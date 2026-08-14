@@ -1,0 +1,52 @@
+[
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=TSLA",
+    "timestamp": "",
+    "title": "🇺🇸 테슬라(TSLA)",
+    "is_global": true,
+    "symbol": "TSLA",
+    "body": "🔺 급상승 프리마켓 주식을 확인하세요!"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  }
+]

@@ -61,9 +61,9 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_sa
                     all_tokens = get_all_fcm_tokens()
                     if all_tokens:
                         push_data = {
-                            "type": "system_alert",
+                            "type": "theory_alert",
                             "url": url_target,
-                            "skip_db_save": True
+                            "skip_db_save": str(True)
                         }
                         send_multicast_notification(all_tokens, title, body, push_data)
                         print(f"[Telegram-FCM Sync] 스터디 공지 푸시 {len(all_tokens)}명 발송 성공")

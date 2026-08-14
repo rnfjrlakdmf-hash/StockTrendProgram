@@ -1,0 +1,16 @@
+Aug 03 09:16:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] ━━━ 배치 수집 시작 (09:16:19) ━━━
+Aug 03 09:16:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 📊 총 2개 고유 종목 | 인기(2개) | 일반(0개)
+Aug 03 09:16:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 👥 총 활성 이용자: 2명
+Aug 03 09:16:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 🔄 이번 사이클 신규 수집: 0개 종목
+Aug 03 09:16:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 새로운 뉴스 없음.
+Aug 03 09:16:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] ━━━ 배치 완료 (09:16:19) ━━━
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] ━━━ 배치 수집 시작 (09:21:19) ━━━
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 📊 총 2개 고유 종목 | 인기(2개) | 일반(0개)
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 👥 총 활성 이용자: 2명
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 📰 수집완료 [NVDA.O] '엔비디아 주식' → 0개 뉴스 (오늘 누적 API: 81회)
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 📰 수집완료 [010140.KS] '삼성중공업 주식' → 0개 뉴스 (오늘 누적 API: 82회)
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 🔄 이번 사이클 신규 수집: 2개 종목
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] 새로운 뉴스 없음.
+Aug 03 09:21:19 ip-172-31-34-224 stocktrend-backend[2481066]: [BatchNews] ━━━ 배치 완료 (09:21:19) ━━━

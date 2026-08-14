@@ -146,24 +146,25 @@ export default function RootLayout({
               <WhaleSiren />
 
               {/* Site Footer - AdSense 정책 준수 필수 링크 */}
-              <footer className="border-t border-white/5 mt-8 px-6 py-6 text-center">
-                <p className="text-gray-600 text-xs mb-2">
-                  ⚠️ 본 서비스에서 제공하는 정보는 투자 참고용이며 투자 권유가 아닙니다. 투자의 최종 책임은 본인에게 있습니다.
-                </p>
-                <div className="flex justify-center gap-4 text-xs text-gray-600 flex-wrap">
-                  <a href="/about" className="hover:text-gray-400 transition-colors">서비스 소개</a>
-                  <span>|</span>
-                  <a href="/contact" className="hover:text-gray-400 transition-colors">문의하기</a>
-                  <span>|</span>
-                  <a href="/privacy-policy" className="hover:text-gray-400 transition-colors">개인정보처리방침</a>
-                  <span>|</span>
-                  <a href="/terms" className="hover:text-gray-400 transition-colors">이용약관</a>
-                  <span>|</span>
-                  <a href="/disclaimer" className="hover:text-gray-400 transition-colors">면책 조항(Disclaimer)</a>
-                  <span>|</span>
-                  <a href="/blog" className="hover:text-gray-400 transition-colors font-bold text-gray-400">마켓 리포트(블로그)</a>
-                  <span>|</span>
-                  <span>© 2026 StockTrend</span>
+              <footer className="border-t border-white/10 mt-16 bg-black/60 px-6 py-12 text-center relative z-10">
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 mb-8 text-left text-xs md:text-sm text-gray-400 leading-relaxed">
+                    <strong className="text-gray-300 block mb-2">⚠️ 금융 면책 조항 (Disclaimer)</strong>
+                    본 웹사이트("스마트 투자비서")에서 제공하는 모든 금융 정보, 주식 차트 분석, 시황 브리핑 및 AI 알고리즘의 결과는 투자 판단을 위한 단순 참고용입니다. 본 서비스는 어떠한 경우에도 주식의 매수/매도를 권유하지 않으며, 투자 결과에 대한 법적 책임을 지지 않습니다. 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다. YMYL(Your Money or Your Life) 가이드라인을 준수하여 작성되었으나 정보의 오류나 지연이 발생할 수 있습니다.
+                  </div>
+                  
+                  <div className="flex justify-center gap-4 text-sm text-gray-500 flex-wrap mb-4 font-medium">
+                    <a href="/about" className="hover:text-gray-300 transition-colors">서비스 소개</a>
+                    <span className="text-gray-800">|</span>
+                    <a href="/contact" className="hover:text-gray-300 transition-colors">문의하기</a>
+                    <span className="text-gray-800">|</span>
+                    <a href="/privacy-policy" className="hover:text-gray-300 transition-colors">개인정보처리방침</a>
+                    <span className="text-gray-800">|</span>
+                    <a href="/terms" className="hover:text-gray-300 transition-colors">이용약관</a>
+                    <span className="text-gray-800">|</span>
+                    <a href="/blog" className="hover:text-gray-300 transition-colors font-bold text-gray-400">마켓 리포트(블로그)</a>
+                  </div>
+                  <p className="text-gray-600 text-xs">© 2026 StockTrend AI Analyst Team. All rights reserved.</p>
                 </div>
               </footer>
 

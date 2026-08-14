@@ -1,0 +1,200 @@
+Aug 03 00:42:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AMZN.O - Optimized for speed
+Aug 03 00:42:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:INTC.O - Refreshing data (kept for fallback)...
+Aug 03 00:42:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AAPL.O - Optimized for speed
+Aug 03 00:42:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:RITR.O - Optimized for speed
+Aug 03 00:42:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:INTC.O - Optimized for speed
+Aug 03 00:42:46 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 19.5s.
+Aug 03 00:42:50 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.0s.
+Aug 03 00:42:53 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[공시Monitor] DART 공시 체크 시작...
+Aug 03 00:42:54 ip-172-31-34-224 stocktrend-backend[2376104]: [Telegram] Successfully sent teaser message.
+Aug 03 00:42:55 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center (No push): 🚨 [한화솔루션] 세력 포착!
+Aug 03 00:42:55 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Broadcasted event for 한화솔루션
+Aug 03 00:42:55 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center: 🚨 [내부자 거래 포착] 한화솔루션
+Aug 03 00:42:55 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Sent FCM to 6 users for 한화솔루션
+Aug 03 00:42:56 ip-172-31-34-224 stocktrend-backend[2376104]: [Telegram] Successfully sent teaser message.
+Aug 03 00:42:56 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center (No push): 🚨 [바이오톡스텍] 세력 포착!
+Aug 03 00:42:56 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Broadcasted event for 바이오톡스텍
+Aug 03 00:42:56 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center: 🚨 [내부자 거래 포착] 바이오톡스텍
+Aug 03 00:42:56 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Sent FCM to 6 users for 바이오톡스텍
+Aug 03 00:42:57 ip-172-31-34-224 stocktrend-backend[2376104]: [Telegram] Successfully sent teaser message.
+Aug 03 00:42:57 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center (No push): 🚨 [에어레인] 세력 포착!
+Aug 03 00:42:57 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Broadcasted event for 에어레인
+Aug 03 00:42:57 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center: 🚨 [내부자 거래 포착] 에어레인
+Aug 03 00:42:57 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Sent FCM to 6 users for 에어레인
+Aug 03 00:42:58 ip-172-31-34-224 stocktrend-backend[2376104]: [Telegram] Successfully sent teaser message.
+Aug 03 00:42:58 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center (No push): 🚨 [씨에스윈드] 세력 포착!
+Aug 03 00:42:58 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Broadcasted event for 씨에스윈드
+Aug 03 00:42:58 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center: 🚨 [내부자 거래 포착] 씨에스윈드
+Aug 03 00:42:58 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Sent FCM to 6 users for 씨에스윈드
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [Telegram] Successfully sent teaser message.
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center (No push): 🚨 [한화솔루션] 세력 포착!
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Broadcasted event for 한화솔루션
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [Firestore] Alert saved to center: 🚨 [내부자 거래 포착] 한화솔루션
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[WhaleSiren] Sent FCM to 6 users for 한화솔루션
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[공시Monitor] 완료: 신규 9건, 알림 0건 발송
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='106521981520921283920' found 0 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='112149881614099169576' found 0 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='105380008146890395004' found 0 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='100957523954792251373' found 5 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='110575222441741747894' found 2 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='114225141413041035088' found 0 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='108559801745912003405' found 1 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='115316570647279011868' found 2 items
+Aug 03 00:42:59 ip-172-31-34-224 stocktrend-backend[2376104]: [DB_WATCHLIST] user_id='110418985320259217419' found 1 items
+Aug 03 00:43:00 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Aug 03 00:43:00 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 9.5s.
+Aug 03 00:43:04 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.1s.
+Aug 03 00:43:08 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.0s.
+Aug 03 00:43:12 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.0s.
+Aug 03 00:43:16 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.0s.
+Aug 03 00:43:20 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.0s.
+Aug 03 00:43:24 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 4.0s.
+Aug 03 00:43:27 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:010120 - Refreshing data (kept for fallback)...
+Aug 03 00:43:27 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:010120 - Refreshing data (kept for fallback)...
+Aug 03 00:43:27 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:010120 - Refreshing data (kept for fallback)...
+Aug 03 00:43:27 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:010120 - Refreshing data (kept for fallback)...
+Aug 03 00:43:29 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:010120 - Optimized for speed
+Aug 03 00:43:29 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 010120
+Aug 03 00:43:29 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:010120 - Optimized for speed
+Aug 03 00:43:29 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:010120 - Optimized for speed
+Aug 03 00:43:29 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 010120
+Aug 03 00:43:29 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:010120 - Optimized for speed
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: [Turbo] Cache Warm-up Completed in 5.6s.
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:002700 - Refreshing data (kept for fallback)...
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005930 - Refreshing data (kept for fallback)...
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005930 - Refreshing data (kept for fallback)...
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:002700 - Refreshing data (kept for fallback)...
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:010170 - Refreshing data (kept for fallback)...
+Aug 03 00:43:30 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:010170 - Refreshing data (kept for fallback)...
+Aug 03 00:43:31 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005930 - Optimized for speed
+Aug 03 00:43:31 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 005930
+Aug 03 00:43:31 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005930 - Optimized for speed
+Aug 03 00:43:31 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:439960 - Refreshing data (kept for fallback)...
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:439960 - Refreshing data (kept for fallback)...
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:010170 - Optimized for speed
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 010170
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:010170 - Optimized for speed
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:044340 - Refreshing data (kept for fallback)...
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:044340 - Refreshing data (kept for fallback)...
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:002700 - Optimized for speed
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 002700
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:002700 - Optimized for speed
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:037070 - Refreshing data (kept for fallback)...
+Aug 03 00:43:32 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:037070 - Refreshing data (kept for fallback)...
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:044340 - Optimized for speed
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 044340
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:044340 - Optimized for speed
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:365660 - Refreshing data (kept for fallback)...
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:365660 - Refreshing data (kept for fallback)...
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:439960 - Optimized for speed
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 439960
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:439960 - Optimized for speed
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:413630 - Refreshing data (kept for fallback)...
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:413630 - Refreshing data (kept for fallback)...
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:037070 - Optimized for speed
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 037070
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:037070 - Optimized for speed
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:047040 - Refreshing data (kept for fallback)...
+Aug 03 00:43:33 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:047040 - Refreshing data (kept for fallback)...
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:047040 - Optimized for speed
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 047040
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:047040 - Optimized for speed
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:006340 - Refreshing data (kept for fallback)...
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:006340 - Refreshing data (kept for fallback)...
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:413630 - Optimized for speed
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 413630
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:413630 - Optimized for speed
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:365660 - Optimized for speed
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 365660
+Aug 03 00:43:34 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:365660 - Optimized for speed
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:006340 - Optimized for speed
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 006340
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:006340 - Optimized for speed
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:000660 - Refreshing data (kept for fallback)...
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005930 - Turbo mode activated (0ms)
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:402340 - Refreshing data (kept for fallback)...
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:009150 - Refreshing data (kept for fallback)...
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:402340 - Refreshing data (kept for fallback)...
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:000660 - Refreshing data (kept for fallback)...
+Aug 03 00:43:35 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:009150 - Refreshing data (kept for fallback)...
+Aug 03 00:43:36 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:000660 - Optimized for speed
+Aug 03 00:43:36 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 000660
+Aug 03 00:43:36 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:000660 - Optimized for speed
+Aug 03 00:43:36 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005935 - Refreshing data (kept for fallback)...
+Aug 03 00:43:36 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005935 - Refreshing data (kept for fallback)...
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:009150 - Optimized for speed
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 009150
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:009150 - Optimized for speed
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:005380 - Refreshing data (kept for fallback)...
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:005380 - Refreshing data (kept for fallback)...
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:402340 - Optimized for speed
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 402340
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:402340 - Optimized for speed
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:058610 - Refreshing data (kept for fallback)...
+Aug 03 00:43:37 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:058610 - Refreshing data (kept for fallback)...
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005935 - Optimized for speed
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 005935
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005935 - Optimized for speed
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:439960 - Turbo mode activated (0ms)
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:036930 - Refreshing data (kept for fallback)...
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:036930 - Refreshing data (kept for fallback)...
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: [gather_naver_stock_data] Failed to fetch real-time JSON patch: could not convert string to float: ''
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:005380 - Optimized for speed
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 005380
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:005380 - Optimized for speed
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:010120 - Turbo mode activated (0ms)
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:058610 - Optimized for speed
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 058610
+Aug 03 00:43:38 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:058610 - Optimized for speed
+Aug 03 00:43:39 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:036930 - Optimized for speed
+Aug 03 00:43:39 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 036930
+Aug 03 00:43:39 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:036930 - Optimized for speed
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005930 - Turbo mode activated (0ms)
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:000660 - Turbo mode activated (0ms)
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:009150 - Turbo mode activated (0ms)
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:005380 - Turbo mode activated (0ms)
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:035420 - Refreshing data (kept for fallback)...
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:034020 - Refreshing data (kept for fallback)...
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:402340 - Turbo mode activated (0ms)
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:066570 - Refreshing data (kept for fallback)...
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:035420 - Refreshing data (kept for fallback)...
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:034020 - Refreshing data (kept for fallback)...
+Aug 03 00:43:40 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:066570 - Refreshing data (kept for fallback)...
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:035420 - Optimized for speed
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 035420
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:035420 - Optimized for speed
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:042700 - Refreshing data (kept for fallback)...
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:gather_naver_stock_data:042700 - Refreshing data (kept for fallback)...
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:066570 - Optimized for speed
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 066570
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:066570 - Optimized for speed
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⚡ [Cache Hit] v15:get_simple_quote:058610 - Turbo mode activated (0ms)
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:034020 - Optimized for speed
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 034020
+Aug 03 00:43:41 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:034020 - Optimized for speed
+Aug 03 00:43:42 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:gather_naver_stock_data:042700 - Optimized for speed
+Aug 03 00:43:42 ip-172-31-34-224 stocktrend-backend[2376104]: [get_simple_quote] Success via Legal yfinance Engine for 042700
+Aug 03 00:43:42 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:042700 - Optimized for speed
+Aug 03 00:43:42 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_exchange_rate:USD - Refreshing data (kept for fallback)...
+Aug 03 00:43:42 ip-172-31-34-224 stocktrend-backend[2376104]: [ExchangeRate] Twelve Data retrieved: USD/KRW = 1432.85147
+Aug 03 00:43:42 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_exchange_rate:USD - Optimized for speed
+Aug 03 00:43:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:MGRX.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:ZBAO.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:43 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:ONFO.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:ZBAO.O - Optimized for speed
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:FMFC.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:MGRX.O - Optimized for speed
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:CYCU.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:ONFO.O - Optimized for speed
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:NVDA.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:FMFC.O - Optimized for speed
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:AAPL.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:CYCU.O - Optimized for speed
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:AMZN.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:NVDA.O - Optimized for speed
+Aug 03 00:43:44 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:RITR.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:45 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AAPL.O - Optimized for speed
+Aug 03 00:43:45 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:⌛ [Cache Expired] v15:get_simple_quote:INTC.O - Refreshing data (kept for fallback)...
+Aug 03 00:43:45 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:AMZN.O - Optimized for speed
+Aug 03 00:43:45 ip-172-31-34-224 stocktrend-backend[2376104]: INFO:TurboEngine:💾 [Cache Set] v15:get_simple_quote:RITR.O - Optimized for speed

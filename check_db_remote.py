@@ -1,46 +1,33 @@
-import paramiko
-import sys
-import io
+import firebase_admin
+from firebase_admin import credentials, firestore
+import os, json
 
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+cred_path = os.path.join(os.path.dirname(os.path.abspath('backend/firebase_config.py')), 'firebase-adminsdk.json')
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+else:
+    env_creds = os.environ.get('FIREBASE_CREDENTIALS')
+    cred_dict = json.loads(env_creds)
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
 
-def trigger():
-    key_path = "StockAI-Server.pem"
-    hostname = "13.209.99.170"
-    username = "ubuntu"
-    
-    print("=== Connecting to remote EC2 server ===")
-    key = paramiko.RSAKey.from_private_key_file(key_path)
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
-    try:
-        ssh.connect(hostname, username=username, pkey=key, timeout=15)
-        print("Connected successfully!")
+db = firestore.client()
+alerts = db.collection('alerts').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(1000).stream()
+
+count = 0
+for doc in alerts:
+    data = doc.to_dict()
+    if data.get('type') == 'news_alert':
+        count += 1
+        print(f"Old news_alert: {data.get('title')}")
         
-        cmd = '''
-        cd /home/ubuntu/StockTrendProgram/backend && \
-        source venv/bin/activate && \
-        cat << 'EOF' > query_db.py
-import sqlite3
-import json
-conn = sqlite3.connect('stock_app.db')
-cursor = conn.cursor()
-cursor.execute("SELECT user_id, device_type, last_used FROM fcm_tokens ORDER BY last_used DESC LIMIT 10;")
-rows = cursor.fetchall()
-print(json.dumps(rows, indent=2))
-EOF
-        python query_db.py
-        '''
-        stdin, stdout, stderr = ssh.exec_command(cmd)
-        print("FCM Tokens:")
-        print(stdout.read().decode('utf-8', 'ignore'))
+        # We should fix them here too!
+        update_data = {'type': 'disclosure_alert'}
+        if 'news_url' in data:
+            update_data['dart_url'] = data['news_url']
+            update_data['news_url'] = firestore.DELETE_FIELD
         
-        ssh.close()
-    except Exception as e:
-        print("Failed:", e)
-
-if __name__ == "__main__":
-    trigger()
+        doc.reference.update(update_data)
+        
+print(f"Found and updated {count} news_alerts.")

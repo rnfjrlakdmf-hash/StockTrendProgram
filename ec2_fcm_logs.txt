@@ -1,0 +1,832 @@
+Jul 28 02:27:44 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1180.8 seconds)
+Jul 28 02:27:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 044340.KS"}}}
+Jul 28 02:27:59 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1195.8 seconds)
+Jul 28 02:27:59 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:28:00 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:28:09 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 187420.KS"}}}
+Jul 28 02:28:14 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1211.0 seconds)
+Jul 28 02:28:29 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1225.8 seconds)
+Jul 28 02:28:35 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 067290.KS"}}}
+Jul 28 02:28:44 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1240.8 seconds)
+Jul 28 02:28:59 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1256.0 seconds)
+Jul 28 02:29:00 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 014970.KS"}}}
+Jul 28 02:29:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 483320.KS"}}}
+Jul 28 02:29:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 483320.KQ"}}}
+Jul 28 02:29:43 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:29:48 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:29:48 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 196300.KS"}}}
+Jul 28 02:29:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 405920.KS"}}}
+Jul 28 02:31:21 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1398.0 seconds)
+Jul 28 02:31:22 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1399.5 seconds)
+Jul 28 02:31:24 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/seo/themes/secondary-battery
+Jul 28 02:31:24 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/seo/themes/secondary-battery -> 200
+Jul 28 02:31:24 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     127.0.0.1:34804 - "GET /api/seo/themes/secondary-battery?v=2 HTTP/1.1" 200 OK
+Jul 28 02:31:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 148020.KS"}}}
+Jul 28 02:31:28 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 148020.KQ"}}}
+Jul 28 02:31:59 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:32:00 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 02:32:03 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:32:04 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1441.6 seconds)
+Jul 28 02:32:09 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 02:32:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 02:32:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:32:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 02:32:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:32:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 02:33:01 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[WhaleSiren] Broadcasted event for STX엔진
+Jul 28 02:33:01 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:33:02 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:33:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1500.1 seconds)
+Jul 28 02:33:14 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1510.9 seconds)
+Jul 28 02:33:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 494220.KS"}}}
+Jul 28 02:33:15 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 494220.KQ"}}}
+Jul 28 02:33:29 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1525.7 seconds)
+Jul 28 02:33:44 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1540.9 seconds)
+Jul 28 02:34:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1560.0 seconds)
+Jul 28 02:34:07 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1564.3 seconds)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.218.106.174:47380 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bFHmmvNQc8idjdJIhaF1oA-2KTWf6mCtO8Io7SDdlCJbNPxWs4Cu2P755mWuN0UyYiokj5iMmtCzbaC-3cUQbThOkYiKC3Zu_9cHd97Lu5_QShUV8o HTTP/1.1" 200 OK
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:34586 - "POST /api/auth/google HTTP/1.1" 500 Internal Server Error
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:    Exception in ASGI application
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:08 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:46020 - "POST /api/auth/google HTTP/1.1" 500 Internal Server Error
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:    Exception in ASGI application
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     98.92.156.32:46044 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bFHmmvNQc8idjdJIhaF1oA-2KTWf6mCtO8Io7SDdlCJbNPxWs4Cu2P755mWuN0UyYiokj5iMmtCzbaC-3cUQbThOkYiKC3Zu_9cHd97Lu5_QShUV8o HTTP/1.1" 200 OK
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:34:14 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.218.106.174:47382 - "GET /api/system/fcm/preferences?_t=1785206053711&user_id=110418985320259217419&token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bFHmmvNQc8idjdJIhaF1oA-2KTWf6mCtO8Io7SDdlCJbNPxWs4Cu2P755mWuN0UyYiokj5iMmtCzbaC-3cUQbThOkYiKC3Zu_9cHd97Lu5_QShUV8o HTTP/1.1" 200 OK
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     44.222.87.175:37510 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     44.222.87.175:37510 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bHa16Ftfl_73FOS4NiUGNZZ74JUzM8hxLcv53kSUb-9r8waoZjYiGT1Dl7gHn0OXYtapgp3K92btBT84y-oL2odCxF5f801eOf0H7EacFFVxeBIZMo HTTP/1.1" 200 OK
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm-token
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm-token -> 200
+Jul 28 02:34:20 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     44.222.87.175:37510 - "POST /api/system/fcm-token HTTP/1.1" 200 OK
+Jul 28 02:34:21 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/test-global-alert
+Jul 28 02:34:21 ip-172-31-34-224 stocktrend-backend[445248]: [DEBUG-FCM] Total DB tokens details: [('dq80GSVz1Y8OZxu1E_W--h:APA91bHtEioXcJw0Bw-ozDAujvVqwhA5bYA7t6WWLNNCP_32dL02HHK27M4YjJcK_QJXZCq2d5Bs2Cg-p3RPbNR4qvub3H-KR5eSh9uzbpkIow8bWOxNQvI', '108559801745912003405', 'web'), ('cZZsH_hgIn0ViLNVTaeFJ6:APA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws', '110418985320259217419', 'web'), ('f6x3NB-n1B9nVKrEQh4UdN:APA91bHa16Ftfl_73FOS4NiUGNZZ74JUzM8hxLcv53kSUb-9r8waoZjYiGT1Dl7gHn0OXYtapgp3K92btBT84y-oL2odCxF5f801eOf0H7EacFFVxeBIZMo', '110418985320259217419', 'web')]
+Jul 28 02:34:21 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/test-global-alert -> 200
+Jul 28 02:34:21 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     44.222.87.175:37510 - "POST /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
+Jul 28 02:34:23 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 440110.KS"}}}
+Jul 28 02:34:24 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:34:48 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'[Response] GET /api/auth/user/guest_kbgpaeme7_1785206086591/profile -> 200
+Jul 28 02:34:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 393970.KS"}}}
+Jul 28 02:36:22 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1698.7 seconds)
+Jul 28 02:36:24 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1701.5 seconds)
+Jul 28 02:36:27 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:37:01 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 361580.KS"}}}
+Jul 28 02:37:03 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 357870.KS"}}}
+Jul 28 02:37:07 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:37:07 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 361580.KQ"}}}
+Jul 28 02:37:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 357870.KQ"}}}
+Jul 28 02:37:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 294090.KS"}}}
+Jul 28 02:37:15 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[Whale KR] Checking foreign net buying rank & upper limits...
+Jul 28 02:37:17 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm-token
+Jul 28 02:37:17 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:37:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 100130.KS"}}}
+Jul 28 02:37:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 179530.KS"}}}
+Jul 28 02:37:21 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1758.3 seconds)
+Jul 28 02:37:22 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm-token
+Jul 28 02:37:24 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     44.222.87.175:47312 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm-token -> 200
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:48278 - "POST /api/system/fcm-token HTTP/1.1" 200 OK
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm-token -> 200
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:41596 - "POST /api/system/fcm-token HTTP/1.1" 200 OK
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/test-global-alert
+Jul 28 02:37:27 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/test-global-alert
+Jul 28 02:37:28 ip-172-31-34-224 stocktrend-backend[445248]: [DEBUG-FCM] Total DB tokens details: [('dq80GSVz1Y8OZxu1E_W--h:APA91bHtEioXcJw0Bw-ozDAujvVqwhA5bYA7t6WWLNNCP_32dL02HHK27M4YjJcK_QJXZCq2d5Bs2Cg-p3RPbNR4qvub3H-KR5eSh9uzbpkIow8bWOxNQvI', '108559801745912003405', 'web'), ('cZZsH_hgIn0ViLNVTaeFJ6:APA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws', '110418985320259217419', 'web'), ('f6x3NB-n1B9nVKrEQh4UdN:APA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo', '110418985320259217419', 'web')]
+Jul 28 02:37:29 ip-172-31-34-224 stocktrend-backend[445248]: [Watchdog] Check complete. Errors: {'yahoo_finance': 0, 'fx_api': 0, 'firebase_db': 0}, Heartbeats: {'Main_Alert_Scheduler': 1785206219.684299, 'Hourly_Briefing': 1785206234.406066, 'Auto_Blog_Bot': 1785206234.3445358, 'SEO_Blog_Bot': 1785206234.7789485, 'Disclosure_Monitor': 1785205982.8825681}
+Jul 28 02:37:29 ip-172-31-34-224 stocktrend-backend[445248]: [DEBUG-FCM] Total DB tokens details: [('dq80GSVz1Y8OZxu1E_W--h:APA91bHtEioXcJw0Bw-ozDAujvVqwhA5bYA7t6WWLNNCP_32dL02HHK27M4YjJcK_QJXZCq2d5Bs2Cg-p3RPbNR4qvub3H-KR5eSh9uzbpkIow8bWOxNQvI', '108559801745912003405', 'web'), ('cZZsH_hgIn0ViLNVTaeFJ6:APA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws', '110418985320259217419', 'web'), ('f6x3NB-n1B9nVKrEQh4UdN:APA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo', '110418985320259217419', 'web')]
+Jul 28 02:37:45 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/seo/themes/secondary-battery
+Jul 28 02:37:46 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 02:37:46 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/test-global-alert -> 200
+Jul 28 02:37:46 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:48280 - "POST /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
+Jul 28 02:37:46 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/test-global-alert -> 200
+Jul 28 02:37:46 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     44.222.87.175:55060 - "POST /api/system/fcm/test-global-alert HTTP/1.1" 200 OK
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 494330.KS"}}}
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:48278 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/seo/themes/secondary-battery -> 200
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.209.99.170:59804 - "GET /api/seo/themes/secondary-battery?v=2 HTTP/1.1" 200 OK
+Jul 28 02:37:47 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 494330.KQ"}}}
+Jul 28 02:38:03 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:38:04 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:38:16 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:38:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 02:38:19 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:38:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 02:38:27 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 02:38:28 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:38:33 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 02:38:33 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:38:33 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 02:38:48 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:38:49 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 101160.KS"}}}
+Jul 28 02:38:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 043200.KS"}}}
+Jul 28 02:38:50 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:39:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 59.8 seconds)
+Jul 28 02:39:08 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 105740.KS"}}}
+Jul 28 02:39:17 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:39:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 415760.KS"}}}
+Jul 28 02:39:18 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 415760.KQ"}}}
+Jul 28 02:39:34 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 417500.KS"}}}
+Jul 28 02:39:36 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 042040.KS"}}}
+Jul 28 02:39:36 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:40:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 119.9 seconds)
+Jul 28 02:40:18 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 484790.KS"}}}
+Jul 28 02:40:18 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:40:19 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 484790.KQ"}}}
+Jul 28 02:40:34 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 151.4 seconds)
+Jul 28 02:40:35 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:40:41 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 054930.KS"}}}
+Jul 28 02:40:41 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:40:49 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:41:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 179.8 seconds)
+Jul 28 02:41:40 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 095340.KS"}}}
+Jul 28 02:42:02 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:42:03 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 106080.KS"}}}
+Jul 28 02:42:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 239.8 seconds)
+Jul 28 02:42:40 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:42:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 065770.KS"}}}
+Jul 28 02:42:51 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:43:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 299.8 seconds)
+Jul 28 02:43:04 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:43:06 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:43:08 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:43:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:43:15 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 02:43:18 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:43:23 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 02:43:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 02:43:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:43:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 02:43:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:43:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 02:43:53 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 328130.KS"}}}
+Jul 28 02:44:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 359.8 seconds)
+Jul 28 02:45:02 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 065370.KS"}}}
+Jul 28 02:45:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 419.8 seconds)
+Jul 28 02:46:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 479.9 seconds)
+Jul 28 02:46:21 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:46:42 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GDEN"}}}
+Jul 28 02:46:43 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: GDEN"}}}
+Jul 28 02:46:57 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:46:58 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 002230.KS"}}}
+Jul 28 02:47:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 539.8 seconds)
+Jul 28 02:47:33 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:47:34 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 383930.KS"}}}
+Jul 28 02:47:47 ip-172-31-34-224 stocktrend-backend[445248]: [Watchdog] Check complete. Errors: {'yahoo_finance': 0, 'fx_api': 0, 'firebase_db': 0}, Heartbeats: {'Main_Alert_Scheduler': 1785206866.8277075, 'Hourly_Briefing': 1785206834.7699673, 'Auto_Blog_Bot': 1785206834.4189222, 'SEO_Blog_Bot': 1785206834.782307, 'Disclosure_Monitor': 1785206586.0897186}
+Jul 28 02:47:47 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 02:47:48 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 02:48:03 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/status -> 200[IndexAPI] Returning cached market index data (cache age: 599.8 seconds)
+Jul 28 02:48:06 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:48:07 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:48:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:48:22 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 02:48:24 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:48:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0209D0"}}}
+Jul 28 02:48:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0209D0"}}}
+Jul 28 02:48:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 02:48:33 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 02:48:34 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:48:39 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 02:48:39 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:48:39 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 02:49:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 659.9 seconds)
+Jul 28 02:49:15 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:49:16 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 052220.KS"}}}
+Jul 28 02:50:03 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/status -> 200[IndexAPI] Returning cached market index data (cache age: 719.8 seconds)
+Jul 28 02:51:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 779.9 seconds)
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:39876 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:51:06 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     98.93.142.158:60116 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     98.93.142.158:60116 - "POST /api/auth/google HTTP/1.1" 500 Internal Server Error
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:    Exception in ASGI application
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 787.1 seconds)
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     98.93.142.158:41950 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:51:10 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:37130 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:51:11 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:51:11 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:51:11 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:58184 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 02:51:25 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 801.9 seconds)
+Jul 28 02:51:40 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 817.0 seconds)
+Jul 28 02:51:55 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 832.0 seconds)
+Jul 28 02:52:10 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 847.0 seconds)
+Jul 28 02:52:13 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 270520.KS"}}}
+Jul 28 02:52:25 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 861.9 seconds)
+Jul 28 02:52:40 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 876.9 seconds)
+Jul 28 02:52:51 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:52:55 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 891.9 seconds)
+Jul 28 02:52:57 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 893.9 seconds)
+Jul 28 02:53:08 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[WhaleSiren] Broadcasted event for 세미파이브
+Jul 28 02:53:08 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:53:09 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:53:25 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:53:29 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:53:30 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 02:53:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:53:38 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 02:53:40 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 02:53:41 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:53:46 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 02:53:46 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:53:46 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 02:54:01 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     54.197.14.40:57750 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:54:54 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     54.197.14.40:57750 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 02:54:55 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:54:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 354200.KS"}}}
+Jul 28 02:54:57 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1013.8 seconds)
+Jul 28 02:55:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1017.5 seconds)
+Jul 28 02:55:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 038870.KS"}}}
+Jul 28 02:55:11 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:55:16 ip-172-31-34-224 stocktrend-backend[445248]: [get_simple_quote] Success via Legal yfinance Engine for 068270[IndexAPI] Returning cached market index data (cache age: 1032.5 seconds)
+Jul 28 02:55:18 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 065440.KS"}}}
+Jul 28 02:55:31 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1047.5 seconds)
+Jul 28 02:55:46 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1062.5 seconds)
+Jul 28 02:56:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1077.7 seconds)
+Jul 28 02:56:16 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1092.9 seconds)
+Jul 28 02:56:30 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:56:30 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 28 02:56:30 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:56:30 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     54.197.14.40:45156 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:56:30 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1107.5 seconds)
+Jul 28 02:56:31 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:56:31 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:56:31 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:60290 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 02:56:32 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1108.7 seconds)
+Jul 28 02:56:42 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0101N0"}}}
+Jul 28 02:56:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0101N0"}}}
+Jul 28 02:56:48 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1124.8 seconds)
+Jul 28 02:57:02 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/market/rankings/live -> 200[IndexAPI] Returning cached market index data (cache age: 1138.9 seconds)
+Jul 28 02:57:17 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1153.8 seconds)
+Jul 28 02:57:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 388420.KS"}}}
+Jul 28 02:57:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 388420.KQ"}}}
+Jul 28 02:57:32 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1168.9 seconds)
+Jul 28 02:57:41 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 092730.KS"}}}
+Jul 28 02:57:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1183.8 seconds)
+Jul 28 02:57:47 ip-172-31-34-224 stocktrend-backend[445248]: [Watchdog] Check complete. Errors: {'yahoo_finance': 0, 'fx_api': 0, 'firebase_db': 0}, Heartbeats: {'Main_Alert_Scheduler': 1785207467.4740777, 'Hourly_Briefing': 1785207435.0430539, 'Auto_Blog_Bot': 1785207434.4347687, 'SEO_Blog_Bot': 1785207435.0444388, 'Disclosure_Monitor': 1785207189.440706}
+Jul 28 02:57:48 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 02:57:49 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 02:57:55 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:58:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1199.9 seconds)
+Jul 28 02:58:05 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:58:05 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1201.7 seconds)
+Jul 28 02:58:05 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 089230.KS"}}}
+Jul 28 02:58:09 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 02:58:10 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 02:58:38 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:58:39 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 02:58:42 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:58:47 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 02:58:49 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 02:58:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 02:58:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 02:58:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 02:58:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 02:59:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1259.9 seconds)
+Jul 28 02:59:07 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 066310.KS"}}}
+Jul 28 02:59:08 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 02:59:08 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 02:59:08 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 02:59:08 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.239.49.215:52564 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 02:59:09 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 02:59:09 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 02:59:09 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.239.49.215:52564 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 02:59:21 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1278.1 seconds)
+Jul 28 02:59:21 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 02:59:23 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 214680.KS"}}}
+Jul 28 02:59:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1289.5 seconds)
+Jul 28 02:59:48 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1304.5 seconds)
+Jul 28 03:00:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1319.6 seconds)
+Jul 28 03:00:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1320.0 seconds)INFO:TurboEngine:⚡ [Cache Hit] v15:get_normalized_major_indicators - Turbo mode activated (0ms)
+Jul 28 03:00:18 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1334.5 seconds)
+Jul 28 03:00:20 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:00:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 225060.KS"}}}
+Jul 28 03:00:22 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 225060.KQ"}}}
+Jul 28 03:00:23 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 348080.KS"}}}
+Jul 28 03:00:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1349.6 seconds)
+Jul 28 03:00:38 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 250730.KS"}}}
+Jul 28 03:00:38 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:00:39 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 250730.KQ"}}}
+Jul 28 03:00:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1364.4 seconds)
+Jul 28 03:01:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1380.1 seconds)
+Jul 28 03:01:04 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/market/rank/naver/krx/popular -> 200[IndexAPI] Returning cached market index data (cache age: 1380.7 seconds)
+Jul 28 03:01:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 215480.KS"}}}
+Jul 28 03:01:18 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:01:18 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:01:18 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:01:18 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.84.142:33104 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:01:18 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1395.1 seconds)
+Jul 28 03:01:19 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:01:19 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:01:19 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     54.197.14.40:52942 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:01:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1409.5 seconds)
+Jul 28 03:01:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1424.4 seconds)
+Jul 28 03:02:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1439.9 seconds)
+Jul 28 03:02:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1440.4 seconds)
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:36068 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:02:09 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:36062 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:02:10 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:02:10 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:02:10 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:36068 - "GET /api/system/fcm/preferences?_t=1785207730229&user_id=110418985320259217419&token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1448.2 seconds)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     54.197.14.40:60540 - "POST /api/auth/google HTTP/1.1" 500 Internal Server Error
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:    Exception in ASGI application
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:02:11 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:48492 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:48494 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:02:12 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.141.115:59274 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:02:26 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1463.1 seconds)
+Jul 28 03:02:41 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1478.2 seconds)
+Jul 28 03:02:41 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:02:41 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 28 03:02:41 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:02:41 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.223.95.48:59710 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:02:41 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1478.4 seconds)
+Jul 28 03:02:42 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:02:42 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:02:42 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.235.82:36224 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 03:02:43 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1480.3 seconds)
+Jul 28 03:02:43 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/market/korea/sector_heatmap
+Jul 28 03:02:45 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1482.4 seconds)
+Jul 28 03:02:49 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1486.4 seconds)
+Jul 28 03:02:51 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/market/korea/sector_heatmap -> 200
+Jul 28 03:02:51 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.239.49.215:42120 - "GET /api/market/korea/sector_heatmap HTTP/1.1" 200 OK
+Jul 28 03:02:56 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1493.2 seconds)
+Jul 28 03:02:57 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 404890.KS"}}}
+Jul 28 03:02:57 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 427010.KS"}}}
+Jul 28 03:02:58 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 427010.KQ"}}}
+Jul 28 03:02:59 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 404890.KQ"}}}
+Jul 28 03:03:00 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 282200.KS"}}}
+Jul 28 03:03:00 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$427010: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:01 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$404890: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:01 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 282200.KQ"}}}
+Jul 28 03:03:02 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$427010: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:03 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$404890: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1499.9 seconds)
+Jul 28 03:03:04 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 427010"}}}
+Jul 28 03:03:04 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 404890"}}}
+Jul 28 03:03:06 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$282200: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:07 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$282200: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:08 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 282200"}}}
+Jul 28 03:03:11 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 03:03:11 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1508.4 seconds)
+Jul 28 03:03:12 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 03:03:18 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1514.7 seconds)
+Jul 28 03:03:26 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1523.2 seconds)
+Jul 28 03:03:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1529.7 seconds)
+Jul 28 03:03:41 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:41 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 03:03:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:03:45 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 319640.KS"}}}
+Jul 28 03:03:45 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 319640.KQ"}}}
+Jul 28 03:03:46 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:03:48 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1544.7 seconds)
+Jul 28 03:03:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 03:03:52 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 03:03:53 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:03:58 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 03:03:58 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:03:58 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 03:04:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1559.7 seconds)
+Jul 28 03:04:09 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:04:09 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:04:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:04:18 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1574.7 seconds)
+Jul 28 03:04:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1589.7 seconds)
+Jul 28 03:04:48 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1604.7 seconds)
+Jul 28 03:05:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1619.7 seconds)
+Jul 28 03:05:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:05:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:05:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:05:18 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1634.7 seconds)
+Jul 28 03:05:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 291890.KS"}}}
+Jul 28 03:05:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 291890.KQ"}}}
+Jul 28 03:05:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1649.9 seconds)
+Jul 28 03:05:47 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:05:48 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1664.7 seconds)
+Jul 28 03:05:50 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:05:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 394660.KS"}}}
+Jul 28 03:05:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 394660.KQ"}}}
+Jul 28 03:05:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 402970.KS"}}}
+Jul 28 03:05:52 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 402970.KQ"}}}
+Jul 28 03:06:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1679.7 seconds)
+Jul 28 03:06:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:06:13 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:06:13 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:06:19 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1695.7 seconds)
+Jul 28 03:06:34 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1710.8 seconds)
+Jul 28 03:06:49 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1725.7 seconds)
+Jul 28 03:07:06 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 457600.KS"}}}
+Jul 28 03:07:13 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:07:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:07:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:07:17 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[Whale KR] Checking foreign net buying rank & upper limits...
+Jul 28 03:07:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$NVDA.O: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:07:46 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 045340.KS"}}}
+Jul 28 03:07:46 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:07:48 ip-172-31-34-224 stocktrend-backend[445248]: [Watchdog] Check complete. Errors: {'yahoo_finance': 0, 'fx_api': 0, 'firebase_db': 0}, Heartbeats: {'Main_Alert_Scheduler': 1785208052.677507, 'Hourly_Briefing': 1785208047.6691425, 'Auto_Blog_Bot': 1785208041.1161237, 'SEO_Blog_Bot': 1785208041.2140849, 'Disclosure_Monitor': 1785207792.569877}
+Jul 28 03:07:50 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 03:07:50 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 03:08:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1799.8 seconds)[Response] GET /api/system/status -> 200
+Jul 28 03:08:12 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[WhaleSiren] Broadcasted event for 선광
+Jul 28 03:08:12 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 03:08:14 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 03:08:14 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:08:15 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:08:16 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:08:42 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:08:43 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 03:08:45 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:08:47 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 296640.KS"}}}
+Jul 28 03:08:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 03:08:53 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 03:08:54 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:08:59 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 03:08:59 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:08:59 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 03:09:18 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 14.8 seconds)
+Jul 28 03:09:19 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:09:19 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:09:20 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:09:33 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 29.9 seconds)
+Jul 28 03:10:03 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/alerts -> 200[IndexAPI] Returning cached market index data (cache age: 59.9 seconds)
+Jul 28 03:10:11 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:10:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 307280.KS"}}}
+Jul 28 03:10:20 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:10:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:10:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:10:26 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:10:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 439960.KS"}}}
+Jul 28 03:11:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 119.9 seconds)
+Jul 28 03:11:24 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 053030.KS"}}}
+Jul 28 03:11:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:11:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:11:27 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:11:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 400970.KS"}}}
+Jul 28 03:11:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 400970.KQ"}}}
+Jul 28 03:11:53 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 196450.KS"}}}
+Jul 28 03:11:53 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:12:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 179.9 seconds)
+Jul 28 03:12:30 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:12:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:12:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:12:37 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:12:37 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 452160.KS"}}}
+Jul 28 03:12:40 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 460470.KS"}}}
+Jul 28 03:13:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 239.9 seconds)
+Jul 28 03:13:14 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 03:13:15 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 03:13:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 469530.KS"}}}
+Jul 28 03:13:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 469530.KQ"}}}
+Jul 28 03:13:35 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:13:36 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:13:36 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:13:37 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:13:52 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:13:53 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 03:13:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:14:02 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 03:14:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 299.9 seconds)
+Jul 28 03:14:04 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 03:14:05 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:14:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 03:14:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:14:10 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 03:14:40 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:14:41 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:14:42 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:15:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 359.9 seconds)
+Jul 28 03:15:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 078340.KS"}}}
+Jul 28 03:15:15 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:15:38 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 453450.KS"}}}
+Jul 28 03:15:45 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:15:46 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:15:47 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:16:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 420.0 seconds)
+Jul 28 03:16:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 105760.KS"}}}
+Jul 28 03:16:31 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:16:38 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:16:38 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 033500.KS"}}}
+Jul 28 03:16:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:16:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:16:52 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:17:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 479.9 seconds)
+Jul 28 03:17:05 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:17:05 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 082850.KS"}}}
+Jul 28 03:17:19 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0104N0"}}}
+Jul 28 03:17:20 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0104N0"}}}
+Jul 28 03:17:48 ip-172-31-34-224 stocktrend-backend[445248]: [Watchdog] Check complete. Errors: {'yahoo_finance': 0, 'fx_api': 0, 'firebase_db': 0}, Heartbeats: {'Main_Alert_Scheduler': 1785208653.759353, 'Hourly_Briefing': 1785208647.849862, 'Auto_Blog_Bot': 1785208641.1468976, 'SEO_Blog_Bot': 1785208641.2233481, 'Disclosure_Monitor': 1785208395.6682386}
+Jul 28 03:17:50 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 03:17:51 ip-172-31-34-224 stocktrend-backend[445248]: [BatchNews] ❌ 네이버 API 인증 실패. Client ID/Secret 확인 필요.
+Jul 28 03:17:55 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:17:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:17:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:18:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 539.9 seconds)
+Jul 28 03:18:15 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 03:18:17 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 03:18:24 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 205100.KS"}}}
+Jul 28 03:18:24 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:18:50 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:18:50 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 586.9 seconds)/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/google/cloud/firestore_v1/base_collection.py:317: UserWarning: Detected filter using positional arguments. Prefer using the 'filter' keyword argument instead.
+Jul 28 03:18:50 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:18:50 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:18:50 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.239.49.215:51038 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:18:51 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:18:51 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:18:51 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     98.86.171.54:58480 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:18:53 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 104830.KS"}}}
+Jul 28 03:18:55 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:18:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 03:18:58 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:19:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 599.9 seconds)
+Jul 28 03:19:04 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 03:19:06 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 03:19:07 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:19:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 03:19:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:19:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 03:19:17 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 179900.KS"}}}
+Jul 28 03:19:19 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 340930.KS"}}}
+Jul 28 03:19:25 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 282000.KS"}}}
+Jul 28 03:19:26 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 282000.KQ"}}}
+Jul 28 03:19:27 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:19:28 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:19:28 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:20:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 659.7 seconds)
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.107.159:55866 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:20:25 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.107.159:55850 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: [Watchlist] Reading for user: 110418985320259217419[Request] GET /api/system/fcm/preferences
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     52.91.143.199:47936 - "POST /api/auth/google HTTP/1.1" 500 Internal Server Error
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:    Exception in ASGI application
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     |     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     | ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:   File "/home/ubuntu/StockTrendProgram/backend/security_middleware.py", line 44, in dispatch
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]:     await self.app(scope, receive_or_disconnect, send_no_error)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: ImportError: cannot import name 'update_last_login' from 'db_manager' (/home/ubuntu/StockTrendProgram/backend/db_manager.py)
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:42434 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:20:32 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.107.159:52932 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:20:33 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:20:33 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:20:33 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.107.159:52930 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:20:33 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:20:33 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:20:40 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 696.8 seconds)
+Jul 28 03:21:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 720.0 seconds)
+Jul 28 03:21:16 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:21:30 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 491220.KS"}}}
+Jul 28 03:21:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 491220.KQ"}}}
+Jul 28 03:21:37 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:21:37 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:21:38 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:21:45 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 762.0 seconds)
+Jul 28 03:21:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 764.2 seconds)
+Jul 28 03:22:02 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 779.2 seconds)
+Jul 28 03:22:03 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 779.9 seconds)
+Jul 28 03:22:17 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 794.2 seconds)
+Jul 28 03:22:32 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 809.3 seconds)
+Jul 28 03:22:42 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:22:43 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:22:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:22:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 824.5 seconds)
+Jul 28 03:22:55 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 832.4 seconds)
+Jul 28 03:22:55 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:22:55 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=cZZsH_hgIn0ViLNVTaeF...
+Jul 28 03:22:55 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:22:55 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     13.222.11.133:38704 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:22:56 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:22:56 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:22:56 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     54.208.73.179:45482 - "GET /api/system/fcm/preferences?token=cZZsH_hgIn0ViLNVTaeFJ6%3AAPA91bHK0XBgUmAhzMXrA29VDAjzyWDM4gO5zAZxr-dibidOuDECjSiIH8D-cGwum5L-BUbiwQWn66YFMKCyOn0wydDGlfFFLbkl5VGdXq7aNg6Y5b-jvws HTTP/1.1" 200 OK
+Jul 28 03:22:59 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 836.2 seconds)
+Jul 28 03:23:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 837.5 seconds)
+Jul 28 03:23:02 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 839.3 seconds)
+Jul 28 03:23:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 474800.KS"}}}
+Jul 28 03:23:12 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 474800.KQ"}}}
+Jul 28 03:23:16 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 852.5 seconds)
+Jul 28 03:23:17 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] SEC 공시 체크 시작...
+Jul 28 03:23:17 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 854.5 seconds)
+Jul 28 03:23:18 ip-172-31-34-224 stocktrend-backend[445248]: INFO:scheduler:[SEC Monitor] 완료: 0건 SEC 공시 알림 발송
+Jul 28 03:23:31 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 867.5 seconds)
+Jul 28 03:23:31 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 370090.KS"}}}
+Jul 28 03:23:31 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:23:32 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 869.4 seconds)
+Jul 28 03:23:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:23:44 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.239.49.215:47574 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:23:45 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.239.49.215:47564 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:23:46 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 882.5 seconds)
+Jul 28 03:23:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 884.4 seconds)
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: [Request] POST /api/system/fcm/register
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: [FCM-Save] Token saved (Multiple devices allowed): user_id='110418985320259217419', token=f6x3NB-n1B9nVKrEQh4U...
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: [Response] POST /api/system/fcm/register -> 200
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.107.159:56732 - "POST /api/system/fcm/register HTTP/1.1" 200 OK
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: [Request] GET /api/system/fcm/preferences
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: [Response] GET /api/system/fcm/preferences -> 200
+Jul 28 03:23:56 ip-172-31-34-224 stocktrend-backend[445248]: INFO:     3.236.107.159:56732 - "GET /api/system/fcm/preferences?token=f6x3NB-n1B9nVKrEQh4UdN%3AAPA91bG4H5l8-PQBnL6Vy02SzL7mrL_-PXJ-3yG2WiPtxFWG_zi98CbIp17BybF1b_QmHrVfLZmlF-efIE6mDKkE0XmuMXeO_6iIi7IEKrpyy5Waj3A13bo HTTP/1.1" 200 OK
+Jul 28 03:24:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 897.5 seconds)
+Jul 28 03:24:02 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 899.2 seconds)
+Jul 28 03:24:02 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$KRA: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:24:04 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$IRBO: possibly delisted; no price data found  (period=5d)
+Jul 28 03:24:07 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$AMJ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:24:13 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$RYE: possibly delisted; no price data found  (period=5d)
+Jul 28 03:24:15 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$SPLG: possibly delisted; no price data found  (period=5d)
+Jul 28 03:24:16 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 912.5 seconds)
+Jul 28 03:24:16 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$LNZ: possibly delisted; no price data found  (period=5d)
+Jul 28 03:24:17 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 914.4 seconds)
+Jul 28 03:24:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:
+Jul 28 03:24:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['KRA']: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:24:21 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:['IRBO', 'AMJ', 'RYE', 'SPLG', 'LNZ']: possibly delisted; no price data found  (period=5d)
+Jul 28 03:24:31 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 927.5 seconds)[Response] GET /api/alerts -> 200
+Jul 28 03:24:32 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 929.3 seconds)
+Jul 28 03:24:46 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 942.5 seconds)
+Jul 28 03:24:47 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:24:47 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 944.4 seconds)
+Jul 28 03:24:48 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:24:48 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:24:51 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 244620.KS"}}}
+Jul 28 03:24:52 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 244620.KQ"}}}
+Jul 28 03:25:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 957.9 seconds)
+Jul 28 03:25:16 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 972.5 seconds)
+Jul 28 03:25:31 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 987.5 seconds)
+Jul 28 03:25:46 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1002.5 seconds)
+Jul 28 03:25:49 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:25:49 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:25:50 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:26:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1017.5 seconds)
+Jul 28 03:26:08 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 178320.KS"}}}
+Jul 28 03:26:16 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1032.5 seconds)
+Jul 28 03:26:31 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1047.7 seconds)
+Jul 28 03:26:46 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1062.5 seconds)
+Jul 28 03:26:55 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=1y) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:26:56 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:$0193T0: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+Jul 28 03:26:57 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"Quote not found for symbol: 0193T0"}}}
+Jul 28 03:27:01 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1077.9 seconds)
+Jul 28 03:27:11 ip-172-31-34-224 stocktrend-backend[445248]: Create User Error: 'NoneType' object has no attribute 'lower'
+Jul 28 03:27:11 ip-172-31-34-224 stocktrend-backend[445248]: ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: 027830.KS"}}}
+Jul 28 03:27:16 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1092.5 seconds)
+Jul 28 03:27:31 ip-172-31-34-224 stocktrend-backend[445248]: [IndexAPI] Returning cached market index data (cache age: 1107.7 seconds)

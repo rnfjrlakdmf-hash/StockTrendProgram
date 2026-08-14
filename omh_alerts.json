@@ -1,0 +1,52 @@
+[
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "2026-07-28 02:37:29.937000+00:00",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "2026-07-28 02:37:28.619000+00:00",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "2026-07-28 02:34:21.243000+00:00",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "2026-07-28 01:34:33.313000+00:00",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  },
+  {
+    "target_users": [],
+    "type": "auto_price_alert",
+    "url": "/discovery?q=OMH",
+    "timestamp": "2026-07-28 00:06:34.277000+00:00",
+    "title": "🇺🇸 오마이홈(OMH)",
+    "is_global": true,
+    "symbol": "OMH",
+    "body": "🔺급상승 프리마켓 주식을 확인하세요\n[스톡트렌드 알림]"
+  }
+]

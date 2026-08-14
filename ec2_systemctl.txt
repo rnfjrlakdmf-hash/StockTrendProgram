@@ -1,0 +1,1 @@
+  stocktrend-backend.service                                                   loaded active running   StockTrend FastAPI Backend Service

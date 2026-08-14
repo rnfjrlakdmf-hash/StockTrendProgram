@@ -11,6 +11,15 @@ import ResponsiveKakaoAd from "@/components/ResponsiveKakaoAd";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0; // ISR 60초
 
+async function getRelatedPosts() {
+    try {
+        const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=3`;
+        const res = await fetch(apiUrl, { cache: 'no-store' });
+        const data = await res.json();
+        return data.posts || [];
+    } catch { return []; }
+}
+
 async function getTheoryPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
@@ -82,6 +91,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function TheoryPostPage({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = await params;
     const post = await getTheoryPost(resolvedParams.slug);
+    const relatedPosts = await getRelatedPosts();
 
     if (!post) {
         notFound();
@@ -108,6 +118,45 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         },
         "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`
     };
+
+    // TOC(목차) 자동 생성 및 본문 ID 주입
+    const tocRegex = /<(h[23])([^>]*)>(.*?)<\/\1>/gi;
+    let match;
+    const toc = [];
+    let idCounter = 0;
+    
+    let contentWithIds = post.content
+        .replace(/href="\/market-report"/g, 'href="/discovery"')
+        .replace(/href="\/market"/g, 'href="/discovery"')
+        .replace(/<a href="[^"]*">오늘의 시장 분석 리포트 더 보기<\/a>/g, '<a href="/discovery">오늘의 시장 분석 리포트 더 보기</a>')
+        .replace(/whitespace-nowrap/g, 'break-keep');
+        
+    contentWithIds = contentWithIds.replace(/<(h[23])([^>]*)>(.*?)<\/\1>/gi, (fullMatch, tag, attrs, innerHtml) => {
+        const id = `toc-${idCounter++}`;
+        return `<${tag} id="${id}"${attrs} class="scroll-mt-32">${innerHtml}</${tag}>`;
+    });
+
+    while ((match = tocRegex.exec(post.content)) !== null) {
+        const level = match[1] === 'h2' ? 2 : 3;
+        const text = match[3].replace(/<[^>]*>?/gm, '').trim();
+        if (text) {
+            toc.push({ level, text, id: `toc-${toc.length}` });
+        }
+    }
+
+    let tocHtml = '';
+    if (toc.length > 0) {
+        tocHtml = '<div class="mb-12 p-6 md:p-8 bg-gray-900/60 border border-gray-800 rounded-3xl shadow-lg shadow-black/20"><h3 class="text-xl md:text-2xl font-black text-white mb-6 flex items-center gap-2">📑 이 글의 목차</h3><ul class="space-y-3">';
+        toc.forEach((item) => {
+            const padding = item.level === 3 ? 'pl-6' : '';
+            const bullet = item.level === 2 ? '📌' : '👉';
+            const color = item.level === 2 ? 'text-gray-200 font-bold' : 'text-gray-400 font-medium';
+            tocHtml += `<li class="${padding}"><a href="#${item.id}" class="hover:text-green-400 transition-colors flex items-start gap-2 ${color}"><span>${bullet}</span> <span class="flex-1">${item.text}</span></a></li>`;
+        });
+        tocHtml += '</ul></div>';
+    }
+
+    const finalContent = tocHtml + contentWithIds + '<br/><br/><p style="color: #6b7280; font-size: 0.875rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; margin-top: 2rem;">본 포스팅은 <strong>스마트 투자비서</strong>가 제공하는 AI 기반 주식 분석 및 차트 스터디입니다. YMYL 가이드라인을 준수하여 작성되었으나, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.</p>';
 
     return (
         <article className="min-h-screen pt-24 pb-20 px-4 md:px-8 max-w-4xl mx-auto animate-in fade-in duration-500">
@@ -185,14 +234,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             {/* Content Section (HTML Rendered, includes SVG charts) */}
             <div 
                 className="theory-content leading-loose"
-                dangerouslySetInnerHTML={{ 
-                    __html: post.content
-                        .replace(/href="\/market-report"/g, 'href="/discovery"')
-                        .replace(/href="\/market"/g, 'href="/discovery"')
-                        .replace(/<a href="[^"]*">오늘의 시장 분석 리포트 더 보기<\/a>/g, '<a href="/discovery">오늘의 시장 분석 리포트 더 보기</a>')
-                        .replace(/whitespace-nowrap/g, 'break-keep')
-                        + '<br/><br/><p style="color: #6b7280; font-size: 0.875rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">본 포스팅은 <strong>스마트 투자비서</strong>가 제공하는 AI 기반 주식 분석 및 차트 스터디입니다. 스마트 투자비서와 함께 성공적인 투자를 이어나가세요.</p>'
-                }}
+                dangerouslySetInnerHTML={{ __html: finalContent }}
             />
             
             {/* 뷰 카운터 증가용 클라이언트 사이드 스크립트 */}
@@ -202,7 +244,47 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 `
             }} />
 
-            <div className="mt-16 mb-4">
+            {/* Author Bio Box [SEO YMYL E-E-A-T] */}
+            <div className="mt-16 mb-12 bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center md:items-start relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="w-20 h-20 shrink-0 rounded-full bg-gradient-to-tr from-green-600 to-emerald-600 flex items-center justify-center border-4 border-gray-900 shadow-xl shadow-black/50 z-10">
+                    <UserCheck className="w-10 h-10 text-white" />
+                </div>
+                <div className="z-10 text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                        <h3 className="text-xl font-bold text-white">스마트 투자비서 수석 애널리스트팀</h3>
+                        <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-1 rounded-md border border-green-500/20">Verified</span>
+                    </div>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                        월스트리트 퀀트 트레이딩 알고리즘과 글로벌 증시 빅데이터를 학습한 AI 금융 분석팀입니다. 
+                        개인 투자자들이 정보의 비대칭성을 극복하고 안전하게 자산을 불릴 수 있도록, 어렵고 복잡한 주식 이론과 시황을 가장 명확하고 통찰력 있게 풀어냅니다.
+                    </p>
+                </div>
+            </div>
+
+            {/* Related Posts (Internal Linking for SEO) */}
+            <div className="mb-16 border-t border-white/10 pt-12">
+                <h3 className="text-2xl font-black text-white mb-6 flex items-center gap-2">
+                    <BookOpen className="w-6 h-6 text-green-500" /> 함께 읽으면 좋은 추천 강의
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {relatedPosts.filter((rp: any) => rp.slug !== post.slug).slice(0, 3).map((rp: any) => (
+                        <Link href={`/theory/${rp.slug}`} key={rp.id} className="block group">
+                            <div className="bg-black/40 border border-white/10 rounded-2xl p-5 hover:border-green-500/50 transition-colors h-full flex flex-col">
+                                <h4 className="text-gray-200 font-bold group-hover:text-green-400 transition-colors line-clamp-2 mb-2 text-sm">
+                                    {rp.title}
+                                </h4>
+                                <div className="mt-auto flex items-center text-xs text-gray-500">
+                                    <Clock className="w-3.5 h-3.5 mr-1" />
+                                    {new Date(rp.createdAt).toLocaleDateString('ko-KR')}
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mt-8 mb-4">
                 <PushSubscribeButton />
             </div>
 

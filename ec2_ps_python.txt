@@ -1,0 +1,5 @@
+root         527  0.0  0.5  32476  4712 ?        Ss   Jun18   0:01 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+root         688  0.0  0.3 110056  3364 ?        Ssl  Jun18   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+ubuntu    445248 28.5 49.1 1810716 459028 ?      Ssl  00:06  56:38 /home/ubuntu/StockTrendProgram/backend/venv/bin/python3 /home/ubuntu/StockTrendProgram/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+ubuntu    493734  0.0  0.3   7748  3524 ?        Ss   03:24   0:00 bash -c ps aux | grep python
+ubuntu    493736  0.0  0.2   7084  2156 ?        S    03:24   0:00 grep python

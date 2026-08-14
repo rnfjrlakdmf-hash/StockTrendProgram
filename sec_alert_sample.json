@@ -1,0 +1,18 @@
+{
+  "target_users": [
+    "108559801745912003405",
+    "110418985320259217419",
+    "guest_e9kv67vj0_1785305140968",
+    "guest_w40hdn4z5_1785305545263",
+    "guest_wlbmeli7j_1785306993055",
+    "guest_ccrh5nrgl_1785314200409",
+    "guest_ccrh5nrgl_1785314200409"
+  ],
+  "type": "sec_insider_trading",
+  "url": "https://www.sec.gov/Archives/edgar/data/1999525/000199952526000002/0001999525-26-000002-index.htm",
+  "timestamp": "2026-08-01 11:59:09.497844+00:00",
+  "title": "🐳 [내부자 거래 포착] PORTLAND GENERAL ELECTRIC CO /OR/",
+  "is_global": false,
+  "symbol": "PORTLAND GENERAL ELECTRIC CO /OR/",
+  "body": "회사 핵심 임원의 주식 매수/매도가 발생했습니다! (Form 4)"
+}

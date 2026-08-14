@@ -51,7 +51,7 @@ messaging.onBackgroundMessage((payload) => {
         actions: [
             {
                 action: 'view',
-                title: alertType === 'disclosure_alert' ? '공시 보기 📊' : '종목 보기 📈'
+                title: alertType === 'disclosure_alert' ? '공시 보기 📊' : (alertType === 'theory_alert' ? '강의 보기 📚' : '종목 보기 📈')
             },
             {
                 action: 'close',
