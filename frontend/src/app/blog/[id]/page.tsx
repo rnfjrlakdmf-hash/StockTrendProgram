@@ -57,13 +57,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
     return {
         title: `${post.title} | 스마트 투자비서`,
-        description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
+        description: (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
         alternates: {
             canonical: `/blog/${resolvedParams.id}`,
         },
         openGraph: {
             title: post.title,
-            description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
+            description: (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
             type: "article",
             publishedTime: post.createdAt.toISOString(),
             authors: [post.author],
@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         twitter: {
             card: "summary_large_image",
             title: post.title,
-            description: post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
+            description: (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
             images: [`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`]
         }
     };
@@ -97,7 +97,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
         "@context": "https://schema.org",
         "@type": "BlogPosting",
         "headline": post.title,
-        "description": post.content.replace(/<[^>]*>?/gm, '').substring(0, 150),
+        "description": (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150),
         "datePublished": post.createdAt.toISOString(),
         "dateModified": post.createdAt.toISOString(),
         "author": {
@@ -134,7 +134,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 
                 <SocialShareButtons 
                     title={post.title}
-                    description={post.content.replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
+                    description={(post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
                     url={`https://stock-trend-program.co.kr/blog/${post.slug}`}
                     imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`}
                 />

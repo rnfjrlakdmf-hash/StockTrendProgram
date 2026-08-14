@@ -103,7 +103,7 @@ export default async function BlogListPage(props: Props) {
                                             {post.title}
                                         </h2>
                                         <p className="text-gray-400 text-sm line-clamp-2 mb-4">
-                                            {post.content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim().slice(0, 150)}...
+                                            {(post?.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim().slice(0, 150)}...
                                         </p>
                                         <div className="flex items-center text-xs text-gray-500 font-medium">
                                             <Clock className="w-3.5 h-3.5 mr-1" />

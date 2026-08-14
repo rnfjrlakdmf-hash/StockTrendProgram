@@ -327,7 +327,7 @@ function RecentTheoryWidget() {
               </div>
               <h3 className="text-lg font-bold text-white group-hover:text-green-400 mb-2 line-clamp-2 leading-snug">{post.title}</h3>
               <p className="text-xs text-gray-400 leading-relaxed line-clamp-3 mb-4 flex-1">
-                {post.content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim()}
+                {(post?.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim()}
               </p>
               <div className="mt-auto flex justify-between items-center text-[10px] text-gray-500">
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> {new Date(post.createdAt).toLocaleDateString()}</span>

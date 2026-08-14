@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         return { title: "강의를 찾을 수 없습니다" };
     }
 
-    const desc = post.content.replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";
+    const desc = (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";
 
     return {
         title: `${post.title} | 스마트 투자비서`,
@@ -101,7 +101,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": post.title,
-        "description": post.content.replace(/<[^>]*>?/gm, '').substring(0, 150),
+        "description": (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150),
         "datePublished": post.createdAt.toISOString(),
         "dateModified": post.createdAt.toISOString(),
         "author": {
@@ -180,7 +180,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 
                 <SocialShareButtons 
                     title={post.title}
-                    description={post.content.replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
+                    description={(post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
                     url={`https://stock-trend-program.co.kr/theory/${post.slug}`}
                     imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`}
                 />
