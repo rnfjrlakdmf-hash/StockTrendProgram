@@ -1,0 +1,6 @@
+<h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">주식 차트의 끝판왕, 헤드 앤 숄더와 넥라인 돌파 시그널 완전 정복</h2>
+
+<h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">1. 🎯 도입부: 왜 헤드 앤 숄더 패턴을 모르면 지갑을 털릴까요?</h3>
+
+<p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
+주식 시장에서 수많은 개미 투자자들이 눈물을 흘리는 이유는 단 하나입니다. 바로 <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold 

@@ -146,11 +146,11 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
 
     let tocHtml = '';
     if (toc.length > 0) {
-        tocHtml = '<div class="mb-12 p-6 md:p-8 bg-gray-900/60 border border-gray-800 rounded-3xl shadow-lg shadow-black/20"><h3 class="text-xl md:text-2xl font-black text-white mb-6 flex items-center gap-2">📑 이 글의 목차</h3><ul class="space-y-3">';
+        tocHtml = '<div class="mb-12 p-6 md:p-8 bg-gray-900/80 border border-green-500/30 rounded-3xl shadow-lg shadow-black/40"><h3 class="text-xl md:text-2xl font-black text-white mb-6 flex items-center gap-2">📋 이 글의 핵심 목차</h3><ul class="space-y-3">';
         toc.forEach((item) => {
             const padding = item.level === 3 ? 'pl-6' : '';
             const bullet = item.level === 2 ? '📌' : '👉';
-            const color = item.level === 2 ? 'text-gray-200 font-bold' : 'text-gray-400 font-medium';
+            const color = item.level === 2 ? 'text-green-300 font-bold' : 'text-gray-300 font-medium';
             tocHtml += `<li class="${padding}"><a href="#${item.id}" class="hover:text-green-400 transition-colors flex items-start gap-2 ${color}"><span>${bullet}</span> <span class="flex-1">${item.text}</span></a></li>`;
         });
         tocHtml += '</ul></div>';
