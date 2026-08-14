@@ -28,6 +28,7 @@ const navigationGroups = [
             { name: "🔒 주말 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "토/일 주말에만 열람 가능한 프리미엄 마켓 요약 리포트입니다." },
             { name: "🔒 주말 고래 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "세력과 외국인이 몰래 매집한 TOP 10 종목을 파헤치는 주말 한정 프리미엄 리포트입니다." },
             { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다." },
+            { name: "🔥 핫이슈 종목", href: "/post", icon: Flame, desc: "매일매일 실시간으로 쏟아지는 구글 검색 트렌드 기반 급등주 및 테마주 핫이슈 리포트입니다." },
         ]
     },
     {
