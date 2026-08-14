@@ -36,7 +36,12 @@ async function getBlogPost(slug: string) {
         
         // API에서 못 찾으면 정적 포스트에서 다시 검색
         const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug);
-        if (staticPost) return staticPost;
+        if (staticPost) {
+            return {
+                ...staticPost,
+                createdAt: new Date(staticPost.createdAt)
+            };
+        }
         
         return null;
 
