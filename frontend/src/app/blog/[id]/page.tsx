@@ -192,7 +192,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
             <div 
                 className="blog-content leading-loose"
                 dangerouslySetInnerHTML={{ 
-                    __html: post.content
+                    __html: (post?.content || '')
                         .replace(/href="\/market-report"/g, 'href="/discovery"')
                         .replace(/href="\/market"/g, 'href="/discovery"')
                         .replace(/<a href="[^"]*">오늘의 시장 분석 리포트 더 보기<\/a>/g, '<a href="/discovery">오늘의 시장 분석 리포트 더 보기</a>') 
