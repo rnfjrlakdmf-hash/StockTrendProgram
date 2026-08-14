@@ -74,7 +74,7 @@ export default async function SeoListPage(props: Props) {
                 ) : (
                     posts.map((post: any, index: number) => (
                         <div key={post.id}>
-                            <Link href={`/theory/${post.slug}`} className="block group">
+                            <Link href={`/post/${post.slug}`} className="block group">
                                 <article className="bg-black/40 border border-white/10 hover:border-red-500/50 rounded-3xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/10 relative overflow-hidden flex flex-col md:flex-row gap-6 md:items-center">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/0 group-hover:bg-red-500/10 blur-3xl transition-colors duration-500 rounded-full" />
                                     
@@ -119,7 +119,7 @@ export default async function SeoListPage(props: Props) {
             {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-16 pb-8">
                     {page > 1 && (
-                        <Link href={`/theory?page=${page - 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                        <Link href={`/post?page=${page - 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
                             <ChevronRight className="w-5 h-5 rotate-180" />
                         </Link>
                     )}
@@ -130,7 +130,7 @@ export default async function SeoListPage(props: Props) {
                             return (
                                 <Link 
                                     key={pageNum} 
-                                    href={`/theory?page=${pageNum}`}
+                                    href={`/post?page=${pageNum}`}
                                     className={`flex items-center justify-center w-10 h-10 rounded-xl font-medium transition-all ${
                                         page === pageNum 
                                             ? 'bg-red-500 text-white shadow-lg shadow-green-500/20 border border-green-400/50' 
@@ -147,7 +147,7 @@ export default async function SeoListPage(props: Props) {
                     })}
 
                     {page < totalPages && (
-                        <Link href={`/theory?page=${page + 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                        <Link href={`/post?page=${page + 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
                             <ChevronRight className="w-5 h-5" />
                         </Link>
                     )}
