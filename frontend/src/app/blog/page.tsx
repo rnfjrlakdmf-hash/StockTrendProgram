@@ -40,20 +40,12 @@ async function getBlogPosts(page: number, limitPerPage: number) {
             }
         }
 
-        // 항상 STATIC_POSTS를 포함하여 콘텐츠 양을 늘림 (AdSense 승인 등 유리)
-        // 정적 포스트 10개를 최상단에 고정하거나 섞어줄 수 있음. 여기서는 첫 페이지에만 최상단 고정 노출
-        let combinedPosts = [];
-        if (page === 1) {
-            combinedPosts = [...STATIC_POSTS, ...apiPosts];
-        } else {
-            combinedPosts = apiPosts;
-        }
-
+        // Market View는 오직 API 데이터(실제 시황)만 보여줍니다.
+        let combinedPosts = apiPosts;
         return { posts: combinedPosts, totalPages: totalPages };
     } catch (error) {
         console.error("블로그 포스트 로딩 에러:", error);
-        const staticSliced = STATIC_POSTS.slice((page - 1) * limitPerPage, page * limitPerPage);
-        return { posts: staticSliced, totalPages: Math.ceil(STATIC_POSTS.length / limitPerPage) };
+        return { posts: [], totalPages: 1 };
     }
 }
 type Props = { searchParams: Promise<{ [key: string]: string | string[] | undefined }> };
