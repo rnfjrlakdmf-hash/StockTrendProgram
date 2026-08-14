@@ -32,7 +32,7 @@ async function getTheoryPosts(page: number, limitPerPage: number) {
             id: p.id,
             title: p.title,
             content: p.content,
-            createdAt: new Date(p.createdAt),
+            createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
             tags: p.tags || [],
             slug: p.slug || p.id,
             viewCount: p.viewCount || 0,

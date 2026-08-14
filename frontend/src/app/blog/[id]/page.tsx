@@ -30,7 +30,7 @@ async function getBlogPost(slug: string) {
         if (data.status === "ok" && data.post) {
             // 날짜 문자열을 Date 객체로 변환
             const post = data.post;
-            post.createdAt = new Date(post.createdAt);
+            post.createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
             return post;
         }
         
@@ -39,7 +39,7 @@ async function getBlogPost(slug: string) {
         if (staticPost) {
             return {
                 ...staticPost,
-                createdAt: new Date(staticPost.createdAt)
+                createdAt: staticPost.createdAt ? new Date(staticPost.createdAt) : new Date()
             };
         }
         

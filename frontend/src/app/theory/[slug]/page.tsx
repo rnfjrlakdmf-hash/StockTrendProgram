@@ -36,7 +36,7 @@ async function getTheoryPost(slug: string) {
         
         if (data.status === "ok" && data.post) {
             const post = data.post;
-            post.createdAt = new Date(post.createdAt);
+            post.createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
             return post;
         }
         
