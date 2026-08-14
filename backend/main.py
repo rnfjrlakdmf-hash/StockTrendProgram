@@ -724,3 +724,23 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     # 운영 환경에서는 reload=False 권장
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+
+@app.get("/api/seo_posts/{slug}")
+def get_seo_post(slug: str):
+    from firebase_config import initialize_firebase
+    from firebase_admin import firestore
+    initialize_firebase()
+    db = firestore.client()
+    doc_ref = db.collection("seo_posts").document(slug)
+    doc = doc_ref.get()
+    if doc.exists:
+        data = doc.to_dict()
+        created_at = data.get("createdAt")
+        if hasattr(created_at, "isoformat"):
+            created_at_str = created_at.isoformat()
+        else:
+            created_at_str = str(created_at)
+        data["createdAt"] = created_at_str
+        return {"status": "ok", "post": data}
+    else:
+        return {"status": "error", "message": "Post not found"}

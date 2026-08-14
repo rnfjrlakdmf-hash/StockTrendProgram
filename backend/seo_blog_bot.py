@@ -169,10 +169,10 @@ def post_seo_blog():
     }
     
     try:
-        doc_ref = db.collection("blog_posts").document(slug)
+        doc_ref = db.collection("seo_posts").document(slug)
         doc_ref.set(post_data)
         
-        post_url = f"https://stock-trend-program.co.kr/blog/{slug}"
+        post_url = f"https://stock-trend-program.co.kr/post/{slug}"
         print(f"[SUCCESS] SEO 포스팅 완료! (ID: {slug})")
         print(f"URL: {post_url}")
         

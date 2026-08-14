@@ -141,8 +141,8 @@ def main():
         }
         
         try:
-            db.collection("blog_posts").document(slug).set(post_data)
-            post_url = f"https://stock-trend-program.co.kr/blog/{slug}"
+            db.collection("seo_posts").document(slug).set(post_data)
+            post_url = f"https://stock-trend-program.co.kr/post/{slug}"
             published_urls.append(post_url)
             print(f"[SUCCESS] {i+1}/{len(stocks)} - {name} 포스팅 완료! ({post_url})")
             

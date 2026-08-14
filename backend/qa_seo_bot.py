@@ -177,7 +177,7 @@ def main():
     db = firestore.client()
     
     # 중복 방지 로직: 이미 작성된 주제 필터링
-    existing_docs = db.collection("theory_posts").where("slug", ">=", "qa-seo-").where("slug", "<", "qa-seo-" + "\uf8ff").stream()
+    existing_docs = db.collection("seo_posts").where("slug", ">=", "qa-seo-").where("slug", "<", "qa-seo-" + "\uf8ff").stream()
     published_topics = set()
     for doc in existing_docs:
         data = doc.to_dict()
@@ -220,8 +220,8 @@ def main():
         }
         
         try:
-            db.collection("theory_posts").document(slug).set(post_data)
-            post_url = f"https://stock-trend-program.co.kr/theory/{slug}"
+            db.collection("seo_posts").document(slug).set(post_data)
+            post_url = f"https://stock-trend-program.co.kr/post/{slug}"
             published_urls.append(post_url)
             print(f"[SUCCESS] Q&A 포스팅 완료! ({post_url})")
             
