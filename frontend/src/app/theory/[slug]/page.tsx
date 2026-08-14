@@ -189,7 +189,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             {/* Title Section */}
             <header className="mb-14 border-b border-white/10 pb-10">
                 <div className="flex flex-wrap gap-2 mb-8">
-                    {post.tags.map((tag: string, idx: number) => (
+                    {post.tags?.map((tag: string, idx: number) => (
                         <span key={idx} className="text-xs font-semibold text-gray-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 tracking-wide uppercase">
                             {tag}
                         </span>

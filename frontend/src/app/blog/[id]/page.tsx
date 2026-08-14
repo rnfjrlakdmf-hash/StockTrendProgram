@@ -143,7 +143,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
             {/* Title Section */}
             <header className="mb-12 border-b border-white/10 pb-8">
                 <div className="flex flex-wrap gap-2 mb-6">
-                    {post.tags.map((tag: string, idx: number) => (
+                    {post.tags?.map((tag: string, idx: number) => (
                         <span key={idx} className="text-xs md:text-sm font-bold text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
                             #{tag}
                         </span>

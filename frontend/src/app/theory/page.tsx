@@ -80,7 +80,7 @@ export default async function TheoryListPage(props: Props) {
                                     
                                     <div className="flex-1 min-w-0 z-10">
                                         <div className="flex flex-wrap gap-2 mb-3">
-                                            {post.tags.map((tag: string, idx: number) => (
+                                            {post.tags?.map((tag: string, idx: number) => (
                                                 <span key={idx} className="text-[10px] md:text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">
                                                     #{tag}
                                                 </span>
