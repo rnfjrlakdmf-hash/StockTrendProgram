@@ -108,3 +108,62 @@ body {
     @apply bg-white/[0.02] backdrop-blur-lg border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all duration-300;
   }
 }
+
+/* Premium Theory Content Overrides (Agency Level) */
+.theory-content h2 {
+  color: #f3f4f6 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  padding-bottom: 0.75rem !important;
+  margin-bottom: 2rem !important;
+  margin-top: 3rem !important;
+  font-weight: 800 !important;
+  font-size: 1.75rem !important;
+  line-height: 1.4 !important;
+}
+.theory-content h3 {
+  color: #e5e7eb !important;
+  background: transparent !important;
+  border-left: 3px solid #4b5563 !important;
+  padding-left: 1rem !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1.25rem !important;
+  font-weight: 700 !important;
+  font-size: 1.35rem !important;
+  border-radius: 0 !important;
+  line-height: 1.4 !important;
+}
+.theory-content p {
+  color: #9ca3af !important;
+  line-height: 1.8 !important;
+  font-size: 1.05rem !important;
+  font-weight: 400 !important;
+  margin-bottom: 1.5rem !important;
+  letter-spacing: -0.01em !important;
+}
+.theory-content strong {
+  color: #f3f4f6 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+  padding: 0 !important;
+}
+.theory-content ul {
+  list-style-type: none !important;
+  padding-left: 0 !important;
+  margin-bottom: 1.5rem !important;
+}
+.theory-content li {
+  color: #9ca3af !important;
+  line-height: 1.7 !important;
+  font-size: 1.05rem !important;
+  margin-bottom: 0.5rem !important;
+  position: relative;
+  padding-left: 1rem;
+}
+.theory-content li::before {
+  content: "·";
+  position: absolute;
+  left: 0;
+  color: #6b7280;
+  font-weight: bold;
+}

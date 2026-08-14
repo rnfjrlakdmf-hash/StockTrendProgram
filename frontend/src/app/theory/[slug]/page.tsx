@@ -146,12 +146,15 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
 
     let tocHtml = '';
     if (toc.length > 0) {
-        tocHtml = '<div class="mb-12 p-6 md:p-8 bg-gray-900/80 border border-green-500/30 rounded-3xl shadow-lg shadow-black/40"><h3 class="text-xl md:text-2xl font-black text-white mb-6 flex items-center gap-2">📋 이 글의 핵심 목차</h3><ul class="space-y-3">';
+        tocHtml = '<div class="mb-14 p-8 bg-[#0a0a0f] border-y border-white/10 my-10"><h3 class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-6">In This Report</h3><ul class="space-y-4">';
+        let h2Index = 0;
         toc.forEach((item) => {
-            const padding = item.level === 3 ? 'pl-6' : '';
-            const bullet = item.level === 2 ? '📌' : '👉';
-            const color = item.level === 2 ? 'text-green-300 font-bold' : 'text-gray-300 font-medium';
-            tocHtml += `<li class="${padding}"><a href="#${item.id}" class="hover:text-green-400 transition-colors flex items-start gap-2 ${color}"><span>${bullet}</span> <span class="flex-1">${item.text}</span></a></li>`;
+            if (item.level === 2) h2Index++;
+            const isH3 = item.level === 3;
+            const padding = isH3 ? 'pl-8' : '';
+            const prefix = isH3 ? '<span class="text-gray-600 mr-2">-</span>' : `<span class="text-gray-500 font-mono text-sm mr-3">0${h2Index}</span>`;
+            const color = isH3 ? 'text-gray-400 font-normal' : 'text-gray-200 font-semibold';
+            tocHtml += `<li class="${padding}"><a href="#${item.id}" class="hover:text-white transition-colors flex items-start ${color}">${prefix} <span class="flex-1">${item.text}</span></a></li>`;
         });
         tocHtml += '</ul></div>';
     }
@@ -184,25 +187,25 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             </div>
 
             {/* Title Section */}
-            <header className="mb-12 border-b border-white/10 pb-8">
-                <div className="flex flex-wrap gap-2 mb-6">
+            <header className="mb-14 border-b border-white/10 pb-10">
+                <div className="flex flex-wrap gap-2 mb-8">
                     {post.tags.map((tag: string, idx: number) => (
-                        <span key={idx} className="text-xs md:text-sm font-bold text-green-400 bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
-                            #{tag}
+                        <span key={idx} className="text-xs font-semibold text-gray-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 tracking-wide uppercase">
+                            {tag}
                         </span>
                     ))}
                 </div>
                 
-                <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-6">
+                <h1 className="text-3xl md:text-5xl font-black text-gray-100 leading-tight mb-8 tracking-tight">
                     {post.title}
                 </h1>
                 
-                <div className="flex items-center gap-6 text-sm text-gray-400 font-medium">
+                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 font-medium">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-green-600 to-emerald-600 flex items-center justify-center text-white">
+                        <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400">
                             <BookOpen className="w-4 h-4" />
                         </div>
-                        <span className="text-gray-300 font-bold">{post.author}</span>
+                        <span className="text-gray-300 font-bold tracking-wide">{post.author}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
@@ -245,15 +248,14 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             }} />
 
             {/* Author Bio Box [SEO YMYL E-E-A-T] */}
-            <div className="mt-16 mb-12 bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center md:items-start relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="w-20 h-20 shrink-0 rounded-full bg-gradient-to-tr from-green-600 to-emerald-600 flex items-center justify-center border-4 border-gray-900 shadow-xl shadow-black/50 z-10">
-                    <UserCheck className="w-10 h-10 text-white" />
+            <div className="mt-20 mb-12 bg-transparent border-t border-white/10 pt-12 flex flex-col md:flex-row gap-6 items-start">
+                <div className="w-16 h-16 shrink-0 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">
+                    <UserCheck className="w-7 h-7 text-gray-400" />
                 </div>
-                <div className="z-10 text-center md:text-left">
-                    <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
-                        <h3 className="text-xl font-bold text-white">스마트 투자비서 수석 애널리스트팀</h3>
-                        <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-1 rounded-md border border-green-500/20">Verified</span>
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-gray-200 tracking-wide">스마트 투자비서 수석 애널리스트팀</h3>
+                        <span className="bg-gray-800 text-gray-400 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border border-gray-700">Verified</span>
                     </div>
                     <p className="text-gray-400 text-sm leading-relaxed mb-4">
                         월스트리트 퀀트 트레이딩 알고리즘과 글로벌 증시 빅데이터를 학습한 AI 금융 분석팀입니다. 
@@ -262,16 +264,17 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 </div>
             </div>
 
-            {/* Related Posts (Internal Linking for SEO) */}
-            <div className="mb-16 border-t border-white/10 pt-12">
-                <h3 className="text-2xl font-black text-white mb-6 flex items-center gap-2">
-                    <BookOpen className="w-6 h-6 text-green-500" /> 함께 읽으면 좋은 추천 강의
+            {/* 내부 링크 구조 (Related Posts) */}
+            <div className="mb-16 border-t border-white/10 pt-16">
+                <h3 className="text-sm uppercase tracking-widest text-gray-500 font-bold mb-8">
+                    Related Reports
                 </h3>
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {relatedPosts.filter((rp: any) => rp.slug !== post.slug).slice(0, 3).map((rp: any) => (
-                        <Link href={`/theory/${rp.slug}`} key={rp.id} className="block group">
-                            <div className="bg-black/40 border border-white/10 rounded-2xl p-5 hover:border-green-500/50 transition-colors h-full flex flex-col">
-                                <h4 className="text-gray-200 font-bold group-hover:text-green-400 transition-colors line-clamp-2 mb-2 text-sm">
+                        <Link key={rp.id} href={`/theory/${rp.slug || rp.id}`} className="block group">
+                            <div className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors h-full flex flex-col">
+                                <h4 className="text-gray-300 font-semibold group-hover:text-white transition-colors line-clamp-2 mb-4 text-sm leading-snug">
                                     {rp.title}
                                 </h4>
                                 <div className="mt-auto flex items-center text-xs text-gray-500">
