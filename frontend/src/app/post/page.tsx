@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     title: "핫이슈 종목 분석 | StockTrendProgram",
     description: "매일 쏟아지는 주식 시장의 핫이슈 종목과 특징주 심층 분석",
     alternates: {
-        canonical: '/theory',
+        canonical: '/post',
     },
 };
 

@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         title: `${post.title} | 스마트 투자비서`,
         description: desc,
         alternates: {
-            canonical: `/theory/${resolvedParams.slug}`,
+            canonical: `/post/${resolvedParams.slug}`,
         },
         openGraph: {
             title: post.title,
