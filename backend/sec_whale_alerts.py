@@ -10,6 +10,7 @@ EDGAR API: https://efts.sec.gov/LATEST/search-index
 import requests
 import json
 import os
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import traceback
@@ -121,9 +122,14 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
             acc_num = raw_id.split(":")[0] if raw_id else ""
             acc_no_dashes = acc_num.replace("-", "")
             
+            xml_url = ""
             try:
-                cik_int = str(int(acc_num.split("-")[0]))
+                ciks = src.get("ciks", [])
+                cik_int = str(int(ciks[0])) if ciks else str(int(acc_num.split("-")[0]))
                 sec_link = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/{acc_num}-index.htm"
+                xml_filename = raw_id.split(":")[1] if ":" in raw_id else ""
+                if xml_filename:
+                    xml_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/{xml_filename}"
             except:
                 sec_link = f"https://www.sec.gov/Archives/edgar/data/0/{acc_no_dashes}/"
 
@@ -145,12 +151,77 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
                 "file_date": src.get("file_date", ""),
                 "period": src.get("period_of_report", ""),
                 "link": sec_link,
+                "xml_url": xml_url,
             })
         return results
     except Exception as e:
         print(f"[SEC Whale] Filing search error: {e}")
         traceback.print_exc()
         return []
+
+
+def parse_form4_xml(xml_url: str) -> dict:
+    try:
+        res = requests.get(xml_url, headers=HEADERS, timeout=10)
+        if res.status_code != 200:
+            return {}
+            
+        root = ET.fromstring(res.text)
+        
+        owner = root.find('.//rptOwnerName')
+        owner_name = owner.text if owner is not None else '내부자'
+        
+        is_director = root.find('.//isDirector')
+        is_officer = root.find('.//isOfficer')
+        officer_title = root.find('.//officerTitle')
+        
+        title_str = ''
+        if officer_title is not None and officer_title.text:
+            title_str = officer_title.text
+        elif is_director is not None and is_director.text == 'true':
+            title_str = '이사(Director)'
+            
+        total_shares = 0
+        total_value = 0
+        trans_type = '거래'
+        
+        for tx in root.findall('.//nonDerivativeTransaction') + root.findall('.//derivativeTransaction'):
+            shares_el = tx.find('.//transactionShares/value')
+            price_el = tx.find('.//transactionPricePerShare/value')
+            acq_disp_el = tx.find('.//transactionAcquiredDisposedCode/value')
+            
+            if shares_el is not None and acq_disp_el is not None:
+                shares = float(shares_el.text or 0)
+                price = float(price_el.text or 0) if price_el is not None else 0
+                code = acq_disp_el.text
+                
+                total_shares += shares
+                total_value += shares * price
+                
+                if code == 'A':
+                    trans_type = '매수(취득)'
+                elif code == 'D':
+                    trans_type = '매도(처분)'
+                    
+        def format_currency(val):
+            if val >= 1_000_000:
+                return f'${val/1_000_000:.1f}M'
+            elif val >= 1_000:
+                return f'${val/1000:.1f}K'
+            else:
+                return f'${int(val)}'
+                
+        return {
+            'owner_name': owner_name,
+            'title': title_str,
+            'trans_type': trans_type,
+            'total_shares': int(total_shares),
+            'total_value': format_currency(total_value) if total_value > 0 else '$0',
+            'has_value': total_value > 0
+        }
+    except Exception as e:
+        print(f'[SEC Whale] XML Parse Error: {e}')
+        return {}
 
 
 def check_sec_form4_alerts():
@@ -183,8 +254,23 @@ def check_sec_form4_alerts():
         ticker = filing.get("ticker", "")
         display_name = f"{ticker} ({entity_name})" if ticker else entity_name
 
-        title = f"🐳 [내부자 거래 포착] {display_name}"
-        body = f"회사 핵심 임원의 주식 매수/매도가 발생했습니다! (Form 4)"
+        xml_url = filing.get("xml_url")
+        parsed = {}
+        if xml_url:
+            parsed = parse_form4_xml(xml_url)
+            
+        if parsed and parsed.get("total_shares", 0) > 0:
+            title = f"🐳 [내부자 {parsed['trans_type'][:2]}] {display_name}"
+            body_text = f"{parsed['owner_name']}"
+            if parsed['title']:
+                body_text += f" ({parsed['title']})"
+            body_text += f" | {parsed['trans_type']} {parsed['total_shares']:,}주"
+            if parsed['has_value']:
+                body_text += f" (약 {parsed['total_value']})"
+            body = body_text
+        else:
+            title = f"🐳 [내부자 거래 포착] {display_name}"
+            body = f"회사 핵심 임원의 주식 매수/매도가 발생했습니다! (Form 4)"
 
         print(f"[SEC Whale Form4] New filing: {title}")
 
