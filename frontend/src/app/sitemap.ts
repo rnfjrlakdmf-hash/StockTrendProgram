@@ -169,5 +169,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error("Failed to generate theory sitemap:", e);
     }
 
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        // SEO posts limit is set high to capture all hot issue posts
+        const res = await fetch(`${apiUrl}/api/seo_posts?page=1&limit=5000`, { next: { revalidate: 3600 }, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === 'ok' && Array.isArray(data.posts)) {
+                data.posts.forEach((post: any) => {
+                    const slug = post.slug || post.id;
+                    routes.push({
+                        url: `${baseUrl}/post/${encodeURIComponent(slug)}`,
+                        lastModified: new Date(post.createdAt),
+                        changeFrequency: 'daily',
+                        priority: 0.9,
+                    });
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to generate seo posts sitemap:", e);
+    }
+
     return routes;
 }
