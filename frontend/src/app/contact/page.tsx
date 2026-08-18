@@ -15,7 +15,7 @@ export default function ContactPage() {
     setError("");
     try {
       // Formspree를 통한 실제 이메일 발송
-      const res = await fetch("https://formspree.io/f/xqakqgkw", {
+      const res = await fetch("https://formspree.io/f/xeajpqdn", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
