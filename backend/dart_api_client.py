@@ -192,37 +192,33 @@ class DartApiClient:
                     for item in items:
                         if item.get("rcept_no") == rcept_no:
                             # 변동 수량 (양수=취득, 음수=처분)
-                            irds_str = item.get("stkqy_irds", "0").replace(",", "").replace("-", "")
+                            irds_raw = item.get("stkqy_irds", "0").replace(",", "")
                             try:
-                                irds_qty = int(irds_str)
+                                irds_signed = int(irds_raw)
+                                direction = "취득" if irds_signed > 0 else "처분" if irds_signed < 0 else "변동"
+                                irds_qty = abs(irds_signed)
                             except:
+                                direction = "변동"
                                 irds_qty = 0
 
-                            # 변동 후 보유주식 수
-                            final_qty_str = item.get("trminal_stkqy", "0").replace(",", "")
+                            # 최종 보유주식 수 (stkqy)
+                            final_qty_str = item.get("stkqy", "0").replace(",", "")
                             try:
                                 final_qty = int(final_qty_str)
                             except:
                                 final_qty = 0
 
-                            # 변동 전 보유비율 계산 (최종 - 변동)
-                            final_rate_str = item.get("trminal_rto", "0").replace(",", "")
+                            # 증감비율 (stkrt_irds)
+                            rate_irds_str = item.get("stkrt_irds", "0").replace(",", "")
                             try:
-                                final_rate = float(final_rate_str)
+                                rate_irds = float(rate_irds_str)
                             except:
-                                final_rate = 0.0
+                                rate_irds = 0.0
 
-                            # 보유 목적
-                            purpose = item.get("biz_purps", "단순투자")
-
-                            # 취득/처분 방향
-                            stkqy_irds_raw = item.get("stkqy_irds", "0").replace(",", "")
-                            try:
-                                irds_signed = int(stkqy_irds_raw)
-                                direction = "취득" if irds_signed >= 0 else "처분"
-                            except:
-                                direction = "변동"
-                                irds_qty = abs(irds_qty)
+                            # 보고 사유 (report_resn)
+                            reason = item.get("report_resn", "")
+                            if reason:
+                                reason = reason.split("\n")[0].strip()
 
                             return {
                                 "reporter": item.get("repror", "알 수 없음"),
@@ -230,7 +226,8 @@ class DartApiClient:
                                 "irds_qty": irds_qty,
                                 "final_qty": final_qty,
                                 "final_rate": final_rate,
-                                "purpose": purpose,
+                                "rate_irds": rate_irds,
+                                "reason": reason,
                             }
         except Exception as e:
             print(f"[DART-API] majorstock 예외 발생: {e}")

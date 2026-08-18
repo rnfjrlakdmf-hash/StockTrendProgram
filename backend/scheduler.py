@@ -124,11 +124,12 @@ async def check_and_notify_disclosures():
                     skip_whale_alert = False
                     
                     if is_super_ant:
-                        prefix_title = "🚨 [슈퍼개미 포착]"
-                        # 기본 폴백 메시지
-                        fact_str = f"대량보유자의 지분 보유상황 변동이 발생했습니다."
+                        prefix_title = "🐜 [슈퍼개미 포착]"
+                        # 기본 폴백 메시지 (보고자명 강조)
                         if flr_nm:
-                            fact_str += f" (보고자: {flr_nm})"
+                            fact_str = f"{flr_nm} | 대량보유 지분 변동 발생\n원문에서 상세 수량과 지분율을 확인하세요."
+                        else:
+                            fact_str = "대량보유자의 지분 변동 공시가 접수되었습니다."
 
                         # ✅ [업그레이드] majorstock API로 상세 정보 추출
                         corp_code = item.get("corp_code")
@@ -141,26 +142,30 @@ async def check_and_notify_disclosures():
                                     irds_qty = ant_details.get("irds_qty", 0)
                                     final_qty = ant_details.get("final_qty", 0)
                                     final_rate = ant_details.get("final_rate", 0.0)
-                                    purpose = ant_details.get("purpose", "")
+                                    rate_irds = ant_details.get("rate_irds", 0.0)
+                                    reason = ant_details.get("reason", "")
 
                                     prefix_title = f"🐜 [슈퍼개미 {direction}]"
                                     fact_str = f"{reporter} | 지분 {direction}"
                                     if irds_qty > 0:
                                         fact_str += f" {irds_qty:,}주"
+                                    if rate_irds != 0:
+                                        fact_str += f" ({rate_irds:+.2f}%p)"
                                     if final_qty > 0:
                                         fact_str += f"\n보유: {final_qty:,}주"
-                                    if final_rate > 0:
-                                        fact_str += f" ({final_rate:.2f}%)"
-                                    if purpose and purpose not in ("", "0"):
-                                        fact_str += f" · {purpose}"
+                                        if final_rate > 0:
+                                            fact_str += f" ({final_rate:.2f}%)"
+                                    if reason:
+                                        fact_str += f" · {reason}"
                             except Exception as ant_e:
                                 logger.warning(f"[WhaleSiren] 슈퍼개미 상세조회 실패, 폴백 사용: {ant_e}")
 
                     elif is_insider:
                         prefix_title = "🚨 [내부자 거래 포착]"
-                        fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
                         if flr_nm:
-                            fact_str += f" (보고자: {flr_nm})"
+                            fact_str = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n원문에서 상세 매수/매도 수량을 확인하세요."
+                        else:
+                            fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
                         
                         # ✅ [업그레이드] DART API를 통해 상세 추출 (잔여 보유량 + 보유비율 추가)
                         corp_code = item.get("corp_code")
