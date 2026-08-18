@@ -127,10 +127,70 @@ export default function AlertCenterPage() {
         }
     }, [user]);
 
+    const renderFormattedBody = (text: string) => {
+        if (!text) return null;
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const parts = text.split(urlRegex);
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                let href = part;
+                let isInternal = false;
+                if (part.startsWith("https://stock-trend-program.co.kr") || part.startsWith("http://stock-trend-program.co.kr")) {
+                    try {
+                        const parsed = new URL(part);
+                        href = parsed.pathname + parsed.search;
+                        isInternal = true;
+                    } catch(e){}
+                }
+                if (isInternal) {
+                    return (
+                        <Link
+                            key={index}
+                            href={href}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-blue-400 font-semibold hover:underline break-all"
+                        >
+                            {part}
+                        </Link>
+                    );
+                }
+                return (
+                    <a
+                        key={index}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-blue-400 font-semibold hover:underline break-all"
+                    >
+                        {part}
+                    </a>
+                );
+            }
+            return <span key={index}>{part}</span>;
+        });
+    };
+
     const renderAlertCard = (alert: AlertItem) => {
         let targetUrl = (alert as any).url || (alert as any).link;
         const symbol = (alert as any).symbol;
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'whale_accumulation', 'whale_alert'].includes(alert.type);
+
+        // 본문(body)에 URL이 포함되어 있고 targetUrl이 비어있거나 '/'인 경우 본문 속 URL을 우선 타겟팅
+        if ((!targetUrl || targetUrl === "/") && alert.body) {
+            const match = alert.body.match(/https?:\/\/[^\s]+/);
+            if (match) {
+                targetUrl = match[0];
+            }
+        }
+
+        // 내부 도메인 링크는 상대 경로로 변환하여 부드러운 SPA 이동
+        if (targetUrl && (targetUrl.startsWith("https://stock-trend-program.co.kr") || targetUrl.startsWith("http://stock-trend-program.co.kr"))) {
+            try {
+                const parsed = new URL(targetUrl);
+                targetUrl = parsed.pathname + parsed.search;
+            } catch(e){}
+        }
 
         if ((alert as any).news_url) {
             const params = new URLSearchParams();
@@ -185,9 +245,9 @@ export default function AlertCenterPage() {
                 <h3 className="text-md font-semibold text-gray-100 pr-6">
                     {alert.title}
                 </h3>
-                <p className={`text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1 pr-6 ${isDisclosure ? 'mb-4' : ''}`}>
-                    {alert.body}
-                </p>
+                <div className={`text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1 pr-6 ${isDisclosure ? 'mb-4' : ''}`}>
+                    {renderFormattedBody(alert.body)}
+                </div>
 
                 {isDisclosure && (
                     <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">

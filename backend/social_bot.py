@@ -35,12 +35,17 @@ def send_telegram_message(message: str):
                 clean_text = re.sub(r'<br\s*/?>', '\n', message)
                 clean_text = re.sub(r'<[^>]+>', '', clean_text)
                 
-                # 텔레그램 공지 제목 추출 (첫 번째 줄)
-                lines = clean_text.strip().split('\n')
-                title = lines[0] if lines else "📢 장 마감 / 시작 시황"
-                body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
-                
-                save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url="/")
+                # URL 자동 추출
+                url_match = re.search(r'https?://[^\s]+', clean_text)
+                detected_url = "/"
+                if url_match:
+                    raw_u = url_match.group(0)
+                    if "stock-trend-program.co.kr" in raw_u:
+                        detected_url = raw_u.split("stock-trend-program.co.kr")[-1] or "/"
+                    else:
+                        detected_url = raw_u
+
+                save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url=detected_url)
             except Exception as fe:
                 print(f"[Telegram-Firestore Sync Error] {fe}")
 
