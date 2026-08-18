@@ -1,6 +1,6 @@
 export const metadata = {
-  title: '개인정보처리방침 | AI 주식 분석 플랫폼',
-  description: 'AI 주식 분석 플랫폼의 개인정보처리방침입니다.',
+  title: '개인정보처리방침 | 스마트 투자 비서 (Google AdSense 쿠키 정책 포함)',
+  description: '스마트 투자 비서의 개인정보처리방침입니다. Google AdSense 광고 쿠키 사용 안내, 개인정보 수집 항목 및 보유 기간, 이용자 권리 등을 안내합니다.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -8,7 +8,8 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-[#09090b] text-gray-200">
       <div className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-black text-white mb-2">개인정보처리방침</h1>
-        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 6월 10일</p>
+        <p className="text-gray-500 text-sm mb-2">최종 업데이트: 2026년 8월 18일</p>
+        <p className="text-gray-500 text-sm mb-12">본 방침은 스마트 투자 비서(stock-trend-program.co.kr)의 개인정보 수집·이용·보호에 관한 사항을 안내합니다.</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
 
