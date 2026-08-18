@@ -181,19 +181,39 @@ def check_large_holding_alerts():
             if not rcept_no or rcept_no in sent_nos:
                 continue
 
-            corp_name = filing.get("corp_name", "Unknown")
-            flr_nm = filing.get("flr_nm", "")
+            corp_code = filing.get("corp_code", "")
             
-            filer_key = f"{corp_name}_{flr_nm}"
-            if flr_nm and filer_key in sent_filers:
-                sent_nos.add(rcept_no)
-                continue
-                
-            title = f"🚨 [슈퍼개미 포착] {corp_name}"
-            
-            body_text = "지분 5% 이상 대량 매집이 포착되었습니다! (대량보유상황보고서)"
-            if flr_nm:
-                body_text += f" (보고자: {flr_nm})"
+            # ✅ [업그레이드] majorstock 상세 파싱
+            ant_details = None
+            if corp_code and rcept_no:
+                try:
+                    ant_details = dart_api_client.get_super_ant_details(corp_code, rcept_no)
+                except Exception as ant_e:
+                    print(f"[Whale Large] 상세 파싱 실패: {ant_e}")
+
+            if ant_details:
+                reporter = ant_details.get("reporter", flr_nm or "대량보유자")
+                direction = ant_details.get("direction", "변동")
+                irds_qty = ant_details.get("irds_qty", 0)
+                final_qty = ant_details.get("final_qty", 0)
+                final_rate = ant_details.get("final_rate", 0.0)
+                purpose = ant_details.get("purpose", "")
+
+                title = f"🐜 [슈퍼개미 {direction}] {corp_name}"
+                body_text = f"{reporter} | 지분 {direction}"
+                if irds_qty > 0:
+                    body_text += f" {irds_qty:,}주"
+                if final_qty > 0:
+                    body_text += f"\n보유: {final_qty:,}주"
+                if final_rate > 0:
+                    body_text += f" ({final_rate:.2f}%)"
+                if purpose and purpose not in ("", "0"):
+                    body_text += f" · {purpose}"
+            else:
+                title = f"🚨 [슈퍼개미 포착] {corp_name}"
+                body_text = "대량보유자의 지분 보유상황 변동이 발생했습니다."
+                if flr_nm:
+                    body_text += f" (보고자: {flr_nm})"
             
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
@@ -206,7 +226,7 @@ def check_large_holding_alerts():
                 try:
                     from telegram_service import send_telegram_teaser
                     import urllib.parse
-                    teaser_msg = f"🚨 <b>[슈퍼개미 포착!]</b>\n\n지분 5% 이상 대량 매집이 포착되었습니다.\n종목명: 👉 <b>{corp_name}</b>\n\n👇 <b>공시 원문 및 차트 확인하기</b>\n<a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(link)}'>앱에서 즉시 확인하기</a>"
+                    teaser_msg = f"🚨 <b>[{title}]</b>\n\n{body}\n\n👇 <b>공시 원문 및 차트 확인하기</b>\n<a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(link)}'>앱에서 즉시 확인하기</a>"
                     send_telegram_teaser(teaser_msg, alert_type="whale_alert")
                 except Exception as e:
                     print(f"[Whale Large] Telegram teaser error: {e}")
@@ -295,16 +315,44 @@ def check_insider_trading_alerts():
 
             corp_name = filing.get("corp_name", "Unknown")
             flr_nm = filing.get("flr_nm", "")
+            corp_code = filing.get("corp_code", "")
             
             filer_key = f"{corp_name}_{flr_nm}"
             if flr_nm and filer_key in sent_filers:
                 sent_nos.add(rcept_no)
                 continue
             
-            title = f"🚨 [내부자 거래 포착] {corp_name}"
-            body_text = f"회사 임원 또는 주요주주의 지분 변동이 발생했습니다."
-            if flr_nm:
-                body_text += f" (보고자: {flr_nm})"
+            # ✅ [업그레이드] elestock 상세 파싱
+            insider_details = None
+            if corp_code and rcept_no:
+                try:
+                    insider_details = dart_api_client.get_insider_trading_details(corp_code, rcept_no)
+                except Exception as ins_e:
+                    print(f"[Whale Insider] 상세 파싱 실패: {ins_e}")
+
+            if insider_details and insider_details.get("qty", 0) > 0:
+                t_type = insider_details["trans_type"]
+                reporter = insider_details.get("reporter", flr_nm or "임원")
+                title_ofcps = insider_details.get("title", "")
+                qty = insider_details.get("qty", 0)
+                remain = insider_details.get("remain_qty", 0)
+                rate = insider_details.get("hold_rate", "")
+
+                title = f"🚨 [내부자 {t_type}] {corp_name}"
+                body_text = f"{reporter}"
+                if title_ofcps and title_ofcps != "-":
+                    body_text += f" ({title_ofcps})"
+                body_text += f" | {t_type} {qty:,}주"
+                if remain > 0:
+                    body_text += f"\n변동 후 보유: {remain:,}주"
+                    if rate:
+                        body_text += f" ({rate}%)"
+            else:
+                title = f"🚨 [내부자 거래 포착] {corp_name}"
+                body_text = f"회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
+                if flr_nm:
+                    body_text += f" (보고자: {flr_nm})"
+
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
 
@@ -316,7 +364,7 @@ def check_insider_trading_alerts():
                 try:
                     from telegram_service import send_telegram_teaser
                     import urllib.parse
-                    teaser_msg = f"🚨 <b>[내부자 거래 포착!]</b>\n\n회사 임원 또는 주요주주의 지분 변동이 발생했습니다.\n종목명: 👉 <b>{corp_name}</b>\n\n👇 <b>공시 원문 및 수급 확인하기</b>\n<a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(link)}'>앱에서 즉시 확인하기</a>"
+                    teaser_msg = f"🚨 <b>[{title}]</b>\n\n{body}\n\n👇 <b>공시 원문 및 수급 확인하기</b>\n<a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(link)}'>앱에서 즉시 확인하기</a>"
                     send_telegram_teaser(teaser_msg, alert_type="whale_alert")
                 except Exception as e:
                     print(f"[Whale Insider] Telegram teaser error: {e}")
