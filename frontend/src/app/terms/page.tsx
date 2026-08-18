@@ -1,6 +1,6 @@
 export const metadata = {
-  title: '이용약관 | AI 주식 분석 플랫폼',
-  description: 'AI 주식 분석 플랫폼의 이용약관입니다.',
+  title: '이용약관 | 스마트 투자 비서',
+  description: '스마트 투자 비서의 서비스 이용약관 및 법적 규정 안내입니다.',
 };
 
 export default function TermsPage() {
@@ -8,7 +8,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-[#09090b] text-gray-200">
       <div className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-black text-white mb-2">이용약관</h1>
-        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 6월 10일</p>
+        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 8월 18일</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
 

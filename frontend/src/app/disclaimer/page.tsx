@@ -2,16 +2,16 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "면책 조항 (Disclaimer) | StockTrend",
-    description: "StockTrend의 투자 정보 및 데이터 사용에 관한 법적 면책 조항 안내입니다.",
+    title: "면책 조항 (Legal Disclaimer) | 스마트 투자 비서",
+    description: "스마트 투자 비서의 투자 정보 및 데이터 사용에 관한 법적 면책 조항 안내입니다.",
 };
 
 export default function DisclaimerPage() {
     return (
         <div className="min-h-screen bg-[#09090b] text-gray-200">
             <div className="max-w-4xl mx-auto px-6 py-16 animate-in fade-in duration-500">
-                <h1 className="text-3xl font-black text-white mb-2">면책 조항 (Disclaimer)</h1>
-                <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 6월 15일</p>
+                <h1 className="text-3xl font-black text-white mb-2">면책 조항 (Legal Disclaimer)</h1>
+                <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 8월 18일</p>
 
                 <div className="space-y-10 text-gray-300 leading-relaxed">
                     
