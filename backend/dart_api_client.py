@@ -118,6 +118,7 @@ class DartApiClient:
     def get_insider_trading_details(self, corp_code: str, rcept_no: str) -> Optional[Dict]:
         """
         🕵️ 지분공시(elestock.json)를 호출하여 특정 공시(rcept_no)의 변동 내역 파싱
+        업그레이드: 변동 후 잔여 보유주식 수 + 보유비율 추가
         """
         if not self.is_available():
             return None
@@ -142,18 +143,99 @@ class DartApiClient:
                                 qty = int(qty_str)
                             except:
                                 qty = 0
-                                
+                            
+                            # 변동 후 잔여 보유주식 (sp_stock_lmp_cnt)
+                            remain_str = item.get("sp_stock_lmp_cnt", "0").replace(",", "")
+                            try:
+                                remain_qty = int(remain_str)
+                            except:
+                                remain_qty = 0
+
+                            # 보유비율 (sp_stock_lmp_rate)
+                            hold_rate = item.get("sp_stock_lmp_rate", "")
+
                             trans_type = "매수" if qty >= 0 else "매도"
                             
-                            return {
+                            result = {
                                 "reporter": item.get("repror", "알 수 없음"),
                                 "title": item.get("isu_exctv_ofcps", ""),
                                 "trans_type": trans_type,
-                                "qty": abs(qty)
+                                "qty": abs(qty),
+                                "remain_qty": remain_qty,
+                                "hold_rate": hold_rate,
                             }
+                            return result
         except Exception as e:
             print(f"[DART-API] elestock 예외 발생: {e}")
         return None
+
+    def get_super_ant_details(self, corp_code: str, rcept_no: str) -> Optional[Dict]:
+        """
+        🐜 대량보유상황보고(majorstock.json)를 파싱하여 슈퍼개미 지분 변동 상세 추출
+        - 보유비율 변동 (전→후), 보유주식 수, 보유 목적 반환
+        """
+        if not self.is_available():
+            return None
+
+        url = f"{self.BASE_URL}/majorstock.json"
+        params = {
+            "crtfc_key": self.api_key,
+            "corp_code": corp_code
+        }
+
+        try:
+            res = requests.get(url, params=params, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("status") == "000":
+                    items = data.get("list", [])
+                    for item in items:
+                        if item.get("rcept_no") == rcept_no:
+                            # 변동 수량 (양수=취득, 음수=처분)
+                            irds_str = item.get("stkqy_irds", "0").replace(",", "").replace("-", "")
+                            try:
+                                irds_qty = int(irds_str)
+                            except:
+                                irds_qty = 0
+
+                            # 변동 후 보유주식 수
+                            final_qty_str = item.get("trminal_stkqy", "0").replace(",", "")
+                            try:
+                                final_qty = int(final_qty_str)
+                            except:
+                                final_qty = 0
+
+                            # 변동 전 보유비율 계산 (최종 - 변동)
+                            final_rate_str = item.get("trminal_rto", "0").replace(",", "")
+                            try:
+                                final_rate = float(final_rate_str)
+                            except:
+                                final_rate = 0.0
+
+                            # 보유 목적
+                            purpose = item.get("biz_purps", "단순투자")
+
+                            # 취득/처분 방향
+                            stkqy_irds_raw = item.get("stkqy_irds", "0").replace(",", "")
+                            try:
+                                irds_signed = int(stkqy_irds_raw)
+                                direction = "취득" if irds_signed >= 0 else "처분"
+                            except:
+                                direction = "변동"
+                                irds_qty = abs(irds_qty)
+
+                            return {
+                                "reporter": item.get("repror", "알 수 없음"),
+                                "direction": direction,
+                                "irds_qty": irds_qty,
+                                "final_qty": final_qty,
+                                "final_rate": final_rate,
+                                "purpose": purpose,
+                            }
+        except Exception as e:
+            print(f"[DART-API] majorstock 예외 발생: {e}")
+        return None
+
 
     def get_financial_sheets(self, corp_code: str, bsns_year: str, reprt_code: str = "11011") -> List[Dict]:
         """

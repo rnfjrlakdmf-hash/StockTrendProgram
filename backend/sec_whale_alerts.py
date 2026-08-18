@@ -260,17 +260,34 @@ def check_sec_form4_alerts():
             parsed = parse_form4_xml(xml_url)
             
         if parsed and parsed.get("total_shares", 0) > 0:
-            title = f"🐳 [내부자 {parsed['trans_type'][:2]}] {display_name}"
+            trans_short = parsed['trans_type'][:2]
+            title = f"🇺🇸 [내부자 {trans_short}] {display_name}"
             body_text = f"{parsed['owner_name']}"
             if parsed['title']:
                 body_text += f" ({parsed['title']})"
             body_text += f" | {parsed['trans_type']} {parsed['total_shares']:,}주"
             if parsed['has_value']:
                 body_text += f" (약 {parsed['total_value']})"
+            # 잔여 보유주식 파싱 (Form4 XML에서 sharesOwnedFollowingTransaction)
+            try:
+                remain_el = None
+                if xml_url:
+                    import requests as _req
+                    import xml.etree.ElementTree as _ET
+                    _r = _req.get(xml_url, headers=HEADERS, timeout=8)
+                    if _r.status_code == 200:
+                        _root = _ET.fromstring(_r.text)
+                        remain_el = _root.find('.//sharesOwnedFollowingTransaction/value')
+                if remain_el is not None and remain_el.text:
+                    remain_val = float(remain_el.text or 0)
+                    if remain_val > 0:
+                        body_text += f"\n거래 후 보유: {int(remain_val):,}주"
+            except Exception:
+                pass
             body = body_text
         else:
-            title = f"🐳 [내부자 거래 포착] {display_name}"
-            body = f"회사 핵심 임원의 주식 매수/매도가 발생했습니다! (Form 4)"
+            title = f"🇺🇸 [내부자 거래 포착] {display_name}"
+            body = f"회사 핵심 임원의 자사주 매수/매도 공시(Form 4)가 접수되었습니다."
 
         print(f"[SEC Whale Form4] New filing: {title}")
 
@@ -335,8 +352,17 @@ def check_sec_13f_alerts():
         ticker = filing.get("ticker", "")
         display_name = f"{ticker} ({entity_name})" if ticker else entity_name
 
-        title = f"🐳 [미국고래 포착] {display_name}"
-        body = f"거대 기관의 보유 주식 현황(13F)이 공개되었습니다!"
+        period_str = filing.get("period", "")
+        period_label = ""
+        if period_str:
+            try:
+                from datetime import datetime as _dt
+                _pd = _dt.strptime(period_str[:10], "%Y-%m-%d")
+                period_label = f" ({_pd.year}년 {_pd.month}분기 기준)"
+            except Exception:
+                period_label = f" ({period_str[:10]})"
+        title = f"🐳 [미국 기관 포지션 공개] {display_name}"
+        body = f"대형 기관투자자의 분기별 보유 주식 현황(SEC 13F-HR)이 공개되었습니다{period_label}.\nSEC EDGAR 원문에서 포지션 전체를 확인하세요."
 
         print(f"[SEC Whale 13F] New filing: {title}")
 

@@ -125,30 +125,97 @@ async def check_and_notify_disclosures():
                     
                     if is_super_ant:
                         prefix_title = "🚨 [슈퍼개미 포착]"
-                        fact_str = "슈퍼개미(대량보유자)의 지분 보유상황 변동이 발생했습니다."
+                        # 기본 폴백 메시지
+                        fact_str = f"대량보유자의 지분 보유상황 변동이 발생했습니다."
                         if flr_nm:
                             fact_str += f" (보고자: {flr_nm})"
+
+                        # ✅ [업그레이드] majorstock API로 상세 정보 추출
+                        corp_code = item.get("corp_code")
+                        if corp_code and doc_id:
+                            try:
+                                ant_details = dart_api_client.get_super_ant_details(corp_code, doc_id)
+                                if ant_details:
+                                    reporter = ant_details.get("reporter", flr_nm or "")
+                                    direction = ant_details.get("direction", "변동")
+                                    irds_qty = ant_details.get("irds_qty", 0)
+                                    final_qty = ant_details.get("final_qty", 0)
+                                    final_rate = ant_details.get("final_rate", 0.0)
+                                    purpose = ant_details.get("purpose", "")
+
+                                    prefix_title = f"🐜 [슈퍼개미 {direction}]"
+                                    fact_str = f"{reporter} | 지분 {direction}"
+                                    if irds_qty > 0:
+                                        fact_str += f" {irds_qty:,}주"
+                                    if final_qty > 0:
+                                        fact_str += f"\n보유: {final_qty:,}주"
+                                    if final_rate > 0:
+                                        fact_str += f" ({final_rate:.2f}%)"
+                                    if purpose and purpose not in ("", "0"):
+                                        fact_str += f" · {purpose}"
+                            except Exception as ant_e:
+                                logger.warning(f"[WhaleSiren] 슈퍼개미 상세조회 실패, 폴백 사용: {ant_e}")
+
                     elif is_insider:
                         prefix_title = "🚨 [내부자 거래 포착]"
                         fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
                         if flr_nm:
                             fact_str += f" (보고자: {flr_nm})"
                         
-                        # DART API를 통해 디테일 추출 (추가 비용 없음)
+                        # ✅ [업그레이드] DART API를 통해 상세 추출 (잔여 보유량 + 보유비율 추가)
                         corp_code = item.get("corp_code")
                         if corp_code and doc_id:
-                            insider_details = dart_api_client.get_insider_trading_details(corp_code, doc_id)
-                            if insider_details and insider_details.get("qty", 0) > 0:
-                                t_type = insider_details["trans_type"]
-                                prefix_title = f"🚨 [내부자 {t_type}]"
-                                fact_str = f"{insider_details['reporter']}"
-                                if insider_details["title"]:
-                                    fact_str += f" ({insider_details['title']})"
-                                fact_str += f" | {t_type} {insider_details['qty']:,}주"
+                            try:
+                                insider_details = dart_api_client.get_insider_trading_details(corp_code, doc_id)
+                                if insider_details and insider_details.get("qty", 0) > 0:
+                                    t_type = insider_details["trans_type"]
+                                    prefix_title = f"🚨 [내부자 {t_type}]"
+                                    fact_str = f"{insider_details['reporter']}"
+                                    if insider_details.get("title"):
+                                        fact_str += f" ({insider_details['title']})"
+                                    fact_str += f" | {t_type} {insider_details['qty']:,}주"
+                                    # 잔여 보유량 추가
+                                    remain = insider_details.get("remain_qty", 0)
+                                    rate = insider_details.get("hold_rate", "")
+                                    if remain > 0:
+                                        fact_str += f"\n변동 후 보유: {remain:,}주"
+                                        if rate:
+                                            fact_str += f" ({rate}%)"
+                            except Exception as ins_e:
+                                logger.warning(f"[WhaleSiren] 내부자 상세조회 실패, 폴백 사용: {ins_e}")
+
                     else:
                         prefix_title = "🔔 [공시 팩트 알림]"
-                        # AI 비용 절감을 위해 일반 공시는 기본 텍스트로 발송
-                        fact_str = f"[{corp}] {report_title} 공시가 방금 올라왔습니다. 지금 바로 원문을 확인하고 대응하세요!"
+                        # ✅ [업그레이드] 공시 유형별 스마트 팩트 문구
+                        clean = clean_title
+                        if "유상증자" in clean:
+                            fact_str = f"신주 발행(유상증자) 결정이 공시되었습니다. 주식 희석 가능성이 있습니다. 원문을 확인하세요."
+                        elif "무상증자" in clean:
+                            fact_str = f"무상증자 결정 공시! 기존 주주에게 신주를 무상으로 배정합니다. 원문을 확인하세요."
+                        elif "자기주식취득" in clean:
+                            fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식을 직접 사들입니다. 주주환원 신호입니다."
+                        elif "자기주식소각" in clean:
+                            fact_str = f"자사주 소각 결정 공시! 주식 수를 줄여 주당 가치를 높이는 강력한 주주환원입니다."
+                        elif "공개매수" in clean:
+                            fact_str = f"공개매수 결정 공시! 경영권 인수 또는 지분 확대를 위한 주식 매수 제안입니다."
+                        elif "경영권변경" in clean:
+                            fact_str = f"경영권 변경 공시! 최대주주 또는 경영진 구조에 큰 변화가 발생했습니다."
+                        elif "감자결정" in clean:
+                            fact_str = f"감자(자본감소) 결정 공시! 발행 주식 수가 줄어드는 중대 이슈입니다."
+                        elif "상장폐지" in clean:
+                            fact_str = f"⚠️ 상장폐지 관련 공시! 즉시 원문을 확인하고 대응하시기 바랍니다."
+                        elif "관리종목" in clean:
+                            fact_str = f"⚠️ 관리종목 지정 또는 해제 공시! 투자 유의가 필요합니다."
+                        elif "횡령" in clean or "배임" in clean:
+                            fact_str = f"⚠️ 횡령·배임 관련 공시! 회사 신뢰도에 중대한 영향을 미칠 수 있습니다."
+                        elif "영업정지" in clean:
+                            fact_str = f"⚠️ 영업정지 공시! 사업 운영에 중대한 차질이 발생했습니다."
+                        elif "부도발생" in clean or "파산신청" in clean:
+                            fact_str = f"⚠️ 부도·파산 공시! 상당한 주의가 필요한 최고 수준 위험 이슈입니다."
+                        elif "단일판매" in clean:
+                            fact_str = f"대규모 공급계약 체결 공시! 수주 규모를 원문에서 반드시 확인하세요."
+                        else:
+                            fact_str = f"[{corp}] {report_title} 공시가 접수되었습니다. 원문을 확인하세요."
 
                     
                     if not skip_whale_alert:
