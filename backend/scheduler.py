@@ -133,6 +133,18 @@ async def check_and_notify_disclosures():
                         fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
                         if flr_nm:
                             fact_str += f" (보고자: {flr_nm})"
+                        
+                        # DART API를 통해 디테일 추출 (추가 비용 없음)
+                        corp_code = item.get("corp_code")
+                        if corp_code and doc_id:
+                            insider_details = dart_api_client.get_insider_trading_details(corp_code, doc_id)
+                            if insider_details and insider_details.get("qty", 0) > 0:
+                                t_type = insider_details["trans_type"]
+                                prefix_title = f"🚨 [내부자 {t_type}]"
+                                fact_str = f"{insider_details['reporter']}"
+                                if insider_details["title"]:
+                                    fact_str += f" ({insider_details['title']})"
+                                fact_str += f" | {t_type} {insider_details['qty']:,}주"
                     else:
                         prefix_title = "🔔 [공시 팩트 알림]"
                         # AI 비용 절감을 위해 일반 공시는 기본 텍스트로 발송

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import requests
 from datetime import datetime, timedelta
@@ -114,6 +114,46 @@ class DartApiClient:
             print(f"[DART-API] 호출 예외 발생: {e}")
 
         return []
+
+    def get_insider_trading_details(self, corp_code: str, rcept_no: str) -> Optional[Dict]:
+        """
+        🕵️ 지분공시(elestock.json)를 호출하여 특정 공시(rcept_no)의 변동 내역 파싱
+        """
+        if not self.is_available():
+            return None
+
+        url = f"{self.BASE_URL}/elestock.json"
+        params = {
+            "crtfc_key": self.api_key,
+            "corp_code": corp_code
+        }
+        
+        try:
+            res = requests.get(url, params=params, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("status") == "000":
+                    items = data.get("list", [])
+                    # rcept_no와 일치하는 가장 최신 변동 1건을 찾음
+                    for item in items:
+                        if item.get("rcept_no") == rcept_no:
+                            qty_str = item.get("sp_stock_lmp_irds_cnt", "0").replace(",", "")
+                            try:
+                                qty = int(qty_str)
+                            except:
+                                qty = 0
+                                
+                            trans_type = "매수" if qty >= 0 else "매도"
+                            
+                            return {
+                                "reporter": item.get("repror", "알 수 없음"),
+                                "title": item.get("isu_exctv_ofcps", ""),
+                                "trans_type": trans_type,
+                                "qty": abs(qty)
+                            }
+        except Exception as e:
+            print(f"[DART-API] elestock 예외 발생: {e}")
+        return None
 
     def get_financial_sheets(self, corp_code: str, bsns_year: str, reprt_code: str = "11011") -> List[Dict]:
         """
