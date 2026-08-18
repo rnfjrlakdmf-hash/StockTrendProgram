@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import uuid
 import random
@@ -12,6 +12,7 @@ from firebase_admin import firestore
 import requests
 
 from ai_analysis import generate_with_retry
+from holiday_checker import exit_if_holiday
 
 load_dotenv()
 
@@ -67,6 +68,9 @@ def ping_indexnow(url):
         pass
 
 def generate_seo_post():
+    # 🚨 휴일 중복 포스팅 방지 (주말, 공휴일엔 자동 종료)
+    exit_if_holiday("kor", "SEO Blog Bot")
+
     kst = timezone(timedelta(hours=9))
     today_dt = datetime.now(kst)
     today_str = today_dt.strftime("%Y년 %m월 %d일")
