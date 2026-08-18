@@ -38,48 +38,50 @@ from fx_api import get_alpha_vantage_fx
 
 def fetch_index_data(ticker_symbol):
     try:
-        # 네이버 금융에서 실시간 지수 가져오기 (KOSPI/KOSDAQ)
+        # 1차 시도: yfinance로 지수 및 전일 대비 변동률 정밀 계산
+        import yfinance as yf
+        t = yf.Ticker(ticker_symbol)
+        hist = t.history(period="5d")
+        if not hist.empty:
+            clean_hist = hist['Close'].dropna()
+            if len(clean_hist) >= 2:
+                close_price = float(clean_hist.iloc[-1])
+                prev_close = float(clean_hist.iloc[-2])
+                change_pct = ((close_price - prev_close) / prev_close) * 100
+                sign = "+" if change_pct > 0 else ""
+                color_class = "text-red-500" if change_pct > 0 else "text-blue-500" if change_pct < 0 else "text-gray-300"
+                return f"<span class='{color_class} font-bold'>{close_price:,.2f} ({sign}{change_pct:.2f}%)</span>"
+    except Exception as yf_e:
+        print(f"[AutoBlog] yfinance 지수 조회 실패({ticker_symbol}), 네이버 크롤링 시도: {yf_e}")
+
+    try:
+        # 2차 폴백: 네이버 금융 실시간 지수 크롤링
         if ticker_symbol == "^KS11":
             url = "https://finance.naver.com/sise/sise_index.naver?code=KOSPI"
         elif ticker_symbol == "^KQ11":
             url = "https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ"
         else:
-            # 미국 지수는 기존 yfinance 방식
-            t = yf.Ticker(ticker_symbol)
-            hist = t.history(period="2d")
-            if len(hist) < 2:
-                return "데이터 없음"
-            close_price = hist['Close'].iloc[-1]
-            prev_close = hist['Close'].iloc[-2]
-            change_pct = ((close_price - prev_close) / prev_close) * 100
-            sign = "+" if change_pct > 0 else ""
-            return f"{close_price:,.2f} ({sign}{change_pct:.2f}%)"
+            return "데이터 확인 불가"
             
-        res = requests.get(url)
+        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=5)
         res.raise_for_status()
         soup = BeautifulSoup(res.text, 'html.parser')
         
         now_value = soup.select_one('#now_value').text.strip()
         change_val_str = soup.select_one('#change_value_and_rate').text.strip()
         
-        # change_val_str = "12.34 하락 (-1.23%)" 같은 형태
-        # 부호 결정을 위해 텍스트 파싱
-        if "상승" in change_val_str or "+" in change_val_str:
-            sign = "+"
-            color_class = "text-red-500" # 한국은 상승이 빨강
-        elif "하락" in change_val_str or "-" in change_val_str:
-            sign = "-"
-            color_class = "text-blue-500"
-        else:
-            sign = ""
-            color_class = "text-gray-300"
-            
-        # 괄호 안의 퍼센트 추출
         import re
-        pct_match = re.search(r'\((.*?)\)', change_val_str)
-        pct = pct_match.group(1) if pct_match else "0.00%"
+        pct_match = re.search(r'([+\-]?\d+(?:\.\d+)?%)', change_val_str)
+        pct_str = pct_match.group(1) if pct_match else "0.00%"
         
-        return f"<span class='{color_class} font-bold'>{now_value} ({sign}{pct})</span>"
+        if not pct_str.startswith('+') and not pct_str.startswith('-'):
+            if "상승" in change_val_str or "+" in change_val_str:
+                pct_str = "+" + pct_str
+            elif "하락" in change_val_str or "-" in change_val_str:
+                pct_str = "-" + pct_str
+
+        color_class = "text-red-500" if "+" in pct_str else "text-blue-500" if "-" in pct_str else "text-gray-300"
+        return f"<span class='{color_class} font-bold'>{now_value} ({pct_str})</span>"
     except Exception as e:
         print(f"Index fetch error for {ticker_symbol}: {e}")
         return "데이터 확인 불가"
