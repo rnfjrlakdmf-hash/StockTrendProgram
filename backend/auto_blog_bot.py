@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import uuid
 import yfinance as yf
@@ -85,25 +85,28 @@ def fetch_index_data(ticker_symbol):
         return "데이터 확인 불가"
 
 def get_compliance_prompt():
-    """유사투자자문업 법적 준수 사항 공통 프롬프트"""
+    """유사투자자문업 법적 준수 사항 및 고품질 블로그 구조 공통 프롬프트"""
     return """
     [⚠️ 매우 중요: 유사투자자문업 법적 준수 사항 및 작성 규칙 ⚠️]
     1. 특정 종목(주식)에 대한 매수/매도 추천, 목표가, 손절가 제시는 절대 불법이므로 엄격히 금지합니다.
     2. "추천", "매수", "수익 보장", "무조건 오릅니다" 등의 자극적인 투자 유도 단어를 절대 사용하지 마세요.
     3. 대신 "시장 관심 집중", "외국인/기관 수급 유입", "강세 흐름", "섹터 부각" 등의 객관적이고 전문적인 단어를 사용하세요.
-    4. 글 내용 중에 'AI', '인공지능', '봇', '알고리즘' 등의 단어를 절대 사용하지 마세요. 마치 진짜 인간 전문가가 직접 통찰력을 발휘해 작성한 것처럼 묵직하고 신뢰감 있는 톤(전문가 포스)으로 작성하세요.
-    5. 글의 최하단에는 반드시 다음 면책 조항(Disclaimer)을 포함하세요:
-       "본 리포트는 객관적인 시장 데이터를 바탕으로 단순 요약한 정보 제공 목적의 글입니다. 어떠한 경우에도 주식의 매수/매도를 추천하지 않으며, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다."
-
-    [출력 형식 및 구조 (반드시 아래 양식을 지켜주세요!)]
-    - 가독성을 높이기 위해 텍스트 크기를 키웁니다. 전체를 묶는 최상위 태그는 <div class="prose prose-lg prose-invert max-w-none space-y-6"> 입니다.
-    - 첫 줄은 반드시 `<p class="text-gray-300 text-lg">안녕하세요! 마켓 뷰 수석 전략가(관리자)입니다.</p>` 로 시작하세요.
-    - 지수 마감 요약(개요)과 일반 본문은 모두 `<p class="text-gray-300 text-lg">...</p>` 태그로 작성하세요. (글자 크기 text-lg 필수)
-    - 지수별 세부 분석은 `<h3 class="text-2xl font-bold text-blue-400 mt-6">지수명 마감 분석: <span class="지수데이터그대로삽입">지수데이터</span></h3>` 형태의 제목을 사용하세요. (지수 데이터 색상 보존, 폰트는 text-2xl로 크게)
-    - 테마 분석 섹션의 제목은 `<h3 class="text-2xl font-bold text-blue-400 mt-8 mb-4">오늘의 핵심 테마 및 특징주 분석</h3>` 로 하세요.
-    - 각 테마별 항목은 `<div>` 또는 `<p class="text-gray-300 text-lg">`로 묶고, 소제목은 `<strong class="text-blue-400 text-xl block mt-4 mb-1">테마 이름:</strong>` 로 파란색을 사용하여 크게 강조하세요.
-    - 본문 안에서 긍정적인 내용, 강세 섹터, 중요한 이유는 `<strong class="text-blue-400 text-lg">` 로 파란색 색상을 입혀서 한눈에 들어오도록 강조하세요.
-    - 테일윈드 클래스를 적절히 사용하세요. JSON이나 Markdown 코드블록(```html)을 제외하고, 순수한 HTML 텍스트 문자열만 반환하세요.
+    4. 글 내용 중에 'AI', '인공지능', '봇', '알고리즘' 등의 단어를 절대 사용하지 마세요. 마치 진짜 인간 수석 애널리스트가 직접 통찰력을 발휘해 작성한 것처럼 묵직하고 신뢰감 있는 톤으로 작성하세요.
+    
+    [출력 형식 및 구조 (E-E-A-T 및 구글 애드센스 승인 최적화 구조)]
+    - 최상위 태그: <div class="prose prose-lg prose-invert max-w-none space-y-6">
+    - 첫 줄은 반드시 관리자 인사말: `<p class="text-gray-300 text-lg">안녕하세요! 스마트 투자 비서 리서치팀 수석 전략가입니다.</p>`
+    - 인사말 바로 아래에 [📌 오늘의 3줄 핵심 요약 박스]를 반드시 포함하세요:
+      `<div class="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 my-6"><h4 class="text-xl font-bold text-blue-400 mb-3">📌 오늘의 증시 핵심 요약</h4><ul class="list-disc list-inside space-y-2 text-gray-200 text-base"><li>핵심 1</li><li>핵심 2</li><li>핵심 3</li></ul></div>`
+    - 지수 마감 분석 섹션: `<h3 class="text-2xl font-bold text-blue-400 mt-8 mb-4">...</h3>`
+    - 핵심 테마 섹션: `<h3 class="text-2xl font-bold text-blue-400 mt-8 mb-4">오늘의 핵심 테마 및 특징주 분석</h3>`
+    - 본문 내 중요한 수치나 호재는 `<strong class="text-blue-400 text-lg">` 로 강조
+    - 글 하단에 반드시 [💡 오늘의 증시 FAQ 3문 3답] 섹션 포함 (`<h3 class="text-2xl font-bold text-white mt-10 mb-4">💡 자주 묻는 질문 (FAQ)</h3>` 아래 3가지 Q&A)
+    - 글 하단에 [📊 공식 데이터 출처 카드] 포함:
+      `<div class="bg-white/5 border border-white/10 rounded-2xl p-5 my-6 text-sm text-gray-400"><strong class="text-gray-200 block mb-1">데이터 출처 및 산출 기준</strong>본 리포트의 지수 및 수급 데이터는 한국거래소(KRX), 금융감독원 전자공시시스템(DART), 네이버 금융, 미국 SEC EDGAR의 공식 발표 수치를 기반으로 작성되었습니다.</div>`
+    - 글 맨 마지막 줄에 [⚠️ 법적 면책 조항 (Legal Disclaimer)] 필수 삽입:
+      `<div class="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 my-6 text-xs text-yellow-300/90 leading-relaxed"><strong class="block mb-1 text-yellow-300">⚠️ 투자 유의사항 및 면책고지</strong>본 리포트는 객관적인 시장 통계와 공시 데이터를 바탕으로 단순 요약한 정보 제공 목적의 콘텐츠입니다. 어떠한 경우에도 특정 주식의 매수·매도를 추천하거나 투자 자문을 제공하지 않으며, 모든 투자의 최종 판단과 법적 책임은 투자자 본인에게 있습니다.</div>`
+    - 순수한 HTML 텍스트 문자열만 반환하고 markdown 틱(```html)은 제외하세요.
     """
 
 def generate_market_post(market_type):

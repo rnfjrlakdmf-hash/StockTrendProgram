@@ -117,16 +117,21 @@ def generate_seo_post():
     1. 첫 줄에 반드시 SEO 최적화된 클릭 유발 제목을 `<title-seo>여기에 작성</title-seo>` 형태로 출력하세요. 
        (예: "{stock} 주가 전망 및 배당금 지급일 완벽 정리 ({today_str} 기준)")
     2. 본문 제목은 `<h2 class="text-3xl font-black text-white pb-2 border-b border-gray-700 mb-8">🚀 [SEO제목 그대로 삽입]</h2>` 로 작성하세요.
-    3. 본문은 서론, 본론(3개 이상의 소주제), 결론으로 명확히 나누고 글자 수를 풍부하게 작성하세요.
-    4. 글 중간중간 핵심 키워드('{stock}', '주가 전망', '배당금', '실적')가 자연스럽게 5~7번 반복되도록 하여 구글 봇이 좋아하게 만드세요.
-    5. 유사투자자문업 법을 철저히 준수하여 절대 "매수하세요", "무조건 오릅니다" 같은 말은 쓰지 마시고, "기관 수급이 긍정적입니다", "증권가 컨센서스는 상승을 가리킵니다" 같이 객관적 사실 기반으로 작성하세요.
+    3. 본문 제목 바로 아래에 [📌 핵심 3줄 요약 박스]를 반드시 삽입하세요:
+       `<div class="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 my-6"><h4 class="text-xl font-bold text-blue-400 mb-3">📌 핵심 요약 포인트</h4><ul class="list-disc list-inside space-y-2 text-gray-200 text-base"><li>핵심 1</li><li>핵심 2</li><li>핵심 3</li></ul></div>`
+    4. 본문은 서론, 본론(3개 이상의 소주제), 결론으로 명확히 나누고 글자 수를 풍부하게 작성하세요.
+    5. 글 중간중간 핵심 키워드('{stock}', '주가 전망', '배당금', '실적')가 자연스럽게 5~7번 반복되도록 하여 구글 봇이 좋아하게 만드세요.
+    6. 유사투자자문업 법을 철저히 준수하여 절대 "매수하세요", "무조건 오릅니다" 같은 말은 쓰지 마시고, "외국인/기관 수급 유입", "공시 데이터 기준", "증권가 컨센서스" 같이 객관적 사실 기반으로 작성하세요.
+    7. 본문 끝에 [💡 {stock} 관련 자주 묻는 질문 (FAQ 3문 3답)] 섹션을 반드시 추가하세요.
+    8. 글 맨 하단에 [📊 공식 데이터 출처 카드]와 [⚠️ 법적 면책 조항]을 필수 삽입하세요:
+       `<div class="bg-white/5 border border-white/10 rounded-2xl p-5 my-6 text-sm text-gray-400"><strong class="text-gray-200 block mb-1">데이터 출처 및 기준</strong>본 정보는 금융감독원 전자공시시스템(DART), 한국거래소(KRX), 네이버 증권의 공개 통계를 바탕으로 작성되었습니다.</div>`
+       `<div class="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 my-6 text-xs text-yellow-300/90 leading-relaxed"><strong class="block mb-1 text-yellow-300">⚠️ 투자 유의사항 및 면책고지</strong>본 리포트는 정보 제공을 목적으로 작성된 자료이며 특정 종목의 매수·매도를 추천하지 않습니다. 모든 투자의 최종 판단과 법적 책임은 투자자 본인에게 있습니다.</div>`
     
     [출력 HTML 포맷 가이드]
     - 전체 래퍼: `<div class="prose prose-lg prose-invert max-w-none space-y-8 leading-loose">`
     - 일반 텍스트: `<p class="text-gray-300 text-lg">`
     - 소제목: `<h3 class="text-2xl font-bold text-blue-400 mt-10 mb-4 border-l-4 border-blue-500 pl-4">`
     - 강조: `<strong class="text-blue-400">` 또는 `<strong class="text-white bg-blue-900/30 px-1 rounded">`
-    - 강렬한 요약 박스: `<div class="my-8 p-6 bg-blue-900/20 border border-blue-500/30 rounded-2xl">...</div>`
     - 순수한 HTML 텍스트만 반환하고 markdown 틱(```html)은 제외하세요.
     - **주의사항**: 절대로 `<!DOCTYPE>`, `<html>`, `<head>`, `<style>`, `<body>` 태그를 포함하지 마세요. 오직 본문에 들어갈 내용물(태그)만 반환하세요.
     """

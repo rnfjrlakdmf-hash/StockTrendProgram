@@ -1,4 +1,4 @@
-﻿import os
+import os
 import yfinance as yf
 from datetime import datetime, timedelta, date
 from db_manager import get_db_connection
@@ -77,9 +77,9 @@ def check_and_send_dividend_alerts():
                 user_tokens = get_users_watching_stock(symbol)
                 
                 if user_tokens:
-                    title = f"💰 내일은 {name} 배당락일입니다"
-                    yield_str = f" (작년 배당금 기준 예상 수익률: 약 {yield_pct:.2f}%)" if yield_pct > 0 else ""
-                    body = f"내일은 {name}의 배당락일이 예정되어 있습니다.{yield_str}\n(본 정보는 투자 참고용이며 최종 책임은 본인에게 있습니다.)"
+                    title = f"💰 [배당락일 D-1] {name}"
+                    yield_str = f"예상 수익률: 약 {yield_pct:.2f}% | " if yield_pct > 0 else ""
+                    body = f"내일 배당락일이 예정되어 있습니다 ({yield_str}D-1).\n오늘 정규장 마감 전 매수 시 배당 수령 대상 · 단순 일정 참고용"
                     url = f"/stock/{symbol}"
                     
                     # 그룹화 (유저 -> 토큰)

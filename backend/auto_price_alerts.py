@@ -1,4 +1,4 @@
-﻿"""
+"""
 Auto Price Alert Monitor (자동 시세 알림 모니터)
 관심종목의 급등/급락(5%) 및 52주 신고가 도달 시 자동으로 푸시 알림을 발송합니다.
 """
@@ -270,8 +270,8 @@ class AutoPriceMonitor:
         if rsi_value is not None and rsi_value < 30.0 and not state.get("rsi_30", False):
             state["rsi_30"] = True
             alerts_to_send.append({
-                "title": "📊 보조지표 변동 알림",
-                "body": f"관심종목의 RSI 지표가 {rsi_value:.1f}로 30 미만(과매도 구간)에 진입했습니다.",
+                "title": "🎯 [보조지표 과매도 진입]",
+                "body": f"RSI 지표가 {rsi_value:.1f}p로 30 미만(과매도 통계 구간)에 도달했습니다.\n현재가: {curr_str} ({change_pct:+.2f}%) · 단순 지표 참고용",
                 "type": "technical_indicator"
             })
 
@@ -279,17 +279,18 @@ class AutoPriceMonitor:
         if vol_ratio >= 5.0 and change_pct > 0 and not state.get("vol_spike", False):
             state["vol_spike"] = True
             alerts_to_send.append({
-                "title": "🚀 거래량 폭발",
-                "body": f"거래량이 평소보다 {int(vol_ratio*100)}% 급증하며 상승 중입니다! ({curr_str})",
+                "title": "💥 [거래량 급증 포착]",
+                "body": f"10일 평균 대비 거래량 {int(vol_ratio*100)}% 폭증 중!\n현재가: {curr_str} ({change_pct:+.2f}%) · 수급 변동 주의",
                 "type": "volume_spike"
             })
 
         # 🚀 5% 이상 상승 포착 (오늘 알림을 안 보낸 경우)
         if change_pct >= 5.0 and not state["up_5"]:
             state["up_5"] = True
+            vol_note = f" (거래량 평소의 {int(vol_ratio*100)}%)" if vol_ratio and vol_ratio >= 2.0 else ""
             alerts_to_send.append({
-                "title": "🚀 급등 포착",
-                "body": f"주식 가격이 {change_pct:.1f}% 올랐어요! ({curr_str})",
+                "title": "🔥 [급등 포착]",
+                "body": f"전일 대비 {change_pct:+.2f}% 급등 중!\n현재가: {curr_str}{vol_note}",
                 "type": "surge"
             })
 
@@ -297,17 +298,18 @@ class AutoPriceMonitor:
         elif change_pct <= -5.0 and not state["down_5"]:
             state["down_5"] = True
             alerts_to_send.append({
-                "title": "📉 급락 포착",
-                "body": f"주식 가격이 {abs(change_pct):.1f}% 떨어졌어요. ({curr_str})",
+                "title": "📉 [급락 포착]",
+                "body": f"전일 대비 {change_pct:+.2f}% 하락 중!\n현재가: {curr_str} · 변동성 확대 주의",
                 "type": "drop"
             })
 
         # 🏆 52주 신고가 근접/돌파 포착 (1% 이내)
         if high_52 and current >= high_52 * 0.99 and not state["high_52"]:
             state["high_52"] = True
+            high_str = f"${high_52:,.2f}" if is_foreign else f"{int(high_52):,}원"
             alerts_to_send.append({
-                "title": "🏆 신고가 경신",
-                "body": f"최근 1년 중 최고가를 기록했어요! ({curr_str})",
+                "title": "🏆 [52주 신고가 경신]",
+                "body": f"최근 1년 중 최고가({high_str})를 돌파 또는 근접했습니다!\n현재가: {curr_str} ({change_pct:+.2f}%)",
                 "type": "high_52"
             })
 

@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from datetime import datetime
 import pytz
 from db_manager import get_db_connection
@@ -64,8 +64,9 @@ async def check_after_hours_limit():
             
             if change_pct >= 9.0:
                 stock_name = info.get("name", symbol)
-                title = f"🌙 [시간외 상한가] {stock_name}"
-                body = f"시간외 단일가 거래에서 {change_pct}% 상승하며 상한가에 근접했습니다! 내일 시초가 폭등을 준비하세요."
+                after_price = nxt.get("price", "-")
+                title = f"🌙 [시간외 상한가 포착] {stock_name}"
+                body = f"시간외 단일가에서 +{change_pct:.1f}% 상승 마감!\n시간외 종가: {after_price}원 · 단순 통계 지표 참고용"
                 print(f"[AfterHours] Triggered for {symbol}: {change_pct}%")
                 
                 from firebase_config import send_multicast_notification

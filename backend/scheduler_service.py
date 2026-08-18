@@ -268,6 +268,8 @@ def send_opening_notification(market: str):
             body += "\n\n📅 오늘의 주요 일정:\n" + "\n".join(event_lines[:5])
             if len(event_lines) > 5:
                 body += f"\n외 {len(event_lines)-5}개 일정 더 있음"
+
+        body += "\n\n(단순 시황 참고용 · 종목 추천 아님)"
             
         tokens_data = get_user_fcm_tokens(user_id)
         if tokens_data:
@@ -514,10 +516,10 @@ def send_closing_notification(market: str):
                             
                 price_list.append(line)
                 
-            body_market = market_summary.strip()
+            body_market = (market_summary + "(단순 시황 요약 · 투자 참고용)").strip()
             title_market = f"🌕 {market_name} 장마감 시황"
             
-            body_portfolio = f"{return_label}: {display_return:+.2f}%\n" + profit_str + "\n".join(price_list)
+            body_portfolio = f"{return_label}: {display_return:+.2f}%\n" + profit_str + "\n".join(price_list) + "\n\n(단순 집계 결과 · 종목 추천 아님)"
             title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
             
             tokens_data = get_user_fcm_tokens(user_id)
