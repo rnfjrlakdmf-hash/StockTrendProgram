@@ -181,7 +181,14 @@ def check_large_holding_alerts():
             if not rcept_no or rcept_no in sent_nos:
                 continue
 
+            corp_name = filing.get("corp_name", "알 수 없음")
+            flr_nm = filing.get("flr_nm", "")
             corp_code = filing.get("corp_code", "")
+            
+            filer_key = f"{corp_name}_{flr_nm}"
+            if flr_nm and filer_key in sent_filers:
+                sent_nos.add(rcept_no)
+                continue
             
             # ✅ [업그레이드] majorstock 상세 파싱
             ant_details = None
