@@ -234,9 +234,10 @@ class BatchNewsSystem:
             conn.close()
 
             for symbol, article_id in rows:
-                if symbol not in self.sent_log:
-                    self.sent_log[symbol] = set()
-                self.sent_log[symbol].add(article_id)
+                norm_symbol = symbol.split('.')[0] if (symbol.endswith('.KS') or symbol.endswith('.KQ') or (len(symbol) == 6 and symbol.isdigit())) else symbol
+                if norm_symbol not in self.sent_log:
+                    self.sent_log[norm_symbol] = set()
+                self.sent_log[norm_symbol].add(article_id)
 
             print(f"[BatchNews] [OK] 발송 이력 복원: {len(rows)}건")
         except Exception as e:
@@ -245,12 +246,13 @@ class BatchNewsSystem:
     def _save_sent_log(self, symbol: str, article_id: str, title: str):
         """발송 이력 DB 저장"""
         try:
+            norm_symbol = symbol.split('.')[0] if (symbol.endswith('.KS') or symbol.endswith('.KQ') or (len(symbol) == 6 and symbol.isdigit())) else symbol
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT OR IGNORE INTO batch_news_sent_log (symbol, article_id, title)
                 VALUES (?, ?, ?)
-            """, (symbol, article_id, title))
+            """, (norm_symbol, article_id, title))
             cursor.execute("DELETE FROM batch_news_sent_log WHERE sent_at < datetime('now', '-7 days')")
             conn.commit()
             conn.close()
@@ -259,14 +261,16 @@ class BatchNewsSystem:
 
     def _is_already_sent(self, symbol: str, article_id: str) -> bool:
         """이미 발송된 뉴스인지 확인"""
-        return article_id in self.sent_log.get(symbol, set())
+        norm_symbol = symbol.split('.')[0] if (symbol.endswith('.KS') or symbol.endswith('.KQ') or (len(symbol) == 6 and symbol.isdigit())) else symbol
+        return article_id in self.sent_log.get(norm_symbol, set())
 
     def _mark_sent(self, symbol: str, article_id: str, title: str):
         """발송 완료 마킹"""
-        if symbol not in self.sent_log:
-            self.sent_log[symbol] = set()
-        self.sent_log[symbol].add(article_id)
-        self._save_sent_log(symbol, article_id, title)
+        norm_symbol = symbol.split('.')[0] if (symbol.endswith('.KS') or symbol.endswith('.KQ') or (len(symbol) == 6 and symbol.isdigit())) else symbol
+        if norm_symbol not in self.sent_log:
+            self.sent_log[norm_symbol] = set()
+        self.sent_log[norm_symbol].add(article_id)
+        self._save_sent_log(norm_symbol, article_id, title)
 
     def _reset_daily_counter(self):
         """자정 이후 API 호출 카운터 초기화"""
