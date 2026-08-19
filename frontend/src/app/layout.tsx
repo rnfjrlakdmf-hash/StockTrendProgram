@@ -162,6 +162,8 @@ export default function RootLayout({
                     <span className="text-gray-800">|</span>
                     <a href="/terms" className="hover:text-gray-300 transition-colors">이용약관</a>
                     <span className="text-gray-800">|</span>
+                    <a href="/disclaimer" className="hover:text-gray-300 transition-colors">면책조항</a>
+                    <span className="text-gray-800">|</span>
                     <a href="/blog" className="hover:text-gray-300 transition-colors font-bold text-gray-400">마켓 리포트(블로그)</a>
                   </div>
                   <p className="text-gray-600 text-xs">© 2026 StockTrend AI Analyst Team. All rights reserved.</p>
