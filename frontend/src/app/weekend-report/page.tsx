@@ -31,7 +31,7 @@ export default function WeekendReportPage() {
     const [timeLeft, setTimeLeft] = useState<number>(0);
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/weekend-report`)
+        fetch(`${API_BASE_URL}/api/weekend-report?t=${Date.now()}`, { cache: 'no-store' })
             .then(res => res.json())
             .then((resData: ReportResponse) => {
                 setData(resData);

@@ -31,7 +31,7 @@ export default function WeekendWhalePage() {
     const [showLoginModal, setShowLoginModal] = useState(false);
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/api/weekend-whale-report`)
+        fetch(`${API_BASE_URL}/api/weekend-whale-report?t=${Date.now()}`, { cache: 'no-store' })
             .then(res => res.json())
             .then((resData: ReportResponse) => {
                 setData(resData);
