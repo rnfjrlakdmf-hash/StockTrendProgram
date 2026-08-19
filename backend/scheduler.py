@@ -126,9 +126,9 @@ async def check_and_notify_disclosures():
                     if is_super_ant:
                         prefix_title = "🚨 [슈퍼개미 포착]"
                         # 기본 폴백 메시지
-                        fact_str = f"대량보유자의 지분 보유상황 변동이 발생했습니다."
+                        fact_str = f"대량보유자의 지분 보유상황 변동이 발생했습니다.\n💡 [시장해석] 큰손의 지분 구조 변화 · 세부 내역 확인 필요"
                         if flr_nm:
-                            fact_str += f" (보고자: {flr_nm})"
+                            fact_str = f"{flr_nm} | 대량보유 지분 변동 발생\n💡 [시장해석] 큰손의 지분 구조 변화 · 세부 내역 확인 필요"
 
                         # ✅ [업그레이드] majorstock API로 상세 정보 추출
                         corp_code = item.get("corp_code")
@@ -156,14 +156,22 @@ async def check_and_notify_disclosures():
                                             fact_str += f" ({final_rate:.2f}%)"
                                     if reason:
                                         fact_str += f" · {reason}"
+
+                                    # 시장 해석 추가
+                                    if "취득" in direction or "매수" in direction:
+                                        fact_str += "\n💡 [시장해석] 큰손 5%+ 집중 매집 · 수급 유입 기대"
+                                    elif "처분" in direction or "매도" in direction:
+                                        fact_str += "\n💡 [시장해석] 대량보유자 지분 축소 · 차익실현 물량 주의"
+                                    else:
+                                        fact_str += "\n💡 [시장해석] 지분 구조 및 담보 계약 변동"
                             except Exception as ant_e:
                                 logger.warning(f"[WhaleSiren] 슈퍼개미 상세조회 실패, 폴백 사용: {ant_e}")
 
                     elif is_insider:
                         prefix_title = "🚨 [내부자 거래 포착]"
-                        fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
+                        fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다.\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
                         if flr_nm:
-                            fact_str += f" (보고자: {flr_nm})"
+                            fact_str = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
                         
                         # ✅ [업그레이드] DART API를 통해 상세 추출 (잔여 보유량 + 보유비율 추가)
                         corp_code = item.get("corp_code")
@@ -184,41 +192,47 @@ async def check_and_notify_disclosures():
                                         fact_str += f"\n변동 후 보유: {remain:,}주"
                                         if rate:
                                             fact_str += f" ({rate}%)"
+
+                                    # 시장 해석 추가
+                                    if t_type == "매수":
+                                        fact_str += "\n💡 [시장해석] 대표/경영진의 자사주 매수 · 실적 자신감 신호"
+                                    else:
+                                        fact_str += "\n💡 [시장해석] 임원 지분 매도 · 차익실현 또는 유동성 확보"
                             except Exception as ins_e:
                                 logger.warning(f"[WhaleSiren] 내부자 상세조회 실패, 폴백 사용: {ins_e}")
 
                     else:
                         prefix_title = "🔔 [공시 팩트 알림]"
-                        # ✅ [업그레이드] 공시 유형별 스마트 팩트 문구
+                        # ✅ [업그레이드] 공시 유형별 스마트 팩트 문구 및 시장 해석
                         clean = clean_title
                         if "유상증자" in clean:
-                            fact_str = f"신주 발행(유상증자) 결정이 공시되었습니다. 주식 희석 가능성이 있습니다. 원문을 확인하세요."
+                            fact_str = f"신주 발행(유상증자) 결정 공시!\n💡 [시장해석] 자금 조달 목적 확인 필요 · 주식 희석 가능성 주의"
                         elif "무상증자" in clean:
-                            fact_str = f"무상증자 결정 공시! 기존 주주에게 신주를 무상으로 배정합니다. 원문을 확인하세요."
+                            fact_str = f"무상증자 결정 공시! 기존 주주에게 신주 무상 배정\n💡 [시장해석] 대표적 주주친화 정책 · 유통 주식수 확대 호재"
                         elif "자기주식취득" in clean:
-                            fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식을 직접 사들입니다. 주주환원 신호입니다."
+                            fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식 직접 매수\n💡 [시장해석] 주가 방어 및 주주가치 제고 신호"
                         elif "자기주식소각" in clean:
-                            fact_str = f"자사주 소각 결정 공시! 주식 수를 줄여 주당 가치를 높이는 강력한 주주환원입니다."
+                            fact_str = f"자사주 소각 결정 공시! 발행 주식수 영구 감축\n💡 [시장해석] 주당 가치 상승을 이끄는 가장 강력한 주주환원 호재"
                         elif "공개매수" in clean:
-                            fact_str = f"공개매수 결정 공시! 경영권 인수 또는 지분 확대를 위한 주식 매수 제안입니다."
+                            fact_str = f"공개매수 결정 공시! 프리미엄 매수 제안\n💡 [시장해석] 경영권 분쟁 또는 지분 확대를 위한 주가 부양 요인"
                         elif "경영권변경" in clean:
-                            fact_str = f"경영권 변경 공시! 최대주주 또는 경영진 구조에 큰 변화가 발생했습니다."
+                            fact_str = f"경영권 변경 공시! 최대주주/경영진 구조 개편\n💡 [시장해석] 지배구조 개편 및 신사업 추진 기대감"
                         elif "감자결정" in clean:
-                            fact_str = f"감자(자본감소) 결정 공시! 발행 주식 수가 줄어드는 중대 이슈입니다."
+                            fact_str = f"감자(자본감소) 결정 공시!\n💡 [시장해석] 재무구조 개선용 감자 여부 확인 · 주주가치 변동 주의"
                         elif "상장폐지" in clean:
-                            fact_str = f"⚠️ 상장폐지 관련 공시! 즉시 원문을 확인하고 대응하시기 바랍니다."
+                            fact_str = f"⚠️ 상장폐지 관련 공시!\n💡 [시장해석] 거래정지 및 정리매매 등 최고 수준 위험 대응 필요"
                         elif "관리종목" in clean:
-                            fact_str = f"⚠️ 관리종목 지정 또는 해제 공시! 투자 유의가 필요합니다."
+                            fact_str = f"⚠️ 관리종목 지정/해제 공시!\n💡 [시장해석] 재무 건전성 및 투자 유의 요건 점검 필요"
                         elif "횡령" in clean or "배임" in clean:
-                            fact_str = f"⚠️ 횡령·배임 관련 공시! 회사 신뢰도에 중대한 영향을 미칠 수 있습니다."
+                            fact_str = f"⚠️ 횡령·배임 혐의 발생 공시!\n💡 [시장해석] 기업 신뢰도 및 거래정지 가능성 중대 악재 주의"
                         elif "영업정지" in clean:
-                            fact_str = f"⚠️ 영업정지 공시! 사업 운영에 중대한 차질이 발생했습니다."
+                            fact_str = f"⚠️ 영업정지 공시!\n💡 [시장해석] 본업 차질 발생 · 실적 타격 리스크"
                         elif "부도발생" in clean or "파산신청" in clean:
-                            fact_str = f"⚠️ 부도·파산 공시! 상당한 주의가 필요한 최고 수준 위험 이슈입니다."
+                            fact_str = f"⚠️ 부도·파산 공시!\n💡 [시장해석] 기업 존속 위험 최고 수준 위험"
                         elif "단일판매" in clean:
-                            fact_str = f"대규모 공급계약 체결 공시! 수주 규모를 원문에서 반드시 확인하세요."
+                            fact_str = f"대규모 공급계약 체결 공시!\n💡 [시장해석] 대형 수주 확보로 향후 매출 및 실적 성장 기대"
                         else:
-                            fact_str = f"[{corp}] {report_title} 공시가 접수되었습니다. 원문을 확인하세요."
+                            fact_str = f"[{corp}] {report_title} 공시 접수\n💡 [시장해석] 신규 주요 공시 발생 · 원문 확인 권장"
 
                     
                     if not skip_whale_alert:

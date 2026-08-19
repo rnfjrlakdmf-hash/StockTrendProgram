@@ -92,7 +92,7 @@ def check_whale_alerts():
 
         if top_stock_name not in state.get("alerted_stocks", []):
             title = f"[세력 포착] 외국인 폭풍 매수 1위: {top_stock_name}"
-            body = "지금 장중에 외국인이 가장 많이 담고 있는 종목입니다. 실시간 수급을 확인하세요!"
+            body = "지금 장중에 외국인이 가장 많이 담고 있는 종목입니다.\n💡 [시장해석] 오늘 장중 외국인 스마트머니 집중 유입"
             print(f"[Whale] Alert Triggered: {title}")
 
             try:
@@ -207,9 +207,16 @@ def check_large_holding_alerts():
                         body_text += f" ({final_rate:.2f}%)"
                 if reason:
                     body_text += f" · {reason}"
+                
+                if "취득" in direction or "매수" in direction:
+                    body_text += "\n💡 [시장해석] 큰손 5%+ 집중 매집 · 수급 유입 기대"
+                elif "처분" in direction or "매도" in direction:
+                    body_text += "\n💡 [시장해석] 대량보유자 지분 축소 · 차익실현 물량 주의"
+                else:
+                    body_text += "\n💡 [시장해석] 지분 구조 및 담보 계약 변동"
             else:
                 title = f"🚨 [슈퍼개미 포착] {corp_name}"
-                body_text = f"{flr_nm} | 대량보유 지분 변동 발생\n원문에서 상세 수량과 지분율을 확인하세요." if flr_nm else "대량보유자의 지분 보유상황 변동이 발생했습니다."
+                body_text = f"{flr_nm} | 대량보유 지분 변동 발생\n💡 [시장해석] 큰손의 지분 구조 변화 · 세부 내역 확인 필요" if flr_nm else "대량보유자의 지분 보유상황 변동이 발생했습니다.\n💡 [시장해석] 큰손의 지분 구조 변화 · 세부 내역 확인 필요"
             
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
@@ -316,7 +323,7 @@ def check_insider_trading_alerts():
                     print(f"[Whale Insider] 상세 파싱 실패: {ins_e}")
 
             if insider_details and insider_details.get("qty", 0) > 0:
-                t_type = insider_details["trans_type"]
+                t_type = insider_details.get("trans_type", "변동")
                 reporter = insider_details.get("reporter", flr_nm or "임원")
                 title_ofcps = insider_details.get("title", "")
                 qty = insider_details.get("qty", 0)
@@ -332,11 +339,16 @@ def check_insider_trading_alerts():
                     body_text += f"\n변동 후 보유: {remain:,}주"
                     if rate:
                         body_text += f" ({rate}%)"
+
+                if t_type == "매수":
+                    body_text += "\n💡 [시장해석] 대표/경영진의 자사주 매수 · 실적 자신감 신호"
+                else:
+                    body_text += "\n💡 [시장해석] 임원 지분 매도 · 차익실현 또는 유동성 확보"
             else:
                 title = f"🚨 [내부자 거래 포착] {corp_name}"
-                body_text = f"회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다."
+                body_text = f"회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동 발생\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
                 if flr_nm:
-                    body_text += f" (보고자: {flr_nm})"
+                    body_text = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
 
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
