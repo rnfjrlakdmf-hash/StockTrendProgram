@@ -140,7 +140,9 @@ export default function WeekendReportPage() {
                 <div className="relative z-10 max-w-4xl mx-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
                         <Calendar className="w-4 h-4" />
-                        주말 한정 열람 (일요일 자정 파기)
+                        {(data as any)?.is_current_weekend 
+                            ? "🔥 주말 특별 라이브 리포트 (일요일 자정 마감)" 
+                            : "📰 지난 주말 특별 리포트 다시보기 (다음 업데이트: 이번 주 토요일 10:00)"}
                     </div>
                     <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight tracking-tight">
                         {report?.title || "주말 마켓 인사이트"}

@@ -122,7 +122,9 @@ export default function WeekendWhalePage() {
                 <div className="relative z-10 max-w-4xl mx-auto">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-6">
                         <Anchor className="w-4 h-4" />
-                        주말 한정 열람 (스마트머니 추적)
+                        {(data as any)?.is_current_weekend 
+                            ? "🔥 주말 특별 라이브 리포트 (외인/세력 수급 분석)" 
+                            : "📰 지난 주말 특별 리포트 다시보기 (다음 업데이트: 이번 주 금요일 18:00)"}
                     </div>
                     <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight tracking-tight">
                         {report?.title || "주말 한정판: 세력/외인 매집 TOP 3"}
