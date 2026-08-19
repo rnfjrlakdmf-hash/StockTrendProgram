@@ -135,91 +135,89 @@ export default function WeekendWhalePage() {
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-6 py-10 space-y-12">
+            <main className="max-w-6xl mx-auto px-4 md:px-6 py-10 space-y-12">
                 
-                {/* Foreign Top 10 */}
-                <section>
-                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-400">
-                        <Anchor className="w-8 h-8" /> 외국인 순매수 TOP 10
-                    </h2>
-                    <div className="grid gap-4 relative">
-                        {report?.foreign_analysis?.map((item, idx) => {
-                            const isBlurred = !user && idx >= 3;
-                            return (
-                                <div key={idx} className={`bg-gray-800/30 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6 transition-colors ${isBlurred ? 'blur-md opacity-70 pointer-events-none select-none' : 'hover:bg-gray-800/50'}`}>
-                                    <div className="flex-shrink-0 w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center font-black text-2xl text-blue-400">
+                {/* 2-Column Side-by-Side Grid for Foreign & Institution Top 10 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    {/* Foreign Top 10 */}
+                    <section className="bg-gray-900/40 border border-gray-800 rounded-3xl p-6 md:p-8 backdrop-blur-sm">
+                        <h2 className="text-2xl font-black mb-6 flex items-center gap-3 text-blue-400">
+                            <Anchor className="w-7 h-7" /> 외국인 순매수 TOP 10
+                        </h2>
+                        <div className="space-y-3.5">
+                            {report?.foreign_analysis?.map((item, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className="bg-gray-800/40 border border-gray-700/40 hover:border-blue-500/40 rounded-2xl p-4 flex items-start gap-4 transition-all hover:bg-gray-800/70"
+                                >
+                                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center font-black text-sm border border-blue-500/30">
                                         {idx + 1}
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-2xl font-bold text-white mb-2 flex items-baseline gap-3">
-                                            {item.stock}
-                                            {item.amount && <span className="text-sm font-normal text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">{item.amount}주 순매수</span>}
-                                        </h3>
-                                        <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                            <h3 className="text-lg font-bold text-white tracking-wide">
+                                                {item.stock}
+                                            </h3>
+                                            {item.amount && (
+                                                <span className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
+                                                    {item.amount.includes('주') ? item.amount : `${item.amount}주`} 순매수
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                                            {item.reason}
+                                        </p>
                                     </div>
                                 </div>
-                            );
-                        })}
-                        {!user && report?.foreign_analysis && report.foreign_analysis.length > 3 && (
-                            <div className="absolute inset-x-0 bottom-0 top-[350px] flex items-center justify-center z-10 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent rounded-3xl">
-                                <button 
-                                    onClick={() => setShowLoginModal(true)}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-full shadow-2xl flex items-center gap-3 transition-transform hover:scale-105"
-                                >
-                                    <Lock className="w-6 h-6" />
-                                    로그인하고 4~10위 분석 확인하기
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </section>
+                            ))}
+                        </div>
+                    </section>
 
-                {/* Institution Top 10 */}
-                <section>
-                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-purple-400">
-                        <Briefcase className="w-8 h-8" /> 기관 순매수 TOP 10
-                    </h2>
-                    <div className="grid gap-4 relative">
-                        {report?.inst_analysis?.map((item, idx) => {
-                            const isBlurred = !user && idx >= 3;
-                            return (
-                                <div key={idx} className={`bg-gray-800/30 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row md:items-center gap-6 transition-colors ${isBlurred ? 'blur-md opacity-70 pointer-events-none select-none' : 'hover:bg-gray-800/50'}`}>
-                                    <div className="flex-shrink-0 w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center font-black text-2xl text-purple-400">
+                    {/* Institution Top 10 */}
+                    <section className="bg-gray-900/40 border border-gray-800 rounded-3xl p-6 md:p-8 backdrop-blur-sm">
+                        <h2 className="text-2xl font-black mb-6 flex items-center gap-3 text-purple-400">
+                            <Briefcase className="w-7 h-7" /> 기관 순매수 TOP 10
+                        </h2>
+                        <div className="space-y-3.5">
+                            {report?.inst_analysis?.map((item, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className="bg-gray-800/40 border border-gray-700/40 hover:border-purple-500/40 rounded-2xl p-4 flex items-start gap-4 transition-all hover:bg-gray-800/70"
+                                >
+                                    <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-black text-sm border border-purple-500/30">
                                         {idx + 1}
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-2xl font-bold text-white mb-2 flex items-baseline gap-3">
-                                            {item.stock}
-                                            {item.amount && <span className="text-sm font-normal text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">{item.amount}주 순매수</span>}
-                                        </h3>
-                                        <p className="text-gray-400 leading-relaxed text-lg">{item.reason}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                            <h3 className="text-lg font-bold text-white tracking-wide">
+                                                {item.stock}
+                                            </h3>
+                                            {item.amount && (
+                                                <span className="text-xs font-semibold text-purple-300 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">
+                                                    {item.amount.includes('주') ? item.amount : `${item.amount}주`} 순매수
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                                            {item.reason}
+                                        </p>
                                     </div>
                                 </div>
-                            );
-                        })}
-                        {!user && report?.inst_analysis && report.inst_analysis.length > 3 && (
-                            <div className="absolute inset-x-0 bottom-0 top-[350px] flex items-center justify-center z-10 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/80 to-transparent rounded-3xl">
-                                <button 
-                                    onClick={() => setShowLoginModal(true)}
-                                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-full shadow-2xl flex items-center gap-3 transition-transform hover:scale-105"
-                                >
-                                    <Lock className="w-6 h-6" />
-                                    로그인하고 4~10위 분석 확인하기
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </section>
+                            ))}
+                        </div>
+                    </section>
+                </div>
 
                 {/* Monday Strategy */}
-                <section className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50 rounded-3xl p-8 backdrop-blur-sm shadow-xl">
-                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <CheckCircle className="w-6 h-6 text-green-400" />
+                <section className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 border border-gray-700/60 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-xl">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-400">
+                        <CheckCircle className="w-6 h-6" />
                         월요일 시장 대응 전략
                     </h2>
-                    <p className="text-gray-300 leading-relaxed text-lg">
+                    <div className="text-gray-200 leading-relaxed text-sm md:text-base whitespace-pre-line space-y-2 font-normal">
                         {report?.monday_strategy}
-                    </p>
+                    </div>
                 </section>
 
                 {/* Disclaimer */}
