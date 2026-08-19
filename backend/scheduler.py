@@ -419,6 +419,31 @@ async def check_and_notify_sec_disclosures():
         except Exception:
             return title
 
+    def get_sec_market_interpretation(title: str) -> str:
+        t = title.lower()
+        if "13f" in t:
+            return "💡 [시장해석] 월가 슈퍼 기관들의 분기별 보유 포트폴리오 공개"
+        elif "4 - " in t or "form 4" in t:
+            return "💡 [시장해석] 미국 경영진/이사의 자사주 지분 변동 체크"
+        elif "13d" in t:
+            return "💡 [시장해석] 5%+ 대량 취득 및 경영 참여 · 행동주의 개입 가능성"
+        elif "13g" in t:
+            return "💡 [시장해석] 기관/큰손의 5%+ 대량 매집 · 단순 수급 유입 호재"
+        elif "10-q" in t:
+            return "💡 [시장해석] 미국 기업의 공식 분기 실적 발표"
+        elif "10-k" in t:
+            return "💡 [시장해석] 1년 종합 사업 성적표 및 감사 보고서"
+        elif "8-k" in t:
+            return "💡 [시장해석] M&A/주요계약/경영진 변경 등 중대 수시 이슈"
+        elif "14a" in t:
+            return "💡 [시장해석] 주주총회 소집 및 주요 안건 의결권 공고"
+        elif "s-8" in t:
+            return "💡 [시장해석] 임직원 스톡옵션 및 주식 보상 발행"
+        elif "3 - " in t:
+            return "💡 [시장해석] 신규 임원/주요주주의 최초 지분 등록"
+        else:
+            return "💡 [시장해석] 미국 SEC 공식 제출 공시 · 원문 확인 권장"
+
     try:
         state = load_state()
         sec_processed = set(state.get("sec_processed_ids", []))
@@ -558,6 +583,9 @@ async def check_and_notify_sec_disclosures():
                                 noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
                             except Exception:
                                 pass
+
+                        # SEC 시장해석 추가
+                        noti_body += f"\n{get_sec_market_interpretation(title_el)}"
 
                         data_payload = {
                             "type": "sec_disclosure",

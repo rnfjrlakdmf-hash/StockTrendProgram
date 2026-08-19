@@ -284,10 +284,17 @@ def check_sec_form4_alerts():
                         body_text += f"\n거래 후 보유: {int(remain_val):,}주"
             except Exception:
                 pass
+            
+            if parsed["trans_type"] == "매수":
+                body_text += "\n💡 [시장해석] 미국 경영진의 자사주 직접 매수 · 실적 자신감 신호"
+            elif parsed["trans_type"] == "매도":
+                body_text += "\n💡 [시장해석] 미국 임원의 자사주 매도 · 차익실현 또는 유동성 확보"
+            else:
+                body_text += "\n💡 [시장해석] 미국 경영진/이사의 자사주 지분 변동 체크"
             body = body_text
         else:
             title = f"🇺🇸 [내부자 거래 포착] {display_name}"
-            body = f"회사 핵심 임원의 자사주 매수/매도 공시(Form 4)가 접수되었습니다."
+            body = f"회사 핵심 임원의 자사주 매수/매도 공시(Form 4) 접수\n💡 [시장해석] 미국 경영진 지분 매매 · 방향성 확인 권장"
 
         print(f"[SEC Whale Form4] New filing: {title}")
 
@@ -362,7 +369,7 @@ def check_sec_13f_alerts():
             except Exception:
                 period_label = f" ({period_str[:10]})"
         title = f"🐳 [미국 기관 포지션 공개] {display_name}"
-        body = f"대형 기관투자자의 분기별 보유 주식 현황(SEC 13F-HR)이 공개되었습니다{period_label}.\nSEC EDGAR 원문에서 포지션 전체를 확인하세요."
+        body = f"대형 기관투자자의 분기별 보유 주식 현황(SEC 13F-HR) 공개{period_label}\n💡 [시장해석] 월가 슈퍼 기관들의 분기별 보유 포트폴리오 공개"
 
         print(f"[SEC Whale 13F] New filing: {title}")
 
