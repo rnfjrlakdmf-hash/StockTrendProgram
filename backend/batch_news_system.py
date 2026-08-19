@@ -1,4 +1,4 @@
-﻿"""
+"""
 🚀 배치 뉴스 수집 시스템 (1만명 규모 최적화)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -516,7 +516,10 @@ class BatchNewsSystem:
         # symbol → [user_id, user_id, ...]
         symbol_users: Dict[str, List[str]] = defaultdict(list)
         for user_id, symbol in rows:
-            symbol_users[symbol].append(user_id)
+            # 종목코드 정규화 (010140과 010140.KS 중복 방지)
+            norm_symbol = symbol.split('.')[0] if (symbol.endswith('.KS') or symbol.endswith('.KQ') or (len(symbol) == 6 and symbol.isdigit())) else symbol
+            if user_id not in symbol_users[norm_symbol]:
+                symbol_users[norm_symbol].append(user_id)
 
         # 인기도 순으로 정렬 (많이 관심 받는 종목 먼저 수집)
         sorted_symbols = sorted(symbol_users.items(), key=lambda x: len(x[1]), reverse=True)
