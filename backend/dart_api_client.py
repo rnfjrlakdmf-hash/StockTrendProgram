@@ -138,9 +138,9 @@ class DartApiClient:
                     # rcept_no와 일치하는 가장 최신 변동 1건을 찾음
                     for item in items:
                         if item.get("rcept_no") == rcept_no:
-                            qty_str = item.get("sp_stock_lmp_irds_cnt", "0").replace(",", "")
+                            qty_str = item.get("sp_stock_lmp_irds_cnt", "0").replace(",", "").replace("+", "")
                             try:
-                                qty = int(qty_str)
+                                qty = abs(int(qty_str))
                             except:
                                 qty = 0
                             
@@ -154,15 +154,27 @@ class DartApiClient:
                             # 보유비율 (sp_stock_lmp_rate)
                             hold_rate = item.get("sp_stock_lmp_rate", "")
 
-                            trans_type = "매수" if qty >= 0 else "매도"
+                            # 증감비율 (sp_stock_lmp_irds_rate) 로 매수/매도 판별
+                            irds_rate_str = item.get("sp_stock_lmp_irds_rate", "0").replace(",", "")
+                            if irds_rate_str.startswith("-"):
+                                trans_type = "매도"
+                            elif irds_rate_str.startswith("+"):
+                                trans_type = "매수"
+                            else:
+                                trans_type = "매수" if int(qty_str) >= 0 else "매도"
                             
+                            title_val = item.get("isu_exctv_ofcps", "")
+                            if title_val == "-":
+                                title_val = ""
+
                             result = {
                                 "reporter": item.get("repror", "알 수 없음"),
-                                "title": item.get("isu_exctv_ofcps", ""),
+                                "title": title_val,
                                 "trans_type": trans_type,
-                                "qty": abs(qty),
+                                "qty": qty,
                                 "remain_qty": remain_qty,
                                 "hold_rate": hold_rate,
+                                "irds_rate": irds_rate_str,
                             }
                             return result
         except Exception as e:
@@ -172,7 +184,7 @@ class DartApiClient:
     def get_super_ant_details(self, corp_code: str, rcept_no: str) -> Optional[Dict]:
         """
         🐜 대량보유상황보고(majorstock.json)를 파싱하여 슈퍼개미 지분 변동 상세 추출
-        - 보유비율 변동 (전→후), 보유주식 수, 보유 목적 반환
+        - 보유비율 변동 (전→후), 보유주식 수, 보고 사유 반환
         """
         if not self.is_available():
             return None
@@ -191,10 +203,10 @@ class DartApiClient:
                     items = data.get("list", [])
                     for item in items:
                         if item.get("rcept_no") == rcept_no:
-                            # 변동 수량 (양수=취득, 음수=처분)
-                            irds_raw = item.get("stkqy_irds", "0").replace(",", "")
+                            # 변동 수량 (stkqy_irds)
+                            stkqy_irds_raw = item.get("stkqy_irds", "0").replace(",", "")
                             try:
-                                irds_signed = int(irds_raw)
+                                irds_signed = int(stkqy_irds_raw)
                                 direction = "취득" if irds_signed > 0 else "처분" if irds_signed < 0 else "변동"
                                 irds_qty = abs(irds_signed)
                             except:
@@ -208,6 +220,13 @@ class DartApiClient:
                             except:
                                 final_qty = 0
 
+                            # 최종 보유비율 (stkrt)
+                            final_rate_str = item.get("stkrt", "0").replace(",", "")
+                            try:
+                                final_rate = float(final_rate_str)
+                            except:
+                                final_rate = 0.0
+
                             # 증감비율 (stkrt_irds)
                             rate_irds_str = item.get("stkrt_irds", "0").replace(",", "")
                             try:
@@ -216,7 +235,7 @@ class DartApiClient:
                                 rate_irds = 0.0
 
                             # 보고 사유 (report_resn)
-                            reason = item.get("report_resn", "")
+                            reason = item.get("report_resn", "단순투자")
                             if reason:
                                 reason = reason.split("\n")[0].strip()
 

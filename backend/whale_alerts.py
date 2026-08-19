@@ -204,23 +204,24 @@ def check_large_holding_alerts():
                 irds_qty = ant_details.get("irds_qty", 0)
                 final_qty = ant_details.get("final_qty", 0)
                 final_rate = ant_details.get("final_rate", 0.0)
-                purpose = ant_details.get("purpose", "")
+                rate_irds = ant_details.get("rate_irds", 0.0)
+                reason = ant_details.get("reason", "")
 
                 title = f"🐜 [슈퍼개미 {direction}] {corp_name}"
                 body_text = f"{reporter} | 지분 {direction}"
                 if irds_qty > 0:
                     body_text += f" {irds_qty:,}주"
+                if rate_irds != 0:
+                    body_text += f" ({rate_irds:+.2f}%p)"
                 if final_qty > 0:
                     body_text += f"\n보유: {final_qty:,}주"
-                if final_rate > 0:
-                    body_text += f" ({final_rate:.2f}%)"
-                if purpose and purpose not in ("", "0"):
-                    body_text += f" · {purpose}"
+                    if final_rate > 0:
+                        body_text += f" ({final_rate:.2f}%)"
+                if reason:
+                    body_text += f" · {reason}"
             else:
                 title = f"🚨 [슈퍼개미 포착] {corp_name}"
-                body_text = "대량보유자의 지분 보유상황 변동이 발생했습니다."
-                if flr_nm:
-                    body_text += f" (보고자: {flr_nm})"
+                body_text = f"{flr_nm} | 대량보유 지분 변동 발생\n원문에서 상세 수량과 지분율을 확인하세요." if flr_nm else "대량보유자의 지분 보유상황 변동이 발생했습니다."
             
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")
