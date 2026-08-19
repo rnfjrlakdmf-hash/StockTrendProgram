@@ -176,9 +176,9 @@ export default function WeekendReportPage() {
                         <section key={idx} className="bg-gray-800/30 border border-gray-800 rounded-3xl p-8 hover:bg-gray-800/40 transition-colors">
                             <div className="text-3xl mb-4">{section.emoji}</div>
                             <h3 className="text-xl font-bold mb-4 text-white">{section.title}</h3>
-                            <p className="text-gray-400 leading-relaxed">
+                            <div className="text-gray-300 leading-relaxed text-sm md:text-[15px] whitespace-pre-line space-y-2.5">
                                 {section.content}
-                            </p>
+                            </div>
                         </section>
                     ))}
                 </div>
