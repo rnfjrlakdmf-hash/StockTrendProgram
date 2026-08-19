@@ -122,7 +122,7 @@ def check_whale_alerts():
                     doc_ref.set({
                         'title': title,
                         'body': body,
-                        'link': f"/stock/{top_stock_name}",
+                        'link': f"/stock/{top_stock_code}",
                         'timestamp': datetime.now(kst),
                         'read': False,
                         'type': 'whale_accumulation',
