@@ -41,8 +41,54 @@ def save_state(state: dict):
         print(f"[Whale] Failed to save state: {e}")
 
 
+def is_already_alerted_today(stock_name: str, today_str: str) -> bool:
+    """DB에 오늘 이미 발송된 종목인지 영구 확인 (서버 재시작/깃 리셋과 무관하게 보존)"""
+    try:
+        from db_manager import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS sent_whale_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stock_name TEXT NOT NULL,
+                alert_date TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(stock_name, alert_date)
+            )
+        """)
+        cur.execute("SELECT id FROM sent_whale_alerts WHERE stock_name = ? AND alert_date = ?", (stock_name, today_str))
+        row = cur.fetchone()
+        conn.close()
+        return row is not None
+    except Exception as e:
+        print(f"[Whale DB] Duplicate check error: {e}")
+        return False
+
+
+def mark_alerted_today(stock_name: str, today_str: str):
+    """DB에 오늘 발송 완료 기록 저장"""
+    try:
+        from db_manager import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS sent_whale_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stock_name TEXT NOT NULL,
+                alert_date TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(stock_name, alert_date)
+            )
+        """)
+        cur.execute("INSERT OR IGNORE INTO sent_whale_alerts (stock_name, alert_date) VALUES (?, ?)", (stock_name, today_str))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[Whale DB] Mark alerted error: {e}")
+
+
 # ──────────────────────────────────────────────────────────────────
-# 1. 외국인 순매수 1위 (기존 로직 유지)
+# 1. 외국인 순매수 1위 (DB 영구 중복 방지 강화)
 # ──────────────────────────────────────────────────────────────────
 def check_whale_alerts():
     """네이버 금융 외국인/기관 순매수 상위 페이지를 스크래핑하여 1위 종목 알림을 보냅니다."""
@@ -77,6 +123,7 @@ def check_whale_alerts():
         rows = first_table.find_all('tr')
 
         top_stock_code = None
+        top_stock_name = None
         for row in rows:
             name_cell = row.find('a', class_='company')
             if name_cell:
@@ -90,39 +137,46 @@ def check_whale_alerts():
             print("[Whale] No stock name or code found in table")
             return
 
-        if top_stock_name not in state.get("alerted_stocks", []):
-            title = f"[세력 포착] 외국인 폭풍 매수 1위: {top_stock_name}"
-            body = "지금 장중에 외국인이 가장 많이 담고 있는 종목입니다.\n💡 [시장해석] 오늘 장중 외국인 스마트머니 집중 유입"
-            print(f"[Whale] Alert Triggered: {title}")
+        # 🛡️ [2중 중복 방지] DB 및 메모리 상태 양쪽 모두 검증
+        if is_already_alerted_today(top_stock_name, today_str) or top_stock_name in state.get("alerted_stocks", []):
+            print(f"[Whale] {top_stock_name} already alerted today ({today_str}), skipping duplicate.")
+            return
 
+        # 발송 즉시 DB에 기록하여 중복 호출 원천 차단
+        mark_alerted_today(top_stock_name, today_str)
+
+        title = f"[세력 포착] 외국인 폭풍 매수 1위: {top_stock_name}"
+        body = "지금 장중에 외국인이 가장 많이 담고 있는 종목입니다.\n💡 [시장해석] 오늘 장중 외국인 스마트머니 집중 유입"
+        print(f"[Whale] Alert Triggered: {title}")
+
+        try:
+            initialize_firebase()
+            tokens = get_all_fcm_tokens(require_whale_alert=True)
             try:
-                initialize_firebase()
-                tokens = get_all_fcm_tokens(require_whale_alert=True)
-                try:
-                    from telegram_service import send_telegram_teaser
-                    teaser_msg = f"🚨 <b>[외국인 폭풍 매수 포착!]</b>\n\n지금 외국인이 쓸어담고 있는 1위 종목은? 👉 <b>{top_stock_name}</b>\n\n👇 <b>실시간 수급 및 차트 확인하기</b>\n<a href='https://stock-trend-program.co.kr/stock/{top_stock_code}'>앱에서 즉시 확인하기</a>"
-                    send_telegram_teaser(teaser_msg, alert_type="whale_alert", skip_db_save=True)
-                except Exception as e:
-                    print(f"[Whale] Telegram teaser error: {e}")
-
-                if tokens:
-                    push_data = {
-                        "type": "whale_accumulation",
-                        "symbol": top_stock_name,
-                        "url": f"/stock/{top_stock_code}",
-                        "market": "KR",
-                    }
-                    send_multicast_notification(tokens, title, body, push_data)
-                    print(f"[Whale] Sent multicast alert to {len(tokens)} tokens.")
-                else:
-                    print("[Whale] No tokens subscribed to whale alerts.")
+                from telegram_service import send_telegram_teaser
+                teaser_msg = f"🚨 <b>[외국인 폭풍 매수 포착!]</b>\n\n지금 외국인이 쓸어담고 있는 1위 종목은? 👉 <b>{top_stock_name}</b>\n\n👇 <b>실시간 수급 및 차트 확인하기</b>\n<a href='https://stock-trend-program.co.kr/stock/{top_stock_code}'>앱에서 즉시 확인하기</a>"
+                send_telegram_teaser(teaser_msg, alert_type="whale_alert", skip_db_save=True)
             except Exception as e:
-                print(f"[Whale] Firebase push error: {e}")
+                print(f"[Whale] Telegram teaser error: {e}")
 
-            if "alerted_stocks" not in state:
-                state["alerted_stocks"] = []
-            state["alerted_stocks"].append(top_stock_name)
-            save_state(state)
+            if tokens:
+                push_data = {
+                    "type": "whale_accumulation",
+                    "symbol": top_stock_name,
+                    "url": f"/stock/{top_stock_code}",
+                    "market": "KR",
+                }
+                send_multicast_notification(tokens, title, body, push_data)
+                print(f"[Whale] Sent multicast alert to {len(tokens)} tokens.")
+            else:
+                print("[Whale] No tokens subscribed to whale alerts.")
+        except Exception as e:
+            print(f"[Whale] Firebase push error: {e}")
+
+        if "alerted_stocks" not in state:
+            state["alerted_stocks"] = []
+        state["alerted_stocks"].append(top_stock_name)
+        save_state(state)
 
     except Exception as e:
         print(f"[Whale] Exception: {e}")

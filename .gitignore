@@ -144,6 +144,8 @@ test_story_response.json
 test_diagnosis_output.txt
 dashboard_cache.json
 alerts.json
+whale_state.json
+backend/whale_state.json
 
 # ===== OS Files =====
 .DS_Store
