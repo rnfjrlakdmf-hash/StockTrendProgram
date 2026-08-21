@@ -278,12 +278,12 @@ function ThemePageContent() {
                         <div className="absolute -inset-1 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
                         <div className="relative flex items-center">
                             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                                <Search className="h-6 w-6 text-orange-400/70" />
+                                <Search className="h-6 w-6 text-orange-400/80" />
                             </div>
                             <input
                                 type="text"
                                 placeholder="예: 비만치료제, 온디바이스AI, 전력기기..."
-                                className="w-full pl-16 pr-20 py-4.5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl text-lg md:text-xl font-bold outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all text-white placeholder-gray-500 shadow-2xl"
+                                className="w-full h-16 pl-16 pr-28 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl text-lg md:text-xl font-bold outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all text-white placeholder-gray-500 shadow-2xl"
                                 value={keyword}
                                 onChange={(e) => setKeyword(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -291,9 +291,9 @@ function ThemePageContent() {
                             <button
                                 onClick={handleAnalyze}
                                 disabled={loading}
-                                className="absolute right-2.5 top-2.5 bottom-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 px-5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)] disabled:opacity-50 disabled:shadow-none"
+                                className="absolute right-2.5 top-2.5 bottom-2.5 px-6 flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)] disabled:opacity-50 disabled:shadow-none cursor-pointer active:scale-95"
                             >
-                                {loading ? <Loader2 className="animate-spin text-white w-5 h-5" /> : <ArrowRight className="text-white w-5 h-5" />}
+                                {loading ? <Loader2 className="animate-spin text-white w-6 h-6" /> : <ArrowRight className="text-white w-6 h-6" />}
                             </button>
                         </div>
                     </div>
