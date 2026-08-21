@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Query, Header, HTTPException
+from fastapi import APIRouter, Query, Header, HTTPException
 from typing import Optional, List, Dict, Any
 import time
 import urllib.parse
@@ -439,6 +439,16 @@ def read_market_insights():
     from korea_data import get_market_insights_data
     try:
         data = get_market_insights_data()
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/double-whale")
+def read_double_whale():
+    """외인·기관 쌍끌이 순매수 및 주도 수급 데이터 반환 (비용 0원)"""
+    from korea_data import get_double_whale_ranking
+    try:
+        data = get_double_whale_ranking()
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}

@@ -4124,6 +4124,134 @@ def get_investor_ranking_data():
         "institution_top": parse_naver_sise("https://finance.naver.com/sise/sise_quant.naver?sosok=1")}
 
 
+def get_double_whale_ranking():
+    """
+    외국인과 기관이 동시에 순매수(쌍끌이) 중인 종목을 발굴하여 반환합니다.
+    100% 무료 네이버 금융 공개 수급 기반 (비용 0원)
+    """
+    import time
+    cache_attr = "_double_whale_cache"
+    cache_ts_attr = "_double_whale_cache_ts"
+    cached_data = globals().get(cache_attr)
+    cached_ts = globals().get(cache_ts_attr, 0)
+    if cached_data and (time.time() - cached_ts) < 60:
+        return cached_data
+
+    def parse_deal_rank(gubun="9000"):
+        results = {}
+        for sosok in ["01", "02"]:
+            url = f"https://finance.naver.com/sise/sise_deal_rank_iframe.naver?sosok={sosok}&investor_gubun={gubun}&type=buy"
+            try:
+                res = requests.get(url, headers=HEADER, timeout=5)
+                soup = BeautifulSoup(decode_safe(res), "html.parser")
+                table = soup.select_one("table.type_1")
+                if not table:
+                    continue
+                rows = table.select("tr")
+                for row in rows:
+                    name_tag = row.select_one("a")
+                    if not name_tag:
+                        continue
+                    name = robust_name(name_tag.text.strip())
+                    href = name_tag.get("href", "")
+                    code = href.split("code=")[-1] if "code=" in href else ""
+                    cols = row.select("td")
+                    shares_str = cols[1].text.strip() if len(cols) > 1 else "0"
+                    try:
+                        shares = int(shares_str.replace(",", ""))
+                    except ValueError:
+                        shares = 0
+                    if name and code and shares > 0:
+                        results[code] = {
+                            "name": name,
+                            "symbol": code,
+                            "shares": shares,
+                            "shares_str": f"{shares:,}주",
+                            "market": "KOSPI" if sosok == "01" else "KOSDAQ"
+                        }
+            except Exception:
+                pass
+        return results
+
+    try:
+        foreign_map = parse_deal_rank("9000")
+        inst_map = parse_deal_rank("8000")
+
+        # 1. 외인+기관 동시 순매수 (쌍끌이)
+        double_whale_list = []
+        for code, f_item in foreign_map.items():
+            if code in inst_map:
+                i_item = inst_map[code]
+                total_shares = f_item["shares"] + i_item["shares"]
+                double_whale_list.append({
+                    "name": f_item["name"],
+                    "symbol": code,
+                    "type": "쌍끌이",
+                    "foreign_shares": f_item["shares_str"],
+                    "foreign_raw": f_item["shares"],
+                    "inst_shares": i_item["shares_str"],
+                    "inst_raw": i_item["shares"],
+                    "total_shares": total_shares,
+                    "total_str": f"{total_shares:,}주",
+                    "market": f_item["market"]
+                })
+
+        # 정렬: 합산 순매수량 내림차순
+        double_whale_list.sort(key=lambda x: x["total_shares"], reverse=True)
+
+        # 2. 만약 장초반/휴일이라 쌍끌이 종목이 10개 미만이면 외인/기관 단독 상위로 보충
+        if len(double_whale_list) < 15:
+            seen_codes = set(x["symbol"] for x in double_whale_list)
+            
+            # 외인 상위 보충
+            sorted_f = sorted(foreign_map.values(), key=lambda x: x["shares"], reverse=True)
+            for f in sorted_f:
+                if f["symbol"] not in seen_codes:
+                    double_whale_list.append({
+                        "name": f["name"],
+                        "symbol": f["symbol"],
+                        "type": "외인집중",
+                        "foreign_shares": f["shares_str"],
+                        "foreign_raw": f["shares"],
+                        "inst_shares": "0주",
+                        "inst_raw": 0,
+                        "total_shares": f["shares"],
+                        "total_str": f["shares_str"],
+                        "market": f["market"]
+                    })
+                    seen_codes.add(f["symbol"])
+                    if len(double_whale_list) >= 15:
+                        break
+
+            # 기관 상위 보충
+            if len(double_whale_list) < 15:
+                sorted_i = sorted(inst_map.values(), key=lambda x: x["shares"], reverse=True)
+                for i in sorted_i:
+                    if i["symbol"] not in seen_codes:
+                        double_whale_list.append({
+                            "name": i["name"],
+                            "symbol": i["symbol"],
+                            "type": "기관집중",
+                            "foreign_shares": "0주",
+                            "foreign_raw": 0,
+                            "inst_shares": i["shares_str"],
+                            "inst_raw": i["shares"],
+                            "total_shares": i["shares"],
+                            "total_str": i["shares_str"],
+                            "market": i["market"]
+                        })
+                        seen_codes.add(i["symbol"])
+                        if len(double_whale_list) >= 15:
+                            break
+
+        globals()[cache_attr] = double_whale_list
+        globals()[cache_ts_attr] = time.time()
+        return double_whale_list
+    except Exception as e:
+        print(f"[Double Whale Error] {e}")
+        return []
+
+
 def get_market_insights_data():
     """
     시장 주도주 탭을 위한 검색 및 거래대금 인사이트 데이터 수집.

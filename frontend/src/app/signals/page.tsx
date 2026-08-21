@@ -104,6 +104,176 @@ function SignalsPageContent() {
     );
 }
 
+// ============ WIDGET: GLOBAL RISK GAUGE ============
+function GlobalRiskGauge() {
+    const [riskData, setRiskData] = useState<{
+        status: "risk_on" | "neutral" | "risk_off";
+        score: number;
+        title: string;
+        desc: string;
+        vix: string;
+        vixStatus: string;
+        usdkrw: string;
+        usdkrwStatus: string;
+        us10y: string;
+        us10yStatus: string;
+    } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const [indRes, assRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/market/indices`, { cache: 'no-store' }),
+                    fetch(`${API_BASE_URL}/api/market/assets`, { cache: 'no-store' })
+                ]);
+                const indJ = await indRes.json();
+                const assJ = await assRes.json();
+                
+                const all = [...(indJ.data || []), ...(assJ.data || [])];
+                
+                let vixItem = all.find((i: any) => String(i.event_kr || i.name || "").includes("VIX") || String(i.symbol || "").includes("VIX"));
+                let fxItem = all.find((i: any) => String(i.event_kr || i.name || "").includes("원/달러") || String(i.event_kr || "").includes("환율") || String(i.symbol || "").includes("USDKRW"));
+                let us10yItem = all.find((i: any) => String(i.event_kr || i.name || "").includes("10년") || String(i.symbol || "").includes("TNX"));
+
+                let vixVal = vixItem ? parseFloat(String(vixItem.price || vixItem.close || "16").replace(/[^0-9.]/g, '')) : 16.5;
+                if (isNaN(vixVal) || vixVal <= 0) vixVal = 16.5;
+
+                let fxVal = fxItem ? parseFloat(String(fxItem.price || fxItem.close || "1380").replace(/[^0-9.]/g, '')) : 1380;
+                if (isNaN(fxVal) || fxVal <= 0) fxVal = 1380;
+
+                let us10yVal = us10yItem ? parseFloat(String(us10yItem.price || us10yItem.close || "4.2").replace(/[^0-9.]/g, '')) : 4.2;
+                if (isNaN(us10yVal) || us10yVal <= 0) us10yVal = 4.2;
+
+                let score = 0;
+                let vixStatus = "안정";
+                if (vixVal < 18) { score += 1; vixStatus = "안정"; }
+                else if (vixVal <= 23) { vixStatus = "주의"; }
+                else { score -= 2; vixStatus = "공포"; }
+
+                let fxStatus = "보통";
+                if (fxVal < 1370) { score += 1; fxStatus = "우호"; }
+                else if (fxVal > 1400) { score -= 1; fxStatus = "부담"; }
+
+                let us10yStatus = "안정";
+                if (us10yVal < 4.3) { score += 1; us10yStatus = "안정"; }
+                else { score -= 1; us10yStatus = "부담"; }
+
+                let status: "risk_on" | "neutral" | "risk_off" = "neutral";
+                let title = "🟡 글로벌 리스크 신호등: 중립 / 관망 (Neutral)";
+                let desc = "주요 거시 경제 지표 발표를 앞두고 관망세가 짙은 혼조 국면입니다.";
+
+                if (score >= 2) {
+                    status = "risk_on";
+                    title = "🟢 글로벌 리스크 신호등: 위험 선호 우호 (Risk-On)";
+                    desc = "VIX 변동성과 환율·금리가 안정적이며, 글로벌 유동성이 주식 등 위험자산에 우호적인 환경입니다.";
+                } else if (score < 0 || vixVal >= 23) {
+                    status = "risk_off";
+                    title = "🔴 글로벌 리스크 신호등: 위험 회피 경계 (Risk-Off)";
+                    desc = "달러 및 안전자산 선호 심리가 강화되어 무리한 추격 매수보다 보수적 리스크 관리가 안전합니다.";
+                }
+
+                setRiskData({
+                    status,
+                    score,
+                    title,
+                    desc,
+                    vix: `${vixVal.toFixed(1)}pt`,
+                    vixStatus,
+                    usdkrw: `${Math.round(fxVal).toLocaleString()}원`,
+                    usdkrwStatus: fxStatus,
+                    us10y: `${us10yVal.toFixed(2)}%`,
+                    us10yStatus
+                });
+            } catch (e) {
+                console.error("Risk gauge calculation error:", e);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 animate-pulse">
+                <div className="h-4 bg-white/10 rounded w-1/3 mb-2"></div>
+                <div className="h-3 bg-white/5 rounded w-2/3"></div>
+            </div>
+        );
+    }
+
+    if (!riskData) return null;
+
+    const isRiskOn = riskData.status === "risk_on";
+    const isRiskOff = riskData.status === "risk_off";
+
+    return (
+        <div className={`border rounded-2xl p-4 mb-3 transition-all relative overflow-hidden ${
+            isRiskOn 
+                ? 'bg-gradient-to-r from-emerald-950/70 via-slate-900 to-black border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]' 
+                : isRiskOff 
+                ? 'bg-gradient-to-r from-rose-950/70 via-slate-900 to-black border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.15)]'
+                : 'bg-gradient-to-r from-amber-950/70 via-slate-900 to-black border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]'
+        }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                            isRiskOn ? 'bg-emerald-400' : isRiskOff ? 'bg-rose-400' : 'bg-amber-400'
+                        }`}></span>
+                        <span className={`relative inline-flex rounded-full h-3 w-3 ${
+                            isRiskOn ? 'bg-emerald-500' : isRiskOff ? 'bg-rose-500' : 'bg-amber-500'
+                        }`}></span>
+                    </span>
+                    <h4 className="text-sm font-black text-white tracking-tight">{riskData.title}</h4>
+                </div>
+                <span className="text-[10px] text-gray-400 font-mono self-start sm:self-auto bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+                    글로벌 거시 지표 5종 종합
+                </span>
+            </div>
+
+            <p className="text-xs text-gray-300 mb-3 leading-relaxed font-medium">
+                {riskData.desc}
+            </p>
+
+            {/* 3대 핵심 바로미터 칩 */}
+            <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-black/50 border border-white/10 rounded-xl p-2">
+                    <div className="text-[10px] text-gray-400 font-bold mb-0.5">VIX 공포지수</div>
+                    <div className="text-xs font-black text-white font-mono">{riskData.vix}</div>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
+                        riskData.vixStatus === '안정' ? 'text-emerald-400 bg-emerald-500/15' : riskData.vixStatus === '주의' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
+                    }`}>
+                        {riskData.vixStatus}
+                    </span>
+                </div>
+                <div className="bg-black/50 border border-white/10 rounded-xl p-2">
+                    <div className="text-[10px] text-gray-400 font-bold mb-0.5">원/달러 환율</div>
+                    <div className="text-xs font-black text-white font-mono">{riskData.usdkrw}</div>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
+                        riskData.usdkrwStatus === '우호' ? 'text-emerald-400 bg-emerald-500/15' : riskData.usdkrwStatus === '보통' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
+                    }`}>
+                        {riskData.usdkrwStatus}
+                    </span>
+                </div>
+                <div className="bg-black/50 border border-white/10 rounded-xl p-2">
+                    <div className="text-[10px] text-gray-400 font-bold mb-0.5">美 10년물 국채</div>
+                    <div className="text-xs font-black text-white font-mono">{riskData.us10y}</div>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
+                        riskData.us10yStatus === '안정' ? 'text-emerald-400 bg-emerald-500/15' : 'text-rose-400 bg-rose-500/15'
+                    }`}>
+                        {riskData.us10yStatus}
+                    </span>
+                </div>
+            </div>
+
+            <p className="mt-2.5 text-[9px] text-gray-500 text-right italic">
+                ※ 글로벌 공공 시장 지표 기반의 객관적 척도이며, 특정 종목에 대한 투자 권유가 아닙니다.
+            </p>
+        </div>
+    );
+}
+
 // ============ TAB 1: SIGNAL FEED ============
 function SignalsFeedTab({ router }: { router: any }) {
     const { user } = useAuth();
@@ -123,6 +293,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [hiddenSignals, setHiddenSignals] = useState<number[]>([]);
     const [riskAlerts, setRiskAlerts] = useState<any[]>([]);
     const [riskLoading, setRiskLoading] = useState(false);
+    const [disclosureCategory, setDisclosureCategory] = useState<"all" | "insider" | "contract" | "risk">("all");
 
     // [v6.6.0] 숨긴 시그널(삭제) 상태를 브라우저에 저장하여 영구 삭제된 것처럼 작동하게 함
     useEffect(() => {
@@ -238,7 +409,6 @@ function SignalsFeedTab({ router }: { router: any }) {
     useEffect(() => {
         fetchSignals();
         fetchRiskAlerts();
-        // 5분마다 리스크 공시 갱신
         const inv = setInterval(fetchRiskAlerts, 300000);
         return () => clearInterval(inv);
     }, []);
@@ -249,6 +419,22 @@ function SignalsFeedTab({ router }: { router: any }) {
         if (t === "INVESTOR_SURGE") return { label: "수급 급증", color: "bg-green-500/20 text-green-300", border: "border-green-500/40" };
         return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
     };
+
+    // 필터링된 공시 목록
+    const filteredRiskAlerts = (Array.isArray(riskAlerts) ? riskAlerts : []).filter(alert => {
+        if (disclosureCategory === "all") return true;
+        const text = (alert.title + " " + (alert.name || "") + " " + (alert.category || "")).toLowerCase();
+        if (disclosureCategory === "insider") {
+            return alert.category === "insider" || text.includes("대량보유") || text.includes("소유상황") || text.includes("임원") || text.includes("주요주주") || text.includes("5%");
+        }
+        if (disclosureCategory === "contract") {
+            return alert.category === "contract" || text.includes("단일판매") || text.includes("공급계약") || text.includes("실적") || text.includes("배당") || text.includes("무상증자") || text.includes("소각");
+        }
+        if (disclosureCategory === "risk") {
+            return alert.category === "risk" || text.includes("유상증자") || text.includes("전환사채") || text.includes("감자") || text.includes("소송") || text.includes("불성실") || text.includes("정지") || text.includes("cb");
+        }
+        return true;
+    });
 
     const watchlistSignals = (Array.isArray(signals) ? signals : []).filter(sig => {
         const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -298,19 +484,62 @@ function SignalsFeedTab({ router }: { router: any }) {
 
     return (
         <div className="space-y-4 text-left">
-            {/* [NEW] 오늘의 주요 공시 리스트 알림 패널 */}
+            {/* [NEW] 글로벌 리스크 신호등 게이지 위젯 */}
+            <GlobalRiskGauge />
+
+            {/* [NEW] 오늘의 주요 공시 리스트 알림 패널 & 카테고리 필터 */}
             {riskAlerts.length > 0 && (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-2 backdrop-blur-md overflow-hidden relative">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-red-500 via-purple-500 to-blue-500 opacity-50"></div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <Zap className="w-5 h-5 text-yellow-400" />
-                        <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">당일 주요 공시 인사이트</h4>
-                        <span className="text-[10px] font-black bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/40 uppercase tracking-tighter">
-                            v3.7.18-WATCHLIST
-                        </span>
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-yellow-500 via-purple-500 to-blue-500 opacity-50"></div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                            <Zap className="w-5 h-5 text-yellow-400" />
+                            <h4 className="text-sm font-black text-gray-200 uppercase tracking-tighter">당일 주요 공시 인사이트</h4>
+                            <span className="text-[10px] font-black bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-500/40 uppercase tracking-tighter">
+                                실시간 DART
+                            </span>
+                        </div>
+
+                        {/* 공시 카테고리 필터 칩 */}
+                        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide py-1">
+                            <button
+                                onClick={() => setDisclosureCategory("all")}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                                    disclosureCategory === "all" ? "bg-yellow-500 text-black shadow-md" : "bg-white/5 text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                전체 ({riskAlerts.length})
+                            </button>
+                            <button
+                                onClick={() => setDisclosureCategory("insider")}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                    disclosureCategory === "insider" ? "bg-purple-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                🔥 지분변동
+                            </button>
+                            <button
+                                onClick={() => setDisclosureCategory("contract")}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                    disclosureCategory === "contract" ? "bg-blue-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                💰 공급계약·실적
+                            </button>
+                            <button
+                                onClick={() => setDisclosureCategory("risk")}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                    disclosureCategory === "risk" ? "bg-red-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                ⚠️ 증자·주의
+                            </button>
+                        </div>
                     </div>
+
                     <div className="space-y-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                        {(Array.isArray(riskAlerts) ? riskAlerts : []).map((alert, idx) => {
+                        {filteredRiskAlerts.map((alert, idx) => {
                             const badge = getRiskBadge(alert.category);
                             return (
                                 <a
@@ -336,6 +565,9 @@ function SignalsFeedTab({ router }: { router: any }) {
                                 </a>
                             );
                         })}
+                        {filteredRiskAlerts.length === 0 && (
+                            <p className="text-gray-500 text-xs text-center py-6">선택한 카테고리에 해당하는 공시가 없습니다.</p>
+                        )}
                     </div>
                     <p className="mt-3 text-[9px] text-gray-600 font-bold leading-relaxed text-center border-t border-white/5 pt-2 italic">
                         본 정보는 DART 공시 원문과 키워드를 기반으로 한 객관적 사실 보도이며, 투자 권유가 아닙니다.
@@ -692,8 +924,9 @@ function HeatmapTab({ router }: { router: any }) {
 function MarketInsightsTab({ router }: { router: any }) {
     const [insightsData, setInsightsData] = useState<any>(null);
     const [investorData, setInvestorData] = useState<any>(null);
+    const [doubleWhaleData, setDoubleWhaleData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [subTab, setSubTab] = useState<"volume" | "value">("volume");
+    const [subTab, setSubTab] = useState<"double_whale" | "volume" | "value">("double_whale");
 
     useEffect(() => {
         (async () => {
@@ -707,6 +940,11 @@ function MarketInsightsTab({ router }: { router: any }) {
                 const r2 = await fetch(`${API_BASE_URL}/api/market/market-insights`);
                 const j2 = await r2.json();
                 if (j2.status === "success") setInsightsData(j2.data);
+
+                // 3. 외인·기관 쌍끌이 순매수 레이더 (신규 API)
+                const r3 = await fetch(`${API_BASE_URL}/api/market/double-whale`);
+                const j3 = await r3.json();
+                if (j3.status === "success") setDoubleWhaleData(j3.data || []);
             } catch { } finally { setLoading(false); }
         })();
     }, []);
@@ -727,27 +965,132 @@ function MarketInsightsTab({ router }: { router: any }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                <button onClick={() => setSubTab("volume")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "volume" ? "bg-green-600 text-white" : "text-gray-400"}`}>급등/거래량 상위</button>
-                <button onClick={() => setSubTab("value")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${subTab === "value" ? "bg-orange-600 text-white" : "text-gray-400"}`}>검색/거래대금 상위</button>
+            {/* 3대 수급 서브탭 네비게이션 */}
+            <div className="flex gap-1.5 bg-white/5 p-1 rounded-xl">
+                <button
+                    onClick={() => setSubTab("double_whale")}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        subTab === "double_whale"
+                            ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg"
+                            : "text-gray-400 hover:text-white"
+                    }`}
+                >
+                    🔥 외인·기관 쌍끌이 레이더
+                </button>
+                <button
+                    onClick={() => setSubTab("volume")}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                        subTab === "volume" ? "bg-green-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+                    }`}
+                >
+                    급등/거래량 상위
+                </button>
+                <button
+                    onClick={() => setSubTab("value")}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                        subTab === "value" ? "bg-orange-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
+                    }`}
+                >
+                    검색/거래대금 상위
+                </button>
             </div>
 
-            {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div>
-                : subTab === "volume" ? (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                            {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                            {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
-                            {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
+            {loading ? (
+                <div className="text-center py-12 text-gray-500">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
+                    <p className="text-xs">수급 데이터 집계 중...</p>
+                </div>
+            ) : subTab === "double_whale" ? (
+                <div className="space-y-3 text-left">
+                    <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/20 to-black border border-emerald-500/20 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
+                                👥 외인 & 기관 스마트머니 동시 순매수 TOP 15
+                            </h3>
+                            <span className="text-[10px] text-gray-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                                100% 실시간 수급 통계
+                            </span>
                         </div>
+                        <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                            외국인과 기관이 함께 순매수하는 종목은 시장 주도력을 확보할 가능성이 높습니다. (종목 클릭 시 차트 분석으로 이동)
+                        </p>
+
+                        <div className="space-y-2">
+                            {doubleWhaleData.map((item: any, idx: number) => {
+                                const isDouble = item.type === "쌍끌이";
+                                return (
+                                    <div
+                                        key={idx}
+                                        onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}
+                                        className="bg-black/50 hover:bg-black/80 border border-white/5 hover:border-emerald-500/40 rounded-xl p-3 transition-all cursor-pointer group"
+                                    >
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className={`w-5 h-5 flex items-center justify-center rounded text-xs font-black shrink-0 ${
+                                                    idx < 3 ? "bg-emerald-500 text-black" : "bg-white/10 text-gray-300"
+                                                }`}>
+                                                    {idx + 1}
+                                                </span>
+                                                <span className="font-bold text-white text-sm truncate group-hover:text-emerald-300 transition-colors">
+                                                    {item.name}
+                                                </span>
+                                                <span className="text-[9px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0">
+                                                    {item.market}
+                                                </span>
+                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded shrink-0 ${
+                                                    isDouble 
+                                                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse" 
+                                                        : item.type === "외인집중" 
+                                                        ? "bg-blue-500/20 text-blue-300 border border-blue-500/40" 
+                                                        : "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                                                }`}>
+                                                    {item.type}
+                                                </span>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="text-xs font-black text-white font-mono">{item.total_str}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* 외인 / 기관 수급 분할 바 */}
+                                        <div className="grid grid-cols-2 gap-2 text-[10px] bg-white/5 p-2 rounded-lg font-mono">
+                                            <div className="flex items-center justify-between text-blue-300">
+                                                <span className="text-gray-400">외국인:</span>
+                                                <span className="font-bold">{item.foreign_shares}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-purple-300 border-l border-white/10 pl-2">
+                                                <span className="text-gray-400">기관:</span>
+                                                <span className="font-bold">{item.inst_shares}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {doubleWhaleData.length === 0 && (
+                                <p className="text-gray-500 text-xs text-center py-6">수급 집계 데이터가 없습니다.</p>
+                            )}
+                        </div>
+
+                        <p className="mt-3 text-[9px] text-gray-500 text-center italic">
+                            ※ 한국거래소 및 네이버 금융 공식 체결 수급 통계 기준이며, 특정 종목 추천이나 투자 자문이 아닙니다.
+                        </p>
                     </div>
-                ) : (
+                </div>
+            ) : subTab === "volume" ? (
+                <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderList("인기 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
-                        {renderList("거래대금 상위 (실수급 연속 포착)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
+                        {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                        {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
+                        {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
+                        {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
                     </div>
-                )}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {renderList("인기 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
+                    {renderList("거래대금 상위 (실수급 연속 포착)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
+                </div>
+            )}
         </div>
     );
 }
@@ -786,6 +1129,7 @@ function CalendarTab({ router }: { router: any }) {
     // 매크로 경제지표 데이터
     const [macroEvents, setMacroEvents] = useState<any[]>([]);
     const [macroLoading, setMacroLoading] = useState(true);
+    const [onlyHighImpact, setOnlyHighImpact] = useState(false);
     const [countryFilter, setCountryFilter] = useState<"calendar" | "market">("market");
     const [krEvents, setKrEvents] = useState<any[]>([]);
     const [krLoading, setKrLoading] = useState(false);
@@ -1076,18 +1420,30 @@ function CalendarTab({ router }: { router: any }) {
                 <div className="space-y-4">
                     {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                             <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-blue-400" /> 주간 글로벌 핵심 일정
                             </h4>
-                            <div className="text-[10px] text-gray-500">ForexFactory / Global</div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setOnlyHighImpact(!onlyHighImpact)}
+                                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                                        onlyHighImpact
+                                            ? "bg-red-500/20 text-red-300 border-red-500/40 shadow-sm"
+                                            : "bg-white/5 text-gray-400 border-white/10 hover:text-white"
+                                    }`}
+                                >
+                                    <span>⭐⭐⭐</span>
+                                    <span>{onlyHighImpact ? "특급 이벤트만 보는 중" : "특급 이벤트만 보기"}</span>
+                                </button>
+                                <div className="text-[10px] text-gray-500 hidden sm:block">ForexFactory / Global</div>
+                            </div>
                         </div>
 
                         {/* [주말 특별 배너] 캘린더 내부 유도 배너 */}
                         {(() => {
                             const day = new Date().getDay();
                             const hour = new Date().getHours();
-                            // const isWeekend = day === 0 || day === 6 || (day === 5 && hour >= 16);
                             const isWeekend = true; // 대표님 확인용 임시 상시 노출
                             if (!isWeekend) return null;
                             return (
@@ -1109,8 +1465,20 @@ function CalendarTab({ router }: { router: any }) {
                             </div>
                         ) : (
                             <div className="space-y-1.5 max-h-[250px] overflow-y-auto hide-scrollbar">
-                                {(Array.isArray(macroEvents) ? macroEvents : []).map((evt, i) => (
-                                    <div key={i} className="flex flex-col p-3 bg-black/20 hover:bg-black/40 rounded-xl transition-all border border-white/5 group">
+                                {(Array.isArray(macroEvents) ? macroEvents : [])
+                                    .filter(evt => {
+                                        if (!onlyHighImpact) return true;
+                                        const name = (evt.event_kr || evt.event || "").toLowerCase();
+                                        return evt.importance >= 3 || name.includes("cpi") || name.includes("fomc") || name.includes("금리") || name.includes("고용") || name.includes("gdp") || name.includes("pce");
+                                    })
+                                    .map((evt, i) => {
+                                        const is3Star = evt.importance >= 3 || String(evt.event_kr || evt.event || "").includes("CPI") || String(evt.event_kr || evt.event || "").includes("FOMC");
+                                        return (
+                                    <div key={i} className={`flex flex-col p-3 rounded-xl transition-all border group ${
+                                        is3Star 
+                                            ? "bg-red-950/20 hover:bg-red-950/30 border-red-500/30 shadow-sm" 
+                                            : "bg-black/20 hover:bg-black/40 border-white/5"
+                                    }`}>
                                         <div className="flex items-center gap-3">
                                             <div className="flex flex-col items-center min-w-[45px]">
                                                 <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
@@ -1119,21 +1487,30 @@ function CalendarTab({ router }: { router: any }) {
                                                 {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className={`font-bold text-xs truncate ${evt.importance >= 3 ? "text-white" : "text-gray-300"}`}>{evt.event_kr || evt.event}</div>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className={`font-bold text-xs truncate ${is3Star ? "text-white" : "text-gray-300"}`}>
+                                                        {evt.event_kr || evt.event}
+                                                    </span>
+                                                    {is3Star && (
+                                                        <span className="text-[9px] font-black bg-red-500/30 text-red-300 px-1.5 py-0.2 rounded border border-red-500/40">
+                                                            ⭐⭐⭐ 특급
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="flex gap-3 mt-1 text-[10px] font-bold">
                                                     {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
                                                     {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
-                                                    {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${evt.importance >= 3 ? 'text-green-400' : 'text-gray-200'} font-black`}>{evt.actual}</span></span>}
+                                                    {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${is3Star ? 'text-green-400 font-black' : 'text-gray-200'}`}>{evt.actual}</span></span>}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <Zap className={`w-3.5 h-3.5 ${evt.importance >= 3 ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
+                                                <Zap className={`w-3.5 h-3.5 ${is3Star ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
                                             </div>
                                         </div>
                                         {/* [New] AI 수혜 테마 배지 (중요도 2 이상이거나 테마가 매칭될 때) */}
                                         {(() => {
                                             const aiData = getAiThemeForEvent(evt.event_kr || evt.event);
-                                            if (aiData && evt.importance >= 2) {
+                                            if (aiData && (evt.importance >= 2 || is3Star)) {
                                                 return (
                                                     <div 
                                                         className="mt-3 ml-[60px] flex flex-col bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30 rounded-lg overflow-hidden cursor-pointer group hover:border-blue-400/50 transition-colors"
@@ -1155,7 +1532,8 @@ function CalendarTab({ router }: { router: any }) {
                                             return null;
                                         })()}
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
