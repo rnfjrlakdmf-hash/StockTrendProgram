@@ -1,15 +1,20 @@
-import { db } from "@/lib/firebase";
-import Link from "next/link";
-import { Clock, BookOpen, ChevronRight, Eye } from "lucide-react";
 import { Metadata } from "next";
+import { BookOpen, Sparkles, GraduationCap, Flame, TrendingUp } from "lucide-react";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import TheoryListClient, { TheoryPost } from "./TheoryListClient";
 
 export const metadata: Metadata = {
-    title: "매일 차트 스터디 | 주식이론방",
-    description: "초보자를 위한 매일매일 올라오는 알기 쉬운 주식 이론과 차트 분석 강의",
+    title: "1타 강사의 매일 차트 스터디 | 실전 주식 차트·보조지표 아카데미",
+    description: "초보자도 5분 만에 마스터하는 1타 강사의 아주 쉬운 주식 이론 강의! RSI, MACD, 볼린저밴드, 캔들 패턴, 20일선 눌림목 매매타점 완벽 정리.",
     alternates: {
         canonical: '/theory',
     },
+    openGraph: {
+        title: "1타 강사의 매일 차트 스터디 | 실전 주식 차트·보조지표 아카데미",
+        description: "초보자도 5분 만에 마스터하는 1타 강사의 아주 쉬운 주식 이론 강의! RSI, MACD, 볼린저밴드, 캔들 패턴 완벽 가이드.",
+        type: "website",
+        images: ["https://stock-trend-program.co.kr/og-image.png"]
+    }
 };
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +33,7 @@ async function getTheoryPosts(page: number, limitPerPage: number) {
             throw new Error("No posts from API");
         }
 
-        const posts = data.posts.map((p: any) => ({
+        const posts: TheoryPost[] = data.posts.map((p: any) => ({
             id: p.id,
             title: p.title,
             content: p.content,
@@ -44,120 +49,67 @@ async function getTheoryPosts(page: number, limitPerPage: number) {
         return { posts: [], totalPages: 1 };
     }
 }
+
 type Props = { searchParams: Promise<{ [key: string]: string | string[] | undefined }> };
 
 export default async function TheoryListPage(props: Props) {
     const searchParams = await props.searchParams;
     const page = parseInt((searchParams.page as string) || "1", 10);
-    const limitPerPage = 10;
+    // 한 번에 풍부하게 가져와서 즉시 검색 및 필터링 가능하도록 설정 (최대 60개)
+    const limitPerPage = 60;
     
     const { posts, totalPages } = await getTheoryPosts(page, limitPerPage);
 
     return (
-        <div className="min-h-screen pt-24 pb-20 px-4 md:px-8 max-w-5xl mx-auto animate-in fade-in duration-500">
-            <div className="text-center mb-16 relative">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-500/10 blur-3xl rounded-full pointer-events-none" />
-                <h1 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight flex items-center justify-center gap-3 relative z-10">
-                    <BookOpen className="w-10 h-10 md:w-12 md:h-12 text-green-500" />
-                    매일 차트 스터디
-                </h1>
-                <p className="text-lg md:text-xl text-gray-400 font-medium relative z-10">
-                    초보자를 위한 1타 강사의 아주 쉬운 주식 이론 강의
-                </p>
+        <div className="min-h-screen pt-20 pb-20 px-4 md:px-8 max-w-6xl mx-auto animate-in fade-in duration-500 text-white">
+            {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
+            <div className="flex md:hidden justify-center -mt-2 mb-6">
+                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+            </div>
+            <div className="hidden md:flex justify-center -mt-2 mb-6">
+                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
             </div>
 
-            <div className="grid gap-6">
-                {posts.length === 0 ? (
-                    <div className="text-center py-20 bg-white/5 border border-white/10 rounded-3xl">
-                        <p className="text-gray-400">아직 작성된 강의가 없습니다.</p>
-                    </div>
-                ) : (
-                    posts.map((post: any, index: number) => (
-                        <div key={post.id}>
-                            <Link href={`/theory/${post.slug}`} className="block group">
-                                <article className="bg-black/40 border border-white/10 hover:border-green-500/50 rounded-3xl p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/10 relative overflow-hidden flex flex-col md:flex-row gap-6 md:items-center">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/0 group-hover:bg-green-500/10 blur-3xl transition-colors duration-500 rounded-full" />
-                                    
-                                    <div className="flex-1 min-w-0 z-10">
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {post.tags?.map((tag: string, idx: number) => (
-                                                <span key={idx} className="text-[10px] md:text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded-md border border-green-500/20">
-                                                    #{tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <h2 className="text-xl md:text-2xl font-bold text-white group-hover:text-green-300 transition-colors mb-3 line-clamp-2">
-                                            {post.title}
-                                        </h2>
-                                        <p className="text-gray-400 text-sm line-clamp-2 mb-4">
-                                            {(post?.content || '').replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim().slice(0, 150)}...
-                                        </p>
-                                        <div className="flex items-center text-xs text-gray-500 font-medium">
-                                            <Clock className="w-3.5 h-3.5 mr-1" />
-                                            {new Date(post.createdAt).toLocaleDateString('ko-KR', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
-                                                timeZone: 'Asia/Seoul'
-                                            })}
-                                            <Eye className="w-3.5 h-3.5 ml-4 mr-1 text-gray-500" />
-                                            <span>{post.viewCount} 읽음</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-green-400 font-bold whitespace-nowrap z-10 bg-green-500/10 px-4 py-2 rounded-xl group-hover:bg-green-500/20 transition-colors self-start md:self-auto">
-                                        강의 보기
-                                        <ChevronRight className="w-4 h-4" />
-                                    </div>
-                                </article>
-                            </Link>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-16 pb-8">
-                    {page > 1 && (
-                        <Link href={`/theory?page=${page - 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-                            <ChevronRight className="w-5 h-5 rotate-180" />
-                        </Link>
-                    )}
-                    
-                    {Array.from({ length: totalPages }).map((_, idx) => {
-                        const pageNum = idx + 1;
-                        if (pageNum === 1 || pageNum === totalPages || (pageNum >= page - 1 && pageNum <= page + 1)) {
-                            return (
-                                <Link 
-                                    key={pageNum} 
-                                    href={`/theory?page=${pageNum}`}
-                                    className={`flex items-center justify-center w-10 h-10 rounded-xl font-medium transition-all ${
-                                        page === pageNum 
-                                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/20 border border-green-400/50' 
-                                            : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
-                                    }`}
-                                >
-                                    {pageNum}
-                                </Link>
-                            );
-                        } else if (pageNum === page - 2 || pageNum === page + 2) {
-                            return <span key={pageNum} className="text-gray-600 px-1">...</span>;
-                        }
-                        return null;
-                    })}
-
-                    {page < totalPages && (
-                        <Link href={`/theory?page=${page + 1}`} className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
-                            <ChevronRight className="w-5 h-5" />
-                        </Link>
-                    )}
+            {/* Hero Header Section */}
+            <div className="text-center mb-12 relative">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+                
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs md:text-sm font-black mb-4 shadow-sm">
+                    <GraduationCap className="w-4 h-4 text-emerald-400" />
+                    <span>실전 주식 아카데미 · 누구나 100% 무료</span>
                 </div>
-            )}
-            
-            <div className="w-full flex justify-center mt-12 mb-4">
+
+                <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4 flex items-center justify-center gap-3 flex-wrap">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-green-400 drop-shadow-md">
+                        매일 차트 스터디
+                    </span>
+                </h1>
+
+                <p className="text-gray-300 text-sm md:text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+                    초보자도 5분 만에 이해하는 <span className="text-emerald-400 font-bold">1타 강사의 실전 차트 분석 & 매매 타점</span> 강의
+                </p>
+
+                {/* 3대 핵심 특징 뱃지 */}
+                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 mt-6 text-xs md:text-sm text-gray-400 font-semibold">
+                    <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-yellow-400" /> 핵심 보조지표 마스터
+                    </span>
+                    <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> 실전 눌림목 & 캔들패턴
+                    </span>
+                    <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5">
+                        <Flame className="w-3.5 h-3.5 text-orange-400" /> 매일 아침 신규 강의 연재
+                    </span>
+                </div>
+            </div>
+
+            {/* Interactive Client Component (검색, 카테고리 필터, 2열 카드 그리드, 내부 링크) */}
+            <TheoryListClient initialPosts={posts} totalPages={totalPages} currentPage={page} />
+
+            {/* 하단 광고 슬롯 */}
+            <div className="w-full flex justify-center mt-14 mb-4">
                 <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
             </div>
-            {/* 하단 직사각형 배너 광고 (320x100) */}
             <div className="w-full flex justify-center mb-8">
                 <KakaoAdFit adUnit="DAN-8TxTsrWjI6Q4SOt0" adWidth="320" adHeight="100" />
             </div>
