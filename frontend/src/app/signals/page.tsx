@@ -10,7 +10,7 @@ import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
-    Star, Globe, Trash2, X, Bell, BellRing
+    Star, Globe, Trash2, X, Bell, BellRing, HelpCircle
 } from "lucide-react";
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
@@ -130,6 +130,7 @@ function GlobalRiskGauge() {
         us10yStatus: "부담"
     });
     const [loading, setLoading] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -230,38 +231,122 @@ function GlobalRiskGauge() {
                 {riskData.desc}
             </p>
 
-            {/* 3대 핵심 바로미터 칩 */}
-            <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-black/50 border border-white/10 rounded-xl p-2">
-                    <div className="text-[10px] text-gray-400 font-bold mb-0.5">VIX 공포지수</div>
-                    <div className="text-xs font-black text-white font-mono">{riskData.vix}</div>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
-                        riskData.vixStatus === '안정' ? 'text-emerald-400 bg-emerald-500/15' : riskData.vixStatus === '주의' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
-                    }`}>
-                        {riskData.vixStatus}
-                    </span>
+            {/* 3대 핵심 바로미터 칩 & 쉬운 설명 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center">
+                <div className="bg-black/50 border border-white/10 rounded-xl p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] text-gray-300 font-bold">VIX 공포지수</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                riskData.vixStatus === '안정' ? 'text-emerald-400 bg-emerald-500/15' : riskData.vixStatus === '주의' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
+                            }`}>
+                                {riskData.vixStatus}
+                            </span>
+                        </div>
+                        <div className="text-sm font-black text-white font-mono my-0.5">{riskData.vix}</div>
+                    </div>
+                    <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-gray-400 leading-tight text-left">
+                        💡 <span className="text-gray-300 font-medium">20 미만</span>일수록 시장 심리가 평온하여 주식 매수에 우호적입니다.
+                    </div>
                 </div>
-                <div className="bg-black/50 border border-white/10 rounded-xl p-2">
-                    <div className="text-[10px] text-gray-400 font-bold mb-0.5">원/달러 환율</div>
-                    <div className="text-xs font-black text-white font-mono">{riskData.usdkrw}</div>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
-                        riskData.usdkrwStatus === '우호' ? 'text-emerald-400 bg-emerald-500/15' : riskData.usdkrwStatus === '보통' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
-                    }`}>
-                        {riskData.usdkrwStatus}
-                    </span>
+
+                <div className="bg-black/50 border border-white/10 rounded-xl p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] text-gray-300 font-bold">원/달러 환율</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                riskData.usdkrwStatus === '우호' ? 'text-emerald-400 bg-emerald-500/15' : riskData.usdkrwStatus === '보통' ? 'text-amber-400 bg-amber-500/15' : 'text-rose-400 bg-rose-500/15'
+                            }`}>
+                                {riskData.usdkrwStatus}
+                            </span>
+                        </div>
+                        <div className="text-sm font-black text-white font-mono my-0.5">{riskData.usdkrw}</div>
+                    </div>
+                    <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-gray-400 leading-tight text-left">
+                        💡 환율이 안정(<span className="text-gray-300 font-medium">하락</span>)되어야 외국인의 국내 주식 순매수가 늘어납니다.
+                    </div>
                 </div>
-                <div className="bg-black/50 border border-white/10 rounded-xl p-2">
-                    <div className="text-[10px] text-gray-400 font-bold mb-0.5">美 10년물 국채</div>
-                    <div className="text-xs font-black text-white font-mono">{riskData.us10y}</div>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 ${
-                        riskData.us10yStatus === '안정' ? 'text-emerald-400 bg-emerald-500/15' : 'text-rose-400 bg-rose-500/15'
-                    }`}>
-                        {riskData.us10yStatus}
-                    </span>
+
+                <div className="bg-black/50 border border-white/10 rounded-xl p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] text-gray-300 font-bold">美 10년물 국채</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                riskData.us10yStatus === '안정' ? 'text-emerald-400 bg-emerald-500/15' : 'text-rose-400 bg-rose-500/15'
+                            }`}>
+                                {riskData.us10yStatus}
+                            </span>
+                        </div>
+                        <div className="text-sm font-black text-white font-mono my-0.5">{riskData.us10y}</div>
+                    </div>
+                    <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-gray-400 leading-tight text-left">
+                        💡 금리가 <span className="text-gray-300 font-medium">낮을수록</span> 미래 가치가 높은 기술·성장주에 유리합니다.
+                    </div>
                 </div>
             </div>
 
-            <p className="mt-2.5 text-[9px] text-gray-500 text-right italic">
+            {/* 초보자를 위한 상세 지표 가이드 (아코디언 토글) */}
+            <div className="mt-3 pt-2.5 border-t border-white/10">
+                <button
+                    onClick={() => setShowGuide(!showGuide)}
+                    className="w-full flex items-center justify-between text-[11px] font-bold text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5"
+                >
+                    <span className="flex items-center gap-1.5">
+                        <HelpCircle className="w-3.5 h-3.5 text-yellow-400" />
+                        <span>💡 신호등 & 3대 지표 쉽게 이해하기 (초보자 가이드)</span>
+                    </span>
+                    <span className="text-xs font-mono">{showGuide ? "▲ 닫기" : "▼ 펼치기"}</span>
+                </button>
+
+                {showGuide && (
+                    <div className="mt-2.5 p-3.5 bg-black/60 rounded-xl border border-white/10 text-xs text-gray-300 space-y-3 text-left animate-in fade-in duration-200">
+                        <div>
+                            <h5 className="font-black text-white mb-1.5 flex items-center gap-1.5">
+                                🚦 신호등 3단계의 의미
+                            </h5>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                                <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30">
+                                    <span className="font-bold text-emerald-400">🟢 위험 선호 (Risk-On)</span>
+                                    <p className="text-gray-300 mt-1 leading-relaxed">
+                                        시장에 자신감이 넘쳐 주식 등 자산으로 돈이 몰리는 상승 친화적 장세입니다.
+                                    </p>
+                                </div>
+                                <div className="p-2 rounded-lg bg-amber-950/40 border border-amber-500/30">
+                                    <span className="font-bold text-amber-400">🟡 중립 / 관망 (Neutral)</span>
+                                    <p className="text-gray-300 mt-1 leading-relaxed">
+                                        주요 경제지표 발표를 앞두고 눈치보기가 이어지며, 실적 우량주 위주로 압축이 유리합니다.
+                                    </p>
+                                </div>
+                                <div className="p-2 rounded-lg bg-rose-950/40 border border-rose-500/30">
+                                    <span className="font-bold text-rose-400">🔴 위험 회피 (Risk-Off)</span>
+                                    <p className="text-gray-300 mt-1 leading-relaxed">
+                                        달러나 금 등 안전자산으로 돈이 빠져나가므로 무리한 매수를 줄이고 방어하는 장세입니다.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/5">
+                            <h5 className="font-black text-white mb-1.5 flex items-center gap-1.5">
+                                📊 3대 거시지표 핵심 포인트
+                            </h5>
+                            <ul className="space-y-1.5 text-[11px] text-gray-300 list-disc list-inside">
+                                <li>
+                                    <strong className="text-white">VIX (변동성·공포지수):</strong> 미국 S&P 500 시장의 불안감을 나타내며, <strong>20 이하</strong>면 평온, <strong>25 이상</strong>이면 시장이 공포에 빠져 있음을 뜻합니다.
+                                </li>
+                                <li>
+                                    <strong className="text-white">원/달러 환율:</strong> 외국인 투자자의 매수 기준입니다. 환율이 <strong>내려갈수록(원화 강세)</strong> 외인의 한국 주식 매수 유입이 강력해집니다.
+                                </li>
+                                <li>
+                                    <strong className="text-white">美 10년물 국채금리:</strong> 전 세계 금융의 기준금리 역할을 하며, <strong>금리가 안정될수록</strong> AI, 반도체, 2차전지 등 성장주 주가에 큰 힘이 됩니다.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <p className="mt-2 text-[9px] text-gray-500 text-right italic">
                 ※ 글로벌 공공 시장 지표 기반의 객관적 척도이며, 특정 종목에 대한 투자 권유가 아닙니다.
             </p>
         </div>
