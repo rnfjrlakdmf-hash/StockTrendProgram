@@ -13,7 +13,7 @@ export const revalidate = 0; // ISR 60초
 
 async function getRelatedPosts() {
     try {
-        const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=3`;
+        const apiUrl = `https://stock-trend-program.co.kr/api/seo_posts?page=1&limit=4`;
         const res = await fetch(apiUrl, { cache: 'no-store' });
         const data = await res.json();
         return data.posts || [];
@@ -43,7 +43,7 @@ async function getTheoryPost(slug: string) {
         return null;
 
     } catch (error) {
-        console.error("이론 포스트 상세 로딩 에러:", error);
+        console.error("SEO 포스트 상세 로딩 에러:", error);
         return null;
     }
 }
@@ -53,13 +53,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const post = await getTheoryPost(resolvedParams.slug);
     
     if (!post) {
-        return { title: "강의를 찾을 수 없습니다" };
+        return { title: "리포트를 찾을 수 없습니다" };
     }
 
     const desc = (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";
 
     return {
-        title: `${post.title} | 스마트 투자비서`,
+        title: `${post.title} | 오늘의 핫이슈 종목 리포트 - StockTrend`,
         description: desc,
         alternates: {
             canonical: `/post/${resolvedParams.slug}`,
@@ -69,10 +69,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             description: desc,
             type: "article",
             publishedTime: post.createdAt.toISOString(),
-            authors: [post.author],
+            authors: [post.author || "StockTrend 수석 애널리스트팀"],
             images: [
                 {
-                    url: `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`,
+                    url: `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('오늘의 급등주 & 특징주 심층 분석 리포트')}&tag=${encodeURIComponent('핫이슈종목분석')}`,
                     width: 1200,
                     height: 630,
                     alt: post.title,
@@ -83,7 +83,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             card: "summary_large_image",
             title: post.title,
             description: desc,
-            images: [`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`]
+            images: [`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('오늘의 급등주 & 특징주 심층 분석 리포트')}&tag=${encodeURIComponent('핫이슈종목분석')}`]
         }
     };
 }
@@ -106,17 +106,17 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         "dateModified": post.createdAt.toISOString(),
         "author": {
             "@type": "Person",
-            "name": post.author || "StockTrend 차트 마스터"
+            "name": post.author || "StockTrend 수석 애널리스트팀"
         },
         "publisher": {
             "@type": "Organization",
-            "name": "스마트 투자비서",
+            "name": "스마트 투자비서 StockTrend",
             "logo": {
                 "@type": "ImageObject",
                 "url": "https://stock-trend-program.co.kr/logo.png"
             }
         },
-        "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`
+        "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('오늘의 급등주 & 특징주 심층 분석 리포트')}&tag=${encodeURIComponent('핫이슈종목분석')}`
     };
 
     // TOC(목차) 자동 생성 및 본문 ID 주입
@@ -159,7 +159,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         tocHtml += '</ul></div>';
     }
 
-    const finalContent = tocHtml + contentWithIds + '<br/><br/><p style="color: #6b7280; font-size: 0.875rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; margin-top: 2rem;">본 포스팅은 <strong>스마트 투자비서</strong>가 제공하는 AI 기반 주식 분석 및 차트 스터디입니다. YMYL 가이드라인을 준수하여 작성되었으나, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.</p>';
+    const finalContent = tocHtml + contentWithIds + '<br/><br/><p style="color: #6b7280; font-size: 0.875rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; margin-top: 2rem;">본 포스팅은 <strong>스마트 투자비서 StockTrend</strong>가 제공하는 실시간 주식 데이터 및 수급 분석 리포트입니다. YMYL 가이드라인을 준수하여 작성되었으나, 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.</p>';
 
     return (
         <article className="min-h-screen pt-24 pb-20 px-4 md:px-8 max-w-4xl mx-auto animate-in fade-in duration-500">
@@ -171,18 +171,18 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             {/* Header / Back */}
             <div className="mb-8 flex justify-between items-center">
                 <Link 
-                    href="/theory" 
+                    href="/post" 
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-colors font-medium text-sm border border-white/10"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    이론방 목록으로
+                    핫이슈 리포트 목록으로
                 </Link>
                 
                 <SocialShareButtons 
                     title={post.title}
                     description={(post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
-                    url={`https://stock-trend-program.co.kr/theory/${post.slug}`}
-                    imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`}
+                    url={`https://stock-trend-program.co.kr/post/${post.slug}`}
+                    imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('오늘의 급등주 & 특징주 심층 분석 리포트')}&tag=${encodeURIComponent('핫이슈종목분석')}`}
                 />
             </div>
 
@@ -205,7 +205,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                         <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400">
                             <BookOpen className="w-4 h-4" />
                         </div>
-                        <span className="text-gray-300 font-bold tracking-wide">{post.author}</span>
+                        <span className="text-gray-300 font-bold tracking-wide">{post.author || "StockTrend 애널리스트팀"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
@@ -243,7 +243,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
             {/* 뷰 카운터 증가용 클라이언트 사이드 스크립트 */}
             <script dangerouslySetInnerHTML={{
                 __html: `
-                    fetch('/api/theory/${post.slug}/view', { method: 'POST' }).catch(console.error);
+                    fetch('/api/blog/${post.slug}/view', { method: 'POST' }).catch(console.error);
                 `
             }} />
 
@@ -272,7 +272,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {relatedPosts.filter((rp: any) => rp.slug !== post.slug).slice(0, 3).map((rp: any) => (
-                        <Link key={rp.id} href={`/theory/${rp.slug || rp.id}`} className="block group">
+                        <Link key={rp.id} href={`/post/${rp.slug || rp.id}`} className="block group">
                             <div className="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors h-full flex flex-col">
                                 <h4 className="text-gray-300 font-semibold group-hover:text-white transition-colors line-clamp-2 mb-4 text-sm leading-snug">
                                     {rp.title}
@@ -286,6 +286,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                     ))}
                 </div>
             </div>
+
 
             <div className="mt-8 mb-4">
                 <PushSubscribeButton />
