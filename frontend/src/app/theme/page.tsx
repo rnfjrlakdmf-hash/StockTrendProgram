@@ -36,10 +36,58 @@ function ThemePageContent() {
         }
     }, [searchParams]);
 
+    const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem("theme_recent_searches");
+            if (saved) {
+                setRecentSearches(JSON.parse(saved));
+            }
+        } catch {}
+    }, []);
+
+    const saveRecentSearch = (kw: string) => {
+        if (!kw || typeof kw !== "string") return;
+        try {
+            const updated = [kw, ...recentSearches.filter(s => s !== kw)].slice(0, 5);
+            setRecentSearches(updated);
+            localStorage.setItem("theme_recent_searches", JSON.stringify(updated));
+        } catch {}
+    };
+
+    const clearRecentSearches = () => {
+        setRecentSearches([]);
+        try {
+            localStorage.removeItem("theme_recent_searches");
+        } catch {}
+    };
+
+    const HOT_RECOMMENDED_THEMES = [
+        { label: "온디바이스AI", icon: "🔥" },
+        { label: "비만치료제", icon: "💊" },
+        { label: "전력설비", icon: "⚡" },
+        { label: "휴머노이드 로봇", icon: "🤖" },
+        { label: "SMR/원전", icon: "☢️" },
+        { label: "전고체배터리", icon: "🔋" },
+        { label: "우주항공", icon: "🚀" },
+        { label: "저PBR 밸류업", icon: "📈" }
+    ];
+
+    const cleanThemeTitle = (name: string) => {
+        if (!name) return "";
+        return name
+            .replace(/\(비트코인 등\)/g, "(가상자산)")
+            .replace(/\(삼성전자\/SK하이닉스.*?\)/g, "(반도체 대형주)")
+            .replace(/테마/g, "")
+            .trim();
+    };
+
     const handleAnalyze = async (overrideKeyword?: any) => {
         const searchKeyword = typeof overrideKeyword === 'string' ? overrideKeyword : keyword;
         if (!searchKeyword) return;
         
+        saveRecentSearch(searchKeyword);
         setLoading(true);
         setError("");
 
@@ -194,9 +242,9 @@ function ThemePageContent() {
 
     return (
         <div className="min-h-screen pb-20 text-white bg-zinc-950">
-            <Header title="이슈 테마 분석 (v2.6)" subtitle="Find the Next Big Thing with AI." />
+            <Header title="실시간 주도 테마 레이더 (테마 발굴)" subtitle="시장 주도 테마와 대장주를 한눈에 파악하세요." />
 
-            <div className="max-w-4xl mx-auto p-6 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="max-w-4xl mx-auto p-6 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
                 <div className="flex md:hidden justify-center -mt-2 mb-4">
                     <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
@@ -205,36 +253,37 @@ function ThemePageContent() {
                     <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
                 </div>
                 {/* Search Hero */}
-                <div className="text-center space-y-8 py-12 relative">
+                <div className="text-center space-y-7 py-8 relative">
                     {/* Background Glow */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
 
                     <div className="flex items-center justify-center gap-3">
-                        <h2 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-500 tracking-tight drop-shadow-lg">
-                            What's Trending Now? <span className="text-2xl text-blue-400/80 font-bold align-top ml-1">(v2.6)</span>
+                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400 tracking-tight drop-shadow-lg flex items-center justify-center gap-2 flex-wrap">
+                            <span>🔥 실시간 주도 테마 레이더</span>
+                            <span className="text-xl md:text-2xl text-orange-400 font-bold align-middle">(테마 발굴)</span>
                         </h2>
                         <button 
                             onClick={() => setShowHelp(true)}
-                            className="p-2.5 bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-cyan-400/50 rounded-full transition-all text-gray-400 hover:text-cyan-300 shadow-lg"
+                            className="p-2 bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-orange-400/50 rounded-full transition-all text-gray-400 hover:text-orange-300 shadow-lg"
                             title="화면 설명 보기"
                         >
                             <Info className="w-5 h-5" />
                         </button>
                     </div>
-                    <p className="text-gray-400 text-lg md:text-xl font-medium tracking-wide">
-                        관심있는 테마 키워드를 입력하면<br className="md:hidden" /> AI가 <span className="text-cyan-400/90 font-bold">대장주와 리스크</span>를 즉각적으로 분석합니다.
+                    <p className="text-gray-300 text-base md:text-lg font-medium tracking-wide">
+                        관심있는 테마 키워드를 입력하면 <span className="text-orange-400 font-bold">대장주와 핵심 리스크</span>를 즉각적으로 분석합니다.
                     </p>
 
                     <div className="relative max-w-2xl mx-auto group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-indigo-500/20 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
+                        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
                         <div className="relative flex items-center">
                             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                                <Search className="h-6 w-6 text-cyan-400/70" />
+                                <Search className="h-6 w-6 text-orange-400/70" />
                             </div>
                             <input
                                 type="text"
-                                placeholder="예: 비만치료제, 온디바이스AI..."
-                                className="w-full pl-16 pr-20 py-5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl text-xl font-bold outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all text-white placeholder-gray-600 shadow-2xl"
+                                placeholder="예: 비만치료제, 온디바이스AI, 전력기기..."
+                                className="w-full pl-16 pr-20 py-4.5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl text-lg md:text-xl font-bold outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all text-white placeholder-gray-500 shadow-2xl"
                                 value={keyword}
                                 onChange={(e) => setKeyword(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -242,67 +291,129 @@ function ThemePageContent() {
                             <button
                                 onClick={handleAnalyze}
                                 disabled={loading}
-                                className="absolute right-3 top-3 bottom-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-6 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)] disabled:opacity-50 disabled:shadow-none"
+                                className="absolute right-2.5 top-2.5 bottom-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 px-5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)] disabled:opacity-50 disabled:shadow-none"
                             >
-                                {loading ? <Loader2 className="animate-spin text-white" /> : <ArrowRight className="text-white w-6 h-6" />}
+                                {loading ? <Loader2 className="animate-spin text-white w-5 h-5" /> : <ArrowRight className="text-white w-5 h-5" />}
                             </button>
                         </div>
                     </div>
 
-                    <div className="pt-8 w-full max-w-5xl mx-auto">
-                        <div className="flex items-center justify-center gap-2 mb-6">
-                            <Sparkles className="w-5 h-5 text-cyan-400 animate-pulse" />
-                            <span className="text-gray-300 font-bold text-sm tracking-widest uppercase">
-                                실시간 인기 테마 TOP 10
+                    {/* 빠른 추천 핫 테마 칩 */}
+                    <div className="max-w-2xl mx-auto">
+                        <div className="flex items-center gap-2 mb-2 px-1 justify-center sm:justify-start">
+                            <span className="text-xs font-bold text-gray-400">⚡ 실시간 추천 핫 테마</span>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+                            {HOT_RECOMMENDED_THEMES.map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setKeyword(item.label);
+                                        handleAnalyze(item.label);
+                                    }}
+                                    className="px-3 py-1.5 bg-white/5 hover:bg-orange-500/20 hover:border-orange-500/50 border border-white/10 rounded-xl text-xs font-bold text-gray-300 hover:text-orange-300 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                                >
+                                    <span>{item.icon}</span>
+                                    <span>{item.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 최근 검색어 칩 */}
+                    {recentSearches.length > 0 && (
+                        <div className="max-w-2xl mx-auto flex items-center justify-between text-xs text-gray-400 px-1 flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-gray-500">최근 검색:</span>
+                                {recentSearches.map((s, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            setKeyword(s);
+                                            handleAnalyze(s);
+                                        }}
+                                        className="px-2 py-0.5 bg-white/5 hover:bg-white/15 rounded-lg text-gray-300 hover:text-white transition-colors"
+                                    >
+                                        #{s}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={clearRecentSearches}
+                                className="text-gray-500 hover:text-gray-300 underline text-[11px]"
+                            >
+                                기록 지우기
+                            </button>
+                        </div>
+                    )}
+
+                    {/* TOP 10 실시간 인기 테마 섹션 */}
+                    <div className="pt-6 w-full max-w-5xl mx-auto">
+                        <div className="flex items-center justify-between gap-2 mb-4 px-1">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
+                                <span className="text-white font-bold text-sm tracking-wider">
+                                    실시간 인기 테마 TOP 10
+                                </span>
+                            </div>
+                            <span className="text-[11px] text-gray-400 font-medium">
+                                🔄 1분 주기 실시간 자동 갱신
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             {trendingThemes.length === 0 ? (
-                                // 스켈레톤 로딩 - 인기 테마가 아직 로드되지 않은 경우
                                 Array.from({ length: 10 }).map((_, i) => (
                                     <div key={i} className="skeleton-shimmer rounded-2xl h-24" />
                                 ))
                             ) : (
-                            trendingThemes.slice(0, 10).map((t, idx) => (
-                                <button
-                                    key={idx}
-                                    onMouseEnter={() => {
-                                        const name = typeof t === 'string' ? t : t.name;
-                                        prefetchTheme(name);
-                                    }}
-                                    onClick={() => { 
-                                        const name = typeof t === 'string' ? t : t.name;
-                                        setKeyword(name); 
-                                        handleAnalyze(name); 
-                                    }}
-                                    className="group relative p-4 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 hover:bg-cyan-950/40 hover:border-cyan-500/50 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(6,182,212,0.15)] text-left overflow-hidden flex flex-col justify-between h-full min-h-[96px]"
-                                >
-                                    {/* Hover Subtlety */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-cyan-500/0 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                    
-                                    <div className="flex justify-between items-start mb-2 z-10 w-full">
-                                        <span className={`text-xs font-black px-2 py-0.5 rounded-md transition-colors ${idx < 3 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'bg-white/5 text-gray-500 border border-white/5 group-hover:text-gray-300'}`}>
-                                            {String(idx + 1).padStart(2, '0')}
-                                        </span>
-                                        {typeof t !== 'string' && t.change && (
-                                            <span className={`text-[12px] font-black tracking-tight ${(t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' ? 'text-red-400' : 'text-blue-400'}`}>
-                                                {t.change}
+                            trendingThemes.slice(0, 10).map((t, idx) => {
+                                const rawName = typeof t === 'string' ? t : t.name;
+                                const cleanName = cleanThemeTitle(rawName);
+                                const isTop3 = idx < 3;
+                                
+                                return (
+                                    <button
+                                        key={idx}
+                                        onMouseEnter={() => prefetchTheme(rawName)}
+                                        onClick={() => { 
+                                            setKeyword(rawName); 
+                                            handleAnalyze(rawName); 
+                                        }}
+                                        className={`group relative p-3.5 rounded-2xl bg-black/50 backdrop-blur-md border ${isTop3 ? 'border-orange-500/30 hover:border-orange-400/70 shadow-[0_4px_20px_rgba(249,115,22,0.1)]' : 'border-white/10 hover:border-white/30'} hover:bg-orange-950/20 transition-all hover:-translate-y-1 text-left overflow-hidden flex flex-col justify-between h-full min-h-[92px] active:scale-95`}
+                                    >
+                                        <div className="flex justify-between items-center mb-1.5 z-10 w-full">
+                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                                                idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.3)]' :
+                                                idx === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/40' :
+                                                idx === 2 ? 'bg-amber-700/20 text-amber-200 border border-amber-700/40' :
+                                                'bg-white/5 text-gray-400 border border-white/5 group-hover:text-gray-200'
+                                            }`}>
+                                                {idx === 0 ? '🥇 1위' : idx === 1 ? '🥈 2위' : idx === 2 ? '🥉 3위' : `${String(idx + 1).padStart(2, '0')}`}
                                             </span>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="z-10 flex flex-col w-full">
-                                        <span className="font-bold text-gray-200 group-hover:text-white text-[15px] transition-colors truncate w-full">
-                                            {typeof t === 'string' ? t : t.name}
-                                        </span>
-                                        {typeof t !== 'string' && t.desc && (
-                                            <span className="text-[11px] text-gray-500 group-hover:text-cyan-200/70 mt-1 line-clamp-1 transition-colors w-full">
-                                                {t.desc}
+                                            {typeof t !== 'string' && t.change && (
+                                                <span className={`text-[12px] font-black tracking-tight ${
+                                                    (t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' 
+                                                        ? 'text-red-400' 
+                                                        : 'text-blue-400'
+                                                }`}>
+                                                    {t.change}
+                                                </span>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="z-10 flex flex-col w-full">
+                                            <span className="font-bold text-gray-100 group-hover:text-orange-300 text-sm transition-colors truncate w-full" title={rawName}>
+                                                {cleanName}
                                             </span>
-                                        )}
-                                    </div>
-                                </button>
-                                ))
+                                            {typeof t !== 'string' && t.desc && (
+                                                <span className="text-[11px] text-gray-400 group-hover:text-gray-300 mt-1 line-clamp-1 transition-colors w-full">
+                                                    {t.desc}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })
                             )}
                         </div>
                     </div>
