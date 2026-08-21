@@ -1,4 +1,4 @@
-﻿
+
 import urllib.parse
 import datetime
 import re
@@ -1264,7 +1264,8 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                     extended_change_pct = ticker.info.get('postMarketChangePercent')
                 
                 # yfinance API에서 간혹 0이나 빈값이 올 수 있으므로 필터
-                if extended_price is not None and extended_price > 0:
+                # [Fix] 장마감 시점에는 종가 기록(extended_price)만 보존하고, 실시간 거래중 플래그(is_extended_hours)는 False여야 함
+                if extended_price is not None and extended_price > 0 and market_status in ["프리마켓", "에프터마켓"]:
                     is_extended_hours = True
 
             if regular_price is None:

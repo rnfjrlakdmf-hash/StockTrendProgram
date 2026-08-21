@@ -1173,16 +1173,21 @@ function DiscoveryContent() {
                                                                     : 'AFTER MARKET 시간외거래'}
                                                         </span>
                                                         {(() => {
-                                                            const isPreMarket = extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE');
-                                                            const isAfterActive = 
-                                                                extendedHours?.extended?.is_active ||
-                                                                stock.market_status?.includes('시간외') ||
-                                                                stock.market_status?.includes('야간') ||
-                                                                stock.market_status?.includes('에프터') ||
-                                                                stock.market_status?.includes('AFTER') ||
-                                                                stock.market_status?.includes('프리') ||
-                                                                stock.market_status?.includes('PRE') ||
-                                                                stock.market_status?.includes('NXT');
+                                                            const isPreMarket = extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status === '프리마켓' || stock.market_status === 'PRE';
+                                                            
+                                                            // 미국/국내 주식 분기하여 정밀 상태 판별
+                                                            const isUS = stock.currency === 'USD' || !/^\d{6}$/.test(stock.symbol || '');
+                                                            let isAfterActive = false;
+                                                            
+                                                            if (isUS) {
+                                                                if (extendedHours?.extended) {
+                                                                    isAfterActive = Boolean(extendedHours.extended.is_active);
+                                                                } else {
+                                                                    isAfterActive = stock.market_status === '프리마켓' || stock.market_status === '에프터마켓' || stock.market_status === 'PRE' || stock.market_status === 'POST';
+                                                                }
+                                                            } else {
+                                                                isAfterActive = Boolean(stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('NXT'));
+                                                            }
                                                             
                                                             if (isAfterActive) {
                                                                 return (
@@ -1192,7 +1197,12 @@ function DiscoveryContent() {
                                                                     </div>
                                                                 );
                                                             } else {
-                                                                return null;
+                                                                return (
+                                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border bg-zinc-800/70 border-zinc-700/60">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500"></div>
+                                                                        <span className="text-[9px] md:text-[10px] font-bold text-zinc-400">마감</span>
+                                                                    </div>
+                                                                );
                                                             }
                                                         })()}
                                                     </div>
