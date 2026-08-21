@@ -57,11 +57,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const post = await getBlogPost(resolvedParams.id);
     
     if (!post) {
-        return { title: "포스트를 찾을 수 없습니다" };
+        return { title: "리포트를 찾을 수 없습니다" };
     }
 
     return {
-        title: `${post.title} | 스마트 투자비서`,
+        title: `${post.title} | 오늘의 마켓 리포트 - StockTrend`,
         description: (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
         alternates: {
             canonical: `/blog/${resolvedParams.id}`,
@@ -71,10 +71,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
             description: (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
             type: "article",
             publishedTime: post.createdAt.toISOString(),
-            authors: [post.author],
+            authors: [post.author || "StockTrend 수석 애널리스트팀"],
             images: [
                 {
-                    url: `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`,
+                    url: `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침·저녁 배달되는 국내·미국 증시 시황 리포트')}&tag=${encodeURIComponent('마켓뷰')}`,
                     width: 1200,
                     height: 630,
                     alt: post.title,
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
             card: "summary_large_image",
             title: post.title,
             description: (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...",
-            images: [`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`]
+            images: [`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침·저녁 배달되는 국내·미국 증시 시황 리포트')}&tag=${encodeURIComponent('마켓뷰')}`]
         }
     };
 }
@@ -106,18 +106,18 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
         "datePublished": post.createdAt.toISOString(),
         "dateModified": post.createdAt.toISOString(),
         "author": {
-            "@type": "Organization",
-            "name": post.author || "StockTrend AI"
+            "@type": "Person",
+            "name": post.author || "StockTrend 수석 애널리스트팀"
         },
         "publisher": {
             "@type": "Organization",
-            "name": "스마트 투자비서",
+            "name": "스마트 투자비서 StockTrend",
             "logo": {
                 "@type": "ImageObject",
                 "url": "https://stock-trend-program.co.kr/logo.png"
             }
         },
-        "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`
+        "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침·저녁 배달되는 국내·미국 증시 시황 리포트')}&tag=${encodeURIComponent('마켓뷰')}`
     };
 
     return (
@@ -134,14 +134,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-colors font-medium text-sm border border-white/10"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    목록으로 돌아가기
+                    시황 목록으로 돌아가기
                 </Link>
                 
                 <SocialShareButtons 
                     title={post.title}
                     description={(post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 100) + "..."}
                     url={`https://stock-trend-program.co.kr/blog/${post.slug}`}
-                    imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 배달되는 AI 주식 시황 리포트')}&tag=${encodeURIComponent('시황 리포트')}`}
+                    imageUrl={`https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침·저녁 배달되는 국내·미국 증시 시황 리포트')}&tag=${encodeURIComponent('마켓뷰')}`}
                 />
             </div>
 
