@@ -367,6 +367,7 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [selectedDisclosure, setSelectedDisclosure] = useState<Signal | null>(null);
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [signalFilter, setSignalFilter] = useState<"all" | "volume" | "disclosure" | "investor">("all");
     const [showWatchlistSection, setShowWatchlistSection] = useState(false);
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
     const [hiddenSignals, setHiddenSignals] = useState<number[]>([]);
@@ -493,10 +494,63 @@ function SignalsFeedTab({ router }: { router: any }) {
     }, []);
 
     const getBadge = (t: string) => {
-        if (t === "VOLUME_SURGE") return { label: "거래량 급증", color: "bg-orange-500/20 text-orange-300", border: "border-orange-500/40" };
-        if (t === "DISCLOSURE") return { label: "공시", color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
-        if (t === "INVESTOR_SURGE") return { label: "수급 급증", color: "bg-green-500/20 text-green-300", border: "border-green-500/40" };
+        if (t === "VOLUME_SURGE") return { label: "🔥 거래량 급증", color: "bg-orange-500/20 text-orange-300", border: "border-orange-500/40" };
+        if (t === "DISCLOSURE") return { label: "📢 공시", color: "bg-blue-500/20 text-blue-300", border: "border-blue-500/40" };
+        if (t === "INVESTOR_SURGE") return { label: "👥 수급 급증", color: "bg-green-500/20 text-green-300", border: "border-green-500/40" };
         return { label: "시그널", color: "bg-gray-500/20 text-gray-300", border: "border-gray-500/40" };
+    };
+
+    // 지저분한 수치 및 텍스트 자동 정제 함수
+    const formatSignalText = (text: string) => {
+        if (!text) return "";
+        let clean = text.replace(/\(주\)/g, "").replace(/\[약식\]/g, "(약식)");
+        // 633,469.7777777778주 -> 633,470주
+        clean = clean.replace(/(\d[\d,]*)\.(\d+)주/g, (match, p1) => {
+            const intVal = parseInt(p1.replace(/,/g, ''), 10);
+            if (!isNaN(intVal)) {
+                return `${intVal.toLocaleString()}주`;
+            }
+            return `${p1}주`;
+        });
+        return clean;
+    };
+
+    // 거래량 폭증 배율 계산 배지
+    const getSurgeBadge = (sig: any) => {
+        const text = `${sig.title} ${sig.summary}`;
+        const matchRatio = text.match(/대비\s*([\d.]+)배/);
+        const matchPct = text.match(/(\d+)%\s*폭증/);
+        if (matchRatio) {
+            const val = parseFloat(matchRatio[1]);
+            if (val >= 5) return { label: `💥 ${val.toFixed(1)}x 초대량`, color: "bg-red-500/20 text-red-300 border-red-500/40" };
+            if (val >= 2) return { label: `🔥 ${val.toFixed(1)}x 폭증`, color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
+        } else if (matchPct) {
+            const pct = parseInt(matchPct[1], 10);
+            const val = pct / 100;
+            if (val >= 5) return { label: `💥 ${val.toFixed(1)}x 초대량`, color: "bg-red-500/20 text-red-300 border-red-500/40" };
+            if (val >= 2) return { label: `🔥 ${val.toFixed(1)}x 폭증`, color: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
+        }
+        return null;
+    };
+
+    // 직관적 상대 시간 계산
+    const getRelativeTime = (dateStr: string) => {
+        if (!dateStr) return "";
+        try {
+            const d = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now.getTime() - d.getTime();
+            const diffMin = Math.floor(diffMs / 60000);
+            if (diffMin < 1) return "방금 전";
+            if (diffMin < 60) return `${diffMin}분 전`;
+            const diffHours = Math.floor(diffMin / 60);
+            if (diffHours < 24) return `${diffHours}시간 전`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `${diffDays}일 전`;
+            return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+        } catch {
+            return dateStr;
+        }
     };
 
     // 필터링된 공시 목록
@@ -515,18 +569,37 @@ function SignalsFeedTab({ router }: { router: any }) {
         return true;
     });
 
+    const isMatchFilter = (sig: Signal) => {
+        if (signalFilter === "all") return true;
+        if (signalFilter === "volume") return sig.signal_type === "VOLUME_SURGE";
+        if (signalFilter === "disclosure") return sig.signal_type === "DISCLOSURE";
+        if (signalFilter === "investor") return sig.signal_type === "INVESTOR_SURGE";
+        return true;
+    };
+
     const watchlistSignals = (Array.isArray(signals) ? signals : []).filter(sig => {
         const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
-        return matchSearch && watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
+        return matchSearch && watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id) && isMatchFilter(sig);
     });
 
     const otherSignals = (Array.isArray(signals) ? signals : []).filter(sig => {
         const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
-        return matchSearch && !watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id);
+        return matchSearch && !watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id) && isMatchFilter(sig);
     });
+
+    // 필터별 개수 카운트
+    const totalCount = (Array.isArray(signals) ? signals : []).filter(s => !hiddenSignals.includes(s.id)).length;
+    const volumeCount = (Array.isArray(signals) ? signals : []).filter(s => s.signal_type === "VOLUME_SURGE" && !hiddenSignals.includes(s.id)).length;
+    const disclosureCount = (Array.isArray(signals) ? signals : []).filter(s => s.signal_type === "DISCLOSURE" && !hiddenSignals.includes(s.id)).length;
+    const investorCount = (Array.isArray(signals) ? signals : []).filter(s => s.signal_type === "INVESTOR_SURGE" && !hiddenSignals.includes(s.id)).length;
 
     const renderSignal = (sig: any, onHide?: (e: React.MouseEvent) => void) => {
         const badge = getBadge(sig.signal_type);
+        const surgeBadge = getSurgeBadge(sig);
+        const relativeTime = getRelativeTime(sig.created_at);
+        const cleanTitle = formatSignalText(sig.title);
+        const cleanSummary = formatSignalText(sig.summary);
+
         const handleSignalClick = () => {
             if (sig.signal_type === "DISCLOSURE") {
                 setSelectedDisclosure(sig);
@@ -536,22 +609,57 @@ function SignalsFeedTab({ router }: { router: any }) {
         };
 
         return (
-            <div key={sig.id} className={`bg-white/5 border ${badge.border} rounded-2xl p-4 hover:bg-white/10 transition-colors cursor-pointer`} onClick={handleSignalClick}>
-                <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${badge.color}`}>{badge.label}</span>
-                            <span className="text-xs text-gray-500">{new Date(sig.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+            <div
+                key={sig.id}
+                className={`bg-white/5 border ${badge.border} hover:border-white/30 rounded-2xl p-4 hover:bg-white/10 transition-all cursor-pointer group shadow-sm`}
+                onClick={handleSignalClick}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className={`text-[11px] px-2 py-0.5 rounded-md font-bold ${badge.color} border ${badge.border}`}>
+                                {badge.label}
+                            </span>
+                            {surgeBadge && (
+                                <span className={`text-[10px] px-2 py-0.5 rounded-md font-black ${surgeBadge.color} border animate-pulse`}>
+                                    {surgeBadge.label}
+                                </span>
+                            )}
+                            <span className="text-[11px] font-bold text-gray-400 font-mono bg-white/5 px-2 py-0.5 rounded">
+                                {relativeTime}
+                            </span>
+                            <span className="text-[10px] text-gray-500 hidden sm:inline">
+                                ({new Date(sig.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })})
+                            </span>
                         </div>
-                        <h4 className="font-bold text-white text-sm">{sig.title}</h4>
-                        <p className="text-xs text-gray-400 mt-1 line-clamp-1">{sig.summary}</p>
+                        
+                        <h4 className="font-bold text-white text-sm group-hover:text-orange-300 transition-colors flex items-center gap-1.5 flex-wrap">
+                            <span>{cleanTitle}</span>
+                        </h4>
+                        
+                        <p className="text-xs text-gray-300 mt-1.5 leading-relaxed break-keep">
+                            {cleanSummary}
+                        </p>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <button onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }} className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold">
+
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <button
+                            onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-purple-600/50 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm"
+                        >
                             <Bot className="w-3.5 h-3.5" /> AI 분석
                         </button>
+                        
+                        <div className="text-[11px] text-gray-500 group-hover:text-gray-300 hidden sm:flex items-center font-bold px-2 py-1">
+                            차트보기 〉
+                        </div>
+
                         {onHide && (
-                            <button onClick={onHide} className="p-1.5 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded-lg transition-colors" title="시그널 삭제 (숨기기)">
+                            <button
+                                onClick={onHide}
+                                className="p-1.5 bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded-lg transition-colors"
+                                title="시그널 삭제 (숨기기)"
+                            >
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         )}
@@ -715,6 +823,42 @@ function SignalsFeedTab({ router }: { router: any }) {
                         <RefreshCw className={`w-4 h-4 ${scanning ? "animate-spin" : ""}`} />{scanning ? "스캔 중..." : "전체 스캔"}
                     </button>
                 </div>
+            </div>
+
+            {/* [NEW] 시그널 카테고리 스마트 필터 칩 */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+                <button
+                    onClick={() => setSignalFilter("all")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        signalFilter === "all" ? "bg-orange-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white border border-white/5"
+                    }`}
+                >
+                    전체 보기 ({totalCount})
+                </button>
+                <button
+                    onClick={() => setSignalFilter("volume")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        signalFilter === "volume" ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white border border-white/5"
+                    }`}
+                >
+                    🔥 거래량 폭증 ({volumeCount})
+                </button>
+                <button
+                    onClick={() => setSignalFilter("disclosure")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        signalFilter === "disclosure" ? "bg-blue-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white border border-white/5"
+                    }`}
+                >
+                    📢 핵심 공시 ({disclosureCount})
+                </button>
+                <button
+                    onClick={() => setSignalFilter("investor")}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        signalFilter === "investor" ? "bg-green-600 text-white shadow-md" : "bg-white/5 text-gray-400 hover:text-white border border-white/5"
+                    }`}
+                >
+                    👥 수급 급증 ({investorCount})
+                </button>
             </div>
 
             <div className="flex flex-col gap-6">
