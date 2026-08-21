@@ -601,11 +601,7 @@ function SignalsFeedTab({ router }: { router: any }) {
         const cleanSummary = formatSignalText(sig.summary);
 
         const handleSignalClick = () => {
-            if (sig.signal_type === "DISCLOSURE") {
-                setSelectedDisclosure(sig);
-            } else {
-                router.push(`/discovery?q=${sig.symbol}`);
-            }
+            router.push(`/discovery?q=${sig.symbol}`);
         };
 
         return (
@@ -643,6 +639,16 @@ function SignalsFeedTab({ router }: { router: any }) {
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        {sig.signal_type === "DISCLOSURE" && (
+                            <button
+                                onClick={e => { e.stopPropagation(); setSelectedDisclosure(sig); }}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 rounded-xl text-xs font-bold transition-all"
+                                title="공시 원문 보기"
+                            >
+                                <FileText className="w-3.5 h-3.5 text-blue-400" /> 공시원문
+                            </button>
+                        )}
+
                         <button
                             onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }}
                             className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-purple-600/50 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm"
@@ -650,9 +656,12 @@ function SignalsFeedTab({ router }: { router: any }) {
                             <Bot className="w-3.5 h-3.5" /> AI 분석
                         </button>
                         
-                        <div className="text-[11px] text-gray-500 group-hover:text-gray-300 hidden sm:flex items-center font-bold px-2 py-1">
+                        <button
+                            onClick={e => { e.stopPropagation(); router.push(`/discovery?q=${sig.symbol}`); }}
+                            className="text-[11px] text-gray-400 group-hover:text-white flex items-center font-bold px-2.5 py-1.5 bg-white/5 hover:bg-orange-600/30 border border-white/10 hover:border-orange-500/40 rounded-xl transition-all"
+                        >
                             차트보기 〉
-                        </div>
+                        </button>
 
                         {onHide && (
                             <button
