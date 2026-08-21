@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -859,12 +859,40 @@ def get_etf_ranking(market="KR", category=None):
     import requests
     from bs4 import BeautifulSoup
     import re
-    from stock_data import get_simple_quote
+
+    def get_brand(name):
+        for b in ["KODEX", "TIGER", "ACE", "SOL", "PLUS", "RISE", "KOSEF", "ARIRANG", "TIMEFOLIO", "WOORI", "HANARO", "UNIRISE"]:
+            if b in name.upper():
+                return b
+        return "ETF"
+
+    def format_krw_amount(million_won):
+        if not million_won or million_won == 0:
+            return "0원"
+        won = million_won * 1_000_000
+        if won >= 1_000_000_000_000:
+            jo = won // 1_000_000_000_000
+            eok = (won % 1_000_000_000_000) // 100_000_000
+            return f"{jo}조 {eok:,}억" if eok > 0 else f"{jo}조"
+        elif won >= 100_000_000:
+            eok = won // 100_000_000
+            return f"{eok:,}억"
+        else:
+            man = won // 10_000
+            return f"{man:,}만"
+
+    tab_names = {
+        1: "국내 시장지수",
+        2: "국내 섹터/테마",
+        3: "국내 파생/레버리지",
+        4: "해외 주식",
+        5: "원자재",
+        6: "채권/금리",
+        7: "기타"
+    }
 
     if market == "KR":
         import time
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        from stock_data import get_simple_quote
 
         current_time = time.time()
         if CACHE_KR_ETFS["data"] and (current_time - CACHE_KR_ETFS["timestamp"] < CACHE_KR_ETFS_DURATION):
@@ -887,6 +915,16 @@ def get_etf_ranking(market="KR", category=None):
                     change_percent = item.get('changeRate', 0.0)
                     change_val = item.get('changeVal', 0)
                     volume = item.get('quant', 0)
+                    amount = item.get('amonut', 0) # million KRW
+                    market_sum = item.get('marketSum', 0) # 100 million KRW
+                    nav = item.get('nav', 0.0)
+                    three_month = item.get('threeMonthEarnRate', 0.0)
+                    tab_code = item.get('etfTabCode', 1)
+                    
+                    # 괴리율 (Disparity = (price - nav) / nav * 100)
+                    nav_gap = 0.0
+                    if nav and nav > 0 and price > 0:
+                        nav_gap = round(((price - nav) / nav) * 100, 2)
                     
                     clean_name = raw_name
                     clean_name = re.sub(r'\((?!H\)).*?\)', '', clean_name)
@@ -918,26 +956,41 @@ def get_etf_ranking(market="KR", category=None):
                     clean_name = re.sub(r'\s+', ' ', clean_name).strip()
                     
                     if change_percent > 0:
-                        change_str = f"▲{abs(change_val):,} ({abs(change_percent):.2f}%)"
+                        change_str = f"▲{abs(change_val):,} (+{abs(change_percent):.2f}%)"
                     elif change_percent < 0:
                         change_str = f"▼{abs(change_val):,} ({change_percent:.2f}%)"
                     else:
-                        change_str = "0.00%"
+                        change_str = "0 (0.00%)"
 
                     results.append({
                         "symbol": sym,
                         "name": clean_name,
+                        "brand": get_brand(clean_name),
+                        "category_name": tab_names.get(tab_code, "기타"),
                         "price": f"{price:,}",
+                        "price_num": price,
                         "change": change_str,
+                        "change_val": change_val,
                         "change_percent": float(change_percent),
-                        "volume": str(volume)
+                        "volume": str(volume),
+                        "volume_num": volume,
+                        "amount": format_krw_amount(amount),
+                        "amount_num": amount,
+                        "market_sum": f"{market_sum:,}억",
+                        "market_sum_num": market_sum,
+                        "nav": f"{int(nav):,}" if nav else "-",
+                        "nav_num": nav,
+                        "nav_gap": f"{nav_gap:+.2f}%",
+                        "nav_gap_num": nav_gap,
+                        "three_month_return": f"{three_month:+.2f}%" if three_month is not None else "-",
+                        "three_month_num": three_month or 0.0
                     })
             except Exception as e:
                 print(f"ETF Fetch Error: {e}")
                 pass
 
             # Sort by volume to mimic ranking
-            results.sort(key=lambda x: int(str(x.get('volume', 0)).replace(',', '')), reverse=True)
+            results.sort(key=lambda x: x.get('volume_num', 0), reverse=True)
             CACHE_KR_ETFS["data"] = results
             CACHE_KR_ETFS["timestamp"] = current_time
         
@@ -966,7 +1019,7 @@ def get_etf_ranking(market="KR", category=None):
                 if not matched: continue
             
             data.append(item)
-            if len(data) >= 20: break
+            if len(data) >= 50: break # TOP 50까지 반환
 
         return data
             
@@ -977,49 +1030,60 @@ def get_etf_ranking(market="KR", category=None):
         if CACHE_US_ETFS["data"] and (current_time - CACHE_US_ETFS["timestamp"] < CACHE_US_ETFS_DURATION):
             us_etfs = CACHE_US_ETFS["data"]
         else:
-            # 1. Define comprehensive list of major US ETFs by sector
             us_symbols = [
-                "SPY", "QQQ", "DIA", "IWM", "VOO", "VTI", "IVV", "QQQM", "RSP", "MDY", "IJR", "VUG", "VTV", "IWF", "IWD", "IJH", "ITOT", "SCHX", "SCHB", "SPLG", "SPYG", "SPYV",
-                "SQQQ", "PSQ", "SH", "SDS", "SPXU", "QID", "DOG", "DXD", "SDOW", "SRTY", "TZA", "HIBS", "RWM", "FAZ", "TECS", "SOXS", "SPXS", "UVXY", "VIXY", "SVXY", "REW", "PST",
-                "TQQQ", "SOXL", "UPRO", "TECL", "FAS", "SSO", "QLD", "USD", "CURE", "RETL", "NAIL", "DPST", "LABU", "JNUG", "UCO", "BOIL", "YINN", "CWEB", "NUGT", "UYG", "DRN",
-                "SCHD", "JEPI", "VIG", "VYM", "JEPQ", "DVY", "SPYD", "SDY", "HDV", "FVD", "NOBL", "DGRO", "PEY", "PGX", "VYMI", "IDV", "IQLT", "RDIV", "SPHD", "DON", "DGRW", "PFF",
-                "TLT", "BND", "AGG", "TMF", "IEF", "SHY", "LQD", "HYG", "MUB", "VCIT", "BSV", "GOVT", "MBB", "BNDX", "JNK", "SJNK", "FLOT", "BKLN", "SRLN", "SPAB", "VGIT", "VCSH",
-                "XLK", "SMH", "SOXX", "LIT", "ARKK", "XLV", "XLE", "IBIT", "GLD", "XLF", "XLY", "XLP", "XLU", "XLI", "XLB", "XLC", "VNQ", "SLV", "URNM", "URA", "COPX",
-                "BATT", "ICLN", "PBW", "QCLN", "TAN", "FAN", "ACES", "XOP", "OIH", "VDE", "ERX", "ERY", "DRIP", "GUSH", "AMJ", "AMLP", "KRA", "RYE", "FENY", "NLR",
-                "BOTZ", "ROBO", "IRBO", "ARKQ", "IGV", "SKYY", "CIBR", "HACK", "AIQ", "BUG", "WCLD", "XT", "KOMP", "TECB", "CLOU", "FCLD", "LNZ", "THNQ", "CHAT", "AI",
-                "XSD", "PSI", "FTXL", "SOXQ", "CHPS", "SEMI",
-                "VHT", "IYH", "ARKG", "XBI", "IBB", "PPH", "XHS", "CURE", "LABU", "LABD", "RXD", "RXL", "SBIO", "BBC", "BBP", "PILL", "GERN"
+                # 지수 추종
+                "SPY", "QQQ", "VOO", "VTI", "IVV", "IWM", "DIA", "RSP", "MDY", "IJR", "VUG", "VTV", "IWF", "IWD",
+                # 레버리지
+                "TQQQ", "SOXL", "UPRO", "TECL", "FAS", "SSO", "QLD", "USD", "DPST", "LABU", "NVDL", "TSLL",
+                # 인버스 / 숏
+                "SQQQ", "SOXS", "SPXU", "PSQ", "SH", "SDS", "QID", "DOG", "DXD", "SDOW", "TZA", "FAZ", "UVXY",
+                # 반도체 & 빅테크 & AI
+                "SOXX", "SMH", "XLK", "ARKK", "BOTZ", "ROBO", "AIQ", "CIBR", "BUG", "XSD", "IGV",
+                # 배당 & 인컴
+                "SCHD", "JEPI", "JEPQ", "VYM", "VIG", "DGRO", "DVY", "SPYD", "HDV", "NOBL",
+                # 채권 & 금리
+                "TLT", "TMF", "IEF", "SHY", "BND", "AGG", "LQD", "HYG", "VCIT", "BSV",
+                # 원자재 & 섹터 & 크립토
+                "IBIT", "GLD", "SLV", "XLE", "XLF", "XLV", "XLY", "XLP", "XLU", "XLI", "XLB", "XLC", "VNQ"
             ]
             
             name_map = {
-                "SPY": "SPDR S&P 500 ETF", "QQQ": "Invesco QQQ Trust", "VOO": "Vanguard S&P 500 ETF", "VTI": "Vanguard Total Stock Market", 
-                "SOXX": "iShares Semiconductor ETF", "TQQQ": "ProShares UltraPro QQQ", "SQQQ": "ProShares UltraPro Short QQQ",
-                "SCHD": "Schwab US Dividend Equity", "JEPI": "JPMorgan Equity Premium Income", "SOXL": "Direxion Daily Semiconductor Bull 3X",
-                "ARKK": "ARK Innovation ETF", "TLT": "iShares 20+ Year Treasury Bond", "IBIT": "iShares Bitcoin Trust",
+                "SPY": "SPDR S&P 500 ETF (S&P500)", "QQQ": "Invesco QQQ Trust (나스닥100)", "VOO": "Vanguard S&P 500 ETF", "VTI": "Vanguard Total Stock Market", 
+                "IVV": "iShares Core S&P 500", "IWM": "iShares Russell 2000 ETF", "DIA": "SPDR Dow Jones Industrial",
+                "SOXX": "iShares Semiconductor ETF (반도체)", "SMH": "VanEck Semiconductor ETF", "TQQQ": "ProShares UltraPro QQQ (나스닥 3X)", 
+                "SQQQ": "ProShares UltraPro Short QQQ (나스닥 -3X)", "SOXL": "Direxion Daily Semiconductor Bull 3X (반도체 3X)",
+                "SOXS": "Direxion Daily Semiconductor Bear 3X (반도체 -3X)", "UPRO": "ProShares UltraPro S&P500 3X", "SPXU": "ProShares Short S&P500 -3X",
+                "SCHD": "Schwab US Dividend Equity (배당성장)", "JEPI": "JPMorgan Equity Premium Income (월배당)", "JEPQ": "JPMorgan Nasdaq Equity Premium",
+                "ARKK": "ARK Innovation ETF", "TLT": "iShares 20+ Year Treasury Bond (미국채 20년+)", "TMF": "Direxion 20+ Year Treasury Bull 3X",
+                "IBIT": "iShares Bitcoin Trust (비트코인)", "GLD": "SPDR Gold Shares (금)", "SLV": "iShares Silver Trust (은)",
                 "XLK": "Technology Select Sector SPDR", "XLE": "Energy Select Sector SPDR", "XLF": "Financial Select Sector SPDR",
-                "SMH": "VanEck Semiconductor ETF", "IWM": "iShares Russell 2000 ETF", "DIA": "SPDR Dow Jones Industrial Average",
-                "GLD": "SPDR Gold Shares"
+                "XLV": "Health Care Select Sector", "NVDL": "GraniteShares 2x Long NVDA", "TSLL": "Direxion Daily TSLA Bull 2X"
             }
             
             import yfinance as yf
             import pandas as pd
             
             unique_symbols = list(set(us_symbols))
-            hist = yf.download(unique_symbols, period="5d", progress=False)
+            try:
+                hist = yf.download(unique_symbols, period="5d", progress=False)
+            except:
+                hist = pd.DataFrame()
             
             results = []
             for sym in unique_symbols:
                 try:
-                    if "Close" in hist.columns.levels[0]:
+                    if not hist.empty and "Close" in hist.columns.levels[0]:
                         close_col = ("Close", sym)
                         vol_col = ("Volume", sym)
                         if close_col not in hist.columns:
                             continue
                         closes = hist[close_col].dropna()
                         vols = hist[vol_col].dropna()
-                    else:
+                    elif not hist.empty and "Close" in hist.columns:
                         closes = hist["Close"][sym].dropna()
                         vols = hist["Volume"][sym].dropna()
+                    else:
+                        continue
                         
                     if len(closes) < 1:
                         continue
@@ -1031,14 +1095,31 @@ def get_etf_ranking(market="KR", category=None):
                     change_val = price - prev_price
                     change_pct = (change_val / prev_price) * 100 if prev_price > 0 else 0
                     
+                    if change_pct > 0:
+                        change_str = f"▲{abs(change_val):.2f} (+{abs(change_pct):.2f}%)"
+                    elif change_pct < 0:
+                        change_str = f"▼{abs(change_val):.2f} ({change_pct:.2f}%)"
+                    else:
+                        change_str = "0.00 (0.00%)"
+
                     if price > 0:
                         results.append({
                             "symbol": sym,
                             "name": name_map.get(sym, sym),
+                            "brand": "US ETF",
+                            "category_name": "미국 시장",
                             "price": f"{price:,.2f}",
-                            "change": f"{change_val:+.2f}",
+                            "price_num": price,
+                            "change": change_str,
+                            "change_val": change_val,
                             "change_percent": round(change_pct, 2),
-                            "volume": str(volume)
+                            "volume": str(volume),
+                            "volume_num": volume,
+                            "amount": f"${(volume * price / 1_000_000):,.1f}M",
+                            "market_sum": "-",
+                            "nav": "-",
+                            "nav_gap": "-",
+                            "three_month_return": "-"
                         })
                 except Exception as e:
                     pass
@@ -1046,38 +1127,17 @@ def get_etf_ranking(market="KR", category=None):
             us_etfs = results
             
             if us_etfs:
-                us_etfs.sort(key=lambda x: int(str(x.get("volume", 0)).replace(",", "")), reverse=True)
+                us_etfs.sort(key=lambda x: x.get("volume_num", 0), reverse=True)
                 for i, item in enumerate(us_etfs):
                     item["rank"] = i + 1
                 CACHE_US_ETFS["data"] = us_etfs
                 CACHE_US_ETFS["timestamp"] = current_time
             else:
-                # If fetching failed (likely rate limited), use empty or old data
+                # If fetching failed, use fallback
                 if CACHE_US_ETFS["data"]:
                     us_etfs = CACHE_US_ETFS["data"]
                 else:
-                    us_etfs = [
-                        {"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust", "price": "520.00", "change": "+0.50%", "change_percent": 0.50, "volume": "50000000", "rank": 1},
-                        {"symbol": "QQQ", "name": "Invesco QQQ Trust", "price": "440.00", "change": "+0.80%", "change_percent": 0.80, "volume": "40000000", "rank": 2},
-                        {"symbol": "VOO", "name": "Vanguard S&P 500 ETF", "price": "470.00", "change": "+0.52%", "change_percent": 0.52, "volume": "25000000", "rank": 3},
-                        {"symbol": "VTI", "name": "Vanguard Total Stock Market ETF", "price": "260.00", "change": "+0.45%", "change_percent": 0.45, "volume": "20000000", "rank": 4},
-                        {"symbol": "SOXX", "name": "iShares Semiconductor ETF", "price": "220.00", "change": "+1.20%", "change_percent": 1.20, "volume": "15000000", "rank": 5},
-                        {"symbol": "TQQQ", "name": "ProShares UltraPro QQQ", "price": "65.00", "change": "+2.40%", "change_percent": 2.40, "volume": "14000000", "rank": 6},
-                        {"symbol": "SQQQ", "name": "ProShares UltraPro Short QQQ", "price": "11.00", "change": "-2.30%", "change_percent": -2.30, "volume": "13000000", "rank": 7},
-                        {"symbol": "SCHD", "name": "Schwab US Dividend Equity ETF", "price": "78.00", "change": "+0.20%", "change_percent": 0.20, "volume": "8500000", "rank": 8},
-                        {"symbol": "JEPI", "name": "JPMorgan Equity Premium Income", "price": "57.00", "change": "+0.15%", "change_percent": 0.15, "volume": "8000000", "rank": 9},
-                        {"symbol": "SOXL", "name": "Direxion Daily Semiconductor Bull 3X", "price": "42.00", "change": "+3.60%", "change_percent": 3.60, "volume": "7500000", "rank": 10},
-                        {"symbol": "ARKK", "name": "ARK Innovation ETF", "price": "48.00", "change": "+1.50%", "change_percent": 1.50, "volume": "7000000", "rank": 11},
-                        {"symbol": "TLT", "name": "iShares 20+ Year Treasury Bond ETF", "price": "92.00", "change": "-0.30%", "change_percent": -0.30, "volume": "6500000", "rank": 12},
-                        {"symbol": "IBIT", "name": "iShares Bitcoin Trust", "price": "38.00", "change": "+2.00%", "change_percent": 2.00, "volume": "6000000", "rank": 13},
-                        {"symbol": "XLK", "name": "Technology Select Sector SPDR", "price": "210.00", "change": "+0.90%", "change_percent": 0.90, "volume": "5500000", "rank": 14},
-                        {"symbol": "XLE", "name": "Energy Select Sector SPDR", "price": "92.00", "change": "-0.50%", "change_percent": -0.50, "volume": "5000000", "rank": 15},
-                        {"symbol": "XLF", "name": "Financial Select Sector SPDR", "price": "41.00", "change": "+0.30%", "change_percent": 0.30, "volume": "4500000", "rank": 16},
-                        {"symbol": "SMH", "name": "VanEck Semiconductor ETF", "price": "260.00", "change": "+1.10%", "change_percent": 1.10, "volume": "4000000", "rank": 17},
-                        {"symbol": "IWM", "name": "iShares Russell 2000 ETF", "price": "208.00", "change": "+0.60%", "change_percent": 0.60, "volume": "3500000", "rank": 18},
-                        {"symbol": "DIA", "name": "SPDR Dow Jones Industrial Average", "price": "395.00", "change": "+0.40%", "change_percent": 0.40, "volume": "3000000", "rank": 19},
-                        {"symbol": "GLD", "name": "SPDR Gold Shares", "price": "220.00", "change": "+0.10%", "change_percent": 0.10, "volume": "2500000", "rank": 20},
-                    ]
+                    us_etfs = []
 
         if category:
             keywords = []
@@ -1103,9 +1163,9 @@ def get_etf_ranking(market="KR", category=None):
                 keywords = ["Healthcare", "Health", "Bio", "ARKG", "XLV", "VHT", "Biotech", "Pharma", "Medical", "IYH", "XBI", "IBB", "PPH", "XHS"]
                 
             filtered = [item for item in us_etfs if any(k.lower() in item['name'].lower() or k.lower() in item['symbol'].lower() for k in keywords)]
-            return filtered[:20]
+            return filtered[:50]
             
-        return us_etfs[:20]
+        return us_etfs[:50]
     
     return []
 

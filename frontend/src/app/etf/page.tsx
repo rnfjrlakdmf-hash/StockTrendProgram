@@ -79,7 +79,7 @@ export default function EtfAnalysisPage() {
                             <div className="flex items-center gap-3">
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-widest animate-pulse">
                                     <Activity className="w-3 h-3" />
-                                    Real-time Analysis Active
+                                    Real-time ETF Analysis
                                 </div>
                                 <button 
                                     onClick={() => setShowGuide(!showGuide)}
@@ -90,41 +90,44 @@ export default function EtfAnalysisPage() {
                                     }`}
                                 >
                                     <Sparkles className="w-3 h-3" />
-                                    {showGuide ? 'Close Guide' : 'Beginner Guide'}
+                                    {showGuide ? '가이드 닫기' : '초보자 ETF 분석 가이드'}
                                 </button>
                             </div>
-                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight">
-                                ETF <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Statistics v2.5.1-FINAL</span>
+                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight flex items-center gap-3 flex-wrap">
+                                <span>실시간 ETF 랭킹 &amp; 괴리율 레이더</span>
+                                <span className="text-xs md:text-sm font-black px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full text-white shadow-lg shadow-blue-500/20">
+                                    TOP 50 실시간
+                                </span>
                             </h1>
-                            <p className="text-gray-400 font-bold max-w-xl leading-snug text-xs md:text-sm">
+                            <p className="text-gray-400 font-medium max-w-2xl leading-relaxed text-xs md:text-sm">
                                 {market === 'KR' 
-                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주 등)의 거래량과 등락률 통계 데이터를 모니터링합니다."
-                                    : "미국 시장을 구성하는 지수 추종 ETF와 섹터별 상품군의 최신 데이터를 집계하여 노출합니다."
+                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주, 반도체 등)의 실시간 거래량, 거래대금, 실시간 NAV 및 괴리율 데이터를 모니터링합니다."
+                                    : "미국 시장 지수(S&P500, 나스닥) 추종 ETF 및 글로벌 핵심 섹터·레버리지 상품군의 실시간 시세를 집계합니다."
                                 }
                             </p>
                         </div>
                         
                         {/* Market Selector Tabs */}
-                        <div className="flex p-1 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shrink-0">
+                        <div className="flex p-1.5 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shrink-0">
                             <button
                                 onClick={() => setMarket('KR')}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black transition-all ${
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black transition-all cursor-pointer ${
                                     market === 'KR' 
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-600/30' 
                                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                                 }`}
                             >
-                                <span className="text-lg">🇰🇷</span> 국내 시장
+                                <span className="text-lg">🇰🇷</span> 국내 ETF
                             </button>
                             <button
                                 onClick={() => setMarket('US')}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black transition-all ${
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black transition-all cursor-pointer ${
                                     market === 'US' 
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-600/30' 
                                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                                 }`}
                             >
-                                <span className="text-lg">🇺🇸</span> 미국 시장
+                                <span className="text-lg">🇺🇸</span> 미국 ETF
                             </button>
                         </div>
                     </div>
@@ -201,131 +204,108 @@ export default function EtfAnalysisPage() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                        {/* Left/Middle: Main Widget */}
-                        <div className="xl:col-span-2 space-y-8">
-                            <EtfRankingWidget data={data} market={market} loading={loading} filterKeyword={filterKeyword} />
-                            
-                            {/* Market Summary Banner */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-900/20 to-black border border-purple-500/20">
-                                    <h4 className="text-purple-400 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4" /> Today's Alpha
-                                    </h4>
-                                    <p className="text-gray-200 text-sm font-bold leading-relaxed">
-                                        {market === 'KR' 
-                                            ? "실시간 거래량 분석 결과, 특정 섹터(반도체, 2차전지 등)로의 수급 쏠림이 관찰되고 있습니다. 매매 전 기초지수와의 추적오차율(Tracking Error) 및 괴리율 동향을 점검하시기 바랍니다."
-                                            : "매크로 지표 변동에 따라 기술주 및 국채 관련 ETF의 거래량이 확대되는 추세입니다. 거시경제 지표 발표 일정과 시장 변동성(VIX) 추이를 연계하여 분석하시기 바랍니다."
-                                        }
-                                    </p>
-                                </div>
-                                <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20">
-                                    <h4 className="text-blue-400 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <Filter className="w-4 h-4" /> Smart Filter
-                                    </h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {[
-                                            { tag: '지수추종', keyword: market === 'KR' ? '200' : 'S&P', cat: 'index' },
-                                            { tag: '레버리지', keyword: null, cat: 'leverage' },
-                                            { tag: '배당/리츠', keyword: null, cat: 'dividend' },
-                                            { tag: '반도체', keyword: null, cat: 'semiconductor' },
-                                            { tag: '2차전지', keyword: null, cat: 'battery' },
-                                            { tag: 'IT/AI', keyword: null, cat: 'ai' },
-                                            { tag: '헬스케어', keyword: null, cat: 'healthcare' },
-                                            { tag: '채권/금리', keyword: null, cat: 'bond' }
-                                        ].map((item) => {
-                                            const isActive = filterKeyword === item.keyword && apiCategoryKey === item.cat;
-                                            return (
-                                                <span 
-                                                    key={item.tag} 
-                                                    onClick={() => handleCategoryClick(item.keyword, item.cat)}
-                                                    className={`px-3 py-1.5 border rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
-                                                        isActive
-                                                        ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/20'
-                                                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-blue-500/20 hover:text-blue-400'
-                                                    }`}
-                                                >
-                                                    #{item.tag}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                    {/* Main Full-Width ETF Ranking Widget (TOP 50) */}
+                    <div className="w-full space-y-8">
+                        <EtfRankingWidget data={data} market={market} loading={loading} filterKeyword={filterKeyword} />
+                    </div>
+
+                    {/* Bottom Analytics & Strategy Panels */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+                        {/* Market Summary Banner */}
+                        <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-900/20 to-black border border-purple-500/20 flex flex-col justify-between">
+                            <div>
+                                <h4 className="text-purple-400 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4" /> 실시간 ETF 수급 인사이트
+                                </h4>
+                                <p className="text-gray-200 text-xs md:text-sm font-bold leading-relaxed">
+                                    {market === 'KR' 
+                                        ? "실시간 거래량 분석 결과, 특정 섹터(반도체, 2차전지, 인버스 등)로의 자금 쏠림이 관찰됩니다. 매매 전 순자산가치(NAV) 대비 괴리율이 ±1% 이내인지 반드시 확인하시기 바랍니다."
+                                        : "매크로 지표 및 빅테크 변동에 따라 나스닥100 및 레버리지(TQQQ, SOXL) ETF의 거래량이 확대되고 있습니다. 기초자산 변동폭을 고려하여 분할 대응을 권장합니다."
+                                    }
+                                </p>
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-purple-500/20 text-[11px] text-purple-300/80 font-medium">
+                                💡 괴리율이 벌어졌을 때는 시장가 매수 시 슬리피지(손실)가 발생할 수 있습니다.
                             </div>
                         </div>
 
-                        {/* Right: Info / Analysis Panel */}
-                        <div className="space-y-6">
-                            <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative overflow-hidden h-full">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
-                                <h3 className="text-xl font-black text-white mb-6 tracking-tight">시장 데이터 모니터</h3>
-                                
-                                <div className="space-y-6 relative">
-                                    <div className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center shrink-0">
-                                            <Activity className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div className="space-y-3">
-                                            <p className="text-xs font-bold text-gray-300 leading-relaxed bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5">
-                                                현재 {market === 'KR' ? '국내' : '미국'} ETF 시장에서 거래량이 가장 활발한 종목은 
-                                                <span className="text-blue-400"> {data[0]?.name || '...'}</span> 입니다. 
-                                                이 종목의 당일 거래량은 {data[0]?.volume ? parseInt(data[0].volume).toLocaleString() : '0'}건을 기록 중입니다.
-                                            </p>
-                                            <p className="text-[10px] text-gray-500 font-bold">Updated: {lastUpdate.toLocaleTimeString()}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-6 border-t border-white/10">
-                                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">유형별 지표 (참고용)</h4>
-                                        <div className="space-y-3">
-                                            {[
-                                                { title: "인버스/헷지군", keyword: null, cat: "inverse", icon: <TrendingDown className="w-3.5 h-3.5 text-blue-400" /> },
-                                                { title: "시장 지수 추종", keyword: market === 'KR' ? '200' : 'S&P', cat: "index", icon: <TrendingUp className="w-3.5 h-3.5 text-red-400" /> },
-                                                { title: "2차전지 테마", keyword: null, cat: "battery", icon: <Zap className="w-3.5 h-3.5 text-yellow-400" /> },
-                                                { title: "IT/AI 테마", keyword: null, cat: "ai", icon: <Sparkles className="w-3.5 h-3.5 text-purple-400" /> },
-                                                { title: "반도체 테마", keyword: null, cat: "semiconductor", icon: <BarChart className="w-3.5 h-3.5 text-orange-400" /> },
-                                                { title: "배당주 테마", keyword: null, cat: "dividend", icon: <TrendingUp className="w-3.5 h-3.5 text-pink-400" /> },
-                                                { title: "채권/금리군", keyword: null, cat: "bond", icon: <Activity className="w-3.5 h-3.5 text-emerald-400" /> }
-                                            ].map((strat) => {
-                                                const isActive = filterKeyword === strat.keyword && apiCategoryKey === strat.cat;
-                                                return (
-                                                    <button 
-                                                        key={strat.title} 
-                                                        onClick={() => handleCategoryClick(strat.keyword, strat.cat)}
-                                                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border ${
-                                                            isActive 
-                                                            ? 'bg-blue-600/20 border-blue-500/50' 
-                                                            : 'bg-white/5 hover:bg-white/10 border-transparent'
-                                                        }`}
-                                                    >
-                                                        <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-300'}`}>{strat.title}</span>
-                                                        {strat.icon}
-                                                    </button>
-                                                );
-                                            })}
-                                            {filterKeyword && (
-                                                <button 
-                                                    onClick={() => {
-                                                        setFilterKeyword(null);
-                                                        fetchEtfRankings(market, null);
-                                                    }}
-                                                    className="w-full py-2 text-[10px] text-gray-500 font-bold hover:text-white transition-colors"
-                                                >
-                                                    정렬 초기화
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <button 
-                                        onClick={() => window.location.href = `/etf-analysis?symbol=${data[0]?.symbol}`}
-                                        className="w-full mt-8 py-4 rounded-2xl border border-blue-600/50 text-blue-400 font-black text-sm hover:bg-blue-600/10 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        종목 상세 데이터 확인
-                                        <ArrowRight className="w-4 h-4" />
-                                    </button>
+                        {/* Smart Filter Category Tags */}
+                        <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/20 flex flex-col justify-between">
+                            <div>
+                                <h4 className="text-blue-400 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Filter className="w-4 h-4" /> 테마별 원터치 필터
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { tag: '지수추종', keyword: market === 'KR' ? '200' : 'S&P', cat: 'index' },
+                                        { tag: '레버리지', keyword: null, cat: 'leverage' },
+                                        { tag: '인버스/숏', keyword: null, cat: 'inverse' },
+                                        { tag: '배당/리츠', keyword: null, cat: 'dividend' },
+                                        { tag: '반도체', keyword: null, cat: 'semiconductor' },
+                                        { tag: '2차전지', keyword: null, cat: 'battery' },
+                                        { tag: 'IT/AI', keyword: null, cat: 'ai' },
+                                        { tag: '헬스케어', keyword: null, cat: 'healthcare' },
+                                        { tag: '채권/금리', keyword: null, cat: 'bond' }
+                                    ].map((item) => {
+                                        const isActive = filterKeyword === item.keyword && apiCategoryKey === item.cat;
+                                        return (
+                                            <span 
+                                                key={item.tag} 
+                                                onClick={() => handleCategoryClick(item.keyword, item.cat)}
+                                                className={`px-3 py-1.5 border rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                                    isActive
+                                                    ? 'bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/20 scale-105'
+                                                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-blue-500/20 hover:text-blue-400'
+                                                }`}
+                                            >
+                                                #{item.tag}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             </div>
+                            {filterKeyword && (
+                                <button 
+                                    onClick={() => {
+                                        setFilterKeyword(null);
+                                        setApiCategoryKey(null);
+                                        fetchEtfRankings(market, null);
+                                    }}
+                                    className="mt-3 w-full py-1.5 bg-white/5 hover:bg-white/10 text-[11px] text-gray-400 hover:text-white rounded-lg transition-colors font-bold"
+                                >
+                                    필터 초기화 (전체 보기)
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Market Monitor Summary */}
+                        <div className="p-6 rounded-3xl bg-zinc-900/60 border border-white/10 flex flex-col justify-between">
+                            <div>
+                                <h4 className="text-white font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-emerald-400" /> 거래량 1위 리딩 종목
+                                </h4>
+                                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                                    <div className="text-xs font-bold text-gray-300">
+                                        현재 거래량 1위: <span className="text-blue-400 font-extrabold">{data[0]?.name || '집계 중...'}</span>
+                                    </div>
+                                    <div className="text-[11px] text-gray-400">
+                                        당일 누적 거래량: <span className="text-white font-bold">{data[0]?.volume ? parseInt(String(data[0].volume).replace(/,/g, '')).toLocaleString() : '0'}주</span>
+                                    </div>
+                                    {data[0]?.amount && (
+                                        <div className="text-[11px] text-gray-400">
+                                            당일 거래대금: <span className="text-amber-400 font-bold">{data[0].amount}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => window.location.href = `/etf-analysis?symbol=${data[0]?.symbol}`}
+                                className="w-full mt-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                1위 종목 심층 분석 차트 보기
+                                <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                         </div>
                     </div>
 
