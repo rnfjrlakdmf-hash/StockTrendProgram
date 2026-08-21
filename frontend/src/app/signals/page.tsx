@@ -117,33 +117,40 @@ function GlobalRiskGauge() {
         usdkrwStatus: string;
         us10y: string;
         us10yStatus: string;
-    } | null>(null);
-    const [loading, setLoading] = useState(true);
+    }>({
+        status: "neutral",
+        score: 0,
+        title: "🟡 글로벌 리스크 신호등: 중립 / 관망 (Neutral)",
+        desc: "주요 거시 경제 지표 및 시장 변동성을 종합 점검 중입니다.",
+        vix: "16.0pt",
+        vixStatus: "안정",
+        usdkrw: "1,381원",
+        usdkrwStatus: "보통",
+        us10y: "4.70%",
+        us10yStatus: "부담"
+    });
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         (async () => {
             try {
-                const [indRes, assRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/market/indices`, { cache: 'no-store' }),
-                    fetch(`${API_BASE_URL}/api/market/assets`, { cache: 'no-store' })
-                ]);
+                const indRes = await fetch(`${API_BASE_URL}/api/market/indices`, { cache: 'no-store' });
                 const indJ = await indRes.json();
-                const assJ = await assRes.json();
                 
-                const all = [...(indJ.data || []), ...(assJ.data || [])];
+                const all: any[] = Array.isArray(indJ.data) ? indJ.data : [];
                 
                 let vixItem = all.find((i: any) => String(i.event_kr || i.name || "").includes("VIX") || String(i.symbol || "").includes("VIX"));
-                let fxItem = all.find((i: any) => String(i.event_kr || i.name || "").includes("원/달러") || String(i.event_kr || "").includes("환율") || String(i.symbol || "").includes("USDKRW"));
-                let us10yItem = all.find((i: any) => String(i.event_kr || i.name || "").includes("10년") || String(i.symbol || "").includes("TNX"));
+                let fxItem = all.find((i: any) => (String(i.event_kr || "").includes("USD") && String(i.event_kr || "").includes("환율")) || String(i.event_kr || "").includes("원/달러"));
+                let us10yItem = all.find((i: any) => String(i.event_kr || "").includes("10년") && (String(i.event_kr || "").includes("금리") || String(i.event_kr || "").includes("국채")));
 
-                let vixVal = vixItem ? parseFloat(String(vixItem.price || vixItem.close || "16").replace(/[^0-9.]/g, '')) : 16.5;
-                if (isNaN(vixVal) || vixVal <= 0) vixVal = 16.5;
+                let vixVal = vixItem ? parseFloat(String(vixItem.actual || vixItem.price || vixItem.close || "16.0").replace(/[^0-9.]/g, '')) : 16.0;
+                if (isNaN(vixVal) || vixVal <= 0) vixVal = 16.0;
 
-                let fxVal = fxItem ? parseFloat(String(fxItem.price || fxItem.close || "1380").replace(/[^0-9.]/g, '')) : 1380;
-                if (isNaN(fxVal) || fxVal <= 0) fxVal = 1380;
+                let fxVal = fxItem ? parseFloat(String(fxItem.actual || fxItem.price || fxItem.close || "1381").replace(/[^0-9.]/g, '')) : 1381;
+                if (isNaN(fxVal) || fxVal <= 0) fxVal = 1381;
 
-                let us10yVal = us10yItem ? parseFloat(String(us10yItem.price || us10yItem.close || "4.2").replace(/[^0-9.]/g, '')) : 4.2;
-                if (isNaN(us10yVal) || us10yVal <= 0) us10yVal = 4.2;
+                let us10yVal = us10yItem ? parseFloat(String(us10yItem.actual || us10yItem.price || us10yItem.close || "4.7").replace(/[^0-9.]/g, '')) : 4.7;
+                if (isNaN(us10yVal) || us10yVal <= 0) us10yVal = 4.7;
 
                 let score = 0;
                 let vixStatus = "안정";
@@ -187,22 +194,9 @@ function GlobalRiskGauge() {
                 });
             } catch (e) {
                 console.error("Risk gauge calculation error:", e);
-            } finally {
-                setLoading(false);
             }
         })();
     }, []);
-
-    if (loading) {
-        return (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 animate-pulse">
-                <div className="h-4 bg-white/10 rounded w-1/3 mb-2"></div>
-                <div className="h-3 bg-white/5 rounded w-2/3"></div>
-            </div>
-        );
-    }
-
-    if (!riskData) return null;
 
     const isRiskOn = riskData.status === "risk_on";
     const isRiskOff = riskData.status === "risk_off";
