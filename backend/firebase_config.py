@@ -312,7 +312,8 @@ def send_multicast_notification(
     body: str,
     data: Optional[Dict] = None,
     image_url: Optional[str] = None,
-    target_users: Optional[List[str]] = None
+    target_users: Optional[List[str]] = None,
+    skip_db_save: bool = False
 ) -> Dict:
     """여러 디바이스로 푸시 알림 전송 및 알림 센터 DB 저장"""
     if not _firebase_initialized:
@@ -322,40 +323,42 @@ def send_multicast_notification(
         print("[Firebase] No tokens provided for multicast")
         return {"success": False, "error": "No tokens provided"}
 
-    # 1. Firestore 알림 센터 저장
-    try:
-        db = firestore.client()
-        alert_type = data.get("type", "system_alert") if data else "system_alert"
-        if data and "is_global" in data:
-            val = data["is_global"]
-            is_global = str(val).lower() == "true" if isinstance(val, str) else bool(val)
-        else:
-            is_global = False if target_users else True
-        
-        # Firestore에 알림 데이터 저장
-        alert_doc = {
-            "title": title,
-            "body": body,
-            "type": alert_type,
-            "timestamp": firestore.SERVER_TIMESTAMP,
-            "is_global": is_global,
-            "target_users": target_users or []
-        }
-        
-        if data:
-            if "url" in data:
-                alert_doc["url"] = data["url"]
-            if "news_url" in data:
-                alert_doc["news_url"] = data["news_url"]
-            if "symbol" in data:
-                alert_doc["symbol"] = data["symbol"]
-            if "dart_url" in data:
-                alert_doc["dart_url"] = data["dart_url"]
-                
-        db.collection("alerts").add(alert_doc)
-        print(f"[Firestore] Alert saved to center: {title}")
-    except Exception as e:
-        print(f"[Firestore] Failed to save alert to center: {e}")
+    # 1. Firestore 알림 센터 저장 (skip_db_save 플래그 지원)
+    should_skip = skip_db_save or (data and str(data.get("skip_db_save", "")).lower() == "true")
+    if not should_skip:
+        try:
+            db = firestore.client()
+            alert_type = data.get("type", "system_alert") if data else "system_alert"
+            if data and "is_global" in data:
+                val = data["is_global"]
+                is_global = str(val).lower() == "true" if isinstance(val, str) else bool(val)
+            else:
+                is_global = False if target_users else True
+            
+            # Firestore에 알림 데이터 저장
+            alert_doc = {
+                "title": title,
+                "body": body,
+                "type": alert_type,
+                "timestamp": firestore.SERVER_TIMESTAMP,
+                "is_global": is_global,
+                "target_users": target_users or []
+            }
+            
+            if data:
+                if "url" in data:
+                    alert_doc["url"] = data["url"]
+                if "news_url" in data:
+                    alert_doc["news_url"] = data["news_url"]
+                if "symbol" in data:
+                    alert_doc["symbol"] = data["symbol"]
+                if "dart_url" in data:
+                    alert_doc["dart_url"] = data["dart_url"]
+                    
+            db.collection("alerts").add(alert_doc)
+            print(f"[Firestore] Alert saved to center: {title}")
+        except Exception as e:
+            print(f"[Firestore] Failed to save alert to center: {e}")
 
     # 중복 토큰 제거 (동일 기기 중복 발송 방지)
     if tokens:

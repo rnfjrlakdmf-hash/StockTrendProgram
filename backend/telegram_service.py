@@ -50,10 +50,7 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_sa
             title = lines[0] if lines else "📢 텔레그램 알림"
             body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
             
-            if not skip_db_save:
-                save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
-
-            # 스터디 관련 공지일 경우 FCM 푸시 발송 연동
+            # 스터디 관련 공지일 경우 FCM 푸시 발송 연동 (푸시와 함께 theory_alert 타입으로 1회만 저장)
             if "스터디" in clean_text:
                 try:
                     from firebase_config import send_multicast_notification
@@ -62,13 +59,21 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_sa
                     if all_tokens:
                         push_data = {
                             "type": "theory_alert",
-                            "url": url_target,
-                            "skip_db_save": str(True)
+                            "url": url_target
                         }
-                        send_multicast_notification(all_tokens, title, body, push_data)
-                        print(f"[Telegram-FCM Sync] 스터디 공지 푸시 {len(all_tokens)}명 발송 성공")
+                        send_multicast_notification(all_tokens, title, body, push_data, skip_db_save=skip_db_save)
+                        print(f"[Telegram-FCM Sync] 스터디 공지 푸시 {len(all_tokens)}명 발송 성공 (DB 1회 저장 완료)")
+                    elif not skip_db_save:
+                        # 토큰이 없는 환경에서도 알림센터에 1회 정상 저장
+                        save_alert_to_firestore(title=title, body=body, alert_type="theory_alert", url=url_target)
                 except Exception as push_e:
                     print(f"[Telegram-FCM Sync] 스터디 공지 푸시 에러: {push_e}")
+                    if not skip_db_save:
+                        save_alert_to_firestore(title=title, body=body, alert_type="theory_alert", url=url_target)
+            else:
+                # 일반 텔레그램 메시지일 경우 지정된 alert_type으로 1회만 저장
+                if not skip_db_save:
+                    save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
 
         except Exception as fe:
             print(f"[Telegram-Firestore Sync Error] {fe}")
