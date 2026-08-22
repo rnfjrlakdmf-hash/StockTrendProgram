@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -21,7 +21,7 @@ def get_real_next_week_calendar():
     # 다음 주 월요일 계산
     days_ahead = (0 - today.weekday()) % 7
     if days_ahead == 0: days_ahead = 7
-    next_monday = today + datetime.timedelta(days=(2 if today.weekday() == 5 else (1 if today.weekday() == 6 else days_ahead)))
+    next_monday = today + timedelta(days=(2 if today.weekday() == 5 else (1 if today.weekday() == 6 else days_ahead)))
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -30,7 +30,7 @@ def get_real_next_week_calendar():
     
     events = []
     for i in range(5):
-        d = next_monday + datetime.timedelta(days=i)
+        d = next_monday + timedelta(days=i)
         d_str = d.strftime("%Y%m%d")
         weekday_kr = ["월", "화", "수", "목", "금", "토", "일"][d.weekday()]
         
@@ -85,7 +85,7 @@ def _generate_sync_impl():
         
         calendar_events, next_monday = get_real_next_week_calendar()
         calendar_summary = "\n".join(calendar_events) if calendar_events else "• 차주 주요 경제 지표 발표 일정 대기 중"
-        next_week_range = f"{next_monday.strftime('%m월 %d일')} ~ {(next_monday + datetime.timedelta(days=4)).strftime('%m월 %d일')}"
+        next_week_range = f"{next_monday.strftime('%m월 %d일')} ~ {(next_monday + timedelta(days=4)).strftime('%m월 %d일')}"
             
     except Exception as e:
         print(f"[WeekendReport] Data fetch error: {e}")
