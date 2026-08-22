@@ -133,7 +133,7 @@ function GlobalRiskGauge() {
     const [showGuide, setShowGuide] = useState(false);
 
     useEffect(() => {
-        (async () => {
+        const fetchRisk = async () => {
             try {
                 const indRes = await fetch(`${API_BASE_URL}/api/market/indices`, { cache: 'no-store' });
                 const indJ = await indRes.json();
@@ -196,7 +196,11 @@ function GlobalRiskGauge() {
             } catch (e) {
                 console.error("Risk gauge calculation error:", e);
             }
-        })();
+        };
+
+        fetchRisk();
+        const interval = setInterval(fetchRisk, 60000); // 1분 주기 실시간 자동 갱신
+        return () => clearInterval(interval);
     }, []);
 
     const isRiskOn = riskData.status === "risk_on";
