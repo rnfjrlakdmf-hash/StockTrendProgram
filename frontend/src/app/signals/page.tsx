@@ -2015,6 +2015,98 @@ function CalendarTab({ router }: { router: any }) {
         })();
     }, []);
 
+    // 글로벌 주요 지수 및 매크로 지표 fetch (숫자 중심 표시용)
+    useEffect(() => {
+        const fetchGlobalAssets = async () => {
+            setGlobalAssetsLoading(true);
+            try {
+                const [assetsRes, indicesRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/market/assets`).catch(() => null),
+                    fetch(`${API_BASE_URL}/api/market/indices`).catch(() => null)
+                ]);
+
+                const assetsJson = assetsRes ? await assetsRes.json().catch(() => ({})) : {};
+                const indicesJson = indicesRes ? await indicesRes.json().catch(() => ({})) : {};
+
+                const rawAssets = assetsJson?.data || {};
+                const rawIndices = indicesJson?.data || [];
+
+                const combined: any[] = [];
+
+                // 1. 국내 및 해외 주요 지수 (코스피, 코스닥, S&P 500, 나스닥, 다우존스, VIX)
+                if (Array.isArray(rawIndices)) {
+                    rawIndices.forEach((item: any) => {
+                        const name = String(item.event_kr || item.event || "");
+                        if (
+                            name.includes("KOSPI") || name.includes("코스피") ||
+                            name.includes("KOSDAQ") || name.includes("코스닥") ||
+                            name.includes("S&P 500") || name.includes("NASDAQ") || name.includes("나스닥") ||
+                            name.includes("DOW") || name.includes("다우") ||
+                            name.includes("VIX") || name.includes("공포") ||
+                            name.includes("미 국채 10년물") || name.includes("달러 지수")
+                        ) {
+                            const cleanName = name
+                                .replace("[글로벌] ", "")
+                                .replace("(공포지수)", "")
+                                .replace("DOW JONES", "다우존스");
+                            combined.push({
+                                name: cleanName,
+                                price: item.actual,
+                                change: item.change
+                            });
+                        }
+                    });
+                }
+
+                // 2. 주요 환율, 원자재, 채권 (원/달러 환율, WTI 유가, 금, 은, 구리 등)
+                if (typeof rawAssets === 'object' && rawAssets !== null) {
+                    const forexList = rawAssets.Forex || [];
+                    forexList.forEach((f: any) => {
+                        if (f.name === "미국 USD" || f.symbol === "FX_USDKRW" || f.name === "일본 JPY") {
+                            const cnum = parseFloat(String(f.change || 0));
+                            const cstr = `${cnum > 0 ? '+' : ''}${cnum.toFixed(2)}%`;
+                            combined.push({
+                                name: f.name === "미국 USD" ? "원/달러 환율" : f.name === "일본 JPY" ? "원/엔 환율 (100엔)" : f.name,
+                                price: `₩${f.price}`,
+                                change: cstr
+                            });
+                        }
+                    });
+
+                    const commodityList = rawAssets.Commodity || [];
+                    commodityList.forEach((c: any) => {
+                        if (c.name === "WTI" || c.name === "국제 금" || c.name === "Gold" || c.name === "천연가스" || c.name === "구리") {
+                            const cnum = parseFloat(String(c.change || 0));
+                            const cstr = `${cnum > 0 ? '+' : ''}${cnum.toFixed(2)}%`;
+                            combined.push({
+                                name: c.name === "WTI" ? "WTI 유가" : c.name === "Gold" || c.name === "국제 금" ? "국제 금" : c.name,
+                                price: `$${c.price}`,
+                                change: cstr
+                            });
+                        }
+                    });
+                }
+
+                // 중복 제거
+                const unique = combined.filter((item, index, self) =>
+                    index === self.findIndex((t) => t.name === item.name)
+                );
+
+                if (unique.length > 0) {
+                    setGlobalAssets(unique);
+                }
+            } catch (e) {
+                console.error("Global assets fetch error:", e);
+            } finally {
+                setGlobalAssetsLoading(false);
+            }
+        };
+
+        fetchGlobalAssets();
+        const interval = setInterval(fetchGlobalAssets, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
     // 실적·배당 데이터 fetch
     useEffect(() => {
         (async () => {
@@ -2217,31 +2309,30 @@ function CalendarTab({ router }: { router: any }) {
                 </div>
 
                 {/* 스마트 인터랙티브 캘린더 그리드 */}
-                {/* 스마트 인터랙티브 캘린더 그리드 */}
-                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl space-y-3">
-                    {/* 달력 헤더: 년월 이동 및 오늘 버튼 */}
-                    <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white"
-                                title="이전 달"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <h3 className="text-base md:text-lg font-black text-white px-2">
-                                {currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}
-                            </h3>
-                            <button
-                                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white"
-                                title="다음 달"
-                            >
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
-                        </div>
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl space-y-4">
+                    {/* 달력 헤더: 년월 이동, 빠른 월 점퍼 및 오늘 버튼 */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-2 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/10">
+                                <button
+                                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                                    className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="이전 달"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="px-3 text-sm md:text-base font-black text-white min-w-[100px] text-center">
+                                    {currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                                    className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="다음 달"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
 
-                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => {
                                     const now = new Date();
@@ -2255,12 +2346,62 @@ function CalendarTab({ router }: { router: any }) {
                                 <span>오늘</span>
                             </button>
                         </div>
+
+                        {/* 시즌 빠른 이동 뱃지들 */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] text-gray-500 font-bold hidden sm:inline">빠른 이동:</span>
+                            {(() => {
+                                const stats: { [key: string]: { year: number, month: number, count: number } } = {};
+                                (Array.isArray(events) ? events : []).forEach(e => {
+                                    if (e?.type === calTab && e?.date) {
+                                        const match = String(e.date).match(/^(\d{4})-(\d{1,2})/);
+                                        if (match) {
+                                            const y = parseInt(match[1]);
+                                            const m = parseInt(match[2]);
+                                            const key = `${y}-${String(m).padStart(2, "0")}`;
+                                            if (!stats[key]) {
+                                                stats[key] = { year: y, month: m, count: 0 };
+                                            }
+                                            stats[key].count += 1;
+                                        }
+                                    }
+                                });
+                                const entries = Object.entries(stats).sort(([a], [b]) => a.localeCompare(b));
+                                if (entries.length === 0) return <span className="text-[10px] text-gray-500">집계된 시즌 일정 없음</span>;
+
+                                return entries.map(([key, item]) => {
+                                    const isCurrent = currentMonth.getFullYear() === item.year && (currentMonth.getMonth() + 1) === item.month;
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => {
+                                                const targetDate = new Date(item.year, item.month - 1, 1);
+                                                setCurrentMonth(targetDate);
+                                                setSelectedDay(null);
+                                                setScheduleFilter("month");
+                                            }}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                                isCurrent
+                                                    ? "bg-orange-600 text-white shadow-md shadow-orange-600/30 font-black ring-1 ring-orange-400"
+                                                    : "bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10"
+                                            }`}
+                                        >
+                                            <span>{item.month}월</span>
+                                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${isCurrent ? 'bg-black/40 text-white' : 'bg-orange-500/20 text-orange-300'}`}>
+                                                {item.count}건
+                                            </span>
+                                            {item.count >= 5 && <span className="text-[10px]">🔥시즌</span>}
+                                        </button>
+                                    );
+                                });
+                            })()}
+                        </div>
                     </div>
 
                     {/* 요일 헤더 */}
-                    <div className="grid grid-cols-7 gap-1">
+                    <div className="grid grid-cols-7 gap-1.5">
                         {["일", "월", "화", "수", "목", "금", "토"].map(d => (
-                            <div key={d} className={`text-center text-xs font-black py-1.5 ${
+                            <div key={d} className={`text-center text-xs font-black py-1 rounded-lg bg-black/20 ${
                                 d === "일" ? "text-rose-400" : d === "토" ? "text-blue-400" : "text-gray-400"
                             }`}>
                                 {d}
@@ -2268,10 +2409,10 @@ function CalendarTab({ router }: { router: any }) {
                         ))}
                     </div>
 
-                    {/* 날짜 셀 그리드 (숫자 중심의 깔끔한 뷰) */}
+                    {/* 날짜 셀 그리드 */}
                     <div className="grid grid-cols-7 gap-1.5">
                         {Array.from({ length: firstDay }, (_, i) => (
-                            <div key={`empty-${i}`} className="h-12 sm:h-14 rounded-xl bg-transparent" />
+                            <div key={`empty-${i}`} className="min-h-[65px] md:min-h-[75px] rounded-xl bg-black/10 opacity-20 border border-transparent" />
                         ))}
                         {Array.from({ length: daysInMonth }, (_, i) => {
                             const day = i + 1;
@@ -2287,36 +2428,58 @@ function CalendarTab({ router }: { router: any }) {
                                         setSelectedDay(day);
                                         setScheduleFilter("selected");
                                     }}
-                                    className={`h-12 sm:h-14 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center relative group ${
+                                    className={`min-h-[65px] md:min-h-[75px] rounded-xl p-2 border transition-all cursor-pointer flex flex-col justify-between group ${
                                         selected
                                             ? "border-orange-500 bg-orange-500/25 shadow-lg shadow-orange-500/20 ring-2 ring-orange-400"
                                             : today
                                             ? "border-amber-500/60 bg-amber-500/10 hover:border-amber-400"
                                             : evs.length > 0
-                                            ? "border-white/15 bg-white/5 hover:border-white/40 hover:bg-white/10"
+                                            ? "border-white/20 bg-white/5 hover:border-orange-500/50 hover:bg-white/10"
                                             : "border-white/5 bg-black/20 hover:border-white/20 hover:bg-white/5"
                                     }`}
                                 >
-                                    <span className={`text-xs sm:text-sm font-bold ${
-                                        selected ? "text-orange-300 font-black scale-110" :
-                                        today ? "text-amber-400 font-black" :
-                                        dow === 0 ? "text-rose-400" :
-                                        dow === 6 ? "text-blue-400" :
-                                        "text-gray-300 group-hover:text-white"
-                                    }`}>
-                                        {day}
-                                    </span>
-
-                                    {/* 오늘 라벨 또는 일정 도트 */}
-                                    {today ? (
-                                        <span className="text-[8px] font-black text-amber-400 leading-none mt-0.5">
-                                            오늘
+                                    <div className="flex items-center justify-between">
+                                        <span className={`text-xs md:text-sm font-black ${
+                                            selected ? "text-orange-300" :
+                                            today ? "text-amber-400" :
+                                            dow === 0 ? "text-rose-400" :
+                                            dow === 6 ? "text-blue-400" :
+                                            "text-gray-200"
+                                        }`}>
+                                            {day}
                                         </span>
-                                    ) : evs.length > 0 ? (
-                                        <div className="flex items-center gap-0.5 mt-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                                        {today && (
+                                            <span className="text-[8px] font-black bg-amber-400 text-black px-1 rounded">
+                                                오늘
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Event Chips (종목명 뱃지 노출) */}
+                                    {evs.length > 0 ? (
+                                        <div className="mt-1 space-y-0.5">
+                                            {evs.slice(0, 1).map((ev: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className={`text-[9px] font-black truncate px-1 py-0.5 rounded border ${
+                                                        calTab === 'earnings'
+                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                    }`}
+                                                    title={ev.name}
+                                                >
+                                                    {ev.name}
+                                                </div>
+                                            ))}
+                                            {evs.length > 1 && (
+                                                <div className="text-[8px] font-bold text-orange-400 flex items-center gap-0.5">
+                                                    <span>+{evs.length - 1}건</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : null}
+                                    ) : (
+                                        <div className="h-3" />
+                                    )}
                                 </div>
                             );
                         })}
@@ -2483,7 +2646,58 @@ function CalendarTab({ router }: { router: any }) {
             {/* TAB 2: 주요 경제 지표 서브탭 */}
             <div className={mainTab === "economic" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
                 <div className="space-y-4">
-                    {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
+                    {/* 상단 글로벌 주요 지수 및 매크로 지표 미니 카드 그리드 (숫자 중심 컴팩트 뷰) */}
+                    <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 shadow-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h4 className="font-black text-sm md:text-base text-gray-200 flex items-center gap-2">
+                                <Globe className="w-4 h-4 text-emerald-400" />
+                                <span>주요 경제 지표 (실시간)</span>
+                            </h4>
+                            <span className="text-[10px] text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 font-mono">
+                                실시간 30초 자동 동기화
+                            </span>
+                        </div>
+
+                        {globalAssetsLoading && !globalAssets ? (
+                            <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin text-gray-500" /></div>
+                        ) : globalAssets && globalAssets.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5">
+                                {(Array.isArray(globalAssets) ? globalAssets : []).map((asset: any, i: number) => {
+                                    const changeStr = String(asset.change || "");
+                                    const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
+                                    const isDown = changeStr.startsWith('-') || parseFloat(changeStr) < 0;
+
+                                    const colorClass = isUp ? 'text-rose-500' : isDown ? 'text-blue-400' : 'text-gray-400';
+                                    const badgeBg = isUp ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : isDown ? 'bg-blue-500/15 text-blue-300 border-blue-500/30' : 'bg-white/5 text-gray-400 border-white/10';
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="bg-black/30 hover:bg-white/5 border border-white/5 hover:border-white/20 rounded-xl p-3 flex flex-col justify-between transition-all group shadow-sm"
+                                        >
+                                            <div className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors truncate mb-1">
+                                                {asset.name}
+                                            </div>
+                                            <div className={`text-base md:text-lg font-black font-mono tracking-tight ${colorClass}`}>
+                                                {asset.price}
+                                            </div>
+                                            <div className="mt-2 flex items-center justify-between">
+                                                <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded-md border ${badgeBg}`}>
+                                                    {isUp ? '▲' : isDown ? '▼' : '●'} {changeStr || "0.00%"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 text-gray-500 text-xs">
+                                <p>실시간 지표 데이터를 조회하는 중입니다...</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 하단 글로벌 경제 캘린더 일정 섹션 */}
                     <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 shadow-xl">
                         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                             <h4 className="font-black text-sm md:text-base text-gray-200 flex items-center gap-2">
@@ -2572,20 +2786,6 @@ function CalendarTab({ router }: { router: any }) {
                                     })}
                             </div>
                         )}
-                    </div>
-
-                    {/* 하단 글로벌 시장 주요 지수 및 매크로 자산 지표 (환율, 원자재, 채권, 금리, 코스피/코스닥/미국 3대 지수) */}
-                    <div className="space-y-3 pt-4 border-t border-white/5">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-black text-sm md:text-base text-gray-200 flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-emerald-400" />
-                                <span>글로벌 주요 지수 및 매크로 핵심 지표</span>
-                            </h4>
-                            <span className="text-[10px] text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 font-mono">
-                                실시간 10초 자동 동기화
-                            </span>
-                        </div>
-                        <MarketIndicators />
                     </div>
                 </div>
             </div>
