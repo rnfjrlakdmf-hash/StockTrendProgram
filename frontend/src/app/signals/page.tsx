@@ -2154,10 +2154,12 @@ function CalendarTab({ router }: { router: any }) {
                 if (j.status === "success") {
                     setIpos(j.data.map((item: any) => ({
                         ...item,
-                        name: item.name || item.corp || item.symbol,
+                        name: item.corp || item.name || item.symbol,
+                        symbol: item.symbol || "",
                         subscription_date: item.date,
                         fixed_price: item.price,
-                        price_band: item.band || ""
+                        price_band: item.band || "",
+                        detail: item.detail || item.type || ""
                     })));
                 }
             } catch { }
@@ -3024,13 +3026,18 @@ function CalendarTab({ router }: { router: any }) {
                                                             <h4 className="font-black text-sm md:text-base text-white group-hover:text-purple-400 transition-colors truncate">
                                                                 {ipo.name}
                                                             </h4>
+                                                            {ipo.symbol && (
+                                                                <span className="text-xs font-mono text-gray-400 font-bold">
+                                                                    {ipo.symbol}
+                                                                </span>
+                                                            )}
                                                             <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                                                {ipoTab === 'kr' ? '국내 공모' : '미국 IPO'}
+                                                                {ipoTab === 'kr' ? '국내 공모' : ipo.type || '미국 IPO'}
                                                             </span>
                                                         </div>
                                                         {ipo.detail && (
                                                             <div className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5 flex-wrap">
-                                                                <span className="text-gray-500">주관사:</span>
+                                                                <span className="text-gray-500">{ipoTab === 'kr' ? '주관사:' : '정보:'}</span>
                                                                 <span className="font-bold text-gray-300">{ipo.detail}</span>
                                                             </div>
                                                         )}
@@ -3055,7 +3062,7 @@ function CalendarTab({ router }: { router: any }) {
                                                 {/* 핵심 공모 정보 그리드 */}
                                                 <div className="bg-black/30 rounded-xl p-3 border border-white/5 grid grid-cols-2 gap-2 text-xs">
                                                     <div>
-                                                        <span className="text-[10px] text-gray-500 font-bold block mb-0.5">📅 청약 일정</span>
+                                                        <span className="text-[10px] text-gray-500 font-bold block mb-0.5">📅 {ipoTab === 'kr' ? '청약 일정' : '상장/공모일'}</span>
                                                         <span className="font-mono font-bold text-gray-200 text-[11px] block truncate">
                                                             {ipo.dateDisplay}
                                                         </span>
@@ -3065,14 +3072,14 @@ function CalendarTab({ router }: { router: any }) {
                                                         <span className={`font-mono font-black text-xs ${
                                                             isFixedPrice ? 'text-rose-400' : 'text-gray-400'
                                                         }`}>
-                                                            {isFixedPrice ? `${ipo.fixed_price}원` : '미정 (수요예측 대기)'}
+                                                            {isFixedPrice ? (String(ipo.fixed_price).includes('$') ? ipo.fixed_price : `${ipo.fixed_price}원`) : '미정 (수요예측 대기)'}
                                                         </span>
                                                     </div>
                                                     {ipo.price_band && (
                                                         <div className="col-span-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[11px]">
                                                             <span className="text-gray-500">🎯 희망 공모가 밴드:</span>
                                                             <span className="font-mono text-gray-300 font-bold">
-                                                                {ipo.price_band}원
+                                                                {String(ipo.price_band).includes('$') ? ipo.price_band : `${ipo.price_band}원`}
                                                             </span>
                                                         </div>
                                                     )}
