@@ -6,7 +6,12 @@ import Header from "@/components/Header";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import SeoContentBlock from "@/components/SeoContentBlock";
 import { API_BASE_URL } from "@/lib/config";
-import { Search, Loader2, ArrowRight, TrendingUp, AlertTriangle, Layers, Sparkles, Info, X, Zap, Flame } from "lucide-react";
+import { 
+    Search, Loader2, ArrowRight, TrendingUp, TrendingDown, AlertTriangle, 
+    Layers, Sparkles, Info, X, Zap, Flame, BarChart3, Clock, 
+    ShieldCheck, AlertOctagon, RefreshCw, LayoutGrid, Table, 
+    ExternalLink, ChevronRight, Activity, Award, CheckCircle2, Shield
+} from "lucide-react";
 import CleanStockList from "@/components/CleanStockList";
 import { useAuth } from "@/context/AuthContext";
 import KakaoShareButton from "@/components/KakaoShareButton";
@@ -26,6 +31,8 @@ function ThemePageContent() {
     const [error, setError] = useState("");
     const [quotes, setQuotes] = useState<Record<string, any>>({});
     const [showHelp, setShowHelp] = useState(false);
+    const [viewMode, setViewMode] = useState<"card" | "table">("card");
+    const [sortBy, setSortBy] = useState<"default" | "change" | "real">("default");
 
     useEffect(() => {
         const q = searchParams.get('q');
@@ -223,6 +230,98 @@ function ThemePageContent() {
         }
     };
 
+    // [테마 종합 통계 계산]
+    const themeStats = useMemo(() => {
+        if (!result) return null;
+        const all = [...(result.leaders || []), ...(result.followers || [])];
+        let totalChange = 0;
+        let validCount = 0;
+        let upCount = 0;
+        let downCount = 0;
+        let realCount = 0;
+        let topGainer: any = null;
+        let maxChange = -999;
+
+        all.forEach((s: any) => {
+            if (s.is_real) realCount++;
+            const q = quotes[s.symbol];
+            const changeStr = s.change || q?.change || q?.change_percent || "0";
+            const num = parseFloat(String(changeStr).replace(/[+%▲▼,]/g, ""));
+            if (!isNaN(num)) {
+                totalChange += num;
+                validCount++;
+                if (num > 0) upCount++;
+                else if (num < 0) downCount++;
+
+                if (num > maxChange) {
+                    maxChange = num;
+                    topGainer = { 
+                        ...s, 
+                        changeNum: num, 
+                        price: s.price || q?.price || "-",
+                        changeStr: s.change || q?.change || "0.00%"
+                    };
+                }
+            }
+        });
+
+        const avgChangeVal = validCount > 0 ? (totalChange / validCount) : 0;
+        const avgChangeStr = `${avgChangeVal > 0 ? '+' : ''}${avgChangeVal.toFixed(2)}%`;
+        const leader1 = result.leaders && result.leaders.length > 0 ? result.leaders[0] : null;
+        const leader1Quote = leader1 ? quotes[leader1.symbol] : null;
+
+        return {
+            avgChangeStr,
+            avgChangeVal,
+            upCount,
+            downCount,
+            totalCount: all.length,
+            realCount,
+            topGainer,
+            leader1: leader1 ? {
+                ...leader1,
+                price: leader1.price || leader1Quote?.price || "-",
+                change: leader1.change || leader1Quote?.change || "0.00%"
+            } : null
+        };
+    }, [result, quotes]);
+
+    // [종목 데이터 포맷팅 및 정렬 매트릭스]
+    const processedStocks = useMemo(() => {
+        if (!result) return { leaders: [], followers: [], allSorted: [] };
+        
+        const formatStock = (s: any, isLeader: boolean, rank: number) => {
+            const q = quotes[s.symbol];
+            const price = s.price || q?.price || "-";
+            const change = s.change || q?.change || q?.change_percent || "0.00%";
+            const changeNum = parseFloat(String(change).replace(/[+%▲▼,]/g, "")) || 0;
+            const isPositive = String(change).startsWith('+') || changeNum > 0;
+            const isNegative = String(change).startsWith('-') || changeNum < 0;
+            return {
+                ...s,
+                isLeader,
+                rank,
+                price,
+                change,
+                changeNum,
+                isPositive,
+                isNegative,
+                marketStatus: q?.market_status || "정규"
+            };
+        };
+
+        const leaders = (result.leaders || []).map((s: any, i: number) => formatStock(s, true, i + 1));
+        const followers = (result.followers || []).map((s: any, i: number) => formatStock(s, false, i + 1));
+        const all = [...leaders, ...followers];
+
+        if (sortBy === "change") {
+            all.sort((a, b) => b.changeNum - a.changeNum);
+        } else if (sortBy === "real") {
+            all.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0));
+        }
+
+        return { leaders, followers, allSorted: all };
+    }, [result, quotes, sortBy]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleAnalyze();
@@ -467,191 +566,556 @@ function ThemePageContent() {
                 {/* Analysis Result */}
                 {result && !loading && (
                     <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                        {/* Summary Card & Clock */}
-                        <div className="grid md:grid-cols-3 gap-6">
-                            {/* Left: Theme Info */}
-                            <div className="md:col-span-2 bg-gradient-to-br from-orange-900/20 to-black border border-orange-500/30 rounded-3xl p-8 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-8 opacity-10">
-                                    <Layers className="w-64 h-64 text-orange-400 -rotate-12 transform translate-x-12 -translate-y-12" />
-                                </div>
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <h3 className="text-2xl md:text-4xl font-black text-white flex items-center gap-3">
+                        {/* 1. Top Hero Intelligence Banner & Stats */}
+                        <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-br from-orange-950/40 via-black to-zinc-950 border border-orange-500/30 relative overflow-hidden shadow-2xl space-y-6">
+                            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                                <Layers className="w-80 h-80 text-orange-400 -rotate-12 transform translate-x-16 -translate-y-16" />
+                            </div>
+
+                            {/* Header Row: Title & Kakao Share */}
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                                <div>
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-black uppercase tracking-wider mb-2">
+                                        <Flame className="w-3.5 h-3.5 animate-pulse" />
+                                        실시간 주도 테마 심층 분석
+                                    </div>
+                                    <h3 className="text-3xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
                                         <span className="text-orange-500">#</span> {result.theme}
                                     </h3>
-                                    <KakaoShareButton 
-                                        title={`[테마 분석] ${result.theme}`}
-                                        description={result.description || "AI가 분석한 이 테마의 핵심 기업과 전망을 확인해보세요."}
-                                        url={`https://stock-trend-program.co.kr/theme?q=${result.theme}`}
-                                        className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors w-full md:w-auto shadow-lg shadow-[#FEE500]/10"
-                                        buttonText="테마 분석 보기"
-                                    />
                                 </div>
-                                <p className="text-lg text-gray-300 leading-relaxed border-l-4 border-orange-500 pl-4 py-1">
-                                    {result.description}
-                                </p>
 
-                                <div className="mt-6 flex items-start gap-3 bg-red-900/20 p-4 rounded-xl border border-red-500/20 relative z-10">
-                                    <AlertTriangle className="w-5 h-5 text-red-400 mt-1 flex-shrink-0" />
-                                    <div>
-                                        <div className="text-red-400 font-bold text-sm mb-1">핵심 리스크 (Risk Factor)</div>
-                                        <p className="text-gray-300 text-sm">{result.risk_factor}</p>
-                                    </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <button
+                                        onClick={() => handleAnalyze(result.theme)}
+                                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                    >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                        실시간 시세 갱신
+                                    </button>
+                                    <KakaoShareButton 
+                                        title={`[주도 테마 분석] ${result.theme}`}
+                                        description={result.description || "AI가 분석한 이 테마의 대장주와 핵심 리스크를 확인해보세요."}
+                                        url={`https://stock-trend-program.co.kr/theme?q=${result.theme}`}
+                                        className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#FEE500]/10 cursor-pointer active:scale-95"
+                                        buttonText="테마 분석 공유"
+                                    />
                                 </div>
                             </div>
 
-                            {/* Right: Theme Clock */}
-                            <div className="bg-black/40 border border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                                <h4 className="text-gray-400 text-sm font-bold mb-4 uppercase tracking-wider">Theme Lifecycle Clock</h4>
+                            {/* Theme Description */}
+                            <p className="text-sm md:text-base text-gray-200 leading-relaxed border-l-4 border-orange-500 pl-4 py-1 relative z-10 font-medium">
+                                {result.description}
+                            </p>
 
-                                {/* Clock Visual */}
-                                <div className="relative w-40 h-40 flex items-center justify-center mb-4">
-                                    {/* Clock Face */}
-                                    <div className="absolute inset-0 rounded-full border-4 border-white/10 bg-white/5" />
+                            {/* 4-Stat Live Matrix Bar */}
+                            {themeStats && (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10 pt-2">
+                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
+                                            <Activity className="w-3.5 h-3.5 text-orange-400" /> 테마 평균 등락률
+                                        </div>
+                                        <div className={`text-lg md:text-xl font-black ${
+                                            themeStats.avgChangeVal > 0 ? 'text-red-400' : themeStats.avgChangeVal < 0 ? 'text-blue-400' : 'text-gray-200'
+                                        }`}>
+                                            {themeStats.avgChangeStr}
+                                        </div>
+                                    </div>
 
-                                    {/* Sectors */}
-                                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500/30 rotate-[-45deg]" /> {/* Morning */}
-                                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-r-red-500/30 rotate-[-45deg]" /> {/* Noon */}
-                                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-orange-500/30 rotate-[-45deg]" /> {/* Evening */}
-                                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-l-gray-500/30 rotate-[-45deg]" /> {/* Night */}
+                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
+                                            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> 수급 상승/하락
+                                        </div>
+                                        <div className="text-lg md:text-xl font-black text-white">
+                                            <span className="text-red-400">{themeStats.upCount}</span>
+                                            <span className="text-gray-500 text-sm"> 상승 / </span>
+                                            <span className="text-blue-400">{themeStats.downCount}</span>
+                                            <span className="text-gray-500 text-sm"> 하락</span>
+                                        </div>
+                                    </div>
 
-                                    {/* Hand */}
-                                    <div
-                                        className="absolute w-1 h-14 bg-gradient-to-t from-orange-500 to-yellow-300 rounded-full origin-bottom bottom-1/2 left-1/2 -translate-x-1/2 shadow-[0_0_15px_rgba(249,115,22,0.8)] transition-transform duration-1000 ease-out"
-                                        style={{
-                                            transform: `translateX(-50%) rotate(${result.lifecycle?.phase === 'Morning' ? '45deg' :
-                                                result.lifecycle?.phase === 'Noon' ? '135deg' :
-                                                    result.lifecycle?.phase === 'Evening' ? '225deg' : '315deg'
-                                                })`
-                                        }}
-                                    />
-                                    <div className="absolute w-3 h-3 bg-white rounded-full z-10 shadow-lg" />
+                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
+                                            <Award className="w-3.5 h-3.5 text-yellow-400" /> 1대장 리딩 종목
+                                        </div>
+                                        <div className="text-base md:text-lg font-black text-white truncate" title={themeStats.leader1?.name || '-'}>
+                                            {themeStats.leader1?.name || '-'}
+                                            {themeStats.leader1?.change && (
+                                                <span className={`text-xs font-bold ml-1.5 ${
+                                                    String(themeStats.leader1.change).includes('+') ? 'text-red-400' : 'text-blue-400'
+                                                }`}>
+                                                    {themeStats.leader1.change}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                    {/* Labels */}
-                                    <span className="absolute top-2 text-[10px] text-blue-400 font-bold">오전(태동)</span>
-                                    <span className="absolute right-2 text-[10px] text-red-500 font-bold">점심(급등)</span>
-                                    <span className="absolute bottom-2 text-[10px] text-orange-400 font-bold">저녁(성숙)</span>
-                                    <span className="absolute left-2 text-[10px] text-gray-500 font-bold">밤(쇠퇴)</span>
+                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
+                                            <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> 실수혜 검증
+                                        </div>
+                                        <div className="text-lg md:text-xl font-black text-white">
+                                            <span className="text-yellow-400">{themeStats.realCount}</span>
+                                            <span className="text-gray-400 text-sm"> / {themeStats.totalCount} 종목</span>
+                                        </div>
+                                    </div>
                                 </div>
+                            )}
 
-                                <div className="z-10 w-full">
-                                    <div className="text-2xl font-black text-white mb-1">
-                                        {result.lifecycle?.time || "12:00"}
-                                    </div>
-                                    <div className={`text-sm font-bold px-3 py-1 rounded-full inline-block mb-3 ${result.lifecycle?.phase === 'Morning' ? 'bg-blue-500/20 text-blue-400' :
-                                        result.lifecycle?.phase === 'Noon' ? 'bg-red-500/20 text-red-400' :
-                                            result.lifecycle?.phase === 'Evening' ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'
-                                        }`}>
-                                        {result.lifecycle?.phase === 'Morning' ? '태동기 (Morning)' :
-                                            result.lifecycle?.phase === 'Noon' ? '성장기 (Noon)' :
-                                                result.lifecycle?.phase === 'Evening' ? '성숙기 (Evening)' : '쇠퇴기 (Night)'}
-                                    </div>
-
-                                    {/* Investment Guide by Phase */}
-                                    <div className={`w-full rounded-xl p-3 mt-1 text-left ${result.lifecycle?.phase === 'Morning' ? 'bg-blue-500/10 border border-blue-500/20' :
-                                        result.lifecycle?.phase === 'Noon' ? 'bg-red-500/10 border border-red-500/20' :
-                                            result.lifecycle?.phase === 'Evening' ? 'bg-orange-500/10 border border-orange-500/20' :
-                                                'bg-gray-500/10 border border-gray-500/20'
-                                        }`}>
-                                        {result.lifecycle?.phase === 'Morning' && (
-                                            <>
-                                                <div className="text-blue-400 font-bold text-xs mb-1">ℹ️ 테마 초기 단계</div>
-                                                <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    아직 많은 사람이 주목하지 않는 초기 단계입니다. 테마가 실현될지는 <strong className="text-yellow-400">불확실성이 높은</strong> 구간이며, 충분한 조사가 필요합니다.
-                                                </p>
-                                            </>
-                                        )}
-                                        {result.lifecycle?.phase === 'Noon' && (
-                                            <>
-                                                <div className="text-red-400 font-bold text-xs mb-1">⚠️ 과열 구간 주의</div>
-                                                <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    모두가 주목하는 과열 구간입니다. 이미 가격이 많이 올랐을 가능성이 높아 <strong className="text-red-300">변동성이 큰 구간</strong>입니다. 투자 판단 전 충분한 분석이 필요합니다.
-                                                </p>
-                                            </>
-                                        )}
-                                        {result.lifecycle?.phase === 'Evening' && (
-                                            <>
-                                                <div className="text-orange-400 font-bold text-xs mb-1">📉 성숙 단계 진입</div>
-                                                <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    테마의 열기가 식어가는 단계입니다. <strong className="text-orange-300">변동성이 줄어드는</strong> 시기이며, 향후 방향성에 대한 충분한 분석이 필요합니다.
-                                                </p>
-                                            </>
-                                        )}
-                                        {result.lifecycle?.phase === 'Night' && (
-                                            <>
-                                                <div className="text-gray-400 font-bold text-xs mb-1">💤 쇠퇴기 진입</div>
-                                                <p className="text-[11px] text-gray-300 leading-relaxed">
-                                                    테마가 시장의 관심에서 벗어난 쇠퇴기입니다. <strong className="text-gray-300">거래량과 관심도가 감소</strong>하는 시기이며, 다음 사이클이 올 때까지 <strong className="text-yellow-400">관망</strong>이 필요한 구간입니다.
-                                                </p>
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {result.lifecycle?.comment && (
-                                        <p className="text-[11px] text-gray-500 leading-tight mt-2 italic">
-                                            "{result.lifecycle.comment}"
+                            {/* Risk Factor Warning Card */}
+                            {result.risk_factor && (
+                                <div className="flex items-start gap-3 bg-red-950/30 p-4 rounded-2xl border border-red-500/30 relative z-10">
+                                    <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 shrink-0 animate-bounce" />
+                                    <div>
+                                        <div className="text-red-400 font-black text-xs uppercase tracking-wide mb-1 flex items-center gap-1.5">
+                                            <span>핵심 리스크 분석 (Key Risk Factor)</span>
+                                        </div>
+                                        <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
+                                            {result.risk_factor}
                                         </p>
-                                    )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2. Theme Lifecycle Progress & Strategy Guide */}
+                        <div className="p-6 md:p-8 rounded-3xl bg-zinc-900/70 border border-white/10 backdrop-blur-xl relative overflow-hidden space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+                                <div>
+                                    <h4 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                                        <Clock className="w-5 h-5 text-orange-400" />
+                                        테마 라이프사이클 레이더 (Lifecycle Clock)
+                                    </h4>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        AI가 시장의 관심도와 수급 사이클을 종합 분석하여 테마의 진입 단계를 진단합니다.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-xs text-gray-400 font-bold">진단 시간:</span>
+                                    <span className="text-sm font-black px-3 py-1 bg-white/10 border border-white/10 rounded-xl text-white font-mono">
+                                        {result.lifecycle?.time || "12:00"}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* 4-Stage Visual Flow Progress Bar */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                {[
+                                    {
+                                        id: 'Morning',
+                                        title: '01. 태동기',
+                                        sub: '🌱 초기 재료 / 잠재력',
+                                        desc: '새로운 이슈가 부각되며 시장에 처음 등장하는 단계',
+                                        color: 'blue'
+                                    },
+                                    {
+                                        id: 'Noon',
+                                        title: '02. 급등·과열기',
+                                        sub: '🔥 수급 폭발 / 변동성',
+                                        desc: '시장의 모든 관심이 쏠리며 주가가 급등하는 중심 구간',
+                                        color: 'red'
+                                    },
+                                    {
+                                        id: 'Evening',
+                                        title: '03. 성숙기',
+                                        sub: '📊 대장주 압축 / 안정화',
+                                        desc: '상승 탄력이 둔화되고 실적주 위주로 압축되는 단계',
+                                        color: 'orange'
+                                    },
+                                    {
+                                        id: 'Night',
+                                        title: '04. 쇠퇴기',
+                                        sub: '❄️ 재료 소멸 / 관망 권고',
+                                        desc: '모멘텀이 소멸되고 거래량이 줄어드는 휴식 구간',
+                                        color: 'gray'
+                                    }
+                                ].map((stage) => {
+                                    const isActive = (result.lifecycle?.phase || 'Evening').toLowerCase() === stage.id.toLowerCase();
+                                    return (
+                                        <div 
+                                            key={stage.id}
+                                            className={`p-4 rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+                                                isActive 
+                                                    ? 'bg-orange-500/15 border-orange-500/60 shadow-[0_0_20px_rgba(249,115,22,0.2)] scale-[1.02]' 
+                                                    : 'bg-white/[0.03] border-white/5 opacity-60 hover:opacity-100'
+                                            }`}
+                                        >
+                                            {isActive && (
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-black animate-pulse">
+                                                    현재 단계
+                                                </div>
+                                            )}
+                                            <div>
+                                                <div className={`text-xs font-black mb-1 ${isActive ? 'text-orange-400' : 'text-gray-400'}`}>
+                                                    {stage.title}
+                                                </div>
+                                                <div className="text-sm font-bold text-white mb-1.5">
+                                                    {stage.sub}
+                                                </div>
+                                                <p className="text-[11px] text-gray-400 leading-relaxed">
+                                                    {stage.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Phase AI Strategy Callout */}
+                            <div className="p-4 rounded-2xl bg-gradient-to-r from-white/5 to-white/[0.02] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                    <div className="text-xs font-black text-orange-400 flex items-center gap-1.5">
+                                        <Sparkles className="w-3.5 h-3.5" />
+                                        <span>AI 테마 전략 코멘트</span>
+                                    </div>
+                                    <p className="text-xs md:text-sm text-gray-200 font-medium">
+                                        {result.lifecycle?.comment 
+                                            ? `"${result.lifecycle.comment}"`
+                                            : "현재 테마의 수급 흐름과 대장주의 캔들 지지선을 복합적으로 검토하여 대응하시기 바랍니다."
+                                        }
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Leaders & Followers */}
-                        <div className="grid lg:grid-cols-2 gap-8">
-                            {/* Leaders */}
-                            <div className="bg-white/[0.02] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                                <div className="bg-gradient-to-r from-orange-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
-                                    <h4 className="text-xl font-black text-white flex items-center gap-2">
-                                        <TrendingUp className="w-6 h-6 text-orange-400" />
-                                        핵심 연관 기업 (Primary) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.6</span>
+                        {/* 3. Leaders & Followers Hub with View Toggle */}
+                        <div className="space-y-6">
+                            {/* View Mode & Filter Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div>
+                                    <h4 className="text-lg font-black text-white flex items-center gap-2">
+                                        <TrendingUp className="w-5 h-5 text-orange-400" />
+                                        테마 수혜 종목 인텔리전스 매트릭스
                                     </h4>
+                                    <p className="text-xs text-gray-400">
+                                        실제 사업 매출이 발생하는 '진짜 수혜주'와 단순 테마 '동조주'를 명확하게 구분합니다.
+                                    </p>
                                 </div>
-                                <CleanStockList
-                                    items={(result.leaders || []).map((stock: any) => {
-                                        const quote = quotes[stock.symbol];
-                                        return {
-                                            symbol: stock.symbol,
-                                            name: stock.name,
-                                            price: stock.price || quote?.price || "-",
-                                            change: stock.change || quote?.change || "-",
-                                            // [New] Real/Fake Badge Logic
-                                            badge: stock.is_real ?
-                                                { label: "찐수혜", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50", icon: "🥇", reason: stock.reason } :
-                                                { label: "주의", color: "bg-gray-500/20 text-gray-400 border-gray-500/50", icon: "💩", reason: stock.reason }
-                                        };
-                                    })}
-                                    onItemClick={(sym) => router.push(`/discovery?q=${sym}`)}
-                                    hideLabels={true}
-                                />
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Sort Dropdown / Buttons */}
+                                    <div className="flex p-1 bg-black/40 rounded-xl border border-white/10 text-xs font-bold">
+                                        <button
+                                            onClick={() => setSortBy("default")}
+                                            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                                                sortBy === "default" ? "bg-orange-500 text-white shadow-md" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            대장주순
+                                        </button>
+                                        <button
+                                            onClick={() => setSortBy("change")}
+                                            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                                                sortBy === "change" ? "bg-orange-500 text-white shadow-md" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            등락률순
+                                        </button>
+                                        <button
+                                            onClick={() => setSortBy("real")}
+                                            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                                                sortBy === "real" ? "bg-orange-500 text-white shadow-md" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            실수혜 우선
+                                        </button>
+                                    </div>
+
+                                    {/* View Mode Switcher */}
+                                    <div className="flex p-1 bg-black/40 rounded-xl border border-white/10 text-xs font-bold">
+                                        <button
+                                            onClick={() => setViewMode("card")}
+                                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                                                viewMode === "card" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"
+                                            }`}
+                                            title="카드 뷰"
+                                        >
+                                            <LayoutGrid className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode("table")}
+                                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                                                viewMode === "table" ? "bg-white/20 text-white" : "text-gray-400 hover:text-white"
+                                            }`}
+                                            title="테이블 뷰"
+                                        >
+                                            <Table className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Followers */}
-                            <div className="bg-white/[0.02] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                                <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border-white/10 flex justify-between items-center">
-                                    <h4 className="text-xl font-black text-white flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                            {/* View Mode 1: Cards */}
+                            {viewMode === "card" && (
+                                <div className="grid lg:grid-cols-2 gap-6">
+                                    {/* Primary Leaders Column */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between px-1">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-orange-500/20 text-orange-400 rounded-lg">
+                                                    <Award className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-white font-black text-base">
+                                                    핵심 대장주 (Primary Leaders)
+                                                </span>
+                                            </div>
+                                            <span className="text-xs text-orange-400/80 font-bold">
+                                                {processedStocks.leaders.length}개사 분석
+                                            </span>
                                         </div>
-                                        주변 연관 기업 (Secondary) <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-2">v2.6</span>
-                                    </h4>
+
+                                        <div className="space-y-3">
+                                            {processedStocks.leaders.map((stock: any, idx: number) => (
+                                                <div
+                                                    key={stock.symbol}
+                                                    className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.04] to-black border border-orange-500/30 hover:border-orange-500/60 transition-all hover:-translate-y-0.5 shadow-lg group flex flex-col justify-between gap-4"
+                                                >
+                                                    {/* Top Row: Rank Badge, Stock Name, Real Badge & Price */}
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="space-y-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className={`text-[11px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                                                                    idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.3)]' :
+                                                                    idx === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/40' :
+                                                                    'bg-amber-700/20 text-amber-200 border border-amber-700/40'
+                                                                }`}>
+                                                                    {idx === 0 ? '🥇 1대장' : idx === 1 ? '🥈 2대장' : '🥉 3대장'}
+                                                                </span>
+                                                                
+                                                                {stock.is_real ? (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                                                        <ShieldCheck className="w-3 h-3" /> 찐수혜 검증
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                                                        <AlertOctagon className="w-3 h-3" /> 테마 편승주의
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 pt-0.5">
+                                                                <span className="text-lg md:text-xl font-black text-white group-hover:text-orange-400 transition-colors">
+                                                                    {stock.name}
+                                                                </span>
+                                                                <span className="text-xs font-mono font-bold text-gray-400 bg-white/10 px-1.5 py-0.5 rounded">
+                                                                    {stock.symbol}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Price Block */}
+                                                        <div className="text-right shrink-0">
+                                                            <div className="text-lg md:text-xl font-black text-white font-mono">
+                                                                {stock.price !== '-' ? `${stock.price}원` : '-'}
+                                                            </div>
+                                                            <div className={`text-xs font-black tracking-tight ${
+                                                                stock.isPositive ? 'text-red-400' : stock.isNegative ? 'text-blue-400' : 'text-gray-400'
+                                                            }`}>
+                                                                {stock.change}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Reason Text */}
+                                                    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xs text-gray-300 leading-relaxed font-medium">
+                                                        💡 {stock.reason || "해당 테마와 직접적인 사업 연관성이 확인된 종목입니다."}
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                                        <button
+                                                            onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
+                                                            className="py-2 px-3 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 border border-orange-500/30 text-orange-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                                        >
+                                                            <span>실시간 캔들차트</span>
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => router.push(`/stock/${stock.symbol}`)}
+                                                            className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                                        >
+                                                            <span>수급·재무 분석</span>
+                                                            <ChevronRight className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Secondary Followers Column */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between px-1">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg">
+                                                    <Zap className="w-4 h-4" />
+                                                </div>
+                                                <span className="text-white font-black text-base">
+                                                    주변 연관 기업 (Secondary Followers)
+                                                </span>
+                                            </div>
+                                            <span className="text-xs text-blue-400/80 font-bold">
+                                                {processedStocks.followers.length}개사 분석
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {processedStocks.followers.map((stock: any, idx: number) => (
+                                                <div
+                                                    key={stock.symbol}
+                                                    className="p-5 rounded-2xl bg-gradient-to-br from-white/[0.04] to-black border border-white/10 hover:border-blue-500/40 transition-all hover:-translate-y-0.5 shadow-lg group flex flex-col justify-between gap-4"
+                                                >
+                                                    {/* Top Row */}
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="space-y-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                                                                    ⚡ 후발/관련주
+                                                                </span>
+                                                                
+                                                                {stock.is_real ? (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                                                        <ShieldCheck className="w-3 h-3" /> 실수혜 검증
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-500/10 text-gray-400 border border-gray-500/30">
+                                                                        <AlertOctagon className="w-3 h-3" /> 단순 편승주의
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2 pt-0.5">
+                                                                <span className="text-lg md:text-xl font-black text-white group-hover:text-blue-400 transition-colors">
+                                                                    {stock.name}
+                                                                </span>
+                                                                <span className="text-xs font-mono font-bold text-gray-400 bg-white/10 px-1.5 py-0.5 rounded">
+                                                                    {stock.symbol}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Price Block */}
+                                                        <div className="text-right shrink-0">
+                                                            <div className="text-lg md:text-xl font-black text-white font-mono">
+                                                                {stock.price !== '-' ? `${stock.price}원` : '-'}
+                                                            </div>
+                                                            <div className={`text-xs font-black tracking-tight ${
+                                                                stock.isPositive ? 'text-red-400' : stock.isNegative ? 'text-blue-400' : 'text-gray-400'
+                                                            }`}>
+                                                                {stock.change}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Reason Text */}
+                                                    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xs text-gray-300 leading-relaxed font-medium">
+                                                        📌 {stock.reason || "해당 테마와 간접적인 사업 연관성이 있는 후발 종목입니다."}
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="grid grid-cols-2 gap-2 pt-1">
+                                                        <button
+                                                            onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
+                                                            className="py-2 px-3 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                                        >
+                                                            <span>실시간 캔들차트</span>
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => router.push(`/stock/${stock.symbol}`)}
+                                                            className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                                        >
+                                                            <span>수급·재무 분석</span>
+                                                            <ChevronRight className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <CleanStockList
-                                    items={(result.followers || []).map((stock: any) => {
-                                        const quote = quotes[stock.symbol];
-                                        return {
-                                            symbol: stock.symbol,
-                                            name: stock.name,
-                                            price: stock.price || quote?.price || "-",
-                                            change: stock.change || quote?.change || "-",
-                                            // [New] Real/Fake Badge Logic
-                                            badge: stock.is_real ?
-                                                { label: "찐수혜", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50", icon: "🥇", reason: stock.reason } :
-                                                { label: "주의", color: "bg-gray-500/20 text-gray-400 border-gray-500/50", icon: "💩", reason: stock.reason }
-                                        };
-                                    })}
-                                    onItemClick={(sym) => router.push(`/discovery?q=${sym}`)}
-                                    hideLabels={true}
-                                />
-                            </div>
+                            )}
+
+                            {/* View Mode 2: Table */}
+                            {viewMode === "table" && (
+                                <div className="rounded-2xl border border-white/10 bg-zinc-900/60 overflow-hidden shadow-2xl">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead>
+                                                <tr className="border-b border-white/10 bg-white/5 text-xs font-black text-gray-400 uppercase tracking-wider">
+                                                    <th className="py-3 px-4">구분</th>
+                                                    <th className="py-3 px-4">종목명 (코드)</th>
+                                                    <th className="py-3 px-4 text-right">현재가</th>
+                                                    <th className="py-3 px-4 text-right">등락률</th>
+                                                    <th className="py-3 px-4 text-center">수혜 검증</th>
+                                                    <th className="py-3 px-4">핵심 연관 팩트 &amp; 이유</th>
+                                                    <th className="py-3 px-4 text-center">차트/분석</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5 text-xs">
+                                                {processedStocks.allSorted.map((stock: any) => (
+                                                    <tr key={stock.symbol} className="hover:bg-white/[0.03] transition-colors">
+                                                        <td className="py-3.5 px-4 font-bold">
+                                                            {stock.isLeader ? (
+                                                                <span className="px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/40 text-[11px] font-black">
+                                                                    👑 대장주
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[11px] font-bold">
+                                                                    ⚡ 후발주
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-3.5 px-4 font-bold text-white">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-sm font-black">{stock.name}</span>
+                                                                <span className="text-[10px] font-mono text-gray-400 bg-white/10 px-1 rounded">
+                                                                    {stock.symbol}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-3.5 px-4 text-right font-mono font-bold text-white text-sm">
+                                                            {stock.price !== '-' ? `${stock.price}원` : '-'}
+                                                        </td>
+                                                        <td className={`py-3.5 px-4 text-right font-bold text-sm ${
+                                                            stock.isPositive ? 'text-red-400' : stock.isNegative ? 'text-blue-400' : 'text-gray-400'
+                                                        }`}>
+                                                            {stock.change}
+                                                        </td>
+                                                        <td className="py-3.5 px-4 text-center">
+                                                            {stock.is_real ? (
+                                                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-black">
+                                                                    🛡️ 찐수혜
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
+                                                                    ⚠️ 편승주의
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-3.5 px-4 text-gray-300 max-w-xs leading-relaxed">
+                                                            {stock.reason || "-"}
+                                                        </td>
+                                                        <td className="py-3.5 px-4 text-center">
+                                                            <div className="flex items-center justify-center gap-1.5">
+                                                                <button
+                                                                    onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
+                                                                    className="px-2.5 py-1 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
+                                                                >
+                                                                    차트
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => router.push(`/stock/${stock.symbol}`)}
+                                                                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-[11px] transition-colors cursor-pointer"
+                                                                >
+                                                                    상세
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Legal Disclaimer Box */}
