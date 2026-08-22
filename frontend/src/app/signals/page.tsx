@@ -2644,6 +2644,20 @@ function CalendarTab({ router }: { router: any }) {
                             </div>
                         )}
                     </div>
+
+                    {/* 하단 글로벌 시장 주요 지수 및 매크로 자산 지표 (환율, 원자재, 채권, 금리, 코스피/코스닥/미국 3대 지수) */}
+                    <div className="space-y-3 pt-4 border-t border-white/5">
+                        <div className="flex items-center justify-between">
+                            <h4 className="font-black text-sm md:text-base text-gray-200 flex items-center gap-2">
+                                <Globe className="w-4 h-4 text-emerald-400" />
+                                <span>글로벌 주요 지수 및 매크로 핵심 지표</span>
+                            </h4>
+                            <span className="text-[10px] text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 font-mono">
+                                실시간 10초 자동 동기화
+                            </span>
+                        </div>
+                        <MarketIndicators />
+                    </div>
                 </div>
             </div>
 
