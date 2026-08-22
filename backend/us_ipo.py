@@ -38,7 +38,46 @@ def get_us_ipo_data():
         'Accept': 'application/json, text/plain, */*',
     }
 
-    # 1. Official NASDAQ IPO Calendar (Current Month & Next Month)
+    # 1. StockAnalysis Upcoming IPOs (High-priority confirmed upcoming listings)
+    try:
+        from bs4 import BeautifulSoup
+        sa_url = "https://stockanalysis.com/ipos/calendar/"
+        r = requests.get(sa_url, headers=headers, timeout=8)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            table = soup.find('table')
+            if table:
+                for tr in table.find_all('tr')[1:]:
+                    cols = [td.text.strip() for td in tr.find_all('td')]
+                    if len(cols) >= 5:
+                        raw_date, sym, name, exchange, price_range = cols[0], cols[1], cols[2], cols[3], cols[4]
+                        if not sym or sym in seen_symbols: continue
+                        seen_symbols.add(sym)
+
+                        date_str = raw_date
+                        try:
+                            dt_obj = datetime.datetime.strptime(raw_date, "%b %d, %Y")
+                            date_str = dt_obj.strftime("%Y-%m-%d")
+                        except:
+                            pass
+
+                        shares = cols[5] if len(cols) > 5 else "-"
+                        results.append({
+                            "symbol": sym,
+                            "corp": name,
+                            "type": f"US {exchange}",
+                            "price": "미정",
+                            "band": price_range,
+                            "date": date_str,
+                            "detail": f"발행규모: {shares}주 (상장 예정)",
+                            "currency": "USD",
+                            "status": "upcoming",
+                            "is_completed": False
+                        })
+    except Exception as e:
+        print(f"[US_IPO] StockAnalysis fetch error: {e}")
+
+    # 2. Official NASDAQ IPO Calendar (Current Month & Next Month)
     now = datetime.datetime.now()
     months = [now.strftime('%Y-%m')]
     next_m = (now.replace(day=28) + datetime.timedelta(days=4)).strftime('%Y-%m')
@@ -78,7 +117,34 @@ def get_us_ipo_data():
                         "is_completed": False
                     })
 
-                # (2) Recently Priced IPOs
+                # (2) SEC Filed IPOs (Pending approval / roadshow)
+                filed = d.get('filed', {}).get('rows', []) or []
+                for row in filed:
+                    sym = row.get('proposedTickerSymbol') or row.get('symbol')
+                    if not sym or sym in seen_symbols: continue
+                    seen_symbols.add(sym)
+
+                    f_date = row.get('filedDate', '')
+                    if "/" in f_date:
+                        parts = f_date.split("/")
+                        if len(parts) == 3:
+                            f_date = f"{parts[2]}-{int(parts[0]):02d}-{int(parts[1]):02d}"
+
+                    dollar_val = row.get('dollarValueOfSharesOffered') or ""
+                    results.append({
+                        "symbol": sym,
+                        "corp": row.get('companyName') or sym,
+                        "type": "US IPO (SEC 제출)",
+                        "price": "미정",
+                        "band": "",
+                        "date": f_date,
+                        "detail": f"신청규모: {dollar_val}" if dollar_val else "SEC 증권신고서 제출 완료 (심사중)",
+                        "currency": "USD",
+                        "status": "filed",
+                        "is_completed": False
+                    })
+
+                # (3) Recently Priced IPOs
                 priced = d.get('priced', {}).get('rows', []) or []
                 for row in priced:
                     sym = row.get('proposedTickerSymbol') or row.get('symbol')
@@ -108,37 +174,10 @@ def get_us_ipo_data():
                         "status": "priced",
                         "is_completed": True
                     })
-
-                # (3) SEC Filed IPOs
-                filed = d.get('filed', {}).get('rows', []) or []
-                for row in filed:
-                    sym = row.get('proposedTickerSymbol') or row.get('symbol')
-                    if not sym or sym in seen_symbols: continue
-                    seen_symbols.add(sym)
-
-                    f_date = row.get('filedDate', '')
-                    if "/" in f_date:
-                        parts = f_date.split("/")
-                        if len(parts) == 3:
-                            f_date = f"{parts[2]}-{int(parts[0]):02d}-{int(parts[1]):02d}"
-
-                    dollar_val = row.get('dollarValueOfSharesOffered') or ""
-                    results.append({
-                        "symbol": sym,
-                        "corp": row.get('companyName') or sym,
-                        "type": "US IPO (SEC 제출)",
-                        "price": "미정",
-                        "band": "",
-                        "date": f_date,
-                        "detail": f"신청규모: {dollar_val}" if dollar_val else "SEC 증권신고서 제출 완료",
-                        "currency": "USD",
-                        "status": "filed",
-                        "is_completed": False
-                    })
         except Exception as e:
             print(f"[US_IPO] NASDAQ fetch error for {ym}: {e}")
 
-    # 2. Alpha Vantage Fallback / Addition
+    # 3. Alpha Vantage Fallback / Addition
     if len(results) < 5:
         try:
             av_url = f"https://www.alphavantage.co/query?function=IPO_CALENDAR&apikey={API_KEY}"
@@ -161,7 +200,7 @@ def get_us_ipo_data():
                         "price": "미정",
                         "band": band,
                         "date": row.get('ipoDate'),
-                        "detail": "Alpha Vantage 제공",
+                        "detail": "Alpha Vantage 제공 (상장 예정)",
                         "currency": row.get('currency', 'USD'),
                         "status": "upcoming",
                         "is_completed": False

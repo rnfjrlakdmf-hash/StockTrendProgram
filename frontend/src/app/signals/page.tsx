@@ -2902,25 +2902,56 @@ function CalendarTab({ router }: { router: any }) {
                             }
 
                             let status: "active" | "upcoming" | "closed" = "upcoming";
-                            let statusLabel = "청약 예정";
+                            let statusLabel = ipoTab === 'us' ? "상장 예정" : "청약 예정";
                             let dDayNum = 999;
 
-                            if (startD && endD) {
-                                const diffStart = Math.ceil((startD.getTime() - today.getTime()) / 86400000);
-                                const diffEnd = Math.ceil((endD.getTime() - today.getTime()) / 86400000);
-
-                                if (today >= startD && today <= endD) {
-                                    status = "active";
-                                    statusLabel = diffEnd === 0 ? "오늘 청약 마감 🔥" : "청약 진행중 🔥";
-                                    dDayNum = 0;
-                                } else if (today < startD) {
-                                    status = "upcoming";
-                                    statusLabel = diffStart === 1 ? "내일 시작" : `D-${diffStart}`;
-                                    dDayNum = diffStart;
-                                } else {
+                            // Handle US specific statuses
+                            if (ipoTab === 'us') {
+                                if (ipo.status === 'priced' || ipo.is_completed) {
                                     status = "closed";
-                                    statusLabel = "청약 마감";
+                                    statusLabel = "📌 상장 완료";
                                     dDayNum = -1;
+                                    dateDisplay = rawDate ? `상장일: ${rawDate}` : "상장 완료";
+                                } else if (ipo.status === 'filed') {
+                                    status = "upcoming";
+                                    statusLabel = "⏳ SEC 심사 대기";
+                                    dDayNum = 50; // Place ahead of past/closed items
+                                    dateDisplay = rawDate ? `SEC 접수: ${rawDate}` : "심사 대기중";
+                                } else if (startD) {
+                                    const diff = Math.ceil((startD.getTime() - today.getTime()) / 86400000);
+                                    if (diff === 0) {
+                                        status = "active";
+                                        statusLabel = "🔥 오늘 상장 (D-Day)";
+                                        dDayNum = 0;
+                                    } else if (diff > 0) {
+                                        status = "upcoming";
+                                        statusLabel = diff === 1 ? "⚡ 내일 상장 예정" : `⚡ D-${diff} (상장 예정)`;
+                                        dDayNum = diff;
+                                    } else {
+                                        status = "closed";
+                                        statusLabel = "📌 상장 완료";
+                                        dDayNum = -1;
+                                    }
+                                }
+                            } else {
+                                // Korean IPO logic
+                                if (startD && endD) {
+                                    const diffStart = Math.ceil((startD.getTime() - today.getTime()) / 86400000);
+                                    const diffEnd = Math.ceil((endD.getTime() - today.getTime()) / 86400000);
+
+                                    if (today >= startD && today <= endD) {
+                                        status = "active";
+                                        statusLabel = diffEnd === 0 ? "오늘 청약 마감 🔥" : "청약 진행중 🔥";
+                                        dDayNum = 0;
+                                    } else if (today < startD) {
+                                        status = "upcoming";
+                                        statusLabel = diffStart === 1 ? "내일 청약 시작" : `D-${diffStart} 청약 예정`;
+                                        dDayNum = diffStart;
+                                    } else {
+                                        status = "closed";
+                                        statusLabel = "청약 마감";
+                                        dDayNum = -1;
+                                    }
                                 }
                             }
 
@@ -2952,13 +2983,14 @@ function CalendarTab({ router }: { router: any }) {
                             const q = ipoSearch.toLowerCase();
                             const matchName = String(item.name || "").toLowerCase().includes(q);
                             const matchDetail = String(item.detail || "").toLowerCase().includes(q);
-                            return matchName || matchDetail;
+                            const matchSymbol = String(item.symbol || "").toLowerCase().includes(q);
+                            return matchName || matchDetail || matchSymbol;
                         }
 
                         return true;
                     });
 
-                    // Sort: Active first, then upcoming (closest first), then closed
+                    // Sort: Active first, then upcoming (closest D-Day first), then filed, then closed
                     filteredList.sort((a, b) => {
                         if (a.status === "active" && b.status !== "active") return -1;
                         if (b.status === "active" && a.status !== "active") return 1;
