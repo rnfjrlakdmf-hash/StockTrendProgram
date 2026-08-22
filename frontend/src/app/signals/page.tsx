@@ -2180,46 +2180,66 @@ function CalendarTab({ router }: { router: any }) {
                 {/* 실적 vs 배당 토글 */}
                 <div className="flex gap-2 bg-zinc-900/60 p-1.5 rounded-2xl border border-white/5">
                     <button
-                        onClick={() => setCalTab("earnings")}
-                        className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                            calTab === "earnings" ? "bg-blue-600 text-white shadow-md shadow-blue-600/30" : "text-gray-400 hover:text-white"
+                        onClick={() => {
+                            setCalTab("earnings");
+                            setSelectedDay(null);
+                        }}
+                        className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                            calTab === "earnings" 
+                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-blue-400/50" 
+                                : "text-gray-400 hover:text-white bg-black/20"
                         }`}
                     >
-                        📈 기업 실적 발표 캘린더
+                        <TrendingUp className="w-4 h-4" />
+                        <span>📈 기업 실적 발표 캘린더</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/30 font-mono">
+                            {(Array.isArray(events) ? events : []).filter(e => e.type === "earnings").length}건
+                        </span>
                     </button>
                     <button
-                        onClick={() => setCalTab("dividend")}
-                        className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-                            calTab === "dividend" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30" : "text-gray-400 hover:text-white"
+                        onClick={() => {
+                            setCalTab("dividend");
+                            setSelectedDay(null);
+                        }}
+                        className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                            calTab === "dividend" 
+                                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/30 ring-1 ring-emerald-400/50" 
+                                : "text-gray-400 hover:text-white bg-black/20"
                         }`}
                     >
-                        💰 배당락 / 배당금 캘린더
+                        <DollarSign className="w-4 h-4" />
+                        <span>💰 배당락 / 배당금 캘린더</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/30 font-mono">
+                            {(Array.isArray(events) ? events : []).filter(e => e.type === "dividend").length}건
+                        </span>
                     </button>
                 </div>
 
                 {/* 스마트 인터랙티브 캘린더 그리드 */}
-                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl">
-                    {/* 달력 헤더: 년월 이동 및 오늘 버튼 */}
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <h3 className="text-base md:text-lg font-black text-white">
-                                {currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}
-                            </h3>
-                            <button
-                                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white"
-                            >
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
-                        </div>
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl space-y-4">
+                    {/* 달력 헤더: 년월 이동, 빠른 월 점퍼 및 오늘 버튼 */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-2 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/10">
+                                <button
+                                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                                    className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="이전 달"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="px-3 text-sm md:text-base font-black text-white min-w-[100px] text-center">
+                                    {currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                                    className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="다음 달"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
 
-                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => {
                                     const now = new Date();
@@ -2227,18 +2247,61 @@ function CalendarTab({ router }: { router: any }) {
                                     setSelectedDay(now.getDate());
                                     setScheduleFilter("selected");
                                 }}
-                                className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
+                                className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
                             >
                                 <Clock className="w-3.5 h-3.5" />
-                                <span>오늘로 이동</span>
+                                <span>오늘</span>
                             </button>
+                        </div>
+
+                        {/* 시즌 빠른 이동 뱃지들 */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] text-gray-500 font-bold hidden sm:inline">빠른 이동:</span>
+                            {(() => {
+                                const stats: { [key: string]: number } = {};
+                                (Array.isArray(events) ? events : []).forEach(e => {
+                                    if (e.type === calTab && e.date) {
+                                        const ym = String(e.date).slice(0, 7);
+                                        stats[ym] = (stats[ym] || 0) + 1;
+                                    }
+                                });
+                                const entries = Object.entries(stats).sort(([a], [b]) => a.localeCompare(b));
+                                if (entries.length === 0) return <span className="text-[10px] text-gray-500">집계된 시즌 일정 없음</span>;
+
+                                return entries.map(([ym, count]) => {
+                                    const [y, m] = ym.split("-");
+                                    const isCurrent = currentMonth.getFullYear() === parseInt(y) && (currentMonth.getMonth() + 1) === parseInt(m);
+                                    return (
+                                        <button
+                                            key={ym}
+                                            onClick={() => {
+                                                const targetDate = new Date(parseInt(y), parseInt(m) - 1, 1);
+                                                setCurrentMonth(targetDate);
+                                                setSelectedDay(null);
+                                                setScheduleFilter("month");
+                                            }}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                                isCurrent
+                                                    ? "bg-orange-600 text-white shadow-md shadow-orange-600/30 font-black ring-1 ring-orange-400"
+                                                    : "bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10"
+                                            }`}
+                                        >
+                                            <span>{parseInt(m)}월</span>
+                                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${isCurrent ? 'bg-black/40 text-white' : 'bg-orange-500/20 text-orange-300'}`}>
+                                                {count}건
+                                            </span>
+                                            {count >= 5 && <span className="text-[10px]">🔥시즌</span>}
+                                        </button>
+                                    );
+                                });
+                            })()}
                         </div>
                     </div>
 
                     {/* 요일 헤더 */}
-                    <div className="grid grid-cols-7 gap-1.5 mb-2">
+                    <div className="grid grid-cols-7 gap-1.5">
                         {["일", "월", "화", "수", "목", "금", "토"].map(d => (
-                            <div key={d} className={`text-center text-xs font-black py-1.5 ${
+                            <div key={d} className={`text-center text-xs font-black py-1 rounded-lg bg-black/20 ${
                                 d === "일" ? "text-rose-400" : d === "토" ? "text-blue-400" : "text-gray-400"
                             }`}>
                                 {d}
@@ -2249,7 +2312,7 @@ function CalendarTab({ router }: { router: any }) {
                     {/* 날짜 셀 그리드 */}
                     <div className="grid grid-cols-7 gap-1.5">
                         {Array.from({ length: firstDay }, (_, i) => (
-                            <div key={`empty-${i}`} className="min-h-[60px] md:min-h-[70px] rounded-xl bg-black/10 opacity-30" />
+                            <div key={`empty-${i}`} className="min-h-[65px] md:min-h-[75px] rounded-xl bg-black/10 opacity-20 border border-transparent" />
                         ))}
                         {Array.from({ length: daysInMonth }, (_, i) => {
                             const day = i + 1;
@@ -2265,13 +2328,13 @@ function CalendarTab({ router }: { router: any }) {
                                         setSelectedDay(day);
                                         setScheduleFilter("selected");
                                     }}
-                                    className={`min-h-[60px] md:min-h-[70px] rounded-xl p-2 border transition-all cursor-pointer flex flex-col justify-between group ${
+                                    className={`min-h-[65px] md:min-h-[75px] rounded-xl p-2 border transition-all cursor-pointer flex flex-col justify-between group ${
                                         selected
-                                            ? "border-orange-500 bg-orange-500/20 shadow-lg shadow-orange-500/20 ring-2 ring-orange-400/80"
+                                            ? "border-orange-500 bg-orange-500/25 shadow-lg shadow-orange-500/20 ring-2 ring-orange-400"
                                             : today
                                             ? "border-amber-500/60 bg-amber-500/10 hover:border-amber-400"
                                             : evs.length > 0
-                                            ? "border-white/15 bg-white/5 hover:border-white/40 hover:bg-white/10"
+                                            ? "border-white/20 bg-white/5 hover:border-orange-500/50 hover:bg-white/10"
                                             : "border-white/5 bg-black/20 hover:border-white/20 hover:bg-white/5"
                                     }`}
                                 >
@@ -2292,13 +2355,27 @@ function CalendarTab({ router }: { router: any }) {
                                         )}
                                     </div>
 
-                                    {/* Event Dots & Counts */}
+                                    {/* Event Chips (종목명 뱃지 노출) */}
                                     {evs.length > 0 ? (
-                                        <div className="mt-1">
-                                            <div className="flex items-center gap-1 bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded-md border border-orange-500/30 text-[9px] font-black w-fit">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                                                <span>{evs.length}건</span>
-                                            </div>
+                                        <div className="mt-1 space-y-0.5">
+                                            {evs.slice(0, 1).map((ev: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className={`text-[9px] font-black truncate px-1 py-0.5 rounded border ${
+                                                        calTab === 'earnings'
+                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                    }`}
+                                                    title={ev.name}
+                                                >
+                                                    {ev.name}
+                                                </div>
+                                            ))}
+                                            {evs.length > 1 && (
+                                                <div className="text-[8px] font-bold text-orange-400 flex items-center gap-0.5">
+                                                    <span>+{evs.length - 1}건</span>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className="h-3" />
