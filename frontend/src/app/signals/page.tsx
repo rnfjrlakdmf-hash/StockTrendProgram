@@ -10,7 +10,7 @@ import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
-    Star, Globe, Trash2, X, Bell, BellRing, HelpCircle
+    Star, Globe, Trash2, X, Bell, BellRing, HelpCircle, LayoutGrid, Table, Award, Sparkles
 } from "lucide-react";
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
@@ -1062,95 +1062,413 @@ function SignalsFeedTab({ router }: { router: any }) {
     );
 }
 
-// ============ TAB 2: HEATMAP ============
+// ============ TAB 2: HEATMAP (업종별/테마별 실시간 주도 섹터 맵) ============
 function HeatmapTab({ router }: { router: any }) {
     const [sectors, setSectors] = useState<any[]>([]);
     const [heatmap, setHeatmap] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [view, setView] = useState<"sectors" | "themes">("sectors");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortBy, setSortBy] = useState<"high" | "low" | "name">("high");
+    const [viewMode, setViewMode] = useState<"card" | "table">("card");
+
+    const loadData = async (isManual: boolean = false) => {
+        if (isManual) setRefreshing(true);
+        try {
+            const [s, h] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/market/korea/sector_heatmap`, { cache: 'no-store' }),
+                fetch(`${API_BASE_URL}/api/market/korea/heatmap`, { cache: 'no-store' })
+            ]);
+            const sj = await s.json(), hj = await h.json();
+
+            if (sj.status === "success" && Array.isArray(sj.data)) {
+                setSectors(sj.data);
+            }
+            if (hj.status === "success" && Array.isArray(hj.data)) {
+                setHeatmap(hj.data);
+            }
+        } catch (e) {
+            console.error("Heatmap load error:", e);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        (async () => {
-            try {
-                // [MODIFY] /api/korea/sector_heatmap 사용, no-store 추가하여 실시간 보장
-                const [s, h] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/market/korea/sector_heatmap`, { cache: 'no-store' }),
-                    fetch(`${API_BASE_URL}/api/market/korea/heatmap`, { cache: 'no-store' })
-                ]);
-                const sj = await s.json(), hj = await h.json();
-
-                // 업종별/테마별 모두 동일한 반환 구조(name, change, stocks)를 가짐
-                if (sj.status === "success" && sj.data) {
-                    setSectors(sj.data);
-                }
-                if (hj.status === "success" && hj.data) {
-                    setHeatmap(hj.data);
-                }
-            } catch { } finally { setLoading(false); }
-        })();
+        loadData();
+        const timer = setInterval(() => loadData(false), 60000);
+        return () => clearInterval(timer);
     }, []);
 
-    const data = view === "sectors" ? sectors : heatmap;
+    const rawData = view === "sectors" ? sectors : heatmap;
+
+    // Filter & Sort
+    const filteredData = (Array.isArray(rawData) ? rawData : []).filter((item: any) => {
+        const title = String(item.name || item.theme || "");
+        if (!searchTerm.trim()) return true;
+        const term = searchTerm.toLowerCase();
+        if (title.toLowerCase().includes(term)) return true;
+        if (Array.isArray(item.stocks) && item.stocks.some((st: any) => String(st.name || "").toLowerCase().includes(term))) return true;
+        return false;
+    });
+
+    const sortedData = [...filteredData].sort((a, b) => {
+        const aChg = Number(a.change || 0);
+        const bChg = Number(b.change || 0);
+        if (sortBy === "high") return bChg - aChg;
+        if (sortBy === "low") return aChg - bChg;
+        const aName = String(a.name || a.theme || "");
+        const bName = String(b.name || b.theme || "");
+        return aName.localeCompare(bName, "ko");
+    });
+
+    // Summary Statistics
+    const topItem = sortedData.length > 0 ? sortedData[0] : null;
+    const upCount = sortedData.filter(d => Number(d.change || 0) > 0).length;
+    const downCount = sortedData.filter(d => Number(d.change || 0) < 0).length;
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                    <button onClick={() => setView("sectors")} className={`px-4 py-1.5 rounded-lg text-xs font-bold ${view === "sectors" ? "bg-red-600 text-white" : "text-gray-400"}`}>업종별</button>
-                    <button onClick={() => setView("themes")} className={`px-4 py-1.5 rounded-lg text-xs font-bold ${view === "themes" ? "bg-purple-600 text-white" : "text-gray-400"}`}>테마별</button>
+        <div className="space-y-5 animate-in fade-in duration-500">
+            {/* Top Intelligence Control Bar */}
+            <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 backdrop-blur-xl shadow-xl space-y-3.5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    {/* View Switcher Tabs */}
+                    <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5 w-full md:w-auto">
+                        <button
+                            onClick={() => setView("sectors")}
+                            className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                view === "sectors"
+                                    ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-600/30"
+                                    : "text-gray-400 hover:text-white"
+                            }`}
+                        >
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span>업종별 주도 섹터</span>
+                            <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded-full font-mono">{sectors.length}</span>
+                        </button>
+                        <button
+                            onClick={() => setView("themes")}
+                            className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                                view === "themes"
+                                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30"
+                                    : "text-gray-400 hover:text-white"
+                            }`}
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                            <span>실시간 인기 테마</span>
+                            <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded-full font-mono">{heatmap.length}</span>
+                        </button>
+                    </div>
+
+                    {/* Action & View Mode Buttons */}
+                    <div className="flex items-center justify-between md:justify-end gap-2">
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center bg-black/40 p-1 rounded-xl border border-white/5">
+                            <button
+                                onClick={() => setViewMode("card")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                                    viewMode === "card" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white"
+                                }`}
+                                title="카드 뷰"
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">카드</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode("table")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                                    viewMode === "table" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white"
+                                }`}
+                                title="상세 표 뷰"
+                            >
+                                <Table className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">표</span>
+                            </button>
+                        </div>
+
+                        {/* Live Refresh Button */}
+                        <button
+                            onClick={() => loadData(true)}
+                            disabled={refreshing || loading}
+                            className="bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-3 py-2 rounded-xl text-xs font-bold border border-white/10 flex items-center gap-1.5 transition-all active:scale-95"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 text-orange-400 ${refreshing ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">실시간 갱신</span>
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-1 text-[9px] text-gray-500">
-                    <span className="w-4 h-2 bg-blue-500 rounded" />하락 <span className="w-4 h-2 bg-gray-700 rounded ml-1" />보합 <span className="w-4 h-2 bg-red-500 rounded ml-1" />상승
+
+                {/* Filter & Search Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-white/5">
+                    {/* Fast Search Input */}
+                    <div className="relative w-full sm:w-72">
+                        <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder={view === "sectors" ? "업종명 또는 종목명 검색..." : "테마명 또는 종목명 검색..."}
+                            className="w-full bg-black/50 border border-white/10 rounded-xl pl-9 pr-7 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/60 transition-all"
+                        />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs">
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Sorting Tabs & Color Legend */}
+                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
+                        <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5 text-[11px] font-bold">
+                            <button
+                                onClick={() => setSortBy("high")}
+                                className={`px-2.5 py-1 rounded-md transition-all ${sortBy === "high" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "text-gray-400 hover:text-white"}`}
+                            >
+                                🔥 급등순
+                            </button>
+                            <button
+                                onClick={() => setSortBy("low")}
+                                className={`px-2.5 py-1 rounded-md transition-all ${sortBy === "low" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-gray-400 hover:text-white"}`}
+                            >
+                                ❄️ 급락순
+                            </button>
+                            <button
+                                onClick={() => setSortBy("name")}
+                                className={`px-2.5 py-1 rounded-md transition-all ${sortBy === "name" ? "bg-white/15 text-white" : "text-gray-400 hover:text-white"}`}
+                            >
+                                🔤 가나다순
+                            </button>
+                        </div>
+
+                        {/* Color Legend */}
+                        <div className="hidden lg:flex items-center gap-2 text-[10px] text-gray-400 bg-black/30 px-2.5 py-1 rounded-lg border border-white/5">
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-purple-500 inline-block" />+15%↑</span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-500 inline-block" />상승</span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-gray-600 inline-block" />보합</span>
+                            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-500 inline-block" />하락</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            {/* Quick Stat Highlights */}
+            {sortedData.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
+                        <span className="text-gray-400 font-bold">👑 오늘 1등 주도 섹터</span>
+                        <span className="font-black text-red-400 truncate max-w-[140px]" title={topItem?.name || topItem?.theme}>
+                            {topItem?.name || topItem?.theme} (+{Number(topItem?.change || 0).toFixed(2)}%)
+                        </span>
+                    </div>
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 flex items-center justify-between">
+                        <span className="text-gray-400 font-bold">📊 상승 / 하락 분포</span>
+                        <span className="font-black text-white">
+                            <span className="text-red-400">{upCount}</span> 상승 / <span className="text-blue-400">{downCount}</span> 하락
+                        </span>
+                    </div>
+                    <div className="hidden sm:flex bg-white/5 border border-white/5 rounded-xl p-2.5 items-center justify-between">
+                        <span className="text-gray-400 font-bold">⚡ 모니터링 수</span>
+                        <span className="font-black text-yellow-400 font-mono">{sortedData.length}개 {view === "sectors" ? "업종" : "테마"}</span>
+                    </div>
+                </div>
+            )}
 
-            {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto" /></div> : (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                        {(Array.isArray(data) ? data : []).map((item: any, i: number) => (
-                            <div key={i} className="bg-black/20 rounded-xl p-4 border border-white/5 hover:border-white/20 transition-all group">
-                                <div className="flex justify-between items-start mb-3 border-b border-white/5 pb-2">
+            {/* Content Body */}
+            {loading ? (
+                <div className="text-center py-20 bg-zinc-900/40 rounded-3xl border border-white/5 space-y-3">
+                    <RefreshCw className="w-9 h-9 text-orange-400 animate-spin mx-auto" />
+                    <p className="text-xs text-gray-400 font-bold">실시간 시장 데이터를 분석하여 섹터 맵을 생성하고 있습니다...</p>
+                </div>
+            ) : sortedData.length === 0 ? (
+                <div className="text-center py-16 bg-zinc-900/40 rounded-3xl border border-white/5 space-y-2">
+                    <p className="text-gray-400 text-sm font-bold">검색 결과가 없습니다.</p>
+                    <p className="text-gray-500 text-xs">다른 검색어를 입력해 보세요.</p>
+                </div>
+            ) : viewMode === "card" ? (
+                /* Card Matrix Grid */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {sortedData.map((item: any, i: number) => {
+                        const title = item.name || item.theme || "섹터";
+                        const changeNum = Number(item.change || 0);
+                        const isUp = changeNum > 0;
+                        const isDown = changeNum < 0;
+                        const rank = i + 1;
+
+                        return (
+                            <div
+                                key={i}
+                                className="bg-zinc-900/70 hover:bg-zinc-900 border border-white/10 hover:border-orange-500/40 rounded-2xl p-4 transition-all duration-200 group shadow-lg hover:shadow-orange-500/5 hover:-translate-y-0.5 flex flex-col justify-between"
+                            >
+                                {/* Card Header */}
+                                <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-3">
                                     <div
-                                        className="font-bold text-gray-200 group-hover:text-white flex items-center gap-2 cursor-pointer"
-                                        onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(item.name || item.theme)}`)}
+                                        className="flex items-center gap-2 cursor-pointer flex-1 min-w-0 pr-2"
+                                        onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(title)}`)}
                                     >
-                                        <span className="w-5 h-5 flex items-center justify-center rounded bg-red-500/20 text-red-500 text-xs font-bold">{i + 1}</span>
-                                        {item.name || item.theme}
+                                        {/* Rank Badge */}
+                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                                            rank === 1 ? 'bg-amber-400 text-black shadow-md shadow-amber-400/30' :
+                                            rank === 2 ? 'bg-slate-300 text-black' :
+                                            rank === 3 ? 'bg-amber-700 text-white' :
+                                            'bg-white/10 text-gray-400'
+                                        }`}>
+                                            {rank}
+                                        </span>
+
+                                        {/* Title */}
+                                        <h3 className="font-black text-sm md:text-base text-gray-100 group-hover:text-orange-400 transition-colors truncate">
+                                            {title}
+                                        </h3>
+                                        <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-orange-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </div>
-                                    <span className={`${item.change >= 0 ? 'text-red-400 bg-red-900/10' : 'text-blue-400 bg-blue-900/10'} font-bold text-sm px-1.5 rounded`}>
-                                        {item.change > 0 ? '+' : ''}{Number(item.change || 0).toFixed(2)}%
+
+                                    {/* Change Badge */}
+                                    <span className={`px-2.5 py-1 rounded-xl text-xs font-black font-mono shrink-0 ${
+                                        isUp ? 'bg-red-500/15 text-red-400 border border-red-500/30' :
+                                        isDown ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' :
+                                        'bg-white/10 text-gray-300 border border-white/10'
+                                    }`}>
+                                        {isUp ? '+' : ''}{changeNum.toFixed(2)}%
                                     </span>
                                 </div>
 
-                                {/* Stocks in this theme/sector */}
-                                <div className="space-y-2">
-                                    {Array.isArray(item.stocks) && item.stocks.map((stock: any, j: number) => (
-                                        <div
-                                            key={j}
-                                            className="flex justify-between items-center text-base cursor-pointer hover:bg-white/5 p-2 rounded"
-                                            onClick={() => router.push(`/discovery?q=${encodeURIComponent(stock.name)}`)}
-                                        >
-                                            <span className="text-gray-300 text-sm font-medium w-28 truncate">{stock.name}</span>
-                                            <div className={`flex-1 h-2 mx-3 rounded-full overflow-hidden bg-gray-700`}>
+                                {/* Stock List */}
+                                <div className="space-y-1.5">
+                                    {Array.isArray(item.stocks) && item.stocks.length > 0 ? (
+                                        item.stocks.map((stock: any, j: number) => {
+                                            const stockChg = Number(stock.change || 0);
+                                            const stockIsUp = stockChg > 0;
+                                            const stockIsDown = stockChg < 0;
+                                            const barWidth = Math.min(Math.abs(stockChg) * 3.5, 100);
+
+                                            return (
                                                 <div
-                                                    className={`h-full ${stock.change > 20 ? 'bg-purple-500' : stock.change > 10 ? 'bg-red-500' : stock.change > 0 ? 'bg-red-400' : 'bg-blue-400'}`}
-                                                    style={{ width: `${Math.min(Math.abs(stock.change) * 3, 100)}%` }}
-                                                />
-                                            </div>
-                                            <span className={`text-sm font-mono font-bold w-14 text-right ${stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-gray-500'}`}>
-                                                {stock.change > 0 ? '+' : ''}{stock.change}%
-                                            </span>
-                                        </div>
-                                    ))}
-                                    {(!item.stocks || item.stocks.length === 0) && (
-                                        <div className="text-xs text-gray-500 text-center py-2">편입 종목 정보 없음</div>
+                                                    key={j}
+                                                    onClick={() => router.push(`/discovery?q=${encodeURIComponent(stock.name)}`)}
+                                                    className="flex items-center justify-between text-xs p-2 rounded-xl bg-black/30 hover:bg-white/10 border border-transparent hover:border-white/10 cursor-pointer transition-all gap-2"
+                                                >
+                                                    {/* Stock Name with 1st Leader Tag */}
+                                                    <div className="flex items-center gap-1.5 w-28 sm:w-32 shrink-0 truncate">
+                                                        {j === 0 && (
+                                                            <span className="text-[9px] font-black bg-amber-400/20 text-amber-300 px-1 py-0.2 rounded shrink-0">
+                                                                대장
+                                                            </span>
+                                                        )}
+                                                        <span className="font-bold text-gray-200 hover:text-white truncate">
+                                                            {stock.name}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Dynamic Sleek Bar */}
+                                                    <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden relative">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-500 ${
+                                                                stockChg >= 15 ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
+                                                                stockChg > 0 ? 'bg-gradient-to-r from-red-500 to-orange-500' :
+                                                                stockChg < 0 ? 'bg-gradient-to-r from-blue-600 to-cyan-400' :
+                                                                'bg-gray-600'
+                                                            }`}
+                                                            style={{ width: `${Math.max(barWidth, 4)}%` }}
+                                                        />
+                                                    </div>
+
+                                                    {/* Stock Change */}
+                                                    <span className={`text-xs font-black font-mono w-16 text-right shrink-0 ${
+                                                        stockIsUp ? 'text-red-400' : stockIsDown ? 'text-blue-400' : 'text-gray-400'
+                                                    }`}>
+                                                        {stockIsUp ? '+' : ''}{stockChg}%
+                                                    </span>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-4 text-xs text-gray-500 font-medium">편입 대표 종목 정보 없음</div>
                                     )}
                                 </div>
                             </div>
-                        ))}
+                        );
+                    })}
+                </div>
+            ) : (
+                /* HTS-Style Compact Table View */
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-gray-300">
+                            <thead className="bg-black/50 text-gray-400 font-bold border-b border-white/10 uppercase tracking-wider">
+                                <tr>
+                                    <th className="py-3 px-4 w-16 text-center">순위</th>
+                                    <th className="py-3 px-4">섹터 / 테마명</th>
+                                    <th className="py-3 px-4 text-right">평균 등락률</th>
+                                    <th className="py-3 px-4">1대장 종목</th>
+                                    <th className="py-3 px-4">2대장 종목</th>
+                                    <th className="py-3 px-4">3대장 종목</th>
+                                    <th className="py-3 px-4 text-center">바로가기</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 font-medium">
+                                {sortedData.map((item: any, i: number) => {
+                                    const title = item.name || item.theme || "섹터";
+                                    const changeNum = Number(item.change || 0);
+                                    const isUp = changeNum > 0;
+                                    const isDown = changeNum < 0;
+                                    const stocks = Array.isArray(item.stocks) ? item.stocks : [];
+                                    const rank = i + 1;
+
+                                    return (
+                                        <tr key={i} className="hover:bg-white/5 transition-colors">
+                                            <td className="py-3 px-4 text-center">
+                                                <span className={`w-5 h-5 rounded inline-flex items-center justify-center font-bold text-xs ${
+                                                    rank === 1 ? 'bg-amber-400 text-black' :
+                                                    rank === 2 ? 'bg-slate-300 text-black' :
+                                                    rank === 3 ? 'bg-amber-700 text-white' :
+                                                    'text-gray-500'
+                                                }`}>
+                                                    {rank}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 font-black text-white cursor-pointer hover:text-orange-400"
+                                                onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(title)}`)}>
+                                                {title}
+                                            </td>
+                                            <td className="py-3 px-4 text-right font-black font-mono text-sm">
+                                                <span className={isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-300'}>
+                                                    {isUp ? '+' : ''}{changeNum.toFixed(2)}%
+                                                </span>
+                                            </td>
+                                            {/* Top 3 Stocks */}
+                                            {[0, 1, 2].map((idx) => {
+                                                const s = stocks[idx];
+                                                if (!s) return <td key={idx} className="py-3 px-4 text-gray-600">-</td>;
+                                                const sChg = Number(s.change || 0);
+                                                return (
+                                                    <td key={idx} className="py-3 px-4 cursor-pointer hover:text-white"
+                                                        onClick={() => router.push(`/discovery?q=${encodeURIComponent(s.name)}`)}>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-bold text-gray-200">{s.name}</span>
+                                                            <span className={`font-mono text-[11px] font-bold ${sChg > 0 ? 'text-red-400' : sChg < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                                ({sChg > 0 ? '+' : ''}{sChg}%)
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                );
+                                            })}
+                                            <td className="py-3 px-4 text-center">
+                                                <button
+                                                    onClick={() => router.push(`/${view === "themes" ? "theme" : "discovery"}?q=${encodeURIComponent(title)}`)}
+                                                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-orange-500/20 hover:text-orange-400 text-gray-400 text-[11px] font-bold transition-all"
+                                                >
+                                                    분석 ↗
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
-                </>
+                </div>
             )}
         </div>
     );
