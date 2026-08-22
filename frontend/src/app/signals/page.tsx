@@ -10,7 +10,8 @@ import {
     Zap, TrendingUp, TrendingDown, Volume2, FileText, Users,
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
-    Star, Globe, Trash2, X, Bell, BellRing, HelpCircle, LayoutGrid, Table, Award, Sparkles
+    Star, Globe, Trash2, X, Bell, BellRing, HelpCircle, LayoutGrid, Table, Award, Sparkles,
+    DollarSign, Clock
 } from "lucide-react";
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
@@ -2258,24 +2259,31 @@ function CalendarTab({ router }: { router: any }) {
                         <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[10px] text-gray-500 font-bold hidden sm:inline">빠른 이동:</span>
                             {(() => {
-                                const stats: { [key: string]: number } = {};
+                                const stats: { [key: string]: { year: number, month: number, count: number } } = {};
                                 (Array.isArray(events) ? events : []).forEach(e => {
-                                    if (e.type === calTab && e.date) {
-                                        const ym = String(e.date).slice(0, 7);
-                                        stats[ym] = (stats[ym] || 0) + 1;
+                                    if (e?.type === calTab && e?.date) {
+                                        const match = String(e.date).match(/^(\d{4})-(\d{1,2})/);
+                                        if (match) {
+                                            const y = parseInt(match[1]);
+                                            const m = parseInt(match[2]);
+                                            const key = `${y}-${String(m).padStart(2, "0")}`;
+                                            if (!stats[key]) {
+                                                stats[key] = { year: y, month: m, count: 0 };
+                                            }
+                                            stats[key].count += 1;
+                                        }
                                     }
                                 });
                                 const entries = Object.entries(stats).sort(([a], [b]) => a.localeCompare(b));
                                 if (entries.length === 0) return <span className="text-[10px] text-gray-500">집계된 시즌 일정 없음</span>;
 
-                                return entries.map(([ym, count]) => {
-                                    const [y, m] = ym.split("-");
-                                    const isCurrent = currentMonth.getFullYear() === parseInt(y) && (currentMonth.getMonth() + 1) === parseInt(m);
+                                return entries.map(([key, item]) => {
+                                    const isCurrent = currentMonth.getFullYear() === item.year && (currentMonth.getMonth() + 1) === item.month;
                                     return (
                                         <button
-                                            key={ym}
+                                            key={key}
                                             onClick={() => {
-                                                const targetDate = new Date(parseInt(y), parseInt(m) - 1, 1);
+                                                const targetDate = new Date(item.year, item.month - 1, 1);
                                                 setCurrentMonth(targetDate);
                                                 setSelectedDay(null);
                                                 setScheduleFilter("month");
@@ -2286,11 +2294,11 @@ function CalendarTab({ router }: { router: any }) {
                                                     : "bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10"
                                             }`}
                                         >
-                                            <span>{parseInt(m)}월</span>
+                                            <span>{item.month}월</span>
                                             <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${isCurrent ? 'bg-black/40 text-white' : 'bg-orange-500/20 text-orange-300'}`}>
-                                                {count}건
+                                                {item.count}건
                                             </span>
-                                            {count >= 5 && <span className="text-[10px]">🔥시즌</span>}
+                                            {item.count >= 5 && <span className="text-[10px]">🔥시즌</span>}
                                         </button>
                                     );
                                 });
