@@ -1889,6 +1889,8 @@ function CalendarTab({ router }: { router: any }) {
     const [ipos, setIpos] = useState<any[]>([]);
     const [ipoLoading, setIpoLoading] = useState(true);
     const [ipoTab, setIpoTab] = useState<'kr' | 'us'>('kr');
+    const [ipoFilter, setIpoFilter] = useState<'all' | 'active' | 'upcoming' | 'watched'>('all');
+    const [ipoSearch, setIpoSearch] = useState<string>('');
     const [watchedIpos, setWatchedIpos] = useState<Set<string>>(new Set());
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
 
@@ -2792,99 +2794,333 @@ function CalendarTab({ router }: { router: any }) {
 
             {/* TAB 3: 공모주 서브탭 */}
             <div className={mainTab === "ipo" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-2 gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-900/80 p-4 rounded-2xl border border-white/10 shadow-xl">
                     <div>
                         <h2 className="text-base md:text-lg font-black text-white flex items-center gap-2">
-                            <span>공모주 청약 캘린더</span>
+                            <span>📋 공모주 청약 캘린더</span>
                         </h2>
-                        <span className="text-xs text-gray-500">한국/미국 공모주 청약 일정 (DART / Alpha Vantage 제공)</span>
+                        <span className="text-xs text-gray-400">DART 전자공시 기반 실시간 청약·상장 일정 분석</span>
                     </div>
                     
-                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-                        <button
-                            onClick={() => setIpoTab('kr')}
-                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${ipoTab === 'kr' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            🇰🇷 국내 공모주
-                        </button>
-                        <button
-                            onClick={() => setIpoTab('us')}
-                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${ipoTab === 'us' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            🇺🇸 미국 공모주
-                        </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 w-full sm:w-auto">
+                            <button
+                                onClick={() => setIpoTab('kr')}
+                                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                    ipoTab === 'kr'
+                                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50 font-black'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                🇰🇷 국내 공모주
+                            </button>
+                            <button
+                                onClick={() => setIpoTab('us')}
+                                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                                    ipoTab === 'us'
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50 font-black'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                🇺🇸 미국 공모주
+                            </button>
+                        </div>
                     </div>
                 </div>
-                    {ipoLoading ? (
-                        <div className="flex justify-center py-8"><RefreshCw className="w-5 h-5 animate-spin text-gray-500" /></div>
-                    ) : ipos.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                            <p>예정된 공모주가 없습니다.</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
-                            <div className="max-h-[400px] overflow-y-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-white/10 text-gray-300 text-xs font-bold sticky top-0 backdrop-blur-md z-10">
-                                        <tr>
-                                            <th className="p-3 whitespace-nowrap">종목명</th>
-                                            <th className="p-3 whitespace-nowrap text-center">공모일정</th>
-                                            <th className="p-3 whitespace-nowrap text-right">공모가</th>
-                                            <th className="p-3 whitespace-nowrap text-center">정보</th>
-                                            <th className="p-3 whitespace-nowrap text-center">알림</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5 text-sm">
-                                        {(Array.isArray(ipos) ? ipos : []).map((ipo, idx) => {
-                                            const formatIpoDate = (rawStr: any) => {
-                                                const dateStr = String(rawStr || "");
-                                                if (!dateStr || dateStr === "null" || dateStr === "undefined") return "-";
-                                                if (dateStr.includes("~")) {
-                                                    const [start, end] = dateStr.split("~");
-                                                    const formatPart = (part: string) => {
-                                                        if (part.length === 6) return `20${part.substring(0, 2)}.${part.substring(2, 4)}.${part.substring(4, 6)}`;
-                                                        if (part.length === 4) return `${part.substring(0, 2)}.${part.substring(2, 4)}`;
-                                                        return part;
-                                                    };
-                                                    return `${formatPart(start)} ~ ${formatPart(end)}`;
-                                                }
-                                                return dateStr;
-                                            };
-                                            const isWatched = watchedIpos.has(ipo.name);
-                                            return (
-                                                <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                                                    <td className="p-3 font-bold text-white align-middle">{ipo.name}</td>
-                                                    <td className="p-3 text-gray-300 text-xs align-middle text-center font-mono">{formatIpoDate(ipo.subscription_date)}</td>
-                                                    <td className="p-3 text-right align-middle">
-                                                        {ipo.fixed_price && ipo.fixed_price !== "-" && (
-                                                            <span className="text-red-400 font-bold font-mono text-xs bg-red-900/20 px-1.5 py-0.5 rounded">{ipo.fixed_price}</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-3 text-center align-middle">
-                                                        <button
-                                                            onClick={() => window.open(ipoTab === 'kr' ? `https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}` : `https://finance.yahoo.com/quote/${ipo.symbol}`, '_blank')}
-                                                            className="bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1.5 rounded text-xs transition-colors border border-white/5 whitespace-nowrap"
-                                                        >{ipoTab === 'kr' ? '정보' : 'Yahoo'}</button>
-                                                    </td>
-                                                    <td className="p-3 text-center align-middle">
-                                                        <button
-                                                            onClick={() => toggleWatchIPO(ipo.name)}
-                                                            className={`p-2 rounded-full transition-colors ${
-                                                                isWatched ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/5 text-gray-500 hover:text-gray-300'
-                                                            }`}
-                                                            title={isWatched ? "알림 해제" : "알림 받기"}
-                                                        >
-                                                            {isWatched ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+
+                {/* 상태 필터 및 검색 바 */}
+                {(() => {
+                    // Helper to parse dates and calculate D-Day
+                    const parseIpoData = (rawList: any[]) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+
+                        return (Array.isArray(rawList) ? rawList : []).map(ipo => {
+                            const rawDate = String(ipo.subscription_date || ipo.date || "");
+                            let startD: Date | null = null;
+                            let endD: Date | null = null;
+                            let dateDisplay = rawDate;
+
+                            const m6 = rawDate.match(/^(\d{2})(\d{2})(\d{2})\s*~\s*(\d{2})(\d{2})$/);
+                            if (m6) {
+                                const y = 2000 + parseInt(m6[1]);
+                                const m1 = parseInt(m6[2]);
+                                const d1 = parseInt(m6[3]);
+                                const m2 = parseInt(m6[4]);
+                                const d2 = parseInt(m6[5]);
+                                startD = new Date(y, m1 - 1, d1);
+                                endD = new Date(y, m2 - 1, d2, 23, 59, 59);
+                                dateDisplay = `${y}.${String(m1).padStart(2, "0")}.${String(d1).padStart(2, "0")} ~ ${String(m2).padStart(2, "0")}.${String(d2).padStart(2, "0")}`;
+                            } else if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                                startD = new Date(rawDate);
+                                endD = new Date(rawDate + "T23:59:59");
+                                dateDisplay = rawDate;
+                            }
+
+                            let status: "active" | "upcoming" | "closed" = "upcoming";
+                            let statusLabel = "청약 예정";
+                            let dDayNum = 999;
+
+                            if (startD && endD) {
+                                const diffStart = Math.ceil((startD.getTime() - today.getTime()) / 86400000);
+                                const diffEnd = Math.ceil((endD.getTime() - today.getTime()) / 86400000);
+
+                                if (today >= startD && today <= endD) {
+                                    status = "active";
+                                    statusLabel = diffEnd === 0 ? "오늘 청약 마감 🔥" : "청약 진행중 🔥";
+                                    dDayNum = 0;
+                                } else if (today < startD) {
+                                    status = "upcoming";
+                                    statusLabel = diffStart === 1 ? "내일 시작" : `D-${diffStart}`;
+                                    dDayNum = diffStart;
+                                } else {
+                                    status = "closed";
+                                    statusLabel = "청약 마감";
+                                    dDayNum = -1;
+                                }
+                            }
+
+                            return {
+                                ...ipo,
+                                dateDisplay,
+                                status,
+                                statusLabel,
+                                dDayNum,
+                                isWatched: watchedIpos.has(ipo.name)
+                            };
+                        });
+                    };
+
+                    const parsedList = parseIpoData(ipos);
+
+                    const activeCount = parsedList.filter(i => i.status === "active").length;
+                    const upcomingCount = parsedList.filter(i => i.status === "upcoming").length;
+                    const watchedCount = parsedList.filter(i => i.isWatched).length;
+
+                    const filteredList = parsedList.filter(item => {
+                        // Filter by tab status
+                        if (ipoFilter === "active" && item.status !== "active") return false;
+                        if (ipoFilter === "upcoming" && item.status !== "upcoming") return false;
+                        if (ipoFilter === "watched" && !item.isWatched) return false;
+
+                        // Search
+                        if (ipoSearch) {
+                            const q = ipoSearch.toLowerCase();
+                            const matchName = String(item.name || "").toLowerCase().includes(q);
+                            const matchDetail = String(item.detail || "").toLowerCase().includes(q);
+                            return matchName || matchDetail;
+                        }
+
+                        return true;
+                    });
+
+                    // Sort: Active first, then upcoming (closest first), then closed
+                    filteredList.sort((a, b) => {
+                        if (a.status === "active" && b.status !== "active") return -1;
+                        if (b.status === "active" && a.status !== "active") return 1;
+                        if (a.status === "upcoming" && b.status === "upcoming") return a.dDayNum - b.dDayNum;
+                        if (a.status === "upcoming" && b.status === "closed") return -1;
+                        if (b.status === "upcoming" && a.status === "closed") return 1;
+                        return 0;
+                    });
+
+                    return (
+                        <div className="space-y-3">
+                            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+                                {/* 필터 칩 바 */}
+                                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto hide-scrollbar">
+                                    <button
+                                        onClick={() => setIpoFilter("all")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                                            ipoFilter === "all" ? "bg-purple-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                        }`}
+                                    >
+                                        ⚡ 전체 ({parsedList.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setIpoFilter("active")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                            ipoFilter === "active" ? "bg-rose-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                        }`}
+                                    >
+                                        🔥 진행중 ({activeCount})
+                                    </button>
+                                    <button
+                                        onClick={() => setIpoFilter("upcoming")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                                            ipoFilter === "upcoming" ? "bg-blue-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                        }`}
+                                    >
+                                        ⏳ 예정 ({upcomingCount})
+                                    </button>
+                                    <button
+                                        onClick={() => setIpoFilter("watched")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                            ipoFilter === "watched" ? "bg-yellow-500 text-black shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                        }`}
+                                    >
+                                        ⭐ 알림 ({watchedCount})
+                                    </button>
+                                </div>
+
+                                {/* 검색 인풋 */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={ipoSearch}
+                                        onChange={(e) => setIpoSearch(e.target.value)}
+                                        placeholder="종목명, 주관사 검색..."
+                                        className="bg-black/30 border border-white/10 focus:border-purple-500 rounded-xl px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none w-full md:w-56"
+                                    />
+                                    {ipoSearch && (
+                                        <button
+                                            onClick={() => setIpoSearch("")}
+                                            className="absolute right-2.5 top-2 text-gray-400 hover:text-white text-xs"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* 로딩 & 목록 렌더링 */}
+                            {ipoLoading ? (
+                                <div className="text-center py-16 bg-zinc-900/40 rounded-2xl border border-white/5">
+                                    <RefreshCw className="w-8 h-8 animate-spin mx-auto text-purple-400 mb-2" />
+                                    <p className="text-xs text-gray-400 font-bold">DART 전자공시 및 최신 공모주 청약 일정을 분석하고 있습니다...</p>
+                                </div>
+                            ) : filteredList.length === 0 ? (
+                                <div className="text-center py-12 px-4 bg-zinc-900/60 rounded-2xl border border-white/5">
+                                    <FileText className="w-10 h-10 text-gray-500 mx-auto mb-2 opacity-40" />
+                                    <p className="text-xs text-gray-300 font-bold mb-1">
+                                        {ipoSearch ? `"${ipoSearch}" 검색 결과가 없습니다.` : "해당 조건의 공모주 일정이 없습니다."}
+                                    </p>
+                                    <p className="text-[11px] text-gray-500 mb-4">전체 탭을 눌러 다가오는 일정을 확인해보세요.</p>
+                                    <button
+                                        onClick={() => { setIpoFilter("all"); setIpoSearch(""); }}
+                                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black transition-all shadow-lg shadow-purple-600/30"
+                                    >
+                                        ⚡ 전체 공모주 보기
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                    {filteredList.map((ipo, idx) => {
+                                        const isFixedPrice = ipo.fixed_price && ipo.fixed_price !== "미정" && ipo.fixed_price !== "-";
+
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`bg-zinc-900/80 border rounded-2xl p-4 transition-all hover:bg-white/5 flex flex-col justify-between gap-3.5 shadow-lg group ${
+                                                    ipo.status === 'active'
+                                                        ? 'border-rose-500/40 ring-1 ring-rose-500/20'
+                                                        : 'border-white/10 hover:border-white/25'
+                                                }`}
+                                            >
+                                                {/* 상단 헤더: 종목명 & D-Day 뱃지 */}
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <h4 className="font-black text-sm md:text-base text-white group-hover:text-purple-400 transition-colors truncate">
+                                                                {ipo.name}
+                                                            </h4>
+                                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                                                {ipoTab === 'kr' ? '국내 공모' : '미국 IPO'}
+                                                            </span>
+                                                        </div>
+                                                        {ipo.detail && (
+                                                            <div className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                                                                <span className="text-gray-500">주관사:</span>
+                                                                <span className="font-bold text-gray-300">{ipo.detail}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* D-Day 뱃지 */}
+                                                    <div className="shrink-0 text-right">
+                                                        <span className={`text-xs font-black px-2.5 py-1 rounded-xl border block font-mono shadow-sm ${
+                                                            ipo.status === 'active'
+                                                                ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
+                                                                : ipo.dDayNum <= 3
+                                                                ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+                                                                : ipo.status === 'upcoming'
+                                                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                                                : 'bg-white/5 text-gray-500 border-white/10'
+                                                        }`}>
+                                                            {ipo.statusLabel}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* 핵심 공모 정보 그리드 */}
+                                                <div className="bg-black/30 rounded-xl p-3 border border-white/5 grid grid-cols-2 gap-2 text-xs">
+                                                    <div>
+                                                        <span className="text-[10px] text-gray-500 font-bold block mb-0.5">📅 청약 일정</span>
+                                                        <span className="font-mono font-bold text-gray-200 text-[11px] block truncate">
+                                                            {ipo.dateDisplay}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[10px] text-gray-500 font-bold block mb-0.5">💰 확정 공모가</span>
+                                                        <span className={`font-mono font-black text-xs ${
+                                                            isFixedPrice ? 'text-rose-400' : 'text-gray-400'
+                                                        }`}>
+                                                            {isFixedPrice ? `${ipo.fixed_price}원` : '미정 (수요예측 대기)'}
+                                                        </span>
+                                                    </div>
+                                                    {ipo.price_band && (
+                                                        <div className="col-span-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[11px]">
+                                                            <span className="text-gray-500">🎯 희망 공모가 밴드:</span>
+                                                            <span className="font-mono text-gray-300 font-bold">
+                                                                {ipo.price_band}원
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 하단 액션 바 */}
+                                                <div className="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
+                                                    <button
+                                                        onClick={() => window.open(
+                                                            ipoTab === 'kr'
+                                                                ? `https://search.naver.com/search.naver?query=${encodeURIComponent(ipo.name + " 공모주")}`
+                                                                : `https://finance.yahoo.com/quote/${ipo.symbol || ipo.name}`,
+                                                            '_blank'
+                                                        )}
+                                                        className="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 text-[11px] transition-colors"
+                                                    >
+                                                        공모 상세정보 <ExternalLink className="w-3 h-3" />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => toggleWatchIPO(ipo.name)}
+                                                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                                                            ipo.isWatched
+                                                                ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                                                                : 'bg-white/5 text-gray-400 hover:text-white border border-white/10 hover:bg-white/10'
+                                                        }`}
+                                                    >
+                                                        {ipo.isWatched ? (
+                                                            <>
+                                                                <BellRing className="w-3.5 h-3.5 text-yellow-400" />
+                                                                <span>알림 받는 중</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Bell className="w-3.5 h-3.5" />
+                                                                <span>청약 알림 받기</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>        </div>
+                    );
+                })()}
+            </div>        </div>
     );
 }
