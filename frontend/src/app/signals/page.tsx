@@ -2830,8 +2830,50 @@ function CalendarTab({ router }: { router: any }) {
                     </div>
                 </div>
 
-                {/* 상태 필터 및 검색 바 */}
+                {/* 실시간 달러 환율 및 통화 변환 헬퍼 */}
                 {(() => {
+                    // Extract live USD/KRW exchange rate from globalAssets
+                    let liveUsdRate = 1380;
+                    if (Array.isArray(globalAssets)) {
+                        const found = globalAssets.find((a: any) =>
+                            a.name?.includes("원/달러") ||
+                            a.name?.includes("달러/원") ||
+                            a.name?.includes("USD/KRW") ||
+                            a.symbol?.includes("USDKRW")
+                        );
+                        if (found && found.price) {
+                            const num = parseFloat(String(found.price).replace(/,/g, ""));
+                            if (!isNaN(num) && num > 500 && num < 3000) {
+                                liveUsdRate = num;
+                            }
+                        }
+                    }
+
+                    const convertUsdToKrw = (usdStr: string) => {
+                        if (!usdStr) return "";
+                        if (usdStr.includes("~")) {
+                            const parts = usdStr.split("~").map(p => p.trim());
+                            const m1 = parts[0].match(/[\d,.]+/);
+                            const m2 = parts[1].match(/[\d,.]+/);
+                            if (m1 && m2) {
+                                const v1 = parseFloat(m1[0].replace(/,/g, ""));
+                                const v2 = parseFloat(m2[0].replace(/,/g, ""));
+                                if (!isNaN(v1) && !isNaN(v2) && (v1 > 0 || v2 > 0)) {
+                                    return `약 ${Math.round(v1 * liveUsdRate).toLocaleString()}원 ~ ${Math.round(v2 * liveUsdRate).toLocaleString()}원`;
+                                }
+                            }
+                        } else {
+                            const m = usdStr.match(/[\d,.]+/);
+                            if (m) {
+                                const v = parseFloat(m[0].replace(/,/g, ""));
+                                if (!isNaN(v) && v > 0) {
+                                    return `약 ${Math.round(v * liveUsdRate).toLocaleString()}원`;
+                                }
+                            }
+                        }
+                        return "";
+                    };
+
                     // Helper to parse dates and calculate D-Day
                     const parseIpoData = (rawList: any[]) => {
                         const today = new Date();
@@ -2929,40 +2971,49 @@ function CalendarTab({ router }: { router: any }) {
                     return (
                         <div className="space-y-3">
                             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
-                                {/* 필터 칩 바 */}
-                                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto hide-scrollbar">
-                                    <button
-                                        onClick={() => setIpoFilter("all")}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                                            ipoFilter === "all" ? "bg-purple-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
-                                        }`}
-                                    >
-                                        ⚡ 전체 ({parsedList.length})
-                                    </button>
-                                    <button
-                                        onClick={() => setIpoFilter("active")}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-                                            ipoFilter === "active" ? "bg-rose-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
-                                        }`}
-                                    >
-                                        🔥 진행중 ({activeCount})
-                                    </button>
-                                    <button
-                                        onClick={() => setIpoFilter("upcoming")}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                                            ipoFilter === "upcoming" ? "bg-blue-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
-                                        }`}
-                                    >
-                                        ⏳ 예정 ({upcomingCount})
-                                    </button>
-                                    <button
-                                        onClick={() => setIpoFilter("watched")}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
-                                            ipoFilter === "watched" ? "bg-yellow-500 text-black shadow-sm font-black" : "text-gray-400 hover:text-white"
-                                        }`}
-                                    >
-                                        ⭐ 알림 ({watchedCount})
-                                    </button>
+                                {/* 필터 칩 바 및 환율 표시 */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto hide-scrollbar">
+                                        <button
+                                            onClick={() => setIpoFilter("all")}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                                                ipoFilter === "all" ? "bg-purple-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            ⚡ 전체 ({parsedList.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setIpoFilter("active")}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                                ipoFilter === "active" ? "bg-rose-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            🔥 진행중 ({activeCount})
+                                        </button>
+                                        <button
+                                            onClick={() => setIpoFilter("upcoming")}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                                                ipoFilter === "upcoming" ? "bg-blue-600 text-white shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            ⏳ 예정 ({upcomingCount})
+                                        </button>
+                                        <button
+                                            onClick={() => setIpoFilter("watched")}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${
+                                                ipoFilter === "watched" ? "bg-yellow-500 text-black shadow-sm font-black" : "text-gray-400 hover:text-white"
+                                            }`}
+                                        >
+                                            ⭐ 알림 ({watchedCount})
+                                        </button>
+                                    </div>
+
+                                    {ipoTab === 'us' && (
+                                        <div className="flex items-center gap-1.5 bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-500/25 text-[11px] font-bold text-blue-300 shadow-sm">
+                                            <span>💵 실시간 적용 환율:</span>
+                                            <span className="font-mono font-black text-white">1$ = {Math.round(liveUsdRate).toLocaleString()}원</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* 검색 인풋 */}
@@ -3009,6 +3060,8 @@ function CalendarTab({ router }: { router: any }) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                                     {filteredList.map((ipo, idx) => {
                                         const isFixedPrice = ipo.fixed_price && ipo.fixed_price !== "미정" && ipo.fixed_price !== "-";
+                                        const krwFixedEstimate = isFixedPrice ? convertUsdToKrw(String(ipo.fixed_price)) : "";
+                                        const krwBandEstimate = ipo.price_band ? convertUsdToKrw(String(ipo.price_band)) : "";
 
                                         return (
                                             <div
@@ -3069,18 +3122,32 @@ function CalendarTab({ router }: { router: any }) {
                                                     </div>
                                                     <div>
                                                         <span className="text-[10px] text-gray-500 font-bold block mb-0.5">💰 확정 공모가</span>
-                                                        <span className={`font-mono font-black text-xs ${
-                                                            isFixedPrice ? 'text-rose-400' : 'text-gray-400'
-                                                        }`}>
-                                                            {isFixedPrice ? (String(ipo.fixed_price).includes('$') ? ipo.fixed_price : `${ipo.fixed_price}원`) : '미정 (수요예측 대기)'}
-                                                        </span>
+                                                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                                                            <span className={`font-mono font-black text-xs ${
+                                                                isFixedPrice ? 'text-rose-400' : 'text-gray-400'
+                                                            }`}>
+                                                                {isFixedPrice ? (String(ipo.fixed_price).includes('$') ? ipo.fixed_price : `${ipo.fixed_price}원`) : '미정 (수요예측 대기)'}
+                                                            </span>
+                                                            {ipoTab === 'us' && krwFixedEstimate && (
+                                                                <span className="text-[11px] font-bold text-emerald-400 font-sans">
+                                                                    ({krwFixedEstimate})
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     {ipo.price_band && (
-                                                        <div className="col-span-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[11px]">
+                                                        <div className="col-span-2 pt-1.5 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
                                                             <span className="text-gray-500">🎯 희망 공모가 밴드:</span>
-                                                            <span className="font-mono text-gray-300 font-bold">
-                                                                {String(ipo.price_band).includes('$') ? ipo.price_band : `${ipo.price_band}원`}
-                                                            </span>
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <span className="font-mono text-gray-300 font-bold">
+                                                                    {String(ipo.price_band).includes('$') ? ipo.price_band : `${ipo.price_band}원`}
+                                                                </span>
+                                                                {ipoTab === 'us' && krwBandEstimate && (
+                                                                    <span className="text-emerald-400 font-bold font-sans text-[11px]">
+                                                                        ({krwBandEstimate})
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
