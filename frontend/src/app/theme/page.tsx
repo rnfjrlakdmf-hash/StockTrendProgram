@@ -33,6 +33,7 @@ function ThemePageContent() {
     const [showHelp, setShowHelp] = useState(false);
     const [viewMode, setViewMode] = useState<"card" | "table">("card");
     const [sortBy, setSortBy] = useState<"default" | "change" | "real">("default");
+    const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
     useEffect(() => {
         const q = searchParams.get('q');
@@ -606,24 +607,56 @@ function ThemePageContent() {
                             <p className="text-sm md:text-base text-gray-200 leading-relaxed border-l-4 border-orange-500 pl-4 py-1 relative z-10 font-medium">
                                 {result.description}
                             </p>
-
-                            {/* 4-Stat Live Matrix Bar */}
+                            {/* 4-Stat Live Matrix Bar with Interactive Tooltips */}
                             {themeStats && (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-10 pt-2">
-                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
-                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
-                                            <Activity className="w-3.5 h-3.5 text-orange-400" /> 테마 평균 등락률
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative z-20 pt-2">
+                                    {/* Stat 1: Avg Change */}
+                                    <div 
+                                        onClick={() => setActiveTooltip(activeTooltip === "avgChange" ? null : "avgChange")}
+                                        onMouseEnter={() => setActiveTooltip("avgChange")}
+                                        onMouseLeave={() => setActiveTooltip(null)}
+                                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md relative cursor-pointer group transition-all"
+                                    >
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center justify-between gap-1 mb-1">
+                                            <div className="flex items-center gap-1">
+                                                <Activity className="w-3.5 h-3.5 text-orange-400" /> 
+                                                <span>테마 평균 등락률</span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 bg-white/10 px-1 py-0.2 rounded-full font-mono group-hover:text-orange-400 group-hover:bg-orange-500/20 transition-colors">?</span>
                                         </div>
                                         <div className={`text-lg md:text-xl font-black ${
                                             themeStats.avgChangeVal > 0 ? 'text-red-400' : themeStats.avgChangeVal < 0 ? 'text-blue-400' : 'text-gray-200'
                                         }`}>
                                             {themeStats.avgChangeStr}
                                         </div>
+
+                                        {/* Tooltip Popup */}
+                                        {activeTooltip === "avgChange" && (
+                                            <div className="absolute left-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-2 w-56 sm:w-64 p-3 rounded-xl bg-zinc-900 border border-orange-500/40 shadow-2xl text-left z-50 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+                                                <div className="text-xs font-black text-orange-400 mb-1 flex items-center gap-1">
+                                                    <span>📉 테마 평균 등락률</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                    이 테마에 속한 전체 종목들의 <strong>실시간 평균 등락률</strong>입니다. 테마 전반의 상승 열기와 시장 분위기를 한눈에 보여줍니다.
+                                                </p>
+                                                <div className="absolute left-6 sm:left-1/2 sm:-translate-x-1/2 top-full w-2 h-2 bg-zinc-900 border-r border-b border-orange-500/40 rotate-45 -mt-1"></div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
-                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
-                                            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> 수급 상승/하락
+                                    {/* Stat 2: Supply & Demand Ratio */}
+                                    <div 
+                                        onClick={() => setActiveTooltip(activeTooltip === "upDown" ? null : "upDown")}
+                                        onMouseEnter={() => setActiveTooltip("upDown")}
+                                        onMouseLeave={() => setActiveTooltip(null)}
+                                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md relative cursor-pointer group transition-all"
+                                    >
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center justify-between gap-1 mb-1">
+                                            <div className="flex items-center gap-1">
+                                                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> 
+                                                <span>수급 상승/하락</span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 bg-white/10 px-1 py-0.2 rounded-full font-mono group-hover:text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">?</span>
                                         </div>
                                         <div className="text-lg md:text-xl font-black text-white">
                                             <span className="text-red-400">{themeStats.upCount}</span>
@@ -631,11 +664,34 @@ function ThemePageContent() {
                                             <span className="text-blue-400">{themeStats.downCount}</span>
                                             <span className="text-gray-500 text-sm"> 하락</span>
                                         </div>
+
+                                        {/* Tooltip Popup */}
+                                        {activeTooltip === "upDown" && (
+                                            <div className="absolute left-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-2 w-56 sm:w-64 p-3 rounded-xl bg-zinc-900 border border-emerald-500/40 shadow-2xl text-left z-50 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+                                                <div className="text-xs font-black text-emerald-400 mb-1 flex items-center gap-1">
+                                                    <span>⚖️ 수급 상승/하락 비율</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                    테마 내 종목 중 <strong>몇 개가 오르고 내리는지</strong>를 나타냅니다. 상승 종목이 많을수록 테마 전반으로 매수세가 확산된 강력한 테마입니다.
+                                                </p>
+                                                <div className="absolute left-6 sm:left-1/2 sm:-translate-x-1/2 top-full w-2 h-2 bg-zinc-900 border-r border-b border-emerald-500/40 rotate-45 -mt-1"></div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
-                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
-                                            <Award className="w-3.5 h-3.5 text-yellow-400" /> 1대장 리딩 종목
+                                    {/* Stat 3: Leader 1 Stock */}
+                                    <div 
+                                        onClick={() => setActiveTooltip(activeTooltip === "leader" ? null : "leader")}
+                                        onMouseEnter={() => setActiveTooltip("leader")}
+                                        onMouseLeave={() => setActiveTooltip(null)}
+                                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md relative cursor-pointer group transition-all"
+                                    >
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center justify-between gap-1 mb-1">
+                                            <div className="flex items-center gap-1">
+                                                <Award className="w-3.5 h-3.5 text-yellow-400" /> 
+                                                <span>1대장 리딩 종목</span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 bg-white/10 px-1 py-0.2 rounded-full font-mono group-hover:text-yellow-400 group-hover:bg-yellow-500/20 transition-colors">?</span>
                                         </div>
                                         <div className="text-base md:text-lg font-black text-white truncate" title={themeStats.leader1?.name || '-'}>
                                             {themeStats.leader1?.name || '-'}
@@ -647,16 +703,52 @@ function ThemePageContent() {
                                                 </span>
                                             )}
                                         </div>
+
+                                        {/* Tooltip Popup */}
+                                        {activeTooltip === "leader" && (
+                                            <div className="absolute right-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-2 w-56 sm:w-64 p-3 rounded-xl bg-zinc-900 border border-yellow-500/40 shadow-2xl text-left z-50 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+                                                <div className="text-xs font-black text-yellow-400 mb-1 flex items-center gap-1">
+                                                    <span>👑 1대장 리딩 종목</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                    테마의 가격과 수급을 <strong>맨 앞에서 이끄는 핵심 대장주</strong>입니다. 1대장이 강하게 버텨주어야 후발 종목들도 뒤따라 상승할 수 있습니다.
+                                                </p>
+                                                <div className="absolute right-6 sm:left-1/2 sm:-translate-x-1/2 top-full w-2 h-2 bg-zinc-900 border-r border-b border-yellow-500/40 rotate-45 -mt-1"></div>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="p-3.5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md">
-                                        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1 mb-1">
-                                            <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> 실수혜 검증
+                                    {/* Stat 4: Real Beneficiary Count */}
+                                    <div 
+                                        onClick={() => setActiveTooltip(activeTooltip === "real" ? null : "real")}
+                                        onMouseEnter={() => setActiveTooltip("real")}
+                                        onMouseLeave={() => setActiveTooltip(null)}
+                                        className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md relative cursor-pointer group transition-all"
+                                    >
+                                        <div className="text-[11px] text-gray-400 font-bold flex items-center justify-between gap-1 mb-1">
+                                            <div className="flex items-center gap-1">
+                                                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> 
+                                                <span>실수혜 검증</span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-400 bg-white/10 px-1 py-0.2 rounded-full font-mono group-hover:text-blue-400 group-hover:bg-blue-500/20 transition-colors">?</span>
                                         </div>
                                         <div className="text-lg md:text-xl font-black text-white">
                                             <span className="text-yellow-400">{themeStats.realCount}</span>
                                             <span className="text-gray-400 text-sm"> / {themeStats.totalCount} 종목</span>
                                         </div>
+
+                                        {/* Tooltip Popup */}
+                                        {activeTooltip === "real" && (
+                                            <div className="absolute right-0 sm:left-1/2 sm:-translate-x-1/2 bottom-full mb-2 w-56 sm:w-64 p-3 rounded-xl bg-zinc-900 border border-blue-500/40 shadow-2xl text-left z-50 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+                                                <div className="text-xs font-black text-blue-400 mb-1 flex items-center gap-1">
+                                                    <span>🛡️ 실수혜 검증 비율</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                    단순 소문/루머로 엮인 종목을 거르고, <strong>실제 관련 사업을 하거나 매출이 발생하는 진짜 수혜 기업</strong>의 비율입니다.
+                                                </p>
+                                                <div className="absolute right-6 sm:left-1/2 sm:-translate-x-1/2 top-full w-2 h-2 bg-zinc-900 border-r border-b border-blue-500/40 rotate-45 -mt-1"></div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
