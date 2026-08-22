@@ -1839,11 +1839,14 @@ function CalendarTab({ router }: { router: any }) {
     const tabParam = searchParams.get('tab');
     
     // 메인 서브탭 상태 (경제지표 / 실적·배당 / 공모주)
-    const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("economic");
+    const [mainTab, setMainTab] = useState<"economic" | "earndiv" | "ipo">("earndiv");
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         if (tabParam === "ipo") {
             setMainTab("ipo");
+        } else if (tabParam === "economic") {
+            setMainTab("economic");
         }
     }, [tabParam]);
 
@@ -1867,18 +1870,19 @@ function CalendarTab({ router }: { router: any }) {
     const [macroEvents, setMacroEvents] = useState<any[]>([]);
     const [macroLoading, setMacroLoading] = useState(true);
     const [onlyHighImpact, setOnlyHighImpact] = useState(false);
-    const [countryFilter, setCountryFilter] = useState<"calendar" | "market">("market");
     const [krEvents, setKrEvents] = useState<any[]>([]);
     const [krLoading, setKrLoading] = useState(false);
     const [globalAssets, setGlobalAssets] = useState<any>(null);
     const [globalAssetsLoading, setGlobalAssetsLoading] = useState(false);
     const [showAllGlobalAssets, setShowAllGlobalAssets] = useState(false);
 
-    // 실적·배당 데이터
+    // 실적·배당 데이터 & 캘린더 상태
     const [events, setEvents] = useState<any[]>([]);
     const [earndivLoading, setEarndivLoading] = useState(true);
     const [calTab, setCalTab] = useState<"earnings" | "dividend">("earnings");
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate());
+    const [scheduleFilter, setScheduleFilter] = useState<"upcoming" | "selected" | "month">("upcoming");
 
     // 공모주(IPO) 데이터
     const [ipos, setIpos] = useState<any[]>([]);
@@ -1902,7 +1906,6 @@ function CalendarTab({ router }: { router: any }) {
             })();
         }
     }, [watchlistSymbols.length]);
-
 
     const fetchWatched = async () => {
         try {
@@ -1961,6 +1964,44 @@ function CalendarTab({ router }: { router: any }) {
         }
     };
 
+    // 실시간 수동 갱신 함수
+    const refreshAllCalendarData = async () => {
+        setRefreshing(true);
+        try {
+            const [r1, r2, r3, r4] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/market/calendar`, { cache: 'no-store' }),
+                fetch(`${API_BASE_URL}/api/market/calendar/events`, { cache: 'no-store' }),
+                fetch(`${API_BASE_URL}/api/market/korea/ipo`, { cache: 'no-store' }),
+                fetch(`${API_BASE_URL}/api/market/us/ipo`, { cache: 'no-store' })
+            ]);
+            const [j1, j2, j3, j4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
+
+            if (j1.status === "success" && j1.data) setMacroEvents(j1.data);
+            if (j2.status === "success" && j2.data) setEvents(j2.data);
+            if (ipoTab === 'kr' && j3.status === "success" && j3.data) {
+                setIpos(j3.data.map((item: any) => ({
+                    ...item,
+                    name: item.name || item.corp || item.symbol,
+                    subscription_date: item.date,
+                    fixed_price: item.price,
+                    price_band: item.band || ""
+                })));
+            } else if (ipoTab === 'us' && j4.status === "success" && j4.data) {
+                setIpos(j4.data.map((item: any) => ({
+                    ...item,
+                    name: item.name || item.corp || item.symbol,
+                    subscription_date: item.date,
+                    fixed_price: item.price,
+                    price_band: item.band || ""
+                })));
+            }
+        } catch (e) {
+            console.error("Calendar refresh error:", e);
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
     // 경제지표 데이터 fetch (글로벌 일정)
     useEffect(() => {
         (async () => {
@@ -1973,107 +2014,14 @@ function CalendarTab({ router }: { router: any }) {
         })();
     }, []);
 
-    // 통합 시장 지표 fetch (실시간 지수/자산)
-    useEffect(() => {
-        // 데이터가 아직 없거나 갱신이 필요할 때 로딩 시작
-        if (!krEvents.length) setKrLoading(true);
-        if (!globalAssets) setGlobalAssetsLoading(true);
-
-        const fetchMarketData = async () => {
-            try {
-                // 병렬로 데이터 호출 (KOSPI/KOSDAQ 지수 포함을 위해 indices 추가 호출)
-                const [krRes, globalRes, indicesRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/market/calendar/korea`),
-                    fetch(`${API_BASE_URL}/api/market/assets`),
-                    fetch(`${API_BASE_URL}/api/market/indices`, { cache: "no-store" })
-                ]);
-
-                const krJson = await krRes.json();
-                const globalJson = await globalRes.json();
-                const indicesJson = await indicesRes.json();
-
-                if (krJson.status === "success") setKrEvents(krJson.data || []);
-                
-                if (globalJson.status === "success" || indicesJson.status === "success") {
-                    const assets = globalJson.data || [];
-                    const indices = indicesJson.data || [];
-                    
-                    // 모든 원본 데이터를 하나로 합침
-                    const allData = [...(Array.isArray(indices) ? indices : []), ...(Array.isArray(assets) ? assets : [])];
-                    
-                    // [v5.6.0] 핵심 시장 지표만 추출 (대형주/개별종목은 카테고리 기반으로 철저히 배제)
-                    const filteredData = allData.filter((item: any) => {
-                        const name = item.event_kr || "";
-                        const cat = item.category || "";
-                        
-                        // 1. 개별 종목(대형주, 미국 핵심주)은 무조건 제외
-                        if (cat.includes("대형주") || cat.includes("핵심주")) return false;
-                        
-                        // 2. 주요 시장 지표 키워드 포함 여부 확인
-                        return (
-                            name.includes("KOSPI") || name.includes("KOSDAQ") || 
-                            name.includes("S&P") || name.includes("NASDAQ") || 
-                            name.includes("DOW") || name.includes("다우") || 
-                            name.includes("VIX") || name.includes("나스닥") ||
-                            name.includes("WTI") || name.includes("금") || 
-                            name.includes("은") || name.includes("구리") || 
-                            name.includes("환율") || name.includes("달러") ||
-                            name.includes("금리") || name.includes("은행")
-                        );
-                    }).map((item: any) => {
-                        // 화면 표시용 이름 정제 (중복 제거를 위해 [한국], [글로벌] 등 제거)
-                        let cleanName = String(item.event_kr || "")
-                            .replace(/\[.*?\]/g, "") // 모든 [텍스트] 제거
-                            .replace(/\(공포지수\)/g, "")
-                            .replace("DOW JONES", "다우존스")
-                            .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, "") // 모든 이모지 제거 (중복 필터링을 위함)
-                            .replace(/지수/g, "") // "KOSPI 지수" -> "KOSPI" 통일
-                            .split("(")[0].trim();
-                            
-                        return {
-                            ...item,
-                            event_kr: cleanName,
-                            _dedupKey: cleanName.replace(/\s+/g, '') // 공백 모두 제거한 비교용 키
-                        };
-                    });
-                    
-                    // 중복 제거 (정제된 키 기준)
-                    const uniqueData = filteredData.filter((item, index, self) =>
-                        index === self.findIndex((t) => t._dedupKey === item._dedupKey)
-                    );
-                    
-                    if (uniqueData.length > 0) {
-                        setGlobalAssets(uniqueData);
-                    } else if (allData.length > 0) {
-                        // 필터링 결과가 아예 없을 경우에만 최소한의 안전장치로 상위 데이터 표시
-                        setGlobalAssets(allData.filter(i => !i.category?.includes("대형주")).slice(0, 12));
-                    }
-                }
-            } catch (error) {
-                console.error("Market data fetch error:", error);
-            } finally {
-                setKrLoading(false);
-                setGlobalAssetsLoading(false);
-            }
-        };
-
-        fetchMarketData();
-
-        // 1분마다 자동 갱신
-        const interval = setInterval(fetchMarketData, 60000);
-        return () => clearInterval(interval);
-    }, []);
-
     // 실적·배당 데이터 fetch
     useEffect(() => {
         (async () => {
             try {
-                // 기본 캘린더 데이터 조회
                 const r = await fetch(`${API_BASE_URL}/api/market/calendar/events`);
                 const j = await r.json();
                 let allEvents = j.status === "success" ? (j.data || []) : [];
 
-                // 사용자의 관심종목 일정(실적/배당 등) 추가 조회
                 const token = localStorage.getItem("token");
                 if (token && watchlistSymbols.length > 0) {
                     try {
@@ -2083,7 +2031,6 @@ function CalendarTab({ router }: { router: any }) {
                         });
                         const w_j = await w_res.json();
                         if (w_j.status === "success" && w_j.data) {
-                            // 중복 제거 후 합치기 (종목코드와 타입이 같으면 중복)
                             const existingKeys = new Set(allEvents.map((e: any) => `${e.symbol}-${e.type}`));
                             const newEvents = w_j.data.filter((e: any) => !existingKeys.has(`${e.symbol}-${e.type}`));
                             allEvents = [...allEvents, ...newEvents];
@@ -2127,38 +2074,405 @@ function CalendarTab({ router }: { router: any }) {
     const filtered = (Array.isArray(events) ? events : []).filter(e => e.type === calTab);
     const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
     const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+    
     const isToday = (d: number) => {
         const n = new Date();
         return n.getFullYear() === currentMonth.getFullYear() && n.getMonth() === currentMonth.getMonth() && n.getDate() === d;
     };
+    
+    const isSelected = (d: number) => {
+        return selectedDay === d;
+    };
+
     const getEventsForDay = (d: number) => {
         const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-        return (Array.isArray(filtered) ? filtered : []).filter(e => e.date === ds);
+        return (Array.isArray(filtered) ? filtered : []).filter(e => String(e.date || "").startsWith(ds));
     };
+
     const icon = (t: string) => t === "earnings" ? "📈" : t === "dividend" ? "💰" : "📋";
 
+    // 하단 목록에 표시할 이벤트 필터링 및 정렬
+    const getDisplayEvents = () => {
+        const list = Array.isArray(filtered) ? [...filtered] : [];
+        
+        if (scheduleFilter === "selected" && selectedDay !== null) {
+            const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
+            return list.filter(e => String(e.date || "").startsWith(ds));
+        }
+        
+        if (scheduleFilter === "month") {
+            const ym = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
+            return list.filter(e => String(e.date || "").startsWith(ym)).sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+        }
+
+        // Default "upcoming":
+        return list.sort((a, b) => {
+            const dDayA = Math.ceil((new Date(a.date).getTime() - Date.now()) / 86400000);
+            const dDayB = Math.ceil((new Date(b.date).getTime() - Date.now()) / 86400000);
+            
+            const isUpA = dDayA >= 0;
+            const isUpB = dDayB >= 0;
+            
+            if (isUpA && !isUpB) return -1;
+            if (!isUpA && isUpB) return 1;
+            if (isUpA && isUpB) return dDayA - dDayB;
+            return dDayB - dDayA;
+        });
+    };
+
+    const displayEvents = getDisplayEvents();
+    const selectedDayEvents = selectedDay !== null ? getEventsForDay(selectedDay) : [];
+
     return (
-        <div className="space-y-4">
-            {/* 메인 서브탭 */}
-            <div className="flex gap-1 bg-white/5 p-1 rounded-xl">
-                <button onClick={() => setMainTab("economic")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "economic" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    📅 주요 경제 지표
-                </button>
-                <button onClick={() => setMainTab("earndiv")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "earndiv" ? "bg-orange-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    📈 실적/배당
-                </button>
-                <button onClick={() => setMainTab("ipo")} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "ipo" ? "bg-purple-600 text-white" : "text-gray-400 hover:text-white"}`}>
-                    📋 공모주
+        <div className="space-y-4 animate-in fade-in duration-500">
+            {/* Top Navigation & Control Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-zinc-900/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
+                {/* 3 Main Subtabs */}
+                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                    <button
+                        onClick={() => setMainTab("earndiv")}
+                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            mainTab === "earndiv"
+                                ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/20"
+                                : "text-gray-400 hover:text-white bg-black/20"
+                        }`}
+                    >
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>실적 / 배당 캘린더</span>
+                    </button>
+                    <button
+                        onClick={() => setMainTab("economic")}
+                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            mainTab === "economic"
+                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20"
+                                : "text-gray-400 hover:text-white bg-black/20"
+                        }`}
+                    >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>주요 경제 지표</span>
+                    </button>
+                    <button
+                        onClick={() => setMainTab("ipo")}
+                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            mainTab === "ipo"
+                                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/20"
+                                : "text-gray-400 hover:text-white bg-black/20"
+                        }`}
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>공모주 청약</span>
+                    </button>
+                </div>
+
+                {/* Refresh Button */}
+                <button
+                    onClick={refreshAllCalendarData}
+                    disabled={refreshing}
+                    className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                >
+                    <RefreshCw className={`w-3.5 h-3.5 text-orange-400 ${refreshing ? 'animate-spin' : ''}`} />
+                    <span>실시간 갱신</span>
                 </button>
             </div>
 
-            {/* 주요 경제 지표 서브탭 */}
+            {/* TAB 1: 실적/배당 서브탭 */}
+            <div className={mainTab === "earndiv" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
+                {/* 실적 vs 배당 토글 */}
+                <div className="flex gap-2 bg-zinc-900/60 p-1.5 rounded-2xl border border-white/5">
+                    <button
+                        onClick={() => setCalTab("earnings")}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            calTab === "earnings" ? "bg-blue-600 text-white shadow-md shadow-blue-600/30" : "text-gray-400 hover:text-white"
+                        }`}
+                    >
+                        📈 기업 실적 발표 캘린더
+                    </button>
+                    <button
+                        onClick={() => setCalTab("dividend")}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            calTab === "dividend" ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30" : "text-gray-400 hover:text-white"
+                        }`}
+                    >
+                        💰 배당락 / 배당금 캘린더
+                    </button>
+                </div>
+
+                {/* 스마트 인터랙티브 캘린더 그리드 */}
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl">
+                    {/* 달력 헤더: 년월 이동 및 오늘 버튼 */}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <h3 className="text-base md:text-lg font-black text-white">
+                                {currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}
+                            </h3>
+                            <button
+                                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                                className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    const now = new Date();
+                                    setCurrentMonth(now);
+                                    setSelectedDay(now.getDate());
+                                    setScheduleFilter("selected");
+                                }}
+                                className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
+                            >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>오늘로 이동</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 요일 헤더 */}
+                    <div className="grid grid-cols-7 gap-1.5 mb-2">
+                        {["일", "월", "화", "수", "목", "금", "토"].map(d => (
+                            <div key={d} className={`text-center text-xs font-black py-1.5 ${
+                                d === "일" ? "text-rose-400" : d === "토" ? "text-blue-400" : "text-gray-400"
+                            }`}>
+                                {d}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 날짜 셀 그리드 */}
+                    <div className="grid grid-cols-7 gap-1.5">
+                        {Array.from({ length: firstDay }, (_, i) => (
+                            <div key={`empty-${i}`} className="min-h-[60px] md:min-h-[70px] rounded-xl bg-black/10 opacity-30" />
+                        ))}
+                        {Array.from({ length: daysInMonth }, (_, i) => {
+                            const day = i + 1;
+                            const evs = getEventsForDay(day);
+                            const dow = (firstDay + i) % 7;
+                            const today = isToday(day);
+                            const selected = isSelected(day);
+
+                            return (
+                                <div
+                                    key={day}
+                                    onClick={() => {
+                                        setSelectedDay(day);
+                                        setScheduleFilter("selected");
+                                    }}
+                                    className={`min-h-[60px] md:min-h-[70px] rounded-xl p-2 border transition-all cursor-pointer flex flex-col justify-between group ${
+                                        selected
+                                            ? "border-orange-500 bg-orange-500/20 shadow-lg shadow-orange-500/20 ring-2 ring-orange-400/80"
+                                            : today
+                                            ? "border-amber-500/60 bg-amber-500/10 hover:border-amber-400"
+                                            : evs.length > 0
+                                            ? "border-white/15 bg-white/5 hover:border-white/40 hover:bg-white/10"
+                                            : "border-white/5 bg-black/20 hover:border-white/20 hover:bg-white/5"
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className={`text-xs md:text-sm font-black ${
+                                            selected ? "text-orange-300" :
+                                            today ? "text-amber-400" :
+                                            dow === 0 ? "text-rose-400" :
+                                            dow === 6 ? "text-blue-400" :
+                                            "text-gray-200"
+                                        }`}>
+                                            {day}
+                                        </span>
+                                        {today && (
+                                            <span className="text-[8px] font-black bg-amber-400 text-black px-1 rounded">
+                                                오늘
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Event Dots & Counts */}
+                                    {evs.length > 0 ? (
+                                        <div className="mt-1">
+                                            <div className="flex items-center gap-1 bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded-md border border-orange-500/30 text-[9px] font-black w-fit">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                                                <span>{evs.length}건</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="h-3" />
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 하단 일정 섹션 & 필터 바 */}
+                <div className="space-y-3 pt-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                        <h4 className="font-black text-sm md:text-base text-gray-200 flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-orange-400" />
+                            <span>
+                                {scheduleFilter === "selected" && selectedDay !== null
+                                    ? `📌 ${currentMonth.getMonth() + 1}월 ${selectedDay}일 일정 (${selectedDayEvents.length}건)`
+                                    : scheduleFilter === "month"
+                                    ? `📅 ${currentMonth.getMonth() + 1}월 전체 일정 (${displayEvents.length}건)`
+                                    : `⚡ 다가오는 주요 실적/배당 일정 (${displayEvents.length}건)`}
+                            </span>
+                        </h4>
+
+                        {/* 3가지 필터 탭 */}
+                        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 w-full sm:w-auto">
+                            <button
+                                onClick={() => setScheduleFilter("upcoming")}
+                                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    scheduleFilter === "upcoming" ? "bg-orange-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                ⚡ 다가오는 순
+                            </button>
+                            <button
+                                onClick={() => setScheduleFilter("selected")}
+                                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    scheduleFilter === "selected" ? "bg-orange-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                📌 선택한 날짜 ({selectedDay ? `${selectedDay}일` : "-"})
+                            </button>
+                            <button
+                                onClick={() => setScheduleFilter("month")}
+                                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    scheduleFilter === "month" ? "bg-orange-600 text-white shadow-sm" : "text-gray-400 hover:text-white"
+                                }`}
+                            >
+                                📅 {currentMonth.getMonth() + 1}월 전체
+                            </button>
+                        </div>
+                    </div>
+
+                    {earndivLoading ? (
+                        <div className="text-center py-16 bg-zinc-900/40 rounded-2xl border border-white/5">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-orange-400 mb-2" />
+                            <p className="text-xs text-gray-400 font-bold">DART 전자공시 및 최신 실적 일정을 분석하고 있습니다...</p>
+                        </div>
+                    ) : displayEvents.length === 0 ? (
+                        <div className="text-center py-12 px-4 bg-zinc-900/60 rounded-2xl border border-white/5">
+                            <Calendar className="w-10 h-10 text-gray-500 mx-auto mb-2 opacity-40" />
+                            <p className="text-xs text-gray-300 font-bold mb-1">
+                                {scheduleFilter === "selected" && selectedDay !== null
+                                    ? `${currentMonth.getMonth() + 1}월 ${selectedDay}일에는 예정된 ${calTab === "earnings" ? "실적" : "배당"} 일정이 없습니다.`
+                                    : "조회된 일정이 없습니다."}
+                            </p>
+                            <p className="text-[11px] text-gray-500 mb-4">다가오는 주요 기업들의 일정을 확인해보세요.</p>
+                            <button
+                                onClick={() => setScheduleFilter("upcoming")}
+                                className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-black transition-all shadow-lg shadow-orange-600/30"
+                            >
+                                ⚡ 다가오는 전체 일정 보기
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {displayEvents.slice(0, 16).map((ev, i) => {
+                                const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
+                                const isPast = dDay < 0;
+
+                                return (
+                                    <div
+                                        key={i}
+                                        className="bg-zinc-900/80 border border-white/10 hover:border-white/25 rounded-2xl p-4 transition-all hover:bg-white/5 cursor-pointer group flex flex-col justify-between gap-3 shadow-lg"
+                                        onClick={() => {
+                                            if (ev.link) window.open(ev.link, '_blank');
+                                            else router.push(`/discovery?q=${encodeURIComponent(ev.symbol || ev.name)}`);
+                                        }}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className={`p-2.5 rounded-xl ${
+                                                    ev.type === 'earnings' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                                } shrink-0`}>
+                                                    <span className="text-lg">{icon(ev.type)}</span>
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="font-black text-sm text-white group-hover:text-orange-400 transition-colors truncate">
+                                                            {ev.name}
+                                                        </span>
+                                                        <span className="text-xs font-mono text-gray-400">
+                                                            {ev.symbol}
+                                                        </span>
+                                                        {(ev.is_dart || (ev.symbol && /^\d{6}$/.test(ev.symbol))) && (
+                                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 flex items-center gap-0.5">
+                                                                <FileText className="w-2.5 h-2.5" /> DART 공식
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-300 mt-1 font-medium line-clamp-1">
+                                                        {ev.detail && ev.detail !== "실적 발표 (예정)"
+                                                            ? ev.detail
+                                                            : ev.summary
+                                                            ? ev.summary
+                                                            : isPast
+                                                            ? "공시 발표가 완료된 일정입니다."
+                                                            : "공시가 등록되는 즉시 핵심 수치를 업데이트합니다."}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Right D-Day & Date */}
+                                            <div className="text-right shrink-0">
+                                                <span className={`text-xs font-black px-2.5 py-1 rounded-xl border block mb-1 font-mono shadow-sm ${
+                                                    dDay === 0
+                                                        ? "bg-rose-500 text-white border-rose-400 animate-pulse"
+                                                        : dDay > 0 && dDay <= 3
+                                                        ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                                                        : dDay > 3 && dDay <= 7
+                                                        ? "bg-orange-500/20 text-orange-300 border-orange-500/40"
+                                                        : dDay > 7
+                                                        ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                                        : "bg-white/5 text-gray-400 border-white/10"
+                                                }`}>
+                                                    {dDay === 0 ? "TODAY" : dDay > 0 ? `D-${dDay}` : `D+${Math.abs(dDay)}`}
+                                                </span>
+                                                <div className="text-[10px] font-mono text-gray-400 font-bold">
+                                                    {ev.date}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Action bar */}
+                                        <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[10px]">
+                                            <div className="flex items-center gap-1.5 text-gray-400">
+                                                <span>{isPast ? "📌 발표 완료" : "⏱️ 발표 대기"}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {ev.link && (
+                                                    <span className="text-blue-400 hover:underline flex items-center gap-0.5">
+                                                        공시원문 <ExternalLink className="w-2.5 h-2.5" />
+                                                    </span>
+                                                )}
+                                                <span className="text-orange-400 group-hover:underline flex items-center gap-0.5 font-bold">
+                                                    차트 분석 ↗
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* TAB 2: 주요 경제 지표 서브탭 */}
             <div className={mainTab === "economic" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
                 <div className="space-y-4">
                     {/* 상단 글로벌 경제 캘린더 일정 섹션 */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 shadow-xl">
                         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                            <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
+                            <h4 className="font-black text-sm md:text-base text-gray-200 flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-blue-400" /> 주간 글로벌 핵심 일정
                             </h4>
                             <div className="flex items-center gap-2">
@@ -2177,31 +2491,14 @@ function CalendarTab({ router }: { router: any }) {
                             </div>
                         </div>
 
-                        {/* [주말 특별 배너] 캘린더 내부 유도 배너 */}
-                        {(() => {
-                            const day = new Date().getDay();
-                            const hour = new Date().getHours();
-                            const isWeekend = true; // 대표님 확인용 임시 상시 노출
-                            if (!isWeekend) return null;
-                            return (
-                                <div className="mb-4 bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-500/30 rounded-xl p-3 flex items-center gap-3">
-                                    <Bot className="w-8 h-8 text-blue-400 animate-bounce" />
-                                    <div>
-                                        <div className="text-[10px] font-bold text-red-400 mb-0.5 tracking-wider">주말 스페셜 기능</div>
-                                        <div className="text-xs font-bold text-white leading-tight">하단 일정표에서 <span className="text-yellow-400">AI 수혜 테마 배지</span>를 클릭해 다음 주 유망 테마를 미리 선점하세요!</div>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
                         {macroLoading ? (
-                            <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
+                            <div className="flex justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin text-gray-500" /></div>
                         ) : macroEvents.length === 0 ? (
-                            <div className="text-center py-4 text-gray-500 text-xs">
-                                <p>오늘 예정된 주요 일정이 없습니다.</p>
+                            <div className="text-center py-8 text-gray-500 text-xs">
+                                <p>예정된 주요 경제 일정이 없습니다.</p>
                             </div>
                         ) : (
-                            <div className="space-y-1.5 max-h-[250px] overflow-y-auto hide-scrollbar">
+                            <div className="space-y-2 max-h-[350px] overflow-y-auto hide-scrollbar">
                                 {(Array.isArray(macroEvents) ? macroEvents : [])
                                     .filter(evt => {
                                         if (!onlyHighImpact) return true;
@@ -2211,258 +2508,80 @@ function CalendarTab({ router }: { router: any }) {
                                     .map((evt, i) => {
                                         const is3Star = evt.importance >= 3 || String(evt.event_kr || evt.event || "").includes("CPI") || String(evt.event_kr || evt.event || "").includes("FOMC");
                                         return (
-                                    <div key={i} className={`flex flex-col p-3 rounded-xl transition-all border group ${
-                                        is3Star 
-                                            ? "bg-red-950/20 hover:bg-red-950/30 border-red-500/30 shadow-sm" 
-                                            : "bg-black/20 hover:bg-black/40 border-white/5"
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex flex-col items-center min-w-[45px]">
-                                                <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 px-1">
-                                                {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className={`font-bold text-xs truncate ${is3Star ? "text-white" : "text-gray-300"}`}>
-                                                        {evt.event_kr || evt.event}
-                                                    </span>
-                                                    {is3Star && (
-                                                        <span className="text-[9px] font-black bg-red-500/30 text-red-300 px-1.5 py-0.2 rounded border border-red-500/40">
-                                                            ⭐⭐⭐ 특급
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-3 mt-1 text-[10px] font-bold">
-                                                    {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
-                                                    {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
-                                                    {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${is3Star ? 'text-green-400 font-black' : 'text-gray-200'}`}>{evt.actual}</span></span>}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Zap className={`w-3.5 h-3.5 ${is3Star ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
-                                            </div>
-                                        </div>
-                                        {/* [New] AI 수혜 테마 배지 (중요도 2 이상이거나 테마가 매칭될 때) */}
-                                        {(() => {
-                                            const aiData = getAiThemeForEvent(evt.event_kr || evt.event);
-                                            if (aiData && (evt.importance >= 2 || is3Star)) {
-                                                return (
-                                                    <div 
-                                                        className="mt-3 ml-[60px] flex flex-col bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30 rounded-lg overflow-hidden cursor-pointer group hover:border-blue-400/50 transition-colors"
-                                                        onClick={(e) => { e.stopPropagation(); window.open(`/theme?q=${aiData.theme}`, '_blank'); }}
-                                                    >
-                                                        <div className="flex items-center justify-between px-2.5 py-1.5 bg-black/20">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Bot className="w-3.5 h-3.5 text-purple-400" />
-                                                                <span className="text-[10px] font-bold text-blue-300">AI 수혜 테마 예상: <span className="text-white ml-0.5">{aiData.theme}</span></span>
-                                                            </div>
-                                                            <span className="text-[9px] text-gray-400 group-hover:text-white transition-colors">분석보기 〉</span>
+                                            <div key={i} className={`flex flex-col p-3 rounded-xl transition-all border group ${
+                                                is3Star 
+                                                    ? "bg-red-950/20 hover:bg-red-950/30 border-red-500/30 shadow-sm" 
+                                                    : "bg-black/20 hover:bg-black/40 border-white/5"
+                                            }`}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex flex-col items-center min-w-[45px]">
+                                                        <span className="text-[11px] font-mono font-black text-gray-400">{evt.time}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 px-1">
+                                                        {evt.country === 'KR' ? '🇰🇷' : evt.country === 'US' ? '🇺🇸' : evt.country === 'JP' ? '🇯🇵' : evt.country === 'CN' ? '🇨🇳' : evt.country === 'EU' ? '🇪🇺' : '🌐'}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className={`font-bold text-xs truncate ${is3Star ? "text-white" : "text-gray-300"}`}>
+                                                                {evt.event_kr || evt.event}
+                                                            </span>
+                                                            {is3Star && (
+                                                                <span className="text-[9px] font-black bg-red-500/30 text-red-300 px-1.5 py-0.2 rounded border border-red-500/40">
+                                                                    ⭐⭐⭐ 특급
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <div className="px-2.5 py-1.5 text-[10px] text-gray-400 border-t border-white/5 leading-tight">
-                                                            💡 {aiData.reason}
+                                                        <div className="flex gap-3 mt-1 text-[10px] font-bold">
+                                                            {evt.previous && evt.previous !== "-" && <span className="text-gray-500">이전 <span className="text-gray-400">{evt.previous}</span></span>}
+                                                            {evt.forecast && evt.forecast !== "-" && <span className="text-gray-500">예상 <span className="text-yellow-500/80">{evt.forecast}</span></span>}
+                                                            {evt.actual && evt.actual !== "-" && <span className="text-gray-400">실제 <span className={`${is3Star ? 'text-green-400 font-black' : 'text-gray-200'}`}>{evt.actual}</span></span>}
                                                         </div>
                                                     </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </div>
-                                    );
-                                })}
+                                                    <div className="flex items-center gap-1">
+                                                        <Zap className={`w-3.5 h-3.5 ${is3Star ? 'text-red-500 fill-red-500 animate-pulse' : evt.importance >= 2 ? 'text-orange-400 fill-orange-400' : 'text-gray-700'}`} />
+                                                    </div>
+                                                </div>
+                                                {(() => {
+                                                    const aiData = getAiThemeForEvent(evt.event_kr || evt.event);
+                                                    if (aiData && (evt.importance >= 2 || is3Star)) {
+                                                        return (
+                                                            <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
+                                                                <span className="text-gray-400">💡 AI 수혜 테마: <strong className="text-yellow-300">{aiData.theme}</strong></span>
+                                                                <span className="text-gray-500 truncate max-w-[200px]">{aiData.reason}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+                                            </div>
+                                        );
+                                    })}
                             </div>
                         )}
                     </div>
-
-
-
-                    {/* 글로벌 주요 지수 및 자산 (KOSPI/KOSDAQ 등) 복구 */}
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-black text-sm text-gray-200 flex items-center gap-2">
-                                🌍 주요 경제 지표 (최신)
-                            </h4>
-                            <button 
-                                onClick={() => setShowAllGlobalAssets(!showAllGlobalAssets)}
-                                className="text-xs font-bold text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10"
-                            >
-                                {showAllGlobalAssets ? "핵심만 보기 ▲" : "전체 보기 ▼"}
-                            </button>
-                        </div>
-                        {globalAssetsLoading ? (
-                            <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-500" /></div>
-                        ) : globalAssets && globalAssets.length > 0 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                {(Array.isArray(globalAssets) ? globalAssets : []).filter((asset: any) => {
-                                    if (showAllGlobalAssets) return true;
-                                    const essential = ['S&P 500', 'NASDAQ', 'KOSPI', 'KOSDAQ', '미 국채 10년물 금리', 'VIX', '미국 USD 환율', 'WTI'];
-                                    return essential.includes(asset.event_kr);
-                                }).map((asset: any, i: number) => {
-                                    // [v5.9.2 ROOT FIX] change_val=0 확인됨 → change 문자열의 +/- 부호로만 판정
-                                    const changeStr = String(asset.change || "");
-                                    const isUp = changeStr.startsWith('+') || (parseFloat(changeStr) > 0 && !changeStr.startsWith('-'));
-                                    const isDown = changeStr.startsWith('-') || parseFloat(changeStr) < 0;
-                                    
-                                    const colorClass = isUp ? 'text-rose-500' : isDown ? 'text-sky-500' : 'text-gray-400';
-                                    const bgColorClass = isUp ? 'bg-rose-500/10' : isDown ? 'bg-sky-500/10' : 'bg-gray-500/10';
-                                    const borderClass = isUp ? 'border-rose-500/20' : isDown ? 'border-sky-500/20' : 'border-gray-500/20';
-
-                                    return (
-                                        <div key={i} className={`bg-black/40 rounded-xl p-3 border ${borderClass} flex flex-col justify-between hover:bg-white/5 transition-all group shadow-lg shadow-black/20`}>
-                                            <div className="text-[10px] text-gray-500 font-bold mb-1 group-hover:text-gray-300 transition-colors">{asset.event_kr}</div>
-                                            <div className={`text-base font-black ${colorClass} tracking-tighter leading-tight`}>
-                                                {asset.actual}
-                                            </div>
-                                            <div className={`text-[10px] font-bold flex items-center gap-1 mt-1.5 ${bgColorClass} ${colorClass} w-max px-2 py-0.5 rounded-full border ${borderClass}`}>
-                                                {isUp ? '▲' : isDown ? '▼' : '●'} {changeStr || "-"}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-
-                            </div>
-                        ) : (
-                            <div className="text-center py-4 text-gray-500 text-xs">
-                                <p>데이터를 불러올 수 없습니다.</p>
-                            </div>
-                        )}
-                    </div>
-
                 </div>
             </div>
-            {/* 실적/배당 서브탭 */}
-            <div className={mainTab === "earndiv" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
-                    <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-                        <button onClick={() => setCalTab("earnings")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "earnings" ? "bg-blue-600 text-white" : "text-gray-400"}`}>📈 전체 실적 달력</button>
-                        <button onClick={() => setCalTab("dividend")} className={`flex-1 py-2 rounded-lg text-xs font-bold ${calTab === "dividend" ? "bg-green-600 text-white" : "text-gray-400"}`}>💰 전체 배당 달력</button>
-                    </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronLeft className="w-4 h-4" /></button>
-                            <h3 className="text-lg font-black">{currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}</h3>
-                            <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-1.5 hover:bg-white/10 rounded-lg"><ChevronRight className="w-4 h-4" /></button>
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 mb-1">
-                            {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className={`text-center text-[10px] font-bold py-1 ${d === "일" ? "text-red-400" : d === "토" ? "text-blue-400" : "text-gray-500"}`}>{d}</div>)}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1">
-                            {Array.from({ length: firstDay }, (_, i) => <div key={`e-${i}`} className="min-h-[55px]" />)}
-                            {Array.from({ length: daysInMonth }, (_, i) => {
-                                const day = i + 1, evs = getEventsForDay(day), dow = (firstDay + i) % 7;
-                                return (
-                                    <div key={day} className={`min-h-[55px] rounded-lg p-1 border ${isToday(day) ? "border-orange-500/50 bg-orange-500/10" : evs.length > 0 ? "border-white/10 bg-white/5" : "border-transparent"}`}>
-                                        <span className={`text-[10px] font-bold ${isToday(day) ? "text-orange-400" : dow === 0 ? "text-red-400" : dow === 6 ? "text-blue-400" : "text-gray-300"}`}>{day}</span>
-                                        {evs.slice(0, 2).map((ev, j) => <div key={j} className="text-[8px] truncate rounded px-0.5 py-0.5 bg-white/5 mt-0.5 cursor-pointer" onClick={() => router.push(`/discovery?q=${ev.symbol}`)} title={ev.name}>{icon(ev.type)} {ev.name}</div>)}
-                                        {evs.length > 2 && <span className="text-[8px] text-gray-500">+{evs.length - 2}</span>}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <h4 className="font-bold text-sm text-gray-400 mb-3 flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-blue-400" /> 다가오는 주요 일정 (자동 탐지)
-                    </h4>
-                    {earndivLoading ? (
-                        <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                            <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-500 mb-2" />
-                            <p className="text-sm text-gray-500 font-medium">최신 공시 데이터를 스캔하고 있습니다...</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-2.5">
-                            {(Array.isArray(filtered) ? filtered : []).sort((a, b) => String(a.date || "").localeCompare(String(b.date || ""))).slice(0, 12).map((ev, i) => {
-                                const dDay = Math.ceil((new Date(ev.date).getTime() - Date.now()) / 86400000);
-                                return (
-                                    <div key={i} 
-                                        className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group flex items-start gap-4"
-                                        onClick={() => {
-                                            if (ev.link) window.open(ev.link, '_blank');
-                                            else router.push(`/discovery?q=${ev.symbol}`);
-                                        }}
-                                    >
-                                        <div className={`p-3 rounded-2xl ${ev.type === 'earnings' ? 'bg-blue-500/10 text-blue-400' : 'bg-green-500/10 text-green-400'} shrink-0 group-hover:scale-110 transition-transform`}>
-                                            <span className="text-xl">{icon(ev.type)}</span>
-                                        </div>
-                                        
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-black text-sm text-white group-hover:text-blue-400 transition-colors">{ev.name}</span>
-                                                <span className="text-xs font-mono text-gray-500" translate="no">{ev.symbol}</span>
-                                                {(ev.is_dart || (ev.symbol && /^\d{6}$/.test(ev.symbol))) && (
-                                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-yellow-500 text-black border border-white/50 flex items-center gap-0.5 shadow-[0_0_15px_rgba(234,179,8,0.4)]">
-                                                        <FileText className="w-2.5 h-2.5" /> DART 공식
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed bg-white/5 p-2 rounded-xl border border-white/5 font-medium">
-                                                {ev.detail && ev.detail !== "실적 발표 (예정)" ? (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <Zap className="w-3 h-3 text-yellow-400" />
-                                                        {ev.detail}
-                                                    </span>
-                                                ) : ev.summary ? (
-                                                    <span className="flex items-center gap-1.5">
-                                                        <Activity className="w-3 h-3 text-blue-400" />
-                                                        {ev.summary}
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1.5 text-gray-400">
-                                                        <div className="w-1.5 h-1.5 bg-gray-500/50 rounded-full" />
-                                                        {dDay > 7 ? "현재 확정 공시 대기 중이며, 발표 당일 수치를 즉시 분석합니다." : "발표 임박! 공시가 올라오는 즉시 배당금 및 실적 수치를 띄워드립니다."}
-                                                    </span>
-                                                )}
-                                            </p>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {ev.link && (
-                                                    <div className="flex items-center gap-1 text-[10px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
-                                                        <ExternalLink className="w-3 h-3" /> 공시 원문
-                                                    </div>
-                                                )}
-                                                {ev.is_dart && (
-                                                    <div className="flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                                                        <FileText className="w-3 h-3" /> 분석 완료
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="text-right shrink-0">
-                                            <div className="text-[11px] font-mono font-bold text-gray-500 mb-1">{ev.date}</div>
-                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg border shadow-sm ${
-                                                dDay <= 0 ? "bg-rose-500 text-white border-rose-400 animate-pulse" : 
-                                                dDay <= 3 ? "bg-rose-500/10 text-rose-400 border-rose-500/30" : 
-                                                dDay <= 7 ? "bg-orange-500/10 text-orange-400 border-orange-500/30" : 
-                                                "bg-gray-500/10 text-gray-400 border-gray-500/30"
-                                            }`}>
-                                                {dDay > 0 ? `D-${dDay}` : dDay === 0 ? "TODAY" : `D+${Math.abs(dDay)}`}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            {/* 공모주 서브탭 */}
-            <div className={mainTab === "ipo" ? "space-y-3 block animate-in fade-in duration-200" : "hidden"}>
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+            {/* TAB 3: 공모주 서브탭 */}
+            <div className={mainTab === "ipo" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-2 gap-3">
                     <div>
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">공모주 일정</h2>
+                        <h2 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+                            <span>공모주 청약 캘린더</span>
+                        </h2>
                         <span className="text-xs text-gray-500">한국/미국 공모주 청약 일정 (DART / Alpha Vantage 제공)</span>
                     </div>
                     
-                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
                         <button
                             onClick={() => setIpoTab('kr')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${ipoTab === 'kr' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${ipoTab === 'kr' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'text-gray-400 hover:text-white'}`}
                         >
                             🇰🇷 국내 공모주
                         </button>
                         <button
                             onClick={() => setIpoTab('us')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${ipoTab === 'us' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${ipoTab === 'us' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-gray-400 hover:text-white'}`}
                         >
                             🇺🇸 미국 공모주
                         </button>
