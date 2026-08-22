@@ -4074,6 +4074,14 @@ def get_investor_ranking_data():
     """
     import requests
     from bs4 import BeautifulSoup
+    import time
+
+    cache_attr = "_investor_ranking_cache"
+    cache_ts_attr = "_investor_ranking_cache_ts"
+    cached_data = globals().get(cache_attr)
+    cached_ts = globals().get(cache_ts_attr, 0)
+    if cached_data and (time.time() - cached_ts) < 30:
+        return cached_data
 
     def parse_naver_sise(url, is_rise=False):
         try:
@@ -4098,30 +4106,70 @@ def get_investor_ranking_data():
                 href = name_tag.get("href", "")
                 symbol = href.split("code=")[-1] if "code=" in href else ""
 
-                # 거래량 또는 등락률 값 추출
-                val = cols[3].text.strip(
-                ) if not is_rise else cols[5].text.strip()
+                price_raw = cols[2].text.strip()
+                diff_raw = cols[3].text.strip().replace("\n", " ").replace("\t", "")
+                change_raw = cols[4].text.strip()
+                vol_raw = cols[5].text.strip()
+
+                # Clean change string
+                change_clean = change_raw
+                if not change_clean.startswith("+") and not change_clean.startswith("-") and not change_clean.startswith("0"):
+                    if "상승" in diff_raw or "▲" in diff_raw:
+                        change_clean = f"+{change_clean}"
+                    elif "하락" in diff_raw or "▼" in diff_raw:
+                        change_clean = f"-{change_clean}"
+
+                # Value and Amount formatted for UI
+                if is_rise:
+                    display_val = change_clean
+                    display_sub = f"{price_raw}원"
+                else:
+                    try:
+                        vol_num = int(vol_raw.replace(",", ""))
+                        if vol_num >= 100000000:
+                            vol_fmt = f"{vol_num / 100000000:.1f}억주"
+                        elif vol_num >= 10000:
+                            vol_fmt = f"{vol_num / 10000:.0f}만주"
+                        else:
+                            vol_fmt = f"{vol_raw}주"
+                    except Exception:
+                        vol_fmt = f"{vol_raw}주"
+                    display_val = vol_fmt
+                    display_sub = f"{change_clean} ({price_raw}원)"
 
                 items.append({
                     "name": name,
                     "symbol": symbol,
-                    "value": val
+                    "price": f"{price_raw}원" if price_raw else "",
+                    "change": change_clean,
+                    "volume": f"{vol_raw}주" if vol_raw else "",
+                    "diff": diff_raw,
+                    "value": display_val,
+                    "amount": display_sub
                 })
                 if len(items) >= 15:
                     break
             return items
-        except BaseException:
+        except Exception as e:
+            print(f"[Investor Ranking Error] {e}")
             return []
 
-    return {
+    data = {
         "foreign_sell": parse_naver_sise(
             "https://finance.naver.com/sise/sise_rise.naver?sosok=0",
             True),
         "institution_sell": parse_naver_sise(
             "https://finance.naver.com/sise/sise_rise.naver?sosok=1",
             True),
-        "foreign_top": parse_naver_sise("https://finance.naver.com/sise/sise_quant.naver?sosok=0"),
-        "institution_top": parse_naver_sise("https://finance.naver.com/sise/sise_quant.naver?sosok=1")}
+        "foreign_top": parse_naver_sise(
+            "https://finance.naver.com/sise/sise_quant.naver?sosok=0",
+            False),
+        "institution_top": parse_naver_sise(
+            "https://finance.naver.com/sise/sise_quant.naver?sosok=1",
+            False)}
+    globals()[cache_attr] = data
+    globals()[cache_ts_attr] = time.time()
+    return data
 
 
 def get_double_whale_ranking():

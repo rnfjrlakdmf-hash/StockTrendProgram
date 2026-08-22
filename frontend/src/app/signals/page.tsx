@@ -1474,98 +1474,273 @@ function HeatmapTab({ router }: { router: any }) {
     );
 }
 
-// ============ TAB 3: MARKET INSIGHTS (국내 수급/공매도) ============
+// ============ TAB 3: MARKET INSIGHTS (국내 수급/시장 주도주) ============
 function MarketInsightsTab({ router }: { router: any }) {
     const [insightsData, setInsightsData] = useState<any>(null);
     const [investorData, setInvestorData] = useState<any>(null);
     const [doubleWhaleData, setDoubleWhaleData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [subTab, setSubTab] = useState<"double_whale" | "volume" | "value">("double_whale");
+    const [refreshing, setRefreshing] = useState(false);
+    const [subTab, setSubTab] = useState<"double_whale" | "volume" | "value">("volume");
+
+    const loadData = async (isManual: boolean = false) => {
+        if (isManual) setRefreshing(true);
+        try {
+            const [r1, r2, r3] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/market/investors/top`, { cache: 'no-store' }),
+                fetch(`${API_BASE_URL}/api/market/market-insights`, { cache: 'no-store' }),
+                fetch(`${API_BASE_URL}/api/market/double-whale`, { cache: 'no-store' })
+            ]);
+            const [j1, j2, j3] = await Promise.all([r1.json(), r2.json(), r3.json()]);
+
+            if (j1.status === "success" && j1.data) setInvestorData(j1.data);
+            if (j2.status === "success" && j2.data) setInsightsData(j2.data);
+            if (j3.status === "success" && Array.isArray(j3.data)) setDoubleWhaleData(j3.data);
+        } catch (e) {
+            console.error("Market insights error:", e);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        (async () => {
-            try {
-                // 1. 거래량 및 상승률 상위 (기존 API)
-                const r1 = await fetch(`${API_BASE_URL}/api/market/investors/top`);
-                const j1 = await r1.json();
-                if (j1.status === "success") setInvestorData(j1.data);
-
-                // 2. 실시간 검색 및 거래대금 상위 (신규 API)
-                const r2 = await fetch(`${API_BASE_URL}/api/market/market-insights`);
-                const j2 = await r2.json();
-                if (j2.status === "success") setInsightsData(j2.data);
-
-                // 3. 외인·기관 쌍끌이 순매수 레이더 (신규 API)
-                const r3 = await fetch(`${API_BASE_URL}/api/market/double-whale`);
-                const j3 = await r3.json();
-                if (j3.status === "success") setDoubleWhaleData(j3.data || []);
-            } catch { } finally { setLoading(false); }
-        })();
+        loadData();
+        const timer = setInterval(() => loadData(false), 60000);
+        return () => clearInterval(timer);
     }, []);
 
-    const renderList = (title: string, items: any[], color: string, icon: any, sliceNum: number = 10) => (
-        <div className={`bg-${color}-900/10 border border-${color}-500/30 rounded-xl p-3`}>
-            <h4 className={`font-bold text-${color}-400 text-sm mb-2 flex items-center gap-1`}>{icon} {title}</h4>
-            {(Array.isArray(items) ? items : []).slice(0, sliceNum).map((item: any, i: number) => (
-                <div key={i} className="flex items-start justify-between text-xs bg-white/5 rounded-lg px-2 py-1.5 mb-1 hover:bg-white/10 cursor-pointer gap-2"
-                    onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}>
-                    <span className="font-medium flex-1 min-w-0 line-clamp-2 leading-tight break-keep">{i + 1}. {item.name}</span>
-                    <span className={`text-${color}-400 font-mono text-[10px] mt-0.5 whitespace-nowrap flex-shrink-0`}>{item.amount || item.value || ""}</span>
+    // Reusable Premium Leaderboard Card
+    const renderLeaderboard = (
+        title: string,
+        subtitle: string,
+        items: any[],
+        theme: "red" | "purple" | "emerald" | "blue" | "orange" | "yellow",
+        icon: any,
+        sliceNum: number = 10,
+        isVolumeMode: boolean = false
+    ) => {
+        const themeMap = {
+            red: { border: "border-red-500/30", bg: "bg-red-950/20", titleColor: "text-red-400", badgeBg: "bg-red-500/15 text-red-400 border-red-500/30" },
+            purple: { border: "border-purple-500/30", bg: "bg-purple-950/20", titleColor: "text-purple-400", badgeBg: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
+            emerald: { border: "border-emerald-500/30", bg: "bg-emerald-950/20", titleColor: "text-emerald-400", badgeBg: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+            blue: { border: "border-cyan-500/30", bg: "bg-cyan-950/20", titleColor: "text-cyan-400", badgeBg: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30" },
+            orange: { border: "border-orange-500/30", bg: "bg-orange-950/20", titleColor: "text-orange-400", badgeBg: "bg-orange-500/15 text-orange-400 border-orange-500/30" },
+            yellow: { border: "border-amber-500/30", bg: "bg-amber-950/20", titleColor: "text-amber-400", badgeBg: "bg-amber-500/15 text-amber-400 border-amber-500/30" }
+        };
+
+        const currentTheme = themeMap[theme] || themeMap.red;
+
+        return (
+            <div className={`rounded-2xl border ${currentTheme.border} ${currentTheme.bg} bg-zinc-900/80 backdrop-blur-xl p-4 shadow-xl flex flex-col justify-between`}>
+                <div>
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-3">
+                        <div className="flex items-center gap-2">
+                            <div className={`p-1.5 rounded-lg bg-white/5 ${currentTheme.titleColor}`}>
+                                {icon}
+                            </div>
+                            <div>
+                                <h4 className={`font-black text-sm md:text-base text-white flex items-center gap-1.5`}>
+                                    {title}
+                                </h4>
+                                <p className="text-[10px] text-gray-400 font-medium">{subtitle}</p>
+                            </div>
+                        </div>
+                        <span className="text-[9px] font-bold text-gray-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+                            실시간 TOP {sliceNum}
+                        </span>
+                    </div>
+
+                    {/* Stock Items */}
+                    <div className="space-y-1.5">
+                        {(Array.isArray(items) ? items : []).slice(0, sliceNum).map((item: any, i: number) => {
+                            const rank = i + 1;
+                            const isFirst = rank === 1;
+                            const isSecond = rank === 2;
+                            const isThird = rank === 3;
+                            const chgStr = String(item.change || item.value || "");
+                            const isPlus = chgStr.includes("+") || (!chgStr.includes("-") && !isVolumeMode && parseFloat(chgStr) > 0);
+                            const isMinus = chgStr.includes("-");
+
+                            return (
+                                <div
+                                    key={i}
+                                    onClick={() => router.push(`/discovery?q=${encodeURIComponent(item.symbol || item.name)}`)}
+                                    className="flex items-center justify-between p-2.5 rounded-xl bg-black/40 hover:bg-white/10 border border-transparent hover:border-white/15 cursor-pointer transition-all duration-150 group gap-2"
+                                >
+                                    {/* Left: Rank & Name */}
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-xs font-black shrink-0 ${
+                                            isFirst ? "bg-amber-400 text-black shadow-md shadow-amber-400/30" :
+                                            isSecond ? "bg-slate-300 text-black" :
+                                            isThird ? "bg-amber-700 text-white" :
+                                            "bg-white/10 text-gray-400"
+                                        }`}>
+                                            {rank}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-bold text-gray-100 group-hover:text-white truncate text-xs md:text-sm flex items-center gap-1.5">
+                                                <span>{item.name}</span>
+                                                {isFirst && <span className="text-[9px] bg-amber-400/20 text-amber-300 px-1 py-0.2 rounded font-bold">1등</span>}
+                                            </div>
+                                            {item.price && (
+                                                <div className="text-[10px] text-gray-400 font-mono">
+                                                    {item.price}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Change / Volume Badges */}
+                                    <div className="text-right shrink-0">
+                                        <div className={`px-2.5 py-1 rounded-xl text-xs font-black font-mono inline-block border ${
+                                            isVolumeMode
+                                                ? currentTheme.badgeBg
+                                                : isPlus
+                                                ? "bg-red-500/15 text-red-400 border-red-500/30"
+                                                : isMinus
+                                                ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                                                : "bg-white/10 text-gray-300 border-white/10"
+                                        }`}>
+                                            {item.value || item.change || item.amount || "-"}
+                                        </div>
+                                        {isVolumeMode && item.amount && (
+                                            <div className={`text-[10px] font-mono mt-0.5 font-bold ${
+                                                item.amount.includes("+") ? "text-red-400" : item.amount.includes("-") ? "text-blue-400" : "text-gray-400"
+                                            }`}>
+                                                {item.amount}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {(!items || items.length === 0) && (
+                            <div className="text-center py-8 text-xs text-gray-500 font-medium">데이터 집계 중...</div>
+                        )}
+                    </div>
                 </div>
-            ))}
-            {(!items || items.length === 0) && <p className="text-gray-500 text-xs text-center py-3">데이터 없음</p>}
-        </div>
-    );
+
+                <div className="mt-3 pt-2.5 border-t border-white/5 text-[10px] text-gray-500 flex items-center justify-between">
+                    <span>※ 클릭 시 해당 종목 차트/분석으로 이동</span>
+                    <span className="font-mono">실시간 네이버 증권</span>
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className="space-y-4">
-            {/* 3대 수급 서브탭 네비게이션 */}
-            <div className="flex gap-1.5 bg-white/5 p-1 rounded-xl">
+        <div className="space-y-4 animate-in fade-in duration-500">
+            {/* Top Navigation & Control Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-zinc-900/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
+                {/* 3 Subtabs */}
+                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                    <button
+                        onClick={() => setSubTab("volume")}
+                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            subTab === "volume"
+                                ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-600/20"
+                                : "text-gray-400 hover:text-white bg-black/20"
+                        }`}
+                    >
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>실시간 급등 & 거래량 TOP</span>
+                    </button>
+                    <button
+                        onClick={() => setSubTab("double_whale")}
+                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            subTab === "double_whale"
+                                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/20"
+                                : "text-gray-400 hover:text-white bg-black/20"
+                        }`}
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>외인·기관 쌍끌이 레이더</span>
+                    </button>
+                    <button
+                        onClick={() => setSubTab("value")}
+                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                            subTab === "value"
+                                ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/20"
+                                : "text-gray-400 hover:text-white bg-black/20"
+                        }`}
+                    >
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>인기 검색 & 거래대금 TOP</span>
+                    </button>
+                </div>
+
+                {/* Refresh Button */}
                 <button
-                    onClick={() => setSubTab("double_whale")}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                        subTab === "double_whale"
-                            ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg"
-                            : "text-gray-400 hover:text-white"
-                    }`}
+                    onClick={() => loadData(true)}
+                    disabled={refreshing || loading}
+                    className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95"
                 >
-                    🔥 외인·기관 쌍끌이 레이더
-                </button>
-                <button
-                    onClick={() => setSubTab("volume")}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                        subTab === "volume" ? "bg-green-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
-                    }`}
-                >
-                    급등/거래량 상위
-                </button>
-                <button
-                    onClick={() => setSubTab("value")}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                        subTab === "value" ? "bg-orange-600 text-white shadow-lg" : "text-gray-400 hover:text-white"
-                    }`}
-                >
-                    검색/거래대금 상위
+                    <RefreshCw className={`w-3.5 h-3.5 text-orange-400 ${refreshing ? 'animate-spin' : ''}`} />
+                    <span>실시간 갱신</span>
                 </button>
             </div>
 
+            {/* Content Body */}
             {loading ? (
-                <div className="text-center py-12 text-gray-500">
-                    <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
-                    <p className="text-xs">수급 데이터 집계 중...</p>
+                <div className="text-center py-20 bg-zinc-900/40 rounded-3xl border border-white/5 space-y-3">
+                    <RefreshCw className="w-9 h-9 text-orange-400 animate-spin mx-auto" />
+                    <p className="text-xs text-gray-400 font-bold">국내 시장 실시간 수급 및 주도주 데이터를 집계하고 있습니다...</p>
+                </div>
+            ) : subTab === "volume" ? (
+                /* Subtab 1: Rise & Volume TOP 4 Cards */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {renderLeaderboard(
+                        "KOSPI 실시간 급등 TOP",
+                        "코스피 시장 당일 최고 상승률 순위",
+                        investorData?.foreign_sell || [],
+                        "red",
+                        <TrendingUp className="w-4 h-4" />,
+                        10,
+                        false
+                    )}
+                    {renderLeaderboard(
+                        "KOSDAQ 실시간 급등 TOP",
+                        "코스닥 시장 당일 최고 상승률 순위",
+                        investorData?.institution_sell || [],
+                        "purple",
+                        <TrendingUp className="w-4 h-4" />,
+                        10,
+                        false
+                    )}
+                    {renderLeaderboard(
+                        "KOSPI 거래량 폭발 TOP",
+                        "코스피 시장 당일 누적 거래량 순위",
+                        investorData?.foreign_top || [],
+                        "emerald",
+                        <Activity className="w-4 h-4" />,
+                        10,
+                        true
+                    )}
+                    {renderLeaderboard(
+                        "KOSDAQ 거래량 폭발 TOP",
+                        "코스닥 시장 당일 누적 거래량 순위",
+                        investorData?.institution_top || [],
+                        "blue",
+                        <Activity className="w-4 h-4" />,
+                        10,
+                        true
+                    )}
                 </div>
             ) : subTab === "double_whale" ? (
+                /* Subtab 2: Double Whale Radar */
                 <div className="space-y-3 text-left">
-                    <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/20 to-black border border-emerald-500/20 rounded-2xl p-4">
+                    <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/20 to-black border border-emerald-500/20 rounded-2xl p-4 shadow-xl">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-bold text-emerald-300 flex items-center gap-1.5">
+                            <h3 className="text-sm md:text-base font-black text-emerald-300 flex items-center gap-1.5">
                                 👥 외인 & 기관 스마트머니 동시 순매수 TOP 15
                             </h3>
                             <span className="text-[10px] text-gray-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                                 100% 실시간 수급 통계
                             </span>
                         </div>
-                        <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                        <p className="text-xs text-gray-400 leading-relaxed mb-4 font-medium">
                             외국인과 기관이 함께 순매수하는 종목은 시장 주도력을 확보할 가능성이 높습니다. (종목 클릭 시 차트 분석으로 이동)
                         </p>
 
@@ -1575,7 +1750,7 @@ function MarketInsightsTab({ router }: { router: any }) {
                                 return (
                                     <div
                                         key={idx}
-                                        onClick={() => router.push(`/discovery?q=${item.symbol || item.name}`)}
+                                        onClick={() => router.push(`/discovery?q=${encodeURIComponent(item.symbol || item.name)}`)}
                                         className="bg-black/50 hover:bg-black/80 border border-white/5 hover:border-emerald-500/40 rounded-xl p-3 transition-all cursor-pointer group"
                                     >
                                         <div className="flex items-center justify-between gap-2 mb-2">
@@ -1630,19 +1805,27 @@ function MarketInsightsTab({ router }: { router: any }) {
                         </p>
                     </div>
                 </div>
-            ) : subTab === "volume" ? (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {renderList("KOSPI 상승률 TOP", investorData?.foreign_sell || [], "red", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                        {renderList("KOSDAQ 상승률 TOP", investorData?.institution_sell || [], "purple", <TrendingUp className="w-3.5 h-3.5" />, 7)}
-                        {renderList("KOSPI 거래량 TOP", investorData?.foreign_top || [], "green", <Activity className="w-3.5 h-3.5" />, 7)}
-                        {renderList("KOSDAQ 거래량 TOP", investorData?.institution_top || [], "blue", <Activity className="w-3.5 h-3.5" />, 7)}
-                    </div>
-                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {renderList("인기 검색 순위 (개인투자자 관심도)", insightsData?.search_top || [], "orange", <Search className="w-3.5 h-3.5" />, 15)}
-                    {renderList("거래대금 상위 (실수급 연속 포착)", insightsData?.value_top || [], "yellow", <Zap className="w-3.5 h-3.5" />, 15)}
+                /* Subtab 3: Search & Transaction Value TOP 2 Cards */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {renderLeaderboard(
+                        "실시간 인기 검색 순위",
+                        "개인투자자 관심도 및 실시간 최다 검색 종목",
+                        insightsData?.search_top || [],
+                        "orange",
+                        <Search className="w-4 h-4" />,
+                        15,
+                        false
+                    )}
+                    {renderLeaderboard(
+                        "실시간 거래대금 상위 TOP",
+                        "대규모 자금이 유입 중인 실수급 집중 종목",
+                        insightsData?.value_top || [],
+                        "yellow",
+                        <Zap className="w-4 h-4" />,
+                        15,
+                        false
+                    )}
                 </div>
             )}
         </div>
