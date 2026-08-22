@@ -71,22 +71,6 @@ function ThemePageContent() {
             .trim();
     };
 
-    const getThemeIcon = (name: string) => {
-        const lower = (name || "").toLowerCase();
-        if (lower.includes("ai") || lower.includes("인공지능") || lower.includes("반도체") || lower.includes("전력") || lower.includes("전기") || lower.includes("온디바이스")) return "⚡";
-        if (lower.includes("로봇") || lower.includes("휴머노이드") || lower.includes("자율주행")) return "🤖";
-        if (lower.includes("바이오") || lower.includes("제약") || lower.includes("치료") || lower.includes("의료") || lower.includes("비만") || lower.includes("헬스")) return "💊";
-        if (lower.includes("원전") || lower.includes("smr") || lower.includes("에너지") || lower.includes("태양광") || lower.includes("풍력")) return "☢️";
-        if (lower.includes("배터리") || lower.includes("2차전지") || lower.includes("전고체") || lower.includes("리튬") || lower.includes("양극재")) return "🔋";
-        if (lower.includes("우주") || lower.includes("항공") || lower.includes("방산") || lower.includes("드론") || lower.includes("미사일")) return "🚀";
-        if (lower.includes("가상화폐") || lower.includes("코인") || lower.includes("비트코인") || lower.includes("블록체인")) return "🪙";
-        if (lower.includes("화폐") || lower.includes("결제") || lower.includes("금융") || lower.includes("은행") || lower.includes("증권") || lower.includes("지주") || lower.includes("밸류업") || lower.includes("저pbr")) return "📈";
-        if (lower.includes("해운") || lower.includes("조선") || lower.includes("해양")) return "🚢";
-        if (lower.includes("엔터") || lower.includes("미디어") || lower.includes("콘텐츠") || lower.includes("게임") || lower.includes("웹툰")) return "🎬";
-        if (lower.includes("통신") || lower.includes("5g") || lower.includes("6g") || lower.includes("네트워크")) return "📡";
-        return "🔥";
-    };
-
     const handleAnalyze = async (overrideKeyword?: any) => {
         const searchKeyword = typeof overrideKeyword === 'string' ? overrideKeyword : keyword;
         if (!searchKeyword) return;
@@ -194,35 +178,6 @@ function ThemePageContent() {
         return () => clearInterval(interval);
     }, []);
 
-    // [실시간 급상승 핫 테마] 1분 주기 실시간 수급 테마 데이터 기반 자동 변동
-    const liveHotThemes = useMemo(() => {
-        if (trendingThemes && trendingThemes.length > 0) {
-            return trendingThemes.slice(0, 8).map((t: any) => {
-                const rawName = typeof t === 'string' ? t : t.name;
-                const cleanName = cleanThemeTitle(rawName);
-                const change = typeof t !== 'string' ? t.change : null;
-                const icon = getThemeIcon(rawName);
-                return {
-                    rawName,
-                    label: cleanName,
-                    change,
-                    icon
-                };
-            });
-        }
-        // 로딩 중이거나 데이터 수신 전 기본 프리셋
-        return [
-            { rawName: "온디바이스AI", label: "온디바이스AI", change: null, icon: "⚡" },
-            { rawName: "비만치료제", label: "비만치료제", change: null, icon: "💊" },
-            { rawName: "전력설비", label: "전력설비", change: null, icon: "⚡" },
-            { rawName: "휴머노이드 로봇", label: "휴머노이드 로봇", change: null, icon: "🤖" },
-            { rawName: "SMR", label: "SMR/원전", change: null, icon: "☢️" },
-            { rawName: "전고체배터리", label: "전고체배터리", change: null, icon: "🔋" },
-            { rawName: "우주항공", label: "우주항공", change: null, icon: "🚀" },
-            { rawName: "저PBR", label: "저PBR 밸류업", change: null, icon: "📈" }
-        ];
-    }, [trendingThemes]);
-
     // [New] URL 파라미터 q= 검색어 자동 실행 (푸시 알림 딥링크용)
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -328,47 +283,6 @@ function ThemePageContent() {
                             >
                                 {loading ? <Loader2 className="animate-spin text-white w-6 h-6" /> : <ArrowRight className="text-white w-6 h-6" />}
                             </button>
-                        </div>
-                    </div>
-
-                    {/* 실시간 급상승 핫 테마 칩 (실시간 수급 변동) */}
-                    <div className="max-w-2xl mx-auto">
-                        <div className="flex items-center gap-2 mb-2 px-1 justify-center sm:justify-start">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                            </span>
-                            <span className="text-xs font-bold text-orange-400">⚡ 실시간 급상승 핫 테마</span>
-                            <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">(실시간 수급 연동)</span>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-                            {liveHotThemes.map((item, idx) => (
-                                <button
-                                    key={idx}
-                                    onMouseEnter={() => prefetchTheme(item.rawName)}
-                                    onClick={() => {
-                                        setKeyword(item.rawName);
-                                        handleAnalyze(item.rawName);
-                                    }}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
-                                        idx < 3
-                                            ? "bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 text-orange-200 hover:text-white shadow-[0_0_12px_rgba(249,115,22,0.15)]"
-                                            : "bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white"
-                                    }`}
-                                >
-                                    <span>{item.icon}</span>
-                                    <span>{item.label}</span>
-                                    {item.change && (
-                                        <span className={`text-[10px] font-black tracking-tight ml-0.5 ${
-                                            (item.change.includes('+') || !item.change.includes('-')) && item.change !== '0.00%' 
-                                                ? 'text-red-400' 
-                                                : 'text-blue-400'
-                                        }`}>
-                                            {item.change}
-                                        </span>
-                                    )}
-                                </button>
-                            ))}
                         </div>
                     </div>
 
