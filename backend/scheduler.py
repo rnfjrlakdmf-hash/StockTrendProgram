@@ -53,6 +53,14 @@ async def check_and_notify_disclosures():
     """
     logger.info("[공시Monitor] DART 공시 체크 시작...")
 
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    # 주말(토/일)은 국내 증시 휴장이므로 공시 알림 발송 스킵
+    if now.weekday() >= 5:
+        logger.debug("[공시Monitor] 주말(토/일)에는 DART 공시 알림을 발송하지 않습니다.")
+        return
+
     from dart_api_client import dart_api_client
     if not dart_api_client.is_available():
         logger.warning("[공시Monitor] DART_API_KEY 없음 -> 공시 체크 생략")
@@ -386,6 +394,23 @@ async def check_and_notify_sec_disclosures():
     """
     logger.info("[SEC Monitor] SEC 공시 체크 시작...")
 
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    weekday = now.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
+    hour = now.hour
+
+    # KST 기준 미국 장 평일 거래 시간 (월요일 22:00 ~ 토요일 06:00 KST)
+    # 토요일 06:00 ~ 월요일 22:00 KST는 주말 휴장이므로 공시 알림 스킵
+    is_us_trading_window = (
+        (weekday == 0 and hour >= 22) or
+        (weekday in [1, 2, 3, 4] and ((hour >= 22) or (hour < 6))) or
+        (weekday == 5 and hour < 6)
+    )
+    if not is_us_trading_window:
+        logger.debug(f"[SEC Monitor] 주말/미국 휴장 시간 ({now.strftime('%a %H:%M')} KST), 해외 공시 알림 스킵.")
+        return
+
     from db_manager import get_all_users, get_watchlist, get_user_fcm_tokens
     from firebase_config import send_multicast_notification
     from sec_api_client import get_cik_by_ticker
@@ -698,8 +723,18 @@ async def hourly_briefing_scheduler_loop():
 
 
 async def check_and_notify_ipos():
-    """Periodic task to check for new IPOs and notify ALL users."""
-    logger.info("Running IPO Check...")
+    """
+    KIND / DART API 기반 IPO 신규/일정확정 실시간 체크 (30분마다)
+    """
+    logger.info("Starting IPO Check...")
+
+    import pytz
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst)
+    # 주말(토/일)은 공모주 알림 스킵
+    if now.weekday() >= 5:
+        logger.debug("[IPO Monitor] 주말(토/일)에는 공모주 청약 알림을 발송하지 않습니다.")
+        return
 
     from dart_ipo import fetch_dart_ipo_schedule
     from db_manager import get_fcm_tokens_for_ipo
@@ -1255,12 +1290,18 @@ async def sec_whale_scheduler_loop():
     while True:
         try:
             now = datetime.now(kst)
+            weekday = now.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
             hour = now.hour
 
-            # KST 22:30~익일 06:00 = 미국 장중 (EST 08:30~16:00)
-            is_us_hours = (hour >= 22) or (hour < 6)
+            # KST 기준 미국 장 평일 거래 시간 (월요일 22:00 ~ 토요일 06:00 KST)
+            # 토요일 06:00 ~ 월요일 22:00 KST는 주말 휴장이므로 고래 알림 스킵
+            is_us_trading_window = (
+                (weekday == 0 and hour >= 22) or
+                (weekday in [1, 2, 3, 4] and ((hour >= 22) or (hour < 6))) or
+                (weekday == 5 and hour < 6)
+            )
 
-            if is_us_hours:
+            if is_us_trading_window:
                 logger.info("[Whale SEC] Checking SEC Form4 & 13F filings...")
                 try:
                     from sec_whale_alerts import check_sec_form4_alerts, check_sec_13f_alerts
@@ -1269,7 +1310,7 @@ async def sec_whale_scheduler_loop():
                 except Exception as e:
                     logger.error(f"[Whale SEC] error: {e}")
             else:
-                logger.debug(f"[Whale SEC] Outside US market hours ({hour}:xx KST), skipping.")
+                logger.debug(f"[Whale SEC] 주말/미국 휴장 시간 ({now.strftime('%a %H:%M')} KST), 고래 알림 스킵.")
 
             await asyncio.sleep(60 * 5)  # 5분마다 체크
         except Exception as e:
