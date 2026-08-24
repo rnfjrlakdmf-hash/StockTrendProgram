@@ -1117,7 +1117,7 @@ def analyze_portfolio_route(req: PortfolioReq):
     # 정렬된 종목 심볼 리스트를 기반으로 고유 캐시 키 생성 (조합이 같으면 무조건 캐시 히트)
     sorted_target = sorted(list(set(target)))
     target_str = ",".join(sorted_target)
-    cache_key = f"v16:analyze_portfolio:{hashlib.md5(target_str.encode()).hexdigest()}"
+    cache_key = f"v17:analyze_portfolio:{hashlib.md5(target_str.encode()).hexdigest()}"
     
     cached_data = turbo_engine.get_cache(cache_key)
     if cached_data is not None:
@@ -1136,8 +1136,8 @@ def analyze_portfolio_route(req: PortfolioReq):
 @router.post("/portfolio/optimize")
 def optimize_portfolio_route(req: PortfolioReq):
     target = req.symbols if req.symbols else req.portfolio
-    if not target or len(target) < 2:
-        return {"status": "error", "message": "At least 2 symbols required for optimization"}
+    if not target or len(target) < 1:
+        return {"status": "error", "message": "At least 1 symbol required for optimization"}
     
     from portfolio_opt import optimize_portfolio
     try:
