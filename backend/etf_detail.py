@@ -1,4 +1,4 @@
-﻿import requests
+import requests
 import json
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -507,14 +507,15 @@ def get_etf_detail(symbol: str):
                                 data["performance"][p_label] = f"{'+' if ret > 0 else ''}{ret:.2f}%"
                     except: pass
 
-                # Additional Info (Index, Listing Date)
+                # Additional Info (Index, Listing Date, High/Low, Volume, Trading Value)
                 for info in api_json.get("totalInfos", []):
                     k, v, c = info.get("key", ""), info.get("value", ""), info.get("code", "")
                     if c == "etfBaseIdx" or "기초지수" in k: data["basic_info"]["index"] = v
                     elif c == "listingDate" or "상장일" in k: data["basic_info"]["launch_date"] = v.replace(".", "-")
                     elif c == "highPriceOf52Weeks": data["market_data"]["high52w"] = v
                     elif c == "lowPriceOf52Weeks": data["market_data"]["low52w"] = v
-                    elif c == "accumulatedTradingVolume": data["market_data"]["volume"] = v
+                    elif c == "accumulatedTradingVolume" or "거래량" in k: data["market_data"]["volume"] = v
+                    elif c == "accumulatedTradingValue" or "대금" in k: data["market_data"]["trading_value"] = v
                 
                 # Market Data (Price, Change)
                 basic_resp = requests.get(basic_url, headers=headers, timeout=5)
