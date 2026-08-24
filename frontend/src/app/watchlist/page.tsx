@@ -352,78 +352,134 @@ export default function WatchlistPage() {
             console.error(e);
         }
     };
+    // 통계 계산
+    const upCount = watchlist.filter(item => {
+        const q = quotes[item.symbol];
+        const chg = q ? parseFloat(String(q.change || '0').replace(/[^0-9.-]/g, '')) : 0;
+        return chg > 0;
+    }).length;
+
+    const downCount = watchlist.filter(item => {
+        const q = quotes[item.symbol];
+        const chg = q ? parseFloat(String(q.change || '0').replace(/[^0-9.-]/g, '')) : 0;
+        return chg < 0;
+    }).length;
 
     return (
-        <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-8">
-                {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
-                <div className="flex md:hidden justify-center mb-4">
-                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-                </div>
-                <div className="hidden md:flex justify-center mb-4">
-                    <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-                </div>
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-white flex items-center gap-3">
-                        <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
-                        MY 관심종목
-                    </h1>
-                    <p className="text-gray-400 mt-2 flex items-center gap-2 text-sm">
-                        <RefreshCw className={`w-4 h-4 ${quotesRefreshing ? 'animate-spin text-blue-400' : ''}`} />
-                        10초 자동 갱신 &middot; 최근 업데이트: {lastUpdated.toLocaleTimeString()}
-                        {quotesRefreshing && <span className="text-blue-400 text-xs font-bold animate-pulse">업데이트 중...</span>}
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => {
-                            setLoading(true);
-                            fetchWatchlist();
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all font-bold border border-white/10"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        리스트 새로고침
-                    </button>
-                    {isAdmin && (
-                        <button
-                            onClick={() => {
-                                const debugInfo = JSON.stringify({
-                                    watchlistSize: watchlist.length,
-                                    quoteKeys: Object.keys(quotes),
-                                    sampleQuote: quotes[watchlist[0]?.symbol] || "None",
-                                    user: user ? { id: user.id, email: user.email } : "Not Logged In"
-                                }, null, 2);
-                                alert(`[데이터 상태 점검]\n${debugInfo}`);
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all font-bold border border-blue-500/20"
-                        >
-                            데이터 상태 점검
-                        </button>
-                    )}
-                </div>
+        <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-6">
+            {/* 상단 띠배너 광고 */}
+            <div className="flex md:hidden justify-center mb-2">
+                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+            </div>
+            <div className="hidden md:flex justify-center mb-2">
+                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
             </div>
 
-            {/* Premium Tab Navigation */}
-            <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 w-fit">
+            {/* Header & Quick Summary */}
+            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-md">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-white/5">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                                <Star className="w-7 h-7 text-amber-400 fill-amber-400" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                                    MY 관심종목
+                                </h1>
+                                <p className="text-gray-400 mt-1 flex items-center gap-2 text-xs font-medium">
+                                    <RefreshCw className={`w-3.5 h-3.5 ${quotesRefreshing ? 'animate-spin text-blue-400' : ''}`} />
+                                    <span>10초 자동 갱신 · 최근 갱신: {lastUpdated.toLocaleTimeString()}</span>
+                                    {quotesRefreshing && <span className="text-blue-400 text-[10px] font-bold animate-pulse">실시간 수신중...</span>}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <button
+                            onClick={() => {
+                                setLoading(true);
+                                fetchWatchlist();
+                            }}
+                            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white transition-all font-bold text-xs border border-white/10 shadow-sm active:scale-95"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            리스트 새로고침
+                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => {
+                                    const debugInfo = JSON.stringify({
+                                        watchlistSize: watchlist.length,
+                                        quoteKeys: Object.keys(quotes),
+                                        sampleQuote: quotes[watchlist[0]?.symbol] || "None",
+                                        user: user ? { id: user.id, email: user.email } : "Not Logged In"
+                                    }, null, 2);
+                                    alert(`[데이터 상태 점검]\n${debugInfo}`);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all font-bold text-xs border border-blue-500/20"
+                            >
+                                점검
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Stat Pills */}
+                {watchlist.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
+                            <span className="text-xs text-gray-400 font-bold">보유 종목수</span>
+                            <span className="text-sm md:text-base font-black font-mono text-white">{watchlist.length}개</span>
+                        </div>
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
+                            <span className="text-xs text-rose-400 font-bold">상승 종목</span>
+                            <span className="text-sm md:text-base font-black font-mono text-rose-400">▲ {upCount}개</span>
+                        </div>
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
+                            <span className="text-xs text-sky-400 font-bold">하락 종목</span>
+                            <span className="text-sm md:text-base font-black font-mono text-sky-400">▼ {downCount}개</span>
+                        </div>
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
+                            <span className="text-xs text-purple-400 font-bold">가격 알림</span>
+                            <span className="text-sm md:text-base font-black font-mono text-purple-400">{alerts.length}건</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Segmented Tab Navigation */}
+            <div className="flex p-1.5 bg-zinc-900 border border-white/10 rounded-2xl w-full sm:w-fit shadow-md">
                 <button
                     onClick={() => setActiveTab("quotes")}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === "quotes" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-gray-400 hover:text-gray-200"}`}
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all ${
+                        activeTab === "quotes" 
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+                            : "text-gray-400 hover:text-gray-200"
+                    }`}
                 >
-                    <Star className="w-4 h-4" /> 시세 현황
+                    <Star className="w-4 h-4" /> 실시간 시세 ({watchlist.length})
                 </button>
                 <button
                     onClick={() => setActiveTab("schedules")}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === "schedules" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : "text-gray-400 hover:text-gray-200"}`}
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all ${
+                        activeTab === "schedules" 
+                            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
+                            : "text-gray-400 hover:text-gray-200"
+                    }`}
                 >
-                    <Zap className="w-4 h-4" /> 실적/배당
+                    <Zap className="w-4 h-4" /> 실적/배당 캘린더
                 </button>
                 <button
                     onClick={() => setActiveTab("alerts")}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all ${activeTab === "alerts" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-gray-400 hover:text-gray-200"}`}
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all ${
+                        activeTab === "alerts" 
+                            ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" 
+                            : "text-gray-400 hover:text-gray-200"
+                    }`}
                 >
-                    <Bell className="w-4 h-4" /> 알림/공시
+                    <Bell className="w-4 h-4" /> 알림/공시 ({alerts.length})
                 </button>
             </div>
 
@@ -433,24 +489,30 @@ export default function WatchlistPage() {
                 {activeTab === "quotes" && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                         {isAuthLoading || isMigrating || loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                                <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                                <p>{isMigrating ? "관심종목을 동기화하고 있습니다. 잠시만 기다려주세요..." : "데이터를 불러오는 중입니다..."}</p>
+                            <div className="flex flex-col items-center justify-center py-20 text-gray-500 bg-zinc-900/40 rounded-3xl border border-white/5">
+                                <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
+                                <p className="text-sm font-semibold">{isMigrating ? "관심종목을 동기화하고 있습니다..." : "시세 데이터를 불러오는 중입니다..."}</p>
                             </div>
                         ) : !user ? (
-                            <div className="flex flex-col items-center justify-center py-32 bg-white/5 border border-dashed border-white/10 rounded-3xl text-center">
-                                <AlertCircle className="w-10 h-10 text-yellow-600 mb-6" />
-                                <h3 className="text-xl font-bold text-white mb-2">로그인이 필요합니다</h3>
-                                <p className="text-gray-400">관심 종목 및 알림 관리를 위해 로그인해주세요.</p>
+                            <div className="flex flex-col items-center justify-center py-28 bg-zinc-900/40 border border-dashed border-white/10 rounded-3xl text-center p-6">
+                                <AlertCircle className="w-12 h-12 text-amber-400 mb-4" />
+                                <h3 className="text-lg font-bold text-white mb-2">로그인이 필요합니다</h3>
+                                <p className="text-xs text-gray-400 max-w-sm mb-5">관심종목 및 목표가 알림 관리를 위해 로그인해 주세요.</p>
+                                <Link href="/login" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition-all shadow-lg">
+                                    로그인하러 가기
+                                </Link>
                             </div>
                         ) : watchlist.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-32 bg-white/5 border border-dashed border-white/10 rounded-3xl text-center">
-                                <Star className="w-10 h-10 text-gray-600 mb-6" />
-                                <h3 className="text-xl font-bold text-white mb-2">관심 종목이 비어있습니다</h3>
-                                <Link href="/discovery" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl mt-4">종목 발굴하러 가기</Link>
+                            <div className="flex flex-col items-center justify-center py-28 bg-zinc-900/40 border border-dashed border-white/10 rounded-3xl text-center p-6">
+                                <Star className="w-12 h-12 text-gray-600 mb-4" />
+                                <h3 className="text-lg font-bold text-white mb-2">관심종목이 비어있습니다</h3>
+                                <p className="text-xs text-gray-400 max-w-sm mb-5">종목 발굴 메뉴에서 관심 있는 종목을 추가해 보세요.</p>
+                                <Link href="/discovery" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition-all shadow-lg">
+                                    종목 발굴하러 가기
+                                </Link>
                             </div>
                         ) : (
-                            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
                                 <CleanStockList
                                     items={watchlist.map(item => {
                                         const data = quotes[item.symbol];
