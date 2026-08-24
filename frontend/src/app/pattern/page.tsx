@@ -500,22 +500,27 @@ export default function PatternPage() {
     };
 
     return (
-        <div className="min-h-screen pb-20 bg-[#0a0a0a]">
+        <div className="min-h-screen pb-20 bg-black">
             <Header />
 
             <AdRewardModal isOpen={showAdModal} onClose={() => setShowAdModal(false)} onReward={handleAdReward} featureName="PatternAnalytics" />
 
             <div className="p-6 max-w-5xl mx-auto space-y-8">
                 {/* Search Bar & Title */}
-                <div className="text-center space-y-4 pt-8">
-                    <h1 className="text-5xl font-black text-white flex items-center justify-center gap-4">
-                        <LineChart className="w-12 h-12 text-emerald-500" />
-                        AI 차트 분석 <span className="text-emerald-500">고급</span>
+                <div className="text-center space-y-4 pt-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black tracking-widest uppercase">
+                        PRO QUANT ANALYTICS
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-black text-white flex items-center justify-center gap-3">
+                        <LineChart className="w-10 h-10 md:w-12 md:h-12 text-emerald-400" />
+                        프로 퀀트 차트 분석 <span className="text-emerald-400">고급</span>
                     </h1>
-                    <p className="text-gray-400 text-lg">AI가 분석하는 스마트한 차트 리포트.</p>
+                    <p className="text-gray-400 text-sm md:text-base font-medium">
+                        과거 5개년 패턴 통계 알고리즘 및 기관·외국인 수급 정밀 퀀트 리포트
+                    </p>
                     
-                    {/* Docent Toggle Switch */}
-                    <div className="flex justify-center mt-6">
+                    {/* 기술적 지표 브리핑 토글 스위치 */}
+                    <div className="flex justify-center mt-4">
                         <button 
                             onClick={() => {
                                 const next = !showDocent;
@@ -527,11 +532,37 @@ export default function PatternPage() {
                             <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${showDocent ? 'bg-emerald-500' : 'bg-gray-700'}`}>
                                 <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${showDocent ? 'left-4.5' : 'left-0.5'}`} />
                             </div>
-                            <span className="text-xs font-bold uppercase tracking-wider">AI 도슨트 가이드 {showDocent ? 'ON' : 'OFF'}</span>
+                            <span className="text-xs font-black tracking-wider">기술적 지표 브리핑 {showDocent ? 'ON' : 'OFF'}</span>
                         </button>
                     </div>
 
-                    <div className="relative max-w-xl mx-auto z-20 mt-8">
+                    {/* 인기 검색 퀵 칩 */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                        <span className="text-xs text-gray-500 font-bold">인기 분석:</span>
+                        {[
+                            { label: "삼성전자", sym: "005930" },
+                            { label: "SK하이닉스", sym: "000660" },
+                            { label: "현대차", sym: "005380" },
+                            { label: "NAVER", sym: "035420" },
+                            { label: "카카오", sym: "035720" },
+                            { label: "AAPL", sym: "AAPL" },
+                            { label: "NVDA", sym: "NVDA" },
+                            { label: "TSLA", sym: "TSLA" },
+                        ].map(t => (
+                            <button
+                                key={t.sym}
+                                onClick={() => {
+                                    setSearchInput(t.sym);
+                                    handleSearch(t.sym);
+                                }}
+                                className="px-3 py-1 rounded-xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/30 text-gray-300 hover:text-emerald-300 text-xs font-bold transition-all"
+                            >
+                                #{t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="relative max-w-xl mx-auto z-20 mt-4">
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl opacity-30 group-hover:opacity-100 transition duration-500 blur"></div>
                             <input
@@ -544,14 +575,14 @@ export default function PatternPage() {
                                 onFocus={() => setShowResults(true)}
                                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                placeholder={isLocked ? "무료 사용량을 다 썼어요! 광고 보고 충전하세요 ⚡" : "종목명 또는 티커 입력 (예: 삼성전자, AAPL)"}
-                                className={`relative w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-32 text-white text-xl font-bold focus:outline-none transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                placeholder="종목명 또는 티커 입력 (예: 삼성전자, 005930, AAPL)"
+                                className="relative w-full bg-zinc-950 border border-white/10 rounded-2xl py-4 md:py-5 pl-14 pr-32 text-white text-base md:text-lg font-bold focus:outline-none transition-colors"
                                 disabled={loading || isLocked}
                             />
                             
                             {/* [Autocomplete Dropdown] */}
                             {showResults && searchResults.length > 0 && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
                                     {searchResults.map((item: any, idx: number) => (
                                         <div
                                             key={idx}
@@ -561,19 +592,19 @@ export default function PatternPage() {
                                                 setShowResults(false);
                                                 handleSearch(item.symbol);
                                             }}
-                                            className="px-4 py-3 hover:bg-gray-800 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-800/50 last:border-0"
+                                            className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex justify-between items-center transition-colors border-b border-white/5 last:border-0"
                                         >
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-white text-sm">{item.name}</span>
-                                                <span className="text-xs text-gray-500 font-mono mt-0.5">{item.symbol}</span>
+                                                <span className="text-xs text-gray-400 font-mono mt-0.5">{item.symbol}</span>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
 
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 w-6 h-6 z-10" />
-                            <button onClick={() => handleSearch()} disabled={loading || isLocked} className="absolute right-3 top-1/2 -translate-y-1/2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-lg font-bold transition-all disabled:opacity-50 z-10">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 md:w-6 md:h-6 z-10" />
+                            <button onClick={() => handleSearch()} disabled={loading || isLocked} className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-black transition-all disabled:opacity-50 z-10 shadow-lg shadow-emerald-600/30">
                                 {isLocked ? <Lock className="w-5 h-5" /> : "분석하기"}
                             </button>
                         </div>
@@ -581,95 +612,259 @@ export default function PatternPage() {
                 </div>
 
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-32 text-emerald-500 space-y-6">
-                        <Loader2 className="w-16 h-16 animate-spin text-emerald-400" />
-                        <h3 className="text-2xl font-bold text-white animate-pulse">AI 분석 엔진 가동 중...</h3>
+                    <div className="flex flex-col items-center justify-center py-28 text-emerald-400 space-y-5">
+                        <Loader2 className="w-14 h-14 animate-spin text-emerald-400" />
+                        <div className="text-center space-y-1">
+                            <h3 className="text-xl md:text-2xl font-black text-white animate-pulse">빅데이터 차트 패턴 및 수급 분석 중...</h3>
+                            <p className="text-xs text-gray-400">과거 5개년 캔들 통계와 메이저 수급을 대조하고 있습니다.</p>
+                        </div>
                     </div>
                 )}
 
                 {result && (
-                    <div id="capture-area" className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-8 bg-black pb-6 rounded-3xl">
+                    <div id="capture-area" className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6 bg-black pb-6 rounded-3xl">
                         
-                        {/* Viral Sharing Buttons */}
-                        <div className="flex gap-3 justify-end hide-on-capture mt-4">
+                        {/* 액션 버튼 */}
+                        <div className="flex gap-2.5 justify-end hide-on-capture mt-2">
                             <button
                                 onClick={handleDownloadImage}
-                                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                                className="bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md"
                             >
-                                <Download className="w-4 h-4" />
+                                <Download className="w-4 h-4 text-emerald-400" />
                                 차트 분석 결과 저장
                             </button>
                             <KakaoShareButton 
-                                title={`${result?.stock_info?.symbol || '종목'} 차트 분석 보고서`} 
-                                description={result.weather?.comment || "AI가 분석한 오늘의 차트 흐름을 확인해보세요."}
+                                title={`${result?.stock_info?.symbol || '종목'} 프로 퀀트 차트 분석`} 
+                                description={result.weather?.comment || "과거 5개년 캔들 통계와 메이저 수급 분석 리포트를 확인해보세요."}
                                 url={`https://stock-trend-program.co.kr/pattern?q=${result?.stock_info?.symbol || ''}`}
-                                className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
-                                buttonText="카카오톡 자랑하기"
+                                className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md"
+                                buttonText="카카오톡 공유"
                             />
                         </div>
 
-                        {/* Summary Header */}
-                        <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-black border border-white/10 p-8 flex flex-col md:flex-row items-center gap-8">
-                             <div className="flex-shrink-0"><LineChart className="w-20 h-20 text-emerald-400" /></div>
-                            <div className="flex-1 text-center md:text-left">
-                                <span className="px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-bold mb-2 inline-block">패턴 분석 결과</span>
-                                <h2 className="text-3xl font-black text-white">{result.weather?.pattern}</h2>
-                                <p className="text-gray-400 mt-2">{result.weather?.comment}</p>
+                        {/* 1. 패턴 분석 결과 & 4대 퀀트 통표 그리드 */}
+                        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-6 md:p-8 space-y-6 shadow-2xl">
+                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-white/5 pb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl shrink-0">
+                                        <LineChart className="w-10 h-10 text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-black uppercase tracking-wider">
+                                                5개년 캔들 패턴 통계
+                                            </span>
+                                            <span className="text-xs text-gray-500 font-mono">
+                                                {result?.stock_info?.symbol}
+                                            </span>
+                                        </div>
+                                        <h2 className="text-2xl md:text-3xl font-black text-white mt-1">
+                                            {result.weather?.pattern}
+                                        </h2>
+                                        <p className="text-xs md:text-sm text-gray-300 mt-1 font-medium leading-relaxed">
+                                            {result.weather?.comment}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {result.weather?.probability !== undefined && (
+                                    <div className="bg-zinc-800/80 border border-white/10 p-4 rounded-2xl text-center shrink-0 w-full md:w-44">
+                                        <div className="text-[11px] text-gray-400 font-bold mb-1">익일 상승 확률</div>
+                                        <div className={`text-2xl md:text-3xl font-black font-mono ${result.weather.probability >= 55 ? 'text-rose-400' : result.weather.probability <= 45 ? 'text-blue-400' : 'text-amber-400'}`}>
+                                            {result.weather.probability}%
+                                        </div>
+                                        <div className="w-full bg-zinc-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full ${result.weather.probability >= 55 ? 'bg-rose-500' : 'bg-blue-500'}`}
+                                                style={{ width: `${Math.min(result.weather.probability, 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 4대 퀀트 지표 스냅샷 */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                                <div className="p-4 rounded-2xl bg-zinc-800/50 border border-white/5">
+                                    <div className="text-[11px] text-gray-400 font-bold mb-1">과거 5년 출현 횟수</div>
+                                    <div className="text-lg md:text-xl font-black text-white font-mono">
+                                        {result.weather?.count || 0}회 발생
+                                    </div>
+                                    <div className="text-[10px] text-emerald-400 mt-1 font-semibold">
+                                        {(result.weather?.count || 0) >= 30 ? '다빈도 패턴' : (result.weather?.count || 0) >= 10 ? '유효 통계 구간' : '희귀 패턴'}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-zinc-800/50 border border-white/5">
+                                    <div className="text-[11px] text-gray-400 font-bold mb-1">익일 평균 변동률</div>
+                                    <div className={`text-lg md:text-xl font-black font-mono ${Number(result.weather?.avg_return) >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                                        {Number(result.weather?.avg_return) > 0 ? `+${result.weather?.avg_return}%` : `${result.weather?.avg_return || 0}%`}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 mt-1 font-semibold">통계적 기대 변동폭</div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-zinc-800/50 border border-white/5">
+                                    <div className="text-[11px] text-gray-400 font-bold mb-1">통계 표본 기간</div>
+                                    <div className="text-lg md:text-xl font-black text-white font-mono">
+                                        최근 1,825일
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 mt-1 font-semibold">5년 일봉 전수조사</div>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-zinc-800/50 border border-white/5">
+                                    <div className="text-[11px] text-gray-400 font-bold mb-1">패턴 신뢰 등급</div>
+                                    <div className="text-lg md:text-xl font-black text-emerald-400 font-mono">
+                                        {(result.weather?.count || 0) >= 15 ? 'HIGH (높음)' : 'MODERATE (보통)'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 mt-1 font-semibold">알고리즘 백테스팅</div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* AI Docent (Beginner Guide) */}
+                        {/* 2. 기술적 지표 종합 분석 브리핑 */}
                         {showDocent && result.beginner_insight && (
-                            <div className="relative overflow-hidden rounded-3xl p-8 mb-8 group transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]">
-                                {/* Premium Background with Gradient and Glow */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/40 via-black to-black z-0" />
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32 rounded-full" />
+                            <div className="rounded-3xl p-6 md:p-8 bg-zinc-900/90 border border-white/10 space-y-6 shadow-2xl">
+                                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                                    <div className="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
+                                        <TrendingUp className="w-5 h-5 text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg md:text-xl font-black text-white leading-none">
+                                            핵심 기술적 지표 종합 분석 📊
+                                        </h3>
+                                        <p className="text-xs text-emerald-400/80 mt-1 font-bold">
+                                            단기·중기 이동평균선 배열 및 거래량 모멘텀 종합 해석
+                                        </p>
+                                    </div>
+                                </div>
                                 
-                                <div className="relative z-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
-                                            <TrendingUp className="w-6 h-6 text-emerald-400" />
+                                <div className="bg-zinc-950/70 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-inner">
+                                    <div 
+                                        className="text-sm md:text-base text-gray-200 leading-relaxed font-medium" 
+                                        dangerouslySetInnerHTML={{ 
+                                            __html: result.beginner_insight.text
+                                                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-400 font-black">$1</strong>')
+                                                .replace(/<small>(.*?)<\/small>/g, '<span class="block mt-4 text-xs text-rose-400/90 font-bold">$1</span>')
+                                        }} 
+                                    />
+                                </div>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {result.beginner_insight.tips?.map((tip: any, idx: number) => (
+                                        <div key={idx} className="bg-zinc-800/50 p-4 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-all duration-300">
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                                                <div className="text-xs font-black text-emerald-300">{tip.label}</div>
+                                            </div>
+                                            <p className="text-xs text-gray-400 leading-relaxed font-medium">{tip.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3. 투자자별 메이저 수급 및 추정 평단가 */}
+                        {result.whale && (
+                            <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-6 md:p-8 space-y-6 shadow-2xl">
+                                <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-2.5 bg-blue-500/20 rounded-xl border border-blue-500/30">
+                                            <TowerControl className="w-5 h-5 text-blue-400" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-bold text-white leading-none">AI 차트 지표 요약 📊</h3>
-                                            <p className="text-xs text-emerald-500/60 mt-1.5 font-medium uppercase tracking-wider">객관적 보조지표 추세 요약</p>
+                                            <h3 className="text-lg md:text-xl font-black text-white">
+                                                메이저 수급 & 추정 평균 매수가 (VWAP)
+                                            </h3>
+                                            <p className="text-xs text-gray-400 font-bold mt-0.5">
+                                                최근 40영업일간 외국인·기관 실체결 거래량 가중평균가
+                                            </p>
                                         </div>
                                     </div>
-                                    
-                                    <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-inner">
-                                        <div 
-                                            className="text-lg md:text-xl text-emerald-50 leading-relaxed font-medium" 
-                                            dangerouslySetInnerHTML={{ 
-                                                __html: result.beginner_insight.text
-                                                    .replace(/\*\*(.*?)\*\*/g, '<span class="text-emerald-400 font-extrabold underline underline-offset-4 decoration-emerald-500/30">$1</span>')
-                                                    .replace(/<small>(.*?)<\/small>/g, '<span class="block mt-4 text-[10px] text-gray-500 font-normal opacity-80 italic">$1</span>')
-                                            }} 
-                                        />
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {result.beginner_insight.tips?.map((tip: any, idx: number) => (
-                                            <div key={idx} className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                                    <div className="text-xs font-bold text-emerald-400">{tip.label}</div>
+                                    <span className="px-3 py-1 bg-blue-500/10 rounded-full text-[11px] font-black text-blue-400 border border-blue-500/20">
+                                        40일 수급 추정
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                    {/* 외국인 & 기관 평단가 카드 */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-gradient-to-br from-blue-500/15 via-zinc-850 to-zinc-900 p-4 md:p-5 rounded-2xl border border-blue-500/30 flex flex-col justify-between">
+                                            <p className="text-gray-300 text-xs font-black flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-blue-400" /> 외국인 평단가
+                                            </p>
+                                            <div className="mt-3">
+                                                <p className="text-xl md:text-2xl font-black text-white font-mono">
+                                                    {formatPrice(result.whale?.foreigner?.avg_price)}
+                                                </p>
+                                                <div className={`text-xs mt-1 font-black ${Number(result.whale?.foreigner?.return_rate) >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                                                    평단 대비 {Number(result.whale?.foreigner?.return_rate) > 0 ? `+${result.whale?.foreigner?.return_rate}%` : `${result.whale?.foreigner?.return_rate}%`}
                                                 </div>
-                                                <p className="text-xs text-gray-400 leading-relaxed font-light">{tip.desc}</p>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="bg-gradient-to-br from-purple-500/15 via-zinc-850 to-zinc-900 p-4 md:p-5 rounded-2xl border border-purple-500/30 flex flex-col justify-between">
+                                            <p className="text-gray-300 text-xs font-black flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-purple-400" /> 기관 평단가
+                                            </p>
+                                            <div className="mt-3">
+                                                <p className="text-xl md:text-2xl font-black text-white font-mono">
+                                                    {formatPrice(result.whale?.institution?.avg_price)}
+                                                </p>
+                                                <div className={`text-xs mt-1 font-black ${Number(result.whale?.institution?.return_rate) >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                                                    평단 대비 {Number(result.whale?.institution?.return_rate) > 0 ? `+${result.whale?.institution?.return_rate}%` : `${result.whale?.institution?.return_rate}%`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 최근 5영업일 메이저 수급 일별 테이블 */}
+                                    <div className="bg-zinc-950/70 rounded-2xl p-4 md:p-5 border border-white/5">
+                                        <div className="flex items-center justify-between mb-3 text-xs font-black text-gray-300">
+                                            <span className="flex items-center gap-1.5">
+                                                <Activity className="w-4 h-4 text-emerald-400" /> 최근 5영업일 수급 주포
+                                            </span>
+                                            <span className="text-gray-500 font-normal text-[11px]">일자 / 주포 / 종가</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {result.whale?.ingredients?.map((ing: any, idx: number) => (
+                                                <div key={idx} className="flex items-center justify-between text-xs py-1.5 border-b border-white/5 last:border-0 font-medium">
+                                                    <span className="text-gray-400 font-mono">{ing.date.split('-').slice(1).join('/')}</span>
+                                                    <span className={`font-black px-2 py-0.5 rounded-md text-[11px] ${
+                                                        ing.winner === '개인' 
+                                                            ? 'bg-amber-500/10 text-amber-300' 
+                                                            : ing.winner === '외국인' 
+                                                            ? 'bg-blue-500/15 text-blue-300 font-bold' 
+                                                            : ing.winner === '기관'
+                                                            ? 'bg-purple-500/15 text-purple-300 font-bold'
+                                                            : 'bg-zinc-800 text-gray-400'
+                                                    }`}>
+                                                        {ing.winner === '순매수 없음' ? ing.winner : `${ing.winner} 순매수`}
+                                                    </span>
+                                                    <span className="text-white font-mono font-bold">{formatPrice(ing.price)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Professional Chart Section */}
-                        <div className="rounded-3xl bg-black border border-white/10 p-4 md:p-8">
-                                <div className="flex items-center gap-4 bg-white/5 p-1.5 rounded-2xl w-fit border border-white/10">
-                                    <button onClick={() => setChartType('line')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${chartType === 'line' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>선차트</button>
-                                    <button onClick={() => setChartType('candle')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${chartType === 'candle' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}>봉차트</button>
+                        {/* 4. 프로페셔널 차트 & 거래량 섹션 */}
+                        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-5 md:p-8 space-y-6 shadow-2xl">
+                            {/* 상단 차트 컨트롤 */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                                <div className="flex items-center gap-2 bg-zinc-800/80 p-1 rounded-xl border border-white/5">
+                                    <button 
+                                        onClick={() => setChartType('line')} 
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartType === 'line' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        📈 영역 라인
+                                    </button>
+                                    <button 
+                                        onClick={() => setChartType('candle')} 
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartType === 'candle' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        🕯️ 캔들스틱
+                                    </button>
                                 </div>
 
-                                 <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex flex-wrap items-center gap-1.5">
                                     {chartType === 'line' ? (
                                         [
                                             { label: '1일', value: '1d' },
@@ -679,7 +874,13 @@ export default function PatternPage() {
                                             { label: '3년', value: '3년' },
                                             { label: '5년', value: '5년' }
                                         ].map((p) => (
-                                            <button key={p.value} onClick={() => setLinePeriod(p.value)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${linePeriod === p.value ? 'bg-emerald-600 text-white' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}>{p.label}</button>
+                                            <button 
+                                                key={p.value} 
+                                                onClick={() => setLinePeriod(p.value)} 
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${linePeriod === p.value ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'}`}
+                                            >
+                                                {p.label}
+                                            </button>
                                         ))
                                     ) : (
                                         <>
@@ -687,19 +888,19 @@ export default function PatternPage() {
                                                 <select
                                                     value={['1m','5m','30m','60m'].includes(candleInterval) ? candleInterval : 'default'}
                                                     onChange={(e) => setCandleInterval(e.target.value as any)}
-                                                    className={`appearance-none px-4 py-2 pr-8 rounded-xl text-xs font-bold transition-all outline-none cursor-pointer ${
+                                                    className={`appearance-none px-3.5 py-1.5 pr-7 rounded-lg text-xs font-black transition-all outline-none cursor-pointer ${
                                                         ['1m','5m','30m','60m'].includes(candleInterval) 
                                                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border border-blue-500' 
-                                                        : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'
+                                                        : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'
                                                     }`}
                                                 >
-                                                    <option value="default" disabled className="bg-gray-900 text-gray-500">분봉 ▾</option>
-                                                    <option value="1m" className="bg-gray-800 text-white">1분봉</option>
-                                                    <option value="5m" className="bg-gray-800 text-white">5분봉</option>
-                                                    <option value="30m" className="bg-gray-800 text-white">30분봉</option>
-                                                    <option value="60m" className="bg-gray-800 text-white">1시간봉</option>
+                                                    <option value="default" disabled className="bg-zinc-900 text-gray-500">분봉 ▾</option>
+                                                    <option value="1m" className="bg-zinc-800 text-white">1분봉</option>
+                                                    <option value="5m" className="bg-zinc-800 text-white">5분봉</option>
+                                                    <option value="30m" className="bg-zinc-800 text-white">30분봉</option>
+                                                    <option value="60m" className="bg-zinc-800 text-white">1시간봉</option>
                                                 </select>
-                                                <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                                                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
                                                     <svg className={`w-3 h-3 ${['1m','5m','30m','60m'].includes(candleInterval) ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                                 </div>
                                             </div>
@@ -709,103 +910,54 @@ export default function PatternPage() {
                                                 { label: '주봉', value: '1wk' },
                                                 { label: '월봉', value: '1mo' }
                                             ].map((i) => (
-                                                <button key={i.value} onClick={() => setCandleInterval(i.value as any)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${candleInterval === i.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}>{i.label}</button>
+                                                <button 
+                                                    key={i.value} 
+                                                    onClick={() => setCandleInterval(i.value as any)} 
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${candleInterval === i.value ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'}`}
+                                                >
+                                                    {i.label}
+                                                </button>
                                             ))}
-                                            
-                                            {/* Optimization Badge for Intraday */}
-                                            {['1m', '5m', '30m', '60m'].includes(candleInterval) && (
-                                                <div className="ml-2 flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 px-3 py-1.5 rounded-full animate-pulse">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Intraday Optimized (1D)</span>
-                                                </div>
-                                            )}
                                         </>
                                     )}
                                 </div>
+                            </div>
 
-                            <div className="flex flex-wrap gap-4 mb-6 text-[10px] md:text-xs text-gray-400">
+                            {/* 범례 */}
+                            <div className="flex flex-wrap gap-4 text-xs font-bold text-gray-400">
                                 {chartType === 'candle' ? (
                                     <>
-                                        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /><span>양봉</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#3b82f6]" /><span>음봉</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#22c55e]" /><span>5일선</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#ef4444]" /><span>20일선</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#f97316]" /><span>60일선</span></div>
-                                        <div className="flex items-center gap-1.5"><div className="h-0.5 w-3 bg-[#a855f7]" /><span>120일선</span></div>
+                                        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#ef4444]" /><span>양봉</span></div>
+                                        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#3b82f6]" /><span>음봉</span></div>
+                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#22c55e]" /><span>5일선 (MA5)</span></div>
+                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#ef4444]" /><span>20일선 (MA20)</span></div>
+                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#f97316]" /><span>60일선 (MA60)</span></div>
+                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#a855f7]" /><span>120일선 (MA120)</span></div>
                                     </>
                                 ) : (
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-0.5 bg-emerald-500" /><span>종가 추세선</span></div>
+                                    <div className="flex items-center gap-1.5"><span className="w-3 h-1 rounded-full bg-emerald-400" /><span>종가 추세선</span></div>
                                 )}
                             </div>
 
-                             <div className="space-y-4 relative">
+                            {/* 차트 렌더링 컨테이너 */}
+                            <div className="space-y-4 relative">
                                 {updating && (
-                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-50 rounded-2xl flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 rounded-2xl flex items-center justify-center">
                                         <div className="flex flex-col items-center gap-2">
                                             <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
                                             <span className="text-xs font-bold text-white">동기화 중...</span>
                                         </div>
                                     </div>
                                 )}
-                                <div className="bg-white/5 rounded-2xl p-2 border border-white/5 min-h-[400px]">
+                                <div className="bg-zinc-950/80 rounded-2xl p-2 md:p-4 border border-white/5 min-h-[400px]">
                                     {isMounted && <Chart key={`chart-${chartType}-${candleInterval}`} options={chartOptions} series={chartSeries} type={chartType === 'line' ? 'area' : 'candlestick'} height={400} />}
                                 </div>
-                                <div className="bg-white/5 rounded-2xl p-2 border border-white/5">
+                                <div className="bg-zinc-950/80 rounded-2xl p-2 md:p-4 border border-white/5">
                                     {isMounted && <Chart key={`vol-${chartType}-${candleInterval}`} options={volumeOptions} series={volumeSeries} type="bar" height={120} />}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Investor Trend (Whale Tracker) - Only show for KR stocks with whale data */}
-                        {result.whale && (
-                            <div className="rounded-3xl bg-white/5 border border-white/10 p-8 space-y-8 animate-in fade-in slide-in-from-right-8 duration-700 delay-100">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3"><TowerControl className="w-6 h-6 text-blue-400" /> 📡 투자자별 추정 평균 단가</h3>
-                                    <div className="px-3 py-1 bg-blue-500/10 rounded-full text-[10px] font-bold text-blue-400 border border-blue-500/20 uppercase tracking-tighter">최근 40일 추정</div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Whale Average Prices */}
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-gradient-to-br from-blue-500/10 to-transparent p-5 rounded-2xl border border-blue-500/20 flex flex-col justify-between h-32">
-                                                <p className="text-gray-400 text-xs font-bold flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500" /> 외국인 평단</p>
-                                                <div>
-                                                    <p className="text-2xl font-black text-white font-mono">{formatPrice(result.whale?.foreigner?.avg_price)}</p>
-                                                    <div className={`text-xs mt-1 font-bold ${result.whale?.foreigner?.return_rate >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                                                        수익률 {result.whale?.foreigner?.return_rate}%
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="bg-gradient-to-br from-purple-500/10 to-transparent p-5 rounded-2xl border border-purple-500/20 flex flex-col justify-between h-32">
-                                                <p className="text-gray-400 text-xs font-bold flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-500" /> 기관 평단</p>
-                                                <div>
-                                                    <p className="text-2xl font-black text-white font-mono">{formatPrice(result.whale?.institution?.avg_price)}</p>
-                                                    <div className={`text-xs mt-1 font-bold ${result.whale?.institution?.return_rate >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                                                        수익률 {result.whale?.institution?.return_rate}%
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Flow Chart Placeholder/Text */}
-                                    <div className="bg-black/40 rounded-2xl p-6 border border-white/10">
-                                        <div className="flex items-center gap-2 mb-4 text-xs font-bold text-gray-400">
-                                            <Activity className="w-4 h-4 text-emerald-500" /> 5개 투자 데이터 정밀 체크
-                                        </div>
-                                        <div className="space-y-4">
-                                            {result.whale?.ingredients?.map((ing: any, idx: number) => (
-                                                <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-white/5 last:border-0">
-                                                    <span className="text-gray-500 font-mono">{ing.date.split('-').slice(1).join('/')}</span>
-                                                    <span className={`font-bold ${ing.winner === '개인' ? 'text-yellow-400' : ing.winner === '외국인' ? 'text-red-400' : 'text-blue-400'}`}>{ing.winner === '순매수 없음' ? ing.winner : `${ing.winner} 순매수`}</span>
-                                                    <span className="text-gray-300 font-mono">{formatPrice(ing.price)}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         )}
                         <AIDisclaimer className="mt-8" />
                         {/* Viral Watermark (Included in capture) */}
