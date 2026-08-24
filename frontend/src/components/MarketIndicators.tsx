@@ -132,15 +132,19 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
         const hasMore = limit ? items.length > limit : false;
 
         return (
-            <div className="bg-[#1c1c1e]/40 backdrop-blur-md rounded-3xl border border-white/5 flex flex-col h-full overflow-hidden transition-all duration-300 hover:border-white/10 shadow-glass hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(6,182,212,0.15)]">
-                <div className="flex justify-between items-center p-4 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent">
-                    <h4 className="text-sm font-bold text-gray-200 flex items-center gap-2">
-                        {icon} <span className="tracking-tight">{title}</span>
-                    </h4>
+            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col h-full">
+                <div className="bg-zinc-950/80 border-b border-white/10 px-5 py-3.5 flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 bg-white/5 border border-white/10 rounded-xl">
+                            {icon}
+                        </div>
+                        <span className="font-black text-white text-sm tracking-tight">{title}</span>
+                    </div>
                     {hasMore && onExpand && (
                         <button
                             onClick={onExpand}
-                            className="p-1 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors"
+                            className="p-1.5 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                            title="전체보기"
                         >
                             <Maximize2 className="w-3.5 h-3.5" />
                         </button>
@@ -159,21 +163,29 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                             const subPrice = priceParts[1] ? `(${priceParts[1]}` : "";
 
                             return (
-                                <div key={idx} className="group flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors relative">
-                                    <div className="flex flex-col max-w-[55%]">
+                                <div key={idx} className="group flex items-center justify-between px-5 py-3 hover:bg-zinc-800/80 transition-colors relative">
+                                    <div className="flex flex-col max-w-[55%] min-w-0">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="text-[12px] font-bold text-gray-300 truncate group-hover:text-white transition-colors">{item.name}</span>
-                                            {item.isRealtime && <span className="text-[7px] bg-emerald-500/20 text-emerald-400 px-1 rounded-sm font-black border border-emerald-500/30 animate-pulse">SYNC</span>}
+                                            <span className="text-xs md:text-sm font-bold text-white truncate group-hover:text-amber-300 transition-colors">{item.name}</span>
+                                            {item.isRealtime && <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.2 rounded font-mono font-bold border border-emerald-500/20">SYNC</span>}
                                         </div>
-                                        <span className="text-[9px] text-gray-500 truncate opacity-60 tracking-wider">{item.symbol}</span>
+                                        <span className="text-[10px] text-gray-500 font-mono truncate tracking-wider mt-0.5">{item.symbol}</span>
                                     </div>
-                                    <div className="text-right flex flex-col items-end">
-                                        <div className="text-[13px] font-black text-gray-100 tabular-nums tracking-tight flex flex-col items-end leading-tight">
+                                    <div className="text-right flex flex-col items-end flex-shrink-0 ml-2">
+                                        <div className="tabular-nums font-black font-mono text-xs md:text-sm text-white flex flex-col items-end leading-tight">
                                             <span>{mainPrice}</span>
-                                            {subPrice && <span className="text-[10px] text-orange-400/80 font-bold tracking-tighter mt-0.5">{subPrice}</span>}
+                                            {subPrice && <span className="text-[10px] text-amber-400/90 font-mono font-bold tracking-tighter mt-0.5">{subPrice}</span>}
                                         </div>
-                                        <div className={`text-[11px] font-bold tabular-nums tracking-tight mt-0.5 ${isZero ? 'text-gray-500' : isUp ? 'text-[#f23c3c]' : isDown ? 'text-[#3c78f2]' : 'text-gray-500'}`}>
-                                            {item.change}
+                                        <div className="mt-1">
+                                            <div className={`px-2 py-0.5 rounded-md text-[10px] font-black font-mono border ${
+                                                isZero 
+                                                    ? 'text-gray-400 bg-white/5 border-white/10' 
+                                                    : isUp 
+                                                    ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
+                                                    : 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+                                            }`}>
+                                                {item.change}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -208,10 +220,10 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
     return (
         <div className="space-y-4">
             <div className="flex justify-end px-1">
-                <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-400 tracking-tighter flex items-center gap-1.5">
-                        <Activity className="w-3 h-3" /> 데이터 동기화 완료: {lastUpdated || 'SYNCING...'}
+                <div className="bg-zinc-900/90 border border-white/10 px-3.5 py-1.5 rounded-full flex items-center gap-2 shadow-md">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[11px] font-mono font-bold text-emerald-400 tracking-tight flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5" /> 데이터 실시간 동기화: {lastUpdated || 'SYNCING...'}
                     </span>
                 </div>
             </div>
@@ -219,10 +231,10 @@ export default function MarketIndicators({ limit }: MarketIndicatorsProps) {
                 <div className="md:col-span-2 lg:col-span-2 flex flex-col">
                     <TradingViewIndicesWidget />
                 </div>
-                {renderCard("주요 환율", <RefreshCw className="w-4 h-4 text-green-400" />, forex, displayLimit, () => openModal("주요 환율", forex, <RefreshCw className="text-green-400" />))}
-                {renderCard("에너지/금속", <Droplet className="w-4 h-4 text-orange-400" />, commodity, displayLimit, () => openModal("원자재 (에너지/금속)", commodity, <Droplet className="text-orange-400" />))}
+                {renderCard("주요 환율", <RefreshCw className="w-4 h-4 text-emerald-400" />, forex, displayLimit, () => openModal("주요 환율", forex, <RefreshCw className="text-emerald-400" />))}
+                {renderCard("에너지/금속", <Droplet className="w-4 h-4 text-amber-400" />, commodity, displayLimit, () => openModal("원자재 (에너지/금속)", commodity, <Droplet className="text-amber-400" />))}
                 {renderCard("국가 채권", <BarChart3 className="w-4 h-4 text-purple-400" />, bonds, displayLimit, () => openModal("주요국 국채 10년물", bonds, <BarChart3 className="text-purple-400" />))}
-                {renderCard("기준 금리", <DollarSign className="w-4 h-4 text-red-400" />, interest, displayLimit, () => openModal("전세계 기준 금리", interest, <DollarSign className="text-red-400" />))}
+                {renderCard("기준 금리", <DollarSign className="w-4 h-4 text-rose-400" />, interest, displayLimit, () => openModal("전세계 기준 금리", interest, <DollarSign className="text-rose-400" />))}
             </div>
 
             {/* Modal for All Data */}
