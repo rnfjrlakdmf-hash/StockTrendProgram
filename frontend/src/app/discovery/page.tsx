@@ -863,20 +863,25 @@ function DiscoveryContent() {
                 {!stock && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         {/* Search / Hero Section */}
-                        <div className="relative rounded-3xl bg-gradient-to-r from-blue-900/60 to-purple-900/60 p-6 border border-white/20 shadow-xl overflow-visible">
-                            <div className="relative z-20 max-w-2xl">
-                                <h2 className="text-xl md:text-2xl font-bold mb-2 text-white drop-shadow-md">종목 데이터 분석 (AI Analysis)</h2>
-                                <p className="text-gray-200 mb-4 text-sm md:text-base">
-                                    종목 코드(티커)를 입력하여 기업의 재무 상태와 시장 심리를 분석하세요.<br />
-                                    <span className="text-xs text-gray-400">예시: AAPL, 삼성전자 (테마 검색 불가)</span>
+                        <div className="relative rounded-3xl bg-gradient-to-r from-blue-950/80 via-slate-900/90 to-purple-950/80 p-5 sm:p-7 border border-white/15 shadow-2xl overflow-visible backdrop-blur-xl">
+                            <div className="relative z-20 max-w-3xl">
+                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black mb-2.5">
+                                    <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                                    <span>AI 정밀 기업 데이터 분석</span>
+                                </div>
+                                <h2 className="text-xl sm:text-2xl md:text-3xl font-black mb-1.5 text-white tracking-tight drop-shadow-md">
+                                    종목 데이터 분석 (AI Analysis)
+                                </h2>
+                                <p className="text-gray-300 mb-4 text-xs sm:text-sm leading-relaxed">
+                                    종목명 또는 티커(코드)를 입력하여 기업의 실시간 재무 건전성, 수급 현황, AI 진단 점수를 한눈에 확인하세요.
                                 </p>
 
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <input
                                             type="text"
-                                            placeholder="종목명 또는 티커 입력..."
-                                            className="w-full rounded-xl bg-black/60 border border-white/30 px-4 py-3 text-base md:text-lg outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 font-medium"
+                                            placeholder="종목명 또는 티커 입력... (예: 삼성전자, AAPL, NVDA)"
+                                            className="w-full rounded-2xl bg-black/60 border border-white/20 px-4 py-3 sm:py-3.5 text-sm sm:text-base outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 font-medium shadow-inner transition-all"
                                             value={searchInput}
                                             onChange={(e) => setSearchInput(e.target.value)}
                                             onKeyDown={handleKeyDown}
@@ -885,7 +890,7 @@ function DiscoveryContent() {
                                         
                                         {/* [New] Search Results Dropdown */}
                                         {showResults && searchResults.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-gray-900 border border-white/20 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[300px] overflow-y-auto">
+                                            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-gray-900 border border-white/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[300px] overflow-y-auto">
                                                 {searchResults.map((res, idx) => (
                                                     <button
                                                         key={idx}
@@ -914,10 +919,34 @@ function DiscoveryContent() {
                                     <button
                                         onClick={() => handleSearch()}
                                         disabled={loading}
-                                        className="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg text-sm md:text-base whitespace-nowrap"
+                                        className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 sm:px-6 py-3 sm:py-3.5 font-black text-white hover:from-blue-500 hover:to-indigo-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-600/30 text-sm sm:text-base whitespace-nowrap active:scale-95 shrink-0"
                                     >
                                         {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <span>분석 시작</span>}
                                     </button>
+                                </div>
+
+                                {/* 빠른 검색 추천 칩 */}
+                                <div className="flex items-center gap-1.5 mt-3 flex-wrap text-xs">
+                                    <span className="text-gray-400 font-bold mr-1">추천 검색:</span>
+                                    {[
+                                        { name: "삼성전자", code: "005930" },
+                                        { name: "SK하이닉스", code: "000660" },
+                                        { name: "현대차", code: "005380" },
+                                        { name: "NVDA", code: "NVDA" },
+                                        { name: "AAPL", code: "AAPL" },
+                                        { name: "TSLA", code: "TSLA" }
+                                    ].map((item) => (
+                                        <button
+                                            key={item.code}
+                                            onClick={() => {
+                                                setSearchInput(item.name);
+                                                handleSearch(item.code);
+                                            }}
+                                            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 text-[11px] font-bold transition-all"
+                                        >
+                                            #{item.name}
+                                        </button>
+                                    ))}
                                 </div>
 
                                 {error && <p className="text-red-400 mt-3 font-semibold bg-red-900/40 p-2 rounded-lg inline-block">{error}</p>}

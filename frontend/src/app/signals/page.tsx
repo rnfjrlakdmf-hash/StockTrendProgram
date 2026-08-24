@@ -73,11 +73,11 @@ function SignalsPageContent() {
     ];
 
     return (
-        <div className="min-h-screen pb-20 text-white bg-black">
+        <div className="min-h-screen pb-24 text-white bg-black">
             <Header title="시장 인텔리전스" subtitle="당일 시그널 · 글로벌 캘린더 · 시장 주도주 분석" />
-            <div className="max-w-5xl mx-auto p-4 space-y-6">
+            <div className="max-w-5xl mx-auto px-3 py-3 sm:p-4 space-y-4 sm:space-y-6">
                 {/* Tab Bar */}
-                <div className="flex gap-1 bg-white/5 p-1 rounded-2xl overflow-x-auto scrollbar-hide">
+                <div className="flex gap-1.5 bg-white/5 p-1 rounded-2xl overflow-x-auto scrollbar-hide -mx-1 px-1 sm:mx-0 sm:px-1">
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`flex-1 min-w-max py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all whitespace-nowrap ${activeTab === tab.id ? `bg-gradient-to-r ${tab.gradient} text-white shadow-lg` : "text-gray-400 hover:text-white"}`}>
@@ -612,12 +612,12 @@ function SignalsFeedTab({ router }: { router: any }) {
         return (
             <div
                 key={sig.id}
-                className={`bg-white/5 border ${badge.border} hover:border-white/30 rounded-2xl p-4 hover:bg-white/10 transition-all cursor-pointer group shadow-sm`}
+                className={`bg-white/5 border ${badge.border} hover:border-white/30 rounded-2xl p-3.5 sm:p-4 hover:bg-white/10 transition-all cursor-pointer group shadow-sm`}
                 onClick={handleSignalClick}
             >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                             <span className={`text-[11px] px-2 py-0.5 rounded-md font-bold ${badge.color} border ${badge.border}`}>
                                 {badge.label}
                             </span>
@@ -634,20 +634,20 @@ function SignalsFeedTab({ router }: { router: any }) {
                             </span>
                         </div>
                         
-                        <h4 className="font-bold text-white text-sm group-hover:text-orange-300 transition-colors flex items-center gap-1.5 flex-wrap">
+                        <h4 className="font-bold text-white text-sm group-hover:text-orange-300 transition-colors flex items-center gap-1.5 flex-wrap break-words">
                             <span>{cleanTitle}</span>
                         </h4>
                         
-                        <p className="text-xs text-gray-300 mt-1.5 leading-relaxed break-keep">
+                        <p className="text-xs text-gray-300 mt-1.5 leading-relaxed break-words break-keep">
                             {cleanSummary}
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                    <div className="flex items-center flex-wrap sm:flex-nowrap gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5 justify-end w-full sm:w-auto">
                         {sig.signal_type === "DISCLOSURE" && (
                             <button
                                 onClick={e => { e.stopPropagation(); setSelectedDisclosure(sig); }}
-                                className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 rounded-xl text-xs font-bold transition-all"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 rounded-xl text-xs font-bold transition-all"
                                 title="공시 원문 보기"
                             >
                                 <FileText className="w-3.5 h-3.5 text-blue-400" /> 공시원문
@@ -656,14 +656,14 @@ function SignalsFeedTab({ router }: { router: any }) {
 
                         <button
                             onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-purple-600/50 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-purple-600/50 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm"
                         >
                             <Bot className="w-3.5 h-3.5" /> AI 분석
                         </button>
                         
                         <button
                             onClick={e => { e.stopPropagation(); router.push(`/discovery?q=${sig.symbol}`); }}
-                            className="text-[11px] text-gray-400 group-hover:text-white flex items-center font-bold px-2.5 py-1.5 bg-white/5 hover:bg-orange-600/30 border border-white/10 hover:border-orange-500/40 rounded-xl transition-all"
+                            className="flex-1 sm:flex-none flex items-center justify-center text-[11px] text-gray-400 group-hover:text-white font-bold px-2.5 py-1.5 bg-white/5 hover:bg-orange-600/30 border border-white/10 hover:border-orange-500/40 rounded-xl transition-all"
                         >
                             차트보기 〉
                         </button>
@@ -1634,12 +1634,12 @@ function MarketInsightsTab({ router }: { router: any }) {
     return (
         <div className="space-y-4 animate-in fade-in duration-500">
             {/* Top Navigation & Control Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-zinc-900/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-zinc-900/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
                 {/* 3 Subtabs */}
-                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 sm:mx-0 sm:px-0 w-full sm:w-auto">
                     <button
                         onClick={() => setSubTab("volume")}
-                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 min-w-max px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                             subTab === "volume"
                                 ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-600/20"
                                 : "text-gray-400 hover:text-white bg-black/20"
@@ -1650,25 +1650,25 @@ function MarketInsightsTab({ router }: { router: any }) {
                     </button>
                     <button
                         onClick={() => setSubTab("double_whale")}
-                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 min-w-max px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                             subTab === "double_whale"
                                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/20"
                                 : "text-gray-400 hover:text-white bg-black/20"
                         }`}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        <span>외인·기관 쌍끌이 레이더</span>
+                        <span>외인·기관 쌍끌이</span>
                     </button>
                     <button
                         onClick={() => setSubTab("value")}
-                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 min-w-max px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                             subTab === "value"
                                 ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/20"
                                 : "text-gray-400 hover:text-white bg-black/20"
                         }`}
                     >
                         <Zap className="w-3.5 h-3.5" />
-                        <span>인기 검색 & 거래대금 TOP</span>
+                        <span>거래대금 TOP</span>
                     </button>
                 </div>
 
@@ -2222,13 +2222,13 @@ function CalendarTab({ router }: { router: any }) {
 
     return (
         <div className="space-y-4 animate-in fade-in duration-500">
-            {/* Top Navigation & Control Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-zinc-900/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
+            {/* Top Navigation & Subtab Control Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-zinc-900/80 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
                 {/* 3 Main Subtabs */}
-                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 sm:mx-0 sm:px-0 w-full sm:w-auto">
                     <button
                         onClick={() => setMainTab("earndiv")}
-                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 min-w-max px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                             mainTab === "earndiv"
                                 ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-600/20"
                                 : "text-gray-400 hover:text-white bg-black/20"
@@ -2239,7 +2239,7 @@ function CalendarTab({ router }: { router: any }) {
                     </button>
                     <button
                         onClick={() => setMainTab("economic")}
-                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 min-w-max px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                             mainTab === "economic"
                                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20"
                                 : "text-gray-400 hover:text-white bg-black/20"
@@ -2250,7 +2250,7 @@ function CalendarTab({ router }: { router: any }) {
                     </button>
                     <button
                         onClick={() => setMainTab("ipo")}
-                        className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                        className={`flex-1 min-w-max px-3 sm:px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
                             mainTab === "ipo"
                                 ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/20"
                                 : "text-gray-400 hover:text-white bg-black/20"
@@ -2265,7 +2265,7 @@ function CalendarTab({ router }: { router: any }) {
                 <button
                     onClick={refreshAllCalendarData}
                     disabled={refreshing}
-                    className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                    className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95 shrink-0"
                 >
                     <RefreshCw className={`w-3.5 h-3.5 text-orange-400 ${refreshing ? 'animate-spin' : ''}`} />
                     <span>실시간 갱신</span>
@@ -2275,21 +2275,21 @@ function CalendarTab({ router }: { router: any }) {
             {/* TAB 1: 실적/배당 서브탭 */}
             <div className={mainTab === "earndiv" ? "space-y-4 block animate-in fade-in duration-200" : "hidden"}>
                 {/* 실적 vs 배당 토글 */}
-                <div className="flex gap-2 bg-zinc-900/60 p-1.5 rounded-2xl border border-white/5">
+                <div className="flex gap-1.5 sm:gap-2 bg-zinc-900/60 p-1.5 rounded-2xl border border-white/5 overflow-x-auto scrollbar-hide">
                     <button
                         onClick={() => {
                             setCalTab("earnings");
                             setSelectedDay(null);
                         }}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                        className={`flex-1 min-w-[130px] sm:min-w-0 py-2.5 sm:py-3 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
                             calTab === "earnings" 
                                 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 ring-1 ring-blue-400/50" 
                                 : "text-gray-400 hover:text-white bg-black/20"
                         }`}
                     >
-                        <TrendingUp className="w-4 h-4" />
-                        <span>📈 기업 실적 발표 캘린더</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/30 font-mono">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>📈 실적 발표</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-mono">
                             {(Array.isArray(events) ? events : []).filter(e => e.type === "earnings").length}건
                         </span>
                     </button>
@@ -2298,25 +2298,25 @@ function CalendarTab({ router }: { router: any }) {
                             setCalTab("dividend");
                             setSelectedDay(null);
                         }}
-                        className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                        className={`flex-1 min-w-[130px] sm:min-w-0 py-2.5 sm:py-3 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
                             calTab === "dividend" 
                                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-600/30 ring-1 ring-emerald-400/50" 
                                 : "text-gray-400 hover:text-white bg-black/20"
                         }`}
                     >
-                        <DollarSign className="w-4 h-4" />
-                        <span>💰 배당락 / 배당금 캘린더</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/30 font-mono">
+                        <DollarSign className="w-3.5 h-3.5" />
+                        <span>💰 배당 캘린더</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-mono">
                             {(Array.isArray(events) ? events : []).filter(e => e.type === "dividend").length}건
                         </span>
                     </button>
                 </div>
 
                 {/* 스마트 인터랙티브 캘린더 그리드 */}
-                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-4 md:p-5 backdrop-blur-xl shadow-xl space-y-4">
+                <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-2.5 sm:p-4 md:p-5 backdrop-blur-xl shadow-xl space-y-3 sm:space-y-4 overflow-hidden">
                     {/* 달력 헤더: 년월 이동, 빠른 월 점퍼 및 오늘 버튼 */}
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-2 border-b border-white/5">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pb-2 border-b border-white/5">
+                        <div className="flex items-center justify-between sm:justify-start gap-2">
                             <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/10">
                                 <button
                                     onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
@@ -2325,7 +2325,7 @@ function CalendarTab({ router }: { router: any }) {
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
-                                <span className="px-3 text-sm md:text-base font-black text-white min-w-[100px] text-center">
+                                <span className="px-2 sm:px-3 text-xs sm:text-sm md:text-base font-black text-white min-w-[80px] sm:min-w-[100px] text-center">
                                     {currentMonth.toLocaleString("ko-KR", { year: "numeric", month: "long" })}
                                 </span>
                                 <button
@@ -2344,7 +2344,7 @@ function CalendarTab({ router }: { router: any }) {
                                     setSelectedDay(now.getDate());
                                     setScheduleFilter("selected");
                                 }}
-                                className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95"
+                                className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 active:scale-95 shrink-0"
                             >
                                 <Clock className="w-3.5 h-3.5" />
                                 <span>오늘</span>
@@ -2352,8 +2352,8 @@ function CalendarTab({ router }: { router: any }) {
                         </div>
 
                         {/* 시즌 빠른 이동 뱃지들 */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[10px] text-gray-500 font-bold hidden sm:inline">빠른 이동:</span>
+                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
+                            <span className="text-[10px] text-gray-500 font-bold hidden sm:inline shrink-0">빠른 이동:</span>
                             {(() => {
                                 const stats: { [key: string]: { year: number, month: number, count: number } } = {};
                                 (Array.isArray(events) ? events : []).forEach(e => {
@@ -2384,7 +2384,7 @@ function CalendarTab({ router }: { router: any }) {
                                                 setSelectedDay(null);
                                                 setScheduleFilter("month");
                                             }}
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
                                                 isCurrent
                                                     ? "bg-orange-600 text-white shadow-md shadow-orange-600/30 font-black ring-1 ring-orange-400"
                                                     : "bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10"
@@ -2403,9 +2403,9 @@ function CalendarTab({ router }: { router: any }) {
                     </div>
 
                     {/* 요일 헤더 */}
-                    <div className="grid grid-cols-7 gap-1.5">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                         {["일", "월", "화", "수", "목", "금", "토"].map(d => (
-                            <div key={d} className={`text-center text-xs font-black py-1 rounded-lg bg-black/20 ${
+                            <div key={d} className={`text-center text-[11px] sm:text-xs font-black py-1 rounded-lg bg-black/20 ${
                                 d === "일" ? "text-rose-400" : d === "토" ? "text-blue-400" : "text-gray-400"
                             }`}>
                                 {d}
@@ -2414,9 +2414,9 @@ function CalendarTab({ router }: { router: any }) {
                     </div>
 
                     {/* 날짜 셀 그리드 */}
-                    <div className="grid grid-cols-7 gap-1.5">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                         {Array.from({ length: firstDay }, (_, i) => (
-                            <div key={`empty-${i}`} className="min-h-[65px] md:min-h-[75px] rounded-xl bg-black/10 opacity-20 border border-transparent" />
+                            <div key={`empty-${i}`} className="min-h-[48px] sm:min-h-[65px] md:min-h-[75px] rounded-lg sm:rounded-xl bg-black/10 opacity-20 border border-transparent" />
                         ))}
                         {Array.from({ length: daysInMonth }, (_, i) => {
                             const day = i + 1;
@@ -2432,7 +2432,7 @@ function CalendarTab({ router }: { router: any }) {
                                         setSelectedDay(day);
                                         setScheduleFilter("selected");
                                     }}
-                                    className={`min-h-[65px] md:min-h-[75px] rounded-xl p-2 border transition-all cursor-pointer flex flex-col justify-between group ${
+                                    className={`min-h-[48px] sm:min-h-[65px] md:min-h-[75px] rounded-lg sm:rounded-xl p-1 sm:p-2 border transition-all cursor-pointer flex flex-col justify-between group ${
                                         selected
                                             ? "border-orange-500 bg-orange-500/25 shadow-lg shadow-orange-500/20 ring-2 ring-orange-400"
                                             : today
@@ -2443,7 +2443,7 @@ function CalendarTab({ router }: { router: any }) {
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
-                                        <span className={`text-xs md:text-sm font-black ${
+                                        <span className={`text-[11px] sm:text-xs md:text-sm font-black ${
                                             selected ? "text-orange-300" :
                                             today ? "text-amber-400" :
                                             dow === 0 ? "text-rose-400" :
@@ -2453,7 +2453,7 @@ function CalendarTab({ router }: { router: any }) {
                                             {day}
                                         </span>
                                         {today && (
-                                            <span className="text-[8px] font-black bg-amber-400 text-black px-1 rounded">
+                                            <span className="text-[7px] sm:text-[8px] font-black bg-amber-400 text-black px-0.5 sm:px-1 rounded">
                                                 오늘
                                             </span>
                                         )}
@@ -2461,11 +2461,11 @@ function CalendarTab({ router }: { router: any }) {
 
                                     {/* Event Chips (종목명 뱃지 노출) */}
                                     {evs.length > 0 ? (
-                                        <div className="mt-1 space-y-0.5">
+                                        <div className="mt-0.5 sm:mt-1 space-y-0.5">
                                             {evs.slice(0, 1).map((ev: any, idx: number) => (
                                                 <div
                                                     key={idx}
-                                                    className={`text-[9px] font-black truncate px-1 py-0.5 rounded border ${
+                                                    className={`text-[8px] sm:text-[9px] font-black truncate px-0.5 sm:px-1 py-0.2 rounded border ${
                                                         calTab === 'earnings'
                                                             ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                                                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -2476,13 +2476,13 @@ function CalendarTab({ router }: { router: any }) {
                                                 </div>
                                             ))}
                                             {evs.length > 1 && (
-                                                <div className="text-[8px] font-bold text-orange-400 flex items-center gap-0.5">
-                                                    <span>+{evs.length - 1}건</span>
+                                                <div className="text-[7px] sm:text-[8px] font-bold text-orange-400 flex items-center gap-0.5">
+                                                    <span>+{evs.length - 1}</span>
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="h-3" />
+                                        <div className="h-2 sm:h-3" />
                                     )}
                                 </div>
                             );
@@ -3098,17 +3098,17 @@ function CalendarTab({ router }: { router: any }) {
                                         return (
                                             <div
                                                 key={idx}
-                                                className={`bg-zinc-900/80 border rounded-2xl p-4 transition-all hover:bg-white/5 flex flex-col justify-between gap-3.5 shadow-lg group ${
+                                                className={`bg-zinc-900/80 border rounded-2xl p-3.5 sm:p-4 transition-all hover:bg-white/5 flex flex-col justify-between gap-3 sm:gap-3.5 shadow-lg group ${
                                                     ipo.status === 'active'
                                                         ? 'border-rose-500/40 ring-1 ring-rose-500/20'
                                                         : 'border-white/10 hover:border-white/25'
                                                 }`}
                                             >
                                                 {/* 상단 헤더: 종목명 & D-Day 뱃지 */}
-                                                <div className="flex items-start justify-between gap-2">
+                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <h4 className="font-black text-sm md:text-base text-white group-hover:text-purple-400 transition-colors truncate">
+                                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                                            <h4 className="font-black text-sm md:text-base text-white group-hover:text-purple-400 transition-colors break-words">
                                                                 {ipo.name}
                                                             </h4>
                                                             {ipo.symbol && (
@@ -3121,7 +3121,7 @@ function CalendarTab({ router }: { router: any }) {
                                                             </span>
                                                         </div>
                                                         {ipo.detail && (
-                                                            <div className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                                                            <div className="text-[11px] text-gray-400 mt-1 flex items-center gap-1.5 flex-wrap break-words">
                                                                 <span className="text-gray-500">{ipoTab === 'kr' ? '주관사:' : '정보:'}</span>
                                                                 <span className="font-bold text-gray-300">{ipo.detail}</span>
                                                             </div>
@@ -3129,8 +3129,8 @@ function CalendarTab({ router }: { router: any }) {
                                                     </div>
 
                                                     {/* D-Day 뱃지 */}
-                                                    <div className="shrink-0 text-right">
-                                                        <span className={`text-xs font-black px-2.5 py-1 rounded-xl border block font-mono shadow-sm ${
+                                                    <div className="self-start sm:self-auto shrink-0">
+                                                        <span className={`text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-xl border block font-mono shadow-sm ${
                                                             ipo.status === 'active'
                                                                 ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
                                                                 : ipo.dDayNum <= 3
@@ -3145,7 +3145,7 @@ function CalendarTab({ router }: { router: any }) {
                                                 </div>
 
                                                 {/* 핵심 공모 정보 그리드 */}
-                                                <div className="bg-black/30 rounded-xl p-3 border border-white/5 grid grid-cols-2 gap-2 text-xs">
+                                                <div className="bg-black/30 rounded-xl p-2.5 sm:p-3 border border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                                     <div>
                                                         <span className="text-[10px] text-gray-500 font-bold block mb-0.5">📅 {ipoTab === 'kr' ? '청약 일정' : '상장/공모일'}</span>
                                                         <span className="font-mono font-bold text-gray-200 text-[11px] block truncate">
@@ -3168,7 +3168,7 @@ function CalendarTab({ router }: { router: any }) {
                                                         </div>
                                                     </div>
                                                     {ipo.price_band && (
-                                                        <div className="col-span-2 pt-1.5 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
+                                                        <div className="col-span-1 sm:col-span-2 pt-1.5 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
                                                             <span className="text-gray-500">🎯 희망 공모가 밴드:</span>
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <span className="font-mono text-gray-300 font-bold">

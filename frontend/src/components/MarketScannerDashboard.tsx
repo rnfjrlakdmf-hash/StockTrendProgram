@@ -129,70 +129,70 @@ export default function MarketScannerDashboard() {
                 {/* 헤더 */}
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">{name}</span>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                            score >= 55 ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                            : score >= 45 ? 'bg-gray-500/10 border-gray-500/30 text-gray-400'
-                            : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                        <span className="text-sm md:text-base font-black text-white">{name}</span>
+                        <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                            score >= 55 ? 'bg-red-500/20 border-red-500/40 text-red-300'
+                            : score >= 45 ? 'bg-gray-500/20 border-gray-500/40 text-gray-300'
+                            : 'bg-blue-500/20 border-blue-500/40 text-blue-300'
                         }`}>
                             {sentiment.label}
                         </span>
                     </div>
-                    <span className="text-gray-500 text-[11px] font-mono">총 {total.toLocaleString()}종목</span>
+                    <span className="text-gray-400 text-xs font-mono font-medium">총 {total.toLocaleString()}개 종목</span>
                 </div>
 
-                {/* 메인 바 */}
+                {/* 메인 프로그레스 바 */}
                 <div className="relative">
-                    <div className="h-5 w-full flex rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                    <div className="h-6 w-full flex rounded-xl overflow-hidden bg-black/60 border border-white/10 p-0.5 shadow-inner">
                         <div
                             style={{ width: animateBars ? `${upPct}%` : '0%' }}
-                            className="bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-1000 ease-out flex items-center justify-center"
+                            className="bg-gradient-to-r from-red-600 to-rose-500 transition-all duration-1000 ease-out flex items-center justify-center rounded-l-lg"
                         >
-                            {upPct > 12 && (
-                                <span className="text-[9px] font-black text-white/90 drop-shadow">{Number(upPct || 0).toFixed(0)}%</span>
+                            {upPct > 10 && (
+                                <span className="text-[10px] font-black text-white drop-shadow font-mono">{Number(upPct || 0).toFixed(0)}%</span>
                             )}
                         </div>
                         <div
                             style={{ width: animateBars ? `${samePct}%` : '0%' }}
-                            className="bg-gray-600/60 transition-all duration-1000 ease-out delay-100 flex items-center justify-center"
+                            className="bg-zinc-600 transition-all duration-1000 ease-out delay-100 flex items-center justify-center"
                         >
                             {samePct > 8 && (
-                                <span className="text-[9px] font-black text-gray-300/80">{Number(samePct || 0).toFixed(0)}%</span>
+                                <span className="text-[10px] font-black text-zinc-200 font-mono">{Number(samePct || 0).toFixed(0)}%</span>
                             )}
                         </div>
                         <div
                             style={{ width: animateBars ? `${downPct}%` : '0%' }}
-                            className="bg-gradient-to-l from-blue-500 to-indigo-400 transition-all duration-1000 ease-out delay-200 flex items-center justify-center"
+                            className="bg-gradient-to-l from-blue-600 to-cyan-500 transition-all duration-1000 ease-out delay-200 flex items-center justify-center rounded-r-lg"
                         >
-                            {downPct > 12 && (
-                                <span className="text-[9px] font-black text-white/90 drop-shadow">{Number(downPct || 0).toFixed(0)}%</span>
+                            {downPct > 10 && (
+                                <span className="text-[10px] font-black text-white drop-shadow font-mono">{Number(downPct || 0).toFixed(0)}%</span>
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* 수치 */}
+                {/* 3대 수치 카드 (고대비 깔끔 정렬) */}
                 <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-red-500/5 border border-red-500/10 rounded-lg py-1.5 px-2">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl py-2 px-1 sm:px-2">
                         <div className="flex items-center justify-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-red-400" />
-                            <span className="text-red-400 font-black text-sm">{(stats.up || 0).toLocaleString()}</span>
+                            <TrendingUp className="w-3.5 h-3.5 text-red-400" />
+                            <span className="text-red-400 font-black text-sm md:text-base font-mono">{(stats.up || 0).toLocaleString()}</span>
                         </div>
-                        <p className="text-[9px] text-gray-500 mt-0.5">상승</p>
+                        <p className="text-[10px] font-bold text-red-300/80 mt-0.5">상승 ({Number(upPct || 0).toFixed(0)}%)</p>
                     </div>
-                    <div className="bg-white/[0.02] border border-white/5 rounded-lg py-1.5 px-2">
+                    <div className="bg-white/5 border border-white/10 rounded-xl py-2 px-1 sm:px-2">
                         <div className="flex items-center justify-center gap-1">
-                            <Minus className="w-3 h-3 text-gray-500" />
-                            <span className="text-gray-400 font-black text-sm">{(stats.same || 0).toLocaleString()}</span>
+                            <Minus className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-gray-300 font-black text-sm md:text-base font-mono">{(stats.same || 0).toLocaleString()}</span>
                         </div>
-                        <p className="text-[9px] text-gray-500 mt-0.5">보합</p>
+                        <p className="text-[10px] font-bold text-gray-400 mt-0.5">보합 ({Number(samePct || 0).toFixed(0)}%)</p>
                     </div>
-                    <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg py-1.5 px-2">
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl py-2 px-1 sm:px-2">
                         <div className="flex items-center justify-center gap-1">
-                            <TrendingDown className="w-3 h-3 text-blue-400" />
-                            <span className="text-blue-400 font-black text-sm">{(stats.down || 0).toLocaleString()}</span>
+                            <TrendingDown className="w-3.5 h-3.5 text-blue-400" />
+                            <span className="text-blue-400 font-black text-sm md:text-base font-mono">{(stats.down || 0).toLocaleString()}</span>
                         </div>
-                        <p className="text-[9px] text-gray-500 mt-0.5">하락</p>
+                        <p className="text-[10px] font-bold text-blue-300/80 mt-0.5">하락 ({Number(downPct || 0).toFixed(0)}%)</p>
                     </div>
                 </div>
             </div>
@@ -213,168 +213,247 @@ export default function MarketScannerDashboard() {
     };
 
     return (
-        <div className="space-y-4 mt-8">
-            {/* 종합 시장 체감 온도 카드 -> 한국판 공포/탐욕 지수 */}
-            <div className={`relative bg-black/40 border border-white/10 rounded-3xl p-6 md:p-8 overflow-hidden shadow-2xl group`}>
-                {/* 배경 글로우 */}
-                <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 blur-[80px] opacity-20 transition-all duration-1000 ${
-                    combinedScore >= 55 ? 'bg-red-500' : combinedScore >= 45 ? 'bg-gray-500' : 'bg-blue-500'
-                }`} />
+        <div className="space-y-6 mt-6">
+            {/* 1. 종합 시장 심리 & 주요 지수 대시보드 (2단 깔끔 분할 레이아웃) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* 좌측: 한국판 공포·탐욕 지수 (Fear & Greed Index) */}
+                <div className="relative bg-zinc-900/80 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between overflow-hidden group">
+                    {/* 배경 소프트 글로우 */}
+                    <div className={`absolute -top-10 -left-10 w-48 h-48 blur-[70px] opacity-25 pointer-events-none transition-all duration-1000 ${
+                        combinedScore >= 56 ? 'bg-red-500' : combinedScore >= 46 ? 'bg-gray-500' : 'bg-blue-500'
+                    }`} />
 
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
-                        <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner shrink-0 ${
-                            combinedScore >= 55 ? 'bg-red-500/15' : combinedScore >= 45 ? 'bg-gray-500/15' : 'bg-blue-500/15'
-                        }`}>
-                            <Zap className={`w-7 h-7 md:w-8 md:h-8 ${combined.color} group-hover:scale-110 transition-transform`} />
-                        </div>
-                        <div className="whitespace-nowrap">
-                            <p className="text-[12px] md:text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">
-                                KOREA FEAR & GREED INDEX
-                            </p>
-                            <h2 className={`text-2xl md:text-3xl font-black ${combined.color} tracking-tight drop-shadow-md`}>
-                                {combined.label} <span className="text-white/80 text-xl font-bold ml-1">{combinedScore}</span>
-                            </h2>
-                        </div>
-                    </div>
-
-                    {/* 온도 게이지 */}
-                    <div className="flex-1 w-full max-w-md">
-                        <div className="flex justify-between text-xs text-gray-400 font-bold mb-2">
-                            <span className="text-blue-400">극단적 공포</span>
-                            <span className="text-red-400">극단적 탐욕</span>
-                        </div>
-                        <div className="h-4 md:h-5 w-full bg-black/50 rounded-full overflow-hidden border border-white/10 shadow-inner relative">
-                            {/* 마커 눈금 */}
-                            <div className="absolute inset-0 flex justify-between px-1 items-center opacity-30">
-                                <div className="w-0.5 h-full bg-white"></div>
-                                <div className="w-0.5 h-full bg-white"></div>
-                                <div className="w-0.5 h-full bg-white"></div>
-                                <div className="w-0.5 h-full bg-white"></div>
-                                <div className="w-0.5 h-full bg-white"></div>
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className={`p-2 rounded-xl border border-white/10 ${
+                                    combinedScore >= 56 ? 'bg-red-500/15 text-red-400' : combinedScore >= 46 ? 'bg-gray-500/15 text-gray-400' : 'bg-blue-500/15 text-blue-400'
+                                }`}>
+                                    <Zap className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase block font-mono">
+                                        Market Sentiment
+                                    </span>
+                                    <h3 className="text-sm md:text-base font-black text-white">
+                                        한국 시장 체감 온도 (공포·탐욕)
+                                    </h3>
+                                </div>
                             </div>
-                            <div
-                                style={{ width: animateBars ? `${combinedScore}%` : '0%' }}
-                                className={`h-full bg-gradient-to-r ${combined.bar} rounded-full transition-all duration-[2000ms] ease-out shadow-lg ${combined.glow} relative`}
-                            >
-                                <div className="absolute right-0 top-0 bottom-0 w-2 bg-white/50 rounded-full blur-[1px]"></div>
-                            </div>
-                        </div>
-                        <div className="flex justify-between text-[10px] text-gray-500 mt-2 font-mono font-bold px-1">
-                            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
-                        </div>
-                    </div>
 
-                    {/* 시장 데이터 요약 (Market Signal) - 빈 공간에 배치 */}
-                    {signal && (
-                        <div className="flex-1 flex flex-col justify-center items-center md:items-start px-0 md:px-6 w-full text-center md:text-left border-y border-white/5 md:border-y-0 py-4 md:py-0 my-2 md:my-0">
-                            <h3 className={`text-lg md:text-xl lg:text-2xl font-black leading-tight flex items-center gap-2 drop-shadow-md ${
-                                signal.signal === 'red' ? 'text-red-400' :
-                                signal.signal === 'yellow' ? 'text-yellow-400' : 'text-green-400'
+                            <span className={`text-xs md:text-sm font-black px-2.5 py-1 rounded-xl border ${
+                                combinedScore >= 76 ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-sm' :
+                                combinedScore >= 56 ? 'bg-orange-500/20 text-orange-300 border-orange-500/40' :
+                                combinedScore >= 46 ? 'bg-gray-500/20 text-gray-300 border-gray-500/40' :
+                                combinedScore >= 26 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' :
+                                'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-sm'
                             }`}>
-                                {signal.signal === 'red' ? '🛑 ' : signal.signal === 'yellow' ? '⚠️ ' : '🚀 '}
-                                {signal.message}
-                            </h3>
-                            {signal.reason && (
-                                <p className="text-sm md:text-base text-gray-300 mt-2 break-keep font-medium">
-                                    <span className="font-bold text-white">핵심 원인: </span>{signal.reason}
-                                </p>
-                            )}
-                            <div className="flex items-center justify-center md:justify-start gap-2 lg:gap-3 mt-3 text-xs md:text-sm font-mono text-gray-400 flex-wrap">
-                                <span className="bg-white/5 px-2 lg:px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSPI <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kospi}</strong></span>
-                                <span className="bg-white/5 px-2 lg:px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">KOSDAQ <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.kosdaq}</strong></span>
-                                <span className="bg-white/5 px-2 lg:px-3 py-1.5 rounded-lg border border-white/10 shadow-sm">USD/KRW <strong className="text-white ml-1 text-sm md:text-base">{signal.details?.usd}</strong></span>
+                                {combined.label} ({combinedScore}점)
+                            </span>
+                        </div>
+
+                        {/* 메인 점수 및 게이지 */}
+                        <div className="my-3 space-y-2">
+                            <div className="flex items-baseline justify-between">
+                                <div className="flex items-baseline gap-1.5">
+                                    <span className={`text-3xl md:text-4xl font-black font-mono tracking-tight ${combined.color}`}>
+                                        {combinedScore}
+                                    </span>
+                                    <span className="text-sm font-bold text-gray-400">/ 100점</span>
+                                </div>
+                                <span className="text-xs text-gray-400 font-medium">
+                                    {combinedScore >= 76 ? "🔥 극단적 탐욕 (과열 주의)" :
+                                     combinedScore >= 56 ? "📈 탐욕 (상승 우세)" :
+                                     combinedScore >= 46 ? "⚖️ 중립 (관망세)" :
+                                     combinedScore >= 26 ? "❄️ 공포 (하락 우세)" :
+                                     "😱 극단적 공포 (과매도 구간)"}
+                                </span>
+                            </div>
+
+                            {/* 온도 게이지 바 */}
+                            <div className="h-4 w-full bg-black/60 rounded-full overflow-hidden border border-white/10 p-0.5 relative shadow-inner">
+                                <div
+                                    style={{ width: animateBars ? `${combinedScore}%` : '0%' }}
+                                    className={`h-full bg-gradient-to-r ${combined.bar} rounded-full transition-all duration-1000 ease-out relative`}
+                                >
+                                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-md"></div>
+                                </div>
+                            </div>
+
+                            {/* 게이지 눈금 라벨 */}
+                            <div className="flex justify-between text-[10px] font-bold text-gray-500 font-mono pt-0.5">
+                                <span className="text-blue-400">0 (극단적 공포)</span>
+                                <span>50 (중립)</span>
+                                <span className="text-red-400">100 (극단적 탐욕)</span>
                             </div>
                         </div>
-                    )}
+                    </div>
+
+                    <p className="text-[11px] text-gray-400 leading-relaxed pt-2 border-t border-white/5 font-medium">
+                        💡 코스피·코스닥 전체 종목의 실시간 상승/하락 비율과 수급을 종합 분석한 체감 심리지수입니다.
+                    </p>
                 </div>
-                
-                {/* 갱신 시각 및 바이럴 버튼 */}
-                <div className="mt-6 pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
-                    <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
-                        <span className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'}`} />
-                        <span>{lastUpdated || '로딩중'} 업데이트됨 (1분 주기)</span>
-                        <button onClick={() => fetchData()} className="ml-2 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+
+                {/* 우측: 실시간 주요 지수 & 시장 상태 요약 */}
+                <div className="relative bg-zinc-900/80 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between overflow-hidden">
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-xl bg-emerald-500/15 border border-white/10 text-emerald-400">
+                                    <Activity className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase block font-mono">
+                                        Live Market Pulse
+                                    </span>
+                                    <h3 className="text-sm md:text-base font-black text-white">
+                                        실시간 주요 지수 & 시황 요약
+                                    </h3>
+                                </div>
+                            </div>
+
+                            {signal && (
+                                <span className={`text-xs font-black px-2.5 py-1 rounded-xl border flex items-center gap-1 ${
+                                    signal.signal === 'red' ? 'bg-red-500/20 text-red-300 border-red-500/40' :
+                                    signal.signal === 'yellow' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                                    'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                }`}>
+                                    {signal.signal === 'red' ? '🛑' : signal.signal === 'yellow' ? '⚠️' : '🚀'}
+                                    <span>{signal.message || "정상 운영"}</span>
+                                </span>
+                            )}
+                        </div>
+
+                        {/* 3대 핵심 지표 카드 그리드 */}
+                        <div className="grid grid-cols-3 gap-2 my-3">
+                            <div className="bg-black/40 border border-white/5 rounded-2xl p-2.5 text-center">
+                                <span className="text-[10px] text-gray-400 font-bold block mb-1">KOSPI</span>
+                                <span className="text-xs sm:text-sm font-black font-mono text-white block truncate">
+                                    {signal?.details?.kospi || "-"}
+                                </span>
+                            </div>
+                            <div className="bg-black/40 border border-white/5 rounded-2xl p-2.5 text-center">
+                                <span className="text-[10px] text-gray-400 font-bold block mb-1">KOSDAQ</span>
+                                <span className="text-xs sm:text-sm font-black font-mono text-white block truncate">
+                                    {signal?.details?.kosdaq || "-"}
+                                </span>
+                            </div>
+                            <div className="bg-black/40 border border-white/5 rounded-2xl p-2.5 text-center">
+                                <span className="text-[10px] text-gray-400 font-bold block mb-1">원/달러 환율</span>
+                                <span className="text-xs sm:text-sm font-black font-mono text-emerald-400 block truncate">
+                                    {signal?.details?.usd ? `${signal.details.usd}원` : "-"}
+                                </span>
+                            </div>
+                        </div>
+
+                        {signal?.reason && (
+                            <div className="bg-white/5 rounded-xl p-2.5 border border-white/5 text-xs text-gray-300 mb-2">
+                                <span className="font-bold text-blue-300">💡 시황 포인트:</span> {signal.reason}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[11px] text-gray-400">
+                        <div className="flex items-center gap-1.5">
+                            <span className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'}`} />
+                            <span className="font-mono">{lastUpdated || '실시간 동기화'}</span>
+                        </div>
+                        <button
+                            onClick={() => fetchData()}
+                            disabled={isRefreshing}
+                            className="hover:text-white transition-colors flex items-center gap-1 font-bold text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded-lg border border-white/5"
+                        >
+                            <RefreshCw className={`w-3 h-3 text-orange-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            <span>새로고침</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. 상세 시장 수급 현황 (Today's 증시 스캐너 - KOSPI vs KOSDAQ) */}
+            <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-white/5 mb-5">
+                    <div>
+                        <h3 className="text-sm md:text-base font-black text-white flex items-center gap-2">
+                            <span>📊 상세 시장 수급 현황 (Today's 증시 스캐너)</span>
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1">
+                            코스피·코스닥 시장 전체 상장 종목의 상승/보합/하락 분포를 실시간 집계합니다.
+                        </p>
                     </div>
                     <KakaoShareButton 
                         title={`오늘의 공포/탐욕 지수: ${combined.label} (${combinedScore}점)`}
                         description={`코스피/코스닥 시장 분위기를 알려드립니다! 지금 장은 살 때일까요, 팔 때일까요?`}
                         url={`https://stock-trend-program.co.kr/discovery`}
-                        buttonText="카카오톡으로 시장 분위기 공유하기"
-                        className="text-xs font-bold text-[#391B1B] bg-[#FEE500] hover:bg-[#FEE500]/90 px-3 py-1.5 rounded-lg border border-[#FEE500]/20 transition-all flex items-center gap-1.5 w-full md:w-auto justify-center"
+                        buttonText="카카오톡으로 공유"
+                        className="text-xs font-bold text-[#391B1B] bg-[#FEE500] hover:bg-[#FEE500]/90 px-3 py-1.5 rounded-xl border border-[#FEE500]/20 transition-all flex items-center gap-1.5 shrink-0"
                     />
                 </div>
 
-                {/* 통합된 KOSPI/KOSDAQ 스캐너 */}
-                <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Activity className="w-5 h-5 text-emerald-400" />
-                        <h3 className="text-base font-bold text-white">상세 시장 수급 현황 (Today's 증시 스캐너)</h3>
-                    </div>
-                    <p className="text-[11px] text-gray-500 mb-5 leading-relaxed">
-                        📈 <strong className="text-gray-400">상승(빨강)</strong> 비율이 높을수록 투자 심리가 안정된 상태입니다.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-                        {data.stats?.kospi && renderStatsBar(data.stats.kospi, 'KOSPI (코스피)')}
-                        {data.stats?.kosdaq && renderStatsBar(data.stats.kosdaq, 'KOSDAQ (코스닥)')}
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+                    {data.stats?.kospi && (
+                        <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                            {renderStatsBar(data.stats.kospi, '🇰🇷 KOSPI (코스피)')}
+                        </div>
+                    )}
+                    {data.stats?.kosdaq && (
+                        <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                            {renderStatsBar(data.stats.kosdaq, '🇰🇷 KOSDAQ (코스닥)')}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* 공시 속보 (Full Width Grid) */}
-            <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 shadow-xl backdrop-blur-md">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-4">
+            {/* 3. 특이 공시 속보 (Breaking Disclosures) */}
+            <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-md">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 pb-3 border-b border-white/5">
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Radio className={`w-5 h-5 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
-                            <h3 className="text-base font-bold text-white">특이 공시 속보</h3>
+                        <div className="flex items-center gap-2">
+                            <Radio className={`w-4 h-4 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
+                            <h3 className="text-sm md:text-base font-black text-white">특이 공시 속보</h3>
                         </div>
-                        <p className="text-[11px] text-gray-500 leading-relaxed">
-                            유상증자·수주·계약 등 호재/악재 공시를 신속하게 포착합니다.
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            유상증자·수주·계약 등 시장에 영향력 있는 핵심 공시를 신속 포착합니다.
                         </p>
                     </div>
                     {lastUpdated && (
-                        <span className="text-xs text-gray-500 font-mono flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full">
-                            <span className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                            {lastUpdated}
+                        <span className="text-[11px] text-gray-400 font-mono flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 self-start sm:self-auto">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <span>{lastUpdated} 기준</span>
                         </span>
                     )}
                 </div>
                 
                 {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (
-                    <div className={`grid gap-3 ${
-                        data.disclosures.length === 1 ? 'grid-cols-1' :
-                        data.disclosures.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
-                        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                    }`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {data.disclosures.slice(0, 9).map((item, idx) => (
                             <a
                                 key={idx}
                                 href={item.link}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex flex-col p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 transition-all group h-full"
+                                className="flex flex-col justify-between p-3.5 rounded-2xl bg-black/30 hover:bg-white/5 border border-white/5 hover:border-white/15 transition-all group h-full shadow-sm"
                             >
-                                <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-2">
-                                    <div className="flex items-center">
-                                        <span className="text-amber-400/80 font-bold px-2 py-0.5 bg-amber-400/10 rounded-md">
-                                            {item.press}
-                                        </span>
-                                        {getNewsBadge(item.title)}
+                                <div>
+                                    <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-amber-300/90 font-bold px-1.5 py-0.5 bg-amber-400/10 rounded-md border border-amber-400/20">
+                                                {item.press}
+                                            </span>
+                                            {getNewsBadge(item.title)}
+                                        </div>
+                                        <span className="text-gray-500 bg-white/5 px-2 py-0.5 rounded-md">{item.date}</span>
                                     </div>
-                                    <span className="text-gray-500 bg-black/20 px-2 py-0.5 rounded-md">{item.date}</span>
+                                    <h4 className="text-xs md:text-sm font-bold text-gray-200 group-hover:text-amber-300 leading-snug transition-colors line-clamp-2">
+                                        {item.title}
+                                    </h4>
                                 </div>
-                                <h4 className="text-sm font-bold text-gray-300 group-hover:text-amber-300 leading-snug transition-colors line-clamp-2">
-                                    {item.title}
-                                </h4>
                             </a>
                         ))}
                     </div>
                 ) : (
-                    <div className="py-12 flex flex-col items-center justify-center text-gray-600 text-sm space-y-3 bg-black/20 rounded-2xl border border-white/5">
-                        <AlertCircle className="w-8 h-8 opacity-40" />
+                    <div className="py-10 flex flex-col items-center justify-center text-gray-500 text-xs space-y-2 bg-black/20 rounded-2xl border border-white/5">
+                        <AlertCircle className="w-6 h-6 opacity-40" />
                         <p>현재 포착된 특이 공시가 없습니다.</p>
                     </div>
                 )}

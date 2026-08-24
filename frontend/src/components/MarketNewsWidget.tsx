@@ -61,28 +61,28 @@ export default function MarketNewsWidget() {
     };
 
     const renderNewsList = (items: NewsItem[], title: string, icon: React.ReactNode, theme: string) => (
-        <div className="flex-1 bg-[#1c1c1e]/40 backdrop-blur-md rounded-2xl border border-white/5 p-5 shadow-lg">
-            <h3 className={`text-sm font-bold flex items-center gap-2 mb-4 ${theme}`}>
-                {icon} {title}
+        <div className="flex-1 bg-zinc-900/80 backdrop-blur-xl rounded-3xl border border-white/10 p-5 md:p-6 shadow-xl">
+            <h3 className={`text-sm md:text-base font-black flex items-center gap-2 mb-4 pb-3 border-b border-white/5 ${theme}`}>
+                {icon} <span>{title}</span>
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3.5">
                 {items.map((item, idx) => (
                     <a 
                         key={idx} 
                         href={item.link} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="group flex flex-col gap-1 cursor-pointer"
+                        className="group flex flex-col gap-1.5 p-2.5 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 cursor-pointer"
                     >
-                        <h4 className="text-sm text-gray-200 font-bold group-hover:text-white transition-colors leading-snug line-clamp-2">
+                        <h4 className="text-xs sm:text-sm text-gray-200 font-bold group-hover:text-white transition-colors leading-snug line-clamp-2">
                             {item.title}
                         </h4>
-                        <div className="flex items-center justify-between text-[10px] text-gray-500 font-mono">
+                        <div className="flex items-center justify-between text-[11px] text-gray-500 font-mono">
                             <div className="flex items-center gap-2">
-                                <span>{item.publisher}</span>
+                                <span className="text-gray-400 font-medium">{item.publisher}</span>
                                 {getNewsBadge(item.title)}
                             </div>
-                            <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-gray-400" />
                         </div>
                     </a>
                 ))}
@@ -91,9 +91,9 @@ export default function MarketNewsWidget() {
     );
 
     return (
-        <div className="flex flex-col md:flex-row gap-6 mt-6">
-            {renderNewsList(news.domestic, "한국 증시 주요 뉴스", <Newspaper className="w-4 h-4" />, "text-blue-400")}
-            {renderNewsList(news.global, "글로벌 경제 특보", <Globe className="w-4 h-4" />, "text-purple-400")}
+        <div className="flex flex-col md:flex-row gap-5 mt-6">
+            {renderNewsList(news.domestic, "한국 증시 실시간 주요 뉴스", <Newspaper className="w-4 h-4 text-blue-400" />, "text-white")}
+            {renderNewsList(news.global, "글로벌 증시 & 경제 특보", <Globe className="w-4 h-4 text-purple-400" />, "text-white")}
         </div>
     );
 }
