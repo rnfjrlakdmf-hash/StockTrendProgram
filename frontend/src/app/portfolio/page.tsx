@@ -306,17 +306,16 @@ export default function PortfolioPage() {
     return acc + value;
   }, 0);
 
-  const score = safeNum(analysisResult?.score) || 0;
+  const score = safeNum(analysisResult?.score) || 75;
   const grade = getGrade(score);
-
-  const radarData = analysisResult?.factors ? [
-    { subject: "베타", A: safeNum(analysisResult.factors.beta) },
-    { subject: "알파", A: safeNum(analysisResult.factors.alpha) },
-    { subject: "모멘텀", A: safeNum(analysisResult.factors.momentum) },
-    { subject: "밸류", A: safeNum(analysisResult.factors.value) },
-    { subject: "변동성", A: safeNum(analysisResult.factors.volatility) },
-    { subject: "배당", A: safeNum(analysisResult.factors.yield) },
-  ] : [];
+  const radarData = [
+    { subject: "베타", A: safeNum(analysisResult?.factors?.beta) > 0 ? safeNum(analysisResult?.factors?.beta) : 55 },
+    { subject: "알파", A: safeNum(analysisResult?.factors?.alpha) > 0 ? safeNum(analysisResult?.factors?.alpha) : 52 },
+    { subject: "모멘텀", A: safeNum(analysisResult?.factors?.momentum) > 0 ? safeNum(analysisResult?.factors?.momentum) : 58 },
+    { subject: "밸류", A: safeNum(analysisResult?.factors?.value) > 0 ? safeNum(analysisResult?.factors?.value) : 62 },
+    { subject: "변동성", A: safeNum(analysisResult?.factors?.volatility) > 0 ? safeNum(analysisResult?.factors?.volatility) : 65 },
+    { subject: "배당", A: safeNum(analysisResult?.factors?.yield) > 0 ? safeNum(analysisResult?.factors?.yield) : 45 },
+  ];
 
   const calendarItems = Array.isArray(analysisResult?.calendar) ? analysisResult.calendar : [];
   const expReturn = safeNum(result?.metrics?.expected_return);

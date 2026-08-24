@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Query, Header, HTTPException
+from fastapi import APIRouter, Query, Header, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import asyncio
@@ -1117,7 +1117,7 @@ def analyze_portfolio_route(req: PortfolioReq):
     # 정렬된 종목 심볼 리스트를 기반으로 고유 캐시 키 생성 (조합이 같으면 무조건 캐시 히트)
     sorted_target = sorted(list(set(target)))
     target_str = ",".join(sorted_target)
-    cache_key = f"v15:analyze_portfolio:{hashlib.md5(target_str.encode()).hexdigest()}"
+    cache_key = f"v16:analyze_portfolio:{hashlib.md5(target_str.encode()).hexdigest()}"
     
     cached_data = turbo_engine.get_cache(cache_key)
     if cached_data is not None:

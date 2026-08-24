@@ -5,9 +5,17 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
-# ==========================================
-# 1. Account Nutritionist (Sector Analysis)
-# ==========================================
+def safe_float(val, default=0.0):
+    if val is None:
+        return default
+    try:
+        s = str(val).replace(',', '').replace('%', '').strip()
+        if not s or s.lower() in ('none', 'nan', 'null', 'n/a', '-'):
+            return default
+        f = float(s)
+        return f if not (np.isnan(f) or np.isinf(f)) else default
+    except Exception:
+        return default
 
 from korea_data import get_naver_stock_info, search_stock_code, get_korean_stock_name
 
@@ -42,16 +50,27 @@ SECTOR_NUTRIENT_MAP = {
 
 # Simplified Korean Sector Mapping
 KOR_SECTOR_MAP = {
-    "반도체": "Technology", "IT": "Technology", "전자": "Technology", "전기": "Technology", "소프트웨어": "Technology", 
-    "통신": "Communication Services", "미디어": "Communication Services", "엔터": "Communication Services", "서비스": "Communication Services",
-    "제약": "Healthcare", "바이오": "Healthcare", "헬스": "Healthcare", "의료": "Healthcare",
-    "은행": "Financial Services", "금융": "Financial Services", "보험": "Financial Services", "증권": "Financial Services",
-    "운송": "Industrials", "항공": "Industrials", "자동차": "Industrials", "해운": "Industrials", "운수창고": "Industrials", "기계": "Industrials", "조선": "Industrials", "건설": "Industrials",
-    "유통": "Consumer Cyclical", "섬유": "Consumer Cyclical", "의복": "Consumer Cyclical", "호텔": "Consumer Cyclical",
-    "음식료": "Consumer Defensive", "생활용품": "Consumer Defensive",
-    "화학": "Basic Materials", "철강": "Basic Materials", "금속": "Basic Materials",
-    "에너지": "Energy", "정유": "Energy", "전력": "Utilities", "가스": "Utilities",
-    "방송": "Communication Services", "엔터테인먼트": "Communication Services"
+    # 기술/성장
+    "반도체": "Technology", "IT": "Technology", "전기전자": "Technology", "소프트웨어": "Technology",
+    "인터넷": "Technology", "컴퓨터": "Technology", "전자": "Technology", "통신": "Communication Services",
+    "게임": "Communication Services", "미디어": "Communication Services", "엔터": "Communication Services",
+    "자동차": "Technology", "모빌리티": "Technology", "배터리": "Technology", "2차전지": "Technology",
+    # 산업/제조
+    "조선": "Industrials", "기계": "Industrials", "운송": "Industrials", "건설": "Industrials",
+    "항공": "Industrials", "해운": "Industrials", "철강": "Industrials", "금속": "Industrials",
+    "제조": "Industrials", "방산": "Industrials", "우주항공": "Industrials", "무역": "Industrials",
+    # 금융/가치
+    "금융": "Financial Services", "은행": "Financial Services", "증권": "Financial Services",
+    "보험": "Financial Services", "지주": "Financial Services", "카드": "Financial Services",
+    "부동산": "Real Estate", "리츠": "Real Estate",
+    # 방어/소비
+    "제약": "Healthcare", "바이오": "Healthcare", "의료": "Healthcare", "헬스케어": "Healthcare",
+    "음식료": "Consumer Defensive", "식품": "Consumer Defensive", "담배": "Consumer Defensive",
+    "유틸리티": "Utilities", "전력": "Utilities", "가스": "Utilities", "에너지공기업": "Utilities",
+    "생활용품": "Consumer Defensive", "유통": "Consumer Cyclical", "화장품": "Consumer Cyclical",
+    # 소재/에너지
+    "화학": "Basic Materials", "정유": "Energy", "석유": "Energy", "에너지": "Energy",
+    "원자재": "Basic Materials", "비철금속": "Basic Materials", "소재": "Basic Materials"
 }
 
 CHARACTER_COLOR_MAP = {
@@ -98,34 +117,27 @@ def analyze_portfolio_composition(symbols: list) -> dict:
     """
     char_counts = {}
     sector_breakdown = {}
-    details = [] # [New] Store per-symbol details
+    details = []
     
     valid_symbols = 0
     
     for symbol in symbols:
         try:
             sector = "Unknown"
-            nutrient = "기타 (식이섬유)"
+            character = "기타 자산"
             
-            # Clean input
             raw_sym = str(symbol).strip()
             search_code = raw_sym
             
-            # 1. Check if it is a Korean Name (contains Hangul)
             if re.search('[가-힣]', raw_sym):
                 found = search_stock_code(raw_sym)
                 if found:
                     search_code = found
-                else:
-                    # Name search failed
-                    pass
             
-            # 2. Check for Korean Stock (Numeric code or KS/KQ suffix)
             is_korean_code = search_code.isdigit() 
             is_korean = search_code.endswith(".KS") or search_code.endswith(".KQ") or is_korean_code
             
             if is_korean:
-                # Cleanup code format
                 final_code = search_code
                 if "." in search_code and search_code.split('.')[0].isdigit():
                     final_code = search_code.split('.')[0]
@@ -664,92 +676,98 @@ def analyze_portfolio_factors(symbols: list) -> dict:
                 from korea_data import gather_naver_stock_data
                 info = gather_naver_stock_data(search_code)
                 if info:
-                    # Beta (Manual Default or Future Scrape)
-                    beta = 1.0 
+                    # Beta (Default 1.0)
+                    beta = safe_float(info.get('beta'), 1.0)
                     
                     # Value (PER)
-                    if info.get('per') and float(str(info['per']).replace(',', '')) > 0:
-                        pe = float(str(info['per']).replace(',', ''))
-                    elif info.get('est_per') and float(str(info['est_per']).replace(',', '')) > 0:
-                        pe = float(str(info['est_per']).replace(',', ''))
+                    per_val = safe_float(info.get('per'), 0.0)
+                    if per_val <= 0:
+                        per_val = safe_float(info.get('est_per'), 25.0)
+                    pe = per_val if per_val > 0 else 25.0
                         
                     # Yield
-                    div_yield = float(str(info.get('dvr', 0)).replace(',', '')) / 100.0 # dvr is usually % in gather_naver_stock_data
+                    dvr_val = safe_float(info.get('dvr'), 0.0)
+                    div_yield = (dvr_val / 100.0) if dvr_val > 0 else 0.0
                     
-                    # Momentum (High/Low)
-                    # Use position in 52w range as proxy for momentum
-                    if info.get('year_high') and info.get('year_low') and info.get('price'):
-                        h = info['year_high']
-                        l = info['year_low']
-                        p = info['price']
-                        if h > l:
-                            # 0 to 1 scale. 1 = All time high (Strong Momentum)
-                            pos = (p - l) / (h - l)
-                            mom = (pos - 0.5) * 100 # -50 to +50
-                        else:
-                            mom = 0
+                    # Momentum (High/Low position)
+                    h = safe_float(info.get('year_high'), 0.0)
+                    l = safe_float(info.get('year_low'), 0.0)
+                    p = safe_float(info.get('price'), 0.0)
+                    if h > l and p > 0:
+                        pos = (p - l) / (h - l)
+                        mom = (pos - 0.5) * 100
+                    else:
+                        mom = 5.0
                     
-                    # Volatility -> Default
-                    vol = 20.0 
+                    # Volatility
+                    vol = 22.0
 
             else:
                 # US Stock (yfinance)
                 ticker = yf.Ticker(symbol)
                 info = ticker.info
                 
-                beta = info.get('beta', 1.0) or 1.0
-                pe = info.get('forwardPE', info.get('trailingPE', 30)) or 30
-                div_yield = info.get('dividendYield', 0) or 0
+                beta = safe_float(info.get('beta'), 1.0)
+                pe = safe_float(info.get('forwardPE', info.get('trailingPE', 25)), 25.0)
+                div_yield = safe_float(info.get('dividendYield'), 0.0)
                 
-                # Momentum & Volatility (Need history)
+                # Momentum & Volatility
                 hist = ticker.history(period="6mo")
-                if not hist.empty:
+                if not hist.empty and len(hist) > 10:
                     returns = hist['Close'].pct_change().dropna()
-                    vol = returns.std() * np.sqrt(252) * 100
-                    mom = ((hist['Close'].iloc[-1] - hist['Close'].iloc[0]) / hist['Close'].iloc[0]) * 100
+                    vol = float(returns.std() * np.sqrt(252) * 100)
+                    mom = float(((hist['Close'].iloc[-1] - hist['Close'].iloc[0]) / hist['Close'].iloc[0]) * 100)
+                else:
+                    vol = 25.0
+                    mom = 5.0
 
-            betas.append(beta)
-            pe_ratios.append(pe)
-            yields.append(div_yield * 100) # Convert to %
-            volatilities.append(vol)
+            betas.append(beta if beta > 0 else 1.0)
+            pe_ratios.append(pe if pe > 0 else 25.0)
+            yields.append(div_yield * 100)
+            volatilities.append(vol if vol > 0 else 20.0)
             momentums.append(mom)
 
         except Exception as e:
             print(f"Error fetching factors for {symbol}: {e}")
+            betas.append(1.0)
+            pe_ratios.append(25.0)
+            yields.append(1.5)
+            volatilities.append(20.0)
+            momentums.append(5.0)
             
     if not betas:
-        return {}
+        return {
+            "beta": 50.0, "value": 50.0, "yield": 50.0,
+            "momentum": 50.0, "volatility": 50.0, "alpha": 50.0,
+            "raw_stats": {"avg_beta": 1.0, "avg_pe": 25.0, "avg_yield": 1.5, "avg_momentum": 5.0}
+        }
         
     # --- Aggregation & Normalization (0-100 Scale for Radar) ---
-    
-    # Use nanmean to ignore possible NaN values from individual stocks
     avg_beta = float(np.nanmean(betas)) if betas else 1.0
-    avg_pe = float(np.nanmean(pe_ratios)) if pe_ratios else 30.0
-    avg_yield = float(np.nanmean(yields)) if yields else 0.0
-    avg_mom = float(np.nanmean(momentums)) if momentums else 0.0
+    avg_pe = float(np.nanmean(pe_ratios)) if pe_ratios else 25.0
+    avg_yield = float(np.nanmean(yields)) if yields else 1.5
+    avg_mom = float(np.nanmean(momentums)) if momentums else 5.0
     avg_vol = float(np.nanmean(volatilities)) if volatilities else 20.0
     
-    # 1. Beta Score (High Beta = High Risk/Aggressive)
-    score_beta = min(max(avg_beta * 50, 10), 100)
+    # 1. Beta Score (0-100, 1.0 -> 55)
+    score_beta = min(max(avg_beta * 55, 15), 95)
     
-    # 2. Value Score (Low P/E = High Value)
-    # If P/E is very high, score is low, but let's keep a floor of 10
-    score_value = min(max(100 - (avg_pe * 1.2), 10), 100)
+    # 2. Value Score (Lower PE = Higher Value Score)
+    score_value = min(max(100 - (avg_pe * 1.5), 20), 95)
     
-    # 3. Yield Score (High Yield = High Score)
-    score_yield = min(max(avg_yield * 15, 10), 100)
+    # 3. Yield Score (1% -> 30, 3% -> 60, 5% -> 85)
+    score_yield = min(max(20 + (avg_yield * 13), 15), 95)
     
-    # 4. Momentum Score (High Return = High Score)
-    score_momentum = min(max(50 + avg_mom, 10), 100)
+    # 4. Momentum Score (-30% -> 20, 0% -> 50, +30% -> 80)
+    score_momentum = min(max(50 + avg_mom, 15), 95)
     
-    # 5. Volatility Score (High Vol = High Score)
-    score_volatility = min(max(avg_vol * 1.5, 10), 100)
+    # 5. Volatility Score (Stability score: Lower Volatility = Higher Stability)
+    score_volatility = min(max(100 - (avg_vol * 1.5), 15), 95)
     
-    # 6. Alpha (Relative Performance)
-    raw_alpha = avg_mom - (avg_beta * 3)
-    score_alpha = min(max(50 + raw_alpha, 10), 100)
+    # 6. Alpha Score (Jensen's Alpha proxy)
+    raw_alpha = avg_mom - (avg_beta * 3.5)
+    score_alpha = min(max(50 + raw_alpha, 15), 95)
     
-    # Final NaN/Inf check
     def clean(val):
         if np.isnan(val) or np.isinf(val): return 50.0
         return float(round(val, 1))
