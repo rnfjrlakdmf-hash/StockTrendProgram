@@ -16,51 +16,59 @@ const safeNum = (v: any): number => {
 
 // 점수에 따른 등급
 function getGrade(score: number) {
-  if (score >= 80) return { label: "아주 튼튼해요 💎", color: "text-blue-400", bg: "bg-blue-500/20" };
-  if (score >= 65) return { label: "균형 잡혔어요 ✅", color: "text-green-400", bg: "bg-green-500/20" };
-  if (score >= 50) return { label: "적당한 상태예요 😐", color: "text-yellow-400", bg: "bg-yellow-500/20" };
-  return { label: "관리가 필요해요 ⚠️", color: "text-red-400", bg: "bg-red-500/20" };
+  if (score >= 80) return { label: "매우 우수 (안정 성장) 💎", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" };
+  if (score >= 65) return { label: "균형 우수 (적정 분산) ✅", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" };
+  if (score >= 50) return { label: "보통 (일부 편중) 😐", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" };
+  return { label: "집중 위험 (리밸런싱 권장) ⚠️", color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/30" };
 }
 
-// 팩터 설명
-const FACTOR_INFO: Record<string, { label: string; desc: string; icon: string }> = {
-  베타:    { label: "시장 민감도", desc: "시장의 파도에 얼마나 민감한지. 높을수록 큰 파도를 타요.", icon: "📡" },
-  알파:    { label: "실력 점수", desc: "평균보다 얼마나 더 수익을 냈는지 보여주는 성적표예요.", icon: "🏆" },
-  모멘텀:  { label: "달리는 힘", desc: "주가가 최근 얼마나 씩씩하게 올라가고 있는지 나타내요.", icon: "🚀" },
-  밸류:    { label: "가성비", desc: "좋은 회사를 저렴한 가격에 샀는지 보여주는 지표예요.", icon: "🏷️" },
-  변동성:  { label: "출렁임", desc: "가격이 롤러코스터처럼 얼마나 오르내리는지 정도예요.", icon: "🎢" },
-  배당:    { label: "보너스", desc: "주식을 가지고만 있어도 회사에서 주는 보너스 수익이에요.", icon: "💰" },
+// 팩터 설명 (전문 용어 + 쉬운 설명 결합)
+const FACTOR_INFO: Record<string, { label: string; term: string; desc: string; icon: string }> = {
+  베타:    { label: "시장 민감도", term: "Beta (시장 연동 계수)", desc: "KOSPI/S&P500 등 시장 지수 변동에 대한 민감도. 1.0 초과 시 시장보다 큰 변동성을 보입니다.", icon: "📡" },
+  알파:    { label: "초과 수익력", term: "Alpha (고유 초과 수익)", desc: "시장 지수 수익률을 넘어서는 종목 고유의 초과 성과 창출 역량 (Jensen's Alpha).", icon: "🏆" },
+  모멘텀:  { label: "추세 탄력도", term: "Momentum (가격 가속도)", desc: "최근 1~6개월간 주가 상승 추세의 속도와 강도. 높을수록 상승 탄력이 강하게 유지됩니다.", icon: "🚀" },
+  밸류:    { label: "저평가 매력", term: "Valuation (기업 내재가치)", desc: "PER, PBR, BPS 기준 기업 실적 및 자산 대비 저평가 정도. 높을수록 안전마진이 큽니다.", icon: "🏷️" },
+  변동성:  { label: "가격 안정성", term: "Volatility (안정성 역수)", desc: "과거 일간 수익률 등락의 표준편차. 점수가 높을수록 가격 변동이 완만하여 안정적입니다.", icon: "🛡️" },
+  배당:    { label: "현금 창출력", term: "Dividend (배당 수익률)", desc: "보유 자산 대비 배당금 지급 비율. 하락장 방어와 지속적인 현금 흐름을 제공합니다.", icon: "💰" },
 };
 
 function FactorBar({ name, value }: { name: string; value: number }) {
-  const info = FACTOR_INFO[name] || { label: name, desc: "", icon: "📊" };
-  const color = value >= 70 ? "bg-green-500" : value >= 40 ? "bg-blue-500" : "bg-red-400";
+  const info = FACTOR_INFO[name] || { label: name, term: name, desc: "", icon: "📊" };
+  const color = value >= 70 ? "bg-emerald-500" : value >= 40 ? "bg-blue-500" : "bg-rose-400";
   return (
-    <div className="group relative">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm">{info.icon}</span>
-          <span className="text-xs font-bold text-gray-200">{info.label}</span>
+    <div className="bg-zinc-950/60 border border-white/5 hover:border-white/15 p-4 rounded-2xl transition-all duration-300">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{info.icon}</span>
+          <div>
+            <span className="text-xs font-bold text-white block">{info.label}</span>
+            <span className="text-[10px] text-gray-500 font-mono">{info.term}</span>
+          </div>
         </div>
-        <span className="text-xs font-black text-white">{Math.round(value)}<span className="text-gray-400 font-normal">/100</span></span>
+        <div className="text-right">
+          <span className="text-sm font-black font-mono text-white">{Math.round(value)}</span>
+          <span className="text-xs text-gray-500 font-mono"> / 100</span>
+        </div>
       </div>
-      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden mb-2">
         <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
       </div>
-      <p className="text-[10px] text-gray-500 mt-0.5">{info.desc}</p>
+      <p className="text-[11px] text-gray-400 leading-relaxed">{info.desc}</p>
     </div>
   );
 }
 
 function StatCard({ icon, label, value, desc, color }: any) {
   return (
-    <div className={`rounded-2xl p-4 border ${color} flex flex-col gap-1`}>
-      <div className="flex items-center gap-2 text-xs text-gray-400">
-        {icon}
-        <span>{label}</span>
+    <div className={`rounded-3xl p-5 border ${color} flex flex-col justify-between shadow-lg backdrop-blur-md min-h-[140px]`}>
+      <div>
+        <div className="flex items-center gap-2 text-xs font-bold text-gray-400 mb-2">
+          {icon}
+          <span>{label}</span>
+        </div>
+        <div className="text-xl md:text-2xl font-black font-mono text-white tracking-tight">{value}</div>
       </div>
-      <div className="text-2xl font-black text-white">{value}</div>
-      <div className="text-[11px] text-gray-500 leading-tight">{desc}</div>
+      <div className="text-[10px] text-gray-500 font-medium leading-relaxed mt-2 pt-2 border-t border-white/5">{desc}</div>
     </div>
   );
 }
@@ -93,11 +101,9 @@ export default function PortfolioPage() {
   const [usdKrw, setUsdKrw] = useState(1350);
   const { user, isLoading: authLoading, isMigrating } = useAuth();
 
-  // 항상 최신 userId를 반환 - localStorage 직접 읽기로 타이밍 문제 해결
+  // 항상 최신 userId를 반환
   const getUserId = useCallback(() => {
-    // 1순위: AuthContext user
     if (user?.id) return user.id;
-    // 2순위: localStorage "stock_user" (AuthContext 로딩 전에도 동작)
     try {
       const stored = localStorage.getItem("stock_user");
       if (stored) {
@@ -108,7 +114,6 @@ export default function PortfolioPage() {
     return null;
   }, [user]);
 
-  // 로그인 여부 (localStorage 포함)
   const isLoggedIn = !!getUserId();
 
   useEffect(() => {
@@ -126,7 +131,6 @@ export default function PortfolioPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, isMigrating]);
 
-  // 실시간 시세 새로고침
   const refreshPrices = useCallback(async (targets?: any[]) => {
     const list = targets || holdings;
     if (list.length === 0) return;
@@ -141,17 +145,15 @@ export default function PortfolioPage() {
     } catch (e) { console.error(e); }
   }, [holdings, API_BASE_URL]);
 
-  // 30초마다 시세 자동 갱신
   useEffect(() => {
     const timer = setInterval(() => refreshPrices(), 30000);
     return () => clearInterval(timer);
   }, [refreshPrices]);
 
-  // 관심종목 불러오기
   const syncFromWatchlist = async () => {
     const userId = getUserId();
     if (!userId) {
-      alert("구글 계정으로 로그인 후 이용할 수 있습니다.\n\n사이드바 하단에서 로그인해 주세요.");
+      alert("로그인 후 관심종목을 동기화할 수 있습니다.");
       return;
     }
     setSyncLoading(true);
@@ -161,7 +163,6 @@ export default function PortfolioPage() {
       });
       const json = await res.json();
       if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
-        // 현재가 동시 조회 (등록된 진입가가 있으면 진입가 우선)
         const newHoldings = await Promise.all(
           json.data.map(async (s: any) => {
             let price = s.added_price && s.added_price > 0 ? String(s.added_price) : "0";
@@ -179,7 +180,6 @@ export default function PortfolioPage() {
           })
         );
         setHoldings(newHoldings);
-        // DB에도 저장
         for (const h of newHoldings) {
           try {
             await fetch(`${API_BASE_URL}/api/portfolio`, {
@@ -189,9 +189,9 @@ export default function PortfolioPage() {
             });
           } catch {}
         }
-        alert(`관심종목 ${newHoldings.length}개를 불러왔습니다!\n관심종목에서 설정하신 매수 단가와 수량이 그대로 적용되었습니다.`);
+        alert(`관심종목 ${newHoldings.length}개를 성공적으로 불러왔습니다!`);
       } else {
-        alert("불러올 관심종목이 없습니다.\n관심종목 페이지에서 먼저 종목을 추가해 주세요.");
+        alert("불러올 관심종목이 없습니다.\n관심종목 메뉴에서 먼저 종목을 추가해 주세요.");
       }
     } catch (e) {
       console.error(e);
@@ -210,7 +210,6 @@ export default function PortfolioPage() {
         const p = safeNum(json.data.price);
         if (p > 0) {
           setInputPrice(p.toString());
-          // 현재가 정보도 즉시 캐시
           setCurrentPrices(prev => ({
             ...prev,
             [sym.toUpperCase().trim()]: { price: p, change: json.data.change || "0%", up: json.data.up ?? true }
@@ -220,7 +219,6 @@ export default function PortfolioPage() {
     } catch (e) { console.error(e); }
   };
 
-  // 종목 검색 제안
   useEffect(() => {
     if (inputSymbol.length < 2) { setSuggestions([]); return; }
     const timer = setTimeout(async () => {
@@ -247,7 +245,6 @@ export default function PortfolioPage() {
   const addHolding = async () => {
     if (!inputSymbol || !inputPrice || !inputQuantity) { alert("종목, 단가, 수량을 모두 입력해주세요."); return; }
     const sym = inputSymbol.toUpperCase().trim();
-    // 선택된 이름이 있으면 사용, 없으면 제안 리스트에서 찾기, 그것도 없으면 심볼 사용
     const foundName = selectedName || suggestions.find(s => s.symbol === sym)?.name || sym;
     const isUS = sym.match(/[A-Z]/) && !sym.includes(".");
     const currency = isUS ? "USD" : "KRW";
@@ -308,6 +305,7 @@ export default function PortfolioPage() {
     const value = isUSD ? price * qty * usdKrw : price * qty;
     return acc + value;
   }, 0);
+
   const score = safeNum(analysisResult?.score) || 0;
   const grade = getGrade(score);
 
@@ -324,453 +322,560 @@ export default function PortfolioPage() {
   const expReturn = safeNum(result?.metrics?.expected_return);
   const volatility = safeNum(result?.metrics?.volatility);
 
+  // Total annual dividend estimation
+  const totalAnnualDividend = calendarItems.reduce((acc: number, item: any) => {
+    const amt = safeNum(item.amount);
+    const found = holdings.find(h => h.symbol === item.symbol);
+    const qty = found ? safeNum(found.quantity) : 1;
+    const isUSD = item.currency === "USD" || (item.symbol?.match(/[A-Z]/) && !item.symbol?.includes("."));
+    return acc + (isUSD ? amt * qty * usdKrw : amt * qty);
+  }, 0);
+
+  const dividendYieldPct = totalInvested > 0 ? (totalAnnualDividend / totalInvested * 100) : 0;
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#0e0e12] text-white">
-      <div className="bg-amber-900/30 border-b border-amber-600/30 px-4 py-2 flex items-center gap-2 text-[11px] text-amber-200">
+    <div className="min-h-screen flex flex-col bg-[#09090b] text-gray-200">
+      <div className="bg-amber-950/40 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-2 text-xs text-amber-300">
         <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-        <span><strong>투자 유의:</strong> 본 분석은 참고용 통계 정보이며, 투자 권유가 아닙니다. 투자 결정은 본인 판단으로 하세요.</span>
+        <span><strong>투자 유의 안내:</strong> 본 포트폴리오 진단은 과거 통계 모델 기반의 참고용 지표이며, 특정 금융투자상품의 매매를 권유하거나 수익을 보장하지 않습니다.</span>
       </div>
 
-      <div className="shrink-0"><Header title="내 포트폴리오 분석" subtitle="보유 종목을 입력하면 AI가 분석해 드려요" /></div>
+      <div className="shrink-0">
+        <Header title="포트폴리오 정밀 퀀트 진단" subtitle="보유 종목의 분산도, 리스크, 팩터 지표 및 현금흐름을 종합 분석합니다" />
+      </div>
 
-      <AdRewardModal isOpen={showAdModal} onClose={() => setShowAdModal(false)} onReward={handleAdReward} featureName="AI Portfolio Optimizer" />
+      <AdRewardModal isOpen={showAdModal} onClose={() => setShowAdModal(false)} onReward={handleAdReward} featureName="Portfolio Optimizer" />
 
-      <div className="flex-1 p-4 md:p-6">
-        <div className="max-w-5xl mx-auto flex flex-col gap-6">
+      <div className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto flex flex-col gap-8">
           {authLoading || isMigrating ? (
             <div className="flex flex-col items-center justify-center py-32 text-gray-500">
               <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-500" />
-              <p className="text-sm font-semibold">{isMigrating ? "관심종목을 동기화하고 있습니다. 잠시만 기다려주세요..." : "사용자 정보를 확인하고 있습니다..."}</p>
+              <p className="text-sm font-semibold">{isMigrating ? "관심종목을 동기화하고 있습니다..." : "사용자 정보를 확인하고 있습니다..."}</p>
             </div>
           ) : (
             <>
-              {/* 입력 패널 */}
-              <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
-            <h2 className="text-sm font-bold text-gray-400 mb-3 flex items-center justify-between">
-              <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" /> 보유 종목 입력</span>
-              
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setShowManualInput(!showManualInput)}
-                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all border ${
-                    showManualInput 
-                      ? "bg-blue-500/20 text-blue-400 border-blue-500/30" 
-                      : "bg-white/5 hover:bg-white/10 text-gray-300 border-white/10"
-                  }`}
-                >
-                  <Plus className={`w-3.5 h-3.5 transition-transform ${showManualInput ? "rotate-45" : ""}`} /> 직접 추가
-                </button>
-                {/* 관심종목 불러오기 버튼 */}
-                <button
-                  onClick={syncFromWatchlist}
-                  disabled={syncLoading}
-                  title={!isLoggedIn ? "사이드바에서 구글 로그인 후 이용 가능합니다" : ""}
-                  className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl transition-all disabled:opacity-50 border ${
-                    isLoggedIn
-                      ? "bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                      : "bg-gray-700/50 text-gray-500 border-gray-600/30 cursor-not-allowed"
-                  }`}
-                >
-                  {syncLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
-                  {syncLoading ? "불러오는 중..." : isLoggedIn ? "⭐ 관심종목 불러오기" : "로그인 후 이용 가능"}
-                </button>
-              </div>
-            </h2>
-            
-            {/* 로그인 유도 메시지 (비로그인 시) */}
-            {!isLoggedIn && (
-              <div className="text-[11px] sm:text-xs text-yellow-400/80 bg-yellow-500/10 px-4 py-3 rounded-xl border border-yellow-500/20 mb-4 flex gap-3 items-start">
-                <span className="text-base shrink-0">💡</span> 
-                <span className="leading-relaxed">
-                  <strong>관심종목 연동</strong>은 사이드바 하단에서 <strong>구글 로그인</strong> 후 이용할 수 있습니다.<br />
-                  로그인 없이 즉시 포트폴리오를 진단해 보시려면 우측 상단의 <strong>[직접 추가]</strong> 버튼을 이용해 주세요.
-                </span>
-              </div>
-            )}
-
-            {/* 종목 태그 */}
-            {holdings.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {holdings.map(h => {
-                  const current = currentPrices[h.symbol];
-                  const buyPrice = safeNum(h.price);
-                  const currPrice = current ? safeNum(current.price) : buyPrice;
-                  const profit = (currPrice - buyPrice) * safeNum(h.quantity);
-                  const profitRate = buyPrice > 0 ? ((currPrice - buyPrice) / buyPrice * 100) : 0;
-                  const isUp = profit > 0;
-                  const isDown = profit < 0;
-
-                  return (
-                    <div key={h.symbol} className="group relative flex flex-col gap-1 bg-white/5 border border-white/10 hover:border-blue-500/40 p-3 rounded-2xl transition-all min-w-[140px]">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-white truncate max-w-[100px]">{h.name || h.symbol}</span>
-                          <span className="text-[9px] font-mono text-gray-500">{h.symbol}</span>
-                        </div>
-                        <button onClick={() => removeHolding(h.symbol)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
-                        <span className="shrink-0">{buyPrice.toLocaleString()}{h.currency === "USD" ? "$" : "원"} ×</span>
-                        <input 
-                          type="number" 
-                          min="0"
-                          step="any"
-                          value={h.quantity} 
-                          onChange={(e) => updateQuantity(h.symbol, e.target.value)}
-                          className="bg-white/10 border border-white/20 rounded w-16 px-1.5 py-0.5 text-white outline-none focus:border-blue-500 text-center font-bold"
-                        />
-                        <span className="shrink-0">주</span>
-                      </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-                        <div className="flex flex-col">
-                          <div className="text-[10px] text-gray-500">현재가</div>
-                          <div className="text-xs font-black text-yellow-400">
-                            {currPrice > 0 ? `${currPrice.toLocaleString()}${h.currency === "USD" ? "$" : "원"}` : "조회중..."}
-                          </div>
-                        </div>
-                        <div className={`text-[10px] font-black px-1.5 py-0.5 rounded h-fit ${isUp ? "bg-red-500/10 text-red-400" : isDown ? "bg-blue-500/10 text-blue-400" : "bg-gray-500/10 text-gray-400"}`}>
-                          {isUp ? "▲" : isDown ? "▼" : ""} {Math.abs(profitRate).toFixed(2)}%
-                        </div>
-                      </div>
+              {/* 보유 종목 입력 패널 */}
+              <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-md">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-5 pb-4 border-b border-white/5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+                      <BarChart3 className="w-5 h-5" />
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* 직접 입력 영역 (토글) */}
-            {showManualInput && (
-              <div className="flex flex-wrap items-end gap-2 p-4 bg-black/20 rounded-xl border border-white/5 mb-4">
-                <div className="flex flex-col gap-1 relative">
-                  <label className="text-[11px] text-gray-500">종목명 또는 코드</label>
-                  <div className="relative">
-                    <input type="text" placeholder="예: 삼성전자, TSLA"
-                      className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 font-mono text-sm w-44"
-                      value={inputSymbol} onChange={e => setInputSymbol(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && addHolding()}
-                      onBlur={() => setTimeout(() => setSuggestions([]), 200)}
-                    />
-                    {isSearching && <Loader2 className="absolute right-3 top-2.5 w-4 h-4 animate-spin text-gray-500" />}
+                    <div>
+                      <h2 className="text-base font-black text-white">포트폴리오 보유 종목 관리</h2>
+                      <p className="text-xs text-gray-400">보유 중인 종목과 매수 단가, 수량을 입력해 정밀 리스크를 진단하세요.</p>
+                    </div>
                   </div>
                   
-                  {/* 검색 제안 드롭다운 */}
-                  {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 w-64 mt-1 bg-[#1a1a24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
-                      {suggestions.map((s, i) => (
-                        <button key={i} onClick={() => selectSuggestion(s)}
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors">
-                          <div className="flex flex-col items-start">
-                            <span className="text-xs font-bold text-white">{s.name}</span>
-                            <span className="text-[10px] text-gray-500 font-mono">{s.symbol}</span>
-                          </div>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.market}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-gray-500">매수 단가 (원)</label>
-                  <input type="number" placeholder="자동 조회됩니다"
-                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm w-36"
-                    value={inputPrice} onChange={e => setInputPrice(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addHolding()} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] text-gray-500">보유 수량 (주)</label>
-                  <input type="number" placeholder="수량"
-                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm w-24"
-                    value={inputQuantity} onChange={e => setInputQuantity(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addHolding()} />
-                </div>
-                <button onClick={addHolding} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
-                  <Plus className="w-4 h-4" /> 추가
-                </button>
-                <button onClick={() => refreshPrices()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all">
-                  <Activity className="w-4 h-4 text-blue-400" /> 시세 갱신
-                </button>
-              </div>
-            )}
-
-            {/* 진단 버튼 */}
-            <div className="flex justify-end mt-4">
-              <button onClick={() => runOptimization()} disabled={loading || holdings.length < 1}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 flex justify-center items-center gap-2 disabled:opacity-50 transition-all">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5" /> 포트폴리오 진단하기</>}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-900/30 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-300 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
-            </div>
-          )}
-
-          {loading && (
-            <div className="flex flex-col items-center justify-center gap-4 py-16">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-              <p className="text-gray-400 text-sm">AI가 포트폴리오를 분석 중입니다... (약 10~20초 소요)</p>
-            </div>
-          )}
-
-          {/* 결과 영역 */}
-          {!loading && (result || analysisResult) && (
-            <div className="flex flex-col gap-6">
-
-              {/* 상단 요약 카드 */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* 건강 점수 */}
-                <div className={`col-span-2 md:col-span-1 rounded-2xl p-5 border border-white/10 flex flex-col items-center justify-center gap-2 ${grade.bg}`}>
-                  <div className="text-xs text-gray-400 font-bold">포트폴리오 건강점수</div>
-                  <div className={`text-6xl font-black ${grade.color}`}>{score}</div>
-                  <div className={`text-sm font-bold px-3 py-1 rounded-full ${grade.bg} ${grade.color} border border-current/30`}>{grade.label}</div>
-                  <p className="text-[11px] text-gray-500 text-center">AI가 산출한 포트폴리오 균형 점수 (참고용)</p>
-                </div>
-
-                {/* 총 투자금액 */}
-                <StatCard
-                  icon={<Coins className="w-4 h-4" />}
-                  label="총 투자 금액"
-                  value={`${totalInvested.toLocaleString()}원`}
-                  desc={`미국 주식은 현재 환율(약 ${usdKrw.toLocaleString()}원)을 적용해 원화로 합산했어요.`}
-                  color="bg-white/5 border-white/10"
-                />
-
-                {/* 기대 수익 */}
-                <StatCard
-                  icon={expReturn >= 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />}
-                  label="연간 기대 수익률"
-                  value={result?.metrics ? `${expReturn > 0 ? "+" : ""}${expReturn}%` : "—"}
-                  desc={result?.metrics ? "※ 과거 통계 데이터 기반 산출값이며 미래 수익을 보장하지 않습니다" : "종목 2개 이상 입력 시 통계 계산됩니다"}
-                  color={result?.metrics ? (expReturn >= 0 ? "bg-green-900/20 border-green-500/20" : "bg-red-900/20 border-red-500/20") : "bg-white/5 border-white/10"}
-                />
-
-                {/* 변동성 */}
-                <StatCard
-                  icon={<Activity className="w-4 h-4 text-purple-400" />}
-                  label="포트폴리오 변동성"
-                  value={result?.metrics ? `${volatility}%` : "—"}
-                  desc={result?.metrics ? `과거 1년 기준 연간 가격 변동폭: ${volatility}% (통계 참고용)` : "종목 2개 이상 입력 시 통계 계산됩니다"}
-                  color="bg-purple-900/20 border-purple-500/20"
-                />
-
-                {/* [추가] 평균 포트폴리오 최대낙폭(MDD) */}
-                <StatCard
-                  icon={<AlertTriangle className="w-4 h-4 text-red-400" />}
-                  label="통합 리스크 (평균 MDD)"
-                  value={analysisResult?.portfolio_mdd ? `${analysisResult.portfolio_mdd}%` : "—"}
-                  desc="과거 가장 큰 하락장에서 현재 구성 종목들의 평균 낙폭 (시뮬레이션 참고용)"
-                  color="bg-red-900/20 border-red-500/20"
-                />
-              </div>
-
-              {/* AI 리포트 */}
-              {analysisResult?.report && (
-                <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/30 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ShieldCheck className="w-5 h-5 text-blue-400" />
-                    <span className="font-bold text-white">AI 포트폴리오 리포트</span>
-                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">참고용 분석</span>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowManualInput(!showManualInput)}
+                      className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all border shadow-sm ${
+                        showManualInput 
+                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30" 
+                          : "bg-zinc-800 hover:bg-zinc-700 text-gray-200 border-white/10"
+                      }`}
+                    >
+                      <Plus className={`w-4 h-4 transition-transform ${showManualInput ? "rotate-45" : ""}`} /> 직접 추가
+                    </button>
+                    <button
+                      onClick={syncFromWatchlist}
+                      disabled={syncLoading}
+                      title={!isLoggedIn ? "로그인 후 이용 가능합니다" : ""}
+                      className={`flex items-center gap-2 text-xs font-bold px-3.5 py-2 rounded-xl transition-all border shadow-sm ${
+                        isLoggedIn
+                          ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30"
+                          : "bg-zinc-800/50 text-gray-500 border-white/5 cursor-not-allowed"
+                      }`}
+                    >
+                      {syncLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5 text-amber-400" />}
+                      {syncLoading ? "불러오는 중..." : "관심종목 불러오기"}
+                    </button>
                   </div>
-                  <p className="text-sm text-gray-300 leading-relaxed">{analysisResult.report}</p>
-                  <p className="text-[11px] text-gray-600 mt-3 flex items-center gap-1"><Info className="w-3 h-3" /> ※ 본 내용은 AI가 생성한 통계적 참고 정보이며, 투자자문이 아닙니다. 모든 투자 결정은 본인 책임입니다.</p>
+                </div>
+
+                {/* 보유 종목 카드 리스트 */}
+                {holdings.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+                    {holdings.map(h => {
+                      const current = currentPrices[h.symbol];
+                      const buyPrice = safeNum(h.price);
+                      const currPrice = current ? safeNum(current.price) : buyPrice;
+                      const profit = (currPrice - buyPrice) * safeNum(h.quantity);
+                      const profitRate = buyPrice > 0 ? ((currPrice - buyPrice) / buyPrice * 100) : 0;
+                      const isUp = profit > 0;
+                      const isDown = profit < 0;
+
+                      return (
+                        <div key={h.symbol} className="group relative bg-zinc-950/80 border border-white/10 hover:border-blue-500/40 p-4 rounded-2xl transition-all shadow-md flex flex-col justify-between">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-bold text-white truncate">{h.name || h.symbol}</span>
+                              <span className="text-[10px] font-mono text-gray-500 tracking-wider">{h.symbol}</span>
+                            </div>
+                            <button 
+                              onClick={() => removeHolding(h.symbol)} 
+                              className="text-gray-500 hover:text-rose-400 p-1 rounded-lg hover:bg-white/5 transition-all opacity-70 group-hover:opacity-100"
+                              title="삭제"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-2 pt-2 border-t border-white/5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-400">매수단가</span>
+                              <span className="font-mono font-bold text-gray-200">{buyPrice.toLocaleString()}{h.currency === "USD" ? "$" : "원"}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-400">보유수량</span>
+                              <div className="flex items-center gap-1">
+                                <input 
+                                  type="number" 
+                                  min="0"
+                                  step="any"
+                                  value={h.quantity} 
+                                  onChange={(e) => updateQuantity(h.symbol, e.target.value)}
+                                  className="bg-zinc-900 border border-white/15 rounded-lg w-16 px-2 py-0.5 text-white outline-none focus:border-blue-500 text-center font-mono font-bold text-xs"
+                                />
+                                <span className="text-gray-400 font-mono text-[11px]">주</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                              <div>
+                                <div className="text-[9px] text-gray-500 font-mono">현재가</div>
+                                <div className="text-xs font-black font-mono text-white">
+                                  {currPrice > 0 ? `${currPrice.toLocaleString()}${h.currency === "USD" ? "$" : "원"}` : "조회중..."}
+                                </div>
+                              </div>
+                              <div className={`px-2 py-0.5 rounded-md text-[10px] font-black font-mono border ${
+                                isUp ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : isDown ? "bg-sky-500/10 text-sky-400 border-sky-500/20" : "bg-white/5 text-gray-400 border-white/10"
+                              }`}>
+                                {isUp ? "▲ +" : isDown ? "▼ " : ""}{profitRate.toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center bg-zinc-950/40 rounded-2xl border border-dashed border-white/10 mb-6">
+                    <p className="text-sm font-bold text-gray-400 mb-1">등록된 보유 종목이 없습니다</p>
+                    <p className="text-xs text-gray-500">우측 상단의 <strong>[직접 추가]</strong> 또는 <strong>[관심종목 불러오기]</strong>를 눌러 종목을 등록하세요.</p>
+                  </div>
+                )}
+
+                {/* 직접 입력 폼 */}
+                {showManualInput && (
+                  <div className="flex flex-wrap items-end gap-3 p-5 bg-zinc-950 rounded-2xl border border-white/10 mb-5 shadow-inner">
+                    <div className="flex flex-col gap-1.5 relative flex-1 min-w-[180px]">
+                      <label className="text-xs font-bold text-gray-400">종목명 또는 티커</label>
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          placeholder="예: 삼성전자, TSLA, 005930"
+                          className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 font-bold text-sm text-white shadow-inner"
+                          value={inputSymbol} 
+                          onChange={e => setInputSymbol(e.target.value)}
+                          onKeyDown={e => e.key === "Enter" && addHolding()}
+                          onBlur={() => setTimeout(() => setSuggestions([]), 200)}
+                        />
+                        {isSearching && <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin text-gray-500" />}
+                      </div>
+                      
+                      {suggestions.length > 0 && (
+                        <div className="absolute top-full left-0 w-full mt-1 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl divide-y divide-white/5">
+                          {suggestions.map((s, i) => (
+                            <button key={i} onClick={() => selectSuggestion(s)}
+                              className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-800 transition-colors text-left">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-white">{s.name}</span>
+                                <span className="text-[10px] text-gray-500 font-mono">{s.symbol}</span>
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{s.market}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 min-w-[140px]">
+                      <label className="text-xs font-bold text-gray-400">매수 단가 (원/$)</label>
+                      <input 
+                        type="number" 
+                        placeholder="단가 입력"
+                        className="bg-zinc-900 border border-white/15 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 font-mono font-bold text-sm text-white shadow-inner"
+                        value={inputPrice} 
+                        onChange={e => setInputPrice(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && addHolding()} 
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 min-w-[110px]">
+                      <label className="text-xs font-bold text-gray-400">보유 수량 (주)</label>
+                      <input 
+                        type="number" 
+                        placeholder="수량"
+                        className="bg-zinc-900 border border-white/15 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 font-mono font-bold text-sm text-white shadow-inner"
+                        value={inputQuantity} 
+                        onChange={e => setInputQuantity(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && addHolding()} 
+                      />
+                    </div>
+
+                    <button 
+                      onClick={addHolding} 
+                      className="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" /> 종목 추가
+                    </button>
+                  </div>
+                )}
+
+                {/* 진단 실행 바 */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/5">
+                  <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+                    <span>등록된 자산: <strong className="text-white font-mono">{holdings.length}개</strong></span>
+                    <span>·</span>
+                    <span>총 매입액: <strong className="text-amber-400 font-mono">{totalInvested.toLocaleString()}원</strong></span>
+                  </div>
+                  <button 
+                    onClick={() => runOptimization()} 
+                    disabled={loading || holdings.length < 1}
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-8 py-3.5 rounded-2xl font-black text-sm text-white shadow-xl shadow-blue-500/20 flex justify-center items-center gap-2 disabled:opacity-40 transition-all active:scale-95"
+                  >
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5 text-amber-300" /> 포트폴리오 퀀트 진단하기</>}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl px-5 py-4 text-sm text-rose-300 flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" /> {error}
                 </div>
               )}
 
-              {/* 6각 데이터맵 + 팩터 바 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 레이더 차트 */}
-                <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Activity className="w-4 h-4 text-purple-400" />
-                    <span className="font-bold text-white text-sm">포트폴리오 특성 지도</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 mb-4">6가지 투자 특성을 한눈에 비교해요. 넓을수록 각 특성이 강해요.</p>
-                  {radarData.length > 0 ? (
-                    <div style={{ width: "100%", height: 260 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                          <PolarGrid stroke="#333" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: "#a78bfa", fontSize: 11, fontWeight: "bold" }} />
-                          <Radar name="포트폴리오" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.35} strokeWidth={2} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="h-48 flex items-center justify-center text-gray-500 text-sm">데이터 없음</div>
-                  )}
-                </div>
-
-                {/* 팩터 바 차트 */}
-                <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BarChart3 className="w-4 h-4 text-blue-400" />
-                    <span className="font-bold text-white text-sm">6가지 투자 지표 상세</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 mb-4">각 지표가 무엇을 의미하는지 쉽게 확인하세요.</p>
-                  <div className="flex flex-col gap-4">
-                    {radarData.map(d => (
-                      <FactorBar key={d.subject} name={d.subject} value={d.A} />
-                    ))}
-                    {radarData.length === 0 && <p className="text-gray-500 text-sm text-center py-8">진단하기 후 표시됩니다</p>}
+              {loading && (
+                <div className="flex flex-col items-center justify-center gap-4 py-20 bg-zinc-900/40 rounded-3xl border border-white/10">
+                  <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+                  <div className="text-center">
+                    <p className="text-white font-bold text-base mb-1">포트폴리오 정밀 퀀트 모델 연산 중...</p>
+                    <p className="text-gray-500 text-xs">자산 상관계수, 팩터 민감도, 배당 스케줄 및 스트레스 테스트를 계산하고 있습니다.</p>
                   </div>
                 </div>
+              )}
 
-                {/* [추가] 섹터 비중 파이 차트 */}
-                {analysisResult?.composition?.composition && analysisResult.composition.composition.length > 0 && (
-                  <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5 md:col-span-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <BarChart3 className="w-4 h-4 text-green-400" />
-                      <span className="font-bold text-white text-sm">자산 분산 비중 분석</span>
-                      <span className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full">포트폴리오 균형성</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500 mb-4">어떤 성격의 자산에 얼마나 투자하고 있는지 파악하여 위험을 분산해 보세요.</p>
-                    <div className="flex flex-col md:flex-row items-center gap-6">
-                      <div className="w-full md:w-1/2 h-56">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={analysisResult.composition.composition}
-                              dataKey="value"
-                              nameKey="name"
-                              cx="50%"
-                              cy="50%"
-                              outerRadius={80}
-                              innerRadius={50}
-                              paddingAngle={2}
-                            >
-                              {analysisResult.composition.composition.map((entry: any, index: number) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                              ))}
-                            </Pie>
-                            <RechartsTooltip 
-                              contentStyle={{ backgroundColor: '#1a1a24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
-                              formatter={(val: any) => [`${val}%`, '비중']}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
+              {/* 분석 결과 대시보드 */}
+              {!loading && (result || analysisResult) && (
+                <div className="flex flex-col gap-8">
+
+                  {/* 1. 상단 5대 핵심 지표 카드 (완벽 대칭 5-Column Grid) */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {/* 건강 점수 */}
+                    <div className={`col-span-2 sm:col-span-1 rounded-3xl p-5 border flex flex-col justify-between shadow-xl backdrop-blur-md ${grade.bg}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400 font-bold">건강 균형 지수</span>
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
                       </div>
-                      <div className="w-full md:w-1/2 flex flex-col gap-2">
-                        {analysisResult.composition.composition.map((entry: any, index: number) => (
-                          <div key={index} className="flex flex-col gap-1 text-sm bg-white/5 p-2 rounded-lg border border-white/5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.fill }} />
-                                <span className="font-bold text-gray-200">{entry.name}</span>
+                      <div className="my-2">
+                        <div className={`text-4xl md:text-5xl font-black font-mono tracking-tight ${grade.color}`}>{score}<span className="text-xs text-gray-400 font-normal"> / 100</span></div>
+                        <div className={`text-xs font-bold px-2.5 py-1 rounded-lg mt-2 inline-block border ${grade.bg} ${grade.color}`}>{grade.label}</div>
+                      </div>
+                      <p className="text-[10px] text-gray-500 font-medium">통계 퀀트 모델 기반 종합 점수</p>
+                    </div>
+
+                    {/* 총 투자금액 */}
+                    <StatCard
+                      icon={<Coins className="w-4 h-4 text-amber-400" />}
+                      label="총 자산 평가액"
+                      value={`${totalInvested.toLocaleString()}원`}
+                      desc={`미국 주식은 실시간 환율(약 ₩${usdKrw.toLocaleString()})로 합산`}
+                      color="bg-zinc-900/90 border-white/10"
+                    />
+
+                    {/* 기대 수익 */}
+                    <StatCard
+                      icon={expReturn >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-400" /> : <TrendingDown className="w-4 h-4 text-rose-400" />}
+                      label="연간 기대 수익률"
+                      value={result?.metrics ? `${expReturn > 0 ? "+" : ""}${expReturn}%` : "—"}
+                      desc={result?.metrics ? "과거 주가 통계 기반 기하평균 산출치" : "종목 2개 이상 입력 시 통계 계산"}
+                      color={result?.metrics ? (expReturn >= 0 ? "bg-emerald-950/20 border-emerald-500/20" : "bg-rose-950/20 border-rose-500/20") : "bg-zinc-900/90 border-white/10"}
+                    />
+
+                    {/* 변동성 */}
+                    <StatCard
+                      icon={<Activity className="w-4 h-4 text-purple-400" />}
+                      label="포트폴리오 변동성"
+                      value={result?.metrics ? `${volatility}%` : "—"}
+                      desc={result?.metrics ? `연간 수익률 표준편차: ${volatility}%` : "종목 2개 이상 입력 시 통계 계산"}
+                      color="bg-zinc-900/90 border-white/10"
+                    />
+
+                    {/* 평균 최대낙폭(MDD) */}
+                    <StatCard
+                      icon={<AlertTriangle className="w-4 h-4 text-rose-400" />}
+                      label="통합 최대낙폭 (MDD)"
+                      value={analysisResult?.portfolio_mdd ? `${analysisResult.portfolio_mdd}%` : "—"}
+                      desc="과거 역사적 하락장 기준 최대 하락폭 시뮬레이션"
+                      color="bg-rose-950/20 border-rose-500/20"
+                    />
+                  </div>
+
+                  {/* 2. 포트폴리오 정밀 퀀트 진단 리포트 */}
+                  {analysisResult?.report && (
+                    <div className="bg-gradient-to-r from-blue-950/40 via-zinc-900/80 to-purple-950/40 border border-blue-500/20 rounded-3xl p-6 shadow-2xl backdrop-blur-md">
+                      <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/5">
+                        <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
+                          <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-black text-white text-base">포트폴리오 정밀 퀀트 진단 리포트</h3>
+                          <p className="text-xs text-gray-400">자산군 간 상관관계 및 분산 상태를 종합 평가한 결과입니다.</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-200 leading-relaxed mt-2">{analysisResult.report}</p>
+                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-1.5 text-[11px] text-gray-500">
+                        <Info className="w-3.5 h-3.5 text-gray-400" />
+                        <span>본 진단 리포트는 과거 통계 데이터를 기계적으로 집계한 참고용 정보이며, 법적 투자 자문에 해당하지 않습니다.</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. 6가지 팩터 특성 지도 & 상세 지표 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* 레이더 차트 */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Activity className="w-5 h-5 text-purple-400" />
+                          <h3 className="font-black text-white text-base">6대 팩터 특성 지도</h3>
+                        </div>
+                        <p className="text-xs text-gray-400 mb-6">자산의 성향(성장, 가치, 안정, 현금흐름) 균형도를 다각형으로 시각화합니다.</p>
+                      </div>
+
+                      {radarData.length > 0 ? (
+                        <div style={{ width: "100%", height: 300 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                              <PolarGrid stroke="#3f3f46" strokeDasharray="3 3" />
+                              <PolarAngleAxis dataKey="subject" tick={{ fill: "#cbd5e1", fontSize: 12, fontWeight: "bold" }} />
+                              <Radar name="포트폴리오" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.35} strokeWidth={2.5} />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="h-64 flex items-center justify-center text-gray-500 text-sm">데이터 없음</div>
+                      )}
+                      
+                      <div className="mt-4 pt-3 border-t border-white/5 text-[11px] text-gray-500 text-center">
+                        다각형 면적이 고르게 넓을수록 분산 투자와 리스크 관리가 잘 이루어진 상태입니다.
+                      </div>
+                    </div>
+
+                    {/* 팩터 상세 바 차트 */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl">
+                      <div className="flex items-center gap-2 mb-1">
+                        <BarChart3 className="w-5 h-5 text-blue-400" />
+                        <h3 className="font-black text-white text-base">6가지 핵심 투자 지표 상세</h3>
+                      </div>
+                      <p className="text-xs text-gray-400 mb-5">각 지표별 퀀트 모델 산출 점수와 전문적 의미를 확인하세요.</p>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {radarData.map(d => (
+                          <FactorBar key={d.subject} name={d.subject} value={d.A} />
+                        ))}
+                        {radarData.length === 0 && <p className="text-gray-500 text-sm text-center py-8">진단하기 후 표시됩니다</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. 자산 분산 비중 분석 (Sector Composition) */}
+                  {analysisResult?.composition?.composition && analysisResult.composition.composition.length > 0 && (
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-3 border-b border-white/5">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-emerald-400" />
+                          <h3 className="font-black text-white text-base">자산 및 업종별 분산 비중</h3>
+                        </div>
+                        <span className="text-xs bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full font-bold border border-emerald-500/20">
+                          포트폴리오 균형성 분석
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mb-6">특정 섹터에 자산이 과도하게 쏠려 있지 않은지 확인하여 시스템 리스크를 줄이세요.</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
+                        <div className="w-full h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={analysisResult.composition.composition}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={90}
+                                innerRadius={55}
+                                paddingAngle={3}
+                              >
+                                {analysisResult.composition.composition.map((entry: any, index: number) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} stroke="rgba(0,0,0,0.5)" strokeWidth={2} />
+                                ))}
+                              </Pie>
+                              <RechartsTooltip 
+                                contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}
+                                formatter={(val: any) => [`${val}%`, '비중']}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="flex flex-col gap-2.5">
+                          {analysisResult.composition.composition.map((entry: any, index: number) => (
+                            <div key={index} className="flex flex-col gap-1 text-sm bg-zinc-950/80 p-3 rounded-2xl border border-white/5 hover:border-white/15 transition-all">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-3.5 h-3.5 rounded-lg shadow-sm" style={{ backgroundColor: entry.fill }} />
+                                  <span className="font-bold text-white text-xs md:text-sm">{entry.name}</span>
+                                </div>
+                                <span className="font-black font-mono text-white text-sm">{entry.value}%</span>
                               </div>
-                              <span className="font-black text-white">{entry.value}%</span>
+                              {entry.symbols && entry.symbols.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1 pl-6">
+                                  {entry.symbols.map((sym: string, i: number) => (
+                                    <span key={i} className="text-[10px] font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                                      {sym}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            {entry.symbols && entry.symbols.length > 0 && (
-                              <div className="text-[10px] text-gray-500 pl-5">
-                                {entry.symbols.join(", ")}
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5. 예상 배당 캘린더 & 현금흐름 요약 */}
+                  {calendarItems.length > 0 && (
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl">
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-2 pb-3 border-b border-white/5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
+                            <Calendar className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-black text-white text-base">예상 배당 캘린더 및 현금흐름</h3>
+                            <p className="text-xs text-gray-400">보유 수량을 반영한 분기별 예상 배당금 지급 스케줄입니다.</p>
+                          </div>
+                        </div>
+                        
+                        {totalAnnualDividend > 0 && (
+                          <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-2xl flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="text-[10px] text-gray-400 font-bold">연간 총 예상 배당금</div>
+                              <div className="text-sm md:text-base font-black font-mono text-amber-300">
+                                ₩{Math.round(totalAnnualDividend).toLocaleString()}원
+                                <span className="text-xs font-normal text-amber-400/80 ml-1.5">({dividendYieldPct.toFixed(2)}%)</span>
                               </div>
-                            )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-6 mt-6">
+                        {Object.entries(
+                          calendarItems.reduce((acc: any, curr: any) => {
+                            const month = curr.date ? curr.date.substring(0, 7) : "Unknown";
+                            if (!acc[month]) acc[month] = [];
+                            acc[month].push(curr);
+                            return acc;
+                          }, {})
+                        ).sort().slice(0, 6).map(([month, events]: [string, any]) => (
+                          <div key={month} className="flex flex-col gap-3">
+                            <h4 className="text-xs font-black text-gray-300 flex items-center gap-2 px-1">
+                              <div className="w-2 h-2 rounded-full bg-amber-400" />
+                              <span>{month.split('-')[0]}년 {parseInt(month.split('-')[1])}월</span>
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {events.map((event: any, i: number) => {
+                                const isConfirmed = event.type?.includes("확정") || event.source === "확정";
+                                const dayOfWeek = getDayOfWeek(event.date);
+                                const found = holdings.find(it => it.symbol === event.symbol);
+                                const stockName = event.name && event.name !== event.symbol ? event.name : found?.name || event.symbol;
+                                const qty = found ? safeNum(found.quantity) : 1;
+                                const unitAmt = safeNum(event.amount);
+                                const isUSD = event.currency === "USD" || (event.symbol?.match(/[A-Z]/) && !event.symbol?.includes("."));
+                                const totalAmt = isUSD ? unitAmt * qty * usdKrw : unitAmt * qty;
+
+                                return (
+                                  <div key={i} className="bg-zinc-950/80 border border-white/10 hover:border-amber-500/40 rounded-2xl p-4 flex justify-between items-center transition-all shadow-md">
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-xs md:text-sm text-white">{stockName}</span>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${
+                                          isConfirmed ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-zinc-800 text-gray-400 border-white/10"
+                                        }`}>
+                                          {isConfirmed ? "확정" : "예상"}
+                                        </span>
+                                      </div>
+                                      <div className="text-[10px] text-gray-500 font-mono">
+                                        {event.date.split('-')[2]}일 ({dayOfWeek}) · 주당 {unitAmt.toLocaleString()}{isUSD ? "$" : "원"}
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-amber-400 font-black font-mono text-sm md:text-base">
+                                        +₩{Math.round(totalAmt).toLocaleString()}
+                                      </div>
+                                      <div className="text-[9px] text-gray-500 font-mono">
+                                        {qty}주 보유 기준
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
 
-              {/* 배당 캘린더 */}
-              {calendarItems.length > 0 && (
-                <div className="bg-gray-900/60 border border-white/10 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-4 h-4 text-yellow-400" />
-                    <span className="font-bold text-white text-sm">예상 배당 캘린더</span>
-                    <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full">연간 흐름 확인</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 mb-4">
-                    과거 배당 이력을 바탕으로 한 예상 일정입니다. <span className="text-blue-400 font-bold">확정</span>은 공시가 완료된 데이터, <span className="text-gray-400">예상</span>은 과거 패턴 분석 결과입니다.
-                  </p>
-                  
-                  <div className="flex flex-col gap-6">
-                    {/* 월별 그룹화 출력 */}
-                    {Object.entries(
-                      calendarItems.reduce((acc: any, curr: any) => {
-                        const month = curr.date ? curr.date.substring(0, 7) : "Unknown"; // YYYY-MM
-                        if (!acc[month]) acc[month] = [];
-                        acc[month].push(curr);
-                        return acc;
-                      }, {})
-                    ).sort().slice(0, 6).map(([month, events]: [string, any]) => (
-                      <div key={month} className="flex flex-col gap-2">
-                        <h4 className="text-xs font-black text-gray-400 flex items-center gap-2 px-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
-                          {month.split('-')[0]}년 {parseInt(month.split('-')[1])}월
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                          {events.map((event: any, i: number) => {
-                            const isConfirmed = event.type?.includes("확정") || event.source === "확정";
-                            const dayOfWeek = getDayOfWeek(event.date);
-                            return (
-                              <div key={i} className="bg-white/5 border border-white/10 hover:border-yellow-500/30 rounded-xl p-3 flex justify-between items-center transition-colors">
-                                <div className="flex flex-col gap-0.5">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-xs text-white">
-                                      {(() => {
-                                        if (event.name && event.name !== event.symbol) return event.name;
-                                        // Fallback: search in current holdings if name is missing
-                                        const found = holdings.find(it => it.symbol === event.symbol);
-                                        return found?.name || event.symbol;
-                                      })()}
-                                    </span>
-                                    <span className={`text-[9px] px-1 py-0.25 rounded ${isConfirmed ? "bg-blue-500/20 text-blue-400" : "bg-gray-500/20 text-gray-400"}`}>
-                                      {isConfirmed ? "확정" : "예상"}
-                                    </span>
-                                  </div>
-                                  <div className="text-[10px] text-gray-500">
-                                    {event.date.split('-')[2]}일 ({dayOfWeek}) · {event.type.replace("확정", "").replace("예상", "").trim()}
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-yellow-400 font-black text-sm">
-                                    +{safeNum(event.amount).toLocaleString()}{event.currency === "KRW" ? "원" : "$"}
-                                  </div>
-                                  <div className="text-[9px] text-gray-600">주당 배당금</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+                  {/* 6. 법적 면책 고지 */}
+                  <div className="bg-rose-950/20 border border-rose-500/20 rounded-3xl p-6 text-xs text-gray-400 leading-relaxed shadow-lg">
+                    <div className="flex items-center gap-2 mb-2 font-bold text-rose-300">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>[투자 유의사항 및 법적 면책 안내]</span>
+                    </div>
+                    <p className="mb-1.5">
+                      본 포트폴리오 정밀 퀀트 분석 서비스는 유사투자자문업 등에 해당하지 않으며, 특정 종목의 매수·매도 추천이나 수익률을 보장하지 않습니다.
+                    </p>
+                    <p className="mb-1.5">
+                      제공되는 모든 지표(건강 균형 지수, 기대 수익률, 변동성, MDD, 팩터 점수)는 과거 주가 및 재무제표 통계에 기반한 정량적 수치일 뿐이며, 미래의 투자 성과를 담보하지 않습니다.
+                    </p>
+                    <p>
+                      모든 투자의 최종 결정과 손익에 대한 책임은 투자자 본인에게 있습니다.
+                    </p>
                   </div>
                 </div>
               )}
 
-              {/* 법적 고지문 (Legal Disclaimer) */}
-              <div className="mt-8 pt-6 border-t border-white/5">
-                <div className="flex gap-2 text-red-300 bg-red-900/20 border border-red-500/30 p-5 rounded-xl shadow-lg">
-                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-400" />
-                  <div className="text-xs leading-relaxed">
-                    <p className="font-black mb-2 text-red-400 text-sm">[투자 유의사항 및 강력한 법적 고지]</p>
-                    <p className="mb-1"><strong>본 서비스(AI 포트폴리오 진단)는 유사투자자문업 등에 해당하지 않으며, 투자에 대한 매수·매도 등 특정 종목의 추천이나 수익률을 보장하지 않습니다.</strong></p>
-                    <p className="mb-1">모든 분석 지표(건강점수, 최대낙폭, 변동성, 레이더 차트 등)는 오로지 <strong>과거의 통계 데이터에 기반한 기계적 연산 및 단순 요약 정보</strong>일 뿐입니다. 미래의 실제 수익이나 손실을 예견하는 것이 아님을 명확히 고지합니다.</p>
-                    <p>투자 행위에 대한 결정은 전적으로 고객님 본인의 독립적인 판단에 따라야 하며, 본 서비스에서 제공된 정보로 인한 어떠한 손실이나 피해에 대해서도 당사는 법적 책임을 지지 않습니다. (본 서비스는 금융위원회 등록 투자자문업자가 아니며, 1:1 상담이나 금전적 대가에 의한 조언을 제공하지 않습니다.)</p>
+              {/* 초기 안내 화면 */}
+              {!loading && !result && !analysisResult && (
+                <div className="flex flex-col items-center justify-center py-20 gap-4 text-gray-500 bg-zinc-900/30 rounded-3xl border border-white/5 p-8">
+                  <Star className="w-16 h-16 opacity-20 text-yellow-500" />
+                  <h3 className="text-xl font-black text-white">내 포트폴리오를 퀀트 알고리즘으로 진단해 보세요</h3>
+                  <p className="text-xs sm:text-sm text-center text-gray-400 max-w-md leading-relaxed">
+                    상단에 보유 종목과 매수 단가, 수량을 입력하고<br/>
+                    <strong className="text-blue-400 font-bold">포트폴리오 퀀트 진단하기</strong> 버튼을 누르면 5대 핵심 지표가 계산됩니다.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 w-full max-w-lg text-center text-xs">
+                    <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5"><div className="text-2xl mb-1">🏥</div><div className="text-white font-bold mb-0.5">건강 균형 지수</div><div className="text-[10px] text-gray-500">종합 분산도 진단</div></div>
+                    <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5"><div className="text-2xl mb-1">📊</div><div className="text-white font-bold mb-0.5">6대 팩터 레이더</div><div className="text-[10px] text-gray-500">베타/알파/모멘텀 분석</div></div>
+                    <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5"><div className="text-2xl mb-1">💰</div><div className="text-white font-bold mb-0.5">배당 현금흐름</div><div className="text-[10px] text-gray-500">연간 배당 스케줄</div></div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* 초기 화면 */}
-          {!loading && !result && !analysisResult && (
-            <div className="flex flex-col items-center justify-center py-20 gap-4 text-gray-500">
-              <Star className="w-16 h-16 opacity-20 text-yellow-500" />
-              <h3 className="text-xl font-bold text-gray-300">내 포트폴리오를 진단해 보세요</h3>
-              <p className="text-sm text-center max-w-md">위에 보유 종목, 매수 단가, 수량을 입력하고<br/><strong className="text-blue-400">포트폴리오 진단하기</strong> 버튼을 눌러주세요!</p>
-              <div className="grid grid-cols-3 gap-4 mt-4 text-center text-xs">
-                <div className="bg-white/5 rounded-xl p-3"><div className="text-2xl mb-1">🏥</div><div className="text-gray-400">건강점수 분석</div></div>
-                <div className="bg-white/5 rounded-xl p-3"><div className="text-2xl mb-1">📊</div><div className="text-gray-400">6가지 특성 진단</div></div>
-                <div className="bg-white/5 rounded-xl p-3"><div className="text-2xl mb-1">💰</div><div className="text-gray-400">배당 캘린더</div></div>
-              </div>
-            </div>
-          )}
+              )}
             </>
           )}
         </div>

@@ -1,4 +1,4 @@
-﻿import re
+import re
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -55,36 +55,42 @@ KOR_SECTOR_MAP = {
 }
 
 CHARACTER_COLOR_MAP = {
-    "기술/성장주 (에너지)": "#f59e0b", 
-    "안정/기초 (기반 자산)": "#ef4444",   
-    "방어/저변동 (안전망)": "#10b981",    
-    "자원/원자재 (고밀도)": "#eab308",  
-    "유동성 (현금성 자산)": "#3b82f6",       
-    "기타 (미분류)": "#94a3b8"       
+    "기술/성장 (IT·반도체·플랫폼)": "#3b82f6", 
+    "산업/제조 (제조·건설·운송)": "#10b981",   
+    "금융/가치 (금융·지주·부동산)": "#8b5cf6",
+    "방어/소비 (헬스케어·필수소비·유틸)": "#ec4899",    
+    "소재/에너지 (원자재·화학·에너지)": "#f59e0b",  
+    "유동성 (현금성 자산)": "#06b6d4",       
+    "기타 자산": "#94a3b8"       
 }
 
 SECTOR_CHARACTER_MAP = {
-    "Technology": "기술/성장주 (에너지)",
-    "Communication Services": "기술/성장주 (에너지)",
-    "Consumer Cyclical": "기술/성장주 (에너지)",
-    "Financial Services": "안정/기초 (기반 자산)",
-    "Industrials": "안정/기초 (기반 자산)",
-    "Real Estate": "안정/기초 (기반 자산)",
-    "Healthcare": "방어/저변동 (안전망)",
-    "Consumer Defensive": "방어/저변동 (안전망)",
-    "Utilities": "방어/저변동 (안전망)",
-    "Energy": "자원/원자재 (고밀도)",
-    "Basic Materials": "자원/원자재 (고밀도)",
+    "Technology": "기술/성장 (IT·반도체·플랫폼)",
+    "Communication Services": "기술/성장 (IT·반도체·플랫폼)",
+    "Consumer Cyclical": "기술/성장 (IT·반도체·플랫폼)",
+    "Financial Services": "금융/가치 (금융·지주·부동산)",
+    "Real Estate": "금융/가치 (금융·지주·부동산)",
+    "Industrials": "산업/제조 (제조·건설·운송)",
+    "Healthcare": "방어/소비 (헬스케어·필수소비·유틸)",
+    "Consumer Defensive": "방어/소비 (헬스케어·필수소비·유틸)",
+    "Utilities": "방어/소비 (헬스케어·필수소비·유틸)",
+    "Energy": "소재/에너지 (원자재·화학·에너지)",
+    "Basic Materials": "소재/에너지 (원자재·화학·에너지)",
     "Cash": "유동성 (현금성 자산)",
-    "Unknown": "기타 (미분류)"
+    "Unknown": "기타 자산"
 }
 
-def get_korean_character(kor_sector_name):
-    # Heuristic mapping
+def get_korean_character(sector_name):
+    if not sector_name or sector_name == "Unknown":
+        return "기타 자산"
+    # 1. Direct English match
+    if sector_name in SECTOR_CHARACTER_MAP:
+        return SECTOR_CHARACTER_MAP[sector_name]
+    # 2. Korean keyword match
     for key, val in KOR_SECTOR_MAP.items():
-        if key in kor_sector_name:
-            return SECTOR_CHARACTER_MAP.get(val, "기타 (미분류)")
-    return "기타 (미분류)"
+        if key in sector_name:
+            return SECTOR_CHARACTER_MAP.get(val, "기타 자산")
+    return "기타 자산"
 
 def analyze_portfolio_composition(symbols: list) -> dict:
     """
