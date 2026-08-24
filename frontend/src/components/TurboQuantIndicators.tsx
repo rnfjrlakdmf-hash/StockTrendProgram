@@ -38,23 +38,38 @@ const formatInvestValue = (val: any, label: string) => {
     try {
         const cleanVal = String(val).replace(/[^0-9.-]/g, '');
         const num = parseFloat(cleanVal);
-        if (isNaN(num)) return val;
+        if (isNaN(num)) return String(val);
 
-        const labelClean = String(label).replace(/\s+/g, '');
+        const labelClean = String(label).replace(/\s+/g, '').toUpperCase();
         
-        // 1. 비율 지표 (%)
-        if (labelClean.includes('률') || labelClean.includes('비율')) {
-            return `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+        // 1. 비율 및 수익률 지표 (%) -> ROE, ROA, ROIC, 영업이익률, 부채비율, 증가율 등
+        if (
+            labelClean.includes('ROE') || 
+            labelClean.includes('ROA') || 
+            labelClean.includes('ROIC') || 
+            labelClean.includes('률') || 
+            labelClean.includes('비율') ||
+            labelClean.includes('마진') ||
+            labelClean.includes('성향') ||
+            labelClean.includes('증가율') ||
+            labelClean.includes('이익률') ||
+            labelClean.includes('수익률') ||
+            labelClean.includes('유보율')
+        ) {
+            return `${num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`;
         }
-        // 2. 주당 가격 지표 (원)
-        else if (labelClean.includes('EPS') || labelClean.includes('BPS') || labelClean.includes('주당')) {
+        // 2. 주당 단가 지표 (원) -> EPS, BPS, CPS, SPS, DPS, 주당순이익 등
+        else if (labelClean.includes('EPS') || labelClean.includes('BPS') || labelClean.includes('CPS') || labelClean.includes('SPS') || labelClean.includes('DPS') || labelClean.includes('주당')) {
             return `${Math.round(num).toLocaleString()}원`;
         }
-        // 3. 배수 지표 (배)
-        else if (labelClean.includes('PER') || labelClean.includes('PBR') || labelClean.includes('배')) {
-            return `${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}배`;
+        // 3. 배수 지표 (배 / 회) -> PER, PBR, EV/EBITDA, 회전율 등
+        else if (labelClean.includes('회전율') || labelClean.includes('회전수')) {
+            return `${num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}회`;
         }
-        // 4. 금액 지표 (Million Won base -> 조/억 변환)
+        else if (labelClean.includes('PER') || labelClean.includes('PBR') || labelClean.includes('PCR') || labelClean.includes('PSR') || labelClean.includes('배') || labelClean.includes('배율')) {
+            return `${num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}배`;
+        }
+        // 4. 금액 지표 (백만원 기준 수치 -> 조/억 변환)
         else {
             const absNum = Math.abs(num);
             const sign = num < 0 ? '-' : '';
@@ -69,12 +84,12 @@ const formatInvestValue = (val: any, label: string) => {
                 const million = Math.round(absNum % 100);
                 result = `${sign}${billion}억${million > 0 ? ` ${million}만` : ''}`;
             } else {
-                result = `${sign}${Math.round(absNum * 100).toLocaleString()}만`;
+                result = `${sign}${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
             }
-            return result + '원';
+            return result + (absNum >= 100 ? ' 원' : '');
         }
     } catch (e) {
-        return val;
+        return String(val);
     }
 };
 
@@ -249,27 +264,29 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
             </div>
 
             {/* Header & Filters */}
-            <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-r from-indigo-600/10 to-indigo-600/5">
+            <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-r from-indigo-950/40 via-zinc-900/60 to-zinc-900/40">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-3 mb-2 notranslate" translate="no">
-                            <BarChart3 className="w-7 h-7 text-indigo-400" />
-                            <span><span>터보퀸트 정밀 진단 </span><span className="text-[10px] text-indigo-500/50 font-normal"><span>v2.3</span></span><span>: </span><span className="text-indigo-400"><span>{getCategoryTitle()}</span></span></span>
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[11px] font-black uppercase tracking-wider mb-2">
+                            FACTORS DEEP DIVE
+                        </div>
+                        <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-2.5">
+                            <BarChart3 className="w-6 h-6 text-indigo-400" />
+                            <span>핵심 팩터 지표 진단 : <span className="text-indigo-400">{getCategoryTitle()}</span></span>
                         </h3>
-                        <p className="text-slate-400 text-sm font-medium">
-                            <span><span>{stockName ? `${stockName}(${symbol})` : symbol}</span> <span>데이터 가독성 엔진 가동 중</span></span>
+                        <p className="text-gray-400 text-xs md:text-sm font-medium mt-1">
+                            {stockName ? `${stockName} (${symbol})` : symbol} 공시 재무제표 기반 시계열 추세 분석
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2.5">
                         {/* Freq Toggle */}
-                        <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex items-center">
+                        <div className="bg-zinc-800/80 p-1 rounded-xl border border-white/10 flex items-center shadow-md">
                             {['0', '1'].map(f => (
                                 <button 
                                     key={f}
                                     onClick={() => setFreq(f)}
-                                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all notranslate ${freq === f ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                                    translate="no"
+                                    className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all ${freq === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-gray-400 hover:text-white'}`}
                                 >
                                     <span>{f === '0' ? '연간' : '분기'}</span>
                                 </button>
@@ -281,16 +298,15 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                             <select 
                                 value={finGubun}
                                 onChange={(e) => setFinGubun(e.target.value)}
-                                className="bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl px-4 py-2.5 outline-none hover:bg-white/10 transition-all appearance-none pr-8 cursor-pointer notranslate"
-                                translate="no"
+                                className="bg-zinc-800/80 border border-white/10 text-white text-xs font-black rounded-xl px-4 py-2 outline-none hover:bg-zinc-700 transition-all appearance-none pr-8 cursor-pointer shadow-md"
                             >
                                 {FIN_GUBUN_MAP.map(opt => (
-                                    <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
+                                    <option key={opt.value} value={opt.value} className="bg-zinc-900 text-white font-medium">
                                         {opt.label}
                                     </option>
                                 ))}
                             </select>
-                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
                     </div>
                 </div>
@@ -319,29 +335,34 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                         <span className="font-bold text-sm">{error}</span>
                     </div>
                 ) : data && Array.isArray(data.rows) && data.rows.length > 0 ? (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Chart Area */}
-                        <div className="bg-white/5 rounded-2xl p-6 border border-white/5 shadow-inner">
-                            <h4 className="text-sm font-bold text-slate-300 mb-6 flex items-center gap-2 notranslate" translate="no">
-                                <TrendingUp className="w-4 h-4 text-indigo-400" /> {getCategoryTitle()} 지표 추이 분석
-                            </h4>
-                            <div className="h-[300px] w-full" key={category}>
+                        <div className="bg-zinc-900/90 rounded-2xl p-5 md:p-6 border border-white/10 shadow-xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-indigo-400" /> {getCategoryTitle()} 핵심 지표 추이 분석
+                                </h4>
+                                <span className="text-[11px] text-gray-500 font-bold">최대 3개 대표 지표 비교</span>
+                            </div>
+                            <div className="h-[280px] md:h-[320px] w-full" key={category}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart key={category} data={getChartData()}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                                    <LineChart key={category} data={getChartData()} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                                        <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} fontWeight="600" tickLine={false} axisLine={false} />
                                         <YAxis 
-                                            stroke="#94a3b8" 
+                                            stroke="#9ca3af" 
                                             fontSize={11} 
+                                            fontWeight="600"
                                             tickLine={false} 
                                             axisLine={false}
                                             tickFormatter={(val) => {
+                                                if (Math.abs(val) >= 1000000) return `${Number(val/1000000).toFixed(0)}조`;
                                                 if (Math.abs(val) >= 100) return `${Number(val/100).toFixed(0)}억`;
-                                                return val;
+                                                return `${val}`;
                                             }}
                                         />
                                         <Tooltip 
-                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff20', borderRadius: '12px', fontSize: '12px' }}
+                                            contentStyle={{ backgroundColor: '#09090b', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '14px', fontSize: '12px', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)' }}
                                             formatter={(value, name) => [formatInvestValue(value, String(name)), name]}
                                         />
                                         <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
@@ -351,9 +372,9 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                                                 name={key} 
                                                 type="monotone" 
                                                 dataKey={key} 
-                                                stroke={i === 0 ? '#6366f1' : i === 1 ? '#10b981' : i === 2 ? '#f59e0b' : '#ef4444'} 
-                                                strokeWidth={3} 
-                                                dot={{ r: 4 }} 
+                                                stroke={i === 0 ? '#6366f1' : i === 1 ? '#10b981' : i === 2 ? '#f59e0b' : '#ec4899'} 
+                                                strokeWidth={2.5} 
+                                                dot={{ r: 4, fill: '#18181b', strokeWidth: 2 }} 
                                             />
                                         ))}
                                     </LineChart>
@@ -362,58 +383,61 @@ export default function TurboQuantIndicators({ symbol, stockName, showEasy }: Pr
                         </div>
 
                         {/* Table Area */}
-                        <div className="bg-white/5 rounded-2xl border border-white/5 overflow-x-auto shadow-xl">
-                            <table className="w-full text-left border-collapse min-w-[800px]" translate="no">
-                                <thead>
-                                    <tr className="bg-white/10 border-b border-white/10">
-                                        <th className="p-4 text-xs font-black text-slate-400 border-r border-white/5 uppercase tracking-widest sticky left-0 bg-[#0e1629] z-10 notranslate" translate="no"><span>항목</span></th>
-                                        {Array.isArray(data.years) && data.years.map(y => (
-                                            <th key={y} className="p-4 text-xs font-black text-slate-300 text-center notranslate" translate="no"><span>{y}</span></th>
-                                        ))}
-                                    </tr>
-</thead>
-                                <tbody>
-                                    {filteredRows.map((row, idx) => (
-                                        <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
-                                            <td className="p-4 text-sm font-bold text-slate-200 sticky left-0 bg-[#0e1629]/95 z-20 border-r border-white/5 group-hover:text-indigo-400 transition-colors notranslate group/tooltip" translate="no">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span>{row.label}</span>
-                                                    {showEasy && (
-                                                        <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 cursor-help flex-shrink-0">
-                                                            <span className="text-[10px] font-black">{"?"}</span>
-                                                            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 w-56 p-3 bg-slate-900 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] rounded-xl text-[11px] font-medium text-emerald-300 leading-relaxed opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[60] whitespace-normal pointer-events-none drop-shadow-2xl text-left">
-                                                                <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-slate-900 border-l border-b border-emerald-500/30 transform rotate-45"></div>
-                                                                <div className="relative z-10">{INDICATOR_HINTS[row.label] || "핵심 재무 건전성 및 수익성을 측정하는 정밀 분석 지표입니다."}</div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            {Array.isArray(row.values) && row.values.map((val, vIdx) => {
-                                                const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
-                                                const isNegative = !isNaN(rawVal) && rawVal < 0;
-                                                
-                                                // 헬퍼 함수를 통한 통합 포맷팅
-                                                let displayVal = formatInvestValue(val, row.label);
-                                                
-                                                return (
-                                                    <td key={vIdx} className={`p-4 text-sm font-medium text-center ${isNegative ? 'text-red-400' : 'text-slate-300'} whitespace-nowrap`}>
-                                                        <span>{displayVal}</span>
-                                                    </td>
-                                                );
-                                            })}
+                        <div className="bg-zinc-900/90 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[700px]">
+                                    <thead>
+                                        <tr className="bg-zinc-950/80 border-b border-white/10">
+                                            <th className="p-3.5 md:p-4 text-xs font-black text-gray-300 border-r border-white/10 uppercase tracking-widest sticky left-0 bg-zinc-950 z-10 min-w-[180px]">
+                                                <span>항목</span>
+                                            </th>
+                                            {Array.isArray(data.years) && data.years.map(y => (
+                                                <th key={y} className="p-3.5 md:p-4 text-xs font-black text-gray-300 text-center font-mono">
+                                                    <span>{y}</span>
+                                                </th>
+                                            ))}
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredRows.map((row, idx) => (
+                                            <tr key={idx} className="hover:bg-white/[0.03] transition-colors group">
+                                                <td className="p-3.5 md:p-4 text-xs md:text-sm font-bold text-gray-200 sticky left-0 bg-zinc-900 z-20 border-r border-white/10 group-hover:text-indigo-400 transition-colors group/tooltip">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span>{row.label}</span>
+                                                        {showEasy && (
+                                                            <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 cursor-help flex-shrink-0">
+                                                                <span className="text-[10px] font-black">{"?"}</span>
+                                                                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 w-56 p-3 bg-zinc-950 border border-emerald-500/30 shadow-2xl rounded-xl text-[11px] font-medium text-emerald-300 leading-relaxed opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[60] whitespace-normal pointer-events-none drop-shadow-2xl text-left">
+                                                                    <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-zinc-950 border-l border-b border-emerald-500/30 transform rotate-45"></div>
+                                                                    <div className="relative z-10">{INDICATOR_HINTS[row.label] || "핵심 재무 건전성 및 수익성을 측정하는 정밀 분석 지표입니다."}</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                {Array.isArray(row.values) && row.values.map((val, vIdx) => {
+                                                    const rawVal = parseFloat(String(val || '0').replace(/,/g, ''));
+                                                    const isNegative = !isNaN(rawVal) && rawVal < 0;
+                                                    let displayVal = formatInvestValue(val, row.label);
+                                                    
+                                                    return (
+                                                        <td key={vIdx} className={`p-3.5 md:p-4 text-xs md:text-sm font-mono font-bold text-center ${isNegative ? 'text-rose-400' : 'text-gray-200'} whitespace-nowrap`}>
+                                                            <span>{displayVal}</span>
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         {/* Toggle Button */}
-                        <div className="flex justify-center mt-4">
+                        <div className="flex justify-center pt-2">
                             <button
                                 onClick={() => setIsFullView(!isFullView)}
-                                className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-slate-300 transition-all shadow-lg active:scale-95 notranslate"
-                                translate="no"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-xl text-xs md:text-sm font-black text-gray-200 transition-all shadow-lg active:scale-95"
                             >
                                 {isFullView ? (
                                     <>

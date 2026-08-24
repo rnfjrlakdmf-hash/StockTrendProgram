@@ -353,8 +353,8 @@ function AnalysisContent() {
 
     const RadarChart = ({ factors }: { factors: any }) => {
         const keys = ["value", "growth", "momentum", "quality", "stability"];
-        const labels = ["가치", "성장", "모멘텀", "수익성", "안정성"];
-        const cx = 150, cy = 150, r = 110;
+        const labels = ["가치 (Value)", "성장 (Growth)", "모멘텀 (Momentum)", "수익성 (Profit)", "안정성 (Safety)"];
+        const cx = 150, cy = 150, r = 100;
         const getPoint = (index: number, score: number) => {
             const angle = (Math.PI * 2 * index / 5) - Math.PI / 2;
             const dist = (score / 100) * r;
@@ -362,30 +362,38 @@ function AnalysisContent() {
         };
         const gridLevels = [20, 40, 60, 80, 100];
         return (
-            <svg viewBox="0 0 300 300" className="w-full max-w-xs mx-auto">
-                {gridLevels.map(level => (
-                    <polygon key={level} points={keys.map((_, i) => { const p = getPoint(i, level); return `${p.x},${p.y}`; }).join(" ")} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-                ))}
-                {keys.map((_, i) => { const p = getPoint(i, 100); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />; })}
-                <polygon points={keys.map((k, i) => { const p = getPoint(i, factors?.[k]?.score || 0); return `${p.x},${p.y}`; }).join(" ")} fill="rgba(99,102,241,0.3)" stroke="rgb(99,102,241)" strokeWidth="2" />
-                {keys.map((k, i) => { const p = getPoint(i, factors?.[k]?.score || 0); return <circle key={k} cx={p.x} cy={p.y} r="4" fill="rgb(129,140,248)" />; })}
-                {keys.map((k, i) => { const p = getPoint(i, 120); return <text key={k} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="11" fontWeight="bold"> {labels[i]} </text>; })}
-            </svg>
+            <div className="relative py-2">
+                <svg viewBox="0 0 300 300" className="w-full max-w-[280px] md:max-w-xs mx-auto drop-shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                    <defs>
+                        <linearGradient id="radarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.45" />
+                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.15" />
+                        </linearGradient>
+                    </defs>
+                    {gridLevels.map(level => (
+                        <polygon key={level} points={keys.map((_, i) => { const p = getPoint(i, level); return `${p.x},${p.y}`; }).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                    ))}
+                    {keys.map((_, i) => { const p = getPoint(i, 100); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />; })}
+                    <polygon points={keys.map((k, i) => { const p = getPoint(i, factors?.[k]?.score || 0); return `${p.x},${p.y}`; }).join(" ")} fill="url(#radarGrad)" stroke="#818cf8" strokeWidth="2.5" />
+                    {keys.map((k, i) => { const p = getPoint(i, factors?.[k]?.score || 0); return <circle key={k} cx={p.x} cy={p.y} r="5" fill="#a5b4fc" stroke="#1e1b4b" strokeWidth="2" />; })}
+                    {keys.map((k, i) => { const p = getPoint(i, 125); return <text key={k} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fill="#d1d5db" fontSize="10.5" fontWeight="700"> {labels[i]} </text>; })}
+                </svg>
+            </div>
         );
     };
 
     if (!mounted) return null;
 
     return (
-        <div className="min-h-screen pb-20 text-white bg-black notranslate" translate="no">
-            <Header title="AI 정밀 분석" subtitle="데이터 기반 종목 정밀 검진" />
+        <div className="min-h-screen pb-20 text-white bg-zinc-950 notranslate" translate="no">
+            <Header title="종목 퀀트 정밀 진단" subtitle="재무·가치·모멘텀 5대 팩터 심층 진단" />
 
             <div className="max-w-5xl mx-auto px-4 space-y-6 pt-4">
                 <div className="max-w-3xl mx-auto w-full">
                     <div className="relative group max-w-2xl mx-auto w-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 z-10" />
-                        <input type="text" placeholder="종목코드 입력 (예: 005930, 삼성전자)"
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-lg font-bold focus:outline-none transition-colors"
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
+                        <input type="text" placeholder="종목명 또는 종목코드 입력 (예: 삼성전자, 005930, AAPL)"
+                            className="w-full bg-zinc-900/90 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-base md:text-lg font-bold focus:outline-none focus:border-indigo-500 transition-all shadow-xl"
                             value={symbol}
                             onChange={(e) => {
                                 setSymbol(e.target.value);
@@ -397,7 +405,7 @@ function AnalysisContent() {
                         />
                         {/* [Autocomplete Dropdown] */}
                         {showResults && searchResults.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-white/15 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2">
                                 {searchResults.map((item: any, idx: number) => (
                                     <div
                                         key={idx}
@@ -405,7 +413,6 @@ function AnalysisContent() {
                                         onClick={() => {
                                             setSymbol(item.symbol);
                                             setShowResults(false);
-                                            // Fake setting the value immediately
                                             let targetSymbol = item.symbol;
                                             switch (activeTab) {
                                                 case "quant": setQuantSymbol(targetSymbol); fetchBasicInfo(targetSymbol); fetchQuant(targetSymbol); break;
@@ -418,7 +425,7 @@ function AnalysisContent() {
                                                     break;
                                             }
                                         }}
-                                        className="px-4 py-3 hover:bg-gray-800 cursor-pointer flex justify-between items-center transition-colors border-b border-gray-800/50 last:border-0"
+                                        className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex justify-between items-center transition-colors border-b border-white/5 last:border-0"
                                     >
                                         <div className="flex flex-col text-left">
                                             <span className="font-bold text-white text-sm">{item.name}</span>
@@ -429,66 +436,65 @@ function AnalysisContent() {
                             </div>
                         )}
                     </div>
-                    <div className="flex justify-between items-center mt-2">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">Select a stock and click 'Analyze' in each tab below</p>
-                        <span className="bg-rose-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(244,63,94,0.5)] border border-rose-400/30 animate-pulse">
-                            FINAL-ULTRA-FIX v5.0.1-STABLE
+                    <div className="flex justify-between items-center mt-3 px-1">
+                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">종목 선택 후 하단 탭별 정밀 분석 데이터를 확인하세요</p>
+                        <span className="bg-indigo-500/10 text-indigo-300 text-[10px] font-black px-2.5 py-0.5 rounded-md border border-indigo-500/30">
+                            PRO QUANT DEEP SCAN
                         </span>
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-stretch justify-between gap-4">
                     <div className="flex-1 w-full">
                         {stockInfo && (
-                            <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
-                                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <h2 className="text-3xl font-black">{stockInfo.name}</h2>
-                                            <span className="text-gray-500 font-mono text-sm tracking-widest">{stockInfo.symbol}</span>
+                            <div className="bg-zinc-900/90 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-md">
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                                    {/* Left: Stock info & Price */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white">{stockInfo.name}</h2>
+                                            <span className="text-xs font-mono font-bold bg-white/10 text-gray-300 px-2.5 py-1 rounded-lg border border-white/10">{stockInfo.symbol}</span>
                                         </div>
-                                        <div className="flex items-baseline gap-3">
-                                            {/* [Fix] Price Blinking & Color Sync (Red for Up, Blue for Down) */}
+                                        
+                                        <div className="flex flex-wrap items-baseline gap-3">
                                             <BlinkingPrice 
                                                 price={stockInfo.price || "---"} 
-                                                className={`text-4xl font-black font-mono tracking-tighter ${
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "text-red-500" : 
-                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "text-blue-500" : 
+                                                className={`text-4xl md:text-5xl font-black font-mono tracking-tighter ${
+                                                    (parseFloat(String(stockInfo.change_rate || "0")) > 0) ? "text-rose-500" : 
+                                                    (parseFloat(String(stockInfo.change_rate || "0")) < 0) ? "text-blue-400" : 
                                                     "text-white"
                                                 }`} 
                                             />
-                                            <div className="flex flex-col gap-2 mt-1">
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
                                                 {/* Regular Market */}
                                                 {(() => {
                                                     const rawRateStr = String(stockInfo.change_rate || stockInfo.final_labeled_change || stockInfo.display_change || stockInfo.change || "0");
-                                                    // Determine sign explicitly from string first (e.g. "+4.07%"), then fallback to numeric value
                                                     const isPos = rawRateStr.includes('+') || (!rawRateStr.includes('-') && parseFloat(rawRateStr.replace(/[^0-9.-]/g, "")) > 0);
                                                     const isNeg = rawRateStr.includes('-') || parseFloat(rawRateStr.replace(/[^0-9.-]/g, "")) < 0;
                                                     
-                                                    const containerClass = isPos ? "bg-red-500/10 border-red-500/30 text-red-400" : 
+                                                    const containerClass = isPos ? "bg-rose-500/10 border-rose-500/30 text-rose-400" : 
                                                                            isNeg ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : 
                                                                            "bg-white/5 border-gray-500/20 text-gray-400";
-                                                                           
-                                                    const badgeClass = isPos ? "bg-red-500 text-white" : 
+                                                                            
+                                                    const badgeClass = isPos ? "bg-rose-500 text-white" : 
                                                                        isNeg ? "bg-blue-500 text-white" : 
-                                                                       "bg-black/40 text-gray-400";
+                                                                       "bg-zinc-800 text-gray-400";
 
                                                     let valStr = String(stockInfo.change_val || "0").replace(/[^0-9.]/g, "");
                                                     let valNum = Number(valStr);
                                                     if (isNaN(valNum)) valNum = 0;
                                                     
                                                     let rawRate = rawRateStr.replace(/[^0-9.]/g, "");
-                                                    
                                                     let labelMatch = String(stockInfo.final_labeled_change || stockInfo.change || "").match(/\[(.*?)\]/);
-                                                    let marketLabel = labelMatch ? labelMatch[1] : "정규장";
+                                                    let marketLabel = labelMatch ? labelMatch[1] : "정규";
 
                                                     return (
                                                         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-sm border ${containerClass}`}>
-                                                            <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>{marketLabel}</span>
-                                                            <span className="text-lg font-black tracking-tight font-mono">
+                                                            <span className={`text-[10px] font-black mr-0.5 px-1.5 py-0.5 rounded ${badgeClass}`}>{marketLabel}</span>
+                                                            <span className="text-base md:text-lg font-black font-mono">
                                                                 {isPos ? '▲ ' : isNeg ? '▼ ' : ''}{valNum.toLocaleString()}
                                                             </span>
-                                                            <span className="text-sm font-bold opacity-80 ml-1">
+                                                            <span className="text-xs md:text-sm font-bold opacity-80 font-mono">
                                                                 ({isPos ? '+' : isNeg ? '-' : ''}{rawRate}%)
                                                             </span>
                                                         </div>
@@ -497,40 +503,22 @@ function AnalysisContent() {
 
                                                 {/* After-Hours Market */}
                                                 {stockInfo.details?.nxt_data && (
-                                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl shadow-[0_0_10px_rgba(99,102,241,0.2)] border ${
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border ${
                                                         (() => {
                                                             const rawNxtPct = String(stockInfo.details.nxt_data.change_pct || "0");
                                                             const isPos = rawNxtPct.includes('+') || (!rawNxtPct.includes('-') && parseFloat(rawNxtPct.replace(/[^0-9.-]/g, "")) > 0);
                                                             const isNeg = rawNxtPct.includes('-') || parseFloat(rawNxtPct.replace(/[^0-9.-]/g, "")) < 0;
-                                                            return isPos ? "bg-red-500/10 border-red-500/30 text-red-400" : isNeg ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-gray-500/10 border-gray-500/30 text-gray-400";
+                                                            return isPos ? "bg-rose-500/10 border-rose-500/30 text-rose-400" : isNeg ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "bg-gray-500/10 border-gray-500/30 text-gray-400";
                                                         })()
                                                     }`}>
-                                                        {(() => {
-                                                            const rate = parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, ""));
-                                                            const isPos = rate > 0;
-                                                            const isNeg = rate < 0;
-                                                            const badgeClass = isPos ? "bg-red-500 text-white" : isNeg ? "bg-blue-500 text-white" : "bg-indigo-900/40 text-indigo-300";
-                                                            return <span className={`text-xs font-bold mr-1 px-1.5 py-0.5 rounded ${badgeClass}`}>야간거래 (NXT)</span>;
-                                                        })()}
-                                                        <span className="text-lg font-black tracking-tight font-mono">
-                                                            {(() => {
-                                                                const nxtValStr = String(stockInfo.details.nxt_data.change_val || "0");
-                                                                const rate = parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, ""));
-                                                                const isPos = rate > 0;
-                                                                const isNeg = rate < 0;
-                                                                let valStr = nxtValStr.replace(/[^0-9.]/g, "");
-                                                                let valNum = Number(valStr);
-                                                                if (isNaN(valNum)) valNum = 0;
-                                                                return `${isPos ? '▲ ' : isNeg ? '▼ ' : ''}${valNum.toLocaleString()}`;
-                                                            })()}
-                                                        </span>
-                                                        <span className="text-sm font-bold opacity-80 ml-1">
+                                                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-900/60 text-indigo-300">NXT야간</span>
+                                                        <span className="text-sm font-bold font-mono">
                                                             {(() => {
                                                                 const rate = parseFloat(String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.-]/g, ""));
                                                                 const isPos = rate > 0;
                                                                 const isNeg = rate < 0;
                                                                 const raw = String(stockInfo.details.nxt_data.change_pct).replace(/[^0-9.]/g, "");
-                                                                return `(${isPos ? '+' : isNeg ? '-' : ''}${raw}%)`;
+                                                                return `(${isPos ? '+' : isNeg ? '-' : ''}{raw}%)`;
                                                             })()}
                                                         </span>
                                                     </div>
@@ -538,32 +526,35 @@ function AnalysisContent() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                                        <div className="bg-black/40 px-4 py-3 rounded-2xl border border-white/5">
-                                            <p className="mb-1 opacity-50">시가총액</p>
-                                            <p className="text-sm text-gray-300">{stockInfo.market_cap_str || stockInfo.market_cap || "N/A"}</p>
+
+                                    {/* Right: Key Summary Stat Cards */}
+                                    <div className="flex flex-wrap md:flex-nowrap gap-3 text-left">
+                                        <div className="bg-zinc-950/70 px-4 py-3 rounded-2xl border border-white/10 min-w-[120px]">
+                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">시가총액</p>
+                                            <p className="text-sm md:text-base font-black text-gray-200 font-mono">{stockInfo.market_cap_str || stockInfo.market_cap || "N/A"}</p>
                                         </div>
                                         {quantData && (
                                             <>
-                                                <div className="bg-white/5 px-4 py-3 rounded-2xl">
-                                                    <p className="mb-1 opacity-50">종합 점수</p>
-                                                    <p className={`text-xl ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}점</p>
+                                                <div className="bg-zinc-950/70 px-4 py-3 rounded-2xl border border-white/10 min-w-[100px]">
+                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">종합 점수</p>
+                                                    <p className={`text-xl font-black font-mono ${getScoreColor(quantData.total_score)}`}>{quantData.total_score}점</p>
                                                 </div>
-                                                <div className={`px-5 py-3 rounded-2xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex flex-col justify-center`}>
-                                                    <p className="mb-1 opacity-70 text-black">등급</p>
-                                                    <p className="text-xl font-black text-black">{quantData.grade}</p>
+                                                <div className={`px-5 py-3 rounded-2xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex flex-col justify-center min-w-[80px] shadow-lg`}>
+                                                    <p className="text-[10px] opacity-75 text-black font-bold uppercase tracking-wider mb-0.5">등급</p>
+                                                    <p className="text-2xl font-black text-black font-mono leading-none">{quantData.grade}</p>
                                                 </div>
                                             </>
                                         )}
                                     </div>
                                 </div>
+
                                 {stockInfo.description && (
-                                    <div className="mt-6 pt-6 border-t border-white/5">
-                                        <div className="text-[10px] text-gray-500 uppercase font-black mb-2 flex items-center gap-2">
+                                    <div className="mt-5 pt-4 border-t border-white/10">
+                                        <div className="text-[11px] text-gray-400 uppercase font-black mb-1.5 flex items-center gap-2">
                                             <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
                                             기업 개요
                                         </div>
-                                        <p className="text-xs text-gray-400 leading-relaxed max-h-24 overflow-y-auto pr-2 custom-scrollbar">
+                                        <p className="text-xs text-gray-400 leading-relaxed max-h-20 overflow-y-auto pr-2 custom-scrollbar">
                                             {stockInfo.description}
                                         </p>
                                     </div>
@@ -571,12 +562,14 @@ function AnalysisContent() {
                             </div>
                         )}
                     </div>
+                    
+                    {/* Guide Mode Toggle */}
                     <button onClick={() => setShowEasy(!showEasy)}
-                        className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-sm transition-all shadow-xl group border ${showEasy ? "bg-indigo-600 border-indigo-400 text-white" : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"}`}>
+                        className={`flex md:flex-col items-center justify-center gap-2 px-5 py-4 rounded-3xl font-black text-xs transition-all shadow-xl border self-stretch md:self-auto ${showEasy ? "bg-indigo-600 border-indigo-400 text-white shadow-indigo-600/30" : "bg-zinc-900/90 border-white/10 text-gray-400 hover:bg-zinc-800 hover:text-white"}`}>
                         <HelpCircle className={`w-5 h-5 ${showEasy ? "animate-bounce" : ""}`} />
-                        <div className="text-left leading-none">
-                            <p className="text-[10px] uppercase tracking-widest mb-1 opacity-70">Guide Mode</p>
-                            <p className="text-xs">{showEasy ? <span>가이드 끄기</span> : <span>가이드 켜기</span>}</p>
+                        <div className="text-center leading-tight">
+                            <p className="text-[9px] uppercase tracking-widest opacity-70 mb-0.5">Guide Mode</p>
+                            <p className="font-bold">{showEasy ? "가이드 ON" : "가이드 OFF"}</p>
                         </div>
                     </button>
                 </div>
@@ -584,17 +577,17 @@ function AnalysisContent() {
                 {/* AdSense Placement (Main Analysis Top) */}
                 <AdBanner adSlot="7781033256" />
 
-                <div className="sticky top-4 z-40 flex justify-center py-2 bg-black/50 backdrop-blur-md rounded-2xl border border-white/5">
-                    <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-full max-w-2xl">
+                <div className="sticky top-4 z-40 flex justify-center py-2 bg-zinc-950/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
+                    <div className="flex gap-1.5 bg-zinc-900/80 p-1.5 rounded-xl w-full max-w-2xl border border-white/5">
                         {[
-                            { id: "quant", label: "TurboQuant", icon: Zap },
-                            { id: "financial", label: "재무 분석", icon: Shield },
+                            { id: "quant", label: "퀀트 정밀진단", icon: Zap },
+                            { id: "financial", label: "재무 건강도", icon: Shield },
                             { id: "sector", label: "섹터 분석", icon: PieChart },
                             { id: "peer", label: "동종비교", icon: Users },
                             { id: "community", label: "종목 토론방", icon: MessageSquare }
                         ].map((tab: any) => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-black transition-all ${activeTab === tab.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
                                 <tab.icon className="w-3.5 h-3.5" /> {tab.label}
                             </button>
                         ))}
@@ -604,78 +597,98 @@ function AnalysisContent() {
                 <div className="min-h-[400px] mt-4">
                     {activeTab === "quant" && (
                         <div className="space-y-6">
-                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/10 mb-4">
+                            <div className="flex justify-between items-center bg-zinc-900/80 p-4 rounded-2xl border border-white/10 mb-4 shadow-lg">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-amber-500/20 rounded-lg"><Zap className="w-5 h-5 text-amber-400" /></div>
-                                    <h3 className="font-bold whitespace-nowrap">TurboQuant 정밀 분석</h3>
+                                    <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl"><Zap className="w-5 h-5 text-amber-400" /></div>
+                                    <div>
+                                        <h3 className="font-black text-white text-sm md:text-base">5축 퀀트 정밀 진단</h3>
+                                        <p className="text-xs text-gray-400">5대 핵심 팩터(가치·성장·모멘텀·수익성·안정성) 종합 스캔</p>
+                                    </div>
                                 </div>
                                 <button onClick={() => handleGlobalSearch("quant")}
-                                    className="px-6 py-2 bg-amber-600 hover:bg-amber-500 rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
-                                    퀀트 로드
+                                    className="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+                                    <RefreshCw className={`w-3.5 h-3.5 ${quantLoading ? "animate-spin text-indigo-400" : ""}`} />
+                                    <span>진단 새로고침</span>
                                 </button>
                             </div>
 
                             {quantLoading ? (
-                                <div className="text-center py-16"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-500">지표 분석 중...</p></div>
+                                <div className="text-center py-20 bg-zinc-900/40 rounded-3xl border border-white/5"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-3" /><p className="text-gray-400 text-xs font-bold">5대 퀀트 팩터 지표 연산 중...</p></div>
                             ) : quantData ? (
                                 quantData.error ? (
-                                    <div className="bg-red-500/10 border border-red-500/30 rounded-3xl p-8 text-center text-red-400">
-                                        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500 animate-bounce" />
+                                    <div className="bg-rose-500/10 border border-rose-500/30 rounded-3xl p-8 text-center text-rose-400">
+                                        <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-rose-500 animate-bounce" />
                                         <h3 className="text-lg font-bold mb-2">퀀트 분석 데이터를 불러올 수 없습니다</h3>
                                         <p className="text-xs opacity-80 leading-relaxed mb-4">
                                             {quantData.error}
                                         </p>
                                         <button onClick={() => handleGlobalSearch("quant")}
-                                            className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
+                                            className="px-6 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-95">
                                             다시 시도
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
-                                        <div className="bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl p-6">
-                                            <div className="flex items-center justify-between mb-6">
+                                        <div className="bg-gradient-to-br from-indigo-950/40 via-zinc-900/90 to-zinc-950 border border-indigo-500/30 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-xl font-black shadow-lg`}>{quantData.grade || "N/A"}</div>
+                                                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${getGradeStyle(quantData.grade)} flex items-center justify-center text-2xl font-black text-black shadow-xl`}>
+                                                        {quantData.grade || "N/A"}
+                                                    </div>
                                                     <div>
-                                                        <h3 className="text-lg font-bold flex items-center gap-2">
-                                                            5축 퀀트 정밀 진단
+                                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                            <h3 className="text-lg md:text-xl font-black text-white">5축 퀀트 정밀 종합 진단</h3>
                                                             {quantData.tags && quantData.tags.map((tag: string, idx: number) => (
-                                                                <span key={idx} className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30">
+                                                                <span key={idx} className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-500/30">
                                                                     {tag}
                                                                 </span>
                                                             ))}
-                                                        </h3>
-                                                        <p className="text-xs text-gray-500">각 팩터별 점수와 세부 지표를 확인하세요</p>
+                                                        </div>
+                                                        <p className="text-xs text-gray-400">각 팩터별 백분위 점수 및 공시 세부 지표 분석</p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right"><span className={`text-3xl font-black ${getScoreColor(quantData.total_score || 0)}`}>{quantData.total_score || 0}</span><p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Total Score</p></div>
+                                                <div className="bg-zinc-950/80 px-5 py-3 rounded-2xl border border-white/10 text-right md:text-right">
+                                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-0.5">Total Quant Score</p>
+                                                    <span className={`text-3xl font-black font-mono ${getScoreColor(quantData.total_score || 0)}`}>{quantData.total_score || 0}<span className="text-sm font-bold text-gray-500 ml-0.5">점</span></span>
+                                                </div>
                                             </div>
+
+                                            {/* Radar Chart */}
                                             <RadarChart factors={quantData.factors} />
+
+                                            {/* 5-Factor Score Cards */}
                                             <div className="mt-8 pt-6 border-t border-white/10">
-                                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
                                                     {Object.entries(quantData.factors || {}).map(([key, f]: any) => {
                                                         const factorGuide: Record<string, string> = {
-                                                            "value": "현재 주가가 벌고 있는 돈이나 재산에 비해 싼지 비싼지를 나타내요.",
-                                                            "growth": "작년보다 매출이나 이익이 얼마나 늘었는지, 회사의 규모가 커지는 중인지 보여줘요.",
-                                                            "momentum": "사람들의 관심과 주가 상승 흐름이 얼마나 강력하게 붙었는지 측정해요.",
-                                                            "quality": "내 돈과 빌린 돈을 합쳐 얼마나 알짜배기 장사를 성실하고 효율적으로 했는지 알려줍니다.",
-                                                            "stability": "빌린 돈이 너무 많지는 않은지, 부도 위험 없이 회사가 얼마나 튼튼한지 나타내요."
+                                                             "value": "현재 주가가 벌고 있는 돈이나 재산에 비해 싼지 비싼지를 나타냅니다.",
+                                                             "growth": "작년 대비 매출과 이익이 얼마나 증가하며 외형이 성장하는지 측정합니다.",
+                                                             "momentum": "시장 참여자들의 관심과 주가 상승 흐름의 강도를 수치화합니다.",
+                                                             "quality": "투입된 자본 대비 얼마나 효율적인 알짜 이익을 냈는지 분석합니다.",
+                                                             "stability": "부채 부담과 금융 비용을 감당할 재무적 안전판을 검증합니다."
                                                         };
                                                         return (
-                                                            <div key={key} className={`flex flex-col items-center text-center p-3 rounded-2xl transition-all ${showEasy ? "bg-white/5 ring-1 ring-indigo-500/30" : ""}`}>
-                                                                <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">{f?.label || ""}</span>
-                                                                <span className={`text-2xl font-black mb-1 ${getScoreColor(f?.score || 0)}`}>{f?.score || 0}</span>
+                                                            <div key={key} className={`flex flex-col justify-between p-4 rounded-2xl bg-zinc-900/90 border border-white/10 hover:border-indigo-500/40 transition-all shadow-md ${showEasy ? "ring-1 ring-indigo-500/30" : ""}`}>
+                                                                <div>
+                                                                    <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block">{f?.label || ""}</span>
+                                                                    <div className="flex items-baseline gap-1 my-2">
+                                                                        <span className={`text-2xl md:text-3xl font-black font-mono ${getScoreColor(f?.score || 0)}`}>{f?.score || 0}</span>
+                                                                        <span className="text-xs font-bold text-gray-500">/100</span>
+                                                                    </div>
+                                                                </div>
                                                                 
-                                                                {/* [New] Guide Mode Explanation */}
                                                                 {showEasy && (
-                                                                    <p className="text-[10px] text-indigo-300 leading-snug mt-2 mb-3 bg-indigo-500/10 p-2 rounded-lg italic">
+                                                                    <p className="text-[10px] text-indigo-300 leading-snug my-2 bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20">
                                                                         {factorGuide[key] || "팩터별 세부 지표를 분석 중입니다."}
                                                                     </p>
                                                                 )}
  
-                                                                <div className="space-y-0.5 opacity-60">
+                                                                <div className="space-y-1 pt-2 border-t border-white/5 mt-1">
                                                                     {Object.entries(f?.metrics || {}).map(([mk, mv]: any) => (
-                                                                        <div key={mk} className="text-[9px] text-gray-400 flex items-center justify-center gap-1"><span>{mk}</span><span className="text-gray-200 font-bold">{mv}</span></div>
+                                                                        <div key={mk} className="text-[10px] flex items-center justify-between gap-1">
+                                                                            <span className="text-gray-400 truncate">{mk}</span>
+                                                                            <span className="text-gray-200 font-bold font-mono">{String(mv)}</span>
+                                                                        </div>
                                                                     ))}
                                                                 </div>
                                                             </div>
@@ -684,7 +697,8 @@ function AnalysisContent() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="border-t border-indigo-500/20 bg-indigo-500/5">
+
+                                        <div className="border border-white/10 rounded-3xl overflow-hidden shadow-2xl bg-zinc-900/60">
                                             <TurboQuantIndicators symbol={quantSymbol || symbol} showEasy={showEasy} />
                                         </div>
                                     </div>
