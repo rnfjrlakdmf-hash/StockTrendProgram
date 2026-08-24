@@ -281,7 +281,9 @@ def get_etf_detail(symbol: str):
             current_price = info.get("currentPrice") or info.get("regularMarketPrice", 0)
             nav_price = info.get("navPrice", 0)
             
-            hist = ticker.history(period="1y")
+            hist = ticker.history(period="2y")
+            if hist.empty:
+                hist = ticker.history(period="1y")
             
             if not hist.empty:
                 if len(hist) >= 2:
@@ -428,16 +430,16 @@ def get_etf_detail(symbol: str):
         # 1. Chart Data (Optional/Non-blocking)
         hist = pd.DataFrame()
         try:
-            # Try KS then KQ
-            hist = yf.Ticker(f"{clean_sym}.KS").history(period="1y")
+            # Try KS then KQ (2y to get full MAs)
+            hist = yf.Ticker(f"{clean_sym}.KS").history(period="2y")
             if hist.empty or len(hist) < 20: 
-                hist_kq = yf.Ticker(f"{clean_sym}.KQ").history(period="1y")
+                hist_kq = yf.Ticker(f"{clean_sym}.KQ").history(period="2y")
                 if not hist_kq.empty and len(hist_kq) > len(hist):
                     hist = hist_kq
             
             # Fallback to Naver API if yfinance fails or data is too short
             if hist.empty or len(hist) < 20:
-                hist = get_naver_daily_prices(clean_sym, 252)
+                hist = get_naver_daily_prices(clean_sym, 400)
             
             if not hist.empty:
                 hist['ma5'] = hist['Close'].rolling(window=5).mean()

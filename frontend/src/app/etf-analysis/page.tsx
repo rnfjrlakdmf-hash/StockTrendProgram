@@ -194,6 +194,12 @@ function EtfAnalysisContent() {
 
     const [symbol, setSymbol] = useState("");
     const [chartRange, setChartRange] = useState("1Y");
+    const [chartType, setChartType] = useState<"area" | "candlestick">("area");
+    const [showMA5, setShowMA5] = useState(true);
+    const [showMA20, setShowMA20] = useState(true);
+    const [showMA60, setShowMA60] = useState(true);
+    const [showMA120, setShowMA120] = useState(false);
+    const [showVolume, setShowVolume] = useState(true);
     const [loading, setLoading] = useState(false);
     const [etfData, setEtfData] = useState<any>(null);
     const [autoRefresh, setAutoRefresh] = useState(false);
@@ -744,74 +750,328 @@ function EtfAnalysisContent() {
                                 </div>
                             </div>
 
-                            {/* ─ 차트 ─ */}
+                            {/* ─ 가격 추이 및 이동평균선 차트 (고급 인터랙티브 차트) ─ */}
                             {etfData.chart_data?.length > 0 && (
-                                <div className="p-5 md:p-8 rounded-3xl bg-zinc-900/80 border border-white/10 shadow-lg">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                                        <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                                            <Activity className="w-5 h-5 text-blue-400" />
-                                            가격 추이 / 이동평균선
-                                        </h3>
-                                        <div className="flex gap-1.5 bg-zinc-800 p-1 rounded-xl w-full sm:w-auto border border-white/5">
-                                            {["1M", "3M", "6M", "1Y"].map(r => (
-                                                <button key={r} onClick={() => setChartRange(r)} className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${chartRange === r ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-gray-400 hover:text-white"}`}>{r}</button>
-                                            ))}
+                                <div className="p-5 md:p-8 rounded-3xl bg-zinc-900/90 border border-white/10 shadow-2xl space-y-5">
+                                    {/* 차트 상단 컨트롤 바 */}
+                                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                                        <div>
+                                            <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                                                <Activity className="w-5 h-5 text-blue-400" />
+                                                가격 추이 & 기술적 보조지표
+                                            </h3>
+                                            <p className="text-xs text-gray-400 font-bold mt-1">
+                                                이동평균선(MA) 추세선 및 하단 일일 거래량 연동 차트
+                                            </p>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                                            {/* 차트 유형 토글 */}
+                                            <div className="flex bg-zinc-800/80 p-1 rounded-xl border border-white/5 text-xs font-bold">
+                                                <button
+                                                    onClick={() => setChartType("area")}
+                                                    className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                                                        chartType === "area"
+                                                            ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                                                            : "text-gray-400 hover:text-white"
+                                                    }`}
+                                                >
+                                                    📈 영역 라인
+                                                </button>
+                                                <button
+                                                    onClick={() => setChartType("candlestick")}
+                                                    className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                                                        chartType === "candlestick"
+                                                            ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                                                            : "text-gray-400 hover:text-white"
+                                                    }`}
+                                                >
+                                                    🕯️ 캔들스틱
+                                                </button>
+                                            </div>
+
+                                            {/* 기간 선택 */}
+                                            <div className="flex bg-zinc-800/80 p-1 rounded-xl border border-white/5 text-xs font-bold">
+                                                {["1M", "3M", "6M", "1Y"].map(r => (
+                                                    <button
+                                                        key={r}
+                                                        onClick={() => setChartRange(r)}
+                                                        className={`px-3 py-1.5 rounded-lg transition-all ${
+                                                            chartRange === r
+                                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                                                                : "text-gray-400 hover:text-white"
+                                                        }`}
+                                                    >
+                                                        {r}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="h-[300px] md:h-[420px] w-full">
-                                        <ReactApexChart
-                                            key={chartRange}
-                                            options={{
-                                                chart: { type: "line", background: "transparent", toolbar: { show: false }, animations: { enabled: false } },
-                                                stroke: { width: [1, 2, 2, 2, 2], curve: "smooth" as const },
-                                                colors: ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#ec4899"],
-                                                plotOptions: { candlestick: { colors: { upward: "#ef4444", downward: "#3b82f6" } } },
-                                                xaxis: {
-                                                    type: "datetime",
-                                                    labels: {
-                                                        datetimeUTC: false,
-                                                        style: { colors: "#9ca3af" },
-                                                        datetimeFormatter: { year: "yyyy년", month: "yyyy.MM", day: "MM.dd" }
-                                                    },
-                                                    axisBorder: { show: false }, axisTicks: { show: false }
-                                                },
-                                                yaxis: {
-                                                    tooltip: { enabled: true },
-                                                    labels: { style: { colors: "#9ca3af" }, formatter: (v: number) => isUs ? `$${v.toLocaleString()}` : `${v.toLocaleString()}원` }
-                                                },
-                                                tooltip: {
-                                                    shared: true,
-                                                    x: { format: "yyyy년 MM월 dd일" },
-                                                    y: { formatter: (v: number) => Math.round(v || 0).toLocaleString() },
-                                                    custom: function ({ dataPointIndex }: any) {
-                                                        const item = filteredChartData[dataPointIndex];
-                                                        if (!item) return "";
-                                                        const [yyyy, mm, dd] = item.date.split("-");
-                                                        const fmt = (v: number | null) => v == null ? "-" : isUs ? `$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}`;
-                                                        return `<div class="bg-gray-900/95 border border-gray-700/50 p-3 rounded-2xl shadow-2xl text-white text-[11px] min-w-[200px]">
-                                                            <div class="text-gray-400 font-black border-b border-gray-700/50 pb-2 mb-2">📅 ${yyyy}. ${mm}. ${dd}.</div>
-                                                            <div class="flex justify-between mb-1"><span class="text-gray-400">시가</span><span class="font-mono">${fmt(item.open)}</span></div>
-                                                            <div class="flex justify-between mb-1"><span class="text-gray-400">고가</span><span class="font-mono text-red-400">${fmt(item.high)}</span></div>
-                                                            <div class="flex justify-between mb-2"><span class="text-gray-400">저가</span><span class="font-mono text-blue-400">${fmt(item.low)}</span></div>
-                                                            <div class="flex justify-between font-black border-b border-gray-700/30 pb-2 mb-2"><span>종가</span><span class="font-mono">${fmt(item.close)}</span></div>
-                                                            <div class="flex justify-between"><span class="text-gray-400">거래량</span><span class="text-blue-300">${item.volume?.toLocaleString()}</span></div>
-                                                        </div>`;
-                                                    }
-                                                },
-                                                grid: { borderColor: "#1f2937", strokeDashArray: 4 },
-                                                theme: { mode: "dark" as const },
-                                                legend: { show: true, position: "top" as const, horizontalAlign: "left" as const }
-                                            }}
-                                            series={[
-                                                { name: "시세", type: "candlestick", data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: [d.open, d.high, d.low, d.close] })) },
-                                                { name: "MA5", type: "line", data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma5 || null })) },
-                                                { name: "MA20", type: "line", data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma20 || null })) },
-                                                { name: "MA60", type: "line", data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma60 || null })) },
-                                                { name: "MA120", type: "line", data: filteredChartData.map((d: any) => ({ x: new Date(d.date).getTime(), y: d.ma120 || null })) },
-                                            ]}
-                                            type="line"
-                                            height="100%"
-                                        />
+
+                                    {/* 이평선 & 거래량 토글 칩 */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                                        <span className="text-gray-500 font-bold text-[11px] mr-1">지표 설정:</span>
+                                        <button
+                                            onClick={() => setShowMA5(!showMA5)}
+                                            className={`px-2.5 py-1 rounded-lg border transition-all font-bold flex items-center gap-1.5 ${
+                                                showMA5
+                                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                                                    : "bg-zinc-800/50 text-gray-500 border-white/5 hover:text-gray-400"
+                                            }`}
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                            5일선 (MA5)
+                                        </button>
+                                        <button
+                                            onClick={() => setShowMA20(!showMA20)}
+                                            className={`px-2.5 py-1 rounded-lg border transition-all font-bold flex items-center gap-1.5 ${
+                                                showMA20
+                                                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                                                    : "bg-zinc-800/50 text-gray-500 border-white/5 hover:text-gray-400"
+                                            }`}
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                            20일선 (MA20)
+                                        </button>
+                                        <button
+                                            onClick={() => setShowMA60(!showMA60)}
+                                            className={`px-2.5 py-1 rounded-lg border transition-all font-bold flex items-center gap-1.5 ${
+                                                showMA60
+                                                    ? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
+                                                    : "bg-zinc-800/50 text-gray-500 border-white/5 hover:text-gray-400"
+                                            }`}
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                                            60일선 (MA60)
+                                        </button>
+                                        <button
+                                            onClick={() => setShowMA120(!showMA120)}
+                                            className={`px-2.5 py-1 rounded-lg border transition-all font-bold flex items-center gap-1.5 ${
+                                                showMA120
+                                                    ? "bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30"
+                                                    : "bg-zinc-800/50 text-gray-500 border-white/5 hover:text-gray-400"
+                                            }`}
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-fuchsia-400" />
+                                            120일선 (MA120)
+                                        </button>
+                                        <button
+                                            onClick={() => setShowVolume(!showVolume)}
+                                            className={`px-2.5 py-1 rounded-lg border transition-all font-bold flex items-center gap-1.5 ml-auto ${
+                                                showVolume
+                                                    ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
+                                                    : "bg-zinc-800/50 text-gray-500 border-white/5 hover:text-gray-400"
+                                            }`}
+                                        >
+                                            📊 거래량 막대
+                                        </button>
+                                    </div>
+
+                                    {/* ApexCharts 렌더링 */}
+                                    <div className="h-[340px] md:h-[450px] w-full pt-2">
+                                        {(() => {
+                                            const series: any[] = [];
+                                            const colors: string[] = [];
+                                            const strokeWidths: number[] = [];
+
+                                            // 1. 거래량 시리즈 (볼륨 막대)
+                                            if (showVolume) {
+                                                series.push({
+                                                    name: "거래량",
+                                                    type: "column",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: d.volume || 0,
+                                                    })),
+                                                });
+                                                colors.push("#3b82f633");
+                                                strokeWidths.push(0);
+                                            }
+
+                                            // 2. 주가 시리즈 (영역 또는 캔들스틱)
+                                            if (chartType === "candlestick") {
+                                                series.push({
+                                                    name: "시세",
+                                                    type: "candlestick",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: [d.open, d.high, d.low, d.close],
+                                                    })),
+                                                });
+                                                colors.push("#3b82f6");
+                                                strokeWidths.push(1);
+                                            } else {
+                                                series.push({
+                                                    name: "종가",
+                                                    type: "area",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: d.close,
+                                                    })),
+                                                });
+                                                colors.push("#3b82f6");
+                                                strokeWidths.push(2.5);
+                                            }
+
+                                            // 3. 이동평균선 시리즈들
+                                            if (showMA5) {
+                                                series.push({
+                                                    name: "MA5",
+                                                    type: "line",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: d.ma5 ?? null,
+                                                    })),
+                                                });
+                                                colors.push("#10b981");
+                                                strokeWidths.push(1.5);
+                                            }
+                                            if (showMA20) {
+                                                series.push({
+                                                    name: "MA20",
+                                                    type: "line",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: d.ma20 ?? null,
+                                                    })),
+                                                });
+                                                colors.push("#f59e0b");
+                                                strokeWidths.push(1.5);
+                                            }
+                                            if (showMA60) {
+                                                series.push({
+                                                    name: "MA60",
+                                                    type: "line",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: d.ma60 ?? null,
+                                                    })),
+                                                });
+                                                colors.push("#06b6d4");
+                                                strokeWidths.push(1.5);
+                                            }
+                                            if (showMA120) {
+                                                series.push({
+                                                    name: "MA120",
+                                                    type: "line",
+                                                    data: filteredChartData.map((d: any) => ({
+                                                        x: new Date(d.date).getTime(),
+                                                        y: d.ma120 ?? null,
+                                                    })),
+                                                });
+                                                colors.push("#ec4899");
+                                                strokeWidths.push(1.5);
+                                            }
+
+                                            const maxVol = Math.max(...filteredChartData.map((d: any) => d.volume || 0), 1);
+
+                                            return (
+                                                <ReactApexChart
+                                                    key={`${chartRange}-${chartType}-${showMA5}-${showMA20}-${showMA60}-${showMA120}-${showVolume}`}
+                                                    options={{
+                                                        chart: {
+                                                            type: "line",
+                                                            background: "transparent",
+                                                            toolbar: { show: false },
+                                                            animations: { enabled: false },
+                                                        },
+                                                        stroke: {
+                                                            width: strokeWidths,
+                                                            curve: "smooth" as const,
+                                                        },
+                                                        fill: {
+                                                            type: series.map(s => s.type === "area" ? "gradient" : "solid"),
+                                                            gradient: {
+                                                                shade: "dark",
+                                                                type: "vertical",
+                                                                opacityFrom: 0.45,
+                                                                opacityTo: 0.02,
+                                                                stops: [0, 90, 100],
+                                                            },
+                                                        },
+                                                        colors: colors,
+                                                        plotOptions: {
+                                                            candlestick: {
+                                                                colors: { upward: "#ef4444", downward: "#3b82f6" },
+                                                                wick: { useFillColor: true },
+                                                            },
+                                                            bar: {
+                                                                columnWidth: "70%",
+                                                                borderRadius: 2,
+                                                            },
+                                                        },
+                                                        xaxis: {
+                                                            type: "datetime",
+                                                            labels: {
+                                                                datetimeUTC: false,
+                                                                style: { colors: "#9ca3af", fontSize: "11px", fontWeight: "600" },
+                                                                datetimeFormatter: { year: "yyyy년", month: "yy.MM", day: "MM.dd" },
+                                                            },
+                                                            axisBorder: { show: false },
+                                                            axisTicks: { show: false },
+                                                        },
+                                                        yaxis: showVolume
+                                                            ? [
+                                                                  {
+                                                                      seriesName: "거래량",
+                                                                      show: false,
+                                                                      max: maxVol * 4.2, // 거래량을 차트 하단 25%에 배치
+                                                                  },
+                                                                  {
+                                                                      seriesName: chartType === "candlestick" ? "시세" : "종가",
+                                                                      labels: {
+                                                                          style: { colors: "#9ca3af", fontSize: "11px", fontWeight: "600" },
+                                                                          formatter: (v: number) => isUs ? `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`,
+                                                                      },
+                                                                  },
+                                                              ]
+                                                            : [
+                                                                  {
+                                                                      labels: {
+                                                                          style: { colors: "#9ca3af", fontSize: "11px", fontWeight: "600" },
+                                                                          formatter: (v: number) => isUs ? `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`,
+                                                                      },
+                                                                  },
+                                                              ],
+                                                        tooltip: {
+                                                            shared: true,
+                                                            x: { format: "yyyy년 MM월 dd일" },
+                                                            custom: function ({ dataPointIndex }: any) {
+                                                                const item = filteredChartData[dataPointIndex];
+                                                                if (!item) return "";
+                                                                const [yyyy, mm, dd] = item.date.split("-");
+                                                                const fmt = (v: number | null) => v == null ? "-" : isUs ? `$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`;
+                                                                return `<div class="bg-zinc-950/95 border border-white/10 p-3.5 rounded-2xl shadow-2xl text-white text-[11px] min-w-[210px] backdrop-blur-xl">
+                                                                    <div class="text-gray-400 font-black border-b border-white/10 pb-2 mb-2 flex items-center justify-between">
+                                                                        <span>📅 ${yyyy}. ${mm}. ${dd}.</span>
+                                                                        <span class="text-indigo-400 font-mono">${etfData.symbol}</span>
+                                                                    </div>
+                                                                    <div class="flex justify-between mb-1"><span class="text-gray-400">시가</span><span class="font-mono text-gray-200">${fmt(item.open)}</span></div>
+                                                                    <div class="flex justify-between mb-1"><span class="text-gray-400">고가</span><span class="font-mono text-rose-400 font-bold">${fmt(item.high)}</span></div>
+                                                                    <div class="flex justify-between mb-1"><span class="text-gray-400">저가</span><span class="font-mono text-blue-400 font-bold">${fmt(item.low)}</span></div>
+                                                                    <div class="flex justify-between font-black border-b border-white/10 pb-2 mb-2"><span>종가</span><span class="font-mono text-white text-xs">${fmt(item.close)}</span></div>
+                                                                    <div class="flex justify-between text-gray-300 mb-1"><span class="text-gray-400">거래량</span><span class="font-mono text-amber-300 font-bold">${item.volume?.toLocaleString()}주</span></div>
+                                                                    ${item.ma5 != null ? `<div class="flex justify-between text-emerald-400"><span class="text-gray-400">MA5</span><span class="font-mono">${fmt(item.ma5)}</span></div>` : ''}
+                                                                    ${item.ma20 != null ? `<div class="flex justify-between text-amber-400"><span class="text-gray-400">MA20</span><span class="font-mono">${fmt(item.ma20)}</span></div>` : ''}
+                                                                    ${item.ma60 != null ? `<div class="flex justify-between text-cyan-400"><span class="text-gray-400">MA60</span><span class="font-mono">${fmt(item.ma60)}</span></div>` : ''}
+                                                                    ${item.ma120 != null ? `<div class="flex justify-between text-fuchsia-400"><span class="text-gray-400">MA120</span><span class="font-mono">${fmt(item.ma120)}</span></div>` : ''}
+                                                                </div>`;
+                                                            },
+                                                        },
+                                                        grid: {
+                                                            borderColor: "#27272a",
+                                                            strokeDashArray: 4,
+                                                        },
+                                                        theme: { mode: "dark" as const },
+                                                        legend: { show: false },
+                                                    }}
+                                                    series={series}
+                                                    type="line"
+                                                    height="100%"
+                                                />
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
