@@ -226,62 +226,89 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                 {data && (
                     <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-6">
 
-                        {/* 1. Commodity Navigator (Planets) */}
+                        {/* 1. Commodity Navigator (Macro & Raw Material Exposure Cards) */}
                         {data.commodities && data.commodities.length > 0 && (
-                            <div className="flex flex-wrap justify-center gap-8 py-6">
-                                {data.commodities.map((comm: any, idx: number) => (
-                                    <div key={idx} className={`relative group cursor-pointer flex flex-col items-center`}>
-                                        <div className={`w-28 h-28 sm:w-36 sm:h-36 rounded-full border-4 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md shadow-[0_0_40px_rgba(0,0,0,0.5)] transition-transform transform group-hover:scale-110 ${comm.type === 'Benefit' ? 'border-green-500 shadow-green-500/30' : 'border-red-500 shadow-red-500/30'
-                                            }`}>
-                                            <div className="text-2xl mb-1">
-                                                {comm.type === 'Benefit' ? '📈' : '⚠️'}
-                                            </div>
-                                            <span className={`text-xs font-bold mb-1 ${comm.type === 'Benefit' ? 'text-green-400' : 'text-red-400'}`}>
-                                                {comm.type === 'Benefit' ? '수혜 (Benefit)' : '리스크 (Risk)'}
-                                            </span>
-                                            <span className="font-bold text-lg text-white text-center leading-tight px-4 break-keep">
-                                                {comm.name}
-                                            </span>
-                                            <div className="mt-2 text-sm font-mono bg-black/40 px-2 py-0.5 rounded">
-                                                <span className={comm.change_value > 0 ? "text-red-400" : "text-blue-400"}>
-                                                    {comm.change_display}
-                                                </span>
-                                            </div>
-                                        </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 px-1">
+                                    <span className="text-sm font-black text-gray-400 uppercase tracking-wider">
+                                        🌐 핵심 원자재 및 거시 리스크 (Macro Exposure)
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {data.commodities.map((comm: any, idx: number) => {
+                                        const isBenefit = comm.type === 'Benefit';
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`p-4 rounded-2xl border backdrop-blur-md transition-all hover:scale-[1.01] shadow-lg flex flex-col justify-between gap-3 ${
+                                                    isBenefit
+                                                        ? 'bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-500/50'
+                                                        : 'bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50'
+                                                }`}
+                                            >
+                                                {/* Card Header: Icon, Type Badge, Name, Price */}
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xl">{isBenefit ? '📈' : '⚠️'}</span>
+                                                        <div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${
+                                                                    isBenefit
+                                                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                                                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                                                }`}>
+                                                                    {isBenefit ? '수혜 원자재' : '리스크 원자재'}
+                                                                </span>
+                                                            </div>
+                                                            <h4 className="text-base font-black text-white mt-1">
+                                                                {comm.name}
+                                                            </h4>
+                                                        </div>
+                                                    </div>
 
-                                        {/* Reason Bubble (Always visible or heavily accented) */}
-                                        <div className={`mt-3 px-4 py-2 rounded-xl text-sm font-bold text-center border break-keep max-w-[180px] shadow-lg ${comm.type === 'Benefit'
-                                            ? 'bg-green-900/40 border-green-500/30 text-green-100'
-                                            : 'bg-red-900/40 border-red-500/30 text-red-100'
-                                            }`}>
-                                            {comm.reason}
-                                            {comm.sensitivity && (
-                                                <div className="mt-1.5 pt-1.5 border-t border-white/20 text-[11px] font-normal text-white/80 leading-tight">
-                                                    <span className="font-bold text-yellow-300">민감도:</span> {comm.sensitivity}
+                                                    {/* Price & Change */}
+                                                    {comm.change_display && (
+                                                        <div className="text-right">
+                                                            <span className={`text-xs font-mono font-black px-2 py-1 rounded-lg bg-black/40 border border-white/10 ${
+                                                                comm.change_value > 0 ? "text-rose-400" : "text-blue-400"
+                                                            }`}>
+                                                                {comm.change_display}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        {/* Connecting Line (Visual Only) */}
-                                        <div className={`absolute left-1/2 bottom-16 w-0.5 h-10 translate-y-full -translate-x-1/2 -z-10 bg-gradient-to-b ${comm.type === 'Benefit' ? 'from-green-500 to-transparent' : 'from-red-500 to-transparent'
-                                            }`} />
-                                    </div>
-                                ))}
+                                                {/* Impact Reason */}
+                                                <div className="bg-black/30 rounded-xl p-2.5 border border-white/5 text-xs text-gray-200 leading-relaxed font-medium">
+                                                    {comm.reason}
+                                                </div>
+
+                                                {/* Sensitivity Info */}
+                                                {comm.sensitivity && (
+                                                    <div className="flex items-center gap-1.5 text-[11px] text-gray-400 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
+                                                        <span className="font-bold text-yellow-400 shrink-0">민감도:</span>
+                                                        <span className="truncate">{comm.sensitivity}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
-                        {/* Explanation */}
-                        <div className="p-6 rounded-2xl bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border border-cyan-500/20 backdrop-blur-md shadow-lg">
-                            <h3 className="text-cyan-300 font-bold mb-3 flex items-center gap-2">
-                                <span className="text-xl">📊</span> Supply Chain Insight
+                        {/* 2. Supply Chain Insight (Executive Briefing) */}
+                        <div className="p-5 md:p-6 rounded-2xl bg-gradient-to-r from-blue-950/30 via-zinc-900/60 to-slate-900/40 border border-blue-500/20 backdrop-blur-md shadow-lg">
+                            <h3 className="text-blue-300 font-bold mb-3 flex items-center gap-2 text-sm md:text-base">
+                                <span className="text-lg">💡</span> 핵심 공급망 인사이트 (Supply Chain Insight)
                             </h3>
-                            <ul className="space-y-2 text-cyan-100/90 text-sm leading-relaxed">
+                            <ul className="space-y-2 text-gray-200 text-xs md:text-sm leading-relaxed">
                                 {String(data.summary || "").split('\n').map((line: string, i: number) => {
                                     const cleanLine = line.replace(/^[\-\*•\d\.]+\s*/, '').trim();
                                     if (!cleanLine) return null;
                                     return (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
+                                        <li key={i} className="flex items-start gap-2.5">
+                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
                                             <span>{cleanLine}</span>
                                         </li>
                                     );
@@ -289,258 +316,285 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                             </ul>
                         </div>
 
-                        {/* Visualization Canvas */}
-                        <div className="relative min-h-[600px] rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden p-4 sm:p-6 md:p-10 flex flex-col lg:flex-row justify-between items-center lg:items-stretch gap-8">
-
-                            {/* Decorative Lines */}
-                            <svg className="hidden lg:block absolute inset-0 pointer-events-none opacity-30 z-0">
-                                <defs>
-                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                        <polygon points="0 0, 10 3.5, 0 7" fill="#fff" />
-                                    </marker>
-                                </defs>
-                                {/* Dynamic Links would be hard to SVG strictly here without coordinates. 
-                                    So we use the list rendering below for lines logic conceptually or keep simple BG lines. 
-                                    For MVP, we stick to the column layout but enhance the list items visually. 
-                                */}
-                            </svg>
+                        {/* 3. Visualization Canvas: 3-Column Value Chain Map */}
+                        <div className="rounded-3xl border border-white/10 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 md:p-8 flex flex-col lg:flex-row justify-between items-stretch gap-6 shadow-2xl">
 
                             {/* Left: Suppliers */}
-                            <div className="z-10 w-full lg:w-1/3 flex flex-col justify-center">
-                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-green-500/30 bg-green-500/5 backdrop-blur-sm">
-                                    <h3 className="text-green-400 font-bold mb-4 flex items-center gap-2">공급사 (Suppliers) <ArrowRight className="w-4 h-4" /></h3>
-                                    <div className="space-y-6">
-                                        {(data.nodes || []).filter((n: any) => n.group === 'supplier').map((node: any) => {
-                                            const link = (data.links || []).find((l: any) => l.source === node.id);
-                                            const isArtery = link?.width_type === 'artery';
-                                            return (
-                                                <div key={node.id} className="relative group">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] ${isArtery ? 'w-4 h-4 ring-2 ring-green-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
-                                                        <div className="flex-1">
-                                                            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2">
-                                                                <span 
-                                                                    onClick={() => handleNodeClick(node)}
-                                                                    className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer hover:underline decoration-green-500/50 underline-offset-4 text-sm md:text-base"
-                                                                >
+                            <div className="w-full lg:w-[32%] flex flex-col">
+                                <div className="h-full p-4 md:p-5 rounded-2xl border border-emerald-500/20 bg-emerald-950/10 backdrop-blur-sm flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center justify-between gap-2 pb-3 mb-4 border-b border-emerald-500/20">
+                                            <h3 className="text-emerald-400 font-black text-sm md:text-base flex items-center gap-2">
+                                                <span>🏢 주요 공급사 (Suppliers)</span>
+                                            </h3>
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {(data.nodes || []).filter((n: any) => n.group === 'supplier').map((node: any) => {
+                                                const link = (data.links || []).find((l: any) => l.source === node.id);
+                                                const isArtery = link?.width_type === 'artery';
+                                                return (
+                                                    <div 
+                                                        key={node.id} 
+                                                        onClick={() => handleNodeClick(node)}
+                                                        className="p-3.5 rounded-xl bg-zinc-900/80 border border-white/10 hover:border-emerald-500/50 transition-all cursor-pointer group shadow-sm hover:shadow-emerald-500/10 hover:scale-[1.01]"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors truncate">
                                                                     {node.label}
-                                                                </span>
-                                                                {/* Price Badge */}
-                                                                {node.price_display && (
-                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-500 whitespace-nowrap ml-2 shadow-sm text-white">
-                                                                        <span>{node.price_display}</span>
-                                                                        <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
-                                                                            {node.change_display}
+                                                                </h4>
+                                                                <div className="flex items-center gap-1.5 mt-1">
+                                                                    <span className="text-[10px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded font-bold border border-emerald-500/20">
+                                                                        {link?.value || "공급"}
+                                                                    </span>
+                                                                    {isArtery && (
+                                                                        <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">
+                                                                            핵심의존 High
                                                                         </span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            {/* Relation Label & Weight */}
-                                                            <div className={`text-xs mt-1 flex items-center gap-1 ${isArtery ? 'text-green-300 font-bold' : 'text-gray-500'}`}>
-                                                                <span>{link?.value}</span>
-                                                                {isArtery && <span className="text-[10px] bg-green-900/50 px-1 rounded">High Dep.</span>}
-                                                            </div>
-                                                            {/* [NEW] Themes */}
-                                                            {node.themes && (
-                                                                <div className="flex flex-wrap gap-1 mt-2">
-                                                                    {node.themes.map((t: string, i: number) => (
-                                                                        <span key={i} className="text-[9px] bg-green-500/10 text-green-400/80 px-1.5 py-0.5 rounded-full border border-green-500/20">
-                                                                            {t}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            {/* Event Flag (Inline) */}
-                                                            {node.event && (
-                                                                <div className="mt-3 inline-flex flex-col w-fit max-w-[220px] bg-red-900/40 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/50 shadow-sm">
-                                                                    <div className="flex items-center gap-1.5 font-bold text-red-400">
-                                                                        <span className="text-xs">🚩</span>
-                                                                        <span>{node.event.d_day}</span>
-                                                                    </div>
-                                                                    <div className="mt-1 font-semibold leading-snug">{node.event.name}</div>
-                                                                    {node.event.date && node.event.date !== 'Unknown' && (
-                                                                        <div className="text-[9px] text-red-300 mt-1 border-t border-red-500/30 pt-1">
-                                                                            {node.event.date}
-                                                                        </div>
                                                                     )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
+                                                            </div>
 
-                            {/* Center: Target Stock */}
-                            <div className="z-20 w-full lg:flex-1 flex items-center justify-center py-12 lg:py-4 order-first lg:order-none">
-                                <div className="relative mt-4 mb-4">
-                                    {/* Target Node */}
-                                    <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex flex-col items-center justify-center shadow-[0_0_80px_rgba(6,182,212,0.6)] border-4 border-white transform hover:scale-105 transition-transform duration-500 cursor-pointer group z-10 relative">
-                                        {/* Animated Polish effect moved inside a sub-div to keep border/shape if needed, but removed overflow-hidden from parent to show flag */}
-                                        <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-                                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                        </div>
-                                        
-                                        <span 
-                                            onClick={() => handleNodeClick((data.nodes || []).find((n: any) => n.group === 'target'))}
-                                            className="text-lg md:text-2xl font-black text-white text-center px-6 break-keep leading-tight drop-shadow-lg group-hover:underline decoration-white/30 underline-offset-8 transition-all relative z-10"
-                                        >
-                                            {(data.nodes || []).find((n: any) => n.group === 'target')?.label || data.symbol || "Target"}
-                                        </span>
-                                        
-                                        {/* [NEW] Target Themes */}
-                                        {(data.nodes || []).find((n: any) => n.group === 'target')?.themes && (
-                                            <div className="flex flex-wrap justify-center gap-1 mt-3 px-4 relative z-10">
-                                                {(data.nodes || []).find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
-                                                    <span key={i} className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-md border border-white/30 font-bold">
-                                                        {t}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {/* Price */}
-                                        {(data.nodes || []).find((n: any) => n.group === 'target')?.price_display && (
-                                            <div className="mt-2 bg-white/10 px-4 py-1.5 rounded-full text-base md:text-lg font-bold font-mono border border-white/20 backdrop-blur-md relative z-10 shadow-md">
-                                                <span className="text-white mr-2">{(data.nodes || []).find((n: any) => n.group === 'target')?.price_display}</span>
-                                                <span className={(data.nodes || []).find((n: any) => n.group === 'target')?.change_value > 0 ? "text-red-300 drop-shadow-sm" : "text-blue-300 drop-shadow-sm"}>
-                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.change_display || ""}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Event Flag (Target) - MOVED OUTSIDE to avoid clipping */}
-                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.event && (
-                                        <div className="absolute -top-14 right-0 sm:-right-8 md:-top-16 md:-right-12 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl animate-bounce shadow-[0_0_20px_rgba(220,38,38,0.5)] border-2 border-white/30 z-[30] w-max max-w-[220px] text-center break-keep">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <span className="text-sm">🚩</span>
-                                                <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.d_day}</span>
-                                            </div>
-                                            <div className="text-[10px] font-extrabold mt-0.5">{(data.nodes || []).find((n: any) => n.group === 'target')?.event.name}</div>
-                                            {(data.nodes || []).find((n: any) => n.group === 'target')?.event.date && (data.nodes || []).find((n: any) => n.group === 'target')?.event.date !== 'Unknown' && (
-                                                <div className="text-[9px] text-red-100 mt-1 border-t border-white/20 pt-1">
-                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.event.date}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 -m-10 border border-white/5 rounded-full animate-[spin_10s_linear_infinite]" />
-                                    <div className="absolute inset-0 -m-20 border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-                                </div>
-                            </div>
-
-                            {/* Right: Customers & Competitors */}
-                            <div className="z-10 w-full lg:w-1/3 flex flex-col justify-between gap-6">
-                                {/* Competitors */}
-                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 backdrop-blur-sm">
-                                    <h3 className="text-red-400 font-bold mb-4 flex items-center justify-between gap-2"><span>경쟁사 (Rivals)</span> <div className="w-2 h-2 rounded-full bg-red-500"></div></h3>
-                                    <div className="space-y-6">
-                                        {(data.nodes || []).filter((n: any) => n.group === 'competitor').map((node: any) => (
-                                            <div key={node.id} className="relative group">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex-1">
-                                                        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2">
-                                                            <span 
-                                                                onClick={() => handleNodeClick(node)}
-                                                                className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-red-500/50 underline-offset-4"
-                                                            >
-                                                                {node.label}
-                                                            </span>
                                                             {/* Price Badge */}
                                                             {node.price_display && (
-                                                                <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-500 whitespace-nowrap ml-2 shadow-sm text-white">
-                                                                    <span>{node.price_display}</span>
-                                                                    <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
+                                                                <div className="text-right shrink-0">
+                                                                    <div className="text-xs font-mono font-bold text-gray-200">
+                                                                        {node.price_display}
+                                                                    </div>
+                                                                    <span className={`text-[11px] font-mono font-bold ${
+                                                                        node.change_value > 0 ? "text-rose-400" : "text-blue-400"
+                                                                    }`}>
                                                                         {node.change_display}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                                            {node.market_share && <span className="bg-white/10 px-1.5 rounded text-white">{node.market_share}</span>}
-                                                            <span>{(data.links || []).find((l: any) => l.target === node.id)?.value || "Compete"}</span>
-                                                        </div>
+
                                                         {/* Themes */}
                                                         {node.themes && (
-                                                            <div className="flex flex-wrap justify-start gap-1 mt-2">
+                                                            <div className="flex flex-wrap gap-1 mt-2.5">
                                                                 {node.themes.map((t: string, i: number) => (
-                                                                    <span key={i} className="text-[9px] bg-red-500/10 text-red-400/80 px-1.5 py-0.5 rounded-full border border-red-500/20">
-                                                                        {t}
+                                                                    <span key={i} className="text-[9px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md border border-white/5">
+                                                                        #{t}
                                                                     </span>
                                                                 ))}
                                                             </div>
                                                         )}
+
+                                                        {/* Event Chip */}
+                                                        {node.event && (
+                                                            <div className="mt-2.5 p-2 rounded-lg bg-rose-950/30 border border-rose-500/30 flex items-start gap-1.5 text-[10px] text-rose-200">
+                                                                <span className="font-black text-rose-400 shrink-0">🚩 {node.event.d_day}</span>
+                                                                <span className="truncate">{node.event.name}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className={`mt-1.5 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] flex-shrink-0 ${node.sentiment === 'Negative' ? 'animate-pulse bg-orange-500 ring-orange-500 shadow-orange-500' : ''}`}></div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Center: Target Stock Hub */}
+                            <div className="w-full lg:w-[36%] flex flex-col items-center justify-center py-4 lg:py-0 order-first lg:order-none">
+                                <div className="w-full max-w-sm flex flex-col items-center">
+                                    
+                                    {/* D-Day Target Event Banner (Centered above Core) */}
+                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.event && (
+                                        <div className="mb-4 w-full bg-gradient-to-r from-rose-600 to-red-600 text-white text-xs font-bold px-4 py-2 rounded-2xl shadow-[0_0_20px_rgba(225,29,72,0.4)] border border-rose-400/40 text-center animate-pulse">
+                                            <div className="flex items-center justify-center gap-1.5 font-black">
+                                                <span>🚩</span>
+                                                <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.d_day}</span>
+                                                <span className="text-white/80">|</span>
+                                                <span>{(data.nodes || []).find((n: any) => n.group === 'target')?.event.name}</span>
+                                            </div>
+                                            {(data.nodes || []).find((n: any) => n.group === 'target')?.event.date && (
+                                                <div className="text-[10px] text-rose-200 mt-0.5">
+                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.event.date}
                                                 </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Target Central Hub Node */}
+                                    <div 
+                                        onClick={() => handleNodeClick((data.nodes || []).find((n: any) => n.group === 'target'))}
+                                        className="w-56 h-56 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 flex flex-col items-center justify-center shadow-[0_0_60px_rgba(6,182,212,0.4)] border-4 border-cyan-400/80 p-6 text-center cursor-pointer group hover:scale-105 transition-all duration-300 relative"
+                                    >
+                                        <span className="text-xs font-black text-cyan-200 uppercase tracking-widest mb-1">
+                                            분석 핵심 기업
+                                        </span>
+                                        
+                                        <h2 className="text-lg md:text-xl font-black text-white leading-tight break-keep group-hover:underline underline-offset-4 decoration-cyan-300">
+                                            {(data.nodes || []).find((n: any) => n.group === 'target')?.label || data.symbol || "Target"}
+                                        </h2>
+                                        
+                                        {/* Themes */}
+                                        {(data.nodes || []).find((n: any) => n.group === 'target')?.themes && (
+                                            <div className="flex flex-wrap justify-center gap-1 my-2">
+                                                {(data.nodes || []).find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
+                                                    <span key={i} className="text-[9px] bg-black/30 text-cyan-100 px-2 py-0.5 rounded-full border border-white/20 font-bold">
+                                                        #{t}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Price */}
+                                        {(data.nodes || []).find((n: any) => n.group === 'target')?.price_display && (
+                                            <div className="mt-1 bg-black/40 px-3.5 py-1.5 rounded-xl border border-white/20 backdrop-blur-md">
+                                                <span className="text-sm font-bold font-mono text-white mr-1.5">
+                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.price_display}
+                                                </span>
+                                                <span className={`text-xs font-bold font-mono ${
+                                                    (data.nodes || []).find((n: any) => n.group === 'target')?.change_value > 0 
+                                                        ? "text-rose-300" 
+                                                        : "text-blue-300"
+                                                }`}>
+                                                    {(data.nodes || []).find((n: any) => n.group === 'target')?.change_display || ""}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Competitors & Clients */}
+                            <div className="w-full lg:w-[32%] flex flex-col gap-4">
+                                
+                                {/* 1. Competitors (Rivals) */}
+                                <div className="p-4 md:p-5 rounded-2xl border border-rose-500/20 bg-rose-950/10 backdrop-blur-sm">
+                                    <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-rose-500/20">
+                                        <h3 className="text-rose-400 font-black text-sm md:text-base flex items-center gap-2">
+                                            <span>⚔️ 주요 경쟁사 (Rivals)</span>
+                                        </h3>
+                                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]" />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {(data.nodes || []).filter((n: any) => n.group === 'competitor').map((node: any) => (
+                                            <div 
+                                                key={node.id}
+                                                onClick={() => handleNodeClick(node)}
+                                                className="p-3.5 rounded-xl bg-zinc-900/80 border border-white/10 hover:border-rose-500/50 transition-all cursor-pointer group shadow-sm hover:shadow-rose-500/10 hover:scale-[1.01]"
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-sm font-bold text-white group-hover:text-rose-300 transition-colors truncate">
+                                                            {node.label}
+                                                        </h4>
+                                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-gray-400">
+                                                            {node.market_share && (
+                                                                <span className="bg-rose-500/20 text-rose-300 font-bold px-1.5 py-0.5 rounded border border-rose-500/30">
+                                                                    점유율 {node.market_share}
+                                                                </span>
+                                                            )}
+                                                            <span>경쟁 관계</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Price Badge */}
+                                                    {node.price_display && (
+                                                        <div className="text-right shrink-0">
+                                                            <div className="text-xs font-mono font-bold text-gray-200">
+                                                                {node.price_display}
+                                                            </div>
+                                                            <span className={`text-[11px] font-mono font-bold ${
+                                                                node.change_value > 0 ? "text-rose-400" : "text-blue-400"
+                                                            }`}>
+                                                                {node.change_display}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Themes */}
+                                                {node.themes && (
+                                                    <div className="flex flex-wrap gap-1 mt-2.5">
+                                                        {node.themes.map((t: string, i: number) => (
+                                                            <span key={i} className="text-[9px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md border border-white/5">
+                                                                #{t}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Customers */}
-                                <div className="p-4 md:p-6 rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 backdrop-blur-sm">
-                                    <h3 className="text-blue-400 font-bold mb-4 flex items-center justify-between gap-2"><span>고객사 (Clients)</span> <ArrowRight className="w-4 h-4 text-blue-400" /></h3>
-                                    <div className="space-y-6">
+                                {/* 2. Customers (Clients) */}
+                                <div className="p-4 md:p-5 rounded-2xl border border-blue-500/20 bg-blue-950/10 backdrop-blur-sm">
+                                    <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-blue-500/20">
+                                        <h3 className="text-blue-400 font-black text-sm md:text-base flex items-center gap-2">
+                                            <span>🤝 주요 고객사 (Clients)</span>
+                                        </h3>
+                                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_#60a5fa]" />
+                                    </div>
+
+                                    <div className="space-y-3">
                                         {(data.nodes || []).filter((n: any) => n.group === 'customer').map((node: any) => {
                                             const link = (data.links || []).find((l: any) => l.target === node.id);
                                             const isArtery = link?.width_type === 'artery';
                                             return (
-                                                <div key={node.id} className="relative group">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="flex-1">
-                                                            <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1 sm:gap-2">
-                                                                <span 
-                                                                    onClick={() => handleNodeClick(node)}
-                                                                    className="text-gray-200 group-hover:text-white font-bold transition-colors cursor-pointer text-sm md:text-base hover:underline decoration-blue-500/50 underline-offset-4"
-                                                                >
-                                                                    {node.label}
+                                                <div 
+                                                    key={node.id}
+                                                    onClick={() => handleNodeClick(node)}
+                                                    className="p-3.5 rounded-xl bg-zinc-900/80 border border-white/10 hover:border-blue-500/50 transition-all cursor-pointer group shadow-sm hover:shadow-blue-500/10 hover:scale-[1.01]"
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors truncate">
+                                                                {node.label}
+                                                            </h4>
+                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                <span className="text-[10px] bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded font-bold border border-blue-500/20">
+                                                                    {link?.value || "매출처"}
                                                                 </span>
-                                                                {/* Price Badge */}
-                                                                {node.price_display && (
-                                                                    <div className="flex items-center gap-1.5 text-xs md:text-sm font-bold font-mono bg-slate-700/80 px-2.5 py-1 rounded-md border border-slate-500 whitespace-nowrap ml-2 shadow-sm text-white">
-                                                                        <span>{node.price_display}</span>
-                                                                        <span className={node.change_value > 0 ? "text-red-400" : "text-blue-400"}>
-                                                                            {node.change_display}
-                                                                        </span>
-                                                                    </div>
+                                                                {isArtery && (
+                                                                    <span className="text-[10px] bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded font-bold border border-blue-500/30">
+                                                                        주요 계약 Major
+                                                                    </span>
                                                                 )}
                                                             </div>
-                                                            <div className={`text-xs mt-1 flex items-center gap-1 ${isArtery ? 'text-blue-300 font-bold' : 'text-gray-500'}`}>
-                                                                {isArtery && <span className="text-[10px] bg-blue-900/50 px-1 rounded">Major Deal</span>}
-                                                                <span>{link?.value || "Sales"}</span>
-                                                            </div>
-                                                            {/* Themes */}
-                                                            {node.themes && (
-                                                                <div className="flex flex-wrap justify-start gap-1 mt-2">
-                                                                    {node.themes.map((t: string, i: number) => (
-                                                                        <span key={i} className="text-[9px] bg-blue-500/10 text-blue-400/80 px-1.5 py-0.5 rounded-full border border-blue-500/20">
-                                                                            {t}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            {/* Event Flag (Inline) */}
-                                                            {node.event && (
-                                                                <div className="mt-3 inline-flex flex-col w-fit max-w-[220px] bg-red-900/40 text-red-100 text-[10px] px-3 py-2 rounded-lg border border-red-500/50 shadow-sm">
-                                                                    <div className="flex items-center gap-1.5 font-bold text-red-400">
-                                                                        <span className="text-xs">🚩</span>
-                                                                        <span>{node.event.d_day}</span>
-                                                                    </div>
-                                                                    <div className="mt-1 font-semibold leading-snug">{node.event.name}</div>
-                                                                    {node.event.date && node.event.date !== 'Unknown' && (
-                                                                        <div className="text-[9px] text-red-300 mt-1 border-t border-red-500/30 pt-1">
-                                                                            {node.event.date}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                        <div className={`mt-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] flex-shrink-0 ${isArtery ? 'w-4 h-4 ring-2 ring-blue-300' : 'w-2 h-2'} ${node.sentiment === 'Negative' ? 'animate-pulse bg-red-500 ring-red-500 shadow-red-500' : ''}`}></div>
+
+                                                        {/* Price Badge */}
+                                                        {node.price_display && (
+                                                            <div className="text-right shrink-0">
+                                                                <div className="text-xs font-mono font-bold text-gray-200">
+                                                                    {node.price_display}
+                                                                </div>
+                                                                <span className={`text-[11px] font-mono font-bold ${
+                                                                    node.change_value > 0 ? "text-rose-400" : "text-blue-400"
+                                                                }`}>
+                                                                    {node.change_display}
+                                                                </span>
+                                                            </div>
+                                                        )}
                                                     </div>
+
+                                                    {/* Themes */}
+                                                    {node.themes && (
+                                                        <div className="flex flex-wrap gap-1 mt-2.5">
+                                                            {node.themes.map((t: string, i: number) => (
+                                                                <span key={i} className="text-[9px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md border border-white/5">
+                                                                    #{t}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Event Chip */}
+                                                    {node.event && (
+                                                        <div className="mt-2.5 p-2 rounded-lg bg-rose-950/30 border border-rose-500/30 flex items-start gap-1.5 text-[10px] text-rose-200">
+                                                            <span className="font-black text-rose-400 shrink-0">🚩 {node.event.d_day}</span>
+                                                            <span className="truncate">{node.event.name}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
