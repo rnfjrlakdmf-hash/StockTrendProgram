@@ -848,7 +848,7 @@ function DiscoveryContent() {
 
     return (
         <div className="min-h-screen pb-10 text-white notranslate" translate="no">
-            <Header title="종목 발굴 & 데이터 분석" subtitle="AI가 분석하는 종목의 핵심 데이터 현황" />
+            <Header title="종목 발굴 & 데이터 분석" subtitle="실시간 기업 재무 및 핵심 수급 데이터 현황" />
 
             <div className="p-6 space-y-8">
                 {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
@@ -867,13 +867,13 @@ function DiscoveryContent() {
                             <div className="relative z-20 max-w-3xl">
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black mb-2.5">
                                     <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                                    <span>AI 정밀 기업 데이터 분석</span>
+                                    <span>정밀 기업 데이터 분석</span>
                                 </div>
                                 <h2 className="text-xl sm:text-2xl md:text-3xl font-black mb-1.5 text-white tracking-tight drop-shadow-md">
-                                    종목 데이터 분석 (AI Analysis)
+                                    종목 데이터 종합 분석
                                 </h2>
                                 <p className="text-gray-300 mb-4 text-xs sm:text-sm leading-relaxed">
-                                    종목명 또는 티커(코드)를 입력하여 기업의 실시간 재무 건전성, 수급 현황, AI 진단 점수를 한눈에 확인하세요.
+                                    종목명 또는 티커(코드)를 입력하여 기업의 실시간 재무 건전성, 수급 현황, 종합 퀀트 지표를 한눈에 확인하세요.
                                 </p>
 
                                 <div className="flex gap-2">
