@@ -18,44 +18,44 @@ const navigationGroups = [
         items: [
             { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다." },
             { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다." },
-            { name: "테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 하루 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다." },
+            { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다." },
         ]
     },
     {
-        groupName: "프리미엄 & 인사이트",
+        groupName: "프리미엄 & 리포트",
         items: [
-            { name: "💎 VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다. (출석 코인 소모)" },
+            { name: "VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다." },
             { name: "주말 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "주말에 발행되는 프리미엄 마켓 요약 리포트입니다." },
             { name: "주말 고래 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "세력과 외국인이 매집한 TOP 10 종목을 파헤치는 주말 프리미엄 리포트입니다." },
             { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다." },
-            { name: "🔥 핫이슈 종목", href: "/post", icon: Flame, desc: "매일매일 실시간으로 쏟아지는 구글 검색 트렌드 기반 급등주 및 테마주 핫이슈 리포트입니다." },
+            { name: "실시간 핫이슈 종목", href: "/post", icon: Flame, desc: "실시간으로 쏟아지는 구글 검색 트렌드 기반 급등주 및 테마주 핫이슈 리포트입니다." },
         ]
     },
     {
-        groupName: "발굴 & 분석",
+        groupName: "종목 발굴 & 분석",
         items: [
-            { name: "AI 퀀트 종목 발굴", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다." },
-            { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사가 돈은 잘 버는지, 빚은 없는지, 부도 위험은 없는지 재무 구조를 철저히 검사해 줍니다." },
-            { name: "AI 기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스나 캔들 차트 모양을 AI가 자동으로 읽어 지금이 살 타이밍인지 쉽게 알려줍니다." },
-            { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity, desc: "개별 주식 투자가 불안할 때 시장 전체나 유망 산업 분야에 묶음 투자할 수 있는 ETF를 비교합니다." },
-            { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network, desc: "이 회사는 어디서 부품을 사오고 완성품은 어디에 납품하는지, 얽힌 기업 인맥도를 지도로 보여줍니다." },
+            { name: "종목 발굴 & 분석", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다." },
+            { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사의 실적, 부채, 밸류에이션 등 재무 건전성을 체계적으로 검사합니다." },
+            { name: "기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스, 지지선/저항선, 캔들 차트 패턴을 정밀 분석합니다." },
+            { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity, desc: "시장 전체나 유망 산업 분야에 분산 투자할 수 있는 ETF를 비교합니다." },
+            { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network, desc: "기업 간 부품 공급망 및 밸류체인 인맥도를 지도로 보여줍니다." },
         ]
     },
     {
-        groupName: "마이 트레이딩",
+        groupName: "내 투자 & 자산 관리",
         items: [
-            { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 산 주식들의 투자 비중을 분석하여 특정 종목에 몰리지 않고 안전하게 분산되어 있는지 진단합니다." },
-            { name: "스마트 워치리스트", href: "/watchlist", icon: Star, desc: "내가 찜한 종목들의 최신 시세와 관련 공시, 악재/호재 일정을 캘린더 형태로 자동 수집합니다." },
-            { name: "🧮 물타기 생존 계산기", href: "/calculator", icon: Activity, desc: "내 불쌍한 계좌 살려낼 물타기 금액은? 친구들과 공유하며 재미있게 평단가를 계산해보세요!" },
+            { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
+            { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
+            { name: "물타기 평단 계산기", href: "/calculator", icon: Activity, desc: "추가 매수 시 변화하는 평단가와 수익 전환 가격을 빠르고 쉽게 계산합니다." },
         ]
     },
     {
         groupName: "스터디 & 설정",
         items: [
-            { name: "매일 차트 스터디 (이론방)", href: "/theory", icon: BookOpen, desc: "매일매일 새롭게 올라오는 차트 보는 법과 주식 기초 이론을 쉽고 재미있게 공부하세요." },
-            { name: "주식 투자 용어 사전", href: "/guide", icon: HelpCircle, desc: "주식 초보자를 위한 필수 투자 용어, 지표, 분석법 및 기초 이론을 완벽하게 정리한 백과사전입니다." },
-            { name: "종목 디렉토리 (전체 종목)", href: "/directory", icon: List, desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색하고 AI 주가 전망을 실시간으로 확인합니다.", hidden: true },
-            { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings, desc: "증권사 계좌 연동을 위한 보안 키 등록 및 화면 다크모드, 알림 등 시스템 환경을 조율합니다." },
+            { name: "차트 스터디 (이론방)", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론을 쉽고 체계적으로 학습합니다." },
+            { name: "주식 투자 용어 사전", href: "/guide", icon: HelpCircle, desc: "주식 초보자를 위한 필수 투자 용어 및 기초 지표를 정리한 백과사전입니다." },
+            { name: "종목 디렉토리 (전체 종목)", href: "/directory", icon: List, desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색합니다.", hidden: true },
+            { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings, desc: "증권사 API 연동, 화면 다크모드, 알림 설정 등 시스템 환경을 관리합니다." },
         ]
     }
 ];
@@ -458,9 +458,9 @@ export default function Sidebar() {
                         </div>
 
                         {/* Ultra-sleek Micro Global Clocks Grid */}
-                        <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div className="grid grid-cols-2 gap-1.5 mt-1">
                             {/* KOR Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isKorOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isKorOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇰🇷</span>
                                     <div className="flex flex-col">
@@ -468,16 +468,16 @@ export default function Sidebar() {
                                         <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isKorOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.korTime}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1">
                                     <span className={`text-[8px] font-black tracking-widest ${clocks.isKorOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
                                         {clocks.isKorOpen ? 'OPEN' : 'CLOSE'}
                                     </span>
-                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isKorOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isKorOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
                                 </div>
                             </div>
 
                             {/* USA Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUsaOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isUsaOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇺🇸</span>
                                     <div className="flex flex-col">
@@ -485,16 +485,16 @@ export default function Sidebar() {
                                         <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isUsaOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.usaTime}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1">
                                     <span className={`text-[8px] font-black tracking-widest ${clocks.isUsaOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
                                         {clocks.isUsaOpen ? 'OPEN' : 'CLOSE'}
                                     </span>
-                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
                                 </div>
                             </div>
 
                             {/* JPN Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isJpnOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isJpnOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇯🇵</span>
                                     <div className="flex flex-col">
@@ -502,16 +502,16 @@ export default function Sidebar() {
                                         <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isJpnOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.jpnTime}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1">
                                     <span className={`text-[8px] font-black tracking-widest ${clocks.isJpnOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
                                         {clocks.isJpnOpen ? 'OPEN' : 'CLOSE'}
                                     </span>
-                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isJpnOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isJpnOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
                                 </div>
                             </div>
 
                             {/* UK Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border bg-black/40 ${clocks.isUkOpen ? 'border-emerald-500/50 bg-emerald-900/20' : 'border-white/5'}`}>
+                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isUkOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
                                 <div className="flex items-center gap-1.5 overflow-hidden">
                                     <span className="text-xs">🇬🇧</span>
                                     <div className="flex flex-col">
@@ -519,114 +519,85 @@ export default function Sidebar() {
                                         <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isUkOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.ukTime}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1">
                                     <span className={`text-[8px] font-black tracking-widest ${clocks.isUkOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
                                         {clocks.isUkOpen ? 'OPEN' : 'CLOSE'}
                                     </span>
-                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${clocks.isUkOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_10px_#34d399] ring-2 ring-emerald-400/30' : 'bg-gray-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isUkOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-3 mb-6 relative">
+                    {/* 텔레그램 속보 채널 배너 */}
+                    <div className="px-2 mb-5">
                         <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer">
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0088cc]/30 to-black p-4 shadow-[0_0_30px_rgba(0,136,204,0.3)] hover:shadow-[0_0_40px_rgba(0,136,204,0.6)] transition-all group cursor-pointer border border-[#0088cc]/50 backdrop-blur-md">
-                                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-                                <div className="relative z-10 flex items-start justify-between gap-2">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950/60 to-slate-900/80 p-3.5 border border-blue-500/30 hover:border-blue-400/50 shadow-lg hover:shadow-blue-500/10 transition-all group cursor-pointer">
+                                <div className="flex items-center justify-between gap-2">
                                     <div className="flex flex-col min-w-0">
-                                        <div className="flex items-center gap-1.5 mb-1.5">
-                                            <span className="inline-flex items-center gap-1 bg-black/20 border border-white/10 text-[#e1f5fe] text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap tracking-wider">
-                                                <Zap className="w-3 h-3 text-yellow-400" /> 실시간 속보 채널
+                                        <div className="flex items-center gap-1 mb-1">
+                                            <span className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider border border-blue-500/30">
+                                                <Zap className="w-2.5 h-2.5 text-yellow-400" /> 실시간 속보 채널
                                             </span>
                                         </div>
-                                        <h3 className="text-[13px] md:text-sm font-black text-white leading-tight mb-1">
+                                        <h3 className="text-xs md:text-[13px] font-black text-white leading-tight">
                                             텔레그램 실시간 주식 속보
                                         </h3>
-                                        <p className="text-[10px] md:text-[11px] text-white/80 leading-snug line-clamp-2 pr-2">
-                                            상한가, 외인수급, DART 공시, 미증시 속보를 1초만에 무료로 받으세요!
+                                        <p className="text-[10px] text-gray-400 leading-snug mt-0.5 truncate">
+                                            장중 급등주, 외인수급, DART 공시 무료 알림
                                         </p>
                                     </div>
-                                    <div className="shrink-0 bg-white/10 border border-white/10 p-2 rounded-xl group-hover:bg-white/20 group-hover:scale-110 transition-all shadow-glass mt-1">
-                                        <Send className="w-4 h-4 md:w-5 md:h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                                    <div className="shrink-0 bg-blue-500/15 border border-blue-500/30 p-2 rounded-xl group-hover:bg-blue-500/25 group-hover:scale-105 transition-all text-blue-300">
+                                        <Send className="w-4 h-4" />
                                     </div>
                                 </div>
                             </div>
                         </Link>
                     </div>
 
-                    <nav className="space-y-4">
+                    {/* 깔끔하고 정돈된 카테고리 네비게이션 */}
+                    <nav className="space-y-3 px-1">
                         {navigationGroups.map((group) => {
                             const isOpen = openGroups[group.groupName];
                             return (
-                                <div key={group.groupName} className="flex flex-col gap-1.5">
+                                <div key={group.groupName} className="flex flex-col">
                                     <button
                                         onClick={() => toggleGroup(group.groupName)}
-                                        className="flex items-center justify-between px-3 py-1.5 w-full text-left group hover:bg-white/5 rounded-lg transition-colors"
+                                        className="flex items-center justify-between px-2.5 py-1.5 w-full text-left group hover:bg-white/5 rounded-xl transition-colors mb-0.5"
                                     >
-                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest group-hover:text-cyan-400 transition-colors drop-shadow-sm">
+                                        <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider group-hover:text-blue-400 transition-colors">
                                             {group.groupName}
                                         </span>
                                         {isOpen ? (
-                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
                                         ) : (
-                                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+                                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
                                         )}
                                     </button>
                                     
                                     {isOpen && (
-                                        <div className="space-y-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
+                                        <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200 pl-0.5">
                                             {group.items.filter(item => !(item as any).hidden).map((item) => {
                                                 const isActive = pathname === item.href;
 
                                                 return (
-                                                    <div 
-                                                        key={item.name} 
-                                                        className={`relative group/menu flex flex-col rounded-2xl transition-all duration-300 hover:bg-white/5 hover:translate-x-1 ${isActive ? 'bg-gradient-to-r from-cyan-600/30 to-blue-900/20 shadow-[0_0_20px_rgba(6,182,212,0.3)] border border-cyan-500/50 backdrop-blur-md scale-[1.02] z-10' : 'border border-transparent'}`}
+                                                    <Link
+                                                        key={item.name}
+                                                        href={item.href}
+                                                        onClick={() => {
+                                                            setIsMobileOpen(false);
+                                                        }}
+                                                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] transition-all font-medium ${
+                                                            isActive
+                                                                ? 'bg-blue-600/15 text-blue-300 font-black border border-blue-500/30 shadow-sm'
+                                                                : 'text-gray-400 hover:text-gray-100 hover:bg-white/5 border border-transparent'
+                                                        }`}
                                                     >
-                                                        <div className="flex items-center justify-between pr-2 w-full">
-                                                            <Link
-                                                                href={item.href}
-                                                                onClick={() => {
-                                                                    setIsMobileOpen(false);
-                                                                }}
-                                                                className={`flex-1 flex items-center gap-3 px-4 py-3 text-[13px] transition-all ${isActive ? 'text-cyan-50 font-black tracking-wide drop-shadow-md' : 'text-gray-400 font-bold hover:text-gray-200'}`}
-                                                            >
-                                                                <item.icon className={`h-4 w-4 ${isActive ? 'text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,1)]' : 'text-gray-500 group-hover/menu:text-cyan-400'} transition-all`} />
-                                                                <div className="flex flex-col">
-                                                                    <span>{item.name}</span>
-                                                                </div>
-                                                            </Link>
-                                                            
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setActiveTooltip(activeTooltip === item.name ? null : item.name);
-                                                                }}
-                                                                onMouseEnter={() => setActiveTooltip(item.name)}
-                                                                onMouseLeave={() => setActiveTooltip(null)}
-                                                                className={`p-1.5 rounded-lg text-gray-500 hover:text-cyan-400 hover:bg-white/10 transition-all shrink-0 ${isActive ? 'text-cyan-500/50' : ''}`}
-                                                                title={`${item.name} 설명 보기`}
-                                                            >
-                                                                <HelpCircle className="h-4 w-4" />
-                                                            </button>
-                                                        </div>
-
-                                                        {activeTooltip === item.name && (
-                                                            <div className="w-full px-4 pb-3 text-xs animate-in slide-in-from-top-2 duration-200 fade-in">
-                                                                <div className="p-3 bg-black/60 backdrop-blur-md border border-blue-500/30 rounded-xl space-y-1 shadow-lg">
-                                                                    <p className="font-bold text-[11px] text-blue-300 flex items-center gap-1.5">
-                                                                        <item.icon className="w-3.5 h-3.5" />
-                                                                        {item.name}란?
-                                                                    </p>
-                                                                    <p className="text-[11px] leading-relaxed text-gray-300 font-medium">
-                                                                        {item.desc}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${
+                                                            isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'
+                                                        }`} />
+                                                        <span className="truncate">{item.name}</span>
+                                                    </Link>
                                                 );
                                             })}
                                         </div>
@@ -639,9 +610,9 @@ export default function Sidebar() {
                             <Link
                                 href="/admin"
                                 onClick={() => setIsMobileOpen(false)}
-                                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/20 transition-all hover:bg-fuchsia-900/40 hover:text-fuchsia-200 hover:scale-105 active:scale-95 group mt-4"
+                                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/20 transition-all hover:bg-fuchsia-900/40 hover:text-fuchsia-200 mt-2"
                             >
-                                <Shield className="h-5 w-5 text-fuchsia-400 transition-colors group-hover:text-fuchsia-300" />
+                                <Shield className="h-4 w-4 text-fuchsia-400" />
                                 <span>관리자 센터 👑</span>
                             </Link>
                         )}
@@ -649,8 +620,8 @@ export default function Sidebar() {
 
                     {/* [New] Watchlist Preview Section */}
                     {user && watchlistPreview.length > 0 && (
-                        <div className="mt-8 px-2">
-                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 mb-3 flex items-center justify-between">
+                        <div className="mt-6 px-1">
+                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 mb-2 flex items-center justify-between">
                                 최근 관심종목
                                 <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">{watchlistPreview.length}</span>
                             </h4>
@@ -660,7 +631,7 @@ export default function Sidebar() {
                                         key={stock.code || idx}
                                         href={`/discovery?q=${(stock.code || '').split('.')[0]}`}
                                         onClick={() => setIsMobileOpen(false)}
-                                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5 cursor-pointer"
+                                        className="flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5 cursor-pointer"
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
                                             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400/20 group-hover:fill-yellow-400 transition-all" />
@@ -675,7 +646,7 @@ export default function Sidebar() {
                                 <Link
                                     href="/watchlist"
                                     onClick={() => setIsMobileOpen(false)}
-                                    className="block text-[10px] text-center text-gray-500 hover:text-blue-400 mt-2 py-1 transition-colors font-bold"
+                                    className="block text-[10px] text-center text-gray-500 hover:text-blue-400 mt-1 py-1 transition-colors font-bold"
                                 >
                                     전체보기 →
                                 </Link>
@@ -685,18 +656,18 @@ export default function Sidebar() {
                 </div>
                 
                 {/* Bottom Section */}
-                <div className="mt-auto space-y-3 pt-3 border-t border-white/10">
-                    {/* 1. Reward/Timer block (No Payment) */}
+                <div className="mt-auto space-y-2.5 pt-3 border-t border-white/10">
+                    {/* 1. Reward/Timer block */}
                     {isPro ? (
-                        <div className="rounded-xl bg-gradient-to-br from-blue-900/40 to-black p-2.5 border border-blue-500/30 shadow-lg flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2 text-blue-300 font-bold text-xs">
+                        <div className="rounded-2xl bg-zinc-900/80 p-3 border border-white/10 shadow-lg flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 text-blue-300 font-black text-xs">
                                 <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                                <span>AI 혜택 이용중</span>
+                                <span>프리미엄 혜택 이용중</span>
                             </div>
-                            <p className="text-[9px] text-gray-400 leading-normal">모든 프리미엄 기능을 제한없이 이용하고 계십니다.</p>
+                            <p className="text-[10px] text-gray-400 leading-tight">모든 종목 분석과 리포트를 무료로 이용하고 계십니다.</p>
                         </div>
                     ) : (
-                        <div className="rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 p-2.5 border border-white/10 shadow-lg relative overflow-hidden group">
+                        <div className="rounded-2xl bg-zinc-900/80 p-3 border border-white/10 shadow-lg relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-1.5 opacity-10 group-hover:opacity-20 transition-opacity">
                                 <Timer className="w-12 h-12 text-white" />
                             </div>
@@ -704,7 +675,7 @@ export default function Sidebar() {
                             <div className="flex justify-between items-start mb-1.5">
                                 <div>
                                     <p className="text-[11px] font-bold text-blue-200 mb-0.5 flex items-center gap-1.5">
-                                        <Zap className="w-3 h-3 text-yellow-400" /> AI 분석 무료 이용
+                                        <Zap className="w-3 h-3 text-yellow-400" /> 퀀트 분석 무료 이용
                                     </p>
                                     <p className="text-[9px] text-gray-400">광고 시청 시 기능 개방</p>
                                 </div>
@@ -731,14 +702,14 @@ export default function Sidebar() {
                                 {freeTrialCount > 0 ? (
                                     <button
                                         onClick={handleFreeTrial}
-                                        className="w-full rounded-lg py-1.5 text-[9px] font-bold bg-green-600 text-white hover:bg-green-500 animate-pulse border border-green-400/30 flex items-center justify-center gap-1 shadow-md transition-colors"
+                                        className="w-full rounded-xl py-2 text-[10px] font-bold bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-400/30 flex items-center justify-center gap-1 shadow-md transition-colors"
                                     >
                                         🎁 1시간 무료 이용하기 ({freeTrialCount}회)
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => setShowAdRewardModal(true)}
-                                        className="w-full rounded-lg py-1.5 text-[9px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 border border-white/10 flex items-center justify-center gap-1 transition-colors"
+                                        className="w-full rounded-xl py-2 text-[10px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 border border-white/10 flex items-center justify-center gap-1 transition-colors"
                                     >
                                         <PlayCircle className="w-3 h-3 text-yellow-500" />
                                         광고 보고 시간 충전 (30분)
@@ -750,16 +721,16 @@ export default function Sidebar() {
 
                     {/* 2. User account profile block */}
                     {user && !user.is_guest ? (
-                        <div className="rounded-xl bg-white/10 p-2.5 border border-white/10 flex items-center gap-2.5 shadow-lg">
-                            <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-white/20">
+                        <div className="rounded-2xl bg-zinc-900/80 p-2.5 border border-white/10 flex items-center gap-2.5 shadow-lg">
+                            <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-white/20 shrink-0">
                                 {user.name?.[0] || 'U'}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-white truncate">{user.name || '사용자'}</p>
-                                <p className="text-[9px] text-gray-300 truncate">{user.email || ''}</p>
+                                <p className="text-[9px] text-gray-400 truncate">{user.email || ''}</p>
                             </div>
-                            <button onClick={logout} className="p-1 px-1.5 text-gray-300 hover:text-white transition-colors bg-white/5 rounded-lg">
-                                <span className="text-[9px] font-bold">로그아웃</span>
+                            <button onClick={logout} className="p-1 px-2 text-gray-300 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-lg border border-white/5">
+                                <span className="text-[10px] font-bold">로그아웃</span>
                             </button>
                         </div>
                     ) : (
@@ -771,10 +742,10 @@ export default function Sidebar() {
                                     setShowLoginModal(true);
                                 }
                             }}
-                            className="w-full rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20"
+                            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95"
                         >
                             <UserCheck className="w-3.5 h-3.5" />
-                            {user?.is_guest ? "정식 로그인 / 연동하기" : "로그인"}
+                            {user?.is_guest ? "정식 로그인 / 계정 연동" : "로그인"}
                         </button>
                     )}
 
