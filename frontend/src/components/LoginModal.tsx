@@ -48,12 +48,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         }
     };
 
-    // 수동 OAuth 2.0 리다이렉트 (WebView 400 Malformed Error 방지)
+    // 수동 OAuth 2.0 리다이렉트 (WebView 400 Malformed Error 방지 및 계정 선택/직접 입력 지원)
     const googleLogin = () => {
         const clientId = "385839147502-h2rjnk44258jciamfsjgc9nsmnt052u8.apps.googleusercontent.com";
         const redirectUri = window.location.origin; // https://stock-trend-program.vercel.app
         const scope = "email profile openid";
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=select_account`;
         window.location.href = authUrl;
     };
 
