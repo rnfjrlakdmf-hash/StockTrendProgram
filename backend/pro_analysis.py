@@ -1,4 +1,4 @@
-﻿import json
+import json
 import urllib.parse
 import re
 from typing import Dict, Any, List
@@ -863,6 +863,14 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
                     except:
                         return 0
 
+                # Fix dividend yield scale
+                raw_div = get_val("dividend_yield", "dividendYield", 1)
+                div_yield = raw_div
+                if div_yield > 25:
+                    div_yield = round(div_yield / 100, 2)
+                elif div_yield > 0:
+                    div_yield = round(div_yield, 2)
+
                 results.append({
                     "symbol": sym.strip(),
                     "name": naver_data.get("name") if naver_data else info.get("shortName") or sym,
@@ -875,7 +883,7 @@ def get_peer_comparison(symbols: List[str]) -> Dict[str, Any]:
                     "roe": round(get_val("roe", "returnOnEquity", 100), 1),
                     "operating_margin": round(get_val("operating_margin", "operatingMargins", 100), 1),
                     "revenue_growth": round(get_val("revenue_growth", "revenueGrowth", 100), 1),
-                    "dividend_yield": round(get_val("dividend_yield", "dividendYield", 100), 2),
+                    "dividend_yield": div_yield,
                     "debt_to_equity": round(get_val("debt_ratio", "debtToEquity"), 1), # Naver uses debt_ratio
                     "beta": round(info.get("beta") or 1, 2),
                     "sector": naver_data.get("sector") if naver_data else info.get("sector", "N/A"),
