@@ -306,30 +306,28 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     return (
         <>
-        <header className="flex flex-row items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-[#0a0a0c]/60 backdrop-blur-2xl sticky top-0 z-[100] transition-all duration-300">
-            <div className="hidden sm:flex items-center gap-2 md:gap-8 flex-shrink-0 min-w-0 mr-2 md:mr-0">
+        <header className="flex flex-row items-center justify-between px-4 py-2.5 md:px-6 md:py-3 border-b border-white/5 bg-[#0a0a0c]/80 backdrop-blur-2xl sticky top-0 z-[100] transition-all duration-300 gap-2">
+            <div className="hidden sm:flex items-center gap-2 flex-shrink-0 min-w-max mr-2 z-20">
                 <div className="flex flex-col min-w-0">
-                    <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
+                    <h2 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
                         {title}
                     </h2>
                     {subtitle && (
-                        <p className="text-xs md:text-sm text-gray-400 font-medium hidden md:block whitespace-nowrap tracking-tight">
+                        <p className="text-[11px] md:text-xs text-gray-400 font-medium hidden md:block whitespace-nowrap tracking-tight">
                             {subtitle}
                         </p>
                     )}
                 </div>
-
-                {/* Navigation moved to Sidebar */}
             </div>
 
             {/* [New] Flip Clock Style Index Ticker (Center Space) */}
             {pathname !== '/settings' && title !== '설정' && (
-                <div className="hidden lg:flex flex-1 items-center justify-center mx-4 min-w-0 overflow-hidden">
+                <div className="hidden xl:flex flex-1 items-center justify-center mx-2 min-w-0 max-w-xl 2xl:max-w-3xl overflow-hidden z-10">
                     <FlipIndexTicker />
                 </div>
             )}
 
-            <div className="flex items-center gap-2 md:gap-4 justify-end shrink-0 ml-auto">
+            <div className="flex items-center gap-2 md:gap-3 justify-end shrink-0 ml-auto z-20">
                 {/* Global Search Bar */}
                 <div className="flex relative w-full flex-1 max-w-[130px] sm:max-w-[160px] md:max-w-[180px] group transition-all duration-500 ease-out hover:max-w-[200px] sm:hover:max-w-[240px] md:hover:max-w-[340px] focus-within:flex-1 focus-within:max-w-[200px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[340px] pl-10 sm:pl-0">
                     <div className="absolute inset-y-0 left-10 sm:left-0 pl-3 flex items-center pointer-events-none">
