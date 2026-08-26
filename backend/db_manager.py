@@ -239,6 +239,21 @@ def init_db():
         )
     ''')
 
+    # [Migration] Add Ad Revenue & Realized eCPM Logs Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ad_revenue_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform TEXT NOT NULL,
+            date TEXT NOT NULL,
+            revenue_krw REAL NOT NULL,
+            pageviews INTEGER NOT NULL,
+            realized_ecpm REAL NOT NULL,
+            memo TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(platform, date) ON CONFLICT REPLACE
+        )
+    ''')
+
     # [NEW] Unlocked Premium Reports
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS unlocked_reports (
@@ -2557,3 +2572,107 @@ def cleanup_old_system_logs(days: int = 3):
         return 0
     finally:
         conn.close()
+
+def save_ad_revenue_log(platform: str, date: str, revenue_krw: float, pageviews: int, memo: str = ""):
+    """광고 수익을 저장하고 실제 실현 eCPM을 자동 계산합니다."""
+    realized_ecpm = round((revenue_krw / max(pageviews, 1)) * 1000, 2)
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO ad_revenue_logs (platform, date, revenue_krw, pageviews, realized_ecpm, memo)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(platform, date) DO UPDATE SET
+                revenue_krw = excluded.revenue_krw,
+                pageviews = excluded.pageviews,
+                realized_ecpm = excluded.realized_ecpm,
+                memo = excluded.memo,
+                created_at = CURRENT_TIMESTAMP
+        """, (platform, date, revenue_krw, pageviews, realized_ecpm, memo))
+        conn.commit()
+        return {
+            "platform": platform,
+            "date": date,
+            "revenue_krw": revenue_krw,
+            "pageviews": pageviews,
+            "realized_ecpm": realized_ecpm,
+            "memo": memo
+        }
+    except Exception as e:
+        print(f"[DB Error] save_ad_revenue_log error: {e}")
+        return None
+    finally:
+        conn.close()
+
+def get_ad_revenue_logs(platform: str = "kakao_adfit", limit: int = 30):
+    """최근 등록된 광고 수익 내역 및 평균 실현 eCPM을 반환합니다."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        if platform:
+            cursor.execute("""
+                SELECT id, platform, date, revenue_krw, pageviews, realized_ecpm, memo, created_at
+                FROM ad_revenue_logs
+                WHERE platform = ?
+                ORDER BY date DESC
+                LIMIT ?
+            """, (platform, limit))
+        else:
+            cursor.execute("""
+                SELECT id, platform, date, revenue_krw, pageviews, realized_ecpm, memo, created_at
+                FROM ad_revenue_logs
+                ORDER BY date DESC
+                LIMIT ?
+            """, (limit,))
+        rows = cursor.fetchall()
+        logs = [
+            {
+                "id": r[0],
+                "platform": r[1],
+                "date": r[2],
+                "revenue_krw": r[3],
+                "pageviews": r[4],
+                "realized_ecpm": r[5],
+                "memo": r[6],
+                "created_at": r[7]
+            }
+            for r in rows
+        ]
+        
+        total_rev = sum(l["revenue_krw"] for l in logs)
+        total_pv = sum(l["pageviews"] for l in logs)
+        avg_ecpm = round((total_rev / max(total_pv, 1)) * 1000, 2) if total_pv > 0 else 0.0
+        
+        return {
+            "logs": logs,
+            "total_revenue_krw": total_rev,
+            "total_pageviews": total_pv,
+            "avg_realized_ecpm": avg_ecpm,
+            "latest_ecpm": logs[0]["realized_ecpm"] if logs else 0.0
+        }
+    except Exception as e:
+        print(f"[DB Error] get_ad_revenue_logs error: {e}")
+        return {
+            "logs": [],
+            "total_revenue_krw": 0,
+            "total_pageviews": 0,
+            "avg_realized_ecpm": 0.0,
+            "latest_ecpm": 0.0
+        }
+    finally:
+        conn.close()
+
+def delete_ad_revenue_log(log_id: int):
+    """광고 수익 기록 삭제"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM ad_revenue_logs WHERE id = ?", (log_id,))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[DB Error] delete_ad_revenue_log error: {e}")
+        return False
+    finally:
+        conn.close()
+

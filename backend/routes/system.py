@@ -770,3 +770,59 @@ def get_gemini_cost(x_admin_key: Optional[str] = Header(None), days: int = 30):
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+class AdRevenueRecordRequest(BaseModel):
+    platform: str = "kakao_adfit" # kakao_adfit or google_adsense
+    date: str # YYYY-MM-DD
+    revenue_krw: float
+    pageviews: Optional[int] = None
+    memo: Optional[str] = ""
+
+@router.post("/admin/ad-revenue")
+def record_ad_revenue(req: AdRevenueRecordRequest, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 실제 광고 수익 등록 및 실현 eCPM 자동 계산"""
+    check_admin_auth(x_admin_key, secret)
+    from db_manager import save_ad_revenue_log, get_site_analytics
+    
+    pv = req.pageviews
+    if not pv or pv <= 0:
+        # DB에서 해당 날짜의 실제 PV 조회
+        analytics = get_site_analytics(limit=60)
+        matched = next((item for item in analytics if item["date"] == req.date), None)
+        if matched and matched.get("pageviews", 0) > 0:
+            pv = matched["pageviews"]
+        else:
+            pv = 1 # Fallback to avoid div by zero
+            
+    res = save_ad_revenue_log(
+        platform=req.platform,
+        date=req.date,
+        revenue_krw=req.revenue_krw,
+        pageviews=pv,
+        memo=req.memo or ""
+    )
+    if res:
+        return {"status": "success", "data": res}
+    else:
+        return {"status": "error", "message": "광고 수익 기록에 실패했습니다."}
+
+@router.get("/admin/ad-revenue")
+def fetch_ad_revenue(platform: str = "kakao_adfit", limit: int = 30, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 실제 광고 수익 내역 및 평균 실현 eCPM 조회"""
+    check_admin_auth(x_admin_key, secret)
+    from db_manager import get_ad_revenue_logs
+    res = get_ad_revenue_logs(platform=platform, limit=limit)
+    return {"status": "success", "data": res}
+
+@router.delete("/admin/ad-revenue/{log_id}")
+def remove_ad_revenue(log_id: int, x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 광고 수익 기록 삭제"""
+    check_admin_auth(x_admin_key, secret)
+    from db_manager import delete_ad_revenue_log
+    success = delete_ad_revenue_log(log_id)
+    if success:
+        return {"status": "success", "message": "삭제되었습니다."}
+    else:
+        return {"status": "error", "message": "삭제 실패"}
+
