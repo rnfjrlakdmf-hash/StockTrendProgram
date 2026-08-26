@@ -116,41 +116,53 @@ export default function AdminPage() {
     const [ecpmRate, setEcpmRate] = useState<number>(3500);
     const [targetDailyPv, setTargetDailyPv] = useState<number>(10000);
 
-    // Kakao AdFit Revenue Sync States
-    const [adfitSummary, setAdfitSummary] = useState<AdRevenueSummary | null>(null);
-    const [adfitLoading, setAdfitLoading] = useState(false);
-    const [inputAdfitDate, setInputAdfitDate] = useState(getYesterdayKstStr());
-    const [inputAdfitRevenue, setInputAdfitRevenue] = useState("");
-    const [inputAdfitMemo, setInputAdfitMemo] = useState("");
-    const [savingAdfit, setSavingAdfit] = useState(false);
+    // Ad Platform & Revenue Sync States (Kakao AdFit & Google AdSense)
+    const [activeAdPlatform, setActiveAdPlatform] = useState<'kakao_adfit' | 'google_adsense'>('kakao_adfit');
+    const [adRevenueSummary, setAdRevenueSummary] = useState<AdRevenueSummary | null>(null);
+    const [adRevenueLoading, setAdRevenueLoading] = useState(false);
+    const [inputAdDate, setInputAdDate] = useState(getYesterdayKstStr());
+    const [inputAdRevenue, setInputAdRevenue] = useState("");
+    const [inputAdCurrency, setInputAdCurrency] = useState<'KRW' | 'USD'>('KRW');
+    const [inputAdMemo, setInputAdMemo] = useState("");
+    const [savingAdRevenue, setSavingAdRevenue] = useState(false);
 
-    const fetchAdfitRevenue = async () => {
-        setAdfitLoading(true);
+    const fetchAdRevenue = async (platform: string = activeAdPlatform) => {
+        setAdRevenueLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/system/admin/ad-revenue?platform=kakao_adfit`, {
+            const res = await fetch(`${API_BASE_URL}/api/system/admin/ad-revenue?platform=${platform}`, {
                 headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" }
             });
             const json = await res.json();
             if (json.status === "success") {
-                setAdfitSummary(json.data);
+                setAdRevenueSummary(json.data);
             }
         } catch (e) {
-            console.error("fetch adfit revenue error", e);
+            console.error("fetch ad revenue error", e);
         } finally {
-            setAdfitLoading(false);
+            setAdRevenueLoading(false);
         }
     };
 
-    const handleSaveAdfitRevenue = async (e: React.FormEvent) => {
+    const handlePlatformChange = (platform: 'kakao_adfit' | 'google_adsense') => {
+        setActiveAdPlatform(platform);
+        setInputAdCurrency(platform === 'google_adsense' ? 'USD' : 'KRW');
+        fetchAdRevenue(platform);
+    };
+
+    const handleSaveAdRevenue = async (e: React.FormEvent) => {
         e.preventDefault();
-        const rev = parseFloat(inputAdfitRevenue.replace(/,/g, ''));
-        if (isNaN(rev) || rev < 0) {
-            alert("유효한 적립금(원)을 입력해주세요.");
+        const rawVal = parseFloat(inputAdRevenue.replace(/,/g, ''));
+        if (isNaN(rawVal) || rawVal < 0) {
+            alert("유효한 수익 금액을 입력해주세요.");
             return;
         }
-        const targetDate = inputAdfitDate || getTodayKstStr();
 
-        setSavingAdfit(true);
+        const USD_RATE = 1380;
+        const revKrw = inputAdCurrency === 'USD' ? Math.round(rawVal * USD_RATE) : rawVal;
+        const targetDate = inputAdDate || getTodayKstStr();
+        const platformName = activeAdPlatform === 'kakao_adfit' ? '카카오 애드핏' : '구글 애드센스';
+
+        setSavingAdRevenue(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/system/admin/ad-revenue`, {
                 method: "POST",
@@ -159,19 +171,18 @@ export default function AdminPage() {
                     "X-Admin-Key": "StockTrendSecretAdmin2026!"
                 },
                 body: JSON.stringify({
-                    platform: "kakao_adfit",
+                    platform: activeAdPlatform,
                     date: targetDate,
-                    revenue_krw: rev,
-                    memo: inputAdfitMemo || "카카오 알림톡/대시보드 실현 정산"
+                    revenue_krw: revKrw,
+                    memo: inputAdMemo || (inputAdCurrency === 'USD' ? `$${rawVal} USD (환율 ₩${USD_RATE})` : `${platformName} 정산`)
                 })
             });
             const json = await res.json();
             if (json.status === "success") {
-                alert(`✅ ${targetDate} 카카오 애드핏 수익(₩${rev.toLocaleString()}원)이 성공적으로 등록되었습니다!\n계산된 실현 eCPM: ₩${json.data.realized_ecpm.toLocaleString()}원`);
-                setInputAdfitRevenue("");
-                setInputAdfitMemo("");
-                fetchAdfitRevenue();
-                // Automatically set simulator rate to newly calculated real eCPM
+                alert(`✅ ${targetDate} ${platformName} 수익(₩${revKrw.toLocaleString()}원${inputAdCurrency === 'USD' ? ` / $${rawVal} USD` : ''})이 성공적으로 등록되었습니다!\n계산된 실현 eCPM: ₩${json.data.realized_ecpm.toLocaleString()}원`);
+                setInputAdRevenue("");
+                setInputAdMemo("");
+                fetchAdRevenue(activeAdPlatform);
                 setEcpmRate(Math.round(json.data.realized_ecpm));
             } else {
                 alert(`저장 실패: ${json.message}`);
@@ -179,11 +190,11 @@ export default function AdminPage() {
         } catch (e) {
             alert("서버 통신 오류가 발생했습니다.");
         } finally {
-            setSavingAdfit(false);
+            setSavingAdRevenue(false);
         }
     };
 
-    const handleDeleteAdfitRevenue = async (id: number) => {
+    const handleDeleteAdRevenue = async (id: number) => {
         if (!confirm("이 정산 기록을 삭제하시겠습니까?")) return;
         try {
             const res = await fetch(`${API_BASE_URL}/api/system/admin/ad-revenue/${id}`, {
@@ -192,7 +203,7 @@ export default function AdminPage() {
             });
             const json = await res.json();
             if (json.status === "success") {
-                fetchAdfitRevenue();
+                fetchAdRevenue(activeAdPlatform);
             }
         } catch (e) {
             alert("삭제 중 오류가 발생했습니다.");
@@ -460,7 +471,7 @@ export default function AdminPage() {
         fetchUsers();
         fetchAnalytics();
         fetchGeminiCost();
-        fetchAdfitRevenue();
+        fetchAdRevenue();
         
         if (currentUser && (currentUser.email?.toLowerCase() === "rnfjr@gmail.com" || currentUser.email?.toLowerCase() === "rnfjrlakdmf@gmail.com")) {
             fetchMasterStatus();
@@ -803,52 +814,85 @@ export default function AdminPage() {
                 </div>
 
                 {/* ============================================================ */}
-                {/* 4. 카카오 애드핏 실현 수익 & eCPM 동기화기 */}
+                {/* 4. 광고 플랫폼별 실현 수익 & eCPM 동기화기 */}
                 {/* ============================================================ */}
-                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-amber-500/20 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 backdrop-blur-md">
+                <div className={`bg-gradient-to-b ${activeAdPlatform === 'kakao_adfit' ? 'from-amber-950/20 via-zinc-900/90 to-zinc-950 border-amber-500/20' : 'from-blue-950/20 via-zinc-900/90 to-zinc-950 border-blue-500/20'} border rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 backdrop-blur-md transition-all duration-300`}>
+                    
+                    {/* 상단 헤더 및 플랫폼 선택 탭 */}
                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-5 border-b border-white/5">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400">
+                            <div className={`p-2.5 rounded-2xl ${activeAdPlatform === 'kakao_adfit' ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' : 'bg-blue-500/10 border border-blue-500/20 text-blue-400'}`}>
                                 <Coins className="w-6 h-6" />
                             </div>
                             <div>
                                 <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                                    카카오 애드핏 실현 수익 & eCPM 동기화기
-                                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-black px-2 py-0.5 rounded-full">REALIZED ECPM SYNC</span>
+                                    광고 실현 수익 & eCPM 동기화기
+                                    <span className={`${activeAdPlatform === 'kakao_adfit' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'} border text-[10px] font-black px-2 py-0.5 rounded-full uppercase`}>
+                                        {activeAdPlatform === 'kakao_adfit' ? 'Kakao AdFit' : 'Google AdSense'}
+                                    </span>
                                 </h2>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                    매일 오전 카카오톡 알림톡이나 애드핏 대시보드에서 확인한 실제 적립금을 입력하면, 해당 일자의 실제 PV와 대조하여 <span className="text-amber-300 font-bold">진짜 실현 eCPM</span>을 자동 계산·저장합니다.
+                                    실제 정산 내역을 입력하면 해당 일자의 실제 PV와 대조하여 <span className={`${activeAdPlatform === 'kakao_adfit' ? 'text-amber-300' : 'text-blue-300'} font-bold`}>진짜 실현 eCPM</span>을 자동 계산·저장합니다.
                                 </p>
                             </div>
                         </div>
 
-                        <button
-                            onClick={fetchAdfitRevenue}
-                            disabled={adfitLoading}
-                            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-2xl text-xs font-bold text-gray-300 transition-all shadow-sm active:scale-95"
-                        >
-                            {adfitLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                            기록 새로고침
-                        </button>
+                        {/* 플랫폼 전환 탭 & 바로가기 버튼 */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="bg-zinc-950 p-1 rounded-2xl border border-white/10 flex items-center text-xs">
+                                <button
+                                    onClick={() => handlePlatformChange('kakao_adfit')}
+                                    className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${activeAdPlatform === 'kakao_adfit' ? 'bg-amber-500 text-black font-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    <span>🟡</span> 카카오 애드핏
+                                </button>
+                                <button
+                                    onClick={() => handlePlatformChange('google_adsense')}
+                                    className={`px-3 py-1.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${activeAdPlatform === 'google_adsense' ? 'bg-blue-600 text-white font-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    <span>🔵</span> 구글 애드센스
+                                </button>
+                            </div>
+
+                            <a
+                                href={activeAdPlatform === 'kakao_adfit' ? "https://adfit.kakao.com" : "https://www.google.com/adsense"}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center gap-1 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-2xl text-xs font-bold text-gray-300 transition-all shadow-sm"
+                                title="공식 대시보드 바로가기"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                {activeAdPlatform === 'kakao_adfit' ? '애드핏' : '애드센스'} 콘솔
+                            </a>
+
+                            <button
+                                onClick={() => fetchAdRevenue(activeAdPlatform)}
+                                disabled={adRevenueLoading}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-2xl text-xs font-bold text-gray-300 transition-all shadow-sm active:scale-95"
+                            >
+                                {adRevenueLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                                새로고침
+                            </button>
+                        </div>
                     </div>
 
                     {/* 실현 지표 4개 카드 */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* 최근 실현 eCPM */}
-                        <div className="bg-zinc-950/80 border border-amber-500/20 rounded-2xl p-5 flex flex-col justify-between">
+                        <div className={`bg-zinc-950/80 border ${activeAdPlatform === 'kakao_adfit' ? 'border-amber-500/20' : 'border-blue-500/20'} rounded-2xl p-5 flex flex-col justify-between`}>
                             <div>
                                 <span className="text-[11px] font-bold text-gray-400 block mb-1">최근 등록된 실현 eCPM</span>
-                                <div className="text-2xl md:text-3xl font-black font-mono text-amber-400">
-                                    ₩{adfitSummary?.latest_ecpm ? Math.round(adfitSummary.latest_ecpm).toLocaleString() : 0}
+                                <div className={`text-2xl md:text-3xl font-black font-mono ${activeAdPlatform === 'kakao_adfit' ? 'text-amber-400' : 'text-blue-400'}`}>
+                                    ₩{adRevenueSummary?.latest_ecpm ? Math.round(adRevenueSummary.latest_ecpm).toLocaleString() : 0}
                                 </div>
                             </div>
-                            {adfitSummary?.latest_ecpm ? (
+                            {adRevenueSummary?.latest_ecpm ? (
                                 <button
                                     onClick={() => {
-                                        setEcpmRate(Math.round(adfitSummary.latest_ecpm));
-                                        alert(`상단 시뮬레이터 단가가 최근 실현 eCPM(₩${Math.round(adfitSummary.latest_ecpm).toLocaleString()}원)으로 적용되었습니다!`);
+                                        setEcpmRate(Math.round(adRevenueSummary.latest_ecpm));
+                                        alert(`상단 시뮬레이터 단가가 최근 실현 eCPM(₩${Math.round(adRevenueSummary.latest_ecpm).toLocaleString()}원)으로 적용되었습니다!`);
                                     }}
-                                    className="mt-3 text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 py-1 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1"
+                                    className={`mt-3 text-[10px] font-bold ${activeAdPlatform === 'kakao_adfit' ? 'text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20' : 'text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20'} border py-1 px-2 rounded-lg transition-all text-center flex items-center justify-center gap-1`}
                                 >
                                     <ArrowUpRight className="w-3 h-3" />
                                     시뮬레이터 단가로 즉시 적용
@@ -861,13 +905,14 @@ export default function AdminPage() {
                         {/* 기간 누적 실현 수익 */}
                         <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
                             <div>
-                                <span className="text-[11px] font-bold text-gray-400 block mb-1">누적 기록된 애드핏 수익</span>
+                                <span className="text-[11px] font-bold text-gray-400 block mb-1">누적 기록된 수익 ({activeAdPlatform === 'kakao_adfit' ? '애드핏' : '애드센스'})</span>
                                 <div className="text-2xl md:text-3xl font-black font-mono text-white">
-                                    ₩{adfitSummary?.total_revenue_krw ? adfitSummary.total_revenue_krw.toLocaleString() : 0}
+                                    ₩{adRevenueSummary?.total_revenue_krw ? adRevenueSummary.total_revenue_krw.toLocaleString() : 0}
                                 </div>
                             </div>
-                            <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-white/5">
-                                총 {adfitSummary?.logs?.length ?? 0}일간의 기록 합계
+                            <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-white/5 flex justify-between">
+                                <span>총 {adRevenueSummary?.logs?.length ?? 0}일간 합계</span>
+                                {adRevenueSummary?.total_revenue_krw ? <span>(${ (adRevenueSummary.total_revenue_krw / 1380).toFixed(2) } USD)</span> : null}
                             </p>
                         </div>
 
@@ -875,8 +920,8 @@ export default function AdminPage() {
                         <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
                             <div>
                                 <span className="text-[11px] font-bold text-gray-400 block mb-1">정산 대상 총 페이지뷰</span>
-                                <div className="text-2xl md:text-3xl font-black font-mono text-blue-400">
-                                    {adfitSummary?.total_pageviews ? adfitSummary.total_pageviews.toLocaleString() : 0}
+                                <div className="text-2xl md:text-3xl font-black font-mono text-emerald-400">
+                                    {adRevenueSummary?.total_pageviews ? adRevenueSummary.total_pageviews.toLocaleString() : 0}
                                     <span className="text-xs text-gray-500 font-normal ml-1">PV</span>
                                 </div>
                             </div>
@@ -889,21 +934,43 @@ export default function AdminPage() {
                         <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
                             <div>
                                 <span className="text-[11px] font-bold text-gray-400 block mb-1">기간 가중평균 eCPM</span>
-                                <div className="text-2xl md:text-3xl font-black font-mono text-emerald-400">
-                                    ₩{adfitSummary?.avg_realized_ecpm ? Math.round(adfitSummary.avg_realized_ecpm).toLocaleString() : 0}
+                                <div className="text-2xl md:text-3xl font-black font-mono text-white">
+                                    ₩{adRevenueSummary?.avg_realized_ecpm ? Math.round(adRevenueSummary.avg_realized_ecpm).toLocaleString() : 0}
                                 </div>
                             </div>
-                            <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-white/5">
-                                전체 정산액 ÷ 전체 PV 환산
+                            <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-white/5 flex justify-between">
+                                <span>전체 정산액 ÷ 전체 PV</span>
+                                {adRevenueSummary?.avg_realized_ecpm ? <span className="text-gray-400">(${ (adRevenueSummary.avg_realized_ecpm / 1380).toFixed(2) } USD)</span> : null}
                             </p>
                         </div>
                     </div>
 
-                    {/* 적립금 입력 폼 */}
-                    <form onSubmit={handleSaveAdfitRevenue} className="bg-zinc-950/60 border border-white/10 rounded-2xl p-5 space-y-4">
-                        <div className="flex items-center gap-2 text-sm font-bold text-white mb-1">
-                            <PlusCircle className="w-4 h-4 text-amber-400" />
-                            카카오 애드핏 실제 적립금 입력
+                    {/* 수익 입력 폼 */}
+                    <form onSubmit={handleSaveAdRevenue} className="bg-zinc-950/60 border border-white/10 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-bold text-white">
+                                <PlusCircle className={`w-4 h-4 ${activeAdPlatform === 'kakao_adfit' ? 'text-amber-400' : 'text-blue-400'}`} />
+                                {activeAdPlatform === 'kakao_adfit' ? '카카오 애드핏 적립금 입력' : '구글 애드센스 일일 수익 입력'}
+                            </div>
+
+                            {activeAdPlatform === 'google_adsense' && (
+                                <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-xl border border-white/10 text-[11px]">
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputAdCurrency('USD')}
+                                        className={`px-2 py-0.5 rounded-lg font-bold transition-all ${inputAdCurrency === 'USD' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}
+                                    >
+                                        USD ($)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputAdCurrency('KRW')}
+                                        className={`px-2 py-0.5 rounded-lg font-bold transition-all ${inputAdCurrency === 'KRW' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}
+                                    >
+                                        KRW (원)
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -912,26 +979,31 @@ export default function AdminPage() {
                                 <label className="text-[11px] font-bold text-gray-400 block mb-1">정산 일자</label>
                                 <input
                                     type="date"
-                                    value={inputAdfitDate}
-                                    onChange={(e) => setInputAdfitDate(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-amber-500/50"
+                                    value={inputAdDate}
+                                    onChange={(e) => setInputAdDate(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-white/30"
                                     required
                                 />
                             </div>
 
-                            {/* 실제 발생 적립금 (원) */}
+                            {/* 실제 발생 수익 */}
                             <div>
-                                <label className="text-[11px] font-bold text-gray-400 block mb-1">카카오톡/웹 적립금 (원)</label>
+                                <label className="text-[11px] font-bold text-gray-400 block mb-1">
+                                    {activeAdPlatform === 'kakao_adfit' ? '카카오톡/웹 적립금 (원)' : `애드센스 정산 금액 (${inputAdCurrency === 'USD' ? 'USD $' : '원 ₩'})`}
+                                </label>
                                 <div className="relative">
                                     <input
                                         type="number"
-                                        placeholder="예: 4800"
-                                        value={inputAdfitRevenue}
-                                        onChange={(e) => setInputAdfitRevenue(e.target.value)}
-                                        className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white outline-none focus:border-amber-500/50 font-mono font-bold"
+                                        step={inputAdCurrency === 'USD' ? "0.01" : "1"}
+                                        placeholder={inputAdCurrency === 'USD' ? "예: 5.50" : "예: 4800"}
+                                        value={inputAdRevenue}
+                                        onChange={(e) => setInputAdRevenue(e.target.value)}
+                                        className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white outline-none focus:border-white/30 font-mono font-bold"
                                         required
                                     />
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">₩</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                                        {inputAdCurrency === 'USD' ? '$' : '₩'}
+                                    </span>
                                 </div>
                             </div>
 
@@ -941,9 +1013,9 @@ export default function AdminPage() {
                                 <input
                                     type="text"
                                     placeholder="예: 전면배너 추가 효과"
-                                    value={inputAdfitMemo}
-                                    onChange={(e) => setInputAdfitMemo(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-amber-500/50"
+                                    value={inputAdMemo}
+                                    onChange={(e) => setInputAdMemo(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-white/30"
                                 />
                             </div>
 
@@ -951,31 +1023,36 @@ export default function AdminPage() {
                             <div className="flex items-end">
                                 <button
                                     type="submit"
-                                    disabled={savingAdfit}
-                                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                                    disabled={savingAdRevenue}
+                                    className={`w-full flex items-center justify-center gap-2 font-black text-xs py-3 px-4 rounded-xl transition-all shadow-lg active:scale-95 disabled:opacity-50 ${activeAdPlatform === 'kakao_adfit' ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'}`}
                                 >
-                                    {savingAdfit ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                    {savingAdfit ? "계산 및 동기화 중..." : "실제 eCPM 자동 역산 & 저장"}
+                                    {savingAdRevenue ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    {savingAdRevenue ? "계산 및 동기화 중..." : "실제 eCPM 자동 역산 & 저장"}
                                 </button>
                             </div>
                         </div>
 
                         {/* 실시간 역산 미리보기 바 */}
-                        {inputAdfitRevenue && !isNaN(parseFloat(inputAdfitRevenue)) && parseFloat(inputAdfitRevenue) > 0 && (
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-amber-300 gap-2 animate-in fade-in duration-300">
+                        {inputAdRevenue && !isNaN(parseFloat(inputAdRevenue)) && parseFloat(inputAdRevenue) > 0 && (
+                            <div className={`p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs gap-2 animate-in fade-in duration-300 ${activeAdPlatform === 'kakao_adfit' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' : 'bg-blue-500/10 border-blue-500/20 text-blue-300'}`}>
                                 <div className="flex items-center gap-2">
-                                    <span className="bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded">PREVIEW</span>
+                                    <span className={`${activeAdPlatform === 'kakao_adfit' ? 'bg-amber-400 text-black' : 'bg-blue-500 text-white'} text-[9px] font-black px-1.5 py-0.5 rounded`}>
+                                        PREVIEW
+                                    </span>
                                     <span>
-                                        선택 일자({inputAdfitDate || "오늘"})의 집계 PV 대조 역산 결과:
+                                        선택 일자({inputAdDate || "오늘"})의 집계 PV 대조 역산 결과:
                                     </span>
                                 </div>
                                 {(() => {
-                                    const matched = analytics?.daily_stats?.find(s => s.date === (inputAdfitDate || todayStr));
+                                    const matched = analytics?.daily_stats?.find(s => s.date === (inputAdDate || todayStr));
                                     const pv = matched ? matched.pageviews : (todayPV > 0 ? todayPV : 1);
-                                    const calc = (parseFloat(inputAdfitRevenue) / Math.max(pv, 1)) * 1000;
+                                    const rawVal = parseFloat(inputAdRevenue);
+                                    const revKrw = inputAdCurrency === 'USD' ? rawVal * 1380 : rawVal;
+                                    const calc = (revKrw / Math.max(pv, 1)) * 1000;
                                     return (
                                         <div className="font-mono font-bold">
-                                            기준 PV: <span className="text-white">{pv.toLocaleString()}회</span> → 실현 eCPM: <span className="text-amber-400 text-sm font-black underline">₩{Math.round(calc).toLocaleString()}원</span>
+                                            {inputAdCurrency === 'USD' && <span className="text-gray-300 mr-2">(환산: ₩{Math.round(revKrw).toLocaleString()}원)</span>}
+                                            기준 PV: <span className="text-white">{pv.toLocaleString()}회</span> → 실현 eCPM: <span className={`${activeAdPlatform === 'kakao_adfit' ? 'text-amber-400' : 'text-blue-400'} text-sm font-black underline`}>₩{Math.round(calc).toLocaleString()}원 (${(calc / 1380).toFixed(2)} USD)</span>
                                         </div>
                                     );
                                 })()}
@@ -984,11 +1061,11 @@ export default function AdminPage() {
                     </form>
 
                     {/* 최근 등록 히스토리 테이블 */}
-                    {adfitSummary?.logs && adfitSummary.logs.length > 0 && (
+                    {adRevenueSummary?.logs && adRevenueSummary.logs.length > 0 && (
                         <div className="space-y-3">
                             <div className="flex items-center gap-2 text-xs font-bold text-gray-300">
                                 <History className="w-3.5 h-3.5 text-gray-400" />
-                                카카오 애드핏 정산 히스토리 (최근 {adfitSummary.logs.length}건)
+                                {activeAdPlatform === 'kakao_adfit' ? '카카오 애드핏' : '구글 애드센스'} 정산 히스토리 (최근 {adRevenueSummary.logs.length}건)
                             </div>
                             <div className="overflow-x-auto rounded-2xl border border-white/5">
                                 <table className="w-full text-left text-xs border-collapse bg-zinc-950/60">
@@ -997,19 +1074,22 @@ export default function AdminPage() {
                                             <th className="px-4 py-3">정산 일자</th>
                                             <th className="px-4 py-3">실제 수익</th>
                                             <th className="px-4 py-3">발생 페이지뷰(PV)</th>
-                                            <th className="px-4 py-3 text-amber-400">실현 eCPM</th>
+                                            <th className={`px-4 py-3 ${activeAdPlatform === 'kakao_adfit' ? 'text-amber-400' : 'text-blue-400'}`}>실현 eCPM</th>
                                             <th className="px-4 py-3">메모</th>
                                             <th className="px-4 py-3 text-right">관리</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5 font-medium">
-                                        {adfitSummary.logs.map((log) => (
+                                        {adRevenueSummary.logs.map((log) => (
                                             <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
                                                 <td className="px-4 py-3 font-mono font-bold text-white">{log.date}</td>
-                                                <td className="px-4 py-3 font-mono text-emerald-400 font-bold">₩{log.revenue_krw.toLocaleString()}원</td>
+                                                <td className="px-4 py-3 font-mono text-emerald-400 font-bold">
+                                                    ₩{log.revenue_krw.toLocaleString()}원
+                                                    <span className="text-[10px] text-gray-500 font-normal ml-1.5">(${ (log.revenue_krw / 1380).toFixed(2) })</span>
+                                                </td>
                                                 <td className="px-4 py-3 font-mono text-gray-300">{log.pageviews.toLocaleString()}회</td>
                                                 <td className="px-4 py-3">
-                                                    <span className="font-mono font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                                                    <span className={`font-mono font-black ${activeAdPlatform === 'kakao_adfit' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-blue-400 bg-blue-500/10 border-blue-500/20'} px-2 py-0.5 rounded-lg border`}>
                                                         ₩{Math.round(log.realized_ecpm).toLocaleString()}
                                                     </span>
                                                 </td>
@@ -1021,13 +1101,13 @@ export default function AdminPage() {
                                                                 setEcpmRate(Math.round(log.realized_ecpm));
                                                                 alert(`시뮬레이터 단가가 ₩${Math.round(log.realized_ecpm).toLocaleString()}원으로 변경되었습니다.`);
                                                             }}
-                                                            className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[10px] text-amber-300 rounded-lg transition-all"
+                                                            className={`px-2 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[10px] ${activeAdPlatform === 'kakao_adfit' ? 'text-amber-300' : 'text-blue-300'} rounded-lg transition-all`}
                                                             title="시뮬레이터 단가로 사용"
                                                         >
                                                             단가 적용
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDeleteAdfitRevenue(log.id)}
+                                                            onClick={() => handleDeleteAdRevenue(log.id)}
                                                             className="p-1 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                                                             title="기록 삭제"
                                                         >
