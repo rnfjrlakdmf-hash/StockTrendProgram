@@ -826,3 +826,23 @@ def remove_ad_revenue(log_id: int, x_admin_key: Optional[str] = Header(None), se
     else:
         return {"status": "error", "message": "삭제 실패"}
 
+class SearchQueryPayload(BaseModel):
+    keyword: str
+    source: Optional[str] = "internal"
+
+@router.post("/analytics/search")
+def log_search_query(payload: SearchQueryPayload):
+    """실시간 검색어 입력 기록"""
+    from db_manager import record_search_query
+    record_search_query(payload.keyword, payload.source or "internal")
+    return {"status": "success"}
+
+@router.get("/admin/search-analytics")
+def get_search_analytics_api(x_admin_key: Optional[str] = Header(None), secret: Optional[str] = Query(None)):
+    """[Admin] 실시간 인기 검색어 랭킹 및 구글/네이버 SEO 타겟 키워드 통계"""
+    check_admin_auth(x_admin_key, secret)
+    from db_manager import get_search_keyword_stats
+    res = get_search_keyword_stats()
+    return {"status": "success", "data": res}
+
+
