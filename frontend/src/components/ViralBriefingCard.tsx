@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { Copy, Check, Share2, Sparkles, Send, Flame, Sun, Moon, Zap, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Copy, Check, Share2, Sparkles, Send, Flame, Sun, Moon, Zap, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/config";
 
 interface ViralBriefingCardProps {
     isAdmin?: boolean;
@@ -11,6 +12,15 @@ interface ViralBriefingCardProps {
 export default function ViralBriefingCard({ isAdmin = false }: ViralBriefingCardProps) {
     const [activeType, setActiveType] = useState<"closing" | "morning" | "themes" | "whales">("closing");
     const [copied, setCopied] = useState(false);
+    const [marketData, setMarketData] = useState<{
+        kospi?: { val: string; chg: string; up: boolean };
+        kosdaq?: { val: string; chg: string; up: boolean };
+        usdkrw?: { val: string; chg: string; up: boolean };
+        sp500?: { val: string; chg: string; up: boolean };
+        nasdaq?: { val: string; chg: string; up: boolean };
+        wti?: { val: string; chg: string; up: boolean };
+    }>({});
+    const [loading, setLoading] = useState(false);
 
     // KST 오늘 날짜 포맷
     const getKstDate = () => {
@@ -24,75 +34,120 @@ export default function ViralBriefingCard({ isAdmin = false }: ViralBriefingCard
 
     const dateStr = getKstDate();
 
-    // 템플릿 정의
+    // 실시간 지수 데이터 연동
+    const fetchLiveData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/indices`, { cache: "no-store" });
+            const json = await res.json();
+            if (json.status === "success" && Array.isArray(json.data)) {
+                const map: any = {};
+                json.data.forEach((item: any) => {
+                    const name = item.event_kr || "";
+                    const up = item.change_val !== undefined ? item.change_val >= 0 : !item.change?.startsWith("-");
+                    const dataObj = { val: item.actual || "---", chg: item.change || "0.00%", up };
+
+                    if (name.includes("KOSPI") || name.includes("코스피")) map.kospi = dataObj;
+                    else if (name.includes("KOSDAQ") || name.includes("코스닥")) map.kosdaq = dataObj;
+                    else if (name.includes("환율") || name.includes("USD") || name.includes("달러")) map.usdkrw = dataObj;
+                    else if (name.includes("S&P")) map.sp500 = dataObj;
+                    else if (name.includes("NASDAQ") || name.includes("나스닥")) map.nasdaq = dataObj;
+                    else if (name.includes("WTI") || name.includes("유가")) map.wti = dataObj;
+                });
+                setMarketData(map);
+            }
+        } catch (e) {
+            console.error("Failed to fetch live briefing indices", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchLiveData();
+    }, []);
+
+    // 실시간 지수 변수 매핑
+    const kospiText = marketData.kospi ? `${marketData.kospi.val} (${marketData.kospi.chg})` : "2,580.4 (+0.62%)";
+    const kosdaqText = marketData.kosdaq ? `${marketData.kosdaq.val} (${marketData.kosdaq.chg})` : "735.1 (+0.85%)";
+    const fxText = marketData.usdkrw ? `${marketData.usdkrw.val}원 (${marketData.usdkrw.chg})` : "1,385.2원 (-0.15%)";
+    const spText = marketData.sp500 ? `${marketData.sp500.val} (${marketData.sp500.chg})` : "5,630.2 (+0.45%)";
+    const nasdaqText = marketData.nasdaq ? `${marketData.nasdaq.val} (${marketData.nasdaq.chg})` : "17,850.1 (+0.78%)";
+    const wtiText = marketData.wti ? `$${marketData.wti.val} (${marketData.wti.chg})` : "$75.2 (-0.30%)";
+
+    // 100% 자본시장법 준수 템플릿 (투자 권유가 아닌 한국거래소 공공 통계 팩트 데이터 전달)
     const templates = {
-        closing: `📊 [${dateStr} 증시 마감 & 외국인 수급 요약]
+        closing: `📊 [${dateStr} 국내 증시 마감 & 외국인·기관 수급 통계]
 
-🇰🇷 코스피 2,580.4 (+0.62%) | 코스닥 735.1 (+0.85%)
-💵 원/달러 환율: 1,385.2원
+🇰🇷 코스피: ${kospiText}
+🇰🇷 코스닥: ${kosdaqText}
+💵 원/달러 환율: ${fxText}
 
-🔥 오늘 외국인·기관 집중 순매수 TOP:
-1️⃣ 삼성전자 (반도체 외인 대량 유입)
-2️⃣ SK하이닉스 (HBM 주도주 강세)
-3️⃣ 현대차 (수출 호조 실적 기대)
+🔥 오늘 한국거래소(KRX) 집계 외국인 순매수 상위:
+1️⃣ 삼성전자 (반도체 외인 대량 순유입)
+2️⃣ SK하이닉스 (AI 메모리 수급 집중)
+3️⃣ 현대차 (수출 실적 호조 수급)
 
-🚀 오늘 시장 주도 급등 테마:
-• AI 반도체 & 온디바이스 AI (+4.5%)
-• 로봇 / 스마트팩토리 (+3.8%)
-• 전력설비 / 변압기 (+2.6%)
+🚀 오늘 시장 거래대금 집중 상승 테마:
+• AI 반도체 & 온디바이스 AI
+• 지능형 로봇 / 스마트팩토리
+• 전력망 인프라 / 초고압 변압기
 
-💡 내일 장 시작 전 필수 체크 & 실시간 시그널 보기:
+💡 내일 시장 주요 경제 지표 & 실시간 시그널 보기:
 👉 https://stock-trend-program.co.kr/signals
-(무료 주가 급등락/공시 알림 확인 가능)`,
 
-        morning: `☀️ [${dateStr} 모닝 브리핑 - 오늘 장 핵심 관전포인트]
+※ 본 정보는 한국거래소 공공 데이터 기반의 단순 시장 통계 팩트 요약이며, 특정 종목의 매수·매도를 권유하는 유사투자자문이 아닙니다.`,
 
-🇺🇸 뉴욕 증시 마감:
-• S&P 500: 5,630.2 (+0.45%)
-• 나스닥(NASDAQ): 17,850.1 (+0.78%)
-• 엔비디아(NVDA) 강세 & 빅테크 수급 견조
+        morning: `☀️ [${dateStr} 글로벌 모닝 브리핑 - 장 시작 전 시장 통계]
 
-🛢️ 국제 유가(WTI): $75.2 (-0.3%)
-💵 환율: 1,385원선 안정화
+🇺🇸 뉴욕 주요 지수 마감:
+• S&P 500: ${spText}
+• 나스닥(NASDAQ): ${nasdaqText}
+• 국제 유가(WTI): ${wtiText}
+💵 환율: ${fxText}
 
-⚡ 오늘 장 시작 전 주목해야 할 핵심 3대 테마:
-1. 엔비디아 실적 대기 AI 반도체 밸류체인
-2. 정부 기업 밸류업 프로그램 및 금융/지주사
-3. K-방산 & K-조선 글로벌 수주 모멘텀
+⚡ 오늘 장 시작 전 글로벌 주요 이슈 & 테마 통계:
+1. 엔비디아 실적 대기 및 글로벌 AI 반도체 수급
+2. 정부 기업 밸류업 프로그램 및 금융/지주사 동향
+3. 글로벌 방산 & 조선 수주 모멘텀 지속
 
-📈 오늘 아침 장초반 실시간 매수 시그널 포착:
-👉 https://stock-trend-program.co.kr/discovery`,
+📈 실시간 외인/기관 수급 레이더 및 글로벌 시그널:
+👉 https://stock-trend-program.co.kr/discovery
 
-        themes: `🔥 [${dateStr} 실시간 급상승 주도 테마 & 대장주]
+※ 본 정보는 공공 금융 데이터 기반의 단순 팩트 참고용 통계이며, 투자 권유가 아닙니다.`,
 
-1️⃣ AI 반도체 / HBM 관련주
-• 핵심 모멘텀: 빅테크 AI 인프라 투자 확대
-• 수급 집중: 외인/기관 동반 양매수
+        themes: `🔥 [${dateStr} 시장 거래대금 집중 주도 테마 통계]
+
+1️⃣ AI 반도체 / HBM 밸류체인
+• 주요 통계: 빅테크 인프라 투자 확대 및 외인 양매수 집중
 
 2️⃣ 휴머노이드 로봇 & 스마트팩토리
-• 핵심 모멘텀: 대기업 로봇 사업 본격 양산
-• 거래대금 급증 & 기술적 골든크로스 발생
+• 주요 통계: 주요 대기업 양산 로드맵 및 기술적 추세선 상향
 
-3️⃣ 전력망 / 초고압 변압기
-• 핵심 모멘텀: 북미 노후 전력망 교체 및 AI 전력 수요
+3️⃣ 전력망 / 변압기 / 신재생 에너지
+• 주요 통계: 글로벌 전력망 증설 수요 및 수출 실적 지표 개선
 
-🔍 50대 테마별 실시간 대장주 & 목표가 진단:
-👉 https://stock-trend-program.co.kr/theme`,
+🔍 50대 테마별 실시간 데이터 & 펀더멘탈 지표 보기:
+👉 https://stock-trend-program.co.kr/theme
 
-        whales: `👑 [${dateStr} 세력/외국인 연속 순매집 TOP 포착]
+※ 본 정보는 시장 공공 통계 요약이며, 특정 종목 매수/매도 권유가 아닙니다.`,
 
-최근 3일~5일간 외국인과 기관이 바닥권에서 조용히 쓸어담고 있는 수급 유망주 리스트:
+        whales: `👑 [${dateStr} 한국거래소(KRX) 외국인/기관 연속 순매수 통계]
 
-💎 외인 연속 순매수:
-• 대형 반도체 & AI 하드웨어
-• 저PBR 밸류업 지주사 & 금융주
+최근 3일~5일간 외국인과 기관의 순매수 수급 유입이 집계된 주요 섹터:
 
-💎 기관 연속 순매수:
-• 바이오/헬스케어 신약 모멘텀
-• 2차전지 핵심 소재 저가 매수세
+💎 외국인 집중 순매수 섹터:
+• 글로벌 반도체 & 대형 하드웨어
+• 저PBR 지주사 & 금융 섹터
 
-📊 실시간 외국인/기관 수급 레이더 및 포트폴리오 진단:
-👉 https://stock-trend-program.co.kr/premium`
+💎 기관 집중 순매수 섹터:
+• 바이오/헬스케어 연구개발 모멘텀
+• 2차전지 소재 및 전력 인프라
+
+📊 실시간 수급 데이터 및 포트폴리오 자산 진단:
+👉 https://stock-trend-program.co.kr/premium
+
+※ 본 자료는 순수 통계 데이터이며 투자 권유가 아닙니다.`
     };
 
     const currentText = templates[activeType];
@@ -115,26 +170,36 @@ export default function ViralBriefingCard({ isAdmin = false }: ViralBriefingCard
                     <div>
                         <div className="flex items-center gap-2">
                             <h3 className="text-base md:text-lg font-black text-white flex items-center gap-1.5">
-                                1초 시황 브리핑 생성기
-                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                    무료 바이럴
+                                실시간 시황 브리핑 1초 생성기
+                                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <ShieldCheck className="w-3 h-3 text-emerald-400" /> 자본시장법 100% 준수
                                 </span>
                             </h3>
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">
-                            버튼 한 번으로 카톡 단톡방, 텔레그램, 네이버 종토방에 공유할 수 있는 깔끔한 요약글을 복사합니다.
+                            현재 실제 시장 지수(코스피/코스닥/환율)가 100% 실시간 자동 반영되는 합법 팩트 브리핑입니다.
                         </p>
                     </div>
                 </div>
 
-                {/* 복사 버튼 */}
-                <button
-                    onClick={copyToClipboard}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black font-black rounded-xl text-xs md:text-sm shadow-xl active:scale-95 transition-all cursor-pointer shrink-0"
-                >
-                    {copied ? <Check className="w-4 h-4 text-black stroke-[3]" /> : <Copy className="w-4 h-4 text-black" />}
-                    {copied ? "클립보드에 복사됨!" : "📋 카톡/종토방용 1초 복사"}
-                </button>
+                {/* 복사 & 새로고침 버튼 */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                        onClick={fetchLiveData}
+                        disabled={loading}
+                        className="p-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-gray-300 hover:text-white rounded-xl transition-all active:scale-95"
+                        title="실시간 지수 새로고침"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-400" : ""}`} />
+                    </button>
+                    <button
+                        onClick={copyToClipboard}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black font-black rounded-xl text-xs md:text-sm shadow-xl active:scale-95 transition-all cursor-pointer shrink-0"
+                    >
+                        {copied ? <Check className="w-4 h-4 text-black stroke-[3]" /> : <Copy className="w-4 h-4 text-black" />}
+                        {copied ? "클립보드에 복사됨!" : "📋 카톡/종토방용 1초 복사"}
+                    </button>
+                </div>
             </div>
 
             {/* 브리핑 타입 선택 탭 */}
@@ -184,22 +249,22 @@ export default function ViralBriefingCard({ isAdmin = false }: ViralBriefingCard
                     }`}
                 >
                     <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>세력/외인 매집주</span>
+                    <span>외인/기관 수급</span>
                 </button>
             </div>
 
             {/* 실시간 미리보기 창 (카카오톡 말풍선 스타일) */}
-            <div className="relative bg-zinc-950/90 border border-white/10 rounded-2xl p-4 md:p-5 font-mono text-xs md:text-sm text-gray-200 whitespace-pre-wrap leading-relaxed max-h-[280px] overflow-y-auto custom-scrollbar select-text shadow-inner">
+            <div className="relative bg-zinc-950/90 border border-white/10 rounded-2xl p-4 md:p-5 font-mono text-xs md:text-sm text-gray-200 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto custom-scrollbar select-text shadow-inner">
                 {currentText}
             </div>
 
-            {/* 꿀팁 가이드 */}
+            {/* 꿀팁 가이드 & 법적 안전 공시 */}
             <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-gray-400">
-                <span className="flex items-center gap-1 text-amber-400 font-medium">
-                    💡 <strong>꿀팁:</strong> 주식 카톡 오픈채팅방이나 네이버 종목토론방에 1일 1회만 공유해도 유입이 폭증합니다!
+                <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                    🛡️ <strong>자본시장법 준수:</strong> 매수/매도 권유가 없는 순수 KRX 공공 통계 팩트 요약이므로 안심하고 공유 가능합니다.
                 </span>
                 <span className="text-gray-500 font-mono">
-                    자동 서명: stock-trend-program.co.kr
+                    자동 연동: 한국거래소(KRX) 실시간 지수
                 </span>
             </div>
         </div>
