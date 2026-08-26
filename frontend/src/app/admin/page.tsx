@@ -125,6 +125,16 @@ export default function AdminPage() {
     const [inputAdCurrency, setInputAdCurrency] = useState<'KRW' | 'USD'>('KRW');
     const [inputAdMemo, setInputAdMemo] = useState("");
     const [savingAdRevenue, setSavingAdRevenue] = useState(false);
+    const [shareCopied, setShareCopied] = useState(false);
+
+    const copyShareLink = (path: string = "/signals") => {
+        const fullUrl = `https://stock-trend-program.co.kr${path}`;
+        if (typeof navigator !== "undefined" && navigator.clipboard) {
+            navigator.clipboard.writeText(fullUrl);
+            setShareCopied(true);
+            setTimeout(() => setShareCopied(false), 2000);
+        }
+    };
 
     const fetchAdRevenue = async (platform: string = activeAdPlatform) => {
         setAdRevenueLoading(true);
@@ -718,6 +728,69 @@ export default function AdminPage() {
                             </button>
                         </div>
                     </div>
+
+                    {/* [NEW] 하루 500원 목표 달성 가속기 & 프로그레스 바 */}
+                    {(() => {
+                        const estTodayRev = Math.round((todayPV * 1.8 / 1000) * ecpmRate);
+                        const progressPct = Math.round((estTodayRev / 500) * 100);
+                        const isAchieved = estTodayRev >= 500;
+
+                        return (
+                            <div className="bg-gradient-to-r from-amber-500/10 via-zinc-950 to-emerald-500/10 border border-amber-500/30 rounded-3xl p-5 md:p-6 shadow-2xl relative overflow-hidden">
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 bg-amber-500/20 border border-amber-500/40 rounded-2xl text-amber-400 text-xl font-black">
+                                            🎯
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-base md:text-lg font-black text-white">
+                                                    하루 500원 수익 목표 달성 트래커
+                                                </h3>
+                                                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${isAchieved ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'}`}>
+                                                    {isAchieved ? `🎉 오늘 목표 ${progressPct}% 달성 완료!` : `🔥 오늘 목표 ${progressPct}% 진행 중`}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-0.5">
+                                                오늘 페이지뷰({todayPV.toLocaleString()} PV $\times$ 광고 1.8개) 기준 예상 수익: <strong className="text-amber-400 font-mono">₩{estTodayRev.toLocaleString()}원</strong> / 일일 목표 500원
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* 빠른 부스터 버튼 */}
+                                    <div className="flex items-center gap-2 w-full md:w-auto">
+                                        <button 
+                                            onClick={() => copyShareLink("/signals")}
+                                            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+                                        >
+                                            {shareCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <ExternalLink className="w-4 h-4 text-amber-400" />}
+                                            {shareCopied ? "링크 복사됨!" : "📢 시그널 공유 링크 복사"}
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveTab("notifications")}
+                                            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-black rounded-xl text-xs transition-all shadow-lg active:scale-95"
+                                        >
+                                            <Bell className="w-4 h-4 text-black" />
+                                            ⚡ 회원 푸시 발송
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 게이지 바 */}
+                                <div className="w-full bg-zinc-900 rounded-full h-3.5 overflow-hidden border border-white/10 p-0.5 relative">
+                                    <div 
+                                        className={`h-full rounded-full transition-all duration-1000 ${isAchieved ? 'bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-400 shadow-lg shadow-emerald-500/50' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`}
+                                        style={{ width: `${Math.min(progressPct, 100)}%` }}
+                                    />
+                                </div>
+                                <div className="flex justify-between items-center text-[11px] text-gray-400 mt-2 font-mono">
+                                    <span>0원 (시작)</span>
+                                    <span className="font-bold text-amber-400">목표: 500원/일 (월 15,000원)</span>
+                                    <span className="font-black text-emerald-400">현재 실시간 예상: ₩{estTodayRev.toLocaleString()} ({progressPct}%)</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* 계산 결과 3개 카드 */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
