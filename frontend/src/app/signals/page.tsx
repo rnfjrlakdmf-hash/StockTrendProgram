@@ -19,6 +19,7 @@ import CleanStockList from "@/components/CleanStockList";
 import AIDisclaimer from "@/components/AIDisclaimer";
 import RankingWidget from "@/components/RankingWidget";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
+import ViralBriefingCard from "@/components/ViralBriefingCard";
 
 // ============ Shared Types ============
 interface Signal { id: number; symbol: string; signal_type: string; title: string; summary: string; data: any; created_at: string; }
@@ -89,6 +90,9 @@ function SignalsPageContent() {
 
                 {/* Top In-Feed Ad Banner */}
                 <KakaoRevenueAd type="banner" />
+
+                {/* 1초 시황 브리핑 공유 카드 */}
+                <ViralBriefingCard />
 
                 <div className={activeTab === "signals" ? "block animate-in fade-in duration-200" : "hidden"}>
                     <SignalsFeedTab router={router} />
