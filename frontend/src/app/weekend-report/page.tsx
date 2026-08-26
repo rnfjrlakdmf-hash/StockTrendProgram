@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Lock, Clock, Calendar, CheckCircle2, TrendingUp, AlertTriangle, Share2, ArrowLeft, Flame, Sparkles, Check } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
+import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 
 interface WeekendReport {
     title: string;
@@ -255,6 +256,9 @@ export default function WeekendReportPage() {
                         </section>
                     ))}
                 </div>
+
+                {/* Kakao AdFit In-Feed Banner */}
+                <KakaoRevenueAd type="feed" />
 
                 {/* 3. 공유하기 버튼 */}
                 <div className="flex flex-col items-center justify-center pt-4">

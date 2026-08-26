@@ -9,6 +9,7 @@ import PriceAlertSetup from "@/components/PriceAlertSetup";
 import WatchlistPurchaseModal from "@/components/WatchlistPurchaseModal";
 import AdBanner from "@/components/AdBanner";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import { useAuth } from "@/context/AuthContext";
 import { isFreeModeEnabled } from "@/lib/adminMode";
 
@@ -367,13 +368,8 @@ export default function WatchlistPage() {
 
     return (
         <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-6">
-            {/* 상단 띠배너 광고 */}
-            <div className="flex md:hidden justify-center mb-2">
-                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-            </div>
-            <div className="hidden md:flex justify-center mb-2">
-                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-            </div>
+            {/* 상단 스마트 반응형 광고 */}
+            <KakaoRevenueAd type="feed" />
 
             {/* Header & Quick Summary */}
             <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-md">

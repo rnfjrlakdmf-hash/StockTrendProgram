@@ -8,6 +8,7 @@ import AdRewardModal from "@/components/AdRewardModal";
 import { checkReward } from "@/lib/reward";
 import { isFreeModeEnabled } from "@/lib/adminMode";
 import { useAuth } from "@/context/AuthContext";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 
 const safeNum = (v: any): number => {
   const n = parseFloat(String(v ?? "0").replace(/,/g, ""));
@@ -840,6 +841,9 @@ export default function PortfolioPage() {
                     </div>
                   )}
 
+                  {/* Kakao AdFit In-Feed Banner */}
+                  <KakaoRevenueAd type="bottom" />
+
                   {/* 6. 법적 면책 고지 */}
                   <div className="bg-rose-950/20 border border-rose-500/20 rounded-3xl p-6 text-xs text-gray-400 leading-relaxed shadow-lg">
                     <div className="flex items-center gap-2 mb-2 font-bold text-rose-300">
@@ -873,6 +877,8 @@ export default function PortfolioPage() {
                     <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5"><div className="text-2xl mb-1">📊</div><div className="text-white font-bold mb-0.5">6대 팩터 레이더</div><div className="text-[10px] text-gray-500">베타/알파/모멘텀 분석</div></div>
                     <div className="bg-zinc-950 p-4 rounded-2xl border border-white/5"><div className="text-2xl mb-1">💰</div><div className="text-white font-bold mb-0.5">배당 현금흐름</div><div className="text-[10px] text-gray-500">연간 배당 스케줄</div></div>
                   </div>
+                  
+                  <KakaoRevenueAd type="feed" />
                 </div>
               )}
             </>

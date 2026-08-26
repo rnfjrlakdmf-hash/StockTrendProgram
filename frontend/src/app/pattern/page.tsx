@@ -19,6 +19,7 @@ import AIDisclaimer from "@/components/AIDisclaimer";
 import { getTickerFromKorean } from "@/lib/stockMapping";
 import AdRewardModal from "@/components/AdRewardModal";
 import KakaoShareButton from "@/components/KakaoShareButton";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 
 export default function PatternPage() {
     const [searchInput, setSearchInput] = useState("");
@@ -959,6 +960,10 @@ export default function PatternPage() {
                         </div>
 
                         )}
+
+                        {/* Kakao AdFit In-Feed Banner */}
+                        <KakaoRevenueAd type="feed" />
+
                         <AIDisclaimer className="mt-8" />
                         {/* Viral Watermark (Included in capture) */}
                         <div className="pt-4 mt-8 border-t border-white/10 flex justify-between items-center text-gray-500 text-xs font-medium px-4">

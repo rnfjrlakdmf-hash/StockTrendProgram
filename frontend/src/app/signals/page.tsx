@@ -18,6 +18,7 @@ import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import CleanStockList from "@/components/CleanStockList";
 import AIDisclaimer from "@/components/AIDisclaimer";
 import RankingWidget from "@/components/RankingWidget";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 
 // ============ Shared Types ============
 interface Signal { id: number; symbol: string; signal_type: string; title: string; summary: string; data: any; created_at: string; }
@@ -86,6 +87,9 @@ function SignalsPageContent() {
                     ))}
                 </div>
 
+                {/* Top In-Feed Ad Banner */}
+                <KakaoRevenueAd type="banner" />
+
                 <div className={activeTab === "signals" ? "block animate-in fade-in duration-200" : "hidden"}>
                     <SignalsFeedTab router={router} />
                 </div>
@@ -98,6 +102,9 @@ function SignalsPageContent() {
                 <div className={activeTab === "calendar" ? "block animate-in fade-in duration-200" : "hidden"}>
                     <CalendarTab router={router} />
                 </div>
+
+                {/* Bottom In-Feed Ad Banner */}
+                <KakaoRevenueAd type="bottom" />
 
                 <AIDisclaimer className="mt-8 opacity-80" />
             </div>

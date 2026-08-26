@@ -10,6 +10,7 @@ import {
     ShieldCheck, BarChart3, Zap, ArrowRight
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false }) as any;
 
@@ -1115,6 +1116,9 @@ function EtfAnalysisContent() {
                             </div>
                         </div>
                     )}
+
+                    {/* Kakao AdFit Bottom Banner */}
+                    <KakaoRevenueAd type="bottom" />
                 </div>
             </main>
         </div>

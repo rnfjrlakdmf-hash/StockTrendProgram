@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import BlinkingPrice from "@/components/BlinkingPrice";
-import AdBanner from "@/components/AdBanner";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import { getTickerFromKorean } from "@/lib/stockMapping";
 import StockChatBoard from "@/components/StockChatBoard";
 import { MessageSquare } from "lucide-react";
@@ -574,8 +574,8 @@ function AnalysisContent() {
                     </button>
                 </div>
 
-                {/* AdSense Placement (Main Analysis Top) */}
-                <AdBanner adSlot="7781033256" />
+                {/* Kakao AdFit Placement (Main Analysis In-Feed) */}
+                <KakaoRevenueAd type="feed" />
 
                 <div className="sticky top-4 z-40 flex justify-center py-2 bg-zinc-950/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl">
                     <div className="flex gap-1.5 bg-zinc-900/80 p-1.5 rounded-xl w-full max-w-2xl border border-white/5">
@@ -1492,7 +1492,10 @@ function AnalysisContent() {
                     )}
                 </div>
 
-                <AIDisclaimer className="mt-12 opacity-60" />
+                {/* Kakao AdFit Bottom Banner */}
+                <KakaoRevenueAd type="bottom" />
+
+                <AIDisclaimer className="mt-8 opacity-60" />
             </div>
         </div>
     );
