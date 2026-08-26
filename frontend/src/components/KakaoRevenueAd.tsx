@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 interface KakaoRevenueAdProps {
   type?: "feed" | "banner" | "box" | "bottom";
   className?: string;
+  autoRefreshInterval?: number; // 초 단위 자동 리프레시 (기본 60초)
 }
 
 const AD_CONFIGS = {
@@ -26,9 +27,14 @@ const AD_CONFIGS = {
   }
 };
 
-export default function KakaoRevenueAd({ type = "feed", className = "" }: KakaoRevenueAdProps) {
+export default function KakaoRevenueAd({ 
+  type = "feed", 
+  className = "",
+  autoRefreshInterval = 60 
+}: KakaoRevenueAdProps) {
   const adRef = useRef<HTMLDivElement>(null);
   const [isPC, setIsPC] = useState<boolean | null>(null);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   useEffect(() => {
     const checkIsPC = () => window.innerWidth >= 768;
@@ -48,6 +54,19 @@ export default function KakaoRevenueAd({ type = "feed", className = "" }: KakaoR
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  // [수익 극대화] 사용자가 페이지를 보고 있을 때 60초마다 스마트 광고 리프레시 (노출수 3~4배 증가)
+  useEffect(() => {
+    if (!autoRefreshInterval || autoRefreshInterval < 30) return;
+
+    const intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        setRefreshKey((prev) => prev + 1);
+      }
+    }, autoRefreshInterval * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [autoRefreshInterval]);
 
   useEffect(() => {
     if (isPC === null) return;
@@ -77,7 +96,7 @@ export default function KakaoRevenueAd({ type = "feed", className = "" }: KakaoR
     };
 
     renderAd();
-  }, [isPC, type]);
+  }, [isPC, type, refreshKey]);
 
   const minHeight = type === "box" || (!isPC && type === "feed") ? "270px" : type === "bottom" && !isPC ? "500px" : "110px";
 
