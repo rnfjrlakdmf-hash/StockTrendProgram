@@ -327,8 +327,7 @@ def get_premium_report(user_id: str):
         try:
             with open(report_path, "r", encoding="utf-8") as f:
                 saved_data = json.load(f)
-                # 날짜가 다르면 아직 오늘 껀 업데이트 안된거임
-                if saved_data.get("report_date") == today_str:
+                if saved_data and saved_data.get("content") and len(saved_data.get("content", "")) > 100:
                     premium_data = saved_data
         except Exception as e:
             print(f"Failed to read premium report: {e}")

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -244,17 +244,6 @@ export default function PremiumPage() {
                         </p>
                     </div>
                 </div>
-
-                {/* 복사 버튼 (열람 가능 시) */}
-                {report && !report.locked && (
-                    <button
-                        onClick={copyFullReport}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-xs font-bold text-gray-200 hover:text-white rounded-xl transition-all active:scale-95 shadow-md shrink-0 cursor-pointer"
-                    >
-                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-amber-400" />}
-                        {copied ? "복사 완료!" : "📋 리포트 전문 복사"}
-                    </button>
-                )}
             </div>
 
             {isLoading ? (
