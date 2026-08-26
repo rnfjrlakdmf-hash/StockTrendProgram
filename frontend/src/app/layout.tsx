@@ -110,17 +110,52 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              "name": "스마트 투자 비서",
-              "applicationCategory": "FinanceApplication",
-              "operatingSystem": "Web, Android",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "KRW"
-              },
-              "description": "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, 속보 알림 서비스",
-              "url": "https://stock-trend-program.co.kr"
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://stock-trend-program.co.kr/#website",
+                  "url": "https://stock-trend-program.co.kr",
+                  "name": "스마트 투자 비서",
+                  "alternateName": ["StockTrend", "스톡트렌드", "AI 주식 비서"],
+                  "description": "국내외 실시간 주식 시세, 퀀트 재무 분석, 외인·기관 수급 레이더 및 무료 주식 투자 가이드",
+                  "inLanguage": "ko-KR",
+                  "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://stock-trend-program.co.kr/discovery?q={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                  }
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://stock-trend-program.co.kr/#organization",
+                  "name": "스마트 투자 비서",
+                  "url": "https://stock-trend-program.co.kr",
+                  "logo": "https://stock-trend-program.co.kr/icon.png",
+                  "founder": {
+                    "@type": "Person",
+                    "name": "윤희원"
+                  },
+                  "contactPoint": {
+                    "@type": "ContactPoint",
+                    "email": "rnfjrlakdmf@gmail.com",
+                    "contactType": "customer service"
+                  }
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": "https://stock-trend-program.co.kr/#app",
+                  "name": "스마트 투자 비서",
+                  "applicationCategory": "FinanceApplication",
+                  "operatingSystem": "Web, iOS, Android",
+                  "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "KRW"
+                  },
+                  "description": "인공지능이 매일 아침 전해주는 주식 브리핑과 주가 급등락, DART 공시 속보 알림 서비스",
+                  "url": "https://stock-trend-program.co.kr"
+                }
+              ]
             })
           }}
         />
