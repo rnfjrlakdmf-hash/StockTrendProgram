@@ -752,7 +752,7 @@ export default function AdminPage() {
                                                 </span>
                                             </div>
                                             <p className="text-xs text-gray-400 mt-0.5">
-                                                오늘 페이지뷰({todayPV.toLocaleString()} PV $\times$ 광고 1.8개) 기준 예상 수익: <strong className="text-amber-400 font-mono">₩{estTodayRev.toLocaleString()}원</strong> / 일일 목표 500원
+                                                오늘 페이지뷰({todayPV.toLocaleString()} PV × 광고 1.8개) 기준 예상 수익: <strong className="text-amber-400 font-mono">₩{estTodayRev.toLocaleString()}원</strong> / 일일 목표 500원
                                             </p>
                                         </div>
                                     </div>

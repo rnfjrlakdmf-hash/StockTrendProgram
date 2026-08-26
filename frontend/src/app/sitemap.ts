@@ -12,9 +12,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 1,
         },
         {
-            url: `${baseUrl}/supply-chain`,
+            url: `${baseUrl}/signals`,
             lastModified: new Date(),
-            changeFrequency: 'weekly',
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/analysis`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/pattern`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/etf-analysis`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
             priority: 0.9,
         },
         {
@@ -24,22 +42,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/guide/ai-investing`,
+            url: `${baseUrl}/weekend-report`,
             lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
+            changeFrequency: 'weekly',
+            priority: 0.8,
         },
         {
-            url: `${baseUrl}/guide/supply-chain-analysis`,
+            url: `${baseUrl}/watchlist`,
             lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
+            changeFrequency: 'daily',
+            priority: 0.8,
         },
         {
-            url: `${baseUrl}/guide/risk-management`,
+            url: `${baseUrl}/supply-chain`,
             lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/guide`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.9,
         },
         {
             url: `${baseUrl}/about`,
@@ -54,18 +78,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         },
         {
+            url: `${baseUrl}/disclaimer`,
+            lastModified: new Date(),
+            changeFrequency: 'yearly',
+            priority: 0.6,
+        },
+        {
             url: `${baseUrl}/privacy-policy`,
             lastModified: new Date(),
             changeFrequency: 'yearly',
-            priority: 0.5,
+            priority: 0.6,
         },
         {
             url: `${baseUrl}/terms`,
             lastModified: new Date(),
             changeFrequency: 'yearly',
-            priority: 0.5,
+            priority: 0.6,
         },
     ];
+
+    // 46대 주식 교육 전문 가이드 색인 추가 (애드센스 고품질 콘텐츠 심사 핵심)
+    const ALL_GUIDE_SLUGS = [
+        "ai-investing", "averaging-down", "beta", "bollinger-band", "book-value", 
+        "dart", "dead-cross", "disclosure", "diversification", "dividend", 
+        "dividend-yield", "ebitda", "eps", "etf", "ex-dividend-date", 
+        "fomc", "fundamental-analysis", "golden-cross", "growth-investing", 
+        "inflation", "interest-rate", "kosdaq", "kospi", "limit-order", 
+        "macd", "market-cap", "market-order", "momentum", "moving-average", 
+        "net-profit", "operating-profit", "pbr", "per", "portfolio", 
+        "rebalancing", "revenue", "risk-management", "roe", "rsi", 
+        "sector-rotation", "short-selling", "stop-loss", "supply-chain-analysis", 
+        "technical-analysis", "value-investing", "volume"
+    ];
+
+    ALL_GUIDE_SLUGS.forEach((slug) => {
+        routes.push({
+            url: `${baseUrl}/guide/${slug}`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.85,
+        });
+    });
 
     // Add static high-quality SEO posts
     STATIC_POSTS.forEach((post) => {
