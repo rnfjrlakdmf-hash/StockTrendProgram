@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import ViralBriefingCard from "@/components/ViralBriefingCard";
 import { Users, ShieldCheck, ShieldAlert, Search, Loader2, Mail, Calendar, Star, Trash2, Activity, Eye, UserPlus, Megaphone, Power, RefreshCw, AlertTriangle, DollarSign, ExternalLink, Settings, MousePointerClick, Bell, Monitor, Smartphone, Calculator, TrendingUp, BarChart3, Info, Sparkles, HelpCircle, ArrowUpRight, Coins, CheckCircle2, PlusCircle, History, Flame, Globe } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
@@ -715,10 +714,6 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* ============================================================ */}
-                {/* 2.5. [1초 바이럴] 카카오톡/종토방 시황 브리핑 생성기 */}
-                {/* ============================================================ */}
-                <ViralBriefingCard isAdmin={true} />
 
                 {/* ============================================================ */}
                 {/* 3. eCPM & 광고 수익 시뮬레이터 */}
