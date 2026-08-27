@@ -9,6 +9,7 @@ import ReportDownloadButton from "@/components/ReportDownloadButton";
 import OnDemandAiAnalysis from "@/components/OnDemandAiAnalysis";
 import PremiumContent from "@/components/PremiumContent";
 import RiskGaugeWidget from "@/components/RiskGaugeWidget";
+import MtsOrderButton from "@/components/MtsOrderButton";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -188,7 +189,8 @@ export default async function StockSeoPage({ params }: Props) {
                             </h1>
                             <p className="text-lg text-slate-400 mt-2 font-medium">종목코드: {decodedTicker}</p>
                         </div>
-                        <div className="flex flex-col gap-2 w-full md:w-auto">
+                        <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
+                            <MtsOrderButton stockName={name} symbol={decodedTicker} className="w-full" />
                             <KakaoShareButton 
                                 title={`[종목 분석] ${name} (${decodedTicker})`}
                                 description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}

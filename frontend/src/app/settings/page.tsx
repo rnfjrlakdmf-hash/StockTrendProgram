@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
+import BrokerMtsSection from "@/components/BrokerMtsSection";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
 import { ShieldCheck, Smartphone, User, ExternalLink, CheckCircle, AlertTriangle, Zap, Eye, EyeOff, Trash2, ChevronDown, ChevronUp, BellRing } from "lucide-react";
@@ -217,6 +218,10 @@ export default function SettingsPage() {
             </div>
 
             <div className="max-w-2xl mx-auto p-6 space-y-6">
+                {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    [New] 주거래 증권사 모바일 MTS/HTS 빠른 실행 연동
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                <BrokerMtsSection />
 
                 {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                     [New] KIS 시세 연동
