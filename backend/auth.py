@@ -325,7 +325,7 @@ def get_premium_report(user_id: str):
 
     if os.path.exists(report_path):
         try:
-            with open(report_path, "r", encoding="utf-8") as f:
+            with open(report_path, "r", encoding="utf-8-sig") as f:
                 saved_data = json.load(f)
                 if saved_data and saved_data.get("content") and len(saved_data.get("content", "")) > 100:
                     premium_data = saved_data
