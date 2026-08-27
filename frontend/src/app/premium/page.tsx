@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Lock, Unlock, Gem, AlertCircle, Timer, Copy, Check, Share2, Globe, Building2, Sparkles, TrendingUp, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Lock, Unlock, Gem, AlertCircle, Timer, Globe, Building2, Sparkles, ShieldCheck } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/lib/config';
 
@@ -361,106 +363,119 @@ export default function PremiumPage() {
                                 )}
 
                                 {/* 2. 외국인 순매수 상위 팩트 체크 리스트 */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="p-2 bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400">
-                                                <Globe className="w-5 h-5" />
+                                {foreignItems.length > 0 && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="p-2 bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400">
+                                                    <Globe className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base md:text-lg font-black text-white">
+                                                        외국인 순매수 상위 팩트 체크
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400">글로벌 스마트머니의 포트폴리오 편입 및 헷지 종목</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-base md:text-lg font-black text-white">
-                                                    외국인 순매수 상위 팩트 체크
-                                                </h3>
-                                                <p className="text-xs text-gray-400">글로벌 스마트머니의 포트폴리오 편입 및 헷지 종목</p>
-                                            </div>
+                                            <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                                                TOP 10
+                                            </span>
                                         </div>
-                                        <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
-                                            TOP 10
-                                        </span>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                        {foreignItems.map((item) => (
-                                            <div
-                                                key={item.rank}
-                                                className="bg-zinc-950/70 hover:bg-zinc-900 border border-white/5 hover:border-cyan-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 shadow-md hover:shadow-cyan-500/5 flex flex-col justify-between"
-                                            >
-                                                <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-white/5">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                                            item.rank === 1 ? 'bg-cyan-400 text-black shadow-md' :
-                                                            item.rank === 2 ? 'bg-slate-300 text-black' :
-                                                            item.rank === 3 ? 'bg-amber-700 text-white' :
-                                                            'bg-white/10 text-gray-400'
-                                                        }`}>
-                                                            {item.rank}
-                                                        </span>
-                                                        <span className="text-sm md:text-base font-black text-white">
-                                                            {item.name}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                                            {foreignItems.map((item) => (
+                                                <div
+                                                    key={item.rank}
+                                                    className="bg-zinc-950/70 hover:bg-zinc-900 border border-white/5 hover:border-cyan-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 shadow-md hover:shadow-cyan-500/5 flex flex-col justify-between"
+                                                >
+                                                    <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-white/5">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                                                                item.rank === 1 ? 'bg-cyan-400 text-black shadow-md' :
+                                                                item.rank === 2 ? 'bg-slate-300 text-black' :
+                                                                item.rank === 3 ? 'bg-amber-700 text-white' :
+                                                                'bg-white/10 text-gray-400'
+                                                            }`}>
+                                                                {item.rank}
+                                                            </span>
+                                                            <span className="text-sm md:text-base font-black text-white">
+                                                                {item.name}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-1 rounded-xl shrink-0">
+                                                            {item.volume}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-1 rounded-xl shrink-0">
-                                                        {item.volume}
-                                                    </span>
+                                                    <p className="text-xs md:text-[13px] text-gray-300 leading-relaxed font-normal">
+                                                        {item.desc}
+                                                    </p>
                                                 </div>
-                                                <p className="text-xs md:text-[13px] text-gray-300 leading-relaxed font-normal">
-                                                    {item.desc}
-                                                </p>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* 3. 기관 순매수 상위 팩트 체크 리스트 */}
-                                <div className="space-y-4 pt-4">
-                                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="p-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-400">
-                                                <Building2 className="w-5 h-5" />
+                                {instItems.length > 0 && (
+                                    <div className="space-y-4 pt-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="p-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-400">
+                                                    <Building2 className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base md:text-lg font-black text-white">
+                                                        기관 순매수 상위 팩트 체크
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400">국내 기관계(투신·연기금)의 대형주 집중 매집 요충지</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-base md:text-lg font-black text-white">
-                                                    기관 순매수 상위 팩트 체크
-                                                </h3>
-                                                <p className="text-xs text-gray-400">국내 기관계(투신·연기금)의 대형주 집중 매집 요충지</p>
-                                            </div>
+                                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                                                TOP 10
+                                            </span>
                                         </div>
-                                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-                                            TOP 10
-                                        </span>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                        {instItems.map((item) => (
-                                            <div
-                                                key={item.rank}
-                                                className="bg-zinc-950/70 hover:bg-zinc-900 border border-white/5 hover:border-amber-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 shadow-md hover:shadow-amber-500/5 flex flex-col justify-between"
-                                            >
-                                                <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-white/5">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                                            item.rank === 1 ? 'bg-amber-400 text-black shadow-md' :
-                                                            item.rank === 2 ? 'bg-slate-300 text-black' :
-                                                            item.rank === 3 ? 'bg-amber-700 text-white' :
-                                                            'bg-white/10 text-gray-400'
-                                                        }`}>
-                                                            {item.rank}
-                                                        </span>
-                                                        <span className="text-sm md:text-base font-black text-white">
-                                                            {item.name}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                                            {instItems.map((item) => (
+                                                <div
+                                                    key={item.rank}
+                                                    className="bg-zinc-950/70 hover:bg-zinc-900 border border-white/5 hover:border-amber-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 shadow-md hover:shadow-amber-500/5 flex flex-col justify-between"
+                                                >
+                                                    <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-white/5">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                                                                item.rank === 1 ? 'bg-amber-400 text-black shadow-md' :
+                                                                item.rank === 2 ? 'bg-slate-300 text-black' :
+                                                                item.rank === 3 ? 'bg-amber-700 text-white' :
+                                                                'bg-white/10 text-gray-400'
+                                                            }`}>
+                                                                {item.rank}
+                                                            </span>
+                                                            <span className="text-sm md:text-base font-black text-white">
+                                                                {item.name}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-xl shrink-0">
+                                                            {item.volume}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-xl shrink-0">
-                                                        {item.volume}
-                                                    </span>
+                                                    <p className="text-xs md:text-[13px] text-gray-300 leading-relaxed font-normal">
+                                                        {item.desc}
+                                                    </p>
                                                 </div>
-                                                <p className="text-xs md:text-[13px] text-gray-300 leading-relaxed font-normal">
-                                                    {item.desc}
-                                                </p>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+
+                                {/* Fallback if items not parsed */}
+                                {foreignItems.length === 0 && instItems.length === 0 && (
+                                    <div className="prose prose-invert prose-base max-w-none text-gray-300 bg-zinc-950/70 p-6 rounded-2xl border border-white/5 leading-relaxed">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {report.data.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                )}
 
                                 {/* 법적 고지 & 카피라이트 */}
                                 <div className="p-4 bg-zinc-950/90 rounded-2xl border border-white/5 text-[11px] text-gray-400 flex items-center justify-between gap-2">

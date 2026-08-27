@@ -335,14 +335,19 @@ def get_premium_report(user_id: str):
     try:
         from db_manager import check_report_unlocked, get_user
         
-        is_unlocked = check_report_unlocked(user_id, today_str)
+        target_report_date = premium_data.get("report_date", today_str)
+        is_unlocked = check_report_unlocked(user_id, target_report_date) or check_report_unlocked(user_id, today_str)
         
         # 관리자 계정은 무조건 열람 가능
         admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
         user_info = get_user(user_id)
         is_admin = False
-        if user_info and user_info.get("email") and user_info.get("email").lower() in admin_emails:
+        if user_id and user_id.lower() in admin_emails:
             is_admin = True
+        elif user_info:
+            user_email = (user_info.get("email") or "").lower()
+            if user_email in admin_emails or user_info.get("is_admin") or user_info.get("role") == "admin":
+                is_admin = True
             
         if is_unlocked or is_admin:
             return {
@@ -351,10 +356,10 @@ def get_premium_report(user_id: str):
                 "data": premium_data
             }
         else:
-            # 잠금 상태이면 preview만 보냄
+            # 잠금 상태이면 preview 및 블러용 미리보기 제공
             locked_data = premium_data.copy()
-            # 블러를 위한 긴 빈 줄 및 안내 문구 추가
-            locked_data["content"] = premium_data["content"][:100] + "\n\n... (50 코인으로 잠금 해제하여 전체 본문을 확인하세요) ..." + "\n" * 15
+            preview_snippet = premium_data.get("content", "")[:180]
+            locked_data["content"] = preview_snippet + "\n\n... (50 코인으로 잠금 해제하여 전체 본문을 확인하세요) ..." + "\n" * 12
             return {
                 "status": "success",
                 "locked": True,
