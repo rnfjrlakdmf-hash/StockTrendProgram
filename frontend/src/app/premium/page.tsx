@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { 
     Lock, Unlock, Gem, AlertCircle, Timer, Globe, Building2, Sparkles, 
     ShieldCheck, Crown, Flame, ArrowUpRight, TrendingUp, Zap, Layers,
-    CheckCircle2, Compass, BarChart3, Copy, Check
+    CheckCircle2, Compass, BarChart3, Copy, Check, Target, AlertTriangle
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18,6 +18,30 @@ interface ParsedQuantStock {
     fact: string;
     tech: string;
     consensus: string;
+}
+
+interface Section1Data {
+    lead: string;
+    foreign: string;
+    inst: string;
+    summary: string;
+}
+
+interface Section3Theme {
+    title: string;
+    badge: string;
+    desc: string;
+    icon: string;
+}
+
+interface Section3Data {
+    lead: string;
+    items: Section3Theme[];
+}
+
+interface Section4Data {
+    hedge: string;
+    risk: string;
 }
 
 export default function PremiumPage() {
@@ -133,18 +157,25 @@ export default function PremiumPage() {
 
     // Helper: Parse the raw text content into visual sections
     const parseVipReport = (rawContent: string) => {
-        if (!rawContent) return { section1: '', quantStocks: [], section3: '', section4: '' };
+        if (!rawContent) {
+            return { 
+                section1Data: { lead: '', foreign: '', inst: '', summary: '' },
+                quantStocks: [], 
+                section3Data: { lead: '', items: [] }, 
+                section4Data: { hedge: '', risk: '' } 
+            };
+        }
 
-        let section1 = '';
+        let s1Raw = '';
         const quantStocks: ParsedQuantStock[] = [];
-        let section3 = '';
-        let section4 = '';
+        let s3Raw = '';
+        let s4Raw = '';
 
         try {
             if (rawContent.includes('Section 1')) {
                 const p1 = rawContent.split(/###\s*💎?\s*Section 1[^\n]*/i)[1] || '';
                 const s2Split = p1.split(/###\s*🏆?\s*Section 2[^\n]*/i);
-                section1 = s2Split[0].trim();
+                s1Raw = s2Split[0].trim();
 
                 if (s2Split.length > 1) {
                     const p2 = s2Split[1];
@@ -183,10 +214,10 @@ export default function PremiumPage() {
                     if (s3Split.length > 1) {
                         const p3 = s3Split[1];
                         const s4Split = p3.split(/###\s*🛡️?\s*Section 4[^\n]*/i);
-                        section3 = s4Split[0].replace(/---.*/s, '').trim();
+                        s3Raw = s4Split[0].replace(/---.*/s, '').trim();
 
                         if (s4Split.length > 1) {
-                            section4 = s4Split[1].replace(/---.*/s, '').replace(/\*※.*/s, '').trim();
+                            s4Raw = s4Split[1].replace(/---.*/s, '').replace(/\*※.*/s, '').trim();
                         }
                     }
                 }
@@ -195,7 +226,76 @@ export default function PremiumPage() {
             console.error('Error parsing VIP report:', e);
         }
 
-        return { section1, quantStocks, section3, section4 };
+        // Parse Section 1
+        const s1Sentences = s1Raw ? s1Raw.split(/(?<=\.)\s+/).filter(Boolean) : [];
+        const section1Data: Section1Data = {
+            lead: s1Sentences[0] || s1Raw,
+            foreign: '',
+            inst: '',
+            summary: ''
+        };
+        for (let i = 1; i < s1Sentences.length; i++) {
+            const s = s1Sentences[i];
+            if (s.includes('외국인')) {
+                section1Data.foreign = s;
+            } else if (s.includes('기관')) {
+                section1Data.inst = s;
+            } else if (s.includes('스마트머니') || s.includes('전반적') || s.includes('국면')) {
+                section1Data.summary = s;
+            } else {
+                if (!section1Data.foreign) section1Data.foreign = s;
+                else if (!section1Data.inst) section1Data.inst = s;
+                else section1Data.summary = (section1Data.summary + ' ' + s).trim();
+            }
+        }
+
+        // Parse Section 3
+        const s3Sentences = s3Raw ? s3Raw.split(/(?<=\.)\s+/).filter(Boolean) : [];
+        const section3Data: Section3Data = {
+            lead: s3Sentences[0] || s3Raw,
+            items: []
+        };
+        for (let i = 1; i < s3Sentences.length; i++) {
+            const s = s3Sentences[i];
+            if (s.includes('자동차') || s.includes('현대차') || s.includes('완성차')) {
+                section3Data.items.push({
+                    title: '자동차 밸류체인 & SDV 부품주',
+                    badge: '현대차 · 현대모비스 · 현대오토에버',
+                    desc: s,
+                    icon: '🚗'
+                });
+            } else if (s.includes('반도체') || s.includes('소부장') || s.includes('주성엔지니어링')) {
+                section3Data.items.push({
+                    title: '반도체 소부장 밸류체인',
+                    badge: '주성엔지니어링 · 원익IPS · 테스',
+                    desc: s,
+                    icon: '⚡'
+                });
+            } else {
+                section3Data.items.push({
+                    title: `주도 유망 테마 ${section3Data.items.length + 1}`,
+                    badge: '수급 집중 테마',
+                    desc: s,
+                    icon: '🚀'
+                });
+            }
+        }
+
+        // Parse Section 4
+        const s4Sentences = s4Raw ? s4Raw.split(/(?<=\.)\s+/).filter(Boolean) : [];
+        const section4Data: Section4Data = {
+            hedge: '',
+            risk: ''
+        };
+        for (const s of s4Sentences) {
+            if (s.includes('인버스') || s.includes('선물') || s.includes('헷지')) {
+                section4Data.hedge = s;
+            } else {
+                section4Data.risk = (section4Data.risk + ' ' + s).trim();
+            }
+        }
+
+        return { section1Data, quantStocks, section3Data, section4Data };
     };
 
     const copyFullReport = () => {
@@ -216,9 +316,14 @@ export default function PremiumPage() {
         );
     }
 
-    const { section1, quantStocks, section3, section4 } = report?.data?.content 
+    const { section1Data, quantStocks, section3Data, section4Data } = report?.data?.content 
         ? parseVipReport(report.data.content) 
-        : { section1: '', quantStocks: [], section3: '', section4: '' };
+        : { 
+            section1Data: { lead: '', foreign: '', inst: '', summary: '' }, 
+            quantStocks: [], 
+            section3Data: { lead: '', items: [] }, 
+            section4Data: { hedge: '', risk: '' } 
+        };
 
     return (
         <div className="min-h-screen bg-[#07080d] text-gray-100 p-4 md:p-8 max-w-5xl mx-auto relative overflow-hidden font-sans">
@@ -357,9 +462,9 @@ export default function PremiumPage() {
                         /* Locked State: Clean Section 1 + Gold Vault Locked Card */
                         <div className="space-y-8">
                             {/* Section 1 Free Preview Card */}
-                            <div className="relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-zinc-950 border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden">
+                            <div className="relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-zinc-950 border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden space-y-4">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                                <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10 mb-4">
+                                <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
                                             <Compass className="w-5 h-5" />
@@ -375,9 +480,49 @@ export default function PremiumPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <p className="text-sm md:text-base text-gray-200 leading-relaxed font-normal whitespace-pre-line">
-                                    {section1 || report.data.content || report.data.preview}
-                                </p>
+
+                                {section1Data.lead && (
+                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3">
+                                        <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+                                        <p className="text-xs md:text-sm font-bold text-amber-200 leading-relaxed">
+                                            {section1Data.lead}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                    {section1Data.foreign && (
+                                        <div className="bg-zinc-900/80 border border-cyan-500/20 rounded-2xl p-4 space-y-2">
+                                            <div className="text-xs font-bold text-cyan-400 flex items-center gap-1.5 pb-1.5 border-b border-white/5">
+                                                <Globe className="w-3.5 h-3.5" /> 외국인 자금 흐름
+                                            </div>
+                                            <p className="text-xs text-gray-300 leading-relaxed">
+                                                {section1Data.foreign}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {section1Data.inst && (
+                                        <div className="bg-zinc-900/80 border border-purple-500/20 rounded-2xl p-4 space-y-2">
+                                            <div className="text-xs font-bold text-purple-400 flex items-center gap-1.5 pb-1.5 border-b border-white/5">
+                                                <Building2 className="w-3.5 h-3.5" /> 기관 자금 흐름
+                                            </div>
+                                            <p className="text-xs text-gray-300 leading-relaxed">
+                                                {section1Data.inst}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {section1Data.summary && (
+                                    <div className="bg-zinc-950/70 border border-white/5 rounded-2xl p-4 space-y-1.5">
+                                        <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                            <Target className="w-3.5 h-3.5" /> 스마트머니 종합 결론
+                                        </div>
+                                        <p className="text-xs text-gray-300 leading-relaxed">
+                                            {section1Data.summary}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Luxury Gold Vault Lock Card */}
@@ -436,10 +581,10 @@ export default function PremiumPage() {
                         <div className="space-y-10">
                             
                             {/* 💎 SECTION 1: 스마트머니 자금 대이동 맥락 */}
-                            {(activeTab === 'all' || activeTab === 'pulse') && section1 && (
-                                <section className="relative bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-zinc-950 border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden">
+                            {(activeTab === 'all' || activeTab === 'pulse') && (
+                                <section className="relative bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-zinc-950 border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden space-y-5">
                                     <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                                    <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10 mb-5">
+                                    <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
                                         <div className="flex items-center gap-3">
                                             <div className="p-3 bg-gradient-to-br from-amber-400/20 to-amber-600/10 border border-amber-500/30 rounded-2xl text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
                                                 <Compass className="w-5 h-5" />
@@ -454,8 +599,65 @@ export default function PremiumPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-sm md:text-base text-gray-200 leading-relaxed font-normal bg-zinc-950/60 border border-white/5 rounded-2xl p-5 md:p-6">
-                                        {section1}
+
+                                    {/* 1. Lead Highlight Banner */}
+                                    {section1Data.lead && (
+                                        <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border-l-4 border-amber-400 p-4 rounded-r-2xl">
+                                            <p className="text-sm md:text-base font-bold text-amber-200 leading-relaxed">
+                                                {section1Data.lead}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* 2. Micro Bento 3-Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {/* Foreign Flow */}
+                                        <div className="bg-zinc-900/80 border border-cyan-500/20 hover:border-cyan-500/40 rounded-2xl p-5 space-y-2.5 transition-all">
+                                            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                                                <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                                                    <Globe className="w-4 h-4 text-cyan-400" />
+                                                    외국인 자금 이동
+                                                </span>
+                                                <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-full">
+                                                    FOREIGN
+                                                </span>
+                                            </div>
+                                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal">
+                                                {section1Data.foreign || "외국인 주도 섹터 집중 매수 확인"}
+                                            </p>
+                                        </div>
+
+                                        {/* Institution Flow */}
+                                        <div className="bg-zinc-900/80 border border-purple-500/20 hover:border-purple-500/40 rounded-2xl p-5 space-y-2.5 transition-all">
+                                            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                                                <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                                                    <Building2 className="w-4 h-4 text-purple-400" />
+                                                    기관 자금 이동
+                                                </span>
+                                                <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
+                                                    INSTITUTION
+                                                </span>
+                                            </div>
+                                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal">
+                                                {section1Data.inst || "기관 밸류에이션 가치주 매집 확인"}
+                                            </p>
+                                        </div>
+
+                                        {/* Strategy Summary */}
+                                        <div className="bg-zinc-900/80 border border-amber-500/20 hover:border-amber-500/40 rounded-2xl p-5 space-y-2.5 transition-all">
+                                            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                                                <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                                    <Target className="w-4 h-4 text-amber-400" />
+                                                    스마트머니 핵심 총평
+                                                </span>
+                                                <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                                                    STRATEGY
+                                                </span>
+                                            </div>
+                                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal">
+                                                {section1Data.summary || "대형주 및 주도주 압축 대응 전략"}
+                                            </p>
+                                        </div>
                                     </div>
                                 </section>
                             )}
@@ -565,10 +767,10 @@ export default function PremiumPage() {
                             )}
 
                             {/* 🚀 SECTION 3: 내일의 주도 유망 테마 & 밸류체인 레이더 */}
-                            {(activeTab === 'all' || activeTab === 'catalyst') && section3 && (
-                                <section className="relative bg-gradient-to-br from-purple-950/20 via-zinc-950 to-zinc-950 border border-purple-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden">
+                            {(activeTab === 'all' || activeTab === 'catalyst') && (
+                                <section className="relative bg-gradient-to-br from-purple-950/20 via-zinc-950 to-zinc-950 border border-purple-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden space-y-5">
                                     <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                                    <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10 mb-5">
+                                    <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
                                         <div className="flex items-center gap-3">
                                             <div className="p-3 bg-gradient-to-br from-purple-400/20 to-indigo-600/10 border border-purple-500/30 rounded-2xl text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
                                                 <Zap className="w-5 h-5" />
@@ -583,17 +785,43 @@ export default function PremiumPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-sm md:text-base text-gray-200 leading-relaxed font-normal bg-zinc-950/60 border border-white/5 rounded-2xl p-5 md:p-6">
-                                        {section3}
+
+                                    {/* 1. Lead Highlight Banner */}
+                                    {section3Data.lead && (
+                                        <div className="bg-gradient-to-r from-purple-500/15 via-purple-500/5 to-transparent border-l-4 border-purple-400 p-4 rounded-r-2xl">
+                                            <p className="text-sm md:text-base font-bold text-purple-200 leading-relaxed">
+                                                {section3Data.lead}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* 2. Theme Focus Cards Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {section3Data.items.map((theme, i) => (
+                                            <div key={i} className="bg-zinc-900/80 border border-purple-500/20 hover:border-purple-500/40 rounded-2xl p-5 space-y-3 transition-all">
+                                                <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
+                                                    <h4 className="text-sm md:text-base font-black text-white flex items-center gap-2">
+                                                        <span className="text-lg">{theme.icon}</span>
+                                                        {theme.title}
+                                                    </h4>
+                                                    <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2.5 py-0.5 rounded-full">
+                                                        {theme.badge}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal">
+                                                    {theme.desc}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </section>
                             )}
 
                             {/* 🛡️ SECTION 4: 지수 변동성 헷지 & 리스크 관리 분석 */}
-                            {(activeTab === 'all' || activeTab === 'risk') && section4 && (
-                                <section className="relative bg-gradient-to-br from-emerald-950/20 via-zinc-950 to-zinc-950 border border-emerald-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden">
+                            {(activeTab === 'all' || activeTab === 'risk') && (
+                                <section className="relative bg-gradient-to-br from-emerald-950/20 via-zinc-950 to-zinc-950 border border-emerald-500/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden space-y-5">
                                     <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                                    <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10 mb-5">
+                                    <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/10">
                                         <div className="flex items-center gap-3">
                                             <div className="p-3 bg-gradient-to-br from-emerald-400/20 to-teal-600/10 border border-emerald-500/30 rounded-2xl text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
                                                 <ShieldCheck className="w-5 h-5" />
@@ -608,8 +836,40 @@ export default function PremiumPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-sm md:text-base text-gray-200 leading-relaxed font-normal bg-zinc-950/60 border border-white/5 rounded-2xl p-5 md:p-6">
-                                        {section4}
+
+                                    {/* 2 Shield Defense Cards Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* 1. Hedge Position */}
+                                        <div className="bg-zinc-900/80 border border-amber-500/25 hover:border-amber-500/40 rounded-2xl p-5 space-y-3 transition-all">
+                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
+                                                <h4 className="text-sm md:text-base font-black text-amber-300 flex items-center gap-2">
+                                                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                                                    기관 헷지(Hedge) 포지션 포착
+                                                </h4>
+                                                <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+                                                    WARNING SIGN
+                                                </span>
+                                            </div>
+                                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal">
+                                                {section4Data.hedge || "선제적 헷지 포지션 구축 동향 분석"}
+                                            </p>
+                                        </div>
+
+                                        {/* 2. Risk Strategy */}
+                                        <div className="bg-zinc-900/80 border border-emerald-500/25 hover:border-emerald-500/40 rounded-2xl p-5 space-y-3 transition-all">
+                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
+                                                <h4 className="text-sm md:text-base font-black text-emerald-300 flex items-center gap-2">
+                                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                                    VVIP 리스크 관리 대응 전략
+                                                </h4>
+                                                <span className="text-[10px] font-mono font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                                                    DEFENSE ACTION
+                                                </span>
+                                            </div>
+                                            <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-normal">
+                                                {section4Data.risk || "보수적 분할 배분 및 지지선 확인 전략"}
+                                            </p>
+                                        </div>
                                     </div>
                                 </section>
                             )}
