@@ -1,0 +1,100 @@
+601:             try {
+602:                 const r = await fetch(`${API_BASE_URL}/api/market/calendar`);
+603:                 const j = await r.json();
+604:                 if (j.status === "success") setMacroEvents(j.data || []);
+605:             } catch { }
+606:             finally { setMacroLoading(false); }
+607:         })();
+608:     }, []);
+609: 
+610:     // 통합 시장 지표 fetch (실시간 지수/자산)
+611:     useEffect(() => {
+612:         // 데이터가 아직 없거나 갱신이 필요할 때 로딩 시작
+613:         if (!krEvents.length) setKrLoading(true);
+614:         if (!globalAssets) setGlobalAssetsLoading(true);
+615: 
+616:         const fetchMarketData = async () => {
+617:             try {
+618:                 // 병렬로 데이터 호출 (KOSPI/KOSDAQ 지수 포함을 위해 indices 추가 호출)
+619:                 const [krRes, globalRes, indicesRes] = await Promise.all([
+620:                     fetch(`${API_BASE_URL}/api/market/calendar/korea`),
+621:                     fetch(`${API_BASE_URL}/api/market/assets`),
+622:                     fetch(`${API_BASE_URL}/api/market/indices`)
+623:                 ]);
+624: 
+625:                 const krJson = await krRes.json();
+626:                 const globalJson = await globalRes.json();
+627:                 const indicesJson = await indicesRes.json();
+628: 
+629:                 if (krJson.status === "success") setKrEvents(krJson.data || []);
+630:                 
+631:                 if (globalJson.status === "success" || indicesJson.status === "success") {
+632:                     const assets = globalJson.data || [];
+633:                     const indices = indicesJson.data || [];
+634:                     
+635:                     // 모든 원본 데이터를 하나로 합침
+636:                     const allData = [...(Array.isArray(indices) ? indices : []), ...(Array.isArray(assets) ? assets : [])];
+637:                     
+638:                     // [v5.6.0] 핵심 시장 지표만 추출 (대형주/개별종목은 카테고리 기반으로 철저히 배제)
+639:                     const filteredData = allData.filter((item: any) => {
+640:                         const name = item.event_kr || "";
+641:                         const cat = item.category || "";
+642:                         
+643:                         // 1. 개별 종목(대형주, 미국 핵심주)은 무조건 제외
+644:                         if (cat.includes("대형주") || cat.includes("핵심주")) return false;
+645:                         
+646:                         // 2. 주요 시장 지표 키워드 포함 여부 확인
+647:                         return (
+648:                             name.includes("KOSPI") || name.includes("KOSDAQ") || 
+649:                             name.includes("S&P") || name.includes("NASDAQ") || 
+650:                             name.includes("DOW") || name.includes("다우") || 
+651:                             name.includes("VIX") || name.includes("나스닥") ||
+652:                             name.includes("WTI") || name.includes("금") || 
+653:                             name.includes("은") || name.includes("구리") || 
+654:                             name.includes("환율") || name.includes("달러") ||
+655:                             name.includes("금리")
+656:                         );
+657:                     }).map((item: any) => ({
+658:                         ...item,
+659:                         // 화면 표시용 이름 정제
+660:                         event_kr: item.event_kr
+661:                             .replace("[글로벌] ", "")
+662:                             .replace("(공포지수)", "")
+663:                             .replace("DOW JONES", "다우존스")
+664:                             .replace("💵 ", "").replace("💰 ", "").replace("🛢️ ", "").replace("🏗️ ", "")
+665:                             .split(" (")[0]
+666:                     }));
+667:                     
+668:                     // 중복 제거 (이름 기준)
+669:                     const uniqueData = filteredData.filter((item, index, self) =>
+670:                         index === self.findIndex((t) => t.event_kr === item.event_kr)
+671:                     );
+672:                     
+673:                     if (uniqueData.length > 0) {
+674:                         setGlobalAssets(uniqueData);
+675:                     } else if (allData.length > 0) {
+676:                         // 필터링 결과가 아예 없을 경우에만 최소한의 안전장치로 상위 데이터 표시
+677:                         setGlobalAssets(allData.filter(i => !i.category?.includes("대형주")).slice(0, 12));
+678:                     }
+679:                 }
+680:             } catch (error) {
+681:                 console.error("Market data fetch error:", error);
+682:             } finally {
+683:                 setKrLoading(false);
+684:                 setGlobalAssetsLoading(false);
+685:             }
+686:         };
+687: 
+688:         fetchMarketData();
+689: 
+690:         // 1분마다 자동 갱신
+691:         const interval = setInterval(fetchMarketData, 60000);
+692:         return () => clearInterval(interval);
+693:     }, []);
+694: 
+695:     // 실적·배당 데이터 fetch
+696:     useEffect(() => {
+697:         (async () => {
+698:             try {
+699:                 const r = await fetch(`${API_BASE_URL}/api/market/calendar/events`);
+700:                 const j = await r.json();
