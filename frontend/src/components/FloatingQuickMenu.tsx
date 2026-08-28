@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Zap, ChevronUp, Search, Star, Home, X, TrendingUp, TrendingDown, RefreshCw, Bell } from "lucide-react";
+import { Zap, ChevronUp, Search, Star, Home, X, TrendingUp, TrendingDown, RefreshCw, Bell, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import { getPreferredBroker, launchMtsApp, BrokerInfo, BROKER_LIST } from "@/lib/brokerLinks";
+import { toast } from "sonner";
 
 export default function FloatingQuickMenu() {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,9 +16,24 @@ export default function FloatingQuickMenu() {
     const [searchQuery, setSearchQuery] = useState("");
     const [watchlist, setWatchlist] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [preferredBroker, setPreferredBroker] = useState<BrokerInfo>(BROKER_LIST[0]);
     const menuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { user } = useAuth();
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            setPreferredBroker(getPreferredBroker());
+
+            const handleBrokerChange = (e: any) => {
+                const found = BROKER_LIST.find(b => b.id === e.detail);
+                if (found) setPreferredBroker(found);
+            };
+
+            window.addEventListener("preferred_broker_changed", handleBrokerChange);
+            return () => window.removeEventListener("preferred_broker_changed", handleBrokerChange);
+        }
+    }, []);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -169,6 +186,23 @@ export default function FloatingQuickMenu() {
                     isOpen ? "scale-100 opacity-100 pointer-events-auto translate-y-0" : "scale-50 opacity-0 pointer-events-none translate-y-10"
                 }`}
             >
+                {/* ⚡ 주거래 증권사 MTS 앱 즉시 실행 버튼 */}
+                <button 
+                    onClick={() => {
+                        toast.info(`📱 ${preferredBroker.name} (${preferredBroker.appTitle}) 앱을 실행합니다...`);
+                        launchMtsApp(preferredBroker.id);
+                        setIsOpen(false);
+                    }}
+                    className={`group relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r ${preferredBroker.bgColor} hover:brightness-125 backdrop-blur-md border border-white/30 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all hover:scale-115 active:scale-95`}
+                    title={`${preferredBroker.name} MTS 앱 실행`}
+                >
+                    <span className="text-sm">{preferredBroker.emoji}</span>
+                    <span className="absolute right-12 px-2.5 py-1 bg-black/90 text-white text-[11px] font-bold rounded-lg border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl flex items-center gap-1.5">
+                        <Zap className="w-3 h-3 text-yellow-400 fill-current animate-pulse" />
+                        {preferredBroker.name} 앱 열기
+                    </span>
+                </button>
+
                 <button 
                     onClick={scrollToTop}
                     className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white shadow-glass transition-all hover:scale-110"
