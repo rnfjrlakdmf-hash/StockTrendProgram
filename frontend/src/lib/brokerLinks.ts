@@ -179,9 +179,20 @@ export function setPreferredBroker(brokerId: string): void {
 }
 
 /**
+ * 현재 기기 환경에 맞는 앱스토어/플레이스토어 다운로드 URL 반환
+ */
+export function getStoreDownloadUrl(broker: BrokerInfo): string {
+    if (typeof window === "undefined") return broker.webTradeUrl;
+    const ua = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(ua);
+    return isIOS ? broker.iosAppStoreUrl : broker.androidPlayStoreUrl;
+}
+
+/**
  * 스마트 딥링크 실행기 (MTS 어플 즉시 켜기)
- * - 모바일(Android/iOS): 앱이 있으면 1초 만에 실행, 없으면 앱스토어/플레이스토어로 자동 유도
- * - PC/데스크탑: 웹 트레이딩(WTS) 또는 공식 홈페이지 새 탭 열기
+ * - Android: Intent scheme + S.browser_fallback_url (미설치 시 구글플레이로 자동 전환)
+ * - iOS: Custom scheme 시도 + 타이머를 통한 앱스토어 안전 이동
+ * - Desktop/PC: 해당 증권사 공식 WTS 웹 트레이딩 또는 포털 새 탭 열기
  */
 export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: BrokerInfo } {
     if (typeof window === "undefined") {
@@ -196,27 +207,30 @@ export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: Br
     const isIOS = /iphone|ipad|ipod/.test(ua);
 
     if (isAndroid) {
-        // 안드로이드 인텐트 스킴 (앱 설치시 직행, 미설치시 플레이스토어 직행)
-        const rawScheme = broker.iosScheme.replace("://", "").replace("/stock", "").replace("/securities", "");
-        const intentUrl = `intent://#Intent;package=${broker.androidPackage};scheme=${rawScheme};end`;
-        
-        const now = Date.now();
-        window.location.href = intentUrl;
+        // 안드로이드 공식 인텐트 스킴 (앱 설치 시 즉시 실행, 미설치 시 플레이스토어로 자동 이동)
+        const cleanScheme = broker.iosScheme.replace("://", "").replace("/stock", "").replace("/securities", "");
+        const fallbackUrl = encodeURIComponent(broker.androidPlayStoreUrl);
+        const intentUrl = `intent://${cleanScheme}#Intent;scheme=${cleanScheme};package=${broker.androidPackage};S.browser_fallback_url=${fallbackUrl};end;`;
 
-        // Intent 미지원 브라우저용 타이머 폴백
-        setTimeout(() => {
-            if (Date.now() - now < 2000) {
-                window.location.href = broker.androidPlayStoreUrl;
-            }
-        }, 1500);
+        try {
+            window.location.href = intentUrl;
+        } catch (e) {
+            // 인텐트 실행 실패 시 플레이스토어로 직접 이동
+            window.location.href = broker.androidPlayStoreUrl;
+        }
 
         return { isMobile: true, broker };
     } else if (isIOS) {
         // iOS 커스텀 URL 스킴
         const now = Date.now();
-        window.location.href = broker.iosScheme;
+        
+        try {
+            window.location.href = broker.iosScheme;
+        } catch (e) {
+            window.location.href = broker.iosAppStoreUrl;
+        }
 
-        // 미설치 시 1.5초 후 앱스토어로 이동
+        // 미설치 시 앱스토어로 부드럽게 유도
         setTimeout(() => {
             if (Date.now() - now < 2000) {
                 window.location.href = broker.iosAppStoreUrl;
