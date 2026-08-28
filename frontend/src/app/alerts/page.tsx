@@ -106,20 +106,32 @@ export default function AlertCenterPage() {
                 const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
                 const snapLatest = await getDocs(qLatest);
                 
-                const allAlertsMap = new Map();
+                const seenContentKeys = new Set<string>();
+                const deduplicatedAlerts: any[] = [];
+
                 snapLatest.forEach(doc => {
                     const data = doc.data();
                     const isGlobal = data.is_global === true;
                     const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
                     
-                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news'].includes(data.type);
+                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'portfolio_summary', 'market_summary'].includes(data.type);
                     
                     if (isGlobal || isTargeted || isPublicType) {
-                        allAlertsMap.set(doc.id, { id: doc.id, ...data });
+                        // Smart Deduplication: clean title + first 40 chars of body + 10-minute time bucket
+                        const sec = data.timestamp?.seconds || 0;
+                        const timeBucket = Math.floor(sec / 600); // 10 minutes bucket
+                        const cleanTitle = (data.title || '').trim().toLowerCase();
+                        const cleanBody = (data.body || '').trim().substring(0, 40).toLowerCase();
+                        const contentKey = `${cleanTitle}::${cleanBody}::${timeBucket}`;
+                        
+                        if (!seenContentKeys.has(contentKey)) {
+                            seenContentKeys.add(contentKey);
+                            deduplicatedAlerts.push({ id: doc.id, ...data });
+                        }
                     }
                 });
 
-                let sortedAlerts = Array.from(allAlertsMap.values());
+                let sortedAlerts = deduplicatedAlerts;
                 sortedAlerts.sort((a, b) => {
                     const timeA = a.timestamp?.seconds || 0;
                     const timeB = b.timestamp?.seconds || 0;

@@ -323,8 +323,22 @@ def send_multicast_notification(
         print("[Firebase] No tokens provided for multicast")
         return {"success": False, "error": "No tokens provided"}
 
-    # 1. Firestore 알림 센터 저장 (skip_db_save 플래그 지원)
+    # 1. Firestore 알림 센터 저장 (skip_db_save 플래그 및 3분 중복 방지 캐시 지원)
     should_skip = skip_db_save or (data and str(data.get("skip_db_save", "")).lower() == "true")
+    
+    # 3분 이내 동일 제목/본문 중복 DB 저장 방지
+    if not hasattr(send_multicast_notification, "_recent_saved_cache"):
+        send_multicast_notification._recent_saved_cache = {}
+    
+    import time as _time
+    _now = _time.time()
+    _dedupe_key = f"{str(title).strip()}::{str(body).strip()[:40]}"
+    if _now - send_multicast_notification._recent_saved_cache.get(_dedupe_key, 0) < 180:
+        should_skip = True
+        print(f"[Firebase-Dedupe] Suppressed duplicate Firestore save within 3m: {title}")
+    else:
+        send_multicast_notification._recent_saved_cache[_dedupe_key] = _now
+
     if not should_skip:
         try:
             db = firestore.client()
