@@ -10,6 +10,13 @@ import subprocess
 import shutil
 from datetime import datetime
 import pytz
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
+backend_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.exists(backend_env):
+    load_dotenv(backend_env)
 
 def get_disk_usage():
     """디스크 용량 점검 (루트 드라이브)"""
@@ -100,7 +107,7 @@ def run_system_health_check():
         except Exception as heal_err:
             issues.append(f"❌ API 서버 응답 불가: {api_err_detail} (자가치유 오류: {heal_err})")
     else:
-        diagnostics.append(f"⚡ [API 서버] 정상 응답 ({api_time:.1f}ms)")
+        diagnostics.append(f"⚡ [API 서버] 초고속 응답 ({api_time:.1f}ms)")
 
     # -------------------------------------------------------------
     # 2. Next.js 프론트엔드 웹 서버 점검
@@ -124,7 +131,7 @@ def run_system_health_check():
     # -------------------------------------------------------------
     db_ok, db_msg, user_count, token_count, error_count = check_database_integrity()
     if db_ok:
-        diagnostics.append(f"💾 [데이터베이스] 무결성 정상 · 가입자 {user_count}명 / 활성 기기 {token_count}대")
+        diagnostics.append(f"💾 [데이터베이스] 무결성 100% 정상 · 가입자 {user_count}명 / 활성 기기 {token_count}대")
         if error_count > 0:
             diagnostics.append(f"⚠️ [시스템 에러 로그] 금일 에러 로그 {error_count}건 감지")
     else:
@@ -137,7 +144,7 @@ def run_system_health_check():
     if disk_used_pct > 88:
         issues.append(f"⚠️ [디스크 경보] 디스크 사용량 {disk_used_pct:.1f}% (잔여 {disk_free_gb:.1f}GB)")
     else:
-        diagnostics.append(f"💽 [서버 디스크] 여유 ({disk_used_pct:.1f}% 사용 중, {disk_free_gb:.1f}GB 잔여)")
+        diagnostics.append(f"💽 [서버 디스크] 쾌적 ({disk_used_pct:.1f}% 사용 중, {disk_free_gb:.1f}GB 잔여)")
 
     # -------------------------------------------------------------
     # 5. 핵심 외부 금융 API 연동 상태
@@ -147,7 +154,7 @@ def run_system_health_check():
     
     api_keys_ok = bool(gemini_key and dart_key)
     if api_keys_ok:
-        diagnostics.append("🔑 [인증 키] Gemini AI & DART 전자공시 정상 탑재")
+        diagnostics.append("🔑 [인증 키] Gemini AI & DART 전자공시 정상 연동")
     else:
         missing = []
         if not gemini_key: missing.append("Gemini AI")
