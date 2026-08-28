@@ -247,6 +247,101 @@ export default function AlertCenterPage() {
     };
 
     // Render Luxury Alert Card
+    
+    // Render Dedicated Portfolio Summary Micro-Bento
+    const renderPortfolioCardContent = (alert: any) => {
+        const text = alert.body || '';
+        const lines = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
+        
+        let totalReturn = "";
+        let totalProfit = "";
+        let stockItems: string[] = [];
+        let disclaimer = "";
+
+        lines.forEach((line: string) => {
+            if (line.includes('총 누적 수익률') || line.includes('총 수익률')) {
+                totalReturn = line.replace(/^.*?수익률[:\s]*/, '').trim();
+            } else if (line.includes('총 누적 수익') || line.includes('총 수익:')) {
+                totalProfit = line.replace(/^.*?총\s*누적\s*수익[:\s]*/, '').replace(/^.*?총\s*수익[:\s]*/, '').trim();
+            } else if (line.startsWith('(') && line.endsWith(')')) {
+                disclaimer = line;
+            } else {
+                stockItems.push(line);
+            }
+        });
+
+        const isNegative = totalReturn.includes('-') || totalProfit.includes('-');
+
+        return (
+            <div className="space-y-4">
+                {/* Top KPI Metrics Bento */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-zinc-950/80 border border-white/10 rounded-2xl">
+                    <div className="flex items-center justify-between p-3 bg-zinc-900/90 rounded-xl border border-white/5">
+                        <span className="text-xs text-gray-400 font-medium">총 누적 수익률</span>
+                        <span className={`text-sm md:text-base font-black font-mono px-2.5 py-0.5 rounded-lg border ${
+                            isNegative 
+                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' 
+                                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                        }`}>
+                            {totalReturn || '0.00%'}
+                        </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-zinc-900/90 rounded-xl border border-white/5">
+                        <span className="text-xs text-gray-400 font-medium">누적 평가 손익</span>
+                        <span className={`text-sm md:text-base font-black font-mono ${
+                            isNegative ? 'text-rose-300' : 'text-emerald-300'
+                        }`}>
+                            {totalProfit || '0원'}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Individual Holdings Micro-List */}
+                {stockItems.length > 0 && (
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">종목별 마감 현황</p>
+                        <div className="space-y-2">
+                            {stockItems.map((item, idx) => {
+                                const isSubLine = item.startsWith('↳') || item.startsWith('->') || item.includes('차]');
+                                return (
+                                    <div 
+                                        key={idx} 
+                                        className={`p-3 rounded-xl border text-xs md:text-sm leading-relaxed ${
+                                            isSubLine 
+                                                ? 'bg-zinc-950/50 border-white/5 ml-3 text-gray-300 font-mono' 
+                                                : 'bg-zinc-900/70 border-white/10 text-white font-semibold flex items-center justify-between'
+                                        }`}
+                                    >
+                                        <span>{item}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Footer Disclaimer */}
+                {disclaimer && (
+                    <p className="text-[11px] text-gray-500 font-medium px-1">
+                        {disclaimer}
+                    </p>
+                )}
+
+                {/* Action CTA Buttons */}
+                <div className="flex flex-wrap gap-2.5 pt-3 border-t border-white/10">
+                    <Link 
+                        href="/watchlist" 
+                        className="flex-1 min-w-[140px] bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:from-amber-600/30 hover:to-orange-600/30 text-amber-300 border border-amber-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                    >
+                        <Crown className="w-4 h-4 text-amber-400" />
+                        관심종목 포트폴리오 관리
+                        <ChevronRight className="w-4 h-4" />
+                    </Link>
+                </div>
+            </div>
+        );
+    };
+
     const renderAlertCard = (alert: any) => {
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
         const symbol = alert.symbol || alert.code || '';
@@ -273,7 +368,18 @@ export default function AlertCenterPage() {
         let typeBadgeLabel = "🔔 일반 알림";
         let cardBorderHover = "hover:border-white/25";
 
-        if (['whale_accumulation', 'whale_alert'].includes(alert.type)) {
+        const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || (alert.title && alert.title.includes('관심종목 결산'));
+        const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || (alert.title && alert.title.includes('장마감 시황'));
+
+        if (isPortfolio) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "👑 관심종목 마감 결산";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+        } else if (isMarketSummary) {
+            typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
+            typeBadgeLabel = "🌕 마켓 장마감 시황";
+            cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
+        } else if (['whale_accumulation', 'whale_alert'].includes(alert.type)) {
             typeBadgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]";
             typeBadgeLabel = "🐳 세력·슈퍼개미 포착";
             cardBorderHover = "hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)]";
@@ -332,9 +438,13 @@ export default function AlertCenterPage() {
                 </h3>
 
                 {/* Body Content */}
-                <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                    {renderFormattedBody(alert.body)}
-                </div>
+                {isPortfolio ? (
+                    renderPortfolioCardContent(alert)
+                ) : (
+                    <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                        {renderFormattedBody(alert.body)}
+                    </div>
+                )}
 
                 {/* Action Buttons for Disclosures / Stocks */}
                 {isDisclosure && (
