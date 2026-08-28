@@ -272,42 +272,25 @@ def check_sec_form4_alerts():
             trans_short = parsed['trans_type'][:2]
             title = f"🚨 [SEC 내부자 {trans_short}] {market_tag} {short_display}"
             
-            p1 = f"📊 [지분 변동]: {parsed['owner_name']}"
-            if parsed['title']:
-                p1 += f" ({parsed['title']})"
-            p1 += f" | {parsed['trans_type']} {parsed['total_shares']:,}주"
-            if parsed['has_value']:
-                p1 += f" (약 {parsed['total_value']})"
-                
-            try:
-                remain_el = None
-                if xml_url:
-                    import requests as _req
-                    import xml.etree.ElementTree as _ET
-                    _r = _req.get(xml_url, headers=HEADERS, timeout=8)
-                    if _r.status_code == 200:
-                        _root = _ET.fromstring(_r.text)
-                        remain_el = _root.find('.//sharesOwnedFollowingTransaction/value')
-                if remain_el is not None and remain_el.text:
-                    remain_val = float(remain_el.text or 0)
-                    if remain_val > 0:
-                        p1 += f"\n📌 [거래 후 보유]: {int(remain_val):,}주"
-            except Exception:
-                pass
+            owner_short = parsed['owner_name']
+            if len(owner_short) > 20:
+                owner_short = owner_short[:18] + ".."
+            val_str = f" ({parsed['total_value']})" if parsed['has_value'] else ""
+            p1 = f"▪️ 📊 수급: {owner_short} | {parsed['trans_type']} {parsed['total_shares']:,}주{val_str}"
             
-            if parsed["trans_type"] == "매수":
-                p2 = "💡 [시장해석]: 미국 경영진의 자사주 직접 매수는 사업 실적 및 미래 밸류에이션에 대한 가장 강력한 자신감 신호."
-            elif parsed["trans_type"] == "매도":
-                p2 = "💡 [시장해석]: 미국 임원의 자사주 매도에 따른 차익실현. 단기 주가 고점 부담 여부 점검 권장."
+            if "매수" in parsed["trans_type"]:
+                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적 및 기업 가치에 대한 강한 자신감 표명"
+            elif "매도" in parsed["trans_type"]:
+                p2 = "▪️ 💡 해석: 임원 지분 매도에 따른 차익실현 · 단기 주가 고점 부담 점검 권장"
             else:
-                p2 = "💡 [시장해석]: 미국 경영진/이사의 자사주 지분 변동 포착."
+                p2 = "▪️ 💡 해석: 미국 경영진의 자사주 지분 변동 포착 · 방향성 점검 권장"
                 
             body = f"{p1}\n{p2}"
         else:
             title = f"🚨 [SEC 내부자 거래] {market_tag} {short_display}"
             body = (
-                f"📊 [공시 팩트]: {entity_name} 핵심 임원의 자사주 지분 변동 보고서(Form 4) 접수\n"
-                f"💡 [시장해석]: 미국 경영진 지분 매매는 기업 내부 펀더멘털 평가와 직결되므로 세부 내역 확인 권장."
+                f"▪️ 📊 수급: {short_display} 핵심 임원의 자사주 지분 변동 보고서(Form 4) 접수\n"
+                f"▪️ 💡 해석: 미국 경영진 지분 매매는 기업 내부 펀더멘털 평가의 핵심 지표"
             )
 
         print(f"[SEC Whale Form4] New filing: {title}")
