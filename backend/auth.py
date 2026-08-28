@@ -372,10 +372,23 @@ def get_premium_report(user_id: str):
                 "data": premium_data
             }
         else:
-            # 잠금 상태이면 preview 및 블러용 미리보기 제공
+            # 잠금 상태: Section 1(스마트머니 대이동 맥락)까지만 문맥 온전히 노출하고 아래는 깔끔하게 잠금 안내
             locked_data = premium_data.copy()
-            preview_snippet = premium_data.get("content", "")[:180]
-            locked_data["content"] = preview_snippet + "\n\n... (50 코인으로 잠금 해제하여 전체 본문을 확인하세요) ..." + "\n" * 12
+            full_content = premium_data.get("content", "")
+            
+            if "### 🏆 Section 2" in full_content:
+                preview_snippet = full_content.split("### 🏆 Section 2")[0].strip()
+            elif "Section 2" in full_content:
+                preview_snippet = full_content.split("Section 2")[0].strip()
+            else:
+                # 마침표 기준으로 문장이 끊기지 않게 안전하게 자름
+                sentences = full_content.split(". ")
+                if len(sentences) >= 2:
+                    preview_snippet = ". ".join(sentences[:2]) + "."
+                else:
+                    preview_snippet = full_content[:200]
+                    
+            locked_data["content"] = preview_snippet
             return {
                 "status": "success",
                 "locked": True,

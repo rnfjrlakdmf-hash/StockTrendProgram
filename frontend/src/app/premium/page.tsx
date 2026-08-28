@@ -290,34 +290,44 @@ export default function PremiumPage() {
                     <div className="p-5 md:p-8 relative space-y-8">
                         {report.locked ? (
                             <>
-                                {/* Preview Text (Clear) */}
-                                <div className="p-5 bg-gradient-to-r from-amber-500/10 via-zinc-900 to-zinc-900 border border-amber-500/30 rounded-2xl">
-                                    <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> 오늘 수급 핵심 프리뷰
+                                {/* Preview Text (Section 1 Clean View) */}
+                                <div className="p-6 bg-gradient-to-r from-amber-500/10 via-zinc-900 to-zinc-900 border border-amber-500/30 rounded-3xl">
+                                    <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> 💎 Section 1. 스마트머니 자금 대이동 맥락 (무료 공개)
                                     </h4>
-                                    <p className="text-sm md:text-base text-gray-200 leading-relaxed font-medium">
-                                        {report.data.preview}
-                                    </p>
+                                    <div className="prose prose-invert max-w-none prose-p:text-gray-200 prose-p:leading-relaxed prose-p:text-sm md:prose-p:base prose-strong:text-white">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {report.data.content || report.data.preview}
+                                        </ReactMarkdown>
+                                    </div>
                                 </div>
 
                                 {/* Blurred Action Area */}
-                                <div className="relative rounded-2xl overflow-hidden border border-white/5 p-8 bg-zinc-950/60 min-h-[360px] flex items-center justify-center">
+                                <div className="relative rounded-3xl overflow-hidden border border-white/5 p-8 bg-zinc-950/60 min-h-[360px] flex items-center justify-center">
                                     {/* Mock Blur Items */}
                                     <div className="absolute inset-0 p-6 opacity-20 blur-md pointer-events-none select-none space-y-4">
-                                        <div className="h-6 bg-white/20 rounded w-1/3"></div>
-                                        <div className="h-16 bg-white/10 rounded"></div>
-                                        <div className="h-16 bg-white/10 rounded"></div>
-                                        <div className="h-16 bg-white/10 rounded"></div>
+                                        <div className="h-8 bg-amber-500/20 rounded-xl w-1/3"></div>
+                                        <div className="h-20 bg-white/10 rounded-2xl"></div>
+                                        <div className="h-20 bg-white/10 rounded-2xl"></div>
+                                        <div className="h-20 bg-white/10 rounded-2xl"></div>
                                     </div>
 
-                                    <div className="relative z-10 bg-zinc-900/90 backdrop-blur-xl border border-amber-500/40 p-6 md:p-8 rounded-3xl text-center shadow-2xl max-w-md w-full mx-4">
+                                    <div className="relative z-10 bg-zinc-900/95 backdrop-blur-xl border border-amber-500/40 p-6 md:p-8 rounded-3xl text-center shadow-2xl max-w-md w-full mx-4">
                                         <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-400">
                                             <Lock className="w-7 h-7" />
                                         </div>
-                                        <h3 className="text-lg md:text-xl font-black text-white mb-2">프리미엄 수급 데이터 잠금</h3>
-                                        <p className="text-gray-300 text-xs md:text-sm mb-6 leading-relaxed">
-                                            외국인과 기관의 10대 집중 순매수 종목별 수량과<br />세력의 포트폴리오 헷지 전략 분석을 확인하세요.
-                                        </p>
+                                        <h3 className="text-lg md:text-xl font-black text-white mb-2">VVIP 퀀트 인텔리전스 잠금</h3>
+                                        <div className="text-left bg-zinc-950/70 border border-white/5 rounded-2xl p-3.5 mb-5 space-y-1.5 text-xs text-gray-300">
+                                            <p className="flex items-center gap-1.5 font-bold text-amber-300">
+                                                <span>🏆</span> VVIP 퀀트 밸런스 알파 3선 심층 브리핑
+                                            </p>
+                                            <p className="flex items-center gap-1.5 font-bold text-cyan-300">
+                                                <span>🚀</span> 내일의 주도 유망 테마 & 밸류체인 레이더
+                                            </p>
+                                            <p className="flex items-center gap-1.5 font-bold text-emerald-300">
+                                                <span>🛡️</span> 지수 변동성 헷지 & 리스크 관리 가이드
+                                            </p>
+                                        </div>
                                         <button
                                             onClick={handleUnlock}
                                             disabled={isUnlocking}
@@ -328,7 +338,7 @@ export default function PremiumPage() {
                                             ) : (
                                                 <>
                                                     <span className="text-lg">🪙</span>
-                                                    50 코인으로 즉시 잠금 해제
+                                                    50 코인으로 VVIP 전체 잠금 해제
                                                 </>
                                             )}
                                         </button>
