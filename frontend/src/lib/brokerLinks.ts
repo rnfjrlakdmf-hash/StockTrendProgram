@@ -12,28 +12,28 @@ export interface BrokerInfo {
     bgColor: string;
     textColor: string;
     borderColor: string;
-    iosScheme: string;
-    androidPackage: string;
-    iosAppStoreUrl: string;
-    androidPlayStoreUrl: string;
-    webTradeUrl: string;
+    appScheme: string;          // 앱 고유 딥링크 스킴 (안드로이드/iOS 공통)
+    androidPackage: string;     // 안드로이드 패키지명
+    iosAppStoreUrl: string;     // 애플 앱스토어 링크
+    androidPlayStoreUrl: string;// 구글 플레이스토어 링크
+    webTradeUrl: string;        // 공식 웹 트레이딩(WTS) 링크
 }
 
 export const BROKER_LIST: BrokerInfo[] = [
     {
-        id: "toss",
-        name: "토스증권",
-        appTitle: "토스 (Toss)",
-        tagline: "초보자도 쓰기 쉬운 직관적 차트와 간편 주문",
-        emoji: "🔵",
-        bgColor: "from-blue-600 to-blue-700",
-        textColor: "text-blue-400",
-        borderColor: "border-blue-500/30",
-        iosScheme: "supertoss://stock",
-        androidPackage: "viva.republica.toss",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id839333328",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=viva.republica.toss",
-        webTradeUrl: "https://tossinvest.com"
+        id: "nh",
+        name: "NH투자증권",
+        appTitle: "나무증권 (NAMUH)",
+        tagline: "2030 스마트 투자자를 위한 간편 수수료 우대",
+        emoji: "🌳",
+        bgColor: "from-emerald-600 to-teal-700",
+        textColor: "text-emerald-400",
+        borderColor: "border-emerald-500/30",
+        appScheme: "txsmart://",
+        androidPackage: "com.nhqv.namuh",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1083946011",
+        androidPlayStoreUrl: "https://play.google.com/store/search?q=NH%ED%88%AC%EC%9E%90%EC%A6%9D%EA%B2%83+%EB%82%98%EB%AC%B4&c=apps",
+        webTradeUrl: "https://www.mynamuh.com"
     },
     {
         id: "kiwoom",
@@ -44,11 +44,41 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-rose-600 to-pink-700",
         textColor: "text-rose-400",
         borderColor: "border-rose-500/30",
-        iosScheme: "kiwoomheroes://",
+        appScheme: "heromts://",
         androidPackage: "com.kiwoom.heromts",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1588636253",
         androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kiwoom.heromts",
         webTradeUrl: "https://www.kiwoom.com"
+    },
+    {
+        id: "toss",
+        name: "토스증권",
+        appTitle: "토스 (Toss)",
+        tagline: "초보자도 쓰기 쉬운 직관적 차트와 간편 주문",
+        emoji: "🔵",
+        bgColor: "from-blue-600 to-blue-700",
+        textColor: "text-blue-400",
+        borderColor: "border-blue-500/30",
+        appScheme: "supertoss://stock",
+        androidPackage: "viva.republica.toss",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id839333328",
+        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=viva.republica.toss",
+        webTradeUrl: "https://tossinvest.com"
+    },
+    {
+        id: "samsung",
+        name: "삼성증권",
+        appTitle: "mPOP (엠팝)",
+        tagline: "프리미엄 자산관리와 안정적인 모바일 주문",
+        emoji: "💎",
+        bgColor: "from-cyan-600 to-blue-700",
+        textColor: "text-cyan-400",
+        borderColor: "border-cyan-500/30",
+        appScheme: "mpopapp://",
+        androidPackage: "com.samsungpop.android.mpop",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id366126607",
+        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.samsungpop.android.mpop",
+        webTradeUrl: "https://www.samsungpop.com"
     },
     {
         id: "kb",
@@ -59,7 +89,7 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-amber-600 to-yellow-600",
         textColor: "text-amber-400",
         borderColor: "border-amber-500/30",
-        iosScheme: "kbmable://",
+        appScheme: "kbma://",
         androidPackage: "com.kbsec.mts.iplustarngm2",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1173618342",
         androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kbsec.mts.iplustarngm2",
@@ -74,41 +104,11 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-orange-600 to-amber-700",
         textColor: "text-orange-400",
         borderColor: "border-orange-500/30",
-        iosScheme: "miraeassetmstock://",
+        appScheme: "miraeassetTrade://",
         androidPackage: "com.miraeasset.trade",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id475658607",
         androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.miraeasset.trade",
         webTradeUrl: "https://securities.miraeasset.com"
-    },
-    {
-        id: "samsung",
-        name: "삼성증권",
-        appTitle: "mPOP (엠팝)",
-        tagline: "프리미엄 자산관리와 안정적인 모바일 주문",
-        emoji: "💎",
-        bgColor: "from-cyan-600 to-blue-700",
-        textColor: "text-cyan-400",
-        borderColor: "border-cyan-500/30",
-        iosScheme: "samsungmpop://",
-        androidPackage: "com.samsungpop.android.mpop",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id366126607",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.samsungpop.android.mpop",
-        webTradeUrl: "https://www.samsungpop.com"
-    },
-    {
-        id: "nh",
-        name: "NH투자증권",
-        appTitle: "나무증권 (NAMUH)",
-        tagline: "2030 스마트 투자자를 위한 간편 수수료 우대",
-        emoji: "🌳",
-        bgColor: "from-emerald-600 to-teal-700",
-        textColor: "text-emerald-400",
-        borderColor: "border-emerald-500/30",
-        iosScheme: "nhnamuh://",
-        androidPackage: "com.nhqv.namuh",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1083946011",
-        androidPlayStoreUrl: "https://play.google.com/store/search?q=NH%ED%88%AC%EC%9E%90%EC%A6%9D%EA%B2%83+%EB%82%98%EB%AC%B4&c=apps",
-        webTradeUrl: "https://www.mynamuh.com"
     },
     {
         id: "shinhan",
@@ -119,7 +119,7 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-sky-600 to-indigo-700",
         textColor: "text-sky-400",
         borderColor: "border-sky-500/30",
-        iosScheme: "shinhanalpha://",
+        appScheme: "newshinhanialpha://",
         androidPackage: "com.shinhaninvest.nsmts",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1331828775",
         androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.shinhaninvest.nsmts",
@@ -134,7 +134,7 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-amber-600 to-orange-700",
         textColor: "text-amber-400",
         borderColor: "border-amber-500/30",
-        iosScheme: "koreainvestment://",
+        appScheme: "neosmartaf://",
         androidPackage: "com.koreainvestment.mts",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1604517037",
         androidPlayStoreUrl: "https://play.google.com/store/search?q=%ED%95%9C%EA%B5%AD%ED%88%AC%EC%9E%90%EC%A6%9D%EA%B2%83&c=apps",
@@ -149,7 +149,7 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-yellow-500 to-amber-600",
         textColor: "text-yellow-400",
         borderColor: "border-yellow-500/30",
-        iosScheme: "kakaopay://securities",
+        appScheme: "kakaopay://securities",
         androidPackage: "com.kakaopay.app",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1464493844",
         androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kakaopay.app",
@@ -166,7 +166,7 @@ export function getPreferredBroker(): BrokerInfo {
     if (typeof window === "undefined") return BROKER_LIST[0];
     const savedId = localStorage.getItem(PREFERRED_BROKER_KEY);
     const found = BROKER_LIST.find(b => b.id === savedId);
-    return found || BROKER_LIST[0]; // 기본값: 토스증권
+    return found || BROKER_LIST[0]; // 기본값: NH나무증권
 }
 
 /**
@@ -189,17 +189,14 @@ export function getStoreDownloadUrl(broker: BrokerInfo): string {
 }
 
 /**
- * 스마트 딥링크 실행기 (MTS 어플 즉시 켜기)
- * - Android: Intent scheme + S.browser_fallback_url (미설치 시 구글플레이로 자동 전환)
- * - iOS: Custom scheme 시도
- * - Desktop/PC: 해당 증권사 공식 WTS 웹 트레이딩 또는 포털 새 탭 열기
+ * 스마트 딥링크 실행기 (스마트폰에 설치된 MTS 어플 즉시 켜기)
  */
 export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: BrokerInfo } {
     if (typeof window === "undefined") {
         return { isMobile: false, broker: BROKER_LIST[0] };
     }
 
-    const targetId = brokerId || localStorage.getItem(PREFERRED_BROKER_KEY) || "toss";
+    const targetId = brokerId || localStorage.getItem(PREFERRED_BROKER_KEY) || "nh";
     const broker = BROKER_LIST.find(b => b.id === targetId) || BROKER_LIST[0];
 
     const ua = navigator.userAgent.toLowerCase();
@@ -207,26 +204,22 @@ export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: Br
     const isIOS = /iphone|ipad|ipod/.test(ua);
 
     if (isAndroid) {
-        // 안드로이드 공식 인텐트 스킴 (앱 설치 시 즉시 실행, 미설치 시 플레이스토어로 자동 이동)
-        const cleanScheme = broker.iosScheme.replace("://", "").replace("/stock", "").replace("/securities", "");
-        const fallbackUrl = encodeURIComponent(broker.androidPlayStoreUrl);
-        const intentUrl = `intent://${cleanScheme}#Intent;scheme=${cleanScheme};package=${broker.androidPackage};S.browser_fallback_url=${fallbackUrl};end;`;
+        // 안드로이드: 커스텀 스킴 직접 호출 (설치된 경우 안드로이드 OS가 앱을 즉시 실행)
+        const cleanScheme = broker.appScheme.replace("://", "").replace("/stock", "").replace("/securities", "");
+        const intentUrl = `intent://#Intent;scheme=${cleanScheme};package=${broker.androidPackage};end;`;
 
+        // 1. 직접 스킴 실행 시도
         try {
-            window.location.href = intentUrl;
+            window.location.href = broker.appScheme;
         } catch (e) {
-            window.open(broker.androidPlayStoreUrl, "_blank");
+            // Intent 시도
+            window.location.href = intentUrl;
         }
 
         return { isMobile: true, broker };
     } else if (isIOS) {
-        // iOS 커스텀 URL 스킴
-        try {
-            window.location.href = broker.iosScheme;
-        } catch (e) {
-            window.open(broker.iosAppStoreUrl, "_blank");
-        }
-
+        // iOS: 커스텀 URL 스킴 호출
+        window.location.href = broker.appScheme;
         return { isMobile: true, broker };
     } else {
         // PC / 데스크탑 환경: WTS 웹 트레이딩 또는 공식 사이트 오픈
