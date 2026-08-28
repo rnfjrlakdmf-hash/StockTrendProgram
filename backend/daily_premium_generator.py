@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import asyncio
 from datetime import datetime
@@ -88,53 +88,64 @@ def generate_objective_report():
     """
     
     prompt = f"""
-당신은 여의도 최고의 기관/외국인 수급 분석 수석 전문가입니다.
-아래의 [수급 원시 데이터]를 바탕으로, VVIP 투자자들을 위한 '심층 수급 분석 리포트'를 작성해 주세요.
+당신은 대한민국 최상위 0.1% 패밀리오피스 및 여의도 기관 전담 VVIP 퀀트 수석 애널리스트입니다.
+아래 [수급 원시 통계 데이터]를 바탕으로, VVIP 투자자들을 위한 [VIP 데일리 퀀트 인텔리전스 리포트]를 작성해 주세요.
 
 [수급 원시 데이터]
 {raw_data_summary}
 
-[작성 규칙 및 자본시장법 준수]
-1. 절대로 '추천', '매수 타이밍', '공략', '목표가', '사라/팔라' 등의 직접적인 매수/매도 추천 단어를 사용하지 마세요. (법적 리스크 방지)
-2. 단순히 "~종목에 포함되었습니다"라는 기계적이고 단조로운 문장을 절대 반복하지 마세요!
-3. 원시 데이터에 제공된 **순매수 수량(주수)**을 반드시 본문에 포함하여 분석하세요. (예: "삼성전자 1,500,000주 대량 매집")
-4. 각 종목별로 해당 종목이 속한 테마, 최근 시장 이슈, 그리고 외국인이나 기관이 '왜 이 엄청난 수량을 집중 매집했을까?'에 대한 전문가적인 인사이트와 분석 코멘트를 1~2줄로 깊이 있게 덧붙이세요.
-5. 리포트는 다음 구조로 작성하세요 (반드시 마크다운 문법을 사용하여 가독성을 극대화하세요):
+[작성 지침 및 자본시장법 준수]
+1. 절대로 '매수 추천', '목표가 달성 시 매도', '지금 사세요' 등의 1:1 투자 자문이나 매매 권유 표현을 쓰지 마세요.
+2. 팩트 데이터(순매수 수량, 증권사 리서치 컨센서스, 이동평균선 위치, 거래대금)를 기반으로 한 고품격 객관적 분석을 제공하세요.
+3. 리포트는 다음 4개 럭셔리 섹션으로 구성하세요 (마크다운 포맷):
 
-### 📊 오늘의 수급 특징 요약
-(오늘 기관/외국인 수급이 어느 섹터/테마로 쏠렸는지, 시장의 전체적인 수급 흐름을 전문가의 날카로운 시선으로 총평해주세요.)
+### 💎 Section 1. 스마트머니 자금 대이동 맥락 (Market Pulse)
+- 오늘 외인과 기관의 거대 자금이 어떤 섹터에서 차익실현되고, 어떤 섹터/테마로 집중 이동(로테이션)했는지 큰 흐름을 3~4문장으로 심도 있게 총평하세요.
 
-### 🌐 외국인 순매수 상위 팩트 체크
-(각 종목마다 글머리 기호 `-` 를 사용하고, 종목명은 **굵게(Bold)** 처리하세요. 예: `- **삼성전자**: [1,500,000주 대량 매집] 최근 반도체 업황 턴어라운드 기대감과 함께 외국인의 저점 매수세가 강하게 유입된 것으로 분석됩니다...`)
+### 🏆 Section 2. VVIP 퀀트 밸런스 알파 3선 (Quant Alpha Top 3)
+- 오늘 수급 강도와 기술적 위치가 가장 돋보이는 핵심 3개 종목을 선별하여 심층 브리핑하세요:
+  - **종목명 (수급 수량)**:
+    - 📊 **수급 팩트**: 왜 외인/기관이 대량 매집했는지 배경 (실적 턴어라운드, 글로벌 공급망, 신사업 등)
+    - 📈 **기술적 지표 위치**: 20일 이동평균선 지지 여부, 이격도 및 거래량 변화
+    - 🎯 **컨센서스 참고**: 증권사 리서치 센터의 공개 목표주가 추이 및 시장 평가
 
-### 🏢 기관 순매수 상위 팩트 체크
-(위와 동일하게 각 종목마다 글머리 기호 `-` 와 **종목명**, **매수 수량**을 포함하고, 기관이 매집한 이유와 인사이트를 분석해 주세요.)
+### 🚀 Section 3. 내일의 주도 유망 테마 & 밸류체인 레이더 (Tomorrow Catalyst)
+- 내일 및 이번 주 후반 시장에서 강력한 수급 연속성을 보일 유망 테마 1~2개와 관련 밸류체인(소부장, 대장주 등)의 핵심 연결고리를 설명하세요.
+
+### 🛡️ Section 4. 지수 변동성 헷지 & 리스크 관리 분석 (Risk & Defense)
+- 외국인의 선물/인버스 포지션 동향과 함께, 지수 단기 변동성에 대비한 리스크 관리 포인트(단기 과열 주의, 지지 라인 안착 여부)를 객관적으로 짚어주세요.
+
+---
+*※ 본 리포트는 공시 및 시장 통계 데이터를 기반으로 한 단순 정보 제공용이며, 특정 종목에 대한 매수·매도를 권유하지 않습니다. 투자 판단의 최종 책임은 투자자 본인에게 있습니다.*
 
 [출력 형식 제한]
-- 미리보기용 짧은 요약(Preview, 1~2문장)과 전체 본문(Content)을 구분해서 작성합니다.
-- Preview 텍스트와 본문 사이에 `|||SPLIT|||` 이라는 구분자를 반드시 넣어주세요.
+- 미리보기용 짧은 프리뷰(Preview, 1~2문장)와 전체 본문(Content) 사이에 `|||SPLIT|||` 구분자를 반드시 넣어주세요.
     """
     
-    report_title = f"[{today_str}] 장 마감 기관/외국인 순매수 데이터 요약"
-    preview_text = "오늘 시장에서 발생한 외국인과 기관의 순매수 통계 데이터 및 수급 특징주 현황입니다."
+    report_title = f"[{today_str}] VVIP 데일리 퀀트 & 주도 섹터 인텔리전스"
+    preview_text = "오늘 스마트머니의 자금 대이동 맥락과 퀀트 밸런스 알파 3선, 내일의 주도 테마 밸류체인 심층 브리핑입니다."
     content_text = "데이터를 불러오는 데 실패했습니다."
     
-    if GEMINI_API_KEY:
-        try:
-            model = genai.GenerativeModel("gemini-3.5-flash-lite")
-            response = model.generate_content(prompt)
+    try:
+        from ai_analysis import generate_with_retry, safe_json_loads
+        response = generate_with_retry(prompt)
+        if response and hasattr(response, 'text'):
             result = response.text.strip()
-            if "|||SPLIT|||" in result:
+            # If AI returned JSON object
+            parsed = safe_json_loads(result)
+            if isinstance(parsed, dict) and "content" in parsed:
+                content_text = parsed["content"]
+                if "preview" in parsed:
+                    preview_text = parsed["preview"]
+            elif "|||SPLIT|||" in result:
                 preview_text, content_text = result.split("|||SPLIT|||", 1)
                 preview_text = preview_text.strip()
                 content_text = content_text.strip()
             else:
                 content_text = result
-        except Exception as e:
-            print(f"Gemini API error: {e}")
-            content_text = f"통계 요약 중 오류가 발생했습니다. 원시 데이터: \n{raw_data_summary}"
-    else:
-        content_text = f"API Key가 없습니다.\n\n{raw_data_summary}"
+    except Exception as e:
+        print(f"Generation error: {e}")
+        content_text = f"통계 요약 중 오류가 발생했습니다. 원시 데이터: \n{raw_data_summary}"
 
     final_report = {
         "report_date": today_str,

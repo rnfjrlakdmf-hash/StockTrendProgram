@@ -340,152 +340,26 @@ export default function PremiumPage() {
                                 </div>
                             </>
                         ) : (
-                            /* Unlocked Visual Report (Card Layout) */
                             <div className="space-y-8">
-                                {/* 1. 오늘의 수급 특징 총평 카드 */}
-                                {summary && (
-                                    <div className="bg-gradient-to-br from-zinc-900/90 via-zinc-900/90 to-blue-950/40 border border-blue-500/30 rounded-3xl p-6 md:p-7 shadow-xl">
-                                        <div className="flex items-center gap-2.5 pb-4 border-b border-white/10 mb-4">
-                                            <div className="p-2 bg-blue-500/20 border border-blue-500/30 rounded-xl text-blue-400">
-                                                <Sparkles className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-base md:text-lg font-black text-white">
-                                                    오늘의 수급 특징 요약 총평
-                                                </h3>
-                                                <p className="text-xs text-gray-400">기관의 대형주 지지 & 외국인의 양방향 헷지 분석</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-sm md:text-base text-gray-200 leading-relaxed font-normal whitespace-pre-wrap">
-                                            {summary}
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Markdown Full Content Styled */}
+                                <div className="prose prose-invert max-w-none prose-headings:font-black prose-h3:text-lg md:prose-h3:text-xl prose-h3:text-amber-300 prose-h3:border-b prose-h3:border-amber-500/20 prose-h3:pb-2.5 prose-h3:mt-8 prose-h3:mb-4 prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-sm md:prose-p:text-base prose-strong:text-white prose-strong:font-black prose-li:text-gray-300 prose-li:text-sm md:prose-li:text-base">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {report.data.content}
+                                    </ReactMarkdown>
+                                </div>
 
-                                {/* 2. 외국인 순매수 상위 팩트 체크 리스트 */}
-                                {foreignItems.length > 0 && (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="p-2 bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400">
-                                                    <Globe className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-base md:text-lg font-black text-white">
-                                                        외국인 순매수 상위 팩트 체크
-                                                    </h3>
-                                                    <p className="text-xs text-gray-400">글로벌 스마트머니의 포트폴리오 편입 및 헷지 종목</p>
-                                                </div>
-                                            </div>
-                                            <span className="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
-                                                TOP 10
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                            {foreignItems.map((item) => (
-                                                <div
-                                                    key={item.rank}
-                                                    className="bg-zinc-950/70 hover:bg-zinc-900 border border-white/5 hover:border-cyan-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 shadow-md hover:shadow-cyan-500/5 flex flex-col justify-between"
-                                                >
-                                                    <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-white/5">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                                                item.rank === 1 ? 'bg-cyan-400 text-black shadow-md' :
-                                                                item.rank === 2 ? 'bg-slate-300 text-black' :
-                                                                item.rank === 3 ? 'bg-amber-700 text-white' :
-                                                                'bg-white/10 text-gray-400'
-                                                            }`}>
-                                                                {item.rank}
-                                                            </span>
-                                                            <span className="text-sm md:text-base font-black text-white">
-                                                                {item.name}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-1 rounded-xl shrink-0">
-                                                            {item.volume}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs md:text-[13px] text-gray-300 leading-relaxed font-normal">
-                                                        {item.desc}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 3. 기관 순매수 상위 팩트 체크 리스트 */}
-                                {instItems.length > 0 && (
-                                    <div className="space-y-4 pt-4">
-                                        <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="p-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-400">
-                                                    <Building2 className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-base md:text-lg font-black text-white">
-                                                        기관 순매수 상위 팩트 체크
-                                                    </h3>
-                                                    <p className="text-xs text-gray-400">국내 기관계(투신·연기금)의 대형주 집중 매집 요충지</p>
-                                                </div>
-                                            </div>
-                                            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-                                                TOP 10
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                            {instItems.map((item) => (
-                                                <div
-                                                    key={item.rank}
-                                                    className="bg-zinc-950/70 hover:bg-zinc-900 border border-white/5 hover:border-amber-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 shadow-md hover:shadow-amber-500/5 flex flex-col justify-between"
-                                                >
-                                                    <div className="flex items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-white/5">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                                                                item.rank === 1 ? 'bg-amber-400 text-black shadow-md' :
-                                                                item.rank === 2 ? 'bg-slate-300 text-black' :
-                                                                item.rank === 3 ? 'bg-amber-700 text-white' :
-                                                                'bg-white/10 text-gray-400'
-                                                            }`}>
-                                                                {item.rank}
-                                                            </span>
-                                                            <span className="text-sm md:text-base font-black text-white">
-                                                                {item.name}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-xl shrink-0">
-                                                            {item.volume}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs md:text-[13px] text-gray-300 leading-relaxed font-normal">
-                                                        {item.desc}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Fallback if items not parsed */}
-                                {foreignItems.length === 0 && instItems.length === 0 && (
-                                    <div className="prose prose-invert prose-base max-w-none text-gray-300 bg-zinc-950/70 p-6 rounded-2xl border border-white/5 leading-relaxed">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {report.data.content}
-                                        </ReactMarkdown>
-                                    </div>
-                                )}
-
-                                {/* 법적 고지 & 카피라이트 */}
-                                <div className="p-4 bg-zinc-950/90 rounded-2xl border border-white/5 text-[11px] text-gray-400 flex items-center justify-between gap-2">
-                                    <span className="flex items-center gap-1.5 text-gray-300">
-                                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                                        본 리포트는 한국거래소(KRX) 일일 수급 통계 기반의 객관적 분석이며, 특정 종목 매수/매도 권유가 아닙니다.
-                                    </span>
-                                    <span className="font-mono text-gray-500 text-[10px]">
-                                        StockTrend VIP Intelligence
-                                    </span>
+                                {/* Action Footer */}
+                                <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <button
+                                        onClick={copyFullReport}
+                                        className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs md:text-sm border border-white/10 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <Sparkles className="w-4 h-4 text-amber-400" />
+                                        {copied ? "✅ 리포트 복사 완료!" : "VIP 리포트 전체 복사하기"}
+                                    </button>
+                                    <p className="text-[11px] text-gray-500 font-mono">
+                                        VVIP QUANT INTELLIGENCE TERMINAL · CONFIDENTIAL
+                                    </p>
                                 </div>
                             </div>
                         )}
@@ -496,6 +370,16 @@ export default function PremiumPage() {
                     리포트 데이터를 불러올 수 없습니다.
                 </div>
             )}
+
+            {/* 자본시장법 준수 법적 면책 안내 */}
+            <div className="mt-8 p-5 bg-zinc-950/80 border border-white/5 rounded-3xl text-[11px] text-gray-400 space-y-1.5">
+                <p className="font-bold text-amber-400/90 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" /> VVIP 투자 정보 법적 안내 및 유의사항
+                </p>
+                <p className="leading-relaxed text-gray-500">
+                    본 VIP 프리미엄 리포트는 금융 시장의 수급 통계 및 정량적 퀀트 알고리즘을 기반으로 작성된 단순 통계 정보 제공용이며, 특정 종목의 매수·매도를 권유하거나 개별 투자 자문을 수행하지 않습니다. 모든 투자 판단 및 최종 책임은 투자자 본인에게 있습니다.
+                </p>
+            </div>
         </div>
     );
 }
