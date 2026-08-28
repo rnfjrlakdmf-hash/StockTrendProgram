@@ -118,84 +118,73 @@ export default function PremiumPage() {
         }
     };
 
+    const [activeTab, setActiveTab] = useState<'all' | 'pulse' | 'quant' | 'catalyst' | 'risk'>('all');
+
     // Helper: Parse the raw text content into visual sections
-    const parseReportContent = (rawContent: string) => {
-        if (!rawContent) return { summary: "", foreignItems: [], instItems: [] };
+    const parseVipReport = (rawContent: string) => {
+        if (!rawContent) return { section1: '', quantStocks: [], section3: '', section4: '' };
 
-        let summary = "";
-        const foreignItems: Array<{ rank: number; name: string; volume: string; desc: string }> = [];
-        const instItems: Array<{ rank: number; name: string; volume: string; desc: string }> = [];
+        let section1 = '';
+        const quantStocks: Array<{ name: string; volume: string; fact: string; tech: string; consensus: string }> = [];
+        let section3 = '';
+        let section4 = '';
 
-        // Split by major headers
-        const foreignHeaderIdx = rawContent.indexOf("외국인 순매수");
-        const instHeaderIdx = rawContent.indexOf("기관 순매수");
+        try {
+            if (rawContent.includes('Section 1')) {
+                const p1 = rawContent.split(/###\s*💎?\s*Section 1[^\n]*/i)[1] || '';
+                const s2Split = p1.split(/###\s*🏆?\s*Section 2[^\n]*/i);
+                section1 = s2Split[0].trim();
 
-        if (foreignHeaderIdx > -1) {
-            // Summary is before foreign header
-            const rawSummaryPart = rawContent.substring(0, foreignHeaderIdx);
-            summary = rawSummaryPart
-                .replace(/###\s*📊?\s*오늘의 수급 특징 요약/g, '')
-                .replace(/---/g, '')
-                .trim();
+                if (s2Split.length > 1) {
+                    const p2 = s2Split[1];
+                    const s3Split = p2.split(/###\s*🚀?\s*Section 3[^\n]*/i);
+                    const s2Raw = s3Split[0].trim();
 
-            const foreignPart = instHeaderIdx > -1 
-                ? rawContent.substring(foreignHeaderIdx, instHeaderIdx) 
-                : rawContent.substring(foreignHeaderIdx);
+                    const stockBlocks = s2Raw.split(/\n(?=-\s*\*\*)/);
+                    for (const block of stockBlocks) {
+                        const trimmed = block.trim();
+                        if (!trimmed.startsWith('- **') && !trimmed.startsWith('-**')) continue;
+                        const lines = trimmed.split('\n');
+                        const headerMatch = lines[0].match(/-\s*\*\*([^\(]+)(?:\(([^)]+)\))?/);
+                        const name = headerMatch ? headerMatch[1].replace(/\*\*/g, '').replace(':', '').trim() : '';
+                        const volume = headerMatch && headerMatch[2] ? headerMatch[2].replace(/\*\*/g, '').trim() : '순매수 집중';
 
-            const instPart = instHeaderIdx > -1 
-                ? rawContent.substring(instHeaderIdx) 
-                : "";
+                        let fact = '';
+                        let tech = '';
+                        let consensus = '';
 
-            // Parse lines helper
-            const parseLines = (text: string, targetList: Array<any>) => {
-                const lines = text.split('\n');
-                let currentRank = 1;
-                for (const line of lines) {
-                    const trimmed = line.trim().replace(/^[-*•]\s*/, '').replace(/^###.*\n?/, '');
-                    if (!trimmed || trimmed.includes("팩트 체크") || trimmed.includes("---")) continue;
+                        for (let i = 1; i < lines.length; i++) {
+                            const l = lines[i].trim().replace(/^[-*•]\s*/, '');
+                            if (l.includes('수급 팩트')) {
+                                fact = l.split(/수급 팩트\*?\*?:/)[1]?.trim() || l.replace(/.*수급 팩트.*?:/, '').trim();
+                            } else if (l.includes('기술적')) {
+                                tech = l.split(/기술적[^\*:]*\*?\*?:/)[1]?.trim() || l.replace(/.*기술적.*?:/, '').trim();
+                            } else if (l.includes('컨센서스')) {
+                                consensus = l.split(/컨센서스[^\*:]*\*?\*?:/)[1]?.trim() || l.replace(/.*컨센서스.*?:/, '').trim();
+                            }
+                        }
 
-                    // Match patterns:
-                    // 1) **삼성전자**: [2,908,093주 대량 매집] 설명...
-                    // 2) SK스퀘어: [54,650주 순매수] 설명...
-                    // 3) **삼성전자 (2,908,093주)**: 설명...
-                    const matchBracket = trimmed.match(/^\*?\*?([^\*:]+)\*?\*?:\s*\[([^\]]+)\]\s*(.*)$/);
-                    const matchParen = trimmed.match(/^\*?\*?([^\*:]+)\s*\(([^)]+)\)\*?\*?:\s*(.*)$/);
+                        if (name) {
+                            quantStocks.push({ name, volume, fact, tech, consensus });
+                        }
+                    }
 
-                    if (matchBracket) {
-                        targetList.push({
-                            rank: currentRank++,
-                            name: matchBracket[1].replace(/\*\*/g, '').trim(),
-                            volume: matchBracket[2].trim(),
-                            desc: matchBracket[3].trim()
-                        });
-                    } else if (matchParen) {
-                        targetList.push({
-                            rank: currentRank++,
-                            name: matchParen[1].replace(/\*\*/g, '').trim(),
-                            volume: matchParen[2].trim(),
-                            desc: matchParen[3].trim()
-                        });
-                    } else if (trimmed.includes(":")) {
-                        const colonIdx = trimmed.indexOf(":");
-                        const namePart = trimmed.substring(0, colonIdx).replace(/\*\*/g, '').trim();
-                        const descPart = trimmed.substring(colonIdx + 1).trim();
-                        targetList.push({
-                            rank: currentRank++,
-                            name: namePart,
-                            volume: "순매수 포착",
-                            desc: descPart
-                        });
+                    if (s3Split.length > 1) {
+                        const p3 = s3Split[1];
+                        const s4Split = p3.split(/###\s*🛡️?\s*Section 4[^\n]*/i);
+                        section3 = s4Split[0].replace(/---.*/s, '').trim();
+
+                        if (s4Split.length > 1) {
+                            section4 = s4Split[1].replace(/---.*/s, '').replace(/\*※.*/s, '').trim();
+                        }
                     }
                 }
-            };
-
-            parseLines(foreignPart, foreignItems);
-            parseLines(instPart, instItems);
-        } else {
-            summary = rawContent;
+            }
+        } catch (e) {
+            console.error('Error parsing VIP report:', e);
         }
 
-        return { summary, foreignItems, instItems };
+        return { section1, quantStocks, section3, section4 };
     };
 
     const copyFullReport = () => {
@@ -216,9 +205,9 @@ export default function PremiumPage() {
         );
     }
 
-    const { summary, foreignItems, instItems } = report?.data?.content 
-        ? parseReportContent(report.data.content) 
-        : { summary: "", foreignItems: [], instItems: [] };
+    const { section1, quantStocks, section3, section4 } = report?.data?.content 
+        ? parseVipReport(report.data.content) 
+        : { section1: '', quantStocks: [], section3: '', section4: '' };
 
     return (
         <div className="p-4 md:p-8 max-w-5xl mx-auto min-h-screen relative">
@@ -236,13 +225,13 @@ export default function PremiumPage() {
                     </div>
                     <div>
                         <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                            VIP 세력 수급 인텔리전스
-                            <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black px-2 py-0.5 rounded-full">
+                            VIP 데일리 퀀트 인텔리전스
+                            <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black px-2.5 py-0.5 rounded-full">
                                 당일 장마감 집계
                             </span>
                         </h1>
                         <p className="text-xs text-gray-400 mt-0.5">
-                            한국거래소(KRX) 공식 외국인·기관 순매수 상위 종목 및 세력 자금 흐름 심층 분석
+                            스마트머니 자금 대이동 맥락 · VVIP 퀀트 알파 3선 · 내일 주도 테마 & 헷지 전략
                         </p>
                     </div>
                 </div>
@@ -258,7 +247,7 @@ export default function PremiumPage() {
                     <div className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 p-6 border-b border-white/5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div>
                             <span className="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-1">
-                                {report.data.report_date || "TODAY"} MARKET WHALE INTELLIGENCE
+                                {report.data.report_date || "TODAY"} VVIP QUANT INTELLIGENCE
                             </span>
                             <h2 className="text-xl md:text-2xl font-black text-white leading-tight">
                                 {report.data.title}
@@ -286,6 +275,62 @@ export default function PremiumPage() {
                         </div>
                     </div>
 
+                    {/* Navigation Tab Bar (Unlocked Mode) */}
+                    {!report.locked && (
+                        <div className="flex items-center gap-1.5 p-3 bg-zinc-950/80 border-b border-white/5 overflow-x-auto scrollbar-none">
+                            <button
+                                onClick={() => setActiveTab('all')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                    activeTab === 'all'
+                                        ? 'bg-amber-500 text-black shadow-md font-black'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                🌟 전체 브리핑
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('pulse')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                    activeTab === 'pulse'
+                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                💎 1. 자금 대이동
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('quant')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                    activeTab === 'quant'
+                                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                🏆 2. 퀀트 알파 3선
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('catalyst')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                    activeTab === 'catalyst'
+                                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                🚀 3. 내일 주도 테마
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('risk')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                    activeTab === 'risk'
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                            >
+                                🛡️ 4. 리스크 관리
+                            </button>
+                        </div>
+                    )}
+
                     {/* Content Area */}
                     <div className="p-5 md:p-8 relative space-y-8">
                         {report.locked ? (
@@ -295,16 +340,13 @@ export default function PremiumPage() {
                                     <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                                         <Sparkles className="w-3.5 h-3.5 text-amber-400" /> 💎 Section 1. 스마트머니 자금 대이동 맥락 (무료 공개)
                                     </h4>
-                                    <div className="prose prose-invert max-w-none prose-p:text-gray-200 prose-p:leading-relaxed prose-p:text-sm md:prose-p:base prose-strong:text-white">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {report.data.content || report.data.preview}
-                                        </ReactMarkdown>
+                                    <div className="text-sm md:text-base text-gray-200 leading-relaxed font-medium whitespace-pre-line">
+                                        {section1 || report.data.content || report.data.preview}
                                     </div>
                                 </div>
 
                                 {/* Blurred Action Area */}
                                 <div className="relative rounded-3xl overflow-hidden border border-white/5 p-8 bg-zinc-950/60 min-h-[360px] flex items-center justify-center">
-                                    {/* Mock Blur Items */}
                                     <div className="absolute inset-0 p-6 opacity-20 blur-md pointer-events-none select-none space-y-4">
                                         <div className="h-8 bg-amber-500/20 rounded-xl w-1/3"></div>
                                         <div className="h-20 bg-white/10 rounded-2xl"></div>
@@ -351,18 +393,163 @@ export default function PremiumPage() {
                             </>
                         ) : (
                             <div className="space-y-8">
-                                {/* Markdown Full Content Styled */}
-                                <div className="prose prose-invert max-w-none prose-headings:font-black prose-h3:text-lg md:prose-h3:text-xl prose-h3:text-amber-300 prose-h3:border-b prose-h3:border-amber-500/20 prose-h3:pb-2.5 prose-h3:mt-8 prose-h3:mb-4 prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-sm md:prose-p:text-base prose-strong:text-white prose-strong:font-black prose-li:text-gray-300 prose-li:text-sm md:prose-li:text-base">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {report.data.content}
-                                    </ReactMarkdown>
-                                </div>
+                                {/* SECTION 1: 스마트머니 자금 대이동 맥락 */}
+                                {(activeTab === 'all' || activeTab === 'pulse') && section1 && (
+                                    <div className="bg-gradient-to-br from-amber-500/10 via-zinc-900 to-zinc-900 border border-amber-500/30 rounded-3xl p-6 md:p-7 shadow-xl">
+                                        <div className="flex items-center gap-2.5 pb-3 border-b border-white/10 mb-4">
+                                            <div className="p-2 bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-400">
+                                                <Sparkles className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base md:text-lg font-black text-white">
+                                                    💎 Section 1. 스마트머니 자금 대이동 맥락 (Market Pulse)
+                                                </h3>
+                                                <p className="text-xs text-gray-400">외인·기관 거대 자금의 섹터 로테이션 및 집중 이동 흐름</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm md:text-base text-gray-200 leading-relaxed font-normal">
+                                            {section1}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* SECTION 2: VVIP 퀀트 밸런스 알파 3선 */}
+                                {(activeTab === 'all' || activeTab === 'quant') && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="p-2 bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400">
+                                                    <Gem className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base md:text-lg font-black text-white">
+                                                        🏆 Section 2. VVIP 퀀트 밸런스 알파 3선 (Quant Alpha Top 3)
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400">수급 강도 + 이평선 지지 + 컨센서스 종합 점수 최상위 3선</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-mono font-black text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/30">
+                                                ALPHA TOP 3
+                                            </span>
+                                        </div>
+
+                                        {quantStocks.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                {quantStocks.map((stock, idx) => (
+                                                    <div 
+                                                        key={idx}
+                                                        className="bg-zinc-950/80 hover:bg-zinc-900/90 border border-white/10 hover:border-cyan-500/40 rounded-3xl p-5 md:p-6 transition-all shadow-xl space-y-4"
+                                                    >
+                                                        {/* Stock Header */}
+                                                        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/5">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black ${
+                                                                    idx === 0 ? 'bg-amber-400 text-black shadow-md' :
+                                                                    idx === 1 ? 'bg-slate-300 text-black' :
+                                                                    'bg-amber-700 text-white'
+                                                                }`}>
+                                                                    #{idx + 1}
+                                                                </span>
+                                                                <h4 className="text-lg md:text-xl font-black text-white">
+                                                                    {stock.name}
+                                                                </h4>
+                                                            </div>
+                                                            <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-3 py-1 rounded-xl">
+                                                                {stock.volume}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* 3 Metrics Bento Grid */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                            {/* 1. 수급 팩트 */}
+                                                            <div className="bg-zinc-900/80 border border-white/5 rounded-2xl p-3.5 space-y-1.5">
+                                                                <div className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                                                                    <span>📊</span> 수급 팩트
+                                                                </div>
+                                                                <p className="text-xs text-gray-300 leading-relaxed font-normal">
+                                                                    {stock.fact || "수급 집중 유입 확인"}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* 2. 기술적 지표 */}
+                                                            <div className="bg-zinc-900/80 border border-white/5 rounded-2xl p-3.5 space-y-1.5">
+                                                                <div className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                                                                    <span>📈</span> 기술적 지표 위치
+                                                                </div>
+                                                                <p className="text-xs text-gray-300 leading-relaxed font-normal">
+                                                                    {stock.tech || "안정적 지지선 확보"}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* 3. 증권사 컨센서스 */}
+                                                            <div className="bg-zinc-900/80 border border-white/5 rounded-2xl p-3.5 space-y-1.5">
+                                                                <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                                                    <span>🎯</span> 컨센서스 참고
+                                                                </div>
+                                                                <p className="text-xs text-gray-300 leading-relaxed font-normal">
+                                                                    {stock.consensus || "증권사 긍정적 평가"}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            /* Fallback Markdown if parsing fails */
+                                            <div className="prose prose-invert max-w-none text-sm text-gray-300 bg-zinc-950/70 p-6 rounded-3xl border border-white/5">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                    {report.data.content}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* SECTION 3: 내일의 주도 유망 테마 & 밸류체인 레이더 */}
+                                {(activeTab === 'all' || activeTab === 'catalyst') && section3 && (
+                                    <div className="bg-gradient-to-br from-purple-950/30 via-zinc-900 to-zinc-900 border border-purple-500/30 rounded-3xl p-6 md:p-7 shadow-xl">
+                                        <div className="flex items-center gap-2.5 pb-3 border-b border-white/10 mb-4">
+                                            <div className="p-2 bg-purple-500/20 border border-purple-500/30 rounded-xl text-purple-400">
+                                                <Sparkles className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base md:text-lg font-black text-white">
+                                                    🚀 Section 3. 내일의 주도 유망 테마 & 밸류체인 레이더 (Tomorrow Catalyst)
+                                                </h3>
+                                                <p className="text-xs text-gray-400">내일 및 주 후반 시장을 주도할 유망 테마와 밸류체인 연결고리</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm md:text-base text-gray-200 leading-relaxed font-normal">
+                                            {section3}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* SECTION 4: 지수 변동성 헷지 & 리스크 관리 분석 */}
+                                {(activeTab === 'all' || activeTab === 'risk') && section4 && (
+                                    <div className="bg-gradient-to-br from-emerald-950/30 via-zinc-900 to-zinc-900 border border-emerald-500/30 rounded-3xl p-6 md:p-7 shadow-xl">
+                                        <div className="flex items-center gap-2.5 pb-3 border-b border-white/10 mb-4">
+                                            <div className="p-2 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-400">
+                                                <ShieldCheck className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base md:text-lg font-black text-white">
+                                                    🛡️ Section 4. 지수 변동성 헷지 & 리스크 관리 분석 (Risk & Defense)
+                                                </h3>
+                                                <p className="text-xs text-gray-400">기관/외인 선물·인버스 포지션 분석 및 단기 리스크 방어 전략</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm md:text-base text-gray-200 leading-relaxed font-normal">
+                                            {section4}
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Action Footer */}
                                 <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
                                     <button
                                         onClick={copyFullReport}
-                                        className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs md:text-sm border border-white/10 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs md:text-sm border border-white/10 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                                     >
                                         <Sparkles className="w-4 h-4 text-amber-400" />
                                         {copied ? "✅ 리포트 복사 완료!" : "VIP 리포트 전체 복사하기"}
