@@ -5,7 +5,7 @@ export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const BACKEND_URL = 'http://13.209.99.170:8000';
+const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || 'http://127.0.0.1:8000';
 
 
 async function proxyRequest(request: NextRequest, context: { params: Promise<{ path: string[] }> }, method: string) {
