@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { BROKER_LIST, BrokerInfo, getPreferredBroker, setPreferredBroker, launchMtsApp, getStoreDownloadUrl } from "@/lib/brokerLinks";
-import { Smartphone, CheckCircle2, ExternalLink, Zap, Download, Sparkles, ShieldCheck, ArrowUpRight, Globe, HelpCircle } from "lucide-react";
+import { Smartphone, CheckCircle2, Zap, Download, Sparkles, ShieldCheck, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 export default function BrokerMtsSection() {
     const [selectedBroker, setSelectedBroker] = useState<BrokerInfo>(BROKER_LIST[0]);
     const [isMobile, setIsMobile] = useState(false);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
-    const [isIOS, setIsIOS] = useState(false);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -18,7 +17,6 @@ export default function BrokerMtsSection() {
             const ua = navigator.userAgent.toLowerCase();
             const mobile = /android|iphone|ipad|ipod/.test(ua);
             setIsMobile(mobile);
-            setIsIOS(/iphone|ipad|ipod/.test(ua));
 
             const handleBrokerChange = (e: any) => {
                 const found = BROKER_LIST.find(b => b.id === e.detail);
@@ -53,21 +51,23 @@ export default function BrokerMtsSection() {
     };
 
     return (
-        <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 backdrop-blur-md">
-            {/* 헤더 */}
+        <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-5 md:p-8 shadow-2xl space-y-6 backdrop-blur-md">
+            {/* 1. 섹션 헤더 */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-5 border-b border-white/5">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/20 text-white font-bold">
+                    <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/20 text-white font-bold shrink-0">
                         <Smartphone className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                            모바일 MTS / HTS 빠른 실행 연동
-                            <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg md:text-xl font-black text-white">
+                                모바일 MTS / HTS 빠른 실행 연동
+                            </h3>
+                            <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">
                                 딥링크 1초 연결
                             </span>
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">
                             스마트폰에 설치된 증권사 앱을 1초 만에 바로 열고 주식 주문을 진행할 수 있습니다.
                         </p>
                     </div>
@@ -75,14 +75,14 @@ export default function BrokerMtsSection() {
 
                 <button
                     onClick={() => setShowInstallGuide(!showInstallGuide)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-gray-300 hover:text-white transition-all shrink-0 cursor-pointer border border-white/5"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-gray-300 hover:text-white transition-all shrink-0 cursor-pointer border border-white/10 whitespace-nowrap"
                 >
                     <Download className="w-3.5 h-3.5 text-blue-400" />
                     <span>홈화면 앱 설치 가이드</span>
                 </button>
             </div>
 
-            {/* 홈화면 앱 설치 가이드 (토글) */}
+            {/* 홈화면 앱 설치 가이드 (토글 드롭다운) */}
             {showInstallGuide && (
                 <div className="p-5 bg-blue-950/30 border border-blue-500/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
                     <h4 className="text-xs font-bold text-blue-300 flex items-center gap-1.5 uppercase tracking-wider">
@@ -106,55 +106,63 @@ export default function BrokerMtsSection() {
                 </div>
             )}
 
-            {/* 현재 선택된 주거래 증권사 실행 배너 */}
-            <div className="p-5 md:p-6 bg-gradient-to-r from-blue-950/50 via-indigo-950/30 to-zinc-950 border border-blue-500/40 rounded-3xl relative overflow-hidden flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-xl">
-                <div className="space-y-1.5 z-10">
-                    <span className="text-[11px] font-mono font-bold text-blue-400 uppercase tracking-widest block">
-                        CURRENT PRIMARY MTS
+            {/* 2. 현재 선택된 주거래 증권사 실행 메인 카드 (깔끔한 2열 레이아웃) */}
+            <div className="p-5 md:p-6 bg-gradient-to-br from-blue-950/60 via-zinc-900/90 to-zinc-950 border border-blue-500/30 rounded-3xl shadow-xl space-y-5">
+                {/* 상단: 증권사 정보 */}
+                <div className="flex items-center gap-3.5">
+                    <span className="text-3xl sm:text-4xl p-2.5 bg-white/5 rounded-2xl border border-white/10 shrink-0">
+                        {selectedBroker.emoji}
                     </span>
-                    <h4 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                        <span className="text-2xl">{selectedBroker.emoji}</span>
-                        {selectedBroker.name} ({selectedBroker.appTitle})
-                    </h4>
-                    <p className="text-xs text-gray-300 leading-relaxed max-w-lg">
-                        {selectedBroker.tagline}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                                CURRENT PRIMARY MTS
+                            </span>
+                        </div>
+                        <h4 className="text-lg sm:text-xl font-black text-white mt-1 truncate">
+                            {selectedBroker.name} <span className="text-sm sm:text-base font-semibold text-gray-300">({selectedBroker.appTitle})</span>
+                        </h4>
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                            {selectedBroker.tagline}
+                        </p>
+                    </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 z-10">
-                    {/* 1. 앱 즉시 열기 버튼 */}
+                {/* 하단: 3개 액션 버튼 (균형잡힌 그리드) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-4 border-t border-white/10">
+                    {/* 1. 앱 즉시 열기 */}
                     <button
                         onClick={() => handleLaunch(selectedBroker)}
-                        className={`flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-gradient-to-r ${selectedBroker.bgColor} hover:brightness-110 text-white font-black text-xs sm:text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer`}
+                        className={`py-3.5 px-4 rounded-2xl bg-gradient-to-r ${selectedBroker.bgColor} hover:brightness-110 text-white font-black text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer`}
                         title="스마트폰에 앱이 설치되어 있는 경우 1초 만에 실행"
                     >
-                        <Zap className="w-4 h-4 fill-current animate-pulse" />
+                        <Zap className="w-4 h-4 fill-current animate-pulse shrink-0" />
                         <span>⚡ 앱 바로 열기</span>
                     </button>
 
-                    {/* 2. 스토어 다운로드 버튼 */}
+                    {/* 2. 스토어 다운로드 */}
                     <button
                         onClick={(e) => handleOpenStore(selectedBroker, e)}
-                        className="px-4 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-gray-200 hover:text-white font-bold text-xs sm:text-sm border border-white/10 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                        className="py-3.5 px-4 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 text-gray-200 hover:text-white font-bold text-sm border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                         title="앱이 아직 없는 경우 플레이스토어/앱스토어에서 다운로드"
                     >
-                        <Download className="w-4 h-4 text-emerald-400" />
+                        <Download className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>📥 앱 설치/다운로드</span>
                     </button>
 
-                    {/* 3. 웹 트레이딩 버튼 */}
+                    {/* 3. 웹 트레이딩 */}
                     <button
                         onClick={(e) => handleOpenWeb(selectedBroker, e)}
-                        className="px-4 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-gray-200 hover:text-white font-bold text-xs sm:text-sm border border-white/10 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                        className="py-3.5 px-4 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700 text-gray-200 hover:text-white font-bold text-sm border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                         title="웹 브라우저에서 바로 주식 매매"
                     >
-                        <Globe className="w-4 h-4 text-blue-400" />
-                        <span>🌐 웹(WTS)</span>
+                        <Globe className="w-4 h-4 text-cyan-400 shrink-0" />
+                        <span>🌐 웹 거래소(WTS)</span>
                     </button>
                 </div>
             </div>
 
-            {/* 9대 주요 증권사 선택 그리드 */}
+            {/* 3. 9대 주요 증권사 선택 그리드 */}
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -180,20 +188,20 @@ export default function BrokerMtsSection() {
                             >
                                 <div>
                                     <div className="flex items-start justify-between gap-2 mb-2">
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="text-2xl">{broker.emoji}</span>
-                                            <div>
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="text-2xl shrink-0">{broker.emoji}</span>
+                                            <div className="min-w-0">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className="text-sm font-black text-white">
+                                                    <span className="text-sm font-black text-white truncate">
                                                         {broker.name}
                                                     </span>
                                                     {isCurrent && (
-                                                        <span className="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-blue-500/30">
+                                                        <span className="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-blue-500/30 shrink-0">
                                                             주거래
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-[11px] text-gray-400 font-medium">
+                                                <span className="text-[11px] text-gray-400 font-medium truncate block">
                                                     {broker.appTitle}
                                                 </span>
                                             </div>
@@ -209,7 +217,7 @@ export default function BrokerMtsSection() {
                                     </p>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-2.5 border-t border-white/5 gap-2">
+                                <div className="flex items-center justify-between pt-2.5 border-t border-white/5 gap-1.5">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -218,25 +226,25 @@ export default function BrokerMtsSection() {
                                         className="flex-1 py-1.5 px-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-all"
                                         title="앱 즉시 열기"
                                     >
-                                        <Zap className="w-3 h-3 text-blue-400" />
+                                        <Zap className="w-3 h-3 text-blue-400 shrink-0" />
                                         <span>앱 열기</span>
                                     </button>
 
                                     <button
                                         onClick={(e) => handleOpenStore(broker, e)}
-                                        className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-medium text-[11px] flex items-center justify-center gap-1 transition-all"
+                                        className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-medium text-[11px] flex items-center justify-center gap-1 transition-all"
                                         title="스토어에서 앱 다운로드"
                                     >
-                                        <Download className="w-3 h-3 text-emerald-400" />
+                                        <Download className="w-3 h-3 text-emerald-400 shrink-0" />
                                         <span>설치</span>
                                     </button>
 
                                     <button
                                         onClick={(e) => handleOpenWeb(broker, e)}
-                                        className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-medium text-[11px] flex items-center justify-center gap-1 transition-all"
+                                        className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-medium text-[11px] flex items-center justify-center gap-1 transition-all"
                                         title="웹 트레이딩(WTS)"
                                     >
-                                        <Globe className="w-3 h-3 text-cyan-400" />
+                                        <Globe className="w-3 h-3 text-cyan-400 shrink-0" />
                                         <span>웹</span>
                                     </button>
                                 </div>
