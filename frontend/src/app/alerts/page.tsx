@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs, limit, where } from "firebase/firestore";
+import { collection, query, orderBy, getDocs, limit } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import Link from "next/link";
-import { ChevronRight, AlertCircle, Clock, CheckCircle2, XCircle, TrendingUp, TrendingDown, Eye, Calendar, Building2, Tag, Info, Database, BellRing } from "lucide-react";
+import { 
+    ChevronRight, AlertCircle, Clock, CheckCircle2, XCircle, TrendingUp, 
+    TrendingDown, Eye, Calendar, Building2, Tag, Info, Database, BellRing,
+    Sparkles, Compass, Zap, ShieldCheck, Flame, Layers, ExternalLink,
+    Search, Filter, Globe, Crown
+} from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import KakaoAdFit from "@/components/KakaoAdFit";
 
@@ -16,11 +21,15 @@ interface AlertItem {
     title: string;
     body: string;
     timestamp: any;
+    market?: string;
+    symbol?: string;
+    dart_url?: string;
+    news_url?: string;
+    url?: string;
 }
 
-
-// Market Badge Resolver (Free, instant)
-function getMarketBadge(alert: any): { label: string; style: string } | null {
+// Market Badge Resolver (Free, instant, 0-delay)
+function getMarketBadge(alert: any): { label: string; style: string; icon?: string } | null {
     const text = `${alert.title || ''} ${alert.body || ''} ${alert.market || ''}`;
     const symbol = (alert.symbol || '').toUpperCase();
     
@@ -75,17 +84,14 @@ export default function AlertCenterPage() {
     // 방문 시간 기록
     useEffect(() => {
         localStorage.setItem('last_alert_visit', new Date().toISOString());
-        // Custom event to trigger header update
         window.dispatchEvent(new Event('alerts_visited'));
     }, []);
 
     useEffect(() => {
         async function fetchAlerts() {
             try {
-                const fetched: AlertItem[] = [];
                 const alertsRef = collection(db, "alerts");
                 
-                // 사용자 맞춤형 알림과 전체 알림을 각각 가져와 프론트엔드에서 병합 (읽기 비용 최소화 및 누락 방지)
                 let userId = user?.id || (user as any)?.uid || localStorage.getItem('fcm_guest_id');
                 if (!userId) {
                     try {
@@ -97,7 +103,6 @@ export default function AlertCenterPage() {
                     } catch(e){}
                 }
                 
-                // Fetch the latest 300 alerts regardless of type to avoid composite index errors
                 const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
                 const snapLatest = await getDocs(qLatest);
                 
@@ -107,7 +112,6 @@ export default function AlertCenterPage() {
                     const isGlobal = data.is_global === true;
                     const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
                     
-                    // 공시, 세력, 뉴스 등 시장 전체 공용 데이터는 타겟(푸시 수신자)과 무관하게 알림 센터에 노출
                     const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news'].includes(data.type);
                     
                     if (isGlobal || isTargeted || isPublicType) {
@@ -115,16 +119,14 @@ export default function AlertCenterPage() {
                     }
                 });
 
-                // 시간순 정렬 (최신순)
                 let sortedAlerts = Array.from(allAlertsMap.values());
                 sortedAlerts.sort((a, b) => {
                     const timeA = a.timestamp?.seconds || 0;
                     const timeB = b.timestamp?.seconds || 0;
                     return timeB - timeA;
                 });
-                // 최종 노출
-                setAlerts(sortedAlerts.slice(0, 600)); // 탭 분류를 위해 전체 개수 증가
-
+                
+                setAlerts(sortedAlerts.slice(0, 600));
                 setErrorMsg(null);
             } catch (err: any) {
                 console.error("Failed to fetch alerts:", err);
@@ -161,71 +163,96 @@ export default function AlertCenterPage() {
             }
         }
         
-        // Wait for auth to initialize before fetching
         if (user !== undefined) {
             fetchAlerts();
             fetchWatchlist();
         }
     }, [user]);
 
+    // Enhanced Body Formatter with Market Interpretation Pill Box
     const renderFormattedBody = (text: string) => {
         if (!text) return null;
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        const parts = text.split(urlRegex);
-        return parts.map((part, index) => {
-            if (part.match(urlRegex)) {
-                let href = part;
-                let isInternal = false;
-                if (part.startsWith("https://stock-trend-program.co.kr") || part.startsWith("http://stock-trend-program.co.kr")) {
-                    try {
-                        const parsed = new URL(part);
-                        href = parsed.pathname + parsed.search;
-                        isInternal = true;
-                    } catch(e){}
-                }
-                if (isInternal) {
-                    return (
-                        <Link
-                            key={index}
-                            href={href}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-blue-400 font-semibold hover:underline break-all"
-                        >
-                            {part}
-                        </Link>
-                    );
-                }
-                return (
-                    <a
-                        key={index}
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-blue-400 font-semibold hover:underline break-all"
-                    >
-                        {part}
-                    </a>
-                );
-            }
-            return <span key={index}>{part}</span>;
-        });
-    };
 
-    const renderAlertCard = (alert: AlertItem) => {
-        let targetUrl = (alert as any).url || (alert as any).link;
-        const symbol = (alert as any).symbol;
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'whale_accumulation', 'whale_alert'].includes(alert.type);
+        // Separate market interpretation block if present
+        let mainText = text;
+        let marketInterpretation = "";
 
-        // 본문(body)에 URL이 포함되어 있고 targetUrl이 비어있거나 '/'인 경우 본문 속 URL을 우선 타겟팅
-        if ((!targetUrl || targetUrl === "/") && alert.body) {
-            const match = alert.body.match(/https?:\/\/[^\s]+/);
-            if (match) {
-                targetUrl = match[0];
-            }
+        if (text.includes("💡 [시장해석]") || text.includes("💡 [시장 해석]")) {
+            const splitIdx = text.indexOf("💡 [시장");
+            mainText = text.substring(0, splitIdx).trim();
+            marketInterpretation = text.substring(splitIdx).trim();
         }
 
-        // 내부 도메인 링크는 상대 경로로 변환하여 부드러운 SPA 이동
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+        const formatSegment = (str: string) => {
+            const parts = str.split(urlRegex);
+            return parts.map((part, index) => {
+                if (part.match(urlRegex)) {
+                    let href = part;
+                    let isInternal = false;
+                    if (part.startsWith("https://stock-trend-program.co.kr") || part.startsWith("http://stock-trend-program.co.kr")) {
+                        try {
+                            const parsed = new URL(part);
+                            href = parsed.pathname + parsed.search;
+                            isInternal = true;
+                        } catch(e){}
+                    }
+                    if (isInternal) {
+                        return (
+                            <Link
+                                key={index}
+                                href={href}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-cyan-400 font-bold hover:underline break-all"
+                            >
+                                {part}
+                            </Link>
+                        );
+                    }
+                    return (
+                        <a
+                            key={index}
+                            href={part}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-cyan-400 font-bold hover:underline break-all inline-flex items-center gap-1"
+                        >
+                            {part} <ExternalLink className="w-3 h-3 inline" />
+                        </a>
+                    );
+                }
+                return <span key={index}>{part}</span>;
+            });
+        };
+
+        return (
+            <div className="space-y-2.5">
+                <div className="text-xs md:text-sm text-zinc-200 leading-relaxed font-medium">
+                    {formatSegment(mainText)}
+                </div>
+                {marketInterpretation && (
+                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3.5 mt-2 flex items-start gap-2.5 shadow-sm">
+                        <div className="p-1 bg-amber-500/20 rounded-lg text-amber-400 shrink-0 mt-0.5">
+                            <Sparkles className="w-3.5 h-3.5" />
+                        </div>
+                        <p className="text-xs md:text-sm text-amber-200 leading-relaxed font-semibold">
+                            {marketInterpretation.replace(/^💡\s*\[시장해석\]\s*/, '')}
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Render Luxury Alert Card
+    const renderAlertCard = (alert: any) => {
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
+        const symbol = alert.symbol || alert.code || '';
+        const marketBadge = getMarketBadge(alert);
+
+        let targetUrl = alert.url || '';
         if (targetUrl && (targetUrl.startsWith("https://stock-trend-program.co.kr") || targetUrl.startsWith("http://stock-trend-program.co.kr"))) {
             try {
                 const parsed = new URL(targetUrl);
@@ -241,72 +268,96 @@ export default function AlertCenterPage() {
             targetUrl = `/news-redirect?${params.toString()}`;
         }
 
+        // Distinct Glow Theme by Alert Type
+        let typeBadgeStyle = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+        let typeBadgeLabel = "🔔 일반 알림";
+        let cardBorderHover = "hover:border-white/25";
+
+        if (['whale_accumulation', 'whale_alert'].includes(alert.type)) {
+            typeBadgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]";
+            typeBadgeLabel = "🐳 세력·슈퍼개미 포착";
+            cardBorderHover = "hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)]";
+        } else if (['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type)) {
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+            typeBadgeLabel = "🇺🇸 미국 SEC 공시";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+        } else if (isDisclosure) {
+            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
+            typeBadgeLabel = "🇰🇷 DART 공시 속보";
+            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
+        } else if (alert.type === 'crypto_bull') {
+            typeBadgeStyle = "bg-rose-500/20 text-rose-300 border-rose-500/40";
+            typeBadgeLabel = "🔥 코인 불장 시그널";
+            cardBorderHover = "hover:border-rose-500/40";
+        } else if (alert.type === 'ipo_alert') {
+            typeBadgeStyle = "bg-pink-500/20 text-pink-300 border-pink-500/40";
+            typeBadgeLabel = "🎯 공모주 레이더";
+            cardBorderHover = "hover:border-pink-500/40";
+        } else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type)) {
+            typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40";
+            typeBadgeLabel = "📰 마켓 헤드라인";
+            cardBorderHover = "hover:border-cyan-500/40";
+        }
+
         const cardContent = (
-            <div className={`bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left ${!isDisclosure ? 'group' : ''}`}>
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                        {getMarketBadge(alert) && (
-                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-black border font-mono tracking-tight ${getMarketBadge(alert)?.style}`}>
-                                {getMarketBadge(alert)?.label}
+            <div className={`relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-zinc-950 border border-white/10 ${cardBorderHover} rounded-3xl p-5 md:p-6 transition-all duration-300 shadow-2xl w-full text-left overflow-hidden group`}>
+                {/* Header Row: Type Badge + Market Badge + Timestamp */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-3 border-b border-white/5">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-black border flex items-center gap-1.5 ${typeBadgeStyle}`}>
+                            {typeBadgeLabel}
+                        </span>
+                        {marketBadge && (
+                            <span className={`px-2.5 py-1 rounded-xl text-xs font-black border font-mono tracking-tight shadow-sm ${marketBadge.style}`}>
+                                {marketBadge.label}
                             </span>
                         )}
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                            alert.type === 'crypto_bull' 
-                                ? 'bg-orange-500/20 text-orange-400' 
-                                : ['whale_accumulation', 'whale_alert'].includes(alert.type)
-                                ? 'bg-purple-500/20 text-purple-400'
-                                : isDisclosure
-                                ? 'bg-indigo-500/20 text-indigo-400'
-                                : alert.type === 'ipo_alert'
-                                ? 'bg-pink-500/20 text-pink-400'
-                                : alert.type === 'admin_report'
-                                ? 'bg-red-500/20 text-red-400'
-                                : ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type)
-                                ? 'bg-blue-500/20 text-blue-400'
-                                : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                            {alert.type === 'crypto_bull' ? '🔥 코인 불장' : 
-                             ['whale_accumulation', 'whale_alert'].includes(alert.type) ? '🐳 세력 포착' : 
-                             ['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type) ? '🇺🇸 해외 공시' :
-                             isDisclosure ? '🇰🇷 국내 공시' :
-                             alert.type === 'ipo_alert' ? '🎯 공모주' :
-                             alert.type === 'admin_report' ? '👑 관리자' :
-                             ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ? '📰 뉴스' : '🔔 알림'}
-                        </span>
-                        <span className="text-xs text-gray-500 font-medium">
-                            {alert.timestamp && alert.timestamp.seconds
-                                ? new Date(
-                                      alert.timestamp.seconds * 1000
-                                  ).toLocaleString("ko-KR", {
-                                      month: "short",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                  })
-                                : "최근"}
-                        </span>
                     </div>
-                    {!isDisclosure && <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" />}
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-gray-400">
+                        <Clock className="w-3.5 h-3.5 text-gray-500" />
+                        {alert.timestamp && alert.timestamp.seconds
+                            ? new Date(alert.timestamp.seconds * 1000).toLocaleString("ko-KR", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                              })
+                            : "최근"}
+                    </div>
                 </div>
-                <h3 className="text-md font-semibold text-gray-100 pr-6">
+
+                {/* Title */}
+                <h3 className="text-base md:text-lg font-black text-white group-hover:text-amber-200 transition-colors leading-snug mb-2">
                     {alert.title}
                 </h3>
-                <div className={`text-sm text-gray-400 whitespace-pre-wrap leading-relaxed mt-1 pr-6 ${isDisclosure ? 'mb-4' : ''}`}>
+
+                {/* Body Content */}
+                <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
                     {renderFormattedBody(alert.body)}
                 </div>
 
+                {/* Action Buttons for Disclosures / Stocks */}
                 {isDisclosure && (
-                    <div className="flex gap-3 mt-4 pt-4 border-t border-gray-800/50">
+                    <div className="flex flex-wrap gap-2.5 mt-5 pt-4 border-t border-white/10">
                         {symbol && (
-                            <Link href={`/stock/${symbol}`} className="flex-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 text-center py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
-                                AI 리포트 분석
+                            <Link 
+                                href={`/stock/${symbol}`} 
+                                className="flex-1 min-w-[130px] bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                            >
+                                <Sparkles className="w-4 h-4 text-blue-400" />
+                                AI 종목 심층 분석
                                 <ChevronRight className="w-4 h-4" />
                             </Link>
                         )}
                         {((alert as any).dart_url || targetUrl) && ((alert as any).dart_url || targetUrl).startsWith("http") && (
-                            <a href={(alert as any).dart_url || targetUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 text-center py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
+                            <a 
+                                href={(alert as any).dart_url || targetUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                            >
+                                <ExternalLink className="w-4 h-4 text-gray-400" />
                                 공시 원문 보기
-                                <ChevronRight className="w-4 h-4" />
                             </a>
                         )}
                     </div>
@@ -343,55 +394,32 @@ export default function AlertCenterPage() {
         return <div key={alert.id} className="cursor-pointer">{cardContent}</div>;
     };
 
-    // 관리자 여부 확인
-    const isAdmin = user && ['rnfjrlakdmf@gmail.com', 'rnfjr@gmail.com'].includes((user as any).email?.toLowerCase());
-
-    // 탭 구성
+    // Filter Navigation Tabs
     const tabs = [
-        { id: "all", label: "전체" },
-        { id: "news", label: "뉴스" },
-        { id: "disclosure", label: "공시" },
-        { id: "portfolio", label: "내 관심종목" },
-        { id: "system", label: "운영 알림" }
+        { id: "all", label: "전체 브리핑", icon: Layers },
+        { id: "disclosure", label: "공시 & 세력 수급", icon: Zap },
+        { id: "news", label: "마켓 뉴스", icon: Globe },
+        { id: "portfolio", label: "내 관심종목", icon: Crown },
+        { id: "system", label: "운영 알림", icon: ShieldCheck }
     ];
-    if (isAdmin) {
-        tabs.push({ id: "admin", label: "관리자 메뉴" });
-    }
 
-    let allTabNewsCount = 0;
-    // 카테고리 필터링 적용
     const filteredAlerts = alerts.filter(alert => {
-        // 관리자 알림은 관리자 탭 또는 전체 탭에서만 보임 (일반 유저의 전체 탭에는 어차피 권한이 없어서 안 가져옴)
         if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
 
-        const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
-        const isPrice = ['price_alert', 'auto_price_alert', 'stock_price_alert'].includes(alert.type);
-        const isSystem = ['system_alert', 'market_summary', 'morning_briefing', 'global_market_alert', 'weekend_report', 'referral_invite'].includes(alert.type);
+        const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
+        const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert'].includes(alert.type);
+        const isSystem = ['admin_report', 'system_alert', 'ping_test'].includes(alert.type);
 
-        if (activeTab === "all") {
-            if (isNews) {
-                if (allTabNewsCount < 15) {
-                    allTabNewsCount++;
-                    return true;
-                }
-                return false;
-            }
-            return true;
-        }
-        if (activeTab === "admin") return ['admin_report', 'ping_test'].includes(alert.type);
         if (activeTab === "news") return isNews;
         if (activeTab === "system") return isSystem;
-        
-        const isPortfolioAlert = ['portfolio_summary', 'dividend_alert'].includes(alert.type);
+
         let symbolMatch = false;
-        if ((alert as any).symbol && watchlistSymbols.includes((alert as any).symbol)) {
+        if (alert.symbol && watchlistSymbols.includes(alert.symbol)) {
             symbolMatch = true;
-        } else if (watchlistNames.length > 0) {
-            // If symbol is missing or doesn't match, try matching by name in title or body
-            const textToSearch = (alert.title + " " + alert.body).toLowerCase();
+        } else {
             for (const name of watchlistNames) {
-                if (textToSearch.includes(name.toLowerCase())) {
+                if (name && (alert.title?.includes(name) || alert.body?.includes(name))) {
                     symbolMatch = true;
                     break;
                 }
@@ -411,7 +439,6 @@ export default function AlertCenterPage() {
         
         if (activeTab === "portfolio") {
             const isPortfolioAlert = ['portfolio_summary', 'dividend_alert', 'morning_briefing'].includes(alert.type);
-            // 내 관심종목 탭에서는 포트폴리오 기본 알림 + 내 관심종목 관련 뉴스, 공시, 가격 알림을 모두 표시
             return isPortfolioAlert || ((isNews || isDisclosure || isPrice) && symbolMatch);
         }
         
@@ -420,75 +447,103 @@ export default function AlertCenterPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab]);
+    }, [activeTab, disclosureFilter]);
 
     const totalPages = Math.ceil(filteredAlerts.length / ITEMS_PER_PAGE);
     const paginatedAlerts = filteredAlerts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     return (
-        <div className="min-h-screen pb-10">
+        <div className="min-h-screen bg-[#07080d] text-gray-100 pb-20 font-sans relative overflow-hidden">
             <Header />
 
-            <div className="p-4 md:p-6 space-y-4 max-w-3xl mx-auto">
-                <div className="flex items-center space-x-3 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                        <span className="text-2xl">🔔</span>
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">
-                            알림 센터
-                        </h1>
-                        <p className="text-sm text-gray-400 mt-1">
-                            놓친 중요한 투자 정보를 모아보세요
-                        </p>
+            {/* Ambient Background Glowing Auroras */}
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+            <div className="fixed top-1/3 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+            <div className="fixed bottom-10 left-1/3 w-96 h-96 bg-purple-500/10 rounded-full blur-[160px] pointer-events-none -z-10" />
+
+            <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-7">
+                
+                {/* Prestige Top Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                    <div className="flex items-center gap-4">
+                        <div className="relative p-3.5 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.35)] text-white font-black flex items-center justify-center shrink-0">
+                            <BellRing className="w-7 h-7 text-white drop-shadow-sm" />
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-400"></span>
+                            </span>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                                    <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-spin" style={{ animationDuration: '4s' }} />
+                                    LIVE RADAR STREAM
+                                </span>
+                                <span className="text-xs font-mono font-bold text-gray-400">
+                                    REAL-TIME INTELLIGENCE
+                                </span>
+                            </div>
+                            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight leading-snug">
+                                실시간 마켓 인텔리전스 알림 센터
+                            </h1>
+                            <p className="text-xs md:text-sm text-gray-400 mt-1 font-medium">
+                                DART·SEC 공시, 큰손 세력 매집, 실시간 급등락 시그널을 초고속으로 스트리밍합니다.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* 탭 버튼 영역 */}
-                <div className="flex items-center space-x-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                                activeTab === tab.id
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
-                            }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-2 p-1.5 bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-2xl overflow-x-auto scrollbar-none shadow-xl">
+                    {tabs.map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                                    isActive
+                                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black shadow-lg shadow-blue-500/25"
+                                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                                }`}
+                            >
+                                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
 
+                {/* 공시 탭 전용 서브 필터 */}
                 {activeTab === 'disclosure' && (
-                    <div className="flex items-center space-x-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+                    <div className="flex items-center gap-2 p-1 bg-zinc-950/80 border border-white/5 rounded-2xl w-fit">
                         <button
                             onClick={() => setDisclosureFilter('all')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 disclosureFilter === 'all'
-                                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                                    : "bg-gray-800/50 text-gray-500 hover:bg-gray-800 hover:text-gray-300 border border-transparent"
+                                    ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                                    : "text-gray-500 hover:text-gray-300"
                             }`}
                         >
                             전체 공시
                         </button>
                         <button
                             onClick={() => setDisclosureFilter('kr')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 disclosureFilter === 'kr'
-                                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                                    : "bg-gray-800/50 text-gray-500 hover:bg-gray-800 hover:text-gray-300 border border-transparent"
+                                    ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                                    : "text-gray-500 hover:text-gray-300"
                             }`}
                         >
                             🇰🇷 국내 (DART)
                         </button>
                         <button
                             onClick={() => setDisclosureFilter('us')}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 disclosureFilter === 'us'
-                                    ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                                    : "bg-gray-800/50 text-gray-500 hover:bg-gray-800 hover:text-gray-300 border border-transparent"
+                                    ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                                    : "text-gray-500 hover:text-gray-300"
                             }`}
                         >
                             🇺🇸 해외 (SEC)
@@ -496,77 +551,48 @@ export default function AlertCenterPage() {
                     </div>
                 )}
 
+                {/* 게스트 로그인 배너 */}
                 {!user && (
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center justify-between mb-4">
-                        <div>
-                            <h3 className="text-blue-400 font-semibold text-sm">개인 맞춤 알림을 받아보세요</h3>
-                            <p className="text-gray-400 text-xs mt-1">로그인하시면 나의 관심종목 뉴스와 목표가 도달 알림을 받을 수 있습니다.</p>
+                    <div className="bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-transparent border border-blue-500/30 rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                        <div className="flex items-center gap-3.5 text-center sm:text-left">
+                            <div className="p-3 bg-blue-500/15 rounded-2xl text-blue-400 shrink-0 hidden sm:flex">
+                                <Crown className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm md:text-base font-black text-white">개인 맞춤 관심종목 실시간 시그널 알림</h3>
+                                <p className="text-xs text-gray-300 mt-0.5">로그인하시면 내 관심종목의 공시, 급등락, 목표가 돌파 푸시를 즉시 수신할 수 있습니다.</p>
+                            </div>
                         </div>
+                        <Link href="/login" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-500/20 whitespace-nowrap active:scale-95">
+                            3초 로그인하기
+                        </Link>
                     </div>
                 )}
 
+                {/* 알림 목록 영역 */}
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    <div className="flex flex-col justify-center items-center h-80 gap-3">
+                        <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-xs font-mono text-blue-400/80 animate-pulse">STREAMING RADAR SIGNALS...</p>
                     </div>
                 ) : errorMsg ? (
-                    <div className="flex flex-col items-center justify-center py-32 text-center bg-red-500/10 border border-red-500/20 rounded-3xl">
-                        <span className="text-4xl mb-4">⚠️</span>
-                        <h3 className="text-lg font-semibold text-red-400">
-                            알림을 불러오지 못했습니다
-                        </h3>
-                        <p className="text-sm text-red-300 mt-2 max-w-md mx-auto">
-                            {errorMsg}
-                        </p>
+                    <div className="flex flex-col items-center justify-center py-20 text-center bg-rose-500/10 border border-rose-500/20 rounded-3xl p-6">
+                        <AlertCircle className="w-10 h-10 text-rose-400 mb-3" />
+                        <h3 className="text-lg font-black text-rose-300">알림을 불러오지 못했습니다</h3>
+                        <p className="text-xs text-rose-400 mt-1">{errorMsg}</p>
                     </div>
                 ) : filteredAlerts.length === 0 ? (
-                    activeTab === "portfolio" && (!user || (user as any).is_guest) ? (
-                        <div className="flex flex-col items-center justify-center py-24 px-4 text-center bg-gradient-to-br from-blue-900/20 via-black to-black border border-blue-500/30 rounded-3xl shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
-                                <BellRing className="w-48 h-48 text-blue-500 -rotate-12 transform translate-x-10 -translate-y-10" />
-                            </div>
-                            
-                            <div className="w-20 h-20 mb-6 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)] relative z-10 pointer-events-none">
-                                <span className="text-4xl">⭐️</span>
-                            </div>
-                            
-                            <h3 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 mb-4 relative z-10 tracking-tight pointer-events-none">
-                                나만의 관심종목 알림을 받아보세요!
-                            </h3>
-                            <p className="text-sm md:text-base text-gray-400 max-w-md mx-auto leading-relaxed relative z-10 mb-8 pointer-events-none">
-                                로그인하고 관심종목을 등록하시면,<br/>
-                                <strong className="text-blue-400 font-bold">목표가 돌파, 대규모 수급 포착, 핵심 공시</strong>를<br/>
-                                누구보다 빠르게 알려드립니다.
-                            </p>
-                            
-                            <div className="relative z-10 flex flex-col items-center">
-                                <Link href="/login" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/30 hover:shadow-blue-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 cursor-pointer">
-                                    3초만에 로그인하고 시작하기 <ChevronRight className="w-5 h-5" />
-                                </Link>
-                                
-                                <div className="flex items-center justify-center gap-2 mt-4">
-                                    <Link href="/login" className="flex items-center gap-1.5 text-xs font-semibold text-yellow-400/90 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20 hover:bg-yellow-400/20 transition-colors cursor-pointer">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div> 카카오톡 1초 로그인
-                                    </Link>
-                                    <Link href="/login" className="flex items-center gap-1.5 text-xs font-semibold text-gray-300 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div> 구글 계정 연동
-                                    </Link>
-                                </div>
-                            </div>
+                    <div className="flex flex-col items-center justify-center py-28 text-center bg-zinc-950/80 border border-white/5 rounded-3xl shadow-2xl p-6">
+                        <div className="w-16 h-16 mb-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
+                            📭
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-32 text-center bg-[#0a0a0c] border border-white/5 rounded-3xl shadow-inner">
-                            <div className="w-16 h-16 mb-4 rounded-full bg-gray-800/50 flex items-center justify-center border border-gray-700/50">
-                                <span className="text-3xl">📭</span>
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-300 mb-1">
-                                해당 분류의 알림이 없습니다.
-                            </h3>
-                            <p className="text-sm text-gray-500 font-medium">
-                                중요한 소식이 발생하면 가장 먼저 알려드릴게요!
-                            </p>
-                        </div>
-                    )
+                        <h3 className="text-lg font-black text-gray-200 mb-1">
+                            해당 분류의 실시간 알림이 없습니다.
+                        </h3>
+                        <p className="text-xs md:text-sm text-gray-400 font-medium max-w-sm leading-relaxed">
+                            새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!
+                        </p>
+                    </div>
                 ) : (
                     <div className="space-y-4">
                         {paginatedAlerts.map((alert, idx) => {
@@ -576,8 +602,8 @@ export default function AlertCenterPage() {
                                 <React.Fragment key={alert.id}>
                                     {renderAlertCard(alert)}
                                     {isFirstHighValue && (
-                                        <div className="bg-black/30 border border-blue-500/10 rounded-2xl p-4 flex flex-col items-center justify-center my-6 shadow-xl">
-                                            <p className="text-xs text-gray-500 mb-2 font-semibold">스폰서 광고</p>
+                                        <div className="bg-zinc-950/80 border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center my-6 shadow-xl">
+                                            <p className="text-[11px] text-gray-500 mb-2 font-semibold">스폰서 광고</p>
                                             <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
                                         </div>
                                     )}
@@ -585,12 +611,13 @@ export default function AlertCenterPage() {
                             );
                         })}
                         
+                        {/* 페이지네이션 */}
                         {totalPages > 1 && (
-                            <div className="flex justify-center items-center space-x-2 mt-8 pt-4">
+                            <div className="flex justify-center items-center space-x-2 mt-10 pt-4 border-t border-white/10">
                                 <button 
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className="px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-30 transition-colors text-sm"
+                                    className="px-4 py-2 rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-gray-300 hover:text-white disabled:opacity-30 transition-all text-xs font-bold cursor-pointer"
                                 >
                                     이전
                                 </button>
@@ -600,14 +627,14 @@ export default function AlertCenterPage() {
                                     .map((p, idx, arr) => (
                                         <React.Fragment key={p}>
                                             {idx > 0 && arr[idx - 1] !== p - 1 && (
-                                                <span className="text-gray-600 px-1">...</span>
+                                                <span className="text-gray-600 px-1 font-bold">...</span>
                                             )}
                                             <button
                                                 onClick={() => setCurrentPage(p)}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
+                                                className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-all cursor-pointer ${
                                                     currentPage === p 
-                                                    ? "bg-blue-500 text-white border border-blue-400/50" 
-                                                    : "bg-white/5 border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
+                                                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border border-blue-400/40" 
+                                                    : "bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-gray-400 hover:text-white"
                                                 }`}
                                             >
                                                 {p}
@@ -619,7 +646,7 @@ export default function AlertCenterPage() {
                                 <button 
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-30 transition-colors text-sm"
+                                    className="px-4 py-2 rounded-xl border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-gray-300 hover:text-white disabled:opacity-30 transition-all text-xs font-bold cursor-pointer"
                                 >
                                     다음
                                 </button>
