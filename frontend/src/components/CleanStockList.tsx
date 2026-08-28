@@ -31,6 +31,20 @@ export interface CleanStockItem {
     // [v3] 통화 정보
     currency?: string;          // 'USD' | 'KRW' | 'JPY' ...
     price_krw?: string | null;  // 해외주식 원화 환산가
+    // [v4] 전문 데이터 지표 (수급, 목표가, 밸류에이션)
+    proInsights?: {
+        target_price?: string;
+        foreign_streak?: number;
+        organ_streak?: number;
+        latest_foreign?: number;
+        latest_organ?: number;
+        is_double_buy?: boolean;
+        per?: string;
+        pbr?: string;
+        high_52w?: string;
+        low_52w?: string;
+        summary_tags?: string[];
+    };
 }
 
 // Helper function to extract high-value keywords and format them as hashtags
@@ -146,6 +160,37 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                 </span>
                                             ))}
                                         </div>
+                                    </div>
+                                )}
+
+                                {/* [PRO] 외인/기관 수급 & 증권사 리서치 컨센서스 목표가 */}
+                                {item.proInsights && (
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                        {item.proInsights.is_double_buy && (
+                                            <span className="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm">
+                                                🔥 외인·기관 쌍끌이
+                                            </span>
+                                        )}
+                                        {!item.proInsights.is_double_buy && (item.proInsights.foreign_streak || 0) >= 2 && (
+                                            <span className="text-[10px] bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                                🌐 외인 {item.proInsights.foreign_streak}일 연속매수
+                                            </span>
+                                        )}
+                                        {!item.proInsights.is_double_buy && (item.proInsights.organ_streak || 0) >= 2 && (
+                                            <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                                🏢 기관 {item.proInsights.organ_streak}일 연속매수
+                                            </span>
+                                        )}
+                                        {item.proInsights.target_price && (
+                                            <span className="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1" title="국내 증권사 리서치센터 평균 목표주가 집계">
+                                                🎯 증권사 목표가 {item.proInsights.target_price}원
+                                            </span>
+                                        )}
+                                        {item.proInsights.per && item.proInsights.per !== 'N/A' && (
+                                            <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                                📊 PER {item.proInsights.per}
+                                            </span>
+                                        )}
                                     </div>
                                 )}
                             </div>

@@ -403,6 +403,146 @@ def get_multi_quotes(symbols: str = Query(...)):
     return {"status": "success", "data": results, "usd_krw": rate}
 
 
+PRO_INSIGHTS_CACHE = {}  # {sym: (timestamp, data)}
+PRO_INSIGHTS_TTL = 120  # 2 minutes cache
+
+@router.get("/stock/pro-insights")
+def get_stock_pro_insights(symbols: str = Query(...)):
+    """
+    관심종목 전문 데이터 지표 (외인/기관 수급 연속일수, 증권사 리서치 컨센서스 목표가, 밸류에이션)
+    - 100% 무료 공시 및 공개 통계 데이터 기반 (API 비용 0원)
+    - 유사투자자문업 규제 준수: 객관적 통계 수치 및 증권사 공개 컨센서스 단순 집계 정보 제공
+    """
+    symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
+    now = time.time()
+    results = {}
+    import concurrent.futures
+    import requests, re
+
+    def fetch_insight(sym):
+        cached = PRO_INSIGHTS_CACHE.get(sym)
+        if cached and (now - cached[0] < PRO_INSIGHTS_TTL):
+            return sym, cached[1]
+
+        clean_code = re.sub(r'[^0-9A-Z]', '', sym.split('.')[0])
+        insight = {
+            "symbol": sym,
+            "target_price": None,
+            "target_upside": None,
+            "foreign_streak": 0,
+            "organ_streak": 0,
+            "latest_foreign": 0,
+            "latest_organ": 0,
+            "is_double_buy": False,
+            "per": None,
+            "pbr": None,
+            "high_52w": None,
+            "low_52w": None,
+            "summary_tags": [],
+        }
+
+        try:
+            if len(clean_code) == 6 and clean_code.isdigit():
+                # 국내 주식 네이버 금융 공개 데이터
+                url = f"https://m.stock.naver.com/api/stock/{clean_code}/integration"
+                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                res = requests.get(url, headers=headers, timeout=4)
+                if res.status_code == 200:
+                    rjson = res.json()
+                    deal_trends = rjson.get('dealTrendInfos', [])
+                    consensus = rjson.get('consensusInfo') or {}
+                    total_infos = {info['code']: info.get('value') for info in rjson.get('totalInfos', []) if 'code' in info}
+
+                    foreign_streak = 0
+                    organ_streak = 0
+                    latest_foreign = 0
+                    latest_organ = 0
+                    
+                    if deal_trends:
+                        latest = deal_trends[0]
+                        latest_foreign = int(str(latest.get('foreignerPureBuyQuant', '0')).replace(',', ''))
+                        latest_organ = int(str(latest.get('organPureBuyQuant', '0')).replace(',', ''))
+                        
+                        for item in deal_trends:
+                            f = int(str(item.get('foreignerPureBuyQuant', '0')).replace(',', ''))
+                            if f > 0: foreign_streak += 1
+                            else: break
+                            
+                        for item in deal_trends:
+                            o = int(str(item.get('organPureBuyQuant', '0')).replace(',', ''))
+                            if o > 0: organ_streak += 1
+                            else: break
+
+                    is_double_buy = (latest_foreign > 0 and latest_organ > 0)
+                    target_price_str = consensus.get('priceTargetMean')
+
+                    tags = []
+                    if is_double_buy:
+                        tags.append("🔥 외인·기관 쌍끌이")
+                    elif foreign_streak >= 2:
+                        tags.append(f"🌐 외인 {foreign_streak}일 연속 매수")
+                    elif organ_streak >= 2:
+                        tags.append(f"🏢 기관 {organ_streak}일 연속 매수")
+
+                    if target_price_str:
+                        tags.append(f"🎯 증권사 목표가 {target_price_str}원")
+
+                    per_val = total_infos.get('per')
+                    if per_val and per_val != 'N/A':
+                        clean_per = per_val.replace('배', '').strip()
+                        try:
+                            if float(clean_per) < 15:
+                                tags.append(f"📊 저PER ({clean_per}배)")
+                        except: pass
+
+                    insight.update({
+                        "target_price": target_price_str,
+                        "foreign_streak": foreign_streak,
+                        "organ_streak": organ_streak,
+                        "latest_foreign": latest_foreign,
+                        "latest_organ": latest_organ,
+                        "is_double_buy": is_double_buy,
+                        "per": total_infos.get('per'),
+                        "pbr": total_infos.get('pbr'),
+                        "high_52w": total_infos.get('highPriceOf52Weeks'),
+                        "low_52w": total_infos.get('lowPriceOf52Weeks'),
+                        "summary_tags": tags,
+                    })
+            else:
+                # 해외/미국 주식
+                import yfinance as yf
+                ticker = yf.Ticker(sym)
+                info = ticker.fast_info
+                target_p = None
+                try:
+                    target_p = ticker.info.get('targetMeanPrice')
+                except: pass
+                
+                tags = []
+                if target_p:
+                    tags.append(f"🎯 월가 목표가 ${target_p:.2f}")
+
+                insight.update({
+                    "target_price": f"${target_p:.2f}" if target_p else None,
+                    "per": f"{info.get('trailing_pe', 0):.1f}배" if hasattr(info, 'trailing_pe') and info.trailing_pe else None,
+                    "summary_tags": tags,
+                })
+        except Exception as e:
+            print(f"[ProInsights] Error for {sym}: {e}")
+
+        PRO_INSIGHTS_CACHE[sym] = (now, insight)
+        return sym, insight
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(fetch_insight, sym): sym for sym in symbol_list}
+        for fut in concurrent.futures.as_completed(futures):
+            s, res = fut.result()
+            results[s] = res
+
+    return {"status": "success", "data": results}
+
+
+
 @router.get("/korea/sector_heatmap")
 async def read_sector_heatmap():
     """업종별 히트맵 데이터 반환"""

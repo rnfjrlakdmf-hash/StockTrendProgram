@@ -48,6 +48,9 @@ export default function WatchlistPage() {
     const [eventEvents, setEventEvents] = useState<any[]>([]);
     const [eventsLoading, setEventsLoading] = useState(false);
 
+    // [PRO] 전문 수급 & 증권사 컨센서스 데이터
+    const [proInsights, setProInsights] = useState<Record<string, any>>({});
+
     // [NEW] 서브탭 상태
     const [activeTab, setActiveTab] = useState<"quotes" | "schedules" | "alerts">("quotes");
     const [isAdmin, setIsAdmin] = useState(false);
@@ -323,6 +326,18 @@ export default function WatchlistPage() {
         const syms = watchlist.map(i => i.symbol).join(",");
         fetchEventSchedules(syms);
 
+        // [PRO] 수급 및 증권사 목표가 전문 데이터 로드
+        const fetchProInsights = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/pro-insights?symbols=${encodeURIComponent(syms)}`);
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    setProInsights(json.data);
+                }
+            } catch (e) {}
+        };
+        fetchProInsights();
+
         return () => clearInterval(quotesTimer);
     }, [watchlist]);
 
@@ -533,6 +548,8 @@ export default function WatchlistPage() {
                                             // [v3] 통화 정보 (해외주식 $ 표시 + 원화 병기)
                                             currency: data?.currency || 'KRW',
                                             price_krw: data?.price_krw || null,
+                                            // [v4] 전문 데이터 지표
+                                            proInsights: proInsights[item.symbol],
                                         };
                                     })}
                                     onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
@@ -745,6 +762,16 @@ export default function WatchlistPage() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* 유사투자자문업 법적 면책 안내 (공식 표준) */}
+            <div className="p-4 bg-zinc-950/80 border border-white/5 rounded-2xl text-[11px] text-gray-400 space-y-1">
+                <p className="font-bold text-gray-300 flex items-center gap-1.5">
+                    <span>🛡️</span> 투자 정보 법적 안내 및 유의사항
+                </p>
+                <p className="leading-relaxed text-gray-500">
+                    본 관심종목 화면에서 제공되는 수급 통계, 증권사 리서치 컨센서스 목표주가, 밸류에이션 지표 등은 공시 데이터 및 금융 시장 공개 통계를 기반으로 집계된 단순 참고 정보이며, 특정 종목의 매수·매도를 권유하거나 개별 투자 자문을 수행하지 않습니다. 모든 투자 판단 및 결과에 대한 책임은 투자자 본인에게 귀속됩니다.
+                </p>
             </div>
 
             {/* 하단 세로 배너 광고 (320x480) */}
