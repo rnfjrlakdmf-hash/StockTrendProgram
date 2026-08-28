@@ -42,20 +42,22 @@ messaging.onBackgroundMessage((payload) => {
 
     const notificationOptions = {
         body: payload.notification?.body || '',
+        icon: '/icon.png',
+        badge: '/icon.png',
         vibrate: [200, 100, 200, 100, 200, 100, 200],
         data: payload.data,
         tag: tag,
         renotify: true,
-        requireInteraction: true,
+        requireInteraction: false,
         silent: false,
         actions: [
             {
-                action: 'view',
-                title: alertType === 'disclosure_alert' ? '공시 보기 📊' : (alertType === 'theory_alert' ? '강의 보기 📚' : '종목 보기 📈')
+                action: 'view_stock',
+                title: '🔍 AI 정밀 진단'
             },
             {
-                action: 'close',
-                title: '닫기'
+                action: 'view_doc',
+                title: '📄 공시·뉴스 원문'
             }
         ]
     };
@@ -82,8 +84,17 @@ self.addEventListener('notificationclick', (event) => {
 
     let targetUrl;
 
-    if (alertType === 'disclosure_alert' || alertType === 'whale_alert') {
-        // 공시 및 세력 알림: 버튼 클릭이든 본문 클릭이든 무조건 공시 중간 경유 페이지로 이동 (조회수 증가 및 원문 제공)
+    if (event.action === 'view_stock' && symbol) {
+        targetUrl = `/stock/${symbol}`;
+    } else if (event.action === 'view_doc') {
+        if (dartUrl) {
+            targetUrl = dartUrl;
+        } else if (newsUrl) {
+            targetUrl = newsUrl;
+        } else {
+            targetUrl = data.url || '/alerts';
+        }
+    } else if (alertType === 'disclosure_alert' || alertType === 'whale_alert') {
         if (dartUrl) {
             const params = new URLSearchParams();
             params.set('url', dartUrl);
@@ -92,28 +103,20 @@ self.addEventListener('notificationclick', (event) => {
             if (notifTitle) params.set('title', notifTitle);
             targetUrl = `/news-redirect?${params.toString()}`;
         } else {
-            targetUrl = data.url || '/discovery';
+            targetUrl = data.url || '/alerts';
         }
     } else if (alertType === 'news_alert') {
-        // 뉴스 속보: 중간 경유 페이지 또는 종목 페이지
-        if (event.action === 'view') {
-            // 종목 보기 버튼 -> 종목 분석 페이지
-            targetUrl = data.url || '/discovery';
+        if (newsUrl) {
+            const params = new URLSearchParams();
+            params.set('url', newsUrl);
+            if (symbol) params.set('symbol', symbol);
+            if (notifTitle) params.set('title', notifTitle);
+            targetUrl = `/news-redirect?${params.toString()}`;
         } else {
-            // 본문 클릭 -> 뉴스 중간 경유 페이지 (고급스러운 UI 포함)
-            if (newsUrl) {
-                const params = new URLSearchParams();
-                params.set('url', newsUrl);
-                if (symbol) params.set('symbol', symbol);
-                if (notifTitle) params.set('title', notifTitle);
-                targetUrl = `/news-redirect?${params.toString()}`;
-            } else {
-                targetUrl = data.url || '/discovery';
-            }
+            targetUrl = data.url || '/alerts';
         }
     } else {
-        // 기타 알림 (장시작가 등)
-        targetUrl = data.url || '/';
+        targetUrl = data.url || '/alerts';
     }
 
     const isSameOrigin = targetUrl.startsWith('/') || targetUrl.startsWith(self.location.origin);

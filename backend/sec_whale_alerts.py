@@ -259,16 +259,26 @@ def check_sec_form4_alerts():
         if xml_url:
             parsed = parse_form4_xml(xml_url)
             
+        from market_tag_helper import get_stock_market_tag
+        market_tag = get_stock_market_tag(ticker) if ticker else "[미국]"
+        
+        # Clean entity name to avoid mobile title cutoff
+        clean_name = entity_name.replace("Inc.", "").replace("Corp.", "").replace("Co.", "").replace("Trust", "").strip()
+        if len(clean_name) > 16:
+            clean_name = clean_name[:14] + ".."
+        short_display = f"{ticker} ({clean_name})" if ticker else clean_name
+
         if parsed and parsed.get("total_shares", 0) > 0:
             trans_short = parsed['trans_type'][:2]
-            title = f"🇺🇸 [내부자 {trans_short}] {display_name}"
-            body_text = f"{parsed['owner_name']}"
+            title = f"🚨 [SEC 내부자 {trans_short}] {market_tag} {short_display}"
+            
+            p1 = f"📊 [지분 변동]: {parsed['owner_name']}"
             if parsed['title']:
-                body_text += f" ({parsed['title']})"
-            body_text += f" | {parsed['trans_type']} {parsed['total_shares']:,}주"
+                p1 += f" ({parsed['title']})"
+            p1 += f" | {parsed['trans_type']} {parsed['total_shares']:,}주"
             if parsed['has_value']:
-                body_text += f" (약 {parsed['total_value']})"
-            # 잔여 보유주식 파싱 (Form4 XML에서 sharesOwnedFollowingTransaction)
+                p1 += f" (약 {parsed['total_value']})"
+                
             try:
                 remain_el = None
                 if xml_url:
@@ -281,20 +291,24 @@ def check_sec_form4_alerts():
                 if remain_el is not None and remain_el.text:
                     remain_val = float(remain_el.text or 0)
                     if remain_val > 0:
-                        body_text += f"\n거래 후 보유: {int(remain_val):,}주"
+                        p1 += f"\n📌 [거래 후 보유]: {int(remain_val):,}주"
             except Exception:
                 pass
             
             if parsed["trans_type"] == "매수":
-                body_text += "\n💡 [시장해석] 미국 경영진의 자사주 직접 매수 · 실적 자신감 신호"
+                p2 = "💡 [시장해석]: 미국 경영진의 자사주 직접 매수는 사업 실적 및 미래 밸류에이션에 대한 가장 강력한 자신감 신호."
             elif parsed["trans_type"] == "매도":
-                body_text += "\n💡 [시장해석] 미국 임원의 자사주 매도 · 차익실현 또는 유동성 확보"
+                p2 = "💡 [시장해석]: 미국 임원의 자사주 매도에 따른 차익실현. 단기 주가 고점 부담 여부 점검 권장."
             else:
-                body_text += "\n💡 [시장해석] 미국 경영진/이사의 자사주 지분 변동 체크"
-            body = body_text
+                p2 = "💡 [시장해석]: 미국 경영진/이사의 자사주 지분 변동 포착."
+                
+            body = f"{p1}\n{p2}"
         else:
-            title = f"🇺🇸 [내부자 거래 포착] {display_name}"
-            body = f"회사 핵심 임원의 자사주 매수/매도 공시(Form 4) 접수\n💡 [시장해석] 미국 경영진 지분 매매 · 방향성 확인 권장"
+            title = f"🚨 [SEC 내부자 거래] {market_tag} {short_display}"
+            body = (
+                f"📊 [공시 팩트]: {entity_name} 핵심 임원의 자사주 지분 변동 보고서(Form 4) 접수\n"
+                f"💡 [시장해석]: 미국 경영진 지분 매매는 기업 내부 펀더멘털 평가와 직결되므로 세부 내역 확인 권장."
+            )
 
         print(f"[SEC Whale Form4] New filing: {title}")
 
