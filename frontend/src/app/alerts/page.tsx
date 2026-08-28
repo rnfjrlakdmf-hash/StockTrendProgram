@@ -182,7 +182,35 @@ export default function AlertCenterPage() {
     }, [user]);
 
     // Enhanced Body Formatter with Market Interpretation Pill Box
+    
+// Convert USD abbreviations ($72.4K, $2.1M) to Korean Won
+function formatUsdToKrwInText(text: string): string {
+    if (!text) return text;
+    const fx = 1380;
+    return text.replace(/\(\s*약?\s*\$([\d\.]+)\s*([KMBkmb]?)\s*\)/g, (match, numStr, unit) => {
+        let val = parseFloat(numStr) || 0;
+        const u = (unit || '').toUpperCase();
+        if (u === 'B') val *= 1_000_000_000;
+        else if (u === 'M') val *= 1_000_000;
+        else if (u === 'K') val *= 1_000;
+        
+        const krw = val * fx;
+        let krwStr = "";
+        if (krw >= 100_000_000_000) {
+            krwStr = `약 ${(krw / 100_000_000_000).toFixed(1)}천억원`;
+        } else if (krw >= 100_000_000) {
+            krwStr = `약 ${(krw / 100_000_000).toFixed(1)}억원`;
+        } else if (krw >= 10_000) {
+            krwStr = `약 ${Math.round(krw / 10_000).toLocaleString()}만원`;
+        } else {
+            krwStr = `약 ${Math.round(krw).toLocaleString()}원`;
+        }
+        return `(${krwStr} · $${numStr}${u})`;
+    });
+}
+
     const renderFormattedBody = (text: string) => {
+        text = formatUsdToKrwInText(text);
         if (!text) return null;
 
         // Separate market interpretation block if present

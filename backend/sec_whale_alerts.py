@@ -203,13 +203,27 @@ def parse_form4_xml(xml_url: str) -> dict:
                 elif code == 'D':
                     trans_type = '매도(처분)'
                     
-        def format_currency(val):
-            if val >= 1_000_000:
-                return f'${val/1_000_000:.1f}M'
-            elif val >= 1_000:
-                return f'${val/1000:.1f}K'
+        def format_currency(val, fx_rate=1380.0):
+            if not val or val <= 0:
+                return "$0"
+            krw = val * fx_rate
+            if krw >= 100_000_000_000:
+                krw_str = f"약 {krw / 100_000_000_000:.1f}천억원"
+            elif krw >= 100_000_000:
+                krw_str = f"약 {krw / 100_000_000:.1f}억원"
+            elif krw >= 10_000:
+                krw_str = f"약 {krw / 10_000:,.0f}만원"
             else:
-                return f'${int(val)}'
+                krw_str = f"약 {krw:,.0f}원"
+                
+            if val >= 1_000_000:
+                usd_str = f"${val/1_000_000:.1f}M"
+            elif val >= 1_000:
+                usd_str = f"${val/1000:.1f}K"
+            else:
+                usd_str = f"${int(val):,}"
+                
+            return f"{krw_str} · {usd_str}" 
                 
         return {
             'owner_name': owner_name,
