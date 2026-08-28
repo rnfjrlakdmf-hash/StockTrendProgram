@@ -188,16 +188,15 @@ def init_db():
         except Exception as e:
             print(f"Migration Warning: {e}")
 
-    # [Migration] Add roulette dates
+    # [Migration] Add preferred_broker if not exists
     try:
-        cursor.execute("SELECT last_roulette_kr_date FROM users LIMIT 1")
+        cursor.execute("SELECT preferred_broker FROM users LIMIT 1")
     except sqlite3.OperationalError:
-        print("Migrating users table (adding roulette dates)...")
+        print("Migrating users table (adding preferred_broker)...")
         try:
-            cursor.execute("ALTER TABLE users ADD COLUMN last_roulette_kr_date TEXT")
-            cursor.execute("ALTER TABLE users ADD COLUMN last_roulette_us_date TEXT")
+            cursor.execute("ALTER TABLE users ADD COLUMN preferred_broker TEXT DEFAULT 'toss'")
         except Exception as e:
-            print(f"Migration Warning (Roulette): {e}")
+            print(f"Migration Warning (preferred_broker): {e}")
 
 
     # [Migration] Add Referral System Columns
@@ -600,7 +599,7 @@ def get_user_info(user_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date, attendance_streak FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date, attendance_streak, preferred_broker FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
@@ -611,6 +610,7 @@ def get_user_info(user_id):
             coins = row[10] if row[10] is not None else 0
             last_attendance_date = row[11]
             attendance_streak = row[12] if row[12] is not None else 0
+            preferred_broker = row[13] if len(row) > 13 and row[13] else "toss"
             
             # 1. 관리자 강제 Pro 부여 (이메일 기반 2차 안전장치)
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -638,7 +638,8 @@ def get_user_info(user_id):
                 "last_roulette_us_date": last_roulette_us_date,
                 "coins": coins,
                 "last_attendance_date": last_attendance_date,
-                "attendance_streak": attendance_streak
+                "attendance_streak": attendance_streak,
+                "preferred_broker": preferred_broker
             }
         return None
     except Exception as e:
@@ -651,7 +652,7 @@ def get_user(user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date, attendance_streak FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, name, picture, is_pro, free_trial_count, pro_expires_at, points, last_roulette_kr_date, last_roulette_us_date, coins, last_attendance_date, attendance_streak, preferred_broker FROM users WHERE id = ?", (user_id,))
         row = cursor.fetchone()
         if row:
             is_pro = bool(row[4])
@@ -663,6 +664,7 @@ def get_user(user_id):
             coins = row[10] if row[10] is not None else 0
             last_attendance_date = row[11]
             attendance_streak = row[12] if row[12] is not None else 0
+            preferred_broker = row[13] if len(row) > 13 and row[13] else "toss"
             
             # 관리자 계정은 항상 PRO 상태 유지
             admin_emails = {'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'}
@@ -692,12 +694,27 @@ def get_user(user_id):
                 "last_roulette_us_date": last_roulette_us_date,
                 "coins": coins,
                 "last_attendance_date": last_attendance_date,
-                "attendance_streak": attendance_streak
+                "attendance_streak": attendance_streak,
+                "preferred_broker": preferred_broker
             }
         return None
     except Exception as e:
         print(f"Get User Error: {e}")
         return None
+    finally:
+        conn.close()
+
+def update_user_preferred_broker(user_id: str, broker: str) -> bool:
+    """사용자의 주거래 증권사 영구 저장"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE users SET preferred_broker = ? WHERE id = ?", (broker, user_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error updating user preferred broker: {e}")
+        return False
     finally:
         conn.close()
 

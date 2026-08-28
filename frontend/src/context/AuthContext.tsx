@@ -14,6 +14,7 @@ interface User {
     is_pro: boolean;
     free_trial_count?: number;
     attendance_streak?: number;
+    preferred_broker?: string;
     is_guest?: boolean;
 }
 
@@ -93,6 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         const serverUser = { ...data.user };
                         if (isAdminEmail(serverUser.email)) {
                             serverUser.is_pro = true;
+                        }
+                        if (serverUser.preferred_broker) {
+                            localStorage.setItem("stocktrend_preferred_broker", serverUser.preferred_broker);
+                            window.dispatchEvent(new CustomEvent("preferred_broker_changed", { detail: serverUser.preferred_broker }));
                         }
                         // [v4] isPro 신호 사용 안 함
                         localStorage.removeItem("isPro");
@@ -182,6 +187,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (provider === "kakao") {
             localStorage.setItem("user_id", immediateUser.id);
             if (userData.token) localStorage.setItem("stock_token", userData.token);
+            if (userData.preferred_broker) {
+                localStorage.setItem("stocktrend_preferred_broker", userData.preferred_broker);
+                window.dispatchEvent(new CustomEvent("preferred_broker_changed", { detail: userData.preferred_broker }));
+            }
         } else {
             // 구글 로그인의 경우 프론트에서 받은 토큰 정보로 백엔드 동기화 수행
             try {
@@ -205,6 +214,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         const serverUser = { ...data.user };
                         if (isAdminEmail(serverUser.email)) {
                             serverUser.is_pro = true;
+                        }
+                        if (serverUser.preferred_broker) {
+                            localStorage.setItem("stocktrend_preferred_broker", serverUser.preferred_broker);
+                            window.dispatchEvent(new CustomEvent("preferred_broker_changed", { detail: serverUser.preferred_broker }));
                         }
                         // [v4] isPro localStorage 신호 사용 안 함
                         localStorage.removeItem("isPro");

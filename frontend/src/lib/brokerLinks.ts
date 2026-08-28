@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Korean Securities MTS/HTS Deep Link Bridge
  * 국내 주요 9대 증권사 모바일 MTS 어플 원클릭 실행 및 구글 플레이/앱스토어 연동 유틸리티
  */
@@ -157,6 +157,8 @@ export const BROKER_LIST: BrokerInfo[] = [
     }
 ];
 
+import { API_BASE_URL } from "./config";
+
 const PREFERRED_BROKER_KEY = "stocktrend_preferred_broker";
 
 /**
@@ -170,12 +172,37 @@ export function getPreferredBroker(): BrokerInfo {
 }
 
 /**
- * 주거래 증권사 설정 저장
+ * 주거래 증권사 설정 저장 (브라우저 로컬 저장 + 로그인 사용자 DB 영구 저장)
  */
 export function setPreferredBroker(brokerId: string): void {
     if (typeof window === "undefined") return;
     localStorage.setItem(PREFERRED_BROKER_KEY, brokerId);
     window.dispatchEvent(new CustomEvent("preferred_broker_changed", { detail: brokerId }));
+
+    // 로그인된 사용자인 경우 계정에 영구 저장
+    try {
+        const storedUser = localStorage.getItem("stock_user");
+        if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            if (parsed && parsed.id && !parsed.is_guest) {
+                // update local cached user object
+                parsed.preferred_broker = brokerId;
+                localStorage.setItem("stock_user", JSON.stringify(parsed));
+
+                // send to backend DB
+                fetch(`${API_BASE_URL}/api/auth/preferred-broker`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: parsed.id,
+                        broker: brokerId
+                    })
+                }).catch(err => console.warn("Failed to sync preferred broker to DB:", err));
+            }
+        }
+    } catch (e) {
+        console.warn("Preferred broker DB sync error:", e);
+    }
 }
 
 /**

@@ -22,6 +22,10 @@ class UserSettingsRequest(BaseModel):
     kis_secret: str
     kis_account: str
 
+class PreferredBrokerRequest(BaseModel):
+    user_id: str
+    broker: str
+
 class DeleteAccountRequest(BaseModel):
     user_id: str
 
@@ -211,6 +215,18 @@ def update_settings(req: UserSettingsRequest):
             return {"status": "success", "message": "Settings updated"}
     except: pass
     return {"status": "error", "message": "Settings update failed"}
+
+@router.post("/preferred-broker")
+def update_preferred_broker_api(req: PreferredBrokerRequest):
+    """사용자의 주거래 증권사 영구 저장 API"""
+    try:
+        from db_manager import update_user_preferred_broker
+        success = update_user_preferred_broker(req.user_id, req.broker)
+        if success:
+            return {"status": "success", "preferred_broker": req.broker}
+    except Exception as e:
+        print(f"Error updating preferred broker: {e}")
+    return {"status": "error", "message": "Failed to update preferred broker"}
 @router.get("/telegram/recent-users")
 def get_recent_telegram_users_api():
     """텔레그램 봇과 최근에 대화한 사용자 목록 조회 (Chat ID 설정용)"""
