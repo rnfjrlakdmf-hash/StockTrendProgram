@@ -18,6 +18,47 @@ interface AlertItem {
     timestamp: any;
 }
 
+
+// Market Badge Resolver (Free, instant)
+function getMarketBadge(alert: any): { label: string; style: string } | null {
+    const text = `${alert.title || ''} ${alert.body || ''} ${alert.market || ''}`;
+    const symbol = (alert.symbol || '').toUpperCase();
+    
+    if (text.includes('[코스피]') || alert.market === 'KOSPI' || alert.market === '코스피' || symbol.endsWith('.KS')) {
+        return { label: '코스피', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
+    }
+    if (text.includes('[코스닥]') || alert.market === 'KOSDAQ' || alert.market === '코스닥' || symbol.endsWith('.KQ')) {
+        return { label: '코스닥', style: 'bg-purple-500/15 text-purple-300 border-purple-500/30' };
+    }
+    if (text.includes('[나스닥]') || alert.market === 'NASDAQ' || alert.market === '나스닥') {
+        return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
+    }
+    if (text.includes('[S&P500]') || text.includes('S&P 500') || alert.market === 'S&P500') {
+        return { label: 'S&P 500', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
+    }
+    if (text.includes('[NYSE]') || text.includes('뉴욕증시') || alert.market === 'NYSE') {
+        return { label: 'NYSE', style: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
+    }
+    
+    // Auto-detect by symbol for US tech stocks
+    const nasdaqTop = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL', 'GOOG', 'AMZN', 'META', 'AMD', 'QCOM', 'INTC', 'NFLX', 'AVGO', 'COST', 'PEP', 'ADBE'];
+    if (nasdaqTop.includes(symbol)) {
+        return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
+    }
+    
+    const sp500Top = ['KO', 'DIS', 'JPM', 'UNH', 'V', 'MA', 'PG', 'JNJ', 'WMT', 'XOM', 'CVX', 'BRK.A', 'BRK.B', 'BRK-A', 'BRK-B', 'LLY'];
+    if (sp500Top.includes(symbol)) {
+        return { label: 'S&P 500', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
+    }
+    
+    // Check if 6 digit korean ticker
+    if (/^\d{6}$/.test(symbol)) {
+        return { label: '국내', style: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' };
+    }
+    
+    return null;
+}
+
 export default function AlertCenterPage() {
     const [alerts, setAlerts] = useState<AlertItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -204,6 +245,11 @@ export default function AlertCenterPage() {
             <div className={`bg-[#0f1115] border border-gray-800 rounded-2xl p-5 hover:border-gray-700 hover:bg-white/5 transition-colors w-full text-left ${!isDisclosure ? 'group' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
+                        {getMarketBadge(alert) && (
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-black border font-mono tracking-tight ${getMarketBadge(alert)?.style}`}>
+                                {getMarketBadge(alert)?.label}
+                            </span>
+                        )}
                         <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
                             alert.type === 'crypto_bull' 
                                 ? 'bg-orange-500/20 text-orange-400' 

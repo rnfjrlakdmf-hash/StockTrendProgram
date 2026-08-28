@@ -106,6 +106,9 @@ async def check_and_notify_disclosures():
                 if not raw_code:
                     continue
                     
+                from market_tag_helper import get_stock_market_tag
+                market_tag = get_stock_market_tag(raw_code)
+                    
                 skip_whale_alert = True
                 prefix_title = ""
                 ok_users = []  # whale 알림을 실제로 받은 사용자 UID (중복 방지용)
@@ -283,7 +286,7 @@ async def check_and_notify_disclosures():
                                         # 관심종목 푸시에서 중복되지 않도록 UID 기록
                                         whale_alerted_uids.update(w_uids)
                                         
-                                        w_title = f"{prefix_title} {corp}"
+                                        w_title = f"{prefix_title} {market_tag} {corp}".strip()
                                         w_body = f"{fact_str}" if fact_str else f"{report_title}"
                                         w_data = {
                                             "type": "whale_alert",
@@ -329,7 +332,7 @@ async def check_and_notify_disclosures():
                     emoji = "📊"
                 elif any(kw in report_title for kw in ["배당", "주주총회"]):
                     emoji = "💸"
-                noti_title = f"{emoji} {corp} 공시 속보"
+                noti_title = f"{emoji} {market_tag} {corp} 공시 속보"
                 safe_report_title = report_title.replace("[", "").replace("]", "").replace("|", "")
                 noti_body = f"📋 {safe_report_title}"
                 if rcept_dt:
@@ -596,7 +599,9 @@ async def check_and_notify_sec_disclosures():
                         # 중복 토큰 제거
                         all_tokens = list(set(all_tokens))
 
-                        noti_title = f"📢 {ticker} SEC 공시"
+                        from market_tag_helper import get_stock_market_tag
+                        market_tag = get_stock_market_tag(ticker)
+                        noti_title = f"📢 {market_tag} {ticker} SEC 공시" 
                         noti_body = f"📋 {kor_title}"
                             
                         if updated:
