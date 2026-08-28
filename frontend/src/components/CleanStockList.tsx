@@ -72,6 +72,61 @@ interface CleanStockListProps {
     hideLabels?: boolean;
 }
 
+// [Interactive Tooltip Component for PC Hover & Mobile Tap]
+function BadgeTooltip({ 
+    children, 
+    title, 
+    desc, 
+    badgeClass 
+}: { 
+    children: React.ReactNode; 
+    title: string; 
+    desc: string; 
+    badgeClass: string; 
+}) {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    return (
+        <div 
+            className="relative inline-flex items-center"
+            onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(!isOpen);
+            }}
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
+        >
+            <span className={`${badgeClass} cursor-pointer transition-all hover:scale-105 active:scale-95 select-none`}>
+                {children}
+            </span>
+
+            {/* Floating Tooltip Bubble */}
+            {isOpen && (
+                <div 
+                    className="absolute bottom-full left-0 mb-2 w-56 sm:w-64 p-3 bg-zinc-950/95 border border-white/20 rounded-xl shadow-2xl backdrop-blur-xl z-50 text-left pointer-events-auto animate-in fade-in zoom-in-95 duration-150"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-white/10">
+                        <span className="text-[11px] font-black text-white flex items-center gap-1">
+                            💡 {title}
+                        </span>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                            className="text-gray-400 hover:text-white text-[10px] p-0.5"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <p className="text-[10px] text-gray-300 leading-relaxed font-normal">
+                        {desc}
+                    </p>
+                    <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-zinc-950 pointer-events-none" />
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function CleanStockList({ items, onItemClick, onDelete, onAlertClick, onEditAddedPrice, isLoading = false, hideLabels = false }: CleanStockListProps) {
     if (isLoading && items.length === 0) {
         return <div className="p-8 text-center text-gray-500 text-sm">데이터를 불러오는 중입니다...</div>;
@@ -127,17 +182,18 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     )}
                                     {/* Quant Grade Badge */}
                                     {item.quantGrade && (
-                                        <div 
-                                            className={`flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-lg text-[10px] md:text-xs font-black shadow-md shrink-0
+                                        <BadgeTooltip
+                                            title="퀀트 밸런스 등급"
+                                            desc="재무 건전성, 거래량 모멘텀, 수급 및 성장성을 종합 평가한 점수 등급입니다. (S/A등급: 최우수, B등급: 우수, C/D등급: 주의)"
+                                            badgeClass={`flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-lg text-[10px] md:text-xs font-black shadow-md shrink-0
                                                 ${item.quantGrade === 'S' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white border border-purple-400/40' : 
                                                   item.quantGrade === 'A' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border border-blue-400/40' : 
                                                   item.quantGrade === 'B' ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border border-emerald-400/40' : 
                                                   item.quantGrade === 'C' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border border-amber-400/40' : 
                                                   'bg-gradient-to-br from-rose-500 to-red-600 text-white border border-rose-400/40'}`}
-                                            title="퀀트 밸런스 등급"
                                         >
                                             {item.quantGrade}
-                                        </div>
+                                        </BadgeTooltip>
                                     )}
                                 </div>
                                 
@@ -163,33 +219,53 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     </div>
                                 )}
 
-                                {/* [PRO] 외인/기관 수급 & 증권사 리서치 컨센서스 목표가 */}
+                                {/* [PRO] 외인/기관 수급 & 증권사 리서치 컨센서스 목표가 (터치/호버 설명 탑재) */}
                                 {item.proInsights && (
                                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
                                         {item.proInsights.is_double_buy && (
-                                            <span className="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm">
+                                            <BadgeTooltip
+                                                title="외인·기관 쌍끌이 순매수"
+                                                desc="외국인과 기관계 자금이 동시에 순매수(동반 매집) 중인 종목입니다. 주가 상승 탄력이 강해질 가능성이 높습니다."
+                                                badgeClass="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
+                                            >
                                                 🔥 외인·기관 쌍끌이
-                                            </span>
+                                            </BadgeTooltip>
                                         )}
                                         {!item.proInsights.is_double_buy && (item.proInsights.foreign_streak || 0) >= 2 && (
-                                            <span className="text-[10px] bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                            <BadgeTooltip
+                                                title="외국인 연속 순매수"
+                                                desc={`외국인 투자자가 최근 ${item.proInsights.foreign_streak}일 동안 지속적으로 순매수하고 있는 종목으로, 글로벌 수급 유입세가 지속되고 있습니다.`}
+                                                badgeClass="text-[10px] bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
+                                            >
                                                 🌐 외인 {item.proInsights.foreign_streak}일 연속매수
-                                            </span>
+                                            </BadgeTooltip>
                                         )}
                                         {!item.proInsights.is_double_buy && (item.proInsights.organ_streak || 0) >= 2 && (
-                                            <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                            <BadgeTooltip
+                                                title="기관 연속 순매수"
+                                                desc={`기관계(투신, 연기금, 사모펀드 등)가 최근 ${item.proInsights.organ_streak}일 동안 연속으로 매집 중인 종목입니다.`}
+                                                badgeClass="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
+                                            >
                                                 🏢 기관 {item.proInsights.organ_streak}일 연속매수
-                                            </span>
+                                            </BadgeTooltip>
                                         )}
                                         {item.proInsights.target_price && (
-                                            <span className="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1" title="국내 증권사 리서치센터 평균 목표주가 집계">
+                                            <BadgeTooltip
+                                                title="증권사 리서치 평균 목표주가"
+                                                desc={`국내 증권사 리서치센터 애널리스트들의 최근 3개월 평균 목표주가(컨센서스) 집계치입니다. (공개 통계 자료)`}
+                                                badgeClass="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
+                                            >
                                                 🎯 증권사 목표가 {item.proInsights.target_price}원
-                                            </span>
+                                            </BadgeTooltip>
                                         )}
                                         {item.proInsights.per && item.proInsights.per !== 'N/A' && (
-                                            <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                            <BadgeTooltip
+                                                title="PER (주가수익비율)"
+                                                desc={`주가가 1주당 순이익(EPS)의 몇 배인지 나타내는 가치평가 지표입니다. 수치가 낮을수록 실적 대비 저평가 상태입니다.`}
+                                                badgeClass="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
+                                            >
                                                 📊 PER {item.proInsights.per}
-                                            </span>
+                                            </BadgeTooltip>
                                         )}
                                     </div>
                                 )}
