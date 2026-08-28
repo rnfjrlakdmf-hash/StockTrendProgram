@@ -332,9 +332,8 @@ async def check_and_notify_disclosures():
                     emoji = "📊"
                 elif any(kw in report_title for kw in ["배당", "주주총회"]):
                     emoji = "💸"
-                noti_title = f"{emoji} {market_tag} {corp} 공시 속보"
-                safe_report_title = report_title.replace("[", "").replace("]", "").replace("|", "")
-                noti_body = f"📋 {safe_report_title}"
+                noti_title = w_title if is_whale else f"📢 {market_tag} {corp} 공시 속보"
+                noti_body = fact_str if fact_str else f"📋 {report_title}"
                 if rcept_dt:
                     try:
                         dt_fmt = f"{rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
@@ -600,22 +599,24 @@ async def check_and_notify_sec_disclosures():
                         all_tokens = list(set(all_tokens))
 
                         from market_tag_helper import get_stock_market_tag
+                        from notification_intelligence import format_sec_intelligence
                         market_tag = get_stock_market_tag(ticker)
-                        noti_title = f"📢 {market_tag} {ticker} SEC 공시" 
-                        noti_body = f"📋 {kor_title}"
+                        noti_title, noti_body, is_sec_whale_calc = format_sec_intelligence(
+                            market_tag=market_tag,
+                            ticker=ticker,
+                            raw_title=safe_title_el
+                        )
+                        if is_sec_whale_calc:
+                            is_sec_whale = True
                             
                         if updated:
                             try:
                                 dt = datetime.fromisoformat(updated[:10])
-                                # 7일 이상 지난 과거 공시라면 알림 생략 (처음 관심종목 추가 시 과거 데이터가 한꺼번에 울리는 것 방지)
                                 if (datetime.now() - dt).days > 7:
                                     continue
                                 noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
                             except Exception:
                                 pass
-
-                        # SEC 시장해석 추가
-                        noti_body += f"\n{get_sec_market_interpretation(title_el)}"
 
                         data_payload = {
                             "type": "sec_disclosure",
