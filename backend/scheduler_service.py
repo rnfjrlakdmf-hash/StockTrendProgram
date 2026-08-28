@@ -519,7 +519,27 @@ def send_closing_notification(market: str):
             body_market = (market_summary + "(단순 시황 요약 · 투자 참고용)").strip()
             title_market = f"🌕 {market_name} 장마감 시황"
             
-            body_portfolio = f"{return_label}: {display_return:+.2f}%\n" + profit_str + "\n".join(price_list) + "\n\n(단순 집계 결과 · 종목 추천 아님)"
+            # 1. MVP (최고 효자 종목) & 약세 종목 산출
+            sorted_items = sorted(perf["items"], key=lambda x: x.get("daily_change", 0), reverse=True)
+            mvp_str = ""
+            if sorted_items and sorted_items[0].get("daily_change", 0) > 0:
+                best = sorted_items[0]
+                mvp_str += f"🏆 오늘의 MVP: {best['name']} ({best['daily_change']:+.1f}%)\n"
+            if len(sorted_items) > 1 and sorted_items[-1].get("daily_change", 0) < 0:
+                worst = sorted_items[-1]
+                mvp_str += f"⚠️ 약세 종목: {worst['name']} ({worst['daily_change']:+.1f}%)\n"
+
+            # 2. 외인/기관 수급 집계 (무료 API 데이터 합산)
+            tot_frgn = sum(i.get("foreign_net_buy", 0) for i in perf["items"])
+            tot_inst = sum(i.get("inst_net_buy", 0) for i in perf["items"])
+            supply_str = ""
+            if tot_frgn != 0 or tot_inst != 0:
+                def _fmt_vol(v):
+                    s = "+" if v > 0 else ""
+                    return f"{s}{v/10000:,.1f}만주" if abs(v) >= 10000 else f"{s}{v:,}주"
+                supply_str = f"🌊 수급 합산: 외인 {_fmt_vol(tot_frgn)} · 기관 {_fmt_vol(tot_inst)}\n"
+
+            body_portfolio = f"{return_label}: {display_return:+.2f}%\n" + profit_str + mvp_str + supply_str + "\n".join(price_list) + "\n\n(단순 집계 통계 결과이며 투자 권유가 아닙니다)"
             title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
             
             tokens_data = get_user_fcm_tokens(user_id)

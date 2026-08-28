@@ -248,14 +248,18 @@ export default function AlertCenterPage() {
 
     // Render Luxury Alert Card
     
-    // Render Dedicated Portfolio Summary Micro-Bento
+    // Render Dedicated Portfolio Summary Micro-Bento with MVP & Smart Money Supply
     const renderPortfolioCardContent = (alert: any) => {
         const text = alert.body || '';
         const lines = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
         
         let totalReturn = "";
         let totalProfit = "";
-        let stockItems: string[] = [];
+        let mvpText = "";
+        let worstText = "";
+        let supplyText = "";
+        let stockItems: { name: string; detail: string; changePct: number; isUp: boolean }[] = [];
+        let subDetails: string[] = [];
         let disclaimer = "";
 
         lines.forEach((line: string) => {
@@ -263,19 +267,50 @@ export default function AlertCenterPage() {
                 totalReturn = line.replace(/^.*?수익률[:\s]*/, '').trim();
             } else if (line.includes('총 누적 수익') || line.includes('총 수익:')) {
                 totalProfit = line.replace(/^.*?총\s*누적\s*수익[:\s]*/, '').replace(/^.*?총\s*수익[:\s]*/, '').trim();
+            } else if (line.includes('오늘의 MVP') || line.includes('🏆')) {
+                mvpText = line.replace(/^.*?MVP[:\s]*/, '').trim();
+            } else if (line.includes('약세 종목') || line.includes('⚠️')) {
+                worstText = line.replace(/^.*?약세\s*종목[:\s]*/, '').trim();
+            } else if (line.includes('수급 합산') || line.includes('🌊')) {
+                supplyText = line.replace(/^.*?수급\s*합산[:\s]*/, '').trim();
             } else if (line.startsWith('(') && line.endsWith(')')) {
                 disclaimer = line;
-            } else {
-                stockItems.push(line);
+            } else if (line.startsWith('↳') || line.startsWith('->') || line.includes('차]')) {
+                subDetails.push(line);
+            } else if (line.startsWith('•') || line.includes(':')) {
+                const match = line.match(/([▲▼\-]?\s*[\d\.]+%)/);
+                let pct = 0;
+                let isUp = false;
+                if (match) {
+                    const cleanPct = match[1].replace('▲', '+').replace('▼', '-').replace('%', '').trim();
+                    pct = parseFloat(cleanPct) || 0;
+                    isUp = pct >= 0;
+                }
+                stockItems.push({
+                    name: line.split(':')[0].replace('•', '').trim(),
+                    detail: line.includes(':') ? line.substring(line.indexOf(':') + 1).trim() : line,
+                    changePct: pct,
+                    isUp: isUp
+                });
             }
         });
+
+        if (!mvpText && stockItems.length > 0) {
+            const sorted = [...stockItems].sort((a, b) => b.changePct - a.changePct);
+            if (sorted[0] && sorted[0].changePct > 0) {
+                mvpText = `${sorted[0].name} (${sorted[0].changePct > 0 ? '+' : ''}${sorted[0].changePct}%)`;
+            }
+            if (sorted[sorted.length - 1] && sorted[sorted.length - 1].changePct < 0 && sorted[sorted.length - 1] !== sorted[0]) {
+                worstText = `${sorted[sorted.length - 1].name} (${sorted[sorted.length - 1].changePct}%)`;
+            }
+        }
 
         const isNegative = totalReturn.includes('-') || totalProfit.includes('-');
 
         return (
-            <div className="space-y-4">
+            <div className="space-y-3.5">
                 {/* Top KPI Metrics Bento */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-zinc-950/80 border border-white/10 rounded-2xl">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5 bg-zinc-950/80 border border-white/10 rounded-2xl">
                     <div className="flex items-center justify-between p-3 bg-zinc-900/90 rounded-xl border border-white/5">
                         <span className="text-xs text-gray-400 font-medium">총 누적 수익률</span>
                         <span className={`text-sm md:text-base font-black font-mono px-2.5 py-0.5 rounded-lg border ${
@@ -296,39 +331,77 @@ export default function AlertCenterPage() {
                     </div>
                 </div>
 
+                {/* Content Feature 1: MVP & Worst Performer Chip */}
+                {(mvpText || worstText) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {mvpText && (
+                            <div className="flex items-center gap-2.5 p-3 bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/25 rounded-2xl">
+                                <div className="p-1.5 bg-amber-500/20 rounded-xl text-amber-400 shrink-0 font-bold text-xs">
+                                    🏆 MVP
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] text-gray-400 font-semibold">오늘의 최고 효자 종목</p>
+                                    <p className="text-xs md:text-sm font-black text-amber-200 truncate">{mvpText}</p>
+                                </div>
+                            </div>
+                        )}
+                        {worstText && (
+                            <div className="flex items-center gap-2.5 p-3 bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/25 rounded-2xl">
+                                <div className="p-1.5 bg-blue-500/20 rounded-xl text-blue-400 shrink-0 font-bold text-xs">
+                                    ⚠️ 약세
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] text-gray-400 font-semibold">당일 리스크 점검 종목</p>
+                                    <p className="text-xs md:text-sm font-black text-blue-200 truncate">{worstText}</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Content Feature 2: Foreign & Inst Supply Summary Chip */}
+                {supplyText && (
+                    <div className="flex items-center gap-2.5 p-3 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent border border-cyan-500/25 rounded-2xl">
+                        <div className="p-1.5 bg-cyan-500/20 rounded-xl text-cyan-300 shrink-0 font-bold text-xs">
+                            🌊 수급
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[11px] text-gray-400 font-semibold">외인·기관 스마트머니 합산</p>
+                            <p className="text-xs md:text-sm font-black text-cyan-200 truncate">{supplyText}</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Individual Holdings Micro-List */}
                 {stockItems.length > 0 && (
                     <div className="space-y-2">
                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">종목별 마감 현황</p>
                         <div className="space-y-2">
-                            {stockItems.map((item, idx) => {
-                                const isSubLine = item.startsWith('↳') || item.startsWith('->') || item.includes('차]');
-                                return (
-                                    <div 
-                                        key={idx} 
-                                        className={`p-3 rounded-xl border text-xs md:text-sm leading-relaxed ${
-                                            isSubLine 
-                                                ? 'bg-zinc-950/50 border-white/5 ml-3 text-gray-300 font-mono' 
-                                                : 'bg-zinc-900/70 border-white/10 text-white font-semibold flex items-center justify-between'
-                                        }`}
-                                    >
-                                        <span>{item}</span>
-                                    </div>
-                                );
-                            })}
+                            {stockItems.map((item, idx) => (
+                                <div 
+                                    key={idx} 
+                                    className="p-3 bg-zinc-900/80 border border-white/10 hover:border-amber-500/30 rounded-2xl transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                                >
+                                    <span className="text-xs md:text-sm font-black text-white">{item.name}</span>
+                                    <span className="text-xs font-mono font-bold text-zinc-300">{item.detail}</span>
+                                </div>
+                            ))}
+                            {subDetails.map((sub, sIdx) => (
+                                <div key={`sub-${sIdx}`} className="ml-3 p-2 bg-zinc-950/60 border border-white/5 rounded-xl text-xs font-mono text-gray-400">
+                                    {sub}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
 
                 {/* Footer Disclaimer */}
-                {disclaimer && (
-                    <p className="text-[11px] text-gray-500 font-medium px-1">
-                        {disclaimer}
-                    </p>
-                )}
+                <p className="text-[11px] text-gray-500 font-medium px-1">
+                    {disclaimer || '(한국거래소 당일 정규장 종가 기준 단순 집계 통계 자료이며 투자 권유가 아닙니다)'}
+                </p>
 
                 {/* Action CTA Buttons */}
-                <div className="flex flex-wrap gap-2.5 pt-3 border-t border-white/10">
+                <div className="flex flex-wrap gap-2.5 pt-2 border-t border-white/10">
                     <Link 
                         href="/watchlist" 
                         className="flex-1 min-w-[140px] bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:from-amber-600/30 hover:to-orange-600/30 text-amber-300 border border-amber-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
