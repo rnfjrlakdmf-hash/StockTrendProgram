@@ -1,6 +1,6 @@
 ﻿/**
  * Korean Securities MTS/HTS Deep Link Bridge
- * 국내 주요 9대 증권사 모바일 MTS 어플 원클릭 실행 및 PC WTS/HTS 연동 유틸리티
+ * 국내 주요 9대 증권사 모바일 MTS 어플 원클릭 실행 및 구글 플레이/앱스토어 연동 유틸리티
  */
 
 export interface BrokerInfo {
@@ -45,9 +45,9 @@ export const BROKER_LIST: BrokerInfo[] = [
         textColor: "text-rose-400",
         borderColor: "border-rose-500/30",
         iosScheme: "kiwoomheroes://",
-        androidPackage: "com.kiwoom.heros",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1617478051",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kiwoom.heros",
+        androidPackage: "com.kiwoom.heromts",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1588636253",
+        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kiwoom.heromts",
         webTradeUrl: "https://www.kiwoom.com"
     },
     {
@@ -59,10 +59,10 @@ export const BROKER_LIST: BrokerInfo[] = [
         bgColor: "from-amber-600 to-yellow-600",
         textColor: "text-amber-400",
         borderColor: "border-amber-500/30",
-        iosScheme: "kbsec://",
-        androidPackage: "com.kbsec.mts.platform",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1173400587",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kbsec.mts.platform",
+        iosScheme: "kbmable://",
+        androidPackage: "com.kbsec.mts.iplustarngm2",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1173618342",
+        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.kbsec.mts.iplustarngm2",
         webTradeUrl: "https://www.kbsec.com"
     },
     {
@@ -76,7 +76,7 @@ export const BROKER_LIST: BrokerInfo[] = [
         borderColor: "border-orange-500/30",
         iosScheme: "miraeassetmstock://",
         androidPackage: "com.miraeasset.trade",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1607567784",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id475658607",
         androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.miraeasset.trade",
         webTradeUrl: "https://securities.miraeasset.com"
     },
@@ -90,9 +90,9 @@ export const BROKER_LIST: BrokerInfo[] = [
         textColor: "text-cyan-400",
         borderColor: "border-cyan-500/30",
         iosScheme: "samsungmpop://",
-        androidPackage: "com.samsung.mpop",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id436402778",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.samsung.mpop",
+        androidPackage: "com.samsungpop.android.mpop",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id366126607",
+        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.samsungpop.android.mpop",
         webTradeUrl: "https://www.samsungpop.com"
     },
     {
@@ -105,24 +105,24 @@ export const BROKER_LIST: BrokerInfo[] = [
         textColor: "text-emerald-400",
         borderColor: "border-emerald-500/30",
         iosScheme: "nhnamuh://",
-        androidPackage: "com.nhwm.trade",
-        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1089926442",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.nhwm.trade",
+        androidPackage: "com.nhqv.namuh",
+        iosAppStoreUrl: "https://apps.apple.com/kr/app/id1083946011",
+        androidPlayStoreUrl: "https://play.google.com/store/search?q=NH%ED%88%AC%EC%9E%90%EC%A6%9D%EA%B2%83+%EB%82%98%EB%AC%B4&c=apps",
         webTradeUrl: "https://www.mynamuh.com"
     },
     {
         id: "shinhan",
         name: "신한투자증권",
-        appTitle: "신한알파",
+        appTitle: "신한 SOL증권",
         tagline: "쉬운 해외주식 소수점 투자 및 AI 종목 발굴",
         emoji: "🔷",
         bgColor: "from-sky-600 to-indigo-700",
         textColor: "text-sky-400",
         borderColor: "border-sky-500/30",
         iosScheme: "shinhanalpha://",
-        androidPackage: "com.shinhaninvest.trade",
+        androidPackage: "com.shinhaninvest.nsmts",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1331828775",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.shinhaninvest.trade",
+        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.shinhaninvest.nsmts",
         webTradeUrl: "https://www.shinhansec.com"
     },
     {
@@ -135,9 +135,9 @@ export const BROKER_LIST: BrokerInfo[] = [
         textColor: "text-amber-400",
         borderColor: "border-amber-500/30",
         iosScheme: "koreainvestment://",
-        androidPackage: "com.truefriend.mts",
+        androidPackage: "com.koreainvestment.mts",
         iosAppStoreUrl: "https://apps.apple.com/kr/app/id1604517037",
-        androidPlayStoreUrl: "https://play.google.com/store/apps/details?id=com.truefriend.mts",
+        androidPlayStoreUrl: "https://play.google.com/store/search?q=%ED%95%9C%EA%B5%AD%ED%88%AC%EC%9E%90%EC%A6%9D%EA%B2%83&c=apps",
         webTradeUrl: "https://www.truefriend.com"
     },
     {
@@ -191,7 +191,7 @@ export function getStoreDownloadUrl(broker: BrokerInfo): string {
 /**
  * 스마트 딥링크 실행기 (MTS 어플 즉시 켜기)
  * - Android: Intent scheme + S.browser_fallback_url (미설치 시 구글플레이로 자동 전환)
- * - iOS: Custom scheme 시도 + 타이머를 통한 앱스토어 안전 이동
+ * - iOS: Custom scheme 시도
  * - Desktop/PC: 해당 증권사 공식 WTS 웹 트레이딩 또는 포털 새 탭 열기
  */
 export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: BrokerInfo } {
@@ -215,27 +215,17 @@ export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: Br
         try {
             window.location.href = intentUrl;
         } catch (e) {
-            // 인텐트 실행 실패 시 플레이스토어로 직접 이동
-            window.location.href = broker.androidPlayStoreUrl;
+            window.open(broker.androidPlayStoreUrl, "_blank");
         }
 
         return { isMobile: true, broker };
     } else if (isIOS) {
         // iOS 커스텀 URL 스킴
-        const now = Date.now();
-        
         try {
             window.location.href = broker.iosScheme;
         } catch (e) {
-            window.location.href = broker.iosAppStoreUrl;
+            window.open(broker.iosAppStoreUrl, "_blank");
         }
-
-        // 미설치 시 앱스토어로 부드럽게 유도
-        setTimeout(() => {
-            if (Date.now() - now < 2000) {
-                window.location.href = broker.iosAppStoreUrl;
-            }
-        }, 1500);
 
         return { isMobile: true, broker };
     } else {
