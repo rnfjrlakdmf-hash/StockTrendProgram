@@ -123,42 +123,40 @@ export default function WeekendReportPage() {
         }
     };
 
-    // Helper to parse section content into structured high-end cards
-    const renderParsedContent = (content: string) => {
+    // Helper to parse section content into spacious, breathing, open editorial list (No cramped boxes)
+    const renderParsedContent = (content: string, isCalendar = false) => {
         const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
         
         return (
-            <div className="space-y-3.5">
+            <div className="space-y-4">
                 {lines.map((line, idx) => {
                     const cleanLine = line.replace(/^[•\-\*]\s*/, '').trim();
-                    
-                    // Check if line contains a colon separator (e.g. "기술 및 반도체: 설명..." or "8월 25일(화): 일정...")
                     const colonIdx = cleanLine.indexOf(':');
+                    
                     if (colonIdx > 0 && colonIdx < 35) {
                         const tag = cleanLine.substring(0, colonIdx).trim();
                         const desc = cleanLine.substring(colonIdx + 1).trim();
-                        
                         const isDate = tag.includes('월') && tag.includes('일');
 
                         return (
                             <div 
                                 key={idx} 
-                                className={`p-4.5 rounded-2xl transition-all flex flex-col gap-2 border ${
+                                className={`relative p-5 sm:p-6 rounded-2xl transition-all border-l-4 ${
                                     isDate 
-                                        ? 'bg-zinc-900/90 border-blue-500/25 hover:border-blue-500/40 shadow-sm' 
-                                        : 'bg-zinc-900/90 border-amber-500/25 hover:border-amber-500/40 shadow-sm'
+                                        ? 'bg-gradient-to-r from-blue-950/30 via-zinc-900/40 to-transparent border-blue-400 hover:from-blue-950/50' 
+                                        : 'bg-gradient-to-r from-amber-950/30 via-zinc-900/40 to-transparent border-amber-400 hover:from-amber-950/50'
                                 }`}
                             >
-                                <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/5">
-                                    <span className={`text-xs md:text-sm font-black px-3 py-1 rounded-xl border flex items-center gap-1.5 ${
+                                <div className="flex flex-wrap items-center gap-2.5 mb-2.5">
+                                    <span className={`text-xs sm:text-sm font-black px-3 py-1 rounded-xl flex items-center gap-1.5 ${
                                         isDate 
-                                            ? 'bg-blue-500/15 text-blue-300 border-blue-500/30 font-mono tracking-tight' 
-                                            : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                            ? 'bg-blue-500/20 text-blue-300 font-mono tracking-tight border border-blue-500/30' 
+                                            : 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
                                     }`}>
                                         {isDate ? <Calendar className="w-3.5 h-3.5 text-blue-400" /> : <Zap className="w-3.5 h-3.5 text-amber-400" />}
                                         {tag}
                                     </span>
-                                    <span className="text-[10px] font-mono text-gray-400 font-bold uppercase">
+                                    <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
                                         {isDate ? "KEY EVENT" : "SECTOR ROTATION"}
                                     </span>
                                 </div>
@@ -170,7 +168,7 @@ export default function WeekendReportPage() {
                     }
 
                     return (
-                        <div key={idx} className="bg-zinc-900/90 border border-white/10 p-4 rounded-2xl text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                        <div key={idx} className="p-4 sm:p-5 rounded-2xl bg-white/[0.02] border-l-2 border-white/20 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                             <HighlightText text={cleanLine} />
                         </div>
                     );
@@ -324,12 +322,12 @@ export default function WeekendReportPage() {
                         {report?.week_summary_bullets?.map((bullet, idx) => (
                             <div 
                                 key={idx} 
-                                className="flex items-start gap-4 bg-zinc-900/90 border border-white/10 hover:border-emerald-500/40 p-4.5 rounded-2xl transition-all shadow-sm"
+                                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 transition-all"
                             >
                                 <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-black flex items-center justify-center text-xs font-black font-mono shrink-0 mt-0.5 shadow-md">
                                     {idx + 1}
                                 </div>
-                                <span className="text-sm sm:text-base text-zinc-100 leading-relaxed font-medium pt-0.5">
+                                <span className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                     <HighlightText text={bullet.replace(/^[•\-\*·]\s*/, '')} />
                                 </span>
                             </div>
@@ -338,7 +336,7 @@ export default function WeekendReportPage() {
                 </section>
 
                 {/* 2. 상세 섹션 (2-Column Grid) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-8">
                     {report?.sections?.map((section, idx) => (
                         <section 
                             key={idx} 

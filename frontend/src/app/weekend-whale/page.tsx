@@ -154,25 +154,25 @@ export default function WeekendWhalePage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             {report.whale_sectors.map((sec, idx) => (
                                 <div 
                                     key={idx}
-                                    className="bg-zinc-950/80 border border-cyan-500/20 hover:border-cyan-500/50 rounded-3xl p-5 transition-all shadow-lg flex flex-col justify-between"
+                                    className="bg-gradient-to-b from-cyan-950/20 via-zinc-950/80 to-zinc-950/90 border-l-4 border-cyan-400 rounded-3xl p-6 transition-all shadow-lg flex flex-col justify-between hover:from-cyan-950/30"
                                 >
                                     <div>
                                         <div className="flex items-center justify-between gap-2 mb-3">
-                                            <span className="text-xs font-black text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-1 rounded-xl">
+                                            <span className="text-xs font-black text-cyan-300 bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 rounded-xl">
                                                 주도 섹터 #{idx + 1}
                                             </span>
-                                            <span className="text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-lg">
+                                            <span className="text-xs font-bold text-rose-400 bg-rose-500/15 px-2.5 py-0.5 rounded-lg">
                                                 {sec.intensity || "집중 유입"}
                                             </span>
                                         </div>
-                                        <h3 className="text-lg font-black text-white mb-1">
+                                        <h3 className="text-lg font-black text-white mb-1.5">
                                             {sec.sector}
                                         </h3>
-                                        <p className="text-xs sm:text-sm font-bold text-zinc-300 mb-3">
+                                        <p className="text-xs sm:text-sm font-bold text-zinc-300 mb-3.5">
                                             대표 종목: <span className="text-cyan-300">{sec.leader}</span>
                                         </p>
                                         <p className="text-sm sm:text-[15px] text-zinc-100 leading-relaxed font-normal">
