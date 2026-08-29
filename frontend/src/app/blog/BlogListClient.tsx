@@ -20,13 +20,14 @@ interface BlogListClientProps {
     currentPage: number;
 }
 
-// 카테고리 정의
+// 카테고리 정의 (눈이 편안한 주제별 필터링)
 const CATEGORIES = [
-    { id: "all", label: "전체 시황", emoji: "🌐" },
-    { id: "korea", label: "국내증시 (코스피/코스닥)", emoji: "🇰🇷" },
-    { id: "us", label: "미국증시 (나스닥/S&P)", emoji: "🇺🇸" },
+    { id: "all", label: "전체 칼럼", emoji: "🌐" },
+    { id: "korea", label: "국내증시", emoji: "🇰🇷" },
+    { id: "us", label: "미국증시", emoji: "🇺🇸" },
+    { id: "edu", label: "투자 기초·가치투자", emoji: "📚" },
     { id: "weekly", label: "주간전망·전략", emoji: "📅" },
-    { id: "sector", label: "반도체·주도섹터", emoji: "⚡" },
+    { id: "sector", label: "주도섹터·AI", emoji: "⚡" },
 ];
 
 // 하단 추천 내부 링크 (구글 애드센스 및 SEO 강화)
@@ -40,13 +41,16 @@ const RECOMMENDED_PAGES = [
 export function getPostCategory(title: string, tags: string[] = []) {
     const text = (title + " " + tags.join(" ")).toLowerCase();
     
-    if (text.includes("미국") || text.includes("나스닥") || text.includes("s&p") || text.includes("다우") || text.includes("뉴욕")) {
+    if (text.includes("재무제표") || text.includes("배당") || text.includes("금리") || text.includes("워런") || text.includes("해자") || text.includes("rsi") || text.includes("연금") || text.includes("물타기") || text.includes("손절") || text.includes("per") || text.includes("pbr") || text.includes("기초") || text.includes("심리") || text.includes("행동경제학")) {
+        return { id: "edu", label: "기초·가치투자", emoji: "📚", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" };
+    }
+    if (text.includes("미국") || text.includes("나스닥") || text.includes("s&p") || text.includes("다우") || text.includes("뉴욕") || text.includes("달러") || text.includes("빅테크")) {
         return { id: "us", label: "미국증시", emoji: "🇺🇸", color: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20" };
     }
-    if (text.includes("주간") || text.includes("전망") || text.includes("전략") || text.includes("위클리") || text.includes("weekly")) {
+    if (text.includes("주간") || text.includes("전망") || text.includes("전략") || text.includes("위클리") || text.includes("weekly") || text.includes("msci") || text.includes("코스피200")) {
         return { id: "weekly", label: "주간전망", emoji: "📅", color: "text-amber-400 bg-amber-500/10 border-amber-500/20" };
     }
-    if (text.includes("반도체") || text.includes("2차전지") || text.includes("바이오") || text.includes("ai") || text.includes("섹터")) {
+    if (text.includes("반도체") || text.includes("2차전지") || text.includes("바이오") || text.includes("ai") || text.includes("섹터") || text.includes("퀀트")) {
         return { id: "sector", label: "주도섹터", emoji: "⚡", color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20" };
     }
     return { id: "korea", label: "국내증시", emoji: "🇰🇷", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" };
@@ -65,6 +69,19 @@ export function cleanPostTags(tags: string[] = []) {
 export default function BlogListClient({ initialPosts, totalPages, currentPage }: BlogListClientProps) {
     const [activeCategory, setActiveCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [clientPage, setClientPage] = useState(1);
+    const POSTS_PER_PAGE = 8; // 한 페이지에 8개씩 깔끔하게 정돈하여 눈의 피로 최소화
+
+    // 카테고리나 검색어 변경 시 1페이지로 리셋
+    const handleCategoryChange = (catId: string) => {
+        setActiveCategory(catId);
+        setClientPage(1);
+    };
+
+    const handleSearchChange = (q: string) => {
+        setSearchQuery(q);
+        setClientPage(1);
+    };
 
     // 필터링 & 검색 적용
     const filteredPosts = useMemo(() => {
@@ -86,12 +103,19 @@ export default function BlogListClient({ initialPosts, totalPages, currentPage }
         });
     }, [initialPosts, activeCategory, searchQuery]);
 
-    // 최신 대표 시황 리포트 (첫 번째 글, 검색/필터 없을 때 상단 하이라이트)
-    const featuredPost = (activeCategory === "all" && !searchQuery.trim() && currentPage === 1 && filteredPosts.length > 0) 
+    // 최신 대표 시황 리포트 (첫 번째 글, 전체 1페이지일 때만 상단 하이라이트)
+    const featuredPost = (activeCategory === "all" && !searchQuery.trim() && clientPage === 1 && filteredPosts.length > 0) 
         ? filteredPosts[0] 
         : null;
 
-    const listPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
+    const rawListPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
+    const totalClientPages = Math.ceil(rawListPosts.length / POSTS_PER_PAGE) || 1;
+    
+    // 현재 페이지에 해당하는 8개만 쾌적하게 슬라이스
+    const listPosts = useMemo(() => {
+        const start = (clientPage - 1) * POSTS_PER_PAGE;
+        return rawListPosts.slice(start, start + POSTS_PER_PAGE);
+    }, [rawListPosts, clientPage]);
 
     return (
         <div className="w-full">
@@ -104,7 +128,7 @@ export default function BlogListClient({ initialPosts, totalPages, currentPage }
                         type="text"
                         placeholder="국내/미국 시황, 코스피, 나스닥, 반도체 등 검색 (예: 코스피 6900, 나스닥 마감, 삼성전자...)"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         className="w-full pl-12 pr-4 py-3.5 bg-black/60 border border-white/10 rounded-2xl text-white placeholder-gray-500 font-medium focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm md:text-base"
                     />
                     {searchQuery && (
@@ -127,7 +151,7 @@ export default function BlogListClient({ initialPosts, totalPages, currentPage }
                         return (
                             <button
                                 key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
+                                onClick={() => handleCategoryChange(cat.id)}
                                 className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                     isActive
                                         ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20 border border-blue-400/50 scale-105"
@@ -217,7 +241,7 @@ export default function BlogListClient({ initialPosts, totalPages, currentPage }
                     <Globe className="w-12 h-12 text-gray-500 mx-auto mb-3 opacity-50" />
                     <p className="text-gray-400 font-medium">검색 조건에 맞는 시황 리포트가 없습니다.</p>
                     <button
-                        onClick={() => { setActiveCategory("all"); setSearchQuery(""); }}
+                        onClick={() => { handleCategoryChange("all"); handleSearchChange(""); }}
                         className="mt-4 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl text-xs font-bold hover:bg-blue-500/30 transition-all"
                     >
                         전체 리포트 목록으로 돌아가기
@@ -287,47 +311,42 @@ export default function BlogListClient({ initialPosts, totalPages, currentPage }
                 </div>
             )}
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {/* 깔끔한 페이지네이션 (8개씩 쾌적하게 탐색) */}
+            {totalClientPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-12 pb-4">
-                    {currentPage > 1 && (
-                        <Link 
-                            href={`/blog?page=${currentPage - 1}`} 
-                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                    {clientPage > 1 && (
+                        <button 
+                            onClick={() => { setClientPage(prev => Math.max(prev - 1, 1)); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
                         >
                             <ChevronRight className="w-5 h-5 rotate-180" />
-                        </Link>
+                        </button>
                     )}
                     
-                    {Array.from({ length: totalPages }).map((_, idx) => {
+                    {Array.from({ length: totalClientPages }).map((_, idx) => {
                         const pageNum = idx + 1;
-                        if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
-                            return (
-                                <Link 
-                                    key={pageNum} 
-                                    href={`/blog?page=${pageNum}`}
-                                    className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                                        currentPage === pageNum 
-                                            ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20 border border-blue-400/50 scale-105" 
-                                            : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
-                                    }`}
-                                >
-                                    {pageNum}
-                                </Link>
-                            );
-                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                            return <span key={pageNum} className="text-gray-600 px-1">...</span>;
-                        }
-                        return null;
+                        return (
+                            <button 
+                                key={pageNum} 
+                                onClick={() => { setClientPage(pageNum); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+                                className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                                    clientPage === pageNum 
+                                        ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20 border border-blue-400/50 scale-105" 
+                                        : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                                }`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
                     })}
 
-                    {currentPage < totalPages && (
-                        <Link 
-                            href={`/blog?page=${currentPage + 1}`} 
-                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                    {clientPage < totalClientPages && (
+                        <button 
+                            onClick={() => { setClientPage(prev => Math.min(prev + 1, totalClientPages)); window.scrollTo({ top: 400, behavior: 'smooth' }); }}
+                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
                         >
                             <ChevronRight className="w-5 h-5" />
-                        </Link>
+                        </button>
                     )}
                 </div>
             )}
