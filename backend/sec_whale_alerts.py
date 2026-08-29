@@ -216,14 +216,22 @@ def parse_form4_xml(xml_url: str) -> dict:
             else:
                 krw_str = f"약 {krw:,.0f}원"
                 
-            if val >= 1_000_000:
-                usd_str = f"${val/1_000_000:.1f}M"
-            elif val >= 1_000:
-                usd_str = f"${val/1000:.1f}K"
+            if val >= 1_000_000_000:
+                usd_kor = f"{val / 100_000_000:.1f}억 달러"
+                usd_raw = f"${val / 1_000_000_000:.1f}B"
+            elif val >= 10_000:
+                val_man = val / 10_000
+                val_man_str = f"{val_man:,.0f}" if val_man == int(val_man) else f"{val_man:,.1f}"
+                usd_kor = f"{val_man_str}만 달러"
+                if val >= 1_000_000:
+                    usd_raw = f"${val / 1_000_000:.1f}M"
+                else:
+                    usd_raw = f"${val / 1_000:.1f}K"
             else:
-                usd_str = f"${int(val):,}"
+                usd_kor = f"{int(val):,}달러"
+                usd_raw = f"${int(val):,}"
                 
-            return f"{krw_str} · {usd_str}" 
+            return f"{krw_str} ({usd_kor} · {usd_raw})" 
                 
         return {
             'owner_name': owner_name,
