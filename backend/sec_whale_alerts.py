@@ -205,7 +205,7 @@ def parse_form4_xml(xml_url: str) -> dict:
                     
         def format_currency(val, fx_rate=1380.0):
             if not val or val <= 0:
-                return "$0"
+                return "0원"
             krw = val * fx_rate
             if krw >= 100_000_000_000:
                 krw_str = f"약 {krw / 100_000_000_000:.1f}천억원"
@@ -218,20 +218,14 @@ def parse_form4_xml(xml_url: str) -> dict:
                 
             if val >= 1_000_000_000:
                 usd_kor = f"{val / 100_000_000:.1f}억 달러"
-                usd_raw = f"${val / 1_000_000_000:.1f}B"
             elif val >= 10_000:
                 val_man = val / 10_000
                 val_man_str = f"{val_man:,.0f}" if val_man == int(val_man) else f"{val_man:,.1f}"
                 usd_kor = f"{val_man_str}만 달러"
-                if val >= 1_000_000:
-                    usd_raw = f"${val / 1_000_000:.1f}M"
-                else:
-                    usd_raw = f"${val / 1_000:.1f}K"
             else:
                 usd_kor = f"{int(val):,}달러"
-                usd_raw = f"${int(val):,}"
                 
-            return f"{krw_str} ({usd_kor} · {usd_raw})" 
+            return f"{krw_str} ({usd_kor})" 
                 
         return {
             'owner_name': owner_name,

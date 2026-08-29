@@ -183,7 +183,7 @@ export default function AlertCenterPage() {
 
     // Enhanced Body Formatter with Market Interpretation Pill Box
     
-// Convert USD abbreviations ($72.4K, $2.1M) to Korean Won & Korean Dollars (만 달러)
+// Convert USD abbreviations ($72.4K, $2.1M) to Korean Won & Korean Dollars (e.g. 약 44.2억원 · 320만 달러)
 function formatUsdToKrwInText(text: string): string {
     if (!text) return text;
     const fx = 1380;
@@ -216,7 +216,7 @@ function formatUsdToKrwInText(text: string): string {
             usdKor = `${Math.round(val).toLocaleString()}달러`;
         }
 
-        return `(${krwStr} · ${usdKor} · $${numStr}${u})`;
+        return `(${krwStr} · ${usdKor})`;
     });
 }
 
