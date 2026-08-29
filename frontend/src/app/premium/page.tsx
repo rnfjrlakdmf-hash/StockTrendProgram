@@ -641,52 +641,43 @@ export default function PremiumPage() {
                                         </div>
                                     )}
 
-                                    {/* 2. Micro Bento 3-Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4.5">
+                                    {/* 2. Spacious Open Rows */}
+                                    <div className="space-y-4">
                                         {/* Foreign Flow */}
-                                        <div className="bg-zinc-900/90 border border-cyan-500/30 hover:border-cyan-500/50 rounded-2xl p-5 space-y-3 transition-all">
-                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                                                <span className="text-xs md:text-sm font-bold text-cyan-300 flex items-center gap-1.5">
-                                                    <Globe className="w-4 h-4 text-cyan-400" />
-                                                    외국인 자금 이동
-                                                </span>
-                                                <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-0.5 rounded-full">
-                                                    FOREIGN
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-cyan-400 transition-all">
+                                            <div className="shrink-0 sm:w-40 flex items-center justify-between sm:justify-start gap-2">
+                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-xl border border-cyan-500/20">
+                                                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                                                    외국인 자금
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                 <HighlightText text={section1Data.foreign || "외국인 주도 섹터 집중 매수 확인"} />
                                             </p>
                                         </div>
 
                                         {/* Institution Flow */}
-                                        <div className="bg-zinc-900/90 border border-purple-500/30 hover:border-purple-500/50 rounded-2xl p-5 space-y-3 transition-all">
-                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                                                <span className="text-xs md:text-sm font-bold text-purple-300 flex items-center gap-1.5">
-                                                    <Building2 className="w-4 h-4 text-purple-400" />
-                                                    기관 자금 이동
-                                                </span>
-                                                <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2.5 py-0.5 rounded-full">
-                                                    INSTITUTION
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-purple-400 transition-all">
+                                            <div className="shrink-0 sm:w-40 flex items-center justify-between sm:justify-start gap-2">
+                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-300 bg-purple-500/10 px-3 py-1 rounded-xl border border-purple-500/20">
+                                                    <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                                                    기관 자금
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                 <HighlightText text={section1Data.inst || "기관 밸류에이션 가치주 매집 확인"} />
                                             </p>
                                         </div>
 
                                         {/* Strategy Summary */}
-                                        <div className="bg-zinc-900/90 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-5 space-y-3 transition-all">
-                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                                                <span className="text-xs md:text-sm font-bold text-amber-300 flex items-center gap-1.5">
-                                                    <Target className="w-4 h-4 text-amber-400" />
-                                                    스마트머니 핵심 총평
-                                                </span>
-                                                <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
-                                                    STRATEGY
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-amber-400 transition-all">
+                                            <div className="shrink-0 sm:w-40 flex items-center justify-between sm:justify-start gap-2">
+                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                                                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                                                    스마트머니 총평
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                 <HighlightText text={section1Data.summary || "대형주 및 주도주 압축 대응 전략"} />
                                             </p>
                                         </div>
@@ -750,37 +741,43 @@ export default function PremiumPage() {
                                                         </span>
                                                     </div>
 
-                                                    {/* 3 Pillar Micro Bento Grid */}
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    {/* Spacious Open 3-Row Analysis (No cramped square boxes) */}
+                                                    <div className="space-y-3.5">
                                                         {/* 1. 수급 팩트 */}
-                                                        <div className="bg-zinc-900/90 border border-cyan-500/25 hover:border-cyan-500/40 rounded-2xl p-4.5 transition-all space-y-2">
-                                                            <div className="text-xs md:text-sm font-bold text-cyan-300 flex items-center gap-1.5 pb-1.5 border-b border-white/5">
-                                                                <BarChart3 className="w-4 h-4 text-cyan-400" />
-                                                                수급 팩트 (Supply)
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-cyan-400 transition-all">
+                                                            <div className="shrink-0 sm:w-40">
+                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-xl border border-cyan-500/20">
+                                                                    <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                                                                    수급 팩트 (Supply)
+                                                                </span>
                                                             </div>
-                                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                                 <HighlightText text={stock.fact || "수급 집중 유입 확인"} />
                                                             </p>
                                                         </div>
 
                                                         {/* 2. 기술적 지표 */}
-                                                        <div className="bg-zinc-900/90 border border-purple-500/25 hover:border-purple-500/40 rounded-2xl p-4.5 transition-all space-y-2">
-                                                            <div className="text-xs md:text-sm font-bold text-purple-300 flex items-center gap-1.5 pb-1.5 border-b border-white/5">
-                                                                <TrendingUp className="w-4 h-4 text-purple-400" />
-                                                                기술적 위치 (Technical)
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-purple-400 transition-all">
+                                                            <div className="shrink-0 sm:w-40">
+                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-300 bg-purple-500/10 px-3 py-1 rounded-xl border border-purple-500/20">
+                                                                    <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
+                                                                    기술적 위치 (Tech)
+                                                                </span>
                                                             </div>
-                                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                                 <HighlightText text={stock.tech || "안정적 지지선 확보"} />
                                                             </p>
                                                         </div>
 
                                                         {/* 3. 증권사 컨센서스 */}
-                                                        <div className="bg-zinc-900/90 border border-emerald-500/25 hover:border-emerald-500/40 rounded-2xl p-4.5 transition-all space-y-2">
-                                                            <div className="text-xs md:text-sm font-bold text-emerald-300 flex items-center gap-1.5 pb-1.5 border-b border-white/5">
-                                                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                                                                컨센서스 (Target)
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-emerald-400 transition-all">
+                                                            <div className="shrink-0 sm:w-40">
+                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-300 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
+                                                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                                                    컨센서스 (Target)
+                                                                </span>
                                                             </div>
-                                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                                 <HighlightText text={stock.consensus || "증권사 긍정적 평가"} />
                                                             </p>
                                                         </div>
