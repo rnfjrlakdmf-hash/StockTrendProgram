@@ -642,6 +642,15 @@ function DiscoveryContent() {
         let query = (term || searchInput || "").trim();
         console.log("[Search] handleSearch initiated. term:", term, "searchInput:", searchInput, "final query:", query);
         if (!query) return;
+
+        // [Real-time SEO] Record search query
+        try {
+            fetch(`${API_BASE_URL}/api/system/search/record`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword: query, source: 'discovery_search' })
+            }).catch(() => {});
+        } catch (_) {}
         const timestamp = Date.now();
         setLoading(true);
         setError("");

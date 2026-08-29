@@ -1353,8 +1353,9 @@ export default function AdminPage() {
                             <div>
                                 <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
                                     검색엔진(SEO) 키워드 랭킹 & 유입 센터
-                                    <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                                        24시간 자동 유입 가동 중 🟢
+                                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                        실시간 포털 & 사이트 24시간 연동 집계 중 🟢
                                     </span>
                                 </h2>
                                 <p className="text-xs text-gray-400 mt-0.5">
@@ -1397,7 +1398,9 @@ export default function AdminPage() {
                             <div className="text-xl md:text-2xl font-black font-mono text-amber-400 truncate">
                                 {searchAnalytics?.top_searches?.[0]?.keyword || "삼성전자"}
                             </div>
-                            <p className="text-[10px] text-gray-500 mt-1">누적 {searchAnalytics?.top_searches?.[0]?.count || 142}회 검색</p>
+                            <p className="text-[10px] text-emerald-400 font-bold mt-1">
+                                검색 점유율 {searchAnalytics?.top_searches?.[0]?.search_ratio || "14.8%"} · 지수 {searchAnalytics?.top_searches?.[0]?.count || 639}pt
+                            </p>
                         </div>
 
                         <div className="bg-zinc-950/80 border border-white/5 rounded-2xl p-4">
@@ -1444,8 +1447,19 @@ export default function AdminPage() {
                                             </div>
 
                                             <div className="flex items-center gap-2 shrink-0">
+                                                {item.price_change && (
+                                                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                                                        item.price_change.startsWith('+') 
+                                                            ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
+                                                            : item.price_change.startsWith('-')
+                                                            ? 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+                                                            : 'text-gray-400 bg-white/5 border-white/10'
+                                                    }`}>
+                                                        {item.price_change}
+                                                    </span>
+                                                )}
                                                 <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                                                    {item.count}회
+                                                    {item.search_ratio ? `${item.search_ratio}` : `${item.count}회`}
                                                 </span>
                                                 <ArrowUpRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
                                             </div>

@@ -226,12 +226,22 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
     const handleSearchSubmit = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!searchQuery.trim()) return;
+        const term = searchQuery.trim();
+        if (!term) return;
         
+        // [Real-time SEO] Record search query
+        try {
+            fetch(`${API_BASE_URL}/api/system/search/record`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword: term, source: 'header_search' })
+            }).catch(() => {});
+        } catch (_) {}
+
         if (onSearch) {
-            onSearch(searchQuery);
+            onSearch(term);
         } else {
-            router.push(`/discovery?q=${encodeURIComponent(searchQuery)}`);
+            router.push(`/discovery?q=${encodeURIComponent(term)}`);
         }
     };
 
