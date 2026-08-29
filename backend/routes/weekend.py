@@ -29,6 +29,27 @@ async def get_weekend_report():
     now = datetime.now(kst)
     
     report = get_latest_weekend_report()
+    
+    # 주말인데 리포트가 없거나 지난주 데이터(4일 이상 경과)인 경우 실시간 자동 생성
+    is_stale = False
+    if report and "generated_at" in report:
+        try:
+            gen_dt = datetime.fromisoformat(report["generated_at"])
+            if (now - gen_dt).total_seconds() > 4 * 86400 and now.weekday() in [5, 6]:
+                is_stale = True
+        except Exception:
+            is_stale = True
+            
+    if not report or is_stale:
+        if now.weekday() in [5, 6] or (now.weekday() == 4 and now.hour >= 18):
+            try:
+                from utils.weekend_report import generate_weekend_report
+                new_rep = await generate_weekend_report()
+                if new_rep:
+                    report = new_rep
+            except Exception as e:
+                print(f"[WeekendRoute] On-demand generation error: {e}")
+                
     next_open = get_next_open_time(now)
     
     if report:
