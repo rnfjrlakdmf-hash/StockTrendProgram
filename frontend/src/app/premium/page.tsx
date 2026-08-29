@@ -824,20 +824,24 @@ export default function PremiumPage() {
                                         </div>
                                     )}
 
-                                    {/* 2. Theme Focus Cards Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
+                                    {/* 2. Theme Focus Wide Rows (Spacious & Cleanly Aligned) */}
+                                    <div className="space-y-4">
                                         {section3Data.items.map((theme, i) => (
-                                            <div key={i} className="bg-zinc-900/90 border border-purple-500/30 hover:border-purple-500/50 rounded-2xl p-5 md:p-6 space-y-3 transition-all">
-                                                <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                                                    <h4 className="text-sm md:text-base font-black text-white flex items-center gap-2">
+                                            <div key={i} className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-purple-400 transition-all space-y-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/5">
+                                                    <h4 className="text-base sm:text-lg font-black text-white flex items-center gap-2.5">
                                                         <span className="text-xl">{theme.icon}</span>
                                                         {theme.title}
                                                     </h4>
-                                                    <span className="text-[11px] font-mono font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-full">
-                                                        {theme.badge}
-                                                    </span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {theme.badge.split('·').map((tag, tIdx) => (
+                                                            <span key={tIdx} className="text-xs font-medium text-purple-200 bg-purple-500/15 border border-purple-500/25 px-2.5 py-0.5 rounded-lg">
+                                                                {tag.trim()}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                                <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                     <HighlightText text={theme.desc} />
                                                 </p>
                                             </div>
@@ -866,36 +870,36 @@ export default function PremiumPage() {
                                         </div>
                                     </div>
 
-                                    {/* 2 Shield Defense Cards Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
+                                    {/* 2 Shield Defense Wide Rows (Spacious & Cleanly Aligned) */}
+                                    <div className="space-y-4">
                                         {/* 1. Hedge Position */}
-                                        <div className="bg-zinc-900/90 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-5 md:p-6 space-y-3 transition-all">
-                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                                                <h4 className="text-sm md:text-base font-black text-amber-300 flex items-center gap-2">
-                                                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                                        <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-amber-400 transition-all space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/5">
+                                                <h4 className="text-base sm:text-lg font-black text-amber-300 flex items-center gap-2">
+                                                    <AlertTriangle className="w-5 h-5 text-amber-400" />
                                                     기관 헷지(Hedge) 포지션 포착
                                                 </h4>
-                                                <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+                                                <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-xl">
                                                     WARNING SIGN
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                 <HighlightText text={section4Data.hedge || "선제적 헷지 포지션 구축 동향 분석"} />
                                             </p>
                                         </div>
 
                                         {/* 2. Risk Strategy */}
-                                        <div className="bg-zinc-900/90 border border-emerald-500/30 hover:border-emerald-500/50 rounded-2xl p-5 md:p-6 space-y-3 transition-all">
-                                            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                                                <h4 className="text-sm md:text-base font-black text-emerald-300 flex items-center gap-2">
-                                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                        <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-emerald-400 transition-all space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/5">
+                                                <h4 className="text-base sm:text-lg font-black text-emerald-300 flex items-center gap-2">
+                                                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
                                                     VVIP 리스크 관리 대응 전략
                                                 </h4>
-                                                <span className="text-[10px] font-mono font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                                                <span className="text-xs font-mono font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-xl">
                                                     DEFENSE ACTION
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
                                                 <HighlightText text={section4Data.risk || "보수적 분할 배분 및 지지선 확인 전략"} />
                                             </p>
                                         </div>
