@@ -341,6 +341,113 @@ def check_sec_form4_alerts():
     print(f"[SEC Whale Form4] Done. New alerts sent: {new_count}")
 
 
+
+def parse_13f_filing(filing: dict) -> dict:
+    """
+    13F-HR 공시 제출물의 infotable.xml을 다운로드하여 주요 보유 종목 TOP3 및 총 AUM 파싱
+    """
+    try:
+        from bs4 import BeautifulSoup
+        acc_num = filing.get("accession_no", "")
+        if not acc_num:
+            return {}
+            
+        acc_no_dashes = acc_num.replace("-", "")
+        cik_int = str(int(acc_num.split("-")[0])) if "-" in acc_num else "0"
+        dir_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/"
+        
+        # 1. Directory index 조회하여 infotable.xml 파일명 찾기
+        r_dir = requests.get(f"{dir_url}index.json", headers=HEADERS, timeout=5)
+        if r_dir.status_code != 200:
+            return {}
+            
+        dir_files = r_dir.json().get("directory", {}).get("item", [])
+        info_file = next((f.get("name") for f in dir_files if "infotable" in f.get("name", "").lower() or (f.get("name", "").endswith(".xml") and "header" not in f.get("name", "").lower() and "primary" not in f.get("name", "").lower())), None)
+        
+        if not info_file:
+            info_file = next((f.get("name") for f in dir_files if f.get("name", "").endswith(".xml") and "header" not in f.get("name", "").lower()), None)
+            
+        if not info_file:
+            return {}
+            
+        # 2. infotable.xml 다운로드 및 파싱
+        r_info = requests.get(f"{dir_url}{info_file}", headers=HEADERS, timeout=7)
+        if r_info.status_code != 200:
+            return {}
+            
+        soup = BeautifulSoup(r_info.content, "xml")
+        holdings = []
+        total_val = 0
+        
+        for item in soup.find_all(["infoTable", "ns1:infoTable"]):
+            issuer = item.find(["nameOfIssuer", "ns1:nameOfIssuer"])
+            name = issuer.text.strip() if issuer else "Unknown"
+            
+            val_el = item.find(["value", "ns1:value"])
+            try:
+                val = float(val_el.text or 0) if val_el else 0
+            except:
+                val = 0
+            # 13F SEC standard: values under 5,000,000 are in thousands ($1,000s)
+            val_usd = val if val > 5_000_000 else (val * 1000)
+            
+            shares_el = item.find(["sshPrnamt", "ns1:sshPrnamt"])
+            try:
+                shares = int(float(shares_el.text or 0)) if shares_el else 0
+            except:
+                shares = 0
+                
+            if val_usd > 0:
+                total_val += val_usd
+                holdings.append({"name": name, "value_usd": val_usd, "shares": shares})
+                
+        if not holdings:
+            return {}
+            
+        holdings.sort(key=lambda x: x["value_usd"], reverse=True)
+        
+        # 3. Currency Format
+        def _fmt_usd_krw(val, fx_rate=1380.0):
+            if not val or val <= 0: return "0원"
+            krw = val * fx_rate
+            if krw >= 100_000_000_000:
+                krw_str = f"약 {krw / 100_000_000_000:.1f}천억원"
+            elif krw >= 100_000_000:
+                krw_str = f"약 {krw / 100_000_000:.1f}억원"
+            elif krw >= 10_000:
+                krw_str = f"약 {krw / 10_000:,.0f}만원"
+            else:
+                krw_str = f"약 {krw:,.0f}원"
+                
+            if val >= 1_000_000_000:
+                usd_kor = f"{val / 100_000_000:.1f}억 달러"
+            elif val >= 10_000:
+                val_man = val / 10_000
+                val_man_str = f"{val_man:,.0f}" if val_man == int(val_man) else f"{val_man:,.1f}"
+                usd_kor = f"{val_man_str}만 달러"
+            else:
+                usd_kor = f"{int(val):,}달러"
+                
+            return f"{krw_str} ({usd_kor})"
+            
+        top_strs = []
+        for h in holdings[:3]:
+            pct = (h["value_usd"] / total_val * 100) if total_val > 0 else 0
+            clean_name = h["name"].title().replace(" Inc", "").replace(" Corp", "").replace(" Co", "").replace(" Ltd", "").strip()
+            top_strs.append(f"{clean_name} {pct:.0f}%")
+            
+        return {
+            "has_detail": True,
+            "total_val_usd": total_val,
+            "total_aum_str": _fmt_usd_krw(total_val),
+            "holdings_count": len(holdings),
+            "top_holding_summary": ", ".join(top_strs)
+        }
+    except Exception as e:
+        print(f"[SEC Whale 13F] XML parse error: {e}")
+        return {}
+
+
 def check_sec_13f_alerts():
     """
     🐳 SEC 13F-HR 기관 대규모 포지션 공개 알림
@@ -382,7 +489,18 @@ def check_sec_13f_alerts():
             except Exception:
                 period_label = f" ({period_str[:10]})"
         title = f"🐳 [미국 기관 포지션 공개] {display_name}"
-        body = f"대형 기관투자자의 분기별 보유 주식 현황(SEC 13F-HR) 공개{period_label}\n💡 [시장해석] 월가 슈퍼 기관들의 분기별 보유 포트폴리오 공개"
+        parsed_13f = parse_13f_filing(filing)
+        if parsed_13f and parsed_13f.get("has_detail"):
+            aum_str = parsed_13f["total_aum_str"]
+            top_holdings = parsed_13f["top_holding_summary"]
+            count = parsed_13f["holdings_count"]
+            line1 = f"▪️ 📊 포트폴리오: {aum_str} | 핵심비중: {top_holdings}"
+            line2 = f"▪️ 💡 특징: 총 {count}개 종목 보유, 대형 우량 자산 위주 포트폴리오 운용"
+            body = f"{line1}\n{line2}"
+        else:
+            line1 = f"▪️ 📊 수급: 대형 기관투자자의 분기별 보유 주식(13F) 포트폴리오 공개{period_label}"
+            line2 = f"▪️ 💡 해석: 월가 슈퍼 고래 기관의 최신 지분 포지션 변동 확인"
+            body = f"{line1}\n{line2}"
 
         print(f"[SEC Whale 13F] New filing: {title}")
 
