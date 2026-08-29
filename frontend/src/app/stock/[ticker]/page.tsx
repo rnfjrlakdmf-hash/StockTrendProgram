@@ -1,3 +1,4 @@
+import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -180,6 +181,7 @@ export default async function StockSeoPage({ params }: Props) {
             <Header />
             <main className="max-w-4xl mx-auto px-4 py-12">
                 <RiskGaugeWidget symbol={decodedTicker} />
+                <div className="my-4"><KakaoRevenueAd type="banner" /></div>
                 <div id="ai-report-capture" className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="mb-2 w-full">
@@ -330,6 +332,7 @@ export default async function StockSeoPage({ params }: Props) {
 
                 {/* Stock Voting Board */}
                 <div className="mb-8">
+                    <div className="mb-6"><KakaoRevenueAd type="box" /></div>
                     <StockVotingBoard ticker={decodedTicker} stockName={name} />
                 </div>
             </main>

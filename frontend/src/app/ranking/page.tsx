@@ -1,5 +1,7 @@
 "use client";
 
+import KakaoRevenueAd from '@/components/KakaoRevenueAd';
+
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Star, Target, TrendingUp, Share2 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
@@ -57,6 +59,7 @@ export default function RankingPage() {
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white pb-20">
+            <div className="max-w-4xl mx-auto px-4 pt-4"><KakaoRevenueAd type="banner" /></div>
             {/* Header */}
             <div className="bg-gradient-to-b from-purple-900/40 to-transparent pt-12 pb-8 px-4 text-center">
                 <Trophy className="w-16 h-16 mx-auto text-yellow-400 mb-4" />

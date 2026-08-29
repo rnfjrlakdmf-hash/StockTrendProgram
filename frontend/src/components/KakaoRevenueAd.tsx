@@ -30,7 +30,7 @@ const AD_CONFIGS = {
 export default function KakaoRevenueAd({ 
   type = "feed", 
   className = "",
-  autoRefreshInterval = 60 
+  autoRefreshInterval = 40 
 }: KakaoRevenueAdProps) {
   const adRef = useRef<HTMLDivElement>(null);
   const [isPC, setIsPC] = useState<boolean | null>(null);
