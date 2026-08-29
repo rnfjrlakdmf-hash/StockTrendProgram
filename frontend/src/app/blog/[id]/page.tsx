@@ -205,8 +205,65 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                 }}
             />
             
+            {/* 함께 읽으면 좋은 추천 금융 리포트 (SEO & 애드센스 내부 링크 강화) */}
+            <div className="mt-16 pt-10 border-t border-white/10">
+                <div className="flex items-center justify-between gap-3 mb-6">
+                    <h3 className="text-xl md:text-2xl font-black text-white flex items-center gap-2.5">
+                        <span className="text-blue-400">📚</span> 함께 읽으면 좋은 추천 투자 칼럼
+                    </h3>
+                    <Link href="/blog" className="text-xs sm:text-sm font-bold text-blue-400 hover:text-blue-300">
+                        전체 칼럼 보기 →
+                    </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                    {STATIC_POSTS.filter(p => p.slug !== post.slug).slice(0, 4).map((rel, rIdx) => (
+                        <Link 
+                            key={rIdx} 
+                            href={`/blog/${rel.slug}`}
+                            className="p-5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-blue-500/30 transition-all flex flex-col justify-between group"
+                        >
+                            <div>
+                                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                                    {rel.tags.slice(0, 2).map((t, tIdx) => (
+                                        <span key={tIdx} className="text-[11px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                                            #{t}
+                                        </span>
+                                    ))}
+                                </div>
+                                <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2 mb-2">
+                                    {rel.title}
+                                </h4>
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">
+                                {rel.author} · 읽기
+                            </span>
+                        </Link>
+                    ))}
+                </div>
+
+                {/* 주식 기초 교육 가이드 바로가기 (E-E-A-T 신뢰도 강화) */}
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-950/20 via-zinc-900/50 to-transparent border border-blue-500/20 mb-12">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h4 className="text-base font-bold text-white mb-1">
+                                🎓 46대 필수 주식 용어 & 가이드 백과사전
+                            </h4>
+                            <p className="text-xs sm:text-sm text-gray-400">
+                                PER, PBR, 공매도, 골든크로스 등 실전 투자에 필요한 기초 지식을 무료로 학습하세요.
+                            </p>
+                        </div>
+                        <Link 
+                            href="/guide" 
+                            className="shrink-0 px-5 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs sm:text-sm font-bold border border-blue-500/30 transition-all text-center"
+                        >
+                            용어 사전 둘러보기
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
             {/* 푸시 알림 구독 버튼 (본문 끝난 후) */}
-            <div className="mt-16 mb-8">
+            <div className="mb-8">
                 <PushSubscribeButton />
             </div>
 
