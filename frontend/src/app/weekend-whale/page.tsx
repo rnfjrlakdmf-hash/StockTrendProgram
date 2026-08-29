@@ -150,7 +150,7 @@ export default function WeekendWhalePage() {
                                 <h2 className="text-lg md:text-xl font-black text-white">
                                     🐋 주간 슈퍼 고래 집중 섹터 맵 (Whale Sector Map)
                                 </h2>
-                                <p className="text-xs text-gray-400">한 주간 거대 자본(수천억 원대)이 집중된 상위 3대 주도 산업군</p>
+                                <p className="text-xs sm:text-sm text-zinc-300 font-medium">한 주간 거대 자본(수천억 원대)이 집중된 상위 3대 주도 산업군</p>
                             </div>
                         </div>
 
@@ -169,13 +169,13 @@ export default function WeekendWhalePage() {
                                                 {sec.intensity || "집중 유입"}
                                             </span>
                                         </div>
-                                        <h3 className="text-base font-black text-white mb-1">
+                                        <h3 className="text-lg font-black text-white mb-1">
                                             {sec.sector}
                                         </h3>
-                                        <p className="text-xs font-bold text-gray-400 mb-3">
+                                        <p className="text-xs sm:text-sm font-bold text-zinc-300 mb-3">
                                             대표 종목: <span className="text-cyan-300">{sec.leader}</span>
                                         </p>
-                                        <p className="text-xs text-gray-300 leading-relaxed font-normal">
+                                        <p className="text-sm sm:text-[15px] text-zinc-100 leading-relaxed font-normal">
                                             {sec.flow_reason}
                                         </p>
                                     </div>
@@ -196,7 +196,7 @@ export default function WeekendWhalePage() {
                                 <h2 className="text-lg md:text-xl font-black text-white">
                                     🔍 고래들의 은밀한 매집주 (Hidden Whale Accumulation)
                                 </h2>
-                                <p className="text-xs text-gray-400">주가는 횡보/조정 중이나 외인·기관이 조용히 수량을 축적한 종목군</p>
+                                <p className="text-xs sm:text-sm text-zinc-300 font-medium">주가는 횡보/조정 중이나 외인·기관이 조용히 수량을 축적한 종목군</p>
                             </div>
                         </div>
 
@@ -208,7 +208,7 @@ export default function WeekendWhalePage() {
                                 >
                                     <div>
                                         <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-white/5">
-                                            <h3 className="text-base font-black text-white">
+                                            <h3 className="text-lg font-black text-white">
                                                 {hw.stock}
                                             </h3>
                                             <span className="text-xs font-mono font-bold text-indigo-300 bg-indigo-500/10 px-2.5 py-0.5 rounded-lg">
@@ -248,7 +248,7 @@ export default function WeekendWhalePage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
-                                            <h3 className="text-sm font-black text-white">
+                                            <h3 className="text-lg font-black text-white">
                                                 {item.stock}
                                             </h3>
                                             {item.amount && (
@@ -257,7 +257,7 @@ export default function WeekendWhalePage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-gray-300 text-xs leading-relaxed font-normal">
+                                        <p className="text-zinc-100 text-sm sm:text-[15px] leading-relaxed font-normal">
                                             {item.reason}
                                         </p>
                                     </div>
@@ -282,7 +282,7 @@ export default function WeekendWhalePage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
-                                            <h3 className="text-sm font-black text-white">
+                                            <h3 className="text-lg font-black text-white">
                                                 {item.stock}
                                             </h3>
                                             {item.amount && (
@@ -291,7 +291,7 @@ export default function WeekendWhalePage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-gray-300 text-xs leading-relaxed font-normal">
+                                        <p className="text-zinc-100 text-sm sm:text-[15px] leading-relaxed font-normal">
                                             {item.reason}
                                         </p>
                                     </div>

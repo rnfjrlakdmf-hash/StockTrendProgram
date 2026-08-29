@@ -44,26 +44,26 @@ interface Section4Data {
     risk: string;
 }
 
-// Readability Enhancer: Highlights stock names in (parens) and quoted 'themes'
+// Readability & Eye-Friendly Highlight Helper
 function HighlightText({ text, className = "" }: { text: string; className?: string }) {
     if (!text) return null;
     
-    const parts = text.split(/('[\w가-힣\s·,]+'|\([\w가-힣\s·,]+\))/g);
+    const parts = text.split(/('[\w가-힣\s·,]{1,12}'|\([\w가-힣\s·,]{1,10}\))/g);
     
     return (
         <span className={className}>
             {parts.map((part, index) => {
                 if (!part) return null;
-                if (part.startsWith("'") && part.endsWith("'")) {
+                if (part.startsWith("'") && part.endsWith("'") && part.length <= 14) {
                     return (
-                        <span key={index} className="text-amber-300 font-bold bg-amber-400/15 px-1.5 py-0.5 rounded-md mx-0.5 border border-amber-500/30 inline-block my-0.5">
+                        <span key={index} className="text-amber-300 font-bold px-1.5 py-0.5 rounded-md bg-amber-400/10 mx-0.5 border border-amber-500/20">
                             {part.slice(1, -1)}
                         </span>
                     );
                 }
-                if (part.startsWith("(") && part.endsWith(")")) {
+                if (part.startsWith("(") && part.endsWith(")") && part.length <= 12) {
                     return (
-                        <span key={index} className="text-cyan-300 font-bold bg-cyan-400/15 px-1.5 py-0.5 rounded-md mx-0.5 border border-cyan-500/30 inline-block my-0.5">
+                        <span key={index} className="text-sky-300 font-bold px-1.5 py-0.5 rounded-md bg-sky-400/10 mx-0.5 border border-sky-500/20">
                             {part}
                         </span>
                     );
@@ -516,7 +516,7 @@ export default function PremiumPage() {
 
                                 {section1Data.lead && (
                                     <div className="bg-amber-500/15 border-l-4 border-amber-400 p-4 rounded-r-2xl">
-                                        <p className="text-sm md:text-base font-bold text-amber-100 leading-relaxed">
+                                        <p className="text-base sm:text-lg font-bold text-amber-100 leading-relaxed">
                                             <HighlightText text={section1Data.lead} />
                                         </p>
                                     </div>
@@ -528,7 +528,7 @@ export default function PremiumPage() {
                                             <div className="text-xs md:text-sm font-bold text-cyan-300 flex items-center gap-1.5 pb-2 border-b border-white/10">
                                                 <Globe className="w-4 h-4 text-cyan-400" /> 외국인 자금 흐름
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section1Data.foreign} />
                                             </p>
                                         </div>
@@ -538,7 +538,7 @@ export default function PremiumPage() {
                                             <div className="text-xs md:text-sm font-bold text-purple-300 flex items-center gap-1.5 pb-2 border-b border-white/10">
                                                 <Building2 className="w-4 h-4 text-purple-400" /> 기관 자금 흐름
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section1Data.inst} />
                                             </p>
                                         </div>
@@ -550,7 +550,7 @@ export default function PremiumPage() {
                                         <div className="text-xs md:text-sm font-bold text-amber-300 flex items-center gap-1.5">
                                             <Target className="w-4 h-4 text-amber-400" /> 스마트머니 종합 결론
                                         </div>
-                                        <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                        <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                             <HighlightText text={section1Data.summary} />
                                         </p>
                                     </div>
@@ -635,7 +635,7 @@ export default function PremiumPage() {
                                     {/* 1. Lead Highlight Banner */}
                                     {section1Data.lead && (
                                         <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/5 to-transparent border-l-4 border-amber-400 p-4.5 rounded-r-2xl">
-                                            <p className="text-sm md:text-base font-bold text-amber-100 leading-relaxed">
+                                            <p className="text-base sm:text-lg font-bold text-amber-100 leading-relaxed">
                                                 <HighlightText text={section1Data.lead} />
                                             </p>
                                         </div>
@@ -654,7 +654,7 @@ export default function PremiumPage() {
                                                     FOREIGN
                                                 </span>
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section1Data.foreign || "외국인 주도 섹터 집중 매수 확인"} />
                                             </p>
                                         </div>
@@ -670,7 +670,7 @@ export default function PremiumPage() {
                                                     INSTITUTION
                                                 </span>
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section1Data.inst || "기관 밸류에이션 가치주 매집 확인"} />
                                             </p>
                                         </div>
@@ -686,7 +686,7 @@ export default function PremiumPage() {
                                                     STRATEGY
                                                 </span>
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section1Data.summary || "대형주 및 주도주 압축 대응 전략"} />
                                             </p>
                                         </div>
@@ -758,7 +758,7 @@ export default function PremiumPage() {
                                                                 <BarChart3 className="w-4 h-4 text-cyan-400" />
                                                                 수급 팩트 (Supply)
                                                             </div>
-                                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                                 <HighlightText text={stock.fact || "수급 집중 유입 확인"} />
                                                             </p>
                                                         </div>
@@ -769,7 +769,7 @@ export default function PremiumPage() {
                                                                 <TrendingUp className="w-4 h-4 text-purple-400" />
                                                                 기술적 위치 (Technical)
                                                             </div>
-                                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                                 <HighlightText text={stock.tech || "안정적 지지선 확보"} />
                                                             </p>
                                                         </div>
@@ -780,7 +780,7 @@ export default function PremiumPage() {
                                                                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                                                                 컨센서스 (Target)
                                                             </div>
-                                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                                 <HighlightText text={stock.consensus || "증권사 긍정적 평가"} />
                                                             </p>
                                                         </div>
@@ -840,7 +840,7 @@ export default function PremiumPage() {
                                                         {theme.badge}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                                <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                     <HighlightText text={theme.desc} />
                                                 </p>
                                             </div>
@@ -882,7 +882,7 @@ export default function PremiumPage() {
                                                     WARNING SIGN
                                                 </span>
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section4Data.hedge || "선제적 헷지 포지션 구축 동향 분석"} />
                                             </p>
                                         </div>
@@ -898,7 +898,7 @@ export default function PremiumPage() {
                                                     DEFENSE ACTION
                                                 </span>
                                             </div>
-                                            <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                                                 <HighlightText text={section4Data.risk || "보수적 분할 배분 및 지지선 확인 전략"} />
                                             </p>
                                         </div>

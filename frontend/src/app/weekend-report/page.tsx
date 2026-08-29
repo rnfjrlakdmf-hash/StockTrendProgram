@@ -32,26 +32,28 @@ interface ReportResponse {
     report?: WeekendReport;
 }
 
-// Readability & Highlight Helper
+// Readability & Eye-Friendly Highlight Helper
 function HighlightText({ text, className = "" }: { text: string; className?: string }) {
     if (!text) return null;
     
-    const parts = text.split(/('[\w가-힣\s·,]+'|\([\w가-힣\s·,]+\))/g);
+    // Only highlight short symbols/tickers (<= 12 chars) like (삼성전자), (GDP), (CPI)
+    // Long explanatory sentences in parens will render naturally as clean, comfortable text
+    const parts = text.split(/('[\w가-힣\s·,]{1,12}'|\([\w가-힣\s·,]{1,10}\))/g);
     
     return (
         <span className={className}>
             {parts.map((part, index) => {
                 if (!part) return null;
-                if (part.startsWith("'") && part.endsWith("'")) {
+                if (part.startsWith("'") && part.endsWith("'") && part.length <= 14) {
                     return (
-                        <span key={index} className="text-amber-300 font-bold bg-amber-400/15 px-1.5 py-0.5 rounded-md mx-0.5 border border-amber-500/30 inline-block my-0.5">
+                        <span key={index} className="text-amber-300 font-bold px-1.5 py-0.5 rounded-md bg-amber-400/10 mx-0.5 border border-amber-500/20">
                             {part.slice(1, -1)}
                         </span>
                     );
                 }
-                if (part.startsWith("(") && part.endsWith(")")) {
+                if (part.startsWith("(") && part.endsWith(")") && part.length <= 12) {
                     return (
-                        <span key={index} className="text-cyan-300 font-bold bg-cyan-400/15 px-1.5 py-0.5 rounded-md mx-0.5 border border-cyan-500/30 inline-block my-0.5">
+                        <span key={index} className="text-sky-300 font-bold px-1.5 py-0.5 rounded-md bg-sky-400/10 mx-0.5 border border-sky-500/20">
                             {part}
                         </span>
                     );
@@ -160,7 +162,7 @@ export default function WeekendReportPage() {
                                         {isDate ? "KEY EVENT" : "SECTOR ROTATION"}
                                     </span>
                                 </div>
-                                <p className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium pl-0.5">
+                                <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pl-0.5">
                                     <HighlightText text={desc} />
                                 </p>
                             </div>
@@ -168,7 +170,7 @@ export default function WeekendReportPage() {
                     }
 
                     return (
-                        <div key={idx} className="bg-zinc-900/90 border border-white/10 p-4 rounded-2xl text-xs md:text-sm text-zinc-100 leading-relaxed font-medium">
+                        <div key={idx} className="bg-zinc-900/90 border border-white/10 p-4 rounded-2xl text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
                             <HighlightText text={cleanLine} />
                         </div>
                     );
@@ -284,7 +286,7 @@ export default function WeekendReportPage() {
                             <h1 className="text-2xl md:text-3xl lg:text-[28px] font-black text-white tracking-tight leading-snug">
                                 {report?.title || "주말 마켓 인사이트: 지난주 시장 데이터와 다음 주 경제 일정"}
                             </h1>
-                            <p className="text-xs md:text-sm text-gray-300 mt-1 font-medium">
+                            <p className="text-sm text-zinc-300 mt-1 font-medium">
                                 {report?.subtitle || "이번 주 시장 핵심 팩트 요약과 다음 주 주요 경제 캘린더"}
                             </p>
                         </div>
@@ -327,7 +329,7 @@ export default function WeekendReportPage() {
                                 <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-black flex items-center justify-center text-xs font-black font-mono shrink-0 mt-0.5 shadow-md">
                                     {idx + 1}
                                 </div>
-                                <span className="text-xs md:text-sm text-zinc-100 leading-relaxed font-medium pt-0.5">
+                                <span className="text-sm sm:text-base text-zinc-100 leading-relaxed font-medium pt-0.5">
                                     <HighlightText text={bullet.replace(/^[•\-\*·]\s*/, '')} />
                                 </span>
                             </div>
