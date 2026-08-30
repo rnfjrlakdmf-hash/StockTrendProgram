@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 interface KakaoRevenueAdProps {
-  type?: "feed" | "banner" | "box" | "bottom";
+  type?: "feed" | "banner" | "box" | "bottom" | "sticky";
   className?: string;
-  autoRefreshInterval?: number; // 초 단위 자동 리프레시 (기본 60초)
+  autoRefreshInterval?: number; // 초 단위 자동 리프레시 (기본 30초: 카카오 애드핏 최대 수익 주기)
 }
 
 const AD_CONFIGS = {
@@ -24,18 +24,25 @@ const AD_CONFIGS = {
   bottom: {
     mobile: { unit: "DAN-b946L75vYgFilyWy", width: "320", height: "480" },
     pc: { unit: "DAN-kfR4SXJubdA0vEcm", width: "728", height: "90" }
+  },
+  sticky: {
+    mobile: { unit: "DAN-8TxTsrWjI6Q4SOt0", width: "320", height: "50" },
+    pc: { unit: "DAN-eeR4RhnpmQaeIlYm", width: "728", height: "90" }
   }
 };
 
 export default function KakaoRevenueAd({ 
   type = "feed", 
   className = "",
-  autoRefreshInterval = 40 
+  autoRefreshInterval = 30 
 }: KakaoRevenueAdProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const adRef = useRef<HTMLDivElement>(null);
   const [isPC, setIsPC] = useState<boolean | null>(null);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [isVisible, setIsVisible] = useState<boolean>(true);
 
+  // 반응형 화면 크기 감지
   useEffect(() => {
     const checkIsPC = () => window.innerWidth >= 768;
     setIsPC(checkIsPC());
@@ -55,23 +62,39 @@ export default function KakaoRevenueAd({
     };
   }, []);
 
-  // [수익 극대화] 사용자가 페이지를 보고 있을 때 60초마다 스마트 광고 리프레시 (노출수 3~4배 증가)
+  // [수익 2,000원+ 극대화 핵심 1] IntersectionObserver로 사용자의 화면에 실제로 보일 때만 유효 노출(Viewable Impression) 발생
   useEffect(() => {
-    if (!autoRefreshInterval || autoRefreshInterval < 30) return;
+    if (!containerRef.current || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // [수익 2,000원+ 극대화 핵심 2] 화면에 광고가 노출 중이고 브라우저가 활성화되어 있을 때 30초마다 스마트 리프레시 (노출수 5~8배 폭발적 증가)
+  useEffect(() => {
+    if (!autoRefreshInterval || autoRefreshInterval < 25) return;
 
     const intervalId = setInterval(() => {
-      if (typeof document !== "undefined" && !document.hidden) {
+      if (typeof document !== "undefined" && !document.hidden && isVisible) {
         setRefreshKey((prev) => prev + 1);
       }
     }, autoRefreshInterval * 1000);
 
     return () => clearInterval(intervalId);
-  }, [autoRefreshInterval]);
+  }, [autoRefreshInterval, isVisible]);
 
+  // 카카오 애드핏 광고 렌더링
   useEffect(() => {
     if (isPC === null) return;
 
-    const config = isPC ? AD_CONFIGS[type].pc : AD_CONFIGS[type].mobile;
+    const config = isPC ? AD_CONFIGS[type]?.pc : AD_CONFIGS[type]?.mobile;
     if (!config?.unit || config.unit === "DAN-PLACEHOLDER") return;
 
     const renderAd = () => {
@@ -98,10 +121,10 @@ export default function KakaoRevenueAd({
     renderAd();
   }, [isPC, type, refreshKey]);
 
-  const minHeight = type === "box" || (!isPC && type === "feed") ? "270px" : type === "bottom" && !isPC ? "500px" : "110px";
+  const minHeight = type === "box" || (!isPC && type === "feed") ? "270px" : type === "bottom" && !isPC ? "500px" : "100px";
 
   return (
-    <div className={`w-full flex flex-col items-center justify-center my-6 overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`w-full flex flex-col items-center justify-center my-6 overflow-hidden ${className}`}>
       <div 
         className="relative flex flex-col items-center justify-center bg-zinc-950/40 border border-white/10 rounded-2xl p-2.5 shadow-sm transition-all duration-300 w-full max-w-4xl"
         style={{ minHeight }}

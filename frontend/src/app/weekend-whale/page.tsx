@@ -1,5 +1,7 @@
 "use client";
 
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Clock, TrendingUp, Anchor, Briefcase, ChevronRight, CheckCircle, Share2, AlertTriangle } from 'lucide-react';
@@ -184,6 +186,7 @@ export default function WeekendWhalePage() {
                         </div>
                     </section>
                 )}
+                <KakaoRevenueAd type="banner" />
 
                 {/* 2. 고래들의 은밀한 매집주 */}
                 {report?.hidden_whales && report.hidden_whales.length > 0 && (
@@ -229,6 +232,7 @@ export default function WeekendWhalePage() {
                         </div>
                     </section>
                 )}
+                <KakaoRevenueAd type="banner" />
 
                 {/* 3. Foreign & Institution Top 10 Facts Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

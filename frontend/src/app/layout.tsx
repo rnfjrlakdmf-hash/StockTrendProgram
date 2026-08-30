@@ -17,6 +17,7 @@ import LeadGenerationPopup from "@/components/LeadGenerationPopup";
 import GlobalBroadcastListener from "@/components/GlobalBroadcastListener";
 import CookieConsent from "@/components/CookieConsent";
 import BottomTabBar from "@/components/BottomTabBar";
+import KakaoStickyBottomAd from "@/components/KakaoStickyBottomAd";
 import FloatingQuickMenu from "@/components/FloatingQuickMenu";
 import { Toaster } from "sonner";
 import type { Viewport } from 'next';
@@ -229,6 +230,7 @@ export default function RootLayout({
             <FCMWrapper />
             
             {/* Mobile Bottom Tab Bar */}
+            <KakaoStickyBottomAd />
             <BottomTabBar />
 
             {/* Smart Floating Quick Menu */}

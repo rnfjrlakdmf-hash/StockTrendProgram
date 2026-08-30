@@ -1,3 +1,4 @@
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 "use client";
 
 import React, { useState, useMemo } from 'react';
