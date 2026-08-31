@@ -488,7 +488,8 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         // Title and Body text analysis for smart categorization
-        const combinedText = `${alert.title || ''} ${alert.body || ''}`.toLowerCase();
+        const titleText = (alert.title || '').trim();
+        const combinedText = `${titleText} ${alert.body || ''}`.toLowerCase();
 
         let typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]";
         let typeBadgeLabel = "📢 스마트 투자 알림";
@@ -496,10 +497,33 @@ function formatUsdToKrwInText(text: string): string {
         let accentBorder = "border-l-4 border-l-cyan-400";
         let defaultCta = { href: "/discovery", label: "AI 종목 발굴 레이더 바로가기", icon: Sparkles, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
 
-        const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || (alert.title && alert.title.includes('관심종목 결산'));
-        const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || (alert.title && alert.title.includes('장마감 시황'));
+        const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산');
+        const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황');
 
-        if (isPortfolio) {
+        // [1순위: DART 공시 / 내부자 거래 / 지분 공시] -> 명확하게 공시 뱃지 우선 부여
+        if (titleText.includes("공시 팩트 알림") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
+            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
+            typeBadgeLabel = "🇰🇷 DART 공시 팩트 속보";
+            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
+            accentBorder = "border-l-4 border-l-blue-400";
+        } else if (titleText.includes("내부자 거래") || alert.type === 'insider_trading' || alert.type === 'sec_insider_trading') {
+            typeBadgeStyle = "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.2)]";
+            typeBadgeLabel = "🚨 대주주·내부자 지분 변동";
+            cardBorderHover = "hover:border-rose-500/40 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)]";
+            accentBorder = "border-l-4 border-l-rose-400";
+        } else if (titleText.includes("대량 보유") || titleText.includes("5% 이상") || alert.type === 'large_holding') {
+            typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
+            typeBadgeLabel = "🏛️ 5% 이상 대량 보유 공시";
+            cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
+            accentBorder = "border-l-4 border-l-indigo-400";
+        } else if (['sec_13f', 'sec_disclosure'].includes(alert.type) || titleText.includes("SEC")) {
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+            typeBadgeLabel = "🇺🇸 미국 SEC 공시 속보";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+            accentBorder = "border-l-4 border-l-emerald-400";
+        } 
+        // [2순위: 리포트 및 결산]
+        else if (isPortfolio) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
             typeBadgeLabel = "👑 관심종목 마감 결산";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
@@ -511,29 +535,25 @@ function formatUsdToKrwInText(text: string): string {
             cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
             accentBorder = "border-l-4 border-l-indigo-400";
             defaultCta = { href: "/blog", label: "마켓 심층 브리핑 전문 읽기", icon: Globe, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
-        } else if (['whale_accumulation', 'whale_alert'].includes(alert.type) || combinedText.includes("외국인") || combinedText.includes("쓸어담은") || combinedText.includes("수급") || combinedText.includes("기관 순매수")) {
-            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
+        } 
+        // [3순위: 세력 및 외국인·기관 수급 특보]
+        else if (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수")) {
+            typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]";
             typeBadgeLabel = "🐳 외인·기관 수급 특보";
-            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
-            accentBorder = "border-l-4 border-l-blue-400";
-            defaultCta = { href: "/ranking", label: "실시간 외국인·기관 수급 순위 보기", icon: TrendingUp, style: "bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border-blue-500/30" };
-        } else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운") || combinedText.includes("급등주") || combinedText.includes("반도체") || combinedText.includes("2차전지")) {
+            cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";
+            accentBorder = "border-l-4 border-l-cyan-400";
+            defaultCta = { href: "/ranking", label: "실시간 외국인·기관 수급 순위 보기", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
+        } 
+        // [4순위: 주도 테마 레이더]
+        else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운 테마") || combinedText.includes("대장주") || combinedText.includes("급등주")) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
             typeBadgeLabel = "⚡ 실시간 주도 테마 레이더";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
             accentBorder = "border-l-4 border-l-amber-400";
             defaultCta = { href: "/theme", label: "AI 주도 테마 맵 & 대장주 확인", icon: Zap, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
-        } else if (['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type)) {
-            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
-            typeBadgeLabel = "🇺🇸 미국 SEC 공시";
-            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
-            accentBorder = "border-l-4 border-l-emerald-400";
-        } else if (isDisclosure) {
-            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
-            typeBadgeLabel = "🇰🇷 DART 공시 속보";
-            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
-            accentBorder = "border-l-4 border-l-blue-400";
-        } else if (alert.type === 'crypto_bull' || combinedText.includes("코인") || combinedText.includes("비트코인")) {
+        } 
+        // [5순위: 기타 마켓 뉴스 및 시그널]
+        else if (alert.type === 'crypto_bull' || combinedText.includes("코인") || combinedText.includes("비트코인")) {
             typeBadgeStyle = "bg-rose-500/20 text-rose-300 border-rose-500/40";
             typeBadgeLabel = "🔥 코인 불장 시그널";
             cardBorderHover = "hover:border-rose-500/40";
@@ -609,7 +629,7 @@ function formatUsdToKrwInText(text: string): string {
                         {symbol && (
                             <Link 
                                 href={`/stock/${symbol}`} 
-                                className="flex-1 min-w-[130px] bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                className="flex-1 min-w-[130px] bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                             >
                                 <Sparkles className="w-4 h-4 text-blue-400" />
                                 AI 종목 심층 분석
@@ -621,7 +641,7 @@ function formatUsdToKrwInText(text: string): string {
                                 href={(alert as any).dart_url || targetUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                             >
                                 <ExternalLink className="w-4 h-4 text-gray-400" />
                                 공시 원문 보기
@@ -638,7 +658,7 @@ function formatUsdToKrwInText(text: string): string {
                         ) : defaultCta ? (
                             <Link
                                 href={defaultCta.href}
-                                className={`w-full py-2.5 px-4 rounded-xl border text-xs md:text-sm font-bold transition-all flex items-center justify-between shadow-sm active:scale-95 ${defaultCta.style}`}
+                                className={`w-full py-2.5 px-4 rounded-xl border text-xs md:text-sm font-bold transition-all flex items-center justify-between shadow-sm active:scale-95 cursor-pointer ${defaultCta.style}`}
                             >
                                 <span className="flex items-center gap-2">
                                     <defaultCta.icon className="w-4 h-4" />
