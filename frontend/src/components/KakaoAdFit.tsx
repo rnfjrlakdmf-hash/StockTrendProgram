@@ -1,56 +1,57 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 interface KakaoAdFitProps {
   adUnit: string;
   adWidth: string;
   adHeight: string;
+  className?: string;
 }
 
-export default function KakaoAdFit({ adUnit, adWidth, adHeight }: KakaoAdFitProps) {
-  const adRef = useRef<HTMLDivElement>(null);
+export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }: KakaoAdFitProps) {
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!adUnit || adUnit === "DAN-PLACEHOLDER") return;
+    setMounted(true);
+  }, []);
 
-    const renderAd = () => {
-      if (!adRef.current) return;
-      adRef.current.innerHTML = "";
+  if (!mounted || !adUnit || adUnit === "DAN-PLACEHOLDER") return null;
 
-      const ins = document.createElement("ins");
-      ins.className = "kakao_ad_area";
-      ins.style.display = "none"; // 카카오 애드핏 공식 가이드: 필수 속성
-      ins.setAttribute("data-ad-unit", adUnit);
-      ins.setAttribute("data-ad-width", adWidth);
-      ins.setAttribute("data-ad-height", adHeight);
+  const numWidth = parseInt(adWidth, 10) || 320;
+  const numHeight = parseInt(adHeight, 10) || 50;
 
-      const script = document.createElement("script");
-      script.src = "//t1.kakaocdn.net/kas/static/ba.min.js";
-      script.async = true;
-      script.type = "text/javascript";
-      script.charset = "utf-8";
-
-      adRef.current.appendChild(ins);
-      adRef.current.appendChild(script);
-    };
-
-    renderAd();
-  }, [adUnit, adWidth, adHeight]);
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html style="margin:0;padding:0;overflow:hidden;">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: transparent; overflow: hidden; }
+        </style>
+      </head>
+      <body>
+        <ins class="kakao_ad_area" style="display:none;"
+          data-ad-unit="${adUnit}"
+          data-ad-width="${adWidth}"
+          data-ad-height="${adHeight}"></ins>
+        <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+      </body>
+    </html>
+  `;
 
   return (
-    <div className="w-full flex justify-center my-2 overflow-hidden transition-all duration-300 empty:hidden">
-      <div 
-        ref={adRef} 
-        className="relative flex items-center justify-center bg-transparent empty:hidden"
-      >
-        {(!adUnit || adUnit === "DAN-PLACEHOLDER") && (
-          <div className="flex flex-col items-center p-4">
-            <span className="text-xs text-gray-500 font-medium">카카오 애드핏 광고 영역</span>
-            <span className="text-[10px] text-gray-400">page.tsx 파일에서 DAN-XXXXXX ID를 입력해주세요</span>
-          </div>
-        )}
-      </div>
+    <div className={`flex items-center justify-center overflow-hidden my-2 ${className}`} style={{ width: numWidth, height: numHeight, maxWidth: "100%" }}>
+      <iframe
+        srcDoc={htmlContent}
+        width={numWidth}
+        height={numHeight}
+        style={{ border: "none", overflow: "hidden", maxWidth: "100%" }}
+        scrolling="no"
+        title="Kakao AdFit"
+      />
     </div>
   );
 }
