@@ -28,17 +28,23 @@ interface AlertItem {
     url?: string;
 }
 
-// Market Badge Resolver (Free, instant, 0-delay)
+// Market Badge Resolver (국내 코스피·코스닥 및 미국 나스닥·NYSE·S&P500 완벽 구분)
 function getMarketBadge(alert: any): { label: string; style: string; icon?: string } | null {
     const text = `${alert.title || ''} ${alert.body || ''} ${alert.market || ''}`;
-    const symbol = (alert.symbol || '').toUpperCase();
+    const symbol = (alert.symbol || '').toUpperCase().trim();
     
+    // 1. 국내 증시 (코스피 / 코스닥)
     if (text.includes('[코스피]') || alert.market === 'KOSPI' || alert.market === '코스피' || symbol.endsWith('.KS')) {
         return { label: '코스피', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
     }
     if (text.includes('[코스닥]') || alert.market === 'KOSDAQ' || alert.market === '코스닥' || symbol.endsWith('.KQ')) {
         return { label: '코스닥', style: 'bg-purple-500/15 text-purple-300 border-purple-500/30' };
     }
+    if (/^\d{6}$/.test(symbol)) {
+        return { label: '코스피', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
+    }
+
+    // 2. 미국 증시 (나스닥 / NYSE / S&P 500)
     if (text.includes('[나스닥]') || alert.market === 'NASDAQ' || alert.market === '나스닥') {
         return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
     }
@@ -49,20 +55,29 @@ function getMarketBadge(alert: any): { label: string; style: string; icon?: stri
         return { label: 'NYSE', style: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
     }
     
-    // Auto-detect by symbol for US tech stocks
-    const nasdaqTop = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL', 'GOOG', 'AMZN', 'META', 'AMD', 'QCOM', 'INTC', 'NFLX', 'AVGO', 'COST', 'PEP', 'ADBE'];
-    if (nasdaqTop.includes(symbol)) {
-        return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
-    }
-    
-    const sp500Top = ['KO', 'DIS', 'JPM', 'UNH', 'V', 'MA', 'PG', 'JNJ', 'WMT', 'XOM', 'CVX', 'BRK.A', 'BRK.B', 'BRK-A', 'BRK-B', 'LLY'];
+    // 미국 대형 지수 (S&P 500 주요 대표 종목)
+    const sp500Top = [
+        'AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL', 'GOOG', 'AMZN', 'META', 'BRK.A', 'BRK.B', 
+        'LLY', 'JPM', 'V', 'UNH', 'XOM', 'MA', 'JNJ', 'PG', 'HD', 'COST', 'ABBV', 'MRK', 
+        'NFLX', 'AMD', 'CRM', 'PEP', 'KO', 'BAC', 'WMT', 'CVX', 'TMO', 'MCD', 'CSCO', 'INTC', 'DIS'
+    ];
     if (sp500Top.includes(symbol)) {
         return { label: 'S&P 500', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
     }
-    
-    // Check if 6 digit korean ticker
-    if (/^\d{6}$/.test(symbol)) {
-        return { label: '국내', style: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' };
+
+    // 미국 SEC 공시 또는 [미국] 태그가 있는 경우 심볼 기반으로 나스닥 / NYSE 자동 분류
+    const isUS = text.includes('[미국]') || alert.market === 'US' || (alert.type && alert.type.startsWith('sec_'));
+    if (isUS) {
+        // 미국 거래소 룰: 4글자 이상 티커(BRZE, ALMU, PLTR, SMCI, CRWD 등)는 나스닥 상장사
+        if (symbol.length >= 4 && /^[A-Z]+$/.test(symbol)) {
+            return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
+        }
+        // 1~3글자 티커(SMR, F, BA, GM, IBM, LLY, CAT 등)는 전통 뉴욕증권거래소(NYSE) 상장사
+        if (symbol.length >= 1 && symbol.length <= 3 && /^[A-Z]+$/.test(symbol)) {
+            return { label: 'NYSE', style: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
+        }
+        // 기본 미국장 뱃지
+        return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
     }
     
     return null;
