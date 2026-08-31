@@ -540,15 +540,14 @@ function DiscoveryContent() {
         if (realtimeData && stock) {
             setStock(prev => {
                 if (!prev) return null;
-                if (prev.price === realtimeData.price) return prev;
 
                 return {
                     ...prev,
-                    price: realtimeData.price,
-                    change: realtimeData.change,
+                    price: realtimeData.price || prev.price,
+                    change: realtimeData.change || prev.change,
                     regular_close: realtimeData.regular_close || prev.regular_close,
-                    regular_change_pct: realtimeData.regular_change_pct || prev.regular_change_pct,
-                    regular_change_val: realtimeData.regular_change_val || prev.regular_change_val,
+                    regular_change_pct: (realtimeData.regular_change_pct !== undefined ? realtimeData.regular_change_pct : prev.regular_change_pct),
+                    regular_change_val: (realtimeData.regular_change_val !== undefined ? realtimeData.regular_change_val : prev.regular_change_val),
                     market_status: realtimeData.market_status || prev.market_status,
                     nxt_data: realtimeData.nxt_data || prev.nxt_data,
                     after_market_data: realtimeData.after_market_data || prev.after_market_data,
