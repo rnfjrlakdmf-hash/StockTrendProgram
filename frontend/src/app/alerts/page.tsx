@@ -487,10 +487,14 @@ function formatUsdToKrwInText(text: string): string {
             targetUrl = `/news-redirect?${params.toString()}`;
         }
 
-        // Distinct Glow Theme by Alert Type
-        let typeBadgeStyle = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-        let typeBadgeLabel = "🔔 일반 알림";
-        let cardBorderHover = "hover:border-white/25";
+        // Title and Body text analysis for smart categorization
+        const combinedText = `${alert.title || ''} ${alert.body || ''}`.toLowerCase();
+
+        let typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]";
+        let typeBadgeLabel = "📢 스마트 투자 알림";
+        let cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";
+        let accentBorder = "border-l-4 border-l-cyan-400";
+        let defaultCta = { href: "/discovery", label: "AI 종목 발굴 레이더 바로가기", icon: Sparkles, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
 
         const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || (alert.title && alert.title.includes('관심종목 결산'));
         const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || (alert.title && alert.title.includes('장마감 시황'));
@@ -499,42 +503,71 @@ function formatUsdToKrwInText(text: string): string {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
             typeBadgeLabel = "👑 관심종목 마감 결산";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+            defaultCta = { href: "/watchlist", label: "관심종목 포트폴리오 관리", icon: Crown, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         } else if (isMarketSummary) {
             typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
             typeBadgeLabel = "🌕 마켓 장마감 시황";
             cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
-        } else if (['whale_accumulation', 'whale_alert'].includes(alert.type)) {
-            typeBadgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]";
-            typeBadgeLabel = "🐳 세력·슈퍼개미 포착";
-            cardBorderHover = "hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)]";
+            accentBorder = "border-l-4 border-l-indigo-400";
+            defaultCta = { href: "/blog", label: "마켓 심층 브리핑 전문 읽기", icon: Globe, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
+        } else if (['whale_accumulation', 'whale_alert'].includes(alert.type) || combinedText.includes("외국인") || combinedText.includes("쓸어담은") || combinedText.includes("수급") || combinedText.includes("기관 순매수")) {
+            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
+            typeBadgeLabel = "🐳 외인·기관 수급 특보";
+            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
+            accentBorder = "border-l-4 border-l-blue-400";
+            defaultCta = { href: "/ranking", label: "실시간 외국인·기관 수급 순위 보기", icon: TrendingUp, style: "bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border-blue-500/30" };
+        } else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운") || combinedText.includes("급등주") || combinedText.includes("반도체") || combinedText.includes("2차전지")) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "⚡ 실시간 주도 테마 레이더";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+            defaultCta = { href: "/theme", label: "AI 주도 테마 맵 & 대장주 확인", icon: Zap, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         } else if (['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type)) {
             typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
             typeBadgeLabel = "🇺🇸 미국 SEC 공시";
             cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+            accentBorder = "border-l-4 border-l-emerald-400";
         } else if (isDisclosure) {
             typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
             typeBadgeLabel = "🇰🇷 DART 공시 속보";
             cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
-        } else if (alert.type === 'crypto_bull') {
+            accentBorder = "border-l-4 border-l-blue-400";
+        } else if (alert.type === 'crypto_bull' || combinedText.includes("코인") || combinedText.includes("비트코인")) {
             typeBadgeStyle = "bg-rose-500/20 text-rose-300 border-rose-500/40";
             typeBadgeLabel = "🔥 코인 불장 시그널";
             cardBorderHover = "hover:border-rose-500/40";
+            accentBorder = "border-l-4 border-l-rose-400";
         } else if (alert.type === 'ipo_alert') {
             typeBadgeStyle = "bg-pink-500/20 text-pink-300 border-pink-500/40";
             typeBadgeLabel = "🎯 공모주 레이더";
             cardBorderHover = "hover:border-pink-500/40";
+            accentBorder = "border-l-4 border-l-pink-400";
         } else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type)) {
             typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40";
             typeBadgeLabel = "📰 마켓 헤드라인";
             cardBorderHover = "hover:border-cyan-500/40";
+            accentBorder = "border-l-4 border-l-cyan-400";
+        } else if (combinedText.includes("시그널") || combinedText.includes("내일 장") || combinedText.includes("미국장")) {
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+            typeBadgeLabel = "🚦 글로벌 마켓 시그널";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+            accentBorder = "border-l-4 border-l-emerald-400";
+            defaultCta = { href: "/signals", label: "글로벌 마켓 시그널 확인", icon: Compass, style: "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30" };
+        } else if (combinedText.includes("리포트") || combinedText.includes("vip") || combinedText.includes("인사이트")) {
+            typeBadgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]";
+            typeBadgeLabel = "💎 VIP 프리미엄 리포트";
+            cardBorderHover = "hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)]";
+            accentBorder = "border-l-4 border-l-purple-400";
+            defaultCta = { href: "/premium", label: "VIP 프리미엄 리포트 열람", icon: Crown, style: "bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border-purple-500/30" };
         }
 
         const cardContent = (
-            <div className={`relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-zinc-950 border border-white/10 ${cardBorderHover} rounded-3xl p-5 md:p-6 transition-all duration-300 shadow-2xl w-full text-left overflow-hidden group`}>
+            <div className={`relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-black border border-white/10 ${accentBorder} ${cardBorderHover} rounded-3xl p-5 md:p-6 transition-all duration-300 shadow-2xl w-full text-left overflow-hidden group`}>
                 {/* Header Row: Type Badge + Market Badge + Timestamp */}
                 <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-3 border-b border-white/5">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-xl text-xs font-black border flex items-center gap-1.5 ${typeBadgeStyle}`}>
+                        <span className={`px-3 py-1 rounded-xl text-xs font-black border flex items-center gap-1.5 ${typeBadgeStyle}`}>
                             {typeBadgeLabel}
                         </span>
                         {marketBadge && (
@@ -557,7 +590,7 @@ function formatUsdToKrwInText(text: string): string {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base md:text-lg font-black text-white group-hover:text-amber-200 transition-colors leading-snug mb-2">
+                <h3 className="text-base md:text-lg font-black text-white group-hover:text-amber-200 transition-colors leading-snug mb-2.5">
                     {alert.title}
                 </h3>
 
@@ -565,13 +598,13 @@ function formatUsdToKrwInText(text: string): string {
                 {isPortfolio ? (
                     renderPortfolioCardContent(alert)
                 ) : (
-                    <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                    <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed font-normal">
                         {renderFormattedBody(alert.body)}
                     </div>
                 )}
 
                 {/* Action Buttons for Disclosures / Stocks */}
-                {isDisclosure && (
+                {isDisclosure ? (
                     <div className="flex flex-wrap gap-2.5 mt-5 pt-4 border-t border-white/10">
                         {symbol && (
                             <Link 
@@ -594,6 +627,26 @@ function formatUsdToKrwInText(text: string): string {
                                 공시 원문 보기
                             </a>
                         )}
+                    </div>
+                ) : !isPortfolio && (
+                    <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between">
+                        {targetUrl ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
+                                <span>상세 내용 확인하기</span>
+                                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </span>
+                        ) : defaultCta ? (
+                            <Link
+                                href={defaultCta.href}
+                                className={`w-full py-2.5 px-4 rounded-xl border text-xs md:text-sm font-bold transition-all flex items-center justify-between shadow-sm active:scale-95 ${defaultCta.style}`}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <defaultCta.icon className="w-4 h-4" />
+                                    {defaultCta.label}
+                                </span>
+                                <ChevronRight className="w-4 h-4" />
+                            </Link>
+                        ) : null}
                     </div>
                 )}
             </div>
