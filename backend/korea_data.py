@@ -465,8 +465,6 @@ def gather_naver_stock_data(symbol: str):
                 print(f"[Fallback Scraping] Failed to fetch PER/PBR for {code}: {e}")
 
         # [Restore & Real-time Patch] 네이버 모바일 통합 API(JSON)를 통한 100% 실시간 시세 보정
-        # yfinance의 15~20분 지연(Delay)을 극복하고, 네이버 HTML 크롤링 차단은 피하기 위해
-        # 상업적 이용 제재 가능성이 낮은 모바일 전용 JSON 엔드포인트를 덮어씌우기로 활용
         nxt_data = None
         try:
             url = f"https://stock.naver.com/api/securityService/integration/price?domesticKrxCodes={code}"
@@ -476,27 +474,49 @@ def gather_naver_stock_data(symbol: str):
                 data_root = res.json()
                 item = data_root.get('domesticKrx', {}).get(code)
                 if item:
-                    # 1. 100% 실시간 정규장 가격 보정 (yfinance 지연 극복)
+                    # 1. 100% 실시간 정규장 가격 보정
                     if item.get('currentPrice'):
-                        price = int(item['currentPrice'].replace(',', ''))
+                        try: price = int(str(item['currentPrice']).replace(',', ''))
+                        except: pass
                     if item.get('lastClosePrice'):
-                        prev_close = int(item['lastClosePrice'].replace(',', ''))
+                        try: prev_close = int(str(item['lastClosePrice']).replace(',', ''))
+                        except: pass
                     
-                    change_val = price - prev_close
-                    if prev_close > 0:
+                    # 변동 금액 및 등락률 정밀 계산
+                    if item.get('fluctuations'):
+                        try: change_val = int(str(item['fluctuations']).replace(',', ''))
+                        except: change_val = price - prev_close
+                    else:
+                        change_val = price - prev_close
+
+                    if item.get('fluctuationsRatio'):
+                        try:
+                            ratio_str = str(item['fluctuationsRatio']).replace('%', '').strip()
+                            reg_change_pct = float(ratio_str) if ratio_str else ((change_val / prev_close * 100) if prev_close > 0 else 0.0)
+                        except:
+                            reg_change_pct = (change_val / prev_close * 100) if prev_close > 0 else 0.0
+                    elif prev_close > 0:
                         reg_change_pct = (change_val / prev_close) * 100
                     else:
-                        reg_change_pct = float(item.get('fluctuationsRatio', 0))
+                        reg_change_pct = 0.0
                         
                     labeled_change_pct = f"[정규] {reg_change_pct:+.2f}%"
 
-                    # 2. 시간외(After-market) 거래 데이터 추출
+                    # 2. 시간외(After-market) 거래 데이터 안전 추출
                     m_info = item.get('overMarketPriceInfo')
                     if m_info and m_info.get('overPrice'):
-                        nxt_data = {
-                            "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
-                            "change_pct": float(m_info.get('fluctuationsRatio', 0))
-                        }
+                        try:
+                            ov_p_str = str(m_info.get('overPrice', '')).replace(',', '').strip()
+                            ov_p = float(ov_p_str) if ov_p_str else 0.0
+                            ov_r_str = str(m_info.get('fluctuationsRatio', '0')).replace('%', '').strip()
+                            ov_r = float(ov_r_str) if ov_r_str else 0.0
+                            if ov_p > 0:
+                                nxt_data = {
+                                    "price": f"{ov_p:,.0f}",
+                                    "change_pct": ov_r
+                                }
+                        except Exception:
+                            pass
         except Exception as e:
             print(f"[gather_naver_stock_data] Failed to fetch real-time JSON patch: {e}")
 

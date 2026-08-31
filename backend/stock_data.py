@@ -1146,12 +1146,18 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 except Exception as e:
                     market_status = yf_info.get('market_status', '장마감')
 
+                change_val = yf_info.get('change_val') or (yf_info.get('price', 0) - yf_info.get('prev_close', 0))
                 return {
                     "symbol": symbol,
                     "name": yf_info.get('name', symbol),
                     "price": price_str,
                     "change": change_pct_str,
                     "change_percent": change_pct_str,
+                    "change_val": change_val,
+                    "regular_change_val": change_val,
+                    "regular_change_pct": change_pct_val,
+                    "prev_close": yf_info.get('prev_close'),
+                    "regular_close": yf_info.get('regular_close') or raw_price,
                     "up": change_pct_val >= 0,
                     "currency": "KRW",
                     "market_status": market_status,

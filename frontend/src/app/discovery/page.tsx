@@ -1139,38 +1139,67 @@ function DiscoveryContent() {
                                                             />
                                                         </span>
 
-                                                        <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
-                                                            (() => {
-                                                                const val = extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
-                                                                return val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                                                                       val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                                                                       'bg-gray-500/10 border-white/10 text-gray-400';
-                                                            })()
-                                                        }`}>
-                                                            <span className="flex items-center gap-1">
-                                                                {(() => {
-                                                                    const val = extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''));
-                                                                    return val > 0 ? '▲' : val < 0 ? '▼' : '';
-                                                                })()}
-                                                                {Math.abs(extendedHours?.regular?.change ?? Number(String(stock.regular_change || stock.regular_change_val || stock.change_val || '0').replace(/,/g, ''))).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                            </span>
-                                                            <span className="text-sm md:text-base font-bold opacity-80 ml-1">
-                                                                ({(() => {
-                                                                    if (extendedHours?.regular?.change_pct !== undefined) {
-                                                                        const pct = extendedHours.regular.change_pct;
-                                                                        return `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
+                                                        {(() => {
+                                                            // Foolproof real-time price & change metric calculation
+                                                            const currentPriceNum = extendedHours?.regular?.price 
+                                                                ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                            const prevCloseNum = Number(String(stock.details?.prev_close || (stock as any).prev_close || (stock as any).previousClose || '0').replace(/,/g, ''));
+
+                                                            let changeVal = extendedHours?.regular?.change;
+                                                            if (changeVal === undefined || isNaN(changeVal)) {
+                                                                if (stock.regular_change_val !== undefined && Number(stock.regular_change_val) !== 0) {
+                                                                    changeVal = Number(stock.regular_change_val);
+                                                                } else if (stock.change_val !== undefined && Number(String(stock.change_val).replace(/,/g, '')) !== 0) {
+                                                                    changeVal = Number(String(stock.change_val).replace(/,/g, ''));
+                                                                } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                    changeVal = currentPriceNum - prevCloseNum;
+                                                                } else if (stock.change_percent || stock.change) {
+                                                                    const raw = String(stock.change_percent || stock.change || '0');
+                                                                    const parsedPct = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                    if (!isNaN(parsedPct) && prevCloseNum > 0) {
+                                                                        changeVal = Math.round(prevCloseNum * (parsedPct / 100));
+                                                                    } else {
+                                                                        changeVal = 0;
                                                                     }
-                                                                    const pct = stock.regular_change_percent || stock.regular_change_pct;
-                                                                    if (!pct || pct === 0) {
-                                                                        const raw = String(stock.change_percent || stock.change || '0.00%');
-                                                                        const num = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                        return isNaN(num) ? '0.00%' : `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
-                                                                    }
-                                                                    const n = typeof pct === 'number' ? pct : parseFloat(String(pct).replace(/[^\d.-]/g, ''));
-                                                                    return isNaN(n) ? String(pct) : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
-                                                                })()})
-                                                            </span>
-                                                        </div>
+                                                                } else {
+                                                                    changeVal = 0;
+                                                                }
+                                                            }
+
+                                                            let changePct = extendedHours?.regular?.change_pct;
+                                                            if (changePct === undefined || isNaN(changePct)) {
+                                                                if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
+                                                                    changePct = Number(stock.regular_change_pct);
+                                                                } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                    changePct = ((currentPriceNum - prevCloseNum) / prevCloseNum) * 100;
+                                                                } else if (stock.change_percent || stock.change) {
+                                                                    const raw = String(stock.change_percent || stock.change || '0');
+                                                                    const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                    changePct = isNaN(parsed) ? 0 : parsed;
+                                                                } else {
+                                                                    changePct = 0;
+                                                                }
+                                                            }
+
+                                                            const isUp = changeVal > 0 || (changeVal === 0 && changePct > 0);
+                                                            const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
+
+                                                            return (
+                                                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
+                                                                    isUp ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
+                                                                    isDown ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+                                                                    'bg-gray-500/10 border-white/10 text-gray-400'
+                                                                }`}>
+                                                                    <span className="flex items-center gap-1">
+                                                                        {isUp ? '▲' : isDown ? '▼' : ''}
+                                                                        {Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                                    </span>
+                                                                    <span className="text-sm md:text-base font-bold opacity-80 ml-1">
+                                                                        ({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })()}
 
                                                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
                                                             extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
