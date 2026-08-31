@@ -41,26 +41,71 @@ export function getPostCategory(title: string, tags: string[] = []) {
     const text = (title + " " + tags.join(" ")).toLowerCase();
     
     if (
+        text.includes("블랙스완") || text.includes("포트폴리오") || text.includes("자산배분") || 
+        text.includes("손절") || text.includes("물타기") || text.includes("절세") || 
+        text.includes("워런") || text.includes("피터 린치") || text.includes("심리학") || 
+        text.includes("dca") || text.includes("전략") || text.includes("생존") || text.includes("기초")
+    ) {
+        return { 
+            id: "strategy", 
+            label: "투자전략·이론", 
+            emoji: "💡", 
+            badge: "💡 실전 투자전략 & 리스크 관리", 
+            subBadge: "📚 포트폴리오 생존 가이드",
+            gradient: "from-emerald-950/40 via-zinc-900/90 to-black",
+            border: "border-emerald-500/30 hover:border-emerald-400",
+            glow: "bg-emerald-500/10 group-hover:bg-emerald-500/20",
+            btnColor: "from-emerald-500 to-teal-600 group-hover:from-emerald-400 group-hover:to-teal-500",
+            color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" 
+        };
+    }
+    if (
         text.includes("외국인") || text.includes("기관") || text.includes("수급") || 
         text.includes("순매수") || text.includes("세력") || text.includes("지분")
     ) {
-        return { id: "supply", label: "수급분석", emoji: "🐳", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" };
+        return { 
+            id: "supply", 
+            label: "수급분석", 
+            emoji: "🐳", 
+            badge: "🐳 외인·기관 수급 집중주", 
+            subBadge: "📊 스마트 머니 추적",
+            gradient: "from-blue-950/40 via-zinc-900/90 to-black",
+            border: "border-blue-500/30 hover:border-blue-400",
+            glow: "bg-blue-500/10 group-hover:bg-blue-500/20",
+            btnColor: "from-blue-500 to-indigo-600 group-hover:from-blue-400 group-hover:to-indigo-500",
+            color: "text-blue-400 bg-blue-500/10 border-blue-500/20" 
+        };
     }
     if (
         text.includes("테마") || text.includes("급등") || text.includes("대장주") || 
         text.includes("지역화폐") || text.includes("관련주") || text.includes("특징주") ||
         text.includes("모멘텀") || text.includes("상한가")
     ) {
-        return { id: "surging", label: "급등·테마", emoji: "🚀", color: "text-orange-400 bg-orange-500/10 border-orange-500/20" };
+        return { 
+            id: "surging", 
+            label: "급등·테마", 
+            emoji: "🚀", 
+            badge: "🔥 오늘의 핫이슈 테마 리포트", 
+            subBadge: "🚀 급등 주도 테마 분석",
+            gradient: "from-orange-950/40 via-zinc-900/90 to-black",
+            border: "border-orange-500/30 hover:border-orange-400",
+            glow: "bg-orange-500/10 group-hover:bg-orange-500/20",
+            btnColor: "from-orange-500 to-amber-600 group-hover:from-orange-400 group-hover:to-amber-500",
+            color: "text-orange-400 bg-orange-500/10 border-orange-500/20" 
+        };
     }
-    if (
-        text.includes("카카오") || text.includes("삼성전자") || text.includes("하이닉스") || 
-        text.includes("lg") || text.includes("hlb") || text.includes("알테오젠") || 
-        text.includes("실적") || text.includes("배당") || text.includes("주가")
-    ) {
-        return { id: "major", label: "종목분석", emoji: "🏢", color: "text-red-400 bg-red-500/10 border-red-500/20" };
-    }
-    return { id: "strategy", label: "투자전략", emoji: "💡", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" };
+    return { 
+        id: "major", 
+        label: "종목분석", 
+        emoji: "🏢", 
+        badge: "🏢 대형주 & 특징주 심층 분석", 
+        subBadge: "📊 기업 펀더멘털 & 주가 전망",
+        gradient: "from-red-950/40 via-zinc-900/90 to-black",
+        border: "border-red-500/30 hover:border-red-400",
+        glow: "bg-red-500/10 group-hover:bg-red-500/20",
+        btnColor: "from-red-500 to-rose-600 group-hover:from-red-400 group-hover:to-rose-500",
+        color: "text-red-400 bg-red-500/10 border-red-500/20" 
+    };
 }
 
 // 불필요한 공통 태그 정제 및 핵심 고유 키워드 추출
@@ -76,6 +121,18 @@ export function cleanPostTags(tags: string[] = []) {
 export default function PostListClient({ initialPosts, totalPages, currentPage }: PostListClientProps) {
     const [activeCategory, setActiveCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [clientPage, setClientPage] = useState(1);
+    const POSTS_PER_PAGE = 8; // 8개씩 깔끔하게 정돈
+
+    const handleCategoryChange = (catId: string) => {
+        setActiveCategory(catId);
+        setClientPage(1);
+    };
+
+    const handleSearchChange = (q: string) => {
+        setSearchQuery(q);
+        setClientPage(1);
+    };
 
     // 필터링 & 검색 적용
     const filteredPosts = useMemo(() => {
@@ -97,12 +154,18 @@ export default function PostListClient({ initialPosts, totalPages, currentPage }
         });
     }, [initialPosts, activeCategory, searchQuery]);
 
-    // 최신 대표 리포트 (첫 번째 글, 검색이나 카테고리 필터 없을 때 상단 와이드 하이라이트)
-    const featuredPost = (activeCategory === "all" && !searchQuery.trim() && currentPage === 1 && filteredPosts.length > 0) 
+    // 최신 대표 리포트 (첫 번째 글, 전체 1페이지일 때 상단 와이드 하이라이트)
+    const featuredPost = (activeCategory === "all" && !searchQuery.trim() && clientPage === 1 && filteredPosts.length > 0) 
         ? filteredPosts[0] 
         : null;
 
-    const listPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
+    const rawListPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
+    const totalClientPages = Math.ceil(rawListPosts.length / POSTS_PER_PAGE) || 1;
+    
+    const listPosts = useMemo(() => {
+        const start = (clientPage - 1) * POSTS_PER_PAGE;
+        return rawListPosts.slice(start, start + POSTS_PER_PAGE);
+    }, [rawListPosts, clientPage]);
 
     return (
         <div className="w-full">
@@ -115,7 +178,7 @@ export default function PostListClient({ initialPosts, totalPages, currentPage }
                         type="text"
                         placeholder="종목명, 테마, 수급 키워드 검색 (예: 카카오, 지역화폐, 삼성전자, 외국인 순매수...)"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         className="w-full pl-12 pr-4 py-3.5 bg-black/60 border border-white/10 rounded-2xl text-white placeholder-gray-500 font-medium focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all text-sm md:text-base"
                     />
                     {searchQuery && (
@@ -138,7 +201,7 @@ export default function PostListClient({ initialPosts, totalPages, currentPage }
                         return (
                             <button
                                 key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
+                                onClick={() => handleCategoryChange(cat.id)}
                                 className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                     isActive
                                         ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/20 border border-red-400/50 scale-105"
@@ -165,62 +228,65 @@ export default function PostListClient({ initialPosts, totalPages, currentPage }
                 </div>
             </div>
 
-            {/* 1. 최신 대표 리포트 하이라이트 (Featured Card) */}
-            {featuredPost && (
-                <div className="mb-8">
-                    <Link href={`/post/${featuredPost.slug}`} className="block group">
-                        <article className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-950/40 via-zinc-900/90 to-black border-2 border-red-500/30 hover:border-red-400 p-6 md:p-8 transition-all duration-300 shadow-2xl hover:shadow-red-500/15 group-hover:-translate-y-1">
-                            <div className="absolute top-0 right-0 w-80 h-80 bg-red-500/10 blur-3xl rounded-full pointer-events-none group-hover:bg-red-500/20 transition-all duration-500" />
-                            
-                            <div className="relative z-10">
-                                <div className="flex flex-wrap items-center gap-2 mb-4">
-                                    <span className="inline-flex items-center gap-1 text-xs font-black text-red-300 bg-red-500/20 border border-red-500/40 px-3 py-1 rounded-full shadow-sm">
-                                        <Flame className="w-3.5 h-3.5 text-orange-400 animate-pulse" /> 오늘의 핫이슈 리포트
-                                    </span>
-                                    <span className="text-xs font-bold text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-                                        📊 종목 심층 분석
-                                    </span>
-                                    {cleanPostTags(featuredPost.tags).map((tag, idx) => (
-                                        <span key={idx} className="text-xs font-semibold text-red-400/90 bg-red-500/10 px-2.5 py-0.5 rounded-md border border-red-500/20">
-                                            #{tag}
+            {/* 1. 최신 대표 리포트 하이라이트 (Featured Card - 주제별 맞춤 뱃지 및 테마) */}
+            {featuredPost && (() => {
+                const featCat = getPostCategory(featuredPost.title, featuredPost.tags);
+                return (
+                    <div className="mb-8">
+                        <Link href={`/post/${featuredPost.slug}`} className="block group">
+                            <article className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${featCat.gradient} border-2 ${featCat.border} p-6 md:p-8 transition-all duration-300 shadow-2xl group-hover:-translate-y-1`}>
+                                <div className={`absolute top-0 right-0 w-80 h-80 ${featCat.glow} blur-3xl rounded-full pointer-events-none transition-all duration-500`} />
+                                
+                                <div className="relative z-10">
+                                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                                        <span className={`inline-flex items-center gap-1 text-xs font-black px-3 py-1 rounded-full shadow-sm border ${featCat.color}`}>
+                                            {featCat.badge}
                                         </span>
-                                    ))}
-                                </div>
-
-                                <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white group-hover:text-red-300 transition-colors mb-4 tracking-tight leading-snug">
-                                    {featuredPost.title}
-                                </h2>
-
-                                <p className="text-gray-300 text-sm md:text-base leading-relaxed line-clamp-2 md:line-clamp-3 mb-6 max-w-4xl font-normal">
-                                    {(featuredPost?.content || "").replace(/<[^>]*>?/gm, "").replace(/&nbsp;/g, " ").trim().slice(0, 200)}...
-                                </p>
-
-                                <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                                    <div className="flex items-center text-xs md:text-sm text-gray-400 font-medium gap-4">
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="w-3.5 h-3.5 text-red-400" />
-                                            {new Date(featuredPost.createdAt).toLocaleDateString("ko-KR", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                                timeZone: "Asia/Seoul",
-                                            })}
+                                        <span className="text-xs font-bold text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+                                            {featCat.subBadge}
                                         </span>
-                                        <span className="flex items-center gap-1">
-                                            <Eye className="w-3.5 h-3.5 text-gray-500" />
-                                            {featuredPost.viewCount}회 조회
-                                        </span>
+                                        {cleanPostTags(featuredPost.tags).map((tag, idx) => (
+                                            <span key={idx} className="text-xs font-semibold text-gray-300 bg-white/5 px-2.5 py-0.5 rounded-md border border-white/10">
+                                                #{tag}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <div className="inline-flex items-center gap-1.5 text-xs md:text-sm font-bold text-white bg-gradient-to-r from-red-500 to-rose-600 px-4 py-2 rounded-xl group-hover:from-red-400 group-hover:to-rose-500 transition-all shadow-md">
-                                        리포트 분석 보기
-                                        <ChevronRight className="w-4 h-4" />
+
+                                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white group-hover:text-amber-300 transition-colors mb-4 tracking-tight leading-snug">
+                                        {featuredPost.title}
+                                    </h2>
+
+                                    <p className="text-gray-300 text-sm md:text-base leading-relaxed line-clamp-2 md:line-clamp-3 mb-6 max-w-4xl font-normal">
+                                        {(featuredPost?.content || "").replace(/<[^>]*>?/gm, "").replace(/&nbsp;/g, " ").trim().slice(0, 200)}...
+                                    </p>
+
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                                        <div className="flex items-center text-xs md:text-sm text-gray-400 font-medium gap-4">
+                                            <span className="flex items-center gap-1">
+                                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                                {new Date(featuredPost.createdAt).toLocaleDateString("ko-KR", {
+                                                    year: "numeric",
+                                                    month: "long",
+                                                    day: "numeric",
+                                                    timeZone: "Asia/Seoul",
+                                                })}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Eye className="w-3.5 h-3.5 text-gray-500" />
+                                                {featuredPost.viewCount}회 조회
+                                            </span>
+                                        </div>
+                                        <div className={`inline-flex items-center gap-1.5 text-xs md:text-sm font-bold text-white bg-gradient-to-r ${featCat.btnColor} px-4 py-2 rounded-xl transition-all shadow-md`}>
+                                            리포트 분석 보기
+                                            <ChevronRight className="w-4 h-4" />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </article>
-                    </Link>
-                </div>
-            )}
+                            </article>
+                        </Link>
+                    </div>
+                );
+            })()}
 
             {/* 2. 깔끔한 2열 그리드 카드 리스트 */}
             {listPosts.length === 0 && !featuredPost ? (
@@ -228,7 +294,7 @@ export default function PostListClient({ initialPosts, totalPages, currentPage }
                     <TrendingUp className="w-12 h-12 text-gray-500 mx-auto mb-3 opacity-50" />
                     <p className="text-gray-400 font-medium">검색 조건에 맞는 분석 리포트가 없습니다.</p>
                     <button
-                        onClick={() => { setActiveCategory("all"); setSearchQuery(""); }}
+                        onClick={() => { handleCategoryChange("all"); handleSearchChange(""); }}
                         className="mt-4 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold hover:bg-red-500/30 transition-all"
                     >
                         전체 리포트 목록으로 돌아가기
@@ -298,47 +364,42 @@ export default function PostListClient({ initialPosts, totalPages, currentPage }
                 </div>
             )}
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {/* 깔끔한 페이지네이션 (8개씩 쾌적하게 분할 탐색) */}
+            {totalClientPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-12 pb-4">
-                    {currentPage > 1 && (
-                        <Link 
-                            href={`/post?page=${currentPage - 1}`} 
-                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                    {clientPage > 1 && (
+                        <button 
+                            onClick={() => { setClientPage(prev => Math.max(prev - 1, 1)); window.scrollTo({ top: 350, behavior: 'smooth' }); }}
+                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
                         >
                             <ChevronRight className="w-5 h-5 rotate-180" />
-                        </Link>
+                        </button>
                     )}
                     
-                    {Array.from({ length: totalPages }).map((_, idx) => {
+                    {Array.from({ length: totalClientPages }).map((_, idx) => {
                         const pageNum = idx + 1;
-                        if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
-                            return (
-                                <Link 
-                                    key={pageNum} 
-                                    href={`/post?page=${pageNum}`}
-                                    className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                                        currentPage === pageNum 
-                                            ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/20 border border-red-400/50 scale-105" 
-                                            : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
-                                    }`}
-                                >
-                                    {pageNum}
-                                </Link>
-                            );
-                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                            return <span key={pageNum} className="text-gray-600 px-1">...</span>;
-                        }
-                        return null;
+                        return (
+                            <button 
+                                key={pageNum} 
+                                onClick={() => { setClientPage(pageNum); window.scrollTo({ top: 350, behavior: 'smooth' }); }}
+                                className={`flex items-center justify-center w-10 h-10 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                                    clientPage === pageNum 
+                                        ? "bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/20 border border-red-400/50 scale-105" 
+                                        : "bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                                }`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
                     })}
 
-                    {currentPage < totalPages && (
-                        <Link 
-                            href={`/post?page=${currentPage + 1}`} 
-                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all"
+                    {clientPage < totalClientPages && (
+                        <button 
+                            onClick={() => { setClientPage(prev => Math.min(prev + 1, totalClientPages)); window.scrollTo({ top: 350, behavior: 'smooth' }); }}
+                            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
                         >
                             <ChevronRight className="w-5 h-5" />
-                        </Link>
+                        </button>
                     )}
                 </div>
             )}
