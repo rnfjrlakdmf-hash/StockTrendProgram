@@ -17,15 +17,15 @@ const navigationGroups = [
         groupName: "홈 & 대시보드",
         items: [
             { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다." },
-            { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다." },
-            { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다." },
+            { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다.", badge: "LIVE" },
+            { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다.", badge: "HOT" },
         ]
     },
     {
         groupName: "프리미엄 & 리포트",
         items: [
-            { name: "주식 고수 랭킹 (VIP)", href: "/ranking", icon: Trophy, desc: "전국 주식 고수들의 포트폴리오 수익률과 명예의 전당 랭킹입니다." },
-            { name: "VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다." },
+            { name: "주식 고수 랭킹", href: "/ranking", icon: Trophy, desc: "전국 주식 고수들의 포트폴리오 수익률과 명예의 전당 랭킹입니다.", badge: "VIP" },
+            { name: "VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다.", badge: "PRO" },
             { name: "주말 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "주말에 발행되는 프리미엄 마켓 요약 리포트입니다." },
             { name: "주말 고래 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "세력과 외국인이 매집한 TOP 10 종목을 파헤치는 주말 프리미엄 리포트입니다." },
             { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다." },
@@ -35,7 +35,7 @@ const navigationGroups = [
     {
         groupName: "종목 발굴 & 분석",
         items: [
-            { name: "종목 발굴 & 분석", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다." },
+            { name: "종목 발굴 & 분석", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다.", badge: "AI" },
             { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사의 실적, 부채, 밸류에이션 등 재무 건전성을 체계적으로 검사합니다." },
             { name: "기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스, 지지선/저항선, 캔들 차트 패턴을 정밀 분석합니다." },
             { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity, desc: "시장 전체나 유망 산업 분야에 분산 투자할 수 있는 ETF를 비교합니다." },
@@ -47,7 +47,7 @@ const navigationGroups = [
         items: [
             { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
             { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
-            { name: "물타기 평단 계산기", href: "/calculator", icon: Calculator, desc: "추가 매수 시 변화하는 평단가와 탈출 시나리오를 계산합니다." },
+            { name: "물타기 평단 계산기", href: "/calculator", icon: Calculator, desc: "추가 매수 시 변화하는 평단가와 탈출 시나리오를 계산합니다.", badge: "NEW" },
         ]
     },
     {
@@ -399,156 +399,182 @@ export default function Sidebar() {
             {/* Mobile Toggle Button */}
             <button
                 onClick={() => setIsMobileOpen(true)}
-                className="md:hidden fixed top-3 left-4 z-[110] p-2 rounded-lg bg-black/80 text-white border border-white/20 hover:bg-white/10 backdrop-blur-md shadow-xl"
+                className="md:hidden fixed top-3 left-4 z-[110] p-2.5 rounded-2xl bg-zinc-900/90 text-white border border-white/15 hover:bg-zinc-800 backdrop-blur-xl shadow-2xl active:scale-95 transition-all"
+                aria-label="메뉴 열기"
             >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5 text-orange-400" />
             </button>
 
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div
-                    className="fixed inset-0 z-[1001] bg-black/80 backdrop-blur-sm md:hidden"
+                    className="fixed inset-0 z-[1001] bg-black/80 backdrop-blur-md md:hidden animate-in fade-in duration-200"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
 
-            <div className={`
-                fixed inset-y-0 left-0 z-[1002] h-full w-80 flex flex-col justify-between border-r border-white/5 bg-black/60 backdrop-blur-2xl text-white p-4 pt-24 md:pt-4 transition-transform duration-300 ease-in-out shadow-[4px_0_24px_rgba(0,0,0,0.5)]
+            {/* Ultra-Luxury VIP Sidebar Container */}
+            <aside className={`
+                fixed inset-y-0 left-0 z-[1002] h-full w-80 flex flex-col justify-between border-r border-white/10 bg-gradient-to-b from-zinc-950/95 via-zinc-900/95 to-black text-white p-4 pt-20 md:pt-4 transition-transform duration-300 ease-out shadow-[10px_0_30px_rgba(0,0,0,0.8)] backdrop-blur-2xl
                 md:relative md:translate-x-0 md:flex
                 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 {/* Mobile Close Button */}
                 <button
                     onClick={() => setIsMobileOpen(false)}
-                    className="absolute top-6 right-4 p-2 text-gray-400 hover:text-white md:hidden z-10 bg-black/20 rounded-full"
+                    className="absolute top-5 right-4 p-2 text-zinc-400 hover:text-white md:hidden z-10 bg-white/10 hover:bg-white/20 rounded-full transition-colors active:scale-95"
+                    aria-label="메뉴 닫기"
                 >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 w-5" />
                 </button>
-                <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-4">
-                    <div className="flex flex-col gap-2.5 px-2 py-4 mb-8 border-b border-white/5 pb-5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                {/* Dynamic spinning global globe/clock icon */}
-                                <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20">
-                                    <Globe 
-                                        className="w-4 h-4 text-blue-200" 
-                                        style={{ animation: 'spin 15s linear infinite' }}
-                                    />
-                                    {/* Pulsing dot indicating real-time activity */}
-                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black animate-ping" />
-                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-black" />
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar pb-4 space-y-5">
+                    
+                    {/* 1. VIP Brand Logo & Real-time Global Clocks Header */}
+                    <div className="p-4 rounded-3xl bg-gradient-to-br from-white/[0.04] to-zinc-950/80 border border-white/10 shadow-lg space-y-4 relative overflow-hidden">
+                        <div className="absolute -right-8 -top-8 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+                        
+                        {/* Brand Logo Row */}
+                        <div className="flex items-center justify-between relative z-10">
+                            <Link href="/" className="flex items-center gap-2.5 group">
+                                <div className="relative flex items-center justify-center w-9 h-9 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-yellow-400 text-black shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
+                                    <Sparkles className="w-5 h-5 text-black font-black animate-pulse" />
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-black animate-ping" />
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-black" />
                                 </div>
-                                <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-indigo-300 to-purple-400">
-                                    STOCK AI
-                                </span>
-                            </div>
-                            
-                            {/* [Upgraded] Time Sync Badge */}
+                                <div className="flex flex-col">
+                                    <span className="text-base font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-200 to-yellow-300">
+                                        STOCK TREND
+                                    </span>
+                                    <span className="text-[9px] font-bold text-zinc-400 tracking-widest uppercase flex items-center gap-1 font-mono">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        VIP QUANT TERMINAL
+                                    </span>
+                                </div>
+                            </Link>
+
+                            {/* Active Market Sync Indicator */}
                             {(() => {
                                 const activeCount = (clocks.isKorOpen ? 1 : 0) + (clocks.isUsaOpen ? 1 : 0) + (clocks.isJpnOpen ? 1 : 0) + (clocks.isUkOpen ? 1 : 0);
                                 return (
-                                    <div className="flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md border border-white/10" suppressHydrationWarning>
-                                        <span className="text-[8px] text-blue-400 font-bold uppercase tracking-wider">Sync</span>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${activeCount > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-gray-600'}`} />
-                                        <span className={`text-[9px] font-bold ${activeCount > 0 ? 'text-emerald-400' : 'text-gray-500'}`}>
-                                            {activeCount} OPEN
+                                    <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-white/10 shadow-inner" suppressHydrationWarning>
+                                        <span className={`w-2 h-2 rounded-full ${activeCount > 0 ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-zinc-600'}`} />
+                                        <span className={`text-[10px] font-black font-mono ${activeCount > 0 ? 'text-emerald-300' : 'text-zinc-500'}`}>
+                                            {activeCount}개장
                                         </span>
                                     </div>
                                 );
                             })()}
                         </div>
 
-                        {/* Ultra-sleek Micro Global Clocks Grid */}
-                        <div className="grid grid-cols-2 gap-1.5 mt-1">
+                        {/* 4 Global Clocks Grid */}
+                        <div className="grid grid-cols-2 gap-2 pt-1 relative z-10">
                             {/* KOR Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isKorOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
-                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                    <span className="text-xs">🇰🇷</span>
-                                    <div className="flex flex-col">
-                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isKorOpen ? 'text-emerald-400' : 'text-gray-500'}`}>SEOUL</span>
-                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isKorOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.korTime}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isKorOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
-                                        {clocks.isKorOpen ? 'OPEN' : 'CLOSE'}
+                            <div className={`p-2.5 rounded-2xl border transition-all ${
+                                clocks.isKorOpen 
+                                    ? 'border-emerald-500/40 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                                    : 'border-white/5 bg-black/40'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
+                                        <span>🇰🇷</span> 서울
                                     </span>
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isKorOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
+                                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                        clocks.isKorOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-600 bg-white/5'
+                                    }`}>
+                                        {clocks.isKorOpen ? 'OPEN' : 'CLOSED'}
+                                    </span>
+                                </div>
+                                <div className={`text-xs font-mono font-black ${clocks.isKorOpen ? 'text-emerald-200' : 'text-zinc-400'}`} suppressHydrationWarning>
+                                    {clocks.korTime || '09:00:00'}
                                 </div>
                             </div>
 
                             {/* USA Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isUsaOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
-                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                    <span className="text-xs">🇺🇸</span>
-                                    <div className="flex flex-col">
-                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isUsaOpen ? 'text-emerald-400' : 'text-gray-500'}`}>NEW YORK</span>
-                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isUsaOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.usaTime}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isUsaOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
-                                        {clocks.isUsaOpen ? 'OPEN' : 'CLOSE'}
+                            <div className={`p-2.5 rounded-2xl border transition-all ${
+                                clocks.isUsaOpen 
+                                    ? 'border-emerald-500/40 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
+                                    : 'border-white/5 bg-black/40'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
+                                        <span>🇺🇸</span> 뉴욕
                                     </span>
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isUsaOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
+                                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                        clocks.isUsaOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-600 bg-white/5'
+                                    }`}>
+                                        {clocks.isUsaOpen ? 'OPEN' : 'CLOSED'}
+                                    </span>
+                                </div>
+                                <div className={`text-xs font-mono font-black ${clocks.isUsaOpen ? 'text-emerald-200' : 'text-zinc-400'}`} suppressHydrationWarning>
+                                    {clocks.usaTime || '22:30:00'}
                                 </div>
                             </div>
 
                             {/* JPN Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isJpnOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
-                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                    <span className="text-xs">🇯🇵</span>
-                                    <div className="flex flex-col">
-                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isJpnOpen ? 'text-emerald-400' : 'text-gray-500'}`}>TOKYO</span>
-                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isJpnOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.jpnTime}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isJpnOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
-                                        {clocks.isJpnOpen ? 'OPEN' : 'CLOSE'}
+                            <div className={`p-2.5 rounded-2xl border transition-all ${
+                                clocks.isJpnOpen 
+                                    ? 'border-emerald-500/40 bg-emerald-950/20' 
+                                    : 'border-white/5 bg-black/40'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
+                                        <span>🇯🇵</span> 도쿄
                                     </span>
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isJpnOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
+                                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                        clocks.isJpnOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-600 bg-white/5'
+                                    }`}>
+                                        {clocks.isJpnOpen ? 'OPEN' : 'CLOSED'}
+                                    </span>
+                                </div>
+                                <div className={`text-xs font-mono font-black ${clocks.isJpnOpen ? 'text-emerald-200' : 'text-zinc-400'}`} suppressHydrationWarning>
+                                    {clocks.jpnTime || '09:00:00'}
                                 </div>
                             </div>
 
                             {/* UK Clock */}
-                            <div className={`flex items-center justify-between p-2 rounded-xl border ${clocks.isUkOpen ? 'border-emerald-500/40 bg-emerald-950/30' : 'border-white/5 bg-zinc-900/40'}`}>
-                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                    <span className="text-xs">🇬🇧</span>
-                                    <div className="flex flex-col">
-                                        <span className={`text-[8px] font-black uppercase tracking-wider leading-none ${clocks.isUkOpen ? 'text-emerald-400' : 'text-gray-500'}`}>LONDON</span>
-                                        <span className={`text-[10px] font-mono font-bold mt-0.5 ${clocks.isUkOpen ? 'text-emerald-100' : 'text-gray-300'}`} suppressHydrationWarning>{clocks.ukTime}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <span className={`text-[8px] font-black tracking-widest ${clocks.isUkOpen ? 'text-emerald-400' : 'text-gray-600'}`}>
-                                        {clocks.isUkOpen ? 'OPEN' : 'CLOSE'}
+                            <div className={`p-2.5 rounded-2xl border transition-all ${
+                                clocks.isUkOpen 
+                                    ? 'border-emerald-500/40 bg-emerald-950/20' 
+                                    : 'border-white/5 bg-black/40'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
+                                        <span>🇬🇧</span> 런던
                                     </span>
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${clocks.isUkOpen ? 'bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]' : 'bg-gray-700'}`} />
+                                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                        clocks.isUkOpen ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-zinc-600 bg-white/5'
+                                    }`}>
+                                        {clocks.isUkOpen ? 'OPEN' : 'CLOSED'}
+                                    </span>
+                                </div>
+                                <div className={`text-xs font-mono font-black ${clocks.isUkOpen ? 'text-emerald-200' : 'text-zinc-400'}`} suppressHydrationWarning>
+                                    {clocks.ukTime || '16:00:00'}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 텔레그램 속보 채널 배너 */}
-                    <div className="px-2 mb-5">
+                    {/* 2. VIP Telegram Live News Channel Banner */}
+                    <div>
                         <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer">
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950/60 to-slate-900/80 p-3.5 border border-blue-500/30 hover:border-blue-400/50 shadow-lg hover:shadow-blue-500/10 transition-all group cursor-pointer">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex flex-col min-w-0">
-                                        <div className="flex items-center gap-1 mb-1">
-                                            <span className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider border border-blue-500/30">
-                                                <Zap className="w-2.5 h-2.5 text-yellow-400" /> 실시간 속보 채널
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-950/60 via-indigo-950/50 to-zinc-950 p-4 border border-blue-500/30 hover:border-blue-400/60 shadow-lg hover:shadow-blue-500/10 transition-all group cursor-pointer">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex flex-col min-w-0 space-y-0.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-500/30">
+                                                <Zap className="w-2.5 h-2.5 text-yellow-400 animate-pulse" /> 텔레그램 속보
                                             </span>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
                                         </div>
-                                        <h3 className="text-xs md:text-[13px] font-black text-white leading-tight">
-                                            텔레그램 실시간 주식 속보
+                                        <h3 className="text-xs font-black text-white group-hover:text-blue-300 transition-colors">
+                                            실시간 세력 수급 &amp; 공시
                                         </h3>
-                                        <p className="text-[10px] text-gray-400 leading-snug mt-0.5 truncate">
-                                            장중 급등주, 외인수급, DART 공시 무료 알림
+                                        <p className="text-[10px] text-zinc-400 truncate">
+                                            장중 급등주 무료 즉시 알림
                                         </p>
                                     </div>
-                                    <div className="shrink-0 bg-blue-500/15 border border-blue-500/30 p-2 rounded-xl group-hover:bg-blue-500/25 group-hover:scale-105 transition-all text-blue-300">
+                                    <div className="shrink-0 bg-blue-500/20 border border-blue-500/40 p-2.5 rounded-2xl group-hover:bg-blue-500 group-hover:text-black transition-all text-blue-300 shadow-md group-hover:scale-105">
                                         <Send className="w-4 h-4" />
                                     </div>
                                 </div>
@@ -556,48 +582,60 @@ export default function Sidebar() {
                         </Link>
                     </div>
 
-                    {/* 깔끔하고 정돈된 카테고리 네비게이션 */}
-                    <nav className="space-y-3 px-1">
+                    {/* 3. Luxury Category Navigation Menu */}
+                    <nav className="space-y-4">
                         {navigationGroups.map((group) => {
-                            const isOpen = openGroups[group.groupName];
+                            const isOpen = openGroups[group.groupName] ?? true;
                             return (
-                                <div key={group.groupName} className="flex flex-col">
+                                <div key={group.groupName} className="space-y-1">
                                     <button
                                         onClick={() => toggleGroup(group.groupName)}
-                                        className="flex items-center justify-between px-2.5 py-1.5 w-full text-left group hover:bg-white/5 rounded-xl transition-colors mb-0.5"
+                                        className="flex items-center justify-between px-3 py-2 w-full text-left group hover:bg-white/5 rounded-2xl transition-colors cursor-pointer"
                                     >
-                                        <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider group-hover:text-blue-400 transition-colors">
+                                        <span className="text-[11px] font-black text-zinc-400 uppercase tracking-wider group-hover:text-orange-400 transition-colors">
                                             {group.groupName}
                                         </span>
                                         {isOpen ? (
-                                            <ChevronDown className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                            <ChevronDown className="w-3.5 h-3.5 text-zinc-500 group-hover:text-orange-400 transition-colors" />
                                         ) : (
-                                            <ChevronRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                                            <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-orange-400 transition-colors" />
                                         )}
                                     </button>
                                     
                                     {isOpen && (
-                                        <div className="space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-200 pl-0.5">
-                                            {group.items.filter(item => !(item as any).hidden).map((item) => {
+                                        <div className="space-y-1 animate-in slide-in-from-top-1 fade-in duration-200">
+                                            {group.items.filter(item => !(item as any).hidden).map((item: any) => {
                                                 const isActive = pathname === item.href;
 
                                                 return (
                                                     <Link
                                                         key={item.name}
                                                         href={item.href}
-                                                        onClick={() => {
-                                                            setIsMobileOpen(false);
-                                                        }}
-                                                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] transition-all font-medium ${
+                                                        onClick={() => setIsMobileOpen(false)}
+                                                        className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-[13px] transition-all font-semibold group relative ${
                                                             isActive
-                                                                ? 'bg-blue-600/15 text-blue-300 font-black border border-blue-500/30 shadow-sm'
-                                                                : 'text-gray-400 hover:text-gray-100 hover:bg-white/5 border border-transparent'
+                                                                ? 'bg-gradient-to-r from-orange-500/20 via-amber-500/15 to-transparent text-amber-200 font-black border border-orange-500/40 shadow-lg shadow-orange-500/5'
+                                                                : 'text-zinc-400 hover:text-white hover:bg-white/[0.06] border border-transparent'
                                                         }`}
                                                     >
-                                                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${
-                                                            isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'
-                                                        }`} />
-                                                        <span className="truncate">{item.name}</span>
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <item.icon className={`h-4 w-4 shrink-0 transition-colors ${
+                                                                isActive ? 'text-orange-400' : 'text-zinc-500 group-hover:text-amber-300'
+                                                            }`} />
+                                                            <span className="truncate">{item.name}</span>
+                                                        </div>
+
+                                                        {/* Feature Badge */}
+                                                        {item.badge && (
+                                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0 shadow-sm ${
+                                                                item.badge === 'VIP' ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black' :
+                                                                item.badge === 'HOT' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
+                                                                item.badge === 'LIVE' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse' :
+                                                                'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                                            }`}>
+                                                                {item.badge}
+                                                            </span>
+                                                        )}
                                                     </Link>
                                                 );
                                             })}
@@ -607,11 +645,12 @@ export default function Sidebar() {
                             );
                         })}
 
+                        {/* Admin Link */}
                         {(user?.email?.toLowerCase() === "rnfjr@gmail.com" || user?.email?.toLowerCase() === "rnfjrlakdmf@gmail.com") && (
                             <Link
                                 href="/admin"
                                 onClick={() => setIsMobileOpen(false)}
-                                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/20 transition-all hover:bg-fuchsia-900/40 hover:text-fuchsia-200 mt-2"
+                                className="flex items-center gap-2.5 rounded-2xl px-3.5 py-3 text-xs font-bold bg-fuchsia-950/40 text-fuchsia-300 border border-fuchsia-500/30 transition-all hover:bg-fuchsia-900/50 hover:text-fuchsia-200 mt-2"
                             >
                                 <Shield className="h-4 w-4 text-fuchsia-400" />
                                 <span>관리자 센터 👑</span>
@@ -619,119 +658,73 @@ export default function Sidebar() {
                         )}
                     </nav>
 
-                    {/* [New] Watchlist Preview Section */}
+                    {/* 4. Watchlist Preview Section */}
                     {user && watchlistPreview.length > 0 && (
-                        <div className="mt-6 px-1">
-                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 mb-2 flex items-center justify-between">
-                                최근 관심종목
-                                <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[8px]">{watchlistPreview.length}</span>
+                        <div className="mt-4 p-4 rounded-3xl bg-zinc-950/80 border border-white/10 space-y-2">
+                            <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                                <span>⭐ 최근 관심종목</span>
+                                <span className="bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full text-[9px] font-bold font-mono">{watchlistPreview.length}</span>
                             </h4>
-                            <div className="space-y-1">
+                            <div className="space-y-1.5 pt-1">
                                 {watchlistPreview.map((stock, idx) => (
                                     <Link
                                         key={stock.code || idx}
                                         href={`/discovery?q=${(stock.code || '').split('.')[0]}`}
                                         onClick={() => setIsMobileOpen(false)}
-                                        className="flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5 cursor-pointer"
+                                        className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5"
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden">
-                                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400/20 group-hover:fill-yellow-400 transition-all" />
+                                            <Star className="w-3 h-3 text-amber-400 fill-amber-400/20 group-hover:fill-amber-400 transition-all" />
                                             <span className="truncate">{stock.name}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-[9px] font-mono text-gray-500 group-hover:text-blue-300 transition-colors uppercase">{stock.code}</span>
-                                            <TrendingUp className="w-3 h-3 text-rose-500/50 group-hover:text-rose-500" />
-                                        </div>
+                                        <span className="text-[10px] font-mono text-zinc-500 group-hover:text-amber-300 transition-colors uppercase">{stock.code}</span>
                                     </Link>
                                 ))}
                                 <Link
                                     href="/watchlist"
                                     onClick={() => setIsMobileOpen(false)}
-                                    className="block text-[10px] text-center text-gray-500 hover:text-blue-400 mt-1 py-1 transition-colors font-bold"
+                                    className="block text-[11px] text-center text-zinc-400 hover:text-orange-400 pt-2 transition-colors font-bold"
                                 >
-                                    전체보기 →
+                                    관심종목 전체보기 →
                                 </Link>
                             </div>
                         </div>
                     )}
                 </div>
                 
-                {/* Bottom Section */}
-                <div className="mt-auto space-y-2.5 pt-3 border-t border-white/10">
-                    {/* 1. Reward/Timer block */}
-                    {isPro ? (
-                        <div className="rounded-2xl bg-zinc-900/80 p-3 border border-white/10 shadow-lg flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5 text-blue-300 font-black text-xs">
-                                <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                                <span>프리미엄 혜택 이용중</span>
+                {/* Bottom Section: VIP Status & User Profile */}
+                <div className="mt-auto space-y-3 pt-4 border-t border-white/10">
+                    {/* VIP All-Access Card */}
+                    <div className="rounded-2xl bg-gradient-to-r from-orange-500/15 via-amber-500/10 to-zinc-950 p-3.5 border border-orange-500/30 shadow-lg flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-amber-300 font-black text-xs">
+                                <Crown className="w-3.5 h-3.5 text-yellow-400" />
+                                <span>VIP 올액세스 패스</span>
                             </div>
-                            <p className="text-[10px] text-gray-400 leading-tight">모든 종목 분석과 리포트를 무료로 이용하고 계십니다.</p>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                전면 무료 개방
+                            </span>
                         </div>
-                    ) : (
-                        <div className="rounded-2xl bg-zinc-900/80 p-3 border border-white/10 shadow-lg relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-1.5 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Timer className="w-12 h-12 text-white" />
-                            </div>
+                        <p className="text-[10px] text-zinc-400 leading-relaxed pt-0.5">모든 AI 퀀트 분석과 VIP 리포트를 무제한 이용 중입니다.</p>
+                    </div>
 
-                            <div className="flex justify-between items-start mb-1.5">
-                                <div>
-                                    <p className="text-[11px] font-bold text-blue-200 mb-0.5 flex items-center gap-1.5">
-                                        <Zap className="w-3 h-3 text-yellow-400" /> 퀀트 분석 무료 이용
-                                    </p>
-                                    <p className="text-[9px] text-gray-400">광고 시청 시 기능 개방</p>
+                    {/* User Profile / Login */}
+                    {user && !user.is_guest ? (
+                        <div className="rounded-2xl bg-zinc-950/80 p-3 border border-white/10 flex items-center justify-between gap-3 shadow-lg">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-black text-black text-xs shadow-md shrink-0">
+                                    {user.name?.[0] || 'U'}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-black text-white truncate">{user.name || 'VIP 회원'}</p>
+                                    <p className="text-[10px] text-zinc-400 truncate">{user.email || ''}</p>
                                 </div>
                             </div>
-
-                            {/* Timer / Reward Section */}
-                            <div className="pt-1.5 border-t border-white/10 mt-1">
-                                {timeLeftStr ? (
-                                    <div className="mb-1.5">
-                                        <div className="flex justify-between items-center text-[9px] text-gray-300 mb-0.5">
-                                            <span>남은 시간</span>
-                                            <span className="text-green-400 font-mono font-bold animate-pulse">{timeLeftStr}</span>
-                                        </div>
-                                        <div className="w-full bg-black/40 rounded-full h-1 overflow-hidden border border-white/5">
-                                            <div className="bg-gradient-to-r from-green-500 to-emerald-400 h-full w-full animate-pulse" />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-[9px] text-gray-400 mb-1.5 text-center">
-                                        이용권이 없습니다.
-                                    </div>
-                                )}
-
-                                {freeTrialCount > 0 ? (
-                                    <button
-                                        onClick={handleFreeTrial}
-                                        className="w-full rounded-xl py-2 text-[10px] font-bold bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-400/30 flex items-center justify-center gap-1 shadow-md transition-colors"
-                                    >
-                                        🎁 1시간 무료 이용하기 ({freeTrialCount}회)
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => setShowAdRewardModal(true)}
-                                        className="w-full rounded-xl py-2 text-[10px] font-bold bg-white/10 text-gray-200 hover:bg-white/20 border border-white/10 flex items-center justify-center gap-1 transition-colors"
-                                    >
-                                        <PlayCircle className="w-3 h-3 text-yellow-500" />
-                                        광고 보고 시간 충전 (30분)
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 2. User account profile block */}
-                    {user && !user.is_guest ? (
-                        <div className="rounded-2xl bg-zinc-900/80 p-2.5 border border-white/10 flex items-center gap-2.5 shadow-lg">
-                            <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xs ring-2 ring-white/20 shrink-0">
-                                {user.name?.[0] || 'U'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-white truncate">{user.name || '사용자'}</p>
-                                <p className="text-[9px] text-gray-400 truncate">{user.email || ''}</p>
-                            </div>
-                            <button onClick={logout} className="p-1 px-2 text-gray-300 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-lg border border-white/5">
-                                <span className="text-[10px] font-bold">로그아웃</span>
+                            <button 
+                                onClick={logout} 
+                                className="p-1.5 px-2.5 text-zinc-300 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-[10px] font-bold shrink-0 cursor-pointer active:scale-95"
+                            >
+                                로그아웃
                             </button>
                         </div>
                     ) : (
@@ -743,79 +736,18 @@ export default function Sidebar() {
                                     setShowLoginModal(true);
                                 }
                             }}
-                            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95"
+                            className="w-full rounded-2xl bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 py-3 text-xs font-black text-black hover:brightness-105 transition-all flex items-center justify-center gap-2 shadow-xl shadow-orange-500/20 cursor-pointer active:scale-95"
                         >
-                            <UserCheck className="w-3.5 h-3.5" />
-                            {user?.is_guest ? "정식 로그인 / 계정 연동" : "로그인"}
+                            <UserCheck className="w-4 h-4 text-black" />
+                            <span>{user?.is_guest ? "정식 계정 로그인 / 연동" : "VIP 로그인 / 회원가입"}</span>
                         </button>
                     )}
-
-
-
-                    <div className="flex justify-center gap-4 pt-1">
-                        <Link
-                            href="/about"
-                            onClick={() => setIsMobileOpen(false)}
-                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
-                        >
-                            서비스 소개
-                        </Link>
-                        <span className="text-gray-700 text-[10px]">|</span>
-                        <Link
-                            href="/contact"
-                            onClick={() => setIsMobileOpen(false)}
-                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
-                        >
-                            문의하기
-                        </Link>
-                        <span className="text-gray-700 text-[10px]">|</span>
-                        <Link
-                            href="/privacy-policy"
-                            onClick={() => setIsMobileOpen(false)}
-                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
-                        >
-                            개인정보
-                        </Link>
-                    </div>
-                    <div className="flex justify-center gap-4 pt-0.5">
-                        <Link
-                            href="/terms"
-                            onClick={() => setIsMobileOpen(false)}
-                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
-                        >
-                            이용약관
-                        </Link>
-                        <span className="text-gray-700 text-[10px]">|</span>
-                        <Link
-                            href="/disclaimer"
-                            onClick={() => setIsMobileOpen(false)}
-                            className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors font-bold"
-                        >
-                            면책조항
-                        </Link>
-                    </div>
-
-                    {/* 6. Version info */}
-                    <div className="opacity-30 text-center">
-                        <span className="text-[8px] font-mono text-gray-500">v3.8.0-READY</span>
-                    </div>
                 </div>
-            </div>
+            </aside>
 
+            {/* Modals */}
             <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
-            <AdRewardModal isOpen={showAdRewardModal} onClose={() => setShowAdRewardModal(false)} onReward={() => { }} featureName="SidebarCharge" />
+            <AdRewardModal isOpen={showAdRewardModal} onClose={() => setShowAdRewardModal(false)} />
         </>
-    );
-}
-
-function BenefitItem({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
-    return (
-        <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-            <div className="mt-1">{icon}</div>
-            <div>
-                <h4 className="font-bold text-white text-sm mb-1">{title}</h4>
-                <p className="text-xs text-gray-400 leading-relaxed">{desc}</p>
-            </div>
-        </div>
     );
 }
