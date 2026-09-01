@@ -10,7 +10,13 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import ResponsiveKakaoAd from "@/components/ResponsiveKakaoAd";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
-export const revalidate = 60; // 60초마다 갱신 (ISR) - 백엔드 배포 후 캐시 무효화를 위한 재배포 트리거
+export const revalidate = 60; // 60초마다 갱신 (ISR)
+
+export async function generateStaticParams() {
+    return STATIC_POSTS.map(post => ({
+        id: post.slug
+    }));
+}
 
 async function getBlogPost(slug: string) {
     try {
