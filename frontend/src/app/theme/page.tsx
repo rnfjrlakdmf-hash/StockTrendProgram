@@ -311,14 +311,22 @@ function ThemePageContent() {
             };
         };
 
-        const leaders = (result.leaders || []).map((s: any, i: number) => formatStock(s, true, i + 1));
-        const followers = (result.followers || []).map((s: any, i: number) => formatStock(s, false, i + 1));
-        const all = [...leaders, ...followers];
+        let leaders = (result.leaders || []).map((s: any, i: number) => formatStock(s, true, i + 1));
+        let followers = (result.followers || []).map((s: any, i: number) => formatStock(s, false, i + 1));
 
+        if (sortBy === "change") {
+            leaders.sort((a, b) => b.changeNum - a.changeNum);
+            followers.sort((a, b) => b.changeNum - a.changeNum);
+        } else if (sortBy === "real") {
+            leaders.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
+            followers.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
+        }
+
+        const all = [...leaders, ...followers];
         if (sortBy === "change") {
             all.sort((a, b) => b.changeNum - a.changeNum);
         } else if (sortBy === "real") {
-            all.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0));
+            all.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
         }
 
         return { leaders, followers, allSorted: all };
