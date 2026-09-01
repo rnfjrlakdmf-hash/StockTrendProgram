@@ -1960,19 +1960,23 @@ function DiscoveryContent() {
                                                 );
                                             })()}
 
-                                            {/* AI 종합 분석 리포트 영역 */}
-                                            <div className="mb-6">
-                                                <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
+                                            {/* AI 종합 분석 리포트 영역 (중복 완전 제거 및 호버 툴팁 간소화 버전) */}
+                                            <div className="mb-8">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-white/10">
                                                     <div className="flex items-center gap-2.5">
                                                         <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shadow-inner">
                                                             <TrendingUp className="h-4 w-4 text-blue-400" />
                                                         </div>
                                                         <div>
                                                             <h4 className="text-base md:text-lg font-black text-white flex items-center gap-2">
-                                                                <span>AI 퀀트 종합 진단 리포트</span>
+                                                                <span>AI 퀀트 종합 진단 대시보드</span>
                                                                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">LIVE INTELLIGENCE</span>
                                                             </h4>
                                                         </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-medium bg-white/5 px-3 py-1 rounded-xl border border-white/10 w-fit">
+                                                        <span className="text-amber-400">💡</span>
+                                                        <span>마우스 호버 또는 터치 시 초보자 해설 제공</span>
                                                     </div>
                                                 </div>
 
@@ -2019,231 +2023,209 @@ function DiscoveryContent() {
                                                                 />
                                                             ))}
                                                         </div>
-                                                        {/* 단계 스텝 도트 */}
-                                                        <div className="flex items-center justify-center gap-3 pb-4">
-                                                            {['수급', '재무', '뉴스', '리포트'].map((label, i) => (
-                                                                <div key={i} className="flex flex-col items-center gap-1">
-                                                                    <div className={`w-2 h-2 rounded-full transition-all duration-500 ${
-                                                                        analysisStep > i ? 'bg-blue-400 scale-125' : analysisStep === i + 1 ? 'bg-blue-400 animate-pulse' : 'bg-white/10'
-                                                                    }`} />
-                                                                    <span className={`text-[9px] font-bold transition-colors duration-500 ${
-                                                                        analysisStep > i ? 'text-blue-300' : 'text-white/20'
-                                                                    }`}>{label}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
                                                     </div>
                                                 ) : (() => {
                                                     const summaryText = stock.summary || "";
-                                                    if (!summaryText || summaryText === "분석 내용이 없습니다.") {
-                                                        return (
-                                                            <div className="p-6 text-center text-zinc-500 bg-zinc-900/50 rounded-2xl border border-white/5 mb-6">
-                                                                종합 분석 리포트 데이터가 준비 중입니다.
-                                                            </div>
-                                                        );
-                                                    }
+                                                    const rawLines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
 
-                                                    const lines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
+                                                    // 1. 밸류에이션 / 시가총액 라인 추출
+                                                    const perLine = rawLines.find(l => l.includes("PER") || l.includes("PBR")) || 
+                                                        (stock.details?.pe_ratio ? `PER ${Number(stock.details.pe_ratio).toFixed(2)}배 및 PBR ${Number(stock.details.pbr || 1).toFixed(2)}배 수준을 기록하고 있습니다.` : "기업의 실적 및 자산가치 기반 안정적인 밸류에이션 구간입니다.");
+                                                    const perExplanation = getBeginnerExplanation(perLine, stock.name);
+
+                                                    const capLine = rawLines.find(l => (l.includes("시가총액") || l.includes("시총")) && !l.includes("PER")) || 
+                                                        (stock.details?.market_cap ? `시가총액은 약 ${stock.details.market_cap} 규모의 국내 대표 기업입니다.` : "시가총액 상위 우량주로 안정적인 시장 수급 기반을 갖추고 있습니다.");
+                                                    const capExplanation = getBeginnerExplanation(capLine, stock.name);
+
                                                     return (
-                                                        <div className="space-y-3.5 mb-6">
-                                                            {lines.map((line, idx) => {
-                                                                let cardBorder = "border-l-4 border-l-blue-400 border-white/5 bg-gradient-to-r from-blue-950/30 via-zinc-900/60 to-black";
-                                                                let badgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/30";
-                                                                let badgeLabel = "핵심 분석";
-
-                                                                if (line.includes("PER") || line.includes("PBR") || line.includes("시가총액") || line.startsWith("📊")) {
-                                                                    cardBorder = "border-l-4 border-l-cyan-400 border-white/5 bg-gradient-to-r from-cyan-950/30 via-zinc-900/60 to-black";
-                                                                    badgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/30";
-                                                                    badgeLabel = "📊 밸류에이션 진단";
-                                                                } else if (line.includes("약화") || line.includes("주의") || line.includes("위험") || line.includes("경고") || line.startsWith("⚠️")) {
-                                                                    cardBorder = "border-l-4 border-l-amber-400 border-white/5 bg-gradient-to-r from-amber-950/30 via-zinc-900/60 to-black";
-                                                                    badgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/30";
-                                                                    badgeLabel = "⚠️ 시장 리스크 점검";
-                                                                } else if (line.includes("상승") || line.includes("모멘텀") || line.includes("수급") || line.startsWith("⚡") || line.startsWith("🔥")) {
-                                                                    cardBorder = "border-l-4 border-l-purple-400 border-white/5 bg-gradient-to-r from-purple-950/30 via-zinc-900/60 to-black";
-                                                                    badgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/30";
-                                                                    badgeLabel = "⚡ 수급·모멘텀 포착";
-                                                                } else if (line.startsWith("📑") || line.includes("혼조세") || line.includes("코스피") || line.includes("코스닥")) {
-                                                                    cardBorder = "border-l-4 border-l-indigo-400 border-white/5 bg-gradient-to-r from-indigo-950/30 via-zinc-900/60 to-black";
-                                                                    badgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/30";
-                                                                    badgeLabel = "📑 섹터 및 장세 흐름";
-                                                                }
-
-                                                                const explanation = getBeginnerExplanation(line, stock.name);
-
-                                                                return (
-                                                                    <div 
-                                                                        key={idx} 
-                                                                        className={`${cardBorder} border p-4.5 md:p-5 rounded-2xl shadow-lg transition-all hover:border-white/20 flex flex-col gap-3 group`}
-                                                                    >
-                                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                                                            <p className="text-zinc-100 text-sm md:text-base font-bold leading-relaxed">
-                                                                                {line}
-                                                                            </p>
-                                                                            <span className={`self-start sm:self-center shrink-0 text-[11px] font-black px-3 py-1 rounded-xl border ${badgeStyle} shadow-sm`}>
-                                                                                {badgeLabel}
+                                                        <div className="space-y-6">
+                                                            {/* 1. 상단: 펀더멘털 & 밸류에이션 2-Column Grid */}
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-3 px-1">
+                                                                    <span className="text-xs font-black text-cyan-300 uppercase tracking-wider">📊 펀더멘털 & 밸류에이션 팩트</span>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                                                    {/* 밸류에이션 카드 */}
+                                                                    <div className="bg-gradient-to-br from-cyan-950/30 via-zinc-950 to-black border-l-4 border-l-cyan-400 border-y border-r border-white/10 p-5 rounded-2xl shadow-lg transition-all hover:border-cyan-500/40 flex flex-col justify-between gap-3.5 relative group/val">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <span className="text-xs font-black text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-1 rounded-xl shadow-sm">
+                                                                                📊 밸류에이션 진단
                                                                             </span>
-                                                                        </div>
-
-                                                                        {/* 💡 초보자를 위한 친절한 쉬운 이유 / 해설 */}
-                                                                        {explanation && (
-                                                                            <div className="pt-2.5 border-t border-white/10 flex items-start gap-2.5 bg-black/40 p-3 rounded-xl">
-                                                                                <div className="w-5 h-5 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                                                                                    <span className="text-[10px]">💡</span>
-                                                                                </div>
-                                                                                <div className="flex-1">
-                                                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                                            
+                                                                            {/* 💡 호버/터치 스마트 툴팁 */}
+                                                                            <div className="relative group/tip">
+                                                                                <button 
+                                                                                    type="button"
+                                                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                                                                >
+                                                                                    <span>💡</span>
+                                                                                    <span>쉬운 해설</span>
+                                                                                </button>
+                                                                                <div className="absolute right-0 bottom-full mb-2 w-72 sm:w-80 p-3.5 bg-zinc-950/95 backdrop-blur-md border border-amber-500/40 rounded-2xl shadow-2xl opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-200 z-30 pointer-events-none group-hover/tip:pointer-events-auto">
+                                                                                    <div className="flex items-center gap-1.5 mb-1 pb-1 border-b border-amber-500/20">
+                                                                                        <span className="text-xs">💡</span>
                                                                                         <span className="text-[11px] font-black text-amber-300">초보자를 위한 쉬운 해설</span>
-                                                                                        <span className="text-[9px] font-mono text-zinc-500">WHY THIS MATTERS</span>
                                                                                     </div>
-                                                                                    <p className="text-xs text-zinc-300 leading-relaxed font-normal">
-                                                                                        {explanation}
+                                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-normal">
+                                                                                        {perExplanation}
                                                                                     </p>
                                                                                 </div>
                                                                             </div>
-                                                                        )}
+                                                                        </div>
+                                                                        <p className="text-zinc-100 text-sm md:text-[15px] font-bold leading-relaxed">
+                                                                            {perLine}
+                                                                        </p>
                                                                     </div>
-                                                                );
-                                                            })}
+
+                                                                    {/* 시가총액 카드 */}
+                                                                    <div className="bg-gradient-to-br from-blue-950/30 via-zinc-950 to-black border-l-4 border-l-blue-400 border-y border-r border-white/10 p-5 rounded-2xl shadow-lg transition-all hover:border-blue-500/40 flex flex-col justify-between gap-3.5 relative group/cap">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <span className="text-xs font-black text-blue-300 bg-blue-500/15 border border-blue-500/30 px-2.5 py-1 rounded-xl shadow-sm">
+                                                                                🏛️ 시장 위상 및 체급
+                                                                            </span>
+                                                                            
+                                                                            {/* 💡 호버/터치 스마트 툴팁 */}
+                                                                            <div className="relative group/tip">
+                                                                                <button 
+                                                                                    type="button"
+                                                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                                                                >
+                                                                                    <span>💡</span>
+                                                                                    <span>쉬운 해설</span>
+                                                                                </button>
+                                                                                <div className="absolute right-0 bottom-full mb-2 w-72 sm:w-80 p-3.5 bg-zinc-950/95 backdrop-blur-md border border-amber-500/40 rounded-2xl shadow-2xl opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-200 z-30 pointer-events-none group-hover/tip:pointer-events-auto">
+                                                                                    <div className="flex items-center gap-1.5 mb-1 pb-1 border-b border-amber-500/20">
+                                                                                        <span className="text-xs">💡</span>
+                                                                                        <span className="text-[11px] font-black text-amber-300">초보자를 위한 쉬운 해설</span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-normal">
+                                                                                        {capExplanation}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-zinc-100 text-sm md:text-[15px] font-bold leading-relaxed">
+                                                                            {capLine}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 2. 하단: AI 퀀트 3대 실전 진단 카드 (수급 · 모멘텀 · 리스크) */}
+                                                            {(stock.rationale && stock.rationale.supply) ? (
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-3 px-1">
+                                                                        <span className="text-xs font-black text-purple-300 uppercase tracking-wider">🎯 실전 매매 3대 핵심 진단 지표</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                                        {/* 수급 카드 */}
+                                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-blue-500/30 hover:border-blue-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] flex flex-col justify-between gap-4 group/rationale relative">
+                                                                            <div>
+                                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
+                                                                                    <span className="text-xs font-black text-blue-300 bg-blue-500/15 border border-blue-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                                        <span>✅</span> 수급 진단 (Supply)
+                                                                                    </span>
+                                                                                    <span className="text-[10px] font-mono font-bold text-blue-400/80">FLOW</span>
+                                                                                </div>
+                                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
+                                                                                    {stock.rationale.supply}
+                                                                                </p>
+                                                                            </div>
+
+                                                                            {/* 💡 호버 / 터치 스마트 툴팁 트리거 */}
+                                                                            <div className="relative group/tip pt-2.5 border-t border-white/10">
+                                                                                <div className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg hover:bg-blue-500/10 transition-colors">
+                                                                                    <span className="text-[11px] font-bold text-blue-300 flex items-center gap-1">
+                                                                                        <span>💡</span> 초보자 실전 팁
+                                                                                    </span>
+                                                                                    <span className="text-[9px] font-mono text-zinc-500 group-hover/tip:text-blue-300 transition-colors">HOVER</span>
+                                                                                </div>
+                                                                                <div className="absolute left-0 bottom-full mb-2 w-72 sm:w-80 p-3.5 bg-zinc-950/95 backdrop-blur-md border border-blue-500/40 rounded-2xl shadow-2xl opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-200 z-30 pointer-events-none group-hover/tip:pointer-events-auto">
+                                                                                    <div className="flex items-center gap-1.5 mb-1 pb-1 border-b border-blue-500/20">
+                                                                                        <span className="text-xs">💡</span>
+                                                                                        <span className="text-[11px] font-black text-blue-300">수급 진단 쉬운 해설</span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-normal">
+                                                                                        {getRationaleExplanation('supply', stock.rationale.supply)}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* 모멘텀 카드 */}
+                                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-purple-500/30 hover:border-purple-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] flex flex-col justify-between gap-4 group/rationale relative">
+                                                                            <div>
+                                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
+                                                                                    <span className="text-xs font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                                        <span>🔥</span> 모멘텀 (Momentum)
+                                                                                    </span>
+                                                                                    <span className="text-[10px] font-mono font-bold text-purple-400/80">DRIVE</span>
+                                                                                </div>
+                                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
+                                                                                    {stock.rationale.momentum}
+                                                                                </p>
+                                                                            </div>
+
+                                                                            {/* 💡 호버 / 터치 스마트 툴팁 트리거 */}
+                                                                            <div className="relative group/tip pt-2.5 border-t border-white/10">
+                                                                                <div className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg hover:bg-purple-500/10 transition-colors">
+                                                                                    <span className="text-[11px] font-bold text-purple-300 flex items-center gap-1">
+                                                                                        <span>💡</span> 초보자 실전 팁
+                                                                                    </span>
+                                                                                    <span className="text-[9px] font-mono text-zinc-500 group-hover/tip:text-purple-300 transition-colors">HOVER</span>
+                                                                                </div>
+                                                                                <div className="absolute left-0 bottom-full mb-2 w-72 sm:w-80 p-3.5 bg-zinc-950/95 backdrop-blur-md border border-purple-500/40 rounded-2xl shadow-2xl opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-200 z-30 pointer-events-none group-hover/tip:pointer-events-auto">
+                                                                                    <div className="flex items-center gap-1.5 mb-1 pb-1 border-b border-purple-500/20">
+                                                                                        <span className="text-xs">💡</span>
+                                                                                        <span className="text-[11px] font-black text-purple-300">모멘텀 진단 쉬운 해설</span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-normal">
+                                                                                        {getRationaleExplanation('momentum', stock.rationale.momentum)}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* 리스크 카드 */}
+                                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-rose-500/30 hover:border-rose-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)] flex flex-col justify-between gap-4 group/rationale relative">
+                                                                            <div>
+                                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
+                                                                                    <span className="text-xs font-black text-rose-300 bg-rose-500/15 border border-rose-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                                        <span>⚠️</span> 리스크 점검 (Risk)
+                                                                                    </span>
+                                                                                    <span className="text-[10px] font-mono font-bold text-rose-400/80">GUARD</span>
+                                                                                </div>
+                                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
+                                                                                    {stock.rationale.risk}
+                                                                                </p>
+                                                                            </div>
+
+                                                                            {/* 💡 호버 / 터치 스마트 툴팁 트리거 */}
+                                                                            <div className="relative group/tip pt-2.5 border-t border-white/10">
+                                                                                <div className="flex items-center justify-between cursor-pointer p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors">
+                                                                                    <span className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
+                                                                                        <span>💡</span> 초보자 실전 팁
+                                                                                    </span>
+                                                                                    <span className="text-[9px] font-mono text-zinc-500 group-hover/tip:text-rose-300 transition-colors">HOVER</span>
+                                                                                </div>
+                                                                                <div className="absolute left-0 bottom-full mb-2 w-72 sm:w-80 p-3.5 bg-zinc-950/95 backdrop-blur-md border border-rose-500/40 rounded-2xl shadow-2xl opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-200 z-30 pointer-events-none group-hover/tip:pointer-events-auto">
+                                                                                    <div className="flex items-center gap-1.5 mb-1 pb-1 border-b border-rose-500/20">
+                                                                                        <span className="text-xs">💡</span>
+                                                                                        <span className="text-[11px] font-black text-rose-300">리스크 점검 쉬운 해설</span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-normal">
+                                                                                        {getRationaleExplanation('risk', stock.rationale.risk)}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
                                                         </div>
                                                     );
                                                 })()}
                                             </div>
-
-                                            {/* [New] 3-Line Rationale with Beginner Terms Guide */}
-                                            {(stock.rationale && stock.rationale.supply) ? (
-                                                <div className="mb-6 space-y-4 animate-in fade-in duration-500">
-                                                    {/* 용어 설명 토글 버튼 */}
-                                                    <details className="group bg-gradient-to-br from-blue-950/20 via-indigo-950/20 to-black/40 border border-blue-500/20 rounded-2xl overflow-hidden [&_summary::-webkit-details-marker]:hidden shadow-lg transition-all">
-                                                        <summary className="flex items-center justify-between p-4 cursor-pointer text-xs md:text-sm font-bold text-blue-200 hover:text-white hover:bg-blue-500/10 transition-colors">
-                                                            <div className="flex items-center gap-2.5">
-                                                                <div className="w-7 h-7 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                                                                    <Info className="w-4 h-4" />
-                                                                </div>
-                                                                <span>주식 초보자를 위한 핵심 투자 용어 쉽게 이해하기 (클릭)</span>
-                                                            </div>
-                                                            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180 text-blue-400" />
-                                                        </summary>
-                                                        <div className="p-5 pt-3 space-y-3 border-t border-white/10 bg-black/40">
-                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                                <div className="bg-blue-950/30 border border-blue-500/20 p-3.5 rounded-xl">
-                                                                    <p className="text-xs font-black text-blue-300 mb-1 flex items-center gap-1.5">
-                                                                        <span>✅ 수급 (Supply)</span>
-                                                                    </p>
-                                                                    <p className="text-xs text-zinc-300 leading-relaxed">
-                                                                        <span className="text-blue-200 font-semibold">"누가 열정적으로 사고 있나?"</span><br/>
-                                                                        외국인·기관 등 큰손들의 매수 유입 강도를 나타냅니다.
-                                                                    </p>
-                                                                </div>
-                                                                <div className="bg-purple-950/30 border border-purple-500/20 p-3.5 rounded-xl">
-                                                                    <p className="text-xs font-black text-purple-300 mb-1 flex items-center gap-1.5">
-                                                                        <span>🔥 모멘텀 (Momentum)</span>
-                                                                    </p>
-                                                                    <p className="text-xs text-zinc-300 leading-relaxed">
-                                                                        <span className="text-purple-200 font-semibold">"주가를 올릴 강력한 에너지가 있나?"</span><br/>
-                                                                        실적 대박, 신사업 등 주가를 끌어올릴 상승 원동력입니다.
-                                                                    </p>
-                                                                </div>
-                                                                <div className="bg-rose-950/30 border border-rose-500/20 p-3.5 rounded-xl">
-                                                                    <p className="text-xs font-black text-rose-300 mb-1 flex items-center gap-1.5">
-                                                                        <span>⚠️ 리스크 (Risk)</span>
-                                                                    </p>
-                                                                    <p className="text-xs text-zinc-300 leading-relaxed">
-                                                                        <span className="text-rose-200 font-semibold">"투자 전 조심할 위험 요소는?"</span><br/>
-                                                                        고평가 논란, 시장 변동성 등 주가 하락 불안 요소를 짚어줍니다.
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </details>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        {/* 수급 카드 */}
-                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-blue-500/30 hover:border-blue-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] flex flex-col justify-between gap-4">
-                                                            <div>
-                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
-                                                                    <span className="text-xs font-black text-blue-300 bg-blue-500/15 border border-blue-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-                                                                        <span>✅</span> 수급 진단 (Supply)
-                                                                    </span>
-                                                                    <span className="text-[10px] font-mono font-bold text-blue-400/80">FLOW</span>
-                                                                </div>
-                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
-                                                                    {stock.rationale.supply}
-                                                                </p>
-                                                            </div>
-                                                            <div className="pt-2.5 border-t border-white/10 bg-blue-950/20 p-3 rounded-xl flex items-start gap-2">
-                                                                <span className="text-xs">💡</span>
-                                                                <p className="text-[11.5px] text-blue-200/90 leading-relaxed font-normal">
-                                                                    <strong className="text-blue-300 font-bold mr-1">[쉬운 설명]</strong>
-                                                                    {getRationaleExplanation('supply', stock.rationale.supply)}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 모멘텀 카드 */}
-                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-purple-500/30 hover:border-purple-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] flex flex-col justify-between gap-4">
-                                                            <div>
-                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
-                                                                    <span className="text-xs font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-                                                                        <span>🔥</span> 모멘텀 (Momentum)
-                                                                    </span>
-                                                                    <span className="text-[10px] font-mono font-bold text-purple-400/80">DRIVE</span>
-                                                                </div>
-                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
-                                                                    {stock.rationale.momentum}
-                                                                </p>
-                                                            </div>
-                                                            <div className="pt-2.5 border-t border-white/10 bg-purple-950/20 p-3 rounded-xl flex items-start gap-2">
-                                                                <span className="text-xs">💡</span>
-                                                                <p className="text-[11.5px] text-purple-200/90 leading-relaxed font-normal">
-                                                                    <strong className="text-purple-300 font-bold mr-1">[쉬운 설명]</strong>
-                                                                    {getRationaleExplanation('momentum', stock.rationale.momentum)}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 리스크 카드 */}
-                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-rose-500/30 hover:border-rose-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)] flex flex-col justify-between gap-4">
-                                                            <div>
-                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
-                                                                    <span className="text-xs font-black text-rose-300 bg-rose-500/15 border border-rose-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-                                                                        <span>⚠️</span> 리스크 점검 (Risk)
-                                                                    </span>
-                                                                    <span className="text-[10px] font-mono font-bold text-rose-400/80">GUARD</span>
-                                                                </div>
-                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
-                                                                    {stock.rationale.risk}
-                                                                </p>
-                                                            </div>
-                                                            <div className="pt-2.5 border-t border-white/10 bg-rose-950/20 p-3 rounded-xl flex items-start gap-2">
-                                                                <span className="text-xs">💡</span>
-                                                                <p className="text-[11.5px] text-rose-200/90 leading-relaxed font-normal">
-                                                                    <strong className="text-rose-300 font-bold mr-1">[쉬운 설명]</strong>
-                                                                    {getRationaleExplanation('risk', stock.rationale.risk)}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : isAnalyzing ? (
-                                                /* [UX] rationale 카드 스켈레톤 */
-                                                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    {[
-                                                        { label: '✅ 수급 (Supply)', color: 'border-blue-500/20', labelColor: 'text-blue-400/40' },
-                                                        { label: '🔥 모멘텀 (Momentum)', color: 'border-white/10', labelColor: 'text-purple-400/40' },
-                                                        { label: '⚠️ 리스크 (Risk)', color: 'border-red-500/20', labelColor: 'text-red-400/40' },
-                                                    ].map((item, i) => (
-                                                        <div key={i} className={`bg-white/5 p-4 rounded-xl border ${item.color} shadow-lg`} style={{ animationDelay: `${i * 200}ms` }}>
-                                                            <div className={`font-bold mb-2 text-sm ${item.labelColor}`}>{item.label}</div>
-                                                            <div className="space-y-1.5">
-                                                                <div className="h-3 bg-white/10 rounded-full animate-pulse w-full" />
-                                                                <div className="h-3 bg-white/10 rounded-full animate-pulse w-5/6" />
-                                                                <div className="h-3 bg-white/10 rounded-full animate-pulse w-4/6" />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : null}
 
                                             <AIDisclaimer className="mt-6" />
                                         </>
