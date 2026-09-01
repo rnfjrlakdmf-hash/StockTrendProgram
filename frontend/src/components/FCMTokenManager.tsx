@@ -61,6 +61,7 @@ export default function FCMTokenManager() {
             navigator.serviceWorker.register('/firebase-messaging-sw.js')
                 .then((registration) => {
                     console.log('[FCM] Service Worker registered:', registration.scope);
+                    registration.update();
                 })
                 .catch((err) => {
                     console.error('[FCM] Service Worker registration failed:', err);
