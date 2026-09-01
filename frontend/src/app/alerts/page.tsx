@@ -10,7 +10,7 @@ import {
     ChevronRight, AlertCircle, Clock, CheckCircle2, XCircle, TrendingUp, 
     TrendingDown, Eye, Calendar, Building2, Tag, Info, Database, BellRing,
     Sparkles, Compass, Zap, ShieldCheck, Flame, Layers, ExternalLink,
-    Search, Filter, Globe, Crown
+    Search, Filter, Globe, Crown, ShieldAlert, Lock
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import KakaoAdFit from "@/components/KakaoAdFit";
@@ -95,6 +95,16 @@ export default function AlertCenterPage() {
     const ITEMS_PER_PAGE = 20;
 
     const { user } = useAuth();
+    const isAdmin = Boolean(
+        user && (
+            user.role === 'admin' || 
+            user.email?.toLowerCase() === 'rnfjr@gmail.com' || 
+            user.email?.toLowerCase() === 'rnfjrlakdmf@gmail.com' || 
+            (user as any).is_admin ||
+            user.id === '110418985320259217419' ||
+            user.id === '108559801745912003405'
+        )
+    );
 
     // 방문 시간 기록
     useEffect(() => {
@@ -129,9 +139,15 @@ export default function AlertCenterPage() {
                     const isGlobal = data.is_global === true;
                     const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
                     
-                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'portfolio_summary', 'market_summary'].includes(data.type);
+                    const isAdminType = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
+                        (data.title || '').includes('[관리자]') || (data.title || '').includes('일일 운영 보고서') || (data.title || '').includes('방문자 보고');
+
+                    // 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
+                    if (isAdminType && !isAdmin) return;
+
+                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'portfolio_summary', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
                     
-                    if (isGlobal || isTargeted || isPublicType) {
+                    if (isGlobal || isTargeted || isPublicType || (isAdmin && isAdminType)) {
                         // Smart Deduplication: clean title + first 40 chars of body + 10-minute time bucket
                         const sec = data.timestamp?.seconds || 0;
                         const timeBucket = Math.floor(sec / 600); // 10 minutes bucket
@@ -506,6 +522,9 @@ function formatUsdToKrwInText(text: string): string {
         const titleText = (alert.title || '').trim();
         const combinedText = `${titleText} ${alert.body || ''}`.toLowerCase();
 
+        const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
+            titleText.includes('[관리자]') || titleText.includes('[시스템 보고]') || titleText.includes('[일일 보고]') || titleText.includes('[방문자 보고]') || titleText.includes('방문자') || titleText.includes('일일 운영 보고서');
+
         let typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]";
         let typeBadgeLabel = "📢 스마트 투자 알림";
         let cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";
@@ -515,8 +534,16 @@ function formatUsdToKrwInText(text: string): string {
         const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산');
         const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황');
 
+        // [0순위: 관리자 운영 및 시스템 보고서]
+        if (isAdminAlert) {
+            typeBadgeStyle = "bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]";
+            typeBadgeLabel = "👑 🛡️ 관리자 전용 운영 보고";
+            cardBorderHover = "hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]";
+            accentBorder = "border-l-4 border-l-purple-500";
+            defaultCta = { href: "/admin", label: "관리자 시스템 대시보드 바로가기", icon: Crown, style: "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/40" };
+        }
         // [1순위: DART 공시 / 내부자 거래 / 지분 공시] -> 명확하게 공시 뱃지 우선 부여
-        if (titleText.includes("공시 팩트 알림") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
+        else if (titleText.includes("공시 팩트 알림") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
             typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
             typeBadgeLabel = "🇰🇷 DART 공시 팩트 속보";
             cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
@@ -532,9 +559,9 @@ function formatUsdToKrwInText(text: string): string {
             cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
             accentBorder = "border-l-4 border-l-indigo-400";
         } else if (['sec_13f', 'sec_disclosure'].includes(alert.type) || titleText.includes("SEC")) {
-            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(168,185,129,0.2)]";
             typeBadgeLabel = "🇺🇸 미국 SEC 공시 속보";
-            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(168,185,129,0.15)]";
             accentBorder = "border-l-4 border-l-emerald-400";
         } 
         // [2순위: 리포트 및 결산]
@@ -716,25 +743,48 @@ function formatUsdToKrwInText(text: string): string {
         return <div key={alert.id} className="cursor-pointer">{cardContent}</div>;
     };
 
-    // Filter Navigation Tabs
-    const tabs = [
+    // Filter Navigation Tabs (관리자 로그인 시 '👑 관리자 알림' 탭 추가)
+    const baseTabs = [
         { id: "all", label: "전체 브리핑", icon: Layers },
         { id: "disclosure", label: "공시 & 세력 수급", icon: Zap },
         { id: "news", label: "마켓 뉴스", icon: Globe },
         { id: "portfolio", label: "내 관심종목", icon: Crown },
-        { id: "system", label: "운영 알림", icon: ShieldCheck }
+        { id: "system", label: "서비스 공지/운영", icon: ShieldCheck }
     ];
 
+    const tabs = isAdmin 
+        ? [...baseTabs, { id: "admin", label: "👑 관리자 알림", icon: ShieldAlert }]
+        : baseTabs;
+
     const filteredAlerts = alerts.filter(alert => {
-        if (['admin_report', 'ping_test'].includes(alert.type) && activeTab !== 'admin' && activeTab !== 'all') return false;
+        const titleText = (alert.title || '').trim();
+        const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
+            titleText.includes('[관리자]') || titleText.includes('[시스템 보고]') || titleText.includes('[일일 보고]') || titleText.includes('[방문자 보고]') || titleText.includes('방문자') || titleText.includes('일일 운영 보고서');
+
+        // 1. 관리자 전용 알림은 비관리자에게 절대 노출 금지
+        if (isAdminAlert && !isAdmin) return false;
+
+        // 2. 관리자 탭 선택 시: 관리자 알림만 집중 표시
+        if (activeTab === "admin") return isAdminAlert;
+
+        // 3. 운영 알림 탭 선택 시: 관리자용 보고서는 완전 제외하고, 순수 일반 서비스 공지/업데이트만 표시!
+        if (activeTab === "system") {
+            if (isAdminAlert) return false;
+            const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update'].includes(alert.type) ||
+                titleText.includes('[공지]') || titleText.includes('[안내]') || titleText.includes('[업데이트]') || titleText.includes('[점검]');
+            return isSystemNotice;
+        }
+
+        // 4. 일반 탭(전체 브리핑, 공시, 뉴스, 내 관심종목)에서는 관리자 보고서 완전 제외
+        if (isAdminAlert) {
+            return false;
+        }
 
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert'].includes(alert.type);
-        const isSystem = ['admin_report', 'system_alert', 'ping_test'].includes(alert.type);
 
         if (activeTab === "news") return isNews;
-        if (activeTab === "system") return isSystem;
 
         let symbolMatch = false;
         if (alert.symbol && watchlistSymbols.includes(alert.symbol)) {
