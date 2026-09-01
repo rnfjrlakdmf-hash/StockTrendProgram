@@ -421,6 +421,90 @@ function parseCompanyDescription(desc: string) {
     };
 }
 
+function getBeginnerExplanation(line: string, stockName: string = ""): string {
+    const clean = line.replace(/^[📊⚠️⚡🔥📑]\s*/, '').trim();
+
+    // 1. PER / PBR
+    if (clean.includes("PER") && clean.includes("PBR")) {
+        const perMatch = clean.match(/PER\s*([\d.]+)/);
+        const pbrMatch = clean.match(/PBR\s*([\d.]+)/);
+        const perVal = perMatch ? parseFloat(perMatch[1]) : 0;
+        const pbrVal = pbrMatch ? parseFloat(pbrMatch[1]) : 0;
+
+        if (perVal > 0 && perVal < 15) {
+            return `현재 회사가 버는 순이익 대비 주가가 저평가/적정 수준에 있어 가격 부담이 비교적 낮습니다. (장부 자산가치 대비 PBR ${pbrVal ? pbrVal + '배' : ''})`;
+        } else if (perVal >= 25) {
+            return `현재 순이익보다 향후 폭발적인 미래 성장 기대감이 주가에 더 많이 선반영되어 있는 상태입니다.`;
+        }
+        return `기업이 실제로 벌어들이는 이익(PER)과 보유 자산(PBR) 대비 현재 주가가 합리적인 수준인지 종합 진단한 지표입니다.`;
+    }
+
+    // 2. 시가총액
+    if (clean.includes("시가총액")) {
+        return `상장된 모든 주식의 총 시장 가치입니다. 시총이 클수록 세력의 작전이 불가능하고 외국인·기관 큰손들의 대규모 수급에 따라 안정적으로 움직입니다.`;
+    }
+
+    // 3. 반도체 투톱 / 동반 상승 약화
+    if (clean.includes("반도체 투톱") || clean.includes("동반 상승")) {
+        return `삼성전자와 SK하이닉스가 함께 오르기보다, HBM 등 핵심 기술 경쟁력과 개별 실적 차이에 따라 주가가 따로 움직이는 차별화 장세입니다.`;
+    }
+
+    // 4. 코스피 / 코스닥 혼조세 / 시총 상위주 차별화
+    if (clean.includes("혼조세") || clean.includes("차별화 장세") || clean.includes("시총 상위주")) {
+        return `시장 전체가 일제히 다 오르는 장세가 아니므로, 확실한 실적 호재나 뚜렷한 수급 주체를 가진 핵심 주도주 위주로 선별 접근하는 것이 유리합니다.`;
+    }
+
+    // 5. 수급 / 외인 / 기관 매수 유입
+    if (clean.includes("외국인") || clean.includes("기관") || clean.includes("수급 유입") || clean.includes("순매수")) {
+        return `주가를 움직이는 핵심 주체인 외국인이나 기관 투자자의 자금이 유입되면서 단기 반등 및 추세 강화에 긍정적인 힘을 실어주고 있습니다.`;
+    }
+
+    // 6. 모멘텀 / 급등 / 상승세
+    if (clean.includes("모멘텀") || clean.includes("상승") || clean.includes("급등") || clean.includes("반등")) {
+        return `신제품 수주나 차세대 기술 기대감 등 주가를 위로 밀어 올릴 수 있는 강력한 상승 원동력(모멘텀)이 유지되고 있습니다.`;
+    }
+
+    // 7. 리스크 / 하락 / 변동성 / 경고
+    if (clean.includes("리스크") || clean.includes("하락") || clean.includes("변동성") || clean.includes("주의") || clean.includes("경고")) {
+        return `단기 과열 또는 글로벌 거시 경제(금리·환율) 이슈로 인해 일시적인 가격 출렁임이 나타날 수 있으므로 분할 매수로 대응하는 것이 안전합니다.`;
+    }
+
+    // 8. 영업이익 / 매출 / 실적
+    if (clean.includes("영업이익") || clean.includes("매출") || clean.includes("실적") || clean.includes("흑자")) {
+        return `기업의 본업 수익성이 탄탄하여 주가가 조정을 받더라도 실적이 하방을 든든하게 지켜주는 안전판 역할을 합니다.`;
+    }
+
+    // 기본 Fallback
+    return `AI 퀀트 알고리즘이 실시간 시장 호가와 재무·공시 데이터를 종합 분석하여 도출한 핵심 투자 판단 근거입니다.`;
+}
+
+function getRationaleExplanation(type: 'supply' | 'momentum' | 'risk', text: string): string {
+    if (type === 'supply') {
+        if (text.includes("혼조세") || text.includes("엇갈리고")) {
+            return "외국인·기관 등 큰손들이 전 종목을 사지 않고 특정 종목만 골라 매매하고 있어, 자금이 집중되는 핵심 종목을 파악하는 것이 중요합니다.";
+        } else if (text.includes("유입") || text.includes("순매수") || text.includes("매수세")) {
+            return "외국인과 기관의 강력한 매수 자금이 꾸준히 유입되어 주가 상승에 긍정적인 탄력을 불어넣고 있습니다.";
+        } else if (text.includes("이탈") || text.includes("매도")) {
+            return "단기 차익 실현 매물이 나오며 주가가 숨고르기 중이므로 진입 시점을 신중히 잡는 것이 좋습니다.";
+        }
+        return "외국인·기관 등 대형 자금의 실시간 이동 방향을 바탕으로 주가 수급의 유불리를 진단합니다.";
+    } else if (type === 'momentum') {
+        if (text.includes("반도체") || text.includes("HBM") || text.includes("AI")) {
+            return "AI 반도체 및 차세대 고대역폭 메모리(HBM) 수요 폭증 등 강력한 산업 성장 드라이브가 주가를 견인하고 있습니다.";
+        } else if (text.includes("실적") || text.includes("성장")) {
+            return "호실적 발표 및 신사업 확장에 따른 실질적 이익 성장이 주가를 위로 밀어 올리는 핵심 동력입니다.";
+        }
+        return "기업의 신제품, 수주, 실적 등 주가를 직접적으로 상승시킬 수 있는 강력한 재료와 에너지를 점검합니다.";
+    } else {
+        if (text.includes("거래대금") || text.includes("긴축") || text.includes("금리")) {
+            return "시장 전체 거래량이 줄거나 글로벌 금리 변동이 생기면 일시적인 주가 흔들림이 발생할 수 있어 분할 매수가 안전합니다.";
+        } else if (text.includes("고평가") || text.includes("과열") || text.includes("단기 급등")) {
+            return "단기 주가가 빠르게 상승하여 조정을 받을 수 있으니 욕심내지 말고 눌림목에서 분할 접근하는 것이 현명합니다.";
+        }
+        return "투자 전 반드시 체크해야 할 하락 위험 및 시장 변동성 요인을 사전 점검하여 원금을 보호합니다.";
+    }
+}
+
 export default function DiscoveryPage() {
     return (
         <Suspense fallback={
@@ -1961,7 +2045,7 @@ function DiscoveryContent() {
 
                                                     const lines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
                                                     return (
-                                                        <div className="space-y-3 mb-6">
+                                                        <div className="space-y-3.5 mb-6">
                                                             {lines.map((line, idx) => {
                                                                 let cardBorder = "border-l-4 border-l-blue-400 border-white/5 bg-gradient-to-r from-blue-950/30 via-zinc-900/60 to-black";
                                                                 let badgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/30";
@@ -1985,17 +2069,39 @@ function DiscoveryContent() {
                                                                     badgeLabel = "📑 섹터 및 장세 흐름";
                                                                 }
 
+                                                                const explanation = getBeginnerExplanation(line, stock.name);
+
                                                                 return (
                                                                     <div 
                                                                         key={idx} 
-                                                                        className={`${cardBorder} border p-4 md:p-4.5 rounded-2xl shadow-lg transition-all hover:border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3`}
+                                                                        className={`${cardBorder} border p-4.5 md:p-5 rounded-2xl shadow-lg transition-all hover:border-white/20 flex flex-col gap-3 group`}
                                                                     >
-                                                                        <p className="text-zinc-100 text-sm md:text-[15px] font-semibold leading-relaxed">
-                                                                            {line}
-                                                                        </p>
-                                                                        <span className={`self-start sm:self-center shrink-0 text-[11px] font-black px-3 py-1 rounded-xl border ${badgeStyle} shadow-sm`}>
-                                                                            {badgeLabel}
-                                                                        </span>
+                                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                                            <p className="text-zinc-100 text-sm md:text-base font-bold leading-relaxed">
+                                                                                {line}
+                                                                            </p>
+                                                                            <span className={`self-start sm:self-center shrink-0 text-[11px] font-black px-3 py-1 rounded-xl border ${badgeStyle} shadow-sm`}>
+                                                                                {badgeLabel}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        {/* 💡 초보자를 위한 친절한 쉬운 이유 / 해설 */}
+                                                                        {explanation && (
+                                                                            <div className="pt-2.5 border-t border-white/10 flex items-start gap-2.5 bg-black/40 p-3 rounded-xl">
+                                                                                <div className="w-5 h-5 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                                                                                    <span className="text-[10px]">💡</span>
+                                                                                </div>
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                        <span className="text-[11px] font-black text-amber-300">초보자를 위한 쉬운 해설</span>
+                                                                                        <span className="text-[9px] font-mono text-zinc-500">WHY THIS MATTERS</span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-zinc-300 leading-relaxed font-normal">
+                                                                                        {explanation}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 );
                                                             })}
@@ -2053,7 +2159,7 @@ function DiscoveryContent() {
 
                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                                         {/* 수급 카드 */}
-                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-blue-500/30 hover:border-blue-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] flex flex-col justify-between">
+                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-blue-500/30 hover:border-blue-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] flex flex-col justify-between gap-4">
                                                             <div>
                                                                 <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
                                                                     <span className="text-xs font-black text-blue-300 bg-blue-500/15 border border-blue-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
@@ -2065,10 +2171,17 @@ function DiscoveryContent() {
                                                                     {stock.rationale.supply}
                                                                 </p>
                                                             </div>
+                                                            <div className="pt-2.5 border-t border-white/10 bg-blue-950/20 p-3 rounded-xl flex items-start gap-2">
+                                                                <span className="text-xs">💡</span>
+                                                                <p className="text-[11.5px] text-blue-200/90 leading-relaxed font-normal">
+                                                                    <strong className="text-blue-300 font-bold mr-1">[쉬운 설명]</strong>
+                                                                    {getRationaleExplanation('supply', stock.rationale.supply)}
+                                                                </p>
+                                                            </div>
                                                         </div>
 
                                                         {/* 모멘텀 카드 */}
-                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-purple-500/30 hover:border-purple-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] flex flex-col justify-between">
+                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-purple-500/30 hover:border-purple-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] flex flex-col justify-between gap-4">
                                                             <div>
                                                                 <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
                                                                     <span className="text-xs font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
@@ -2080,10 +2193,17 @@ function DiscoveryContent() {
                                                                     {stock.rationale.momentum}
                                                                 </p>
                                                             </div>
+                                                            <div className="pt-2.5 border-t border-white/10 bg-purple-950/20 p-3 rounded-xl flex items-start gap-2">
+                                                                <span className="text-xs">💡</span>
+                                                                <p className="text-[11.5px] text-purple-200/90 leading-relaxed font-normal">
+                                                                    <strong className="text-purple-300 font-bold mr-1">[쉬운 설명]</strong>
+                                                                    {getRationaleExplanation('momentum', stock.rationale.momentum)}
+                                                                </p>
+                                                            </div>
                                                         </div>
 
                                                         {/* 리스크 카드 */}
-                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-rose-500/30 hover:border-rose-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)] flex flex-col justify-between">
+                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-rose-500/30 hover:border-rose-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)] flex flex-col justify-between gap-4">
                                                             <div>
                                                                 <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
                                                                     <span className="text-xs font-black text-rose-300 bg-rose-500/15 border border-rose-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
@@ -2093,6 +2213,13 @@ function DiscoveryContent() {
                                                                 </div>
                                                                 <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
                                                                     {stock.rationale.risk}
+                                                                </p>
+                                                            </div>
+                                                            <div className="pt-2.5 border-t border-white/10 bg-rose-950/20 p-3 rounded-xl flex items-start gap-2">
+                                                                <span className="text-xs">💡</span>
+                                                                <p className="text-[11.5px] text-rose-200/90 leading-relaxed font-normal">
+                                                                    <strong className="text-rose-300 font-bold mr-1">[쉬운 설명]</strong>
+                                                                    {getRationaleExplanation('risk', stock.rationale.risk)}
                                                                 </p>
                                                             </div>
                                                         </div>
