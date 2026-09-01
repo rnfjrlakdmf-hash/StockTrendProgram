@@ -17,10 +17,12 @@ const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
 };
 
+export const dynamic = 'force-dynamic';
+
 async function getStockInfo(ticker: string) {
     try {
         const res = await fetch(`${getApiBaseUrl()}/api/seo/stock-info/${ticker}`, {
-            next: { revalidate: 21600 } // Cache for 6 hours
+            cache: 'no-store'
         });
         if (!res.ok) return null;
         return await res.json();
