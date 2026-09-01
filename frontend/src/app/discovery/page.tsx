@@ -2484,16 +2484,16 @@ function DiscoveryContent() {
                                                     <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
                                                         <table className="w-full text-left border-collapse relative">
                                                             <thead className="sticky top-0 bg-[#0c1222] backdrop-blur-xl border-b-2 border-blue-500/30 shadow-xl z-10">
-                                                                <tr className="text-zinc-100 text-xs md:text-sm font-black uppercase tracking-wider">
-                                                                    <th className="py-4 px-4">일자</th>
-                                                                    <th className="py-4 px-3">종가</th>
-                                                                    <th className="py-4 px-3">전일대비</th>
-                                                                    <th className="py-4 px-3 text-center hidden md:table-cell">장중 고저 진폭 & 레인지</th>
-                                                                    <th className="py-4 px-3 text-right">시가</th>
-                                                                    <th className="py-4 px-3 text-right">고가</th>
-                                                                    <th className="py-4 px-3 text-right">저가</th>
-                                                                    <th className="py-4 px-4 text-right">거래량</th>
-                                                                    <th className="py-4 px-4 text-right hidden sm:table-cell">추정 거래대금</th>
+                                                                <tr className="text-zinc-100 text-xs md:text-sm font-black uppercase tracking-wider whitespace-nowrap">
+                                                                    <th className="py-4 px-4 whitespace-nowrap">일자</th>
+                                                                    <th className="py-4 px-4 whitespace-nowrap">종가</th>
+                                                                    <th className="py-4 px-4 whitespace-nowrap">전일대비</th>
+                                                                    <th className="py-4 px-5 text-center hidden md:table-cell whitespace-nowrap min-w-[220px]">장중 고저 진폭 & 레인지</th>
+                                                                    <th className="py-4 px-4 text-right whitespace-nowrap">시가</th>
+                                                                    <th className="py-4 px-4 text-right whitespace-nowrap">고가</th>
+                                                                    <th className="py-4 px-4 text-right whitespace-nowrap">저가</th>
+                                                                    <th className="py-4 px-5 text-right whitespace-nowrap">거래량</th>
+                                                                    <th className="py-4 px-5 text-right whitespace-nowrap hidden sm:table-cell">추정 거래대금</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-white/10 text-xs md:text-sm font-mono">
@@ -2510,11 +2510,21 @@ function DiscoveryContent() {
 
                                                                         const approxTradeVal = (day.close || 0) * (day.volume || 0);
 
+                                                                        // Clean price formatter: rounds KRW to integer, limits USD to 2 decimals
+                                                                        const formatTablePrice = (p: number | null | undefined) => {
+                                                                            if (p === null || p === undefined || isNaN(p)) return '-';
+                                                                            if (stock.currency === 'KRW') {
+                                                                                return Math.round(p).toLocaleString();
+                                                                            }
+                                                                            return Number(p.toFixed(2)).toLocaleString();
+                                                                        };
+
                                                                         return (
                                                                             <tr 
                                                                                 key={idx} 
-                                                                                className="hover:bg-gradient-to-r hover:from-blue-500/15 hover:via-indigo-500/10 hover:to-transparent transition-colors group"
+                                                                                className="hover:bg-gradient-to-r hover:from-blue-500/15 hover:via-indigo-500/10 hover:to-transparent transition-colors group whitespace-nowrap"
                                                                             >
+                                                                                {/* 일자 */}
                                                                                 <td className="py-3.5 px-4 text-zinc-100 font-bold whitespace-nowrap">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <span className="text-sm font-bold text-white">{toKoreanDate(day.date)}</span>
@@ -2526,12 +2536,14 @@ function DiscoveryContent() {
                                                                                     </div>
                                                                                 </td>
 
-                                                                                <td className="py-3.5 px-3 font-extrabold text-white text-sm md:text-[15px] whitespace-nowrap">
-                                                                                    <span>{stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}</span>
+                                                                                {/* 종가 */}
+                                                                                <td className="py-3.5 px-4 font-extrabold text-white text-sm md:text-[15px] whitespace-nowrap">
+                                                                                    <span>{stock.currency === 'KRW' ? '₩' : '$'}{formatTablePrice(day.close)}</span>
                                                                                 </td>
 
-                                                                                <td className="py-3.5 px-3 whitespace-nowrap">
-                                                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs md:text-sm font-black border shadow-md ${
+                                                                                {/* 전일비 뱃지 */}
+                                                                                <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs md:text-sm font-black border shadow-md whitespace-nowrap ${
                                                                                         isUp 
                                                                                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]' 
                                                                                             : isDown 
@@ -2539,18 +2551,18 @@ function DiscoveryContent() {
                                                                                             : 'bg-zinc-800 text-zinc-300 border-zinc-700'
                                                                                     }`}>
                                                                                         <span>{isUp ? '▲' : isDown ? '▼' : '•'}</span>
-                                                                                        <span>{isUp ? '+' : isDown ? '-' : ''}{changeVal.toLocaleString()}</span>
+                                                                                        <span>{isUp ? '+' : isDown ? '-' : ''}{formatTablePrice(changeVal)}</span>
                                                                                         <span className="text-xs opacity-90 font-bold">({isUp ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
                                                                                     </span>
                                                                                 </td>
 
                                                                                 {/* 장중 레인지 밴드 (Desktop) */}
-                                                                                <td className="py-3.5 px-3 text-center hidden md:table-cell">
-                                                                                    <div className="w-40 mx-auto">
-                                                                                        <div className="flex items-center justify-between text-xs font-bold mb-1">
-                                                                                            <span className="text-blue-300 font-mono">{day.low ? day.low.toLocaleString() : '-'}</span>
-                                                                                            <span className="text-xs font-black text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-md">진폭 {intradaySpread.toFixed(1)}%</span>
-                                                                                            <span className="text-rose-300 font-mono">{day.high ? day.high.toLocaleString() : '-'}</span>
+                                                                                <td className="py-3.5 px-5 text-center hidden md:table-cell whitespace-nowrap min-w-[220px]">
+                                                                                    <div className="w-full max-w-[220px] mx-auto">
+                                                                                        <div className="flex items-center justify-between text-xs font-bold mb-1 gap-2">
+                                                                                            <span className="text-blue-300 font-mono font-bold whitespace-nowrap">{formatTablePrice(day.low)}</span>
+                                                                                            <span className="text-xs font-black text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">진폭 {intradaySpread.toFixed(1)}%</span>
+                                                                                            <span className="text-rose-300 font-mono font-bold whitespace-nowrap">{formatTablePrice(day.high)}</span>
                                                                                         </div>
                                                                                         <div className="w-full h-2 bg-zinc-800 rounded-full relative overflow-hidden border border-white/10">
                                                                                             <div 
@@ -2566,23 +2578,23 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 시가 */}
-                                                                                <td className="py-3.5 px-3 text-right text-zinc-100 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
-                                                                                    {day.open ? day.open.toLocaleString() : '-'}
+                                                                                <td className="py-3.5 px-4 text-right text-zinc-100 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
+                                                                                    {formatTablePrice(day.open)}
                                                                                 </td>
 
                                                                                 {/* 고가 */}
-                                                                                <td className="py-3.5 px-3 text-right text-rose-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
-                                                                                    {day.high ? day.high.toLocaleString() : '-'}
+                                                                                <td className="py-3.5 px-4 text-right text-rose-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
+                                                                                    {formatTablePrice(day.high)}
                                                                                 </td>
 
                                                                                 {/* 저가 */}
-                                                                                <td className="py-3.5 px-3 text-right text-blue-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
-                                                                                    {day.low ? day.low.toLocaleString() : '-'}
+                                                                                <td className="py-3.5 px-4 text-right text-blue-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
+                                                                                    {formatTablePrice(day.low)}
                                                                                 </td>
 
                                                                                 {/* 거래량 */}
-                                                                                <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                                                                    <div className="font-bold text-zinc-100 text-xs md:text-sm font-mono">{day.volume ? day.volume.toLocaleString() : '0'}</div>
+                                                                                <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                                                                                    <div className="font-bold text-zinc-100 text-xs md:text-sm font-mono">{day.volume ? Math.round(day.volume).toLocaleString() : '0'}</div>
                                                                                     <div className="w-24 ml-auto h-1.5 bg-zinc-800 rounded-full mt-1 overflow-hidden border border-white/5">
                                                                                         <div 
                                                                                             className="h-full bg-blue-400 rounded-full"
@@ -2592,8 +2604,8 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 추정 거래대금 */}
-                                                                                <td className="py-3.5 px-4 text-right whitespace-nowrap hidden sm:table-cell">
-                                                                                    <span className="text-indigo-200 font-black text-xs md:text-sm bg-indigo-500/20 px-2.5 py-1 rounded-xl border border-indigo-500/40 shadow-sm font-mono">
+                                                                                <td className="py-3.5 px-5 text-right whitespace-nowrap hidden sm:table-cell">
+                                                                                    <span className="text-indigo-200 font-black text-xs md:text-sm bg-indigo-500/20 px-2.5 py-1 rounded-xl border border-indigo-500/40 shadow-sm font-mono whitespace-nowrap">
                                                                                         {formatTradingValue(approxTradeVal, stock.currency)}
                                                                                     </span>
                                                                                 </td>
