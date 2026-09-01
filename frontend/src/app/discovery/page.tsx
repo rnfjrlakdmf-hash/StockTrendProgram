@@ -8,7 +8,7 @@ import GaugeChart from "@/components/GaugeChart";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import SeoContentBlock from "@/components/SeoContentBlock";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown } from "lucide-react";
+import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
@@ -324,20 +324,52 @@ function parseCompanyDescription(desc: string) {
     
     let basicIntro = "";
     let establishment = "";
+    let historyYears: number | null = null;
     let location = "";
     const products: string[] = [];
     const technologies: string[] = [];
+    const applications: string[] = [];
+    const globalPresence: string[] = [];
     
+    // 글로벌 거점 및 주요 시장 네트워크 탐지
+    const regionKeywords = ["한국", "미국", "중국", "유럽", "아시아", "일본", "동남아", "인도", "북미", "남미", "글로벌"];
+    regionKeywords.forEach(reg => {
+        if (desc.includes(reg) && !globalPresence.includes(reg)) {
+            globalPresence.push(reg);
+        }
+    });
+
+    // 주요 전방 산업 / 응용 분야 탐지
+    const appKeywords = [
+        { key: "AI", label: "인공지능(AI) & 가속기" },
+        { key: "데이터센터", label: "클라우드 & 데이터센터" },
+        { key: "서버", label: "엔터프라이즈 서버" },
+        { key: "모바일", label: "스마트폰 & 모바일" },
+        { key: "자동차", label: "자율주행 & 전장 시스템" },
+        { key: "네트워킹", label: "네트워킹 & 5G 통신" },
+        { key: "컴퓨터", label: "PC & 고성능 컴퓨팅" }
+    ];
+    appKeywords.forEach(app => {
+        if (desc.includes(app.key) && !applications.includes(app.label)) {
+            applications.push(app.label);
+        }
+    });
+
     sentences.forEach((sentence, idx) => {
         // 설립 및 본사 정보 찾기
         if (sentence.includes("설립") || sentence.includes("본사")) {
             const estMatch = sentence.match(/(\d{4})년에?\s*설립/);
             if (estMatch) {
-                establishment = estMatch[1] + "년 설립";
+                const year = parseInt(estMatch[1], 10);
+                establishment = `${year}년 설립`;
+                if (year > 1900 && year <= 2026) {
+                    historyYears = 2026 - year;
+                }
             }
-            const locMatch = sentence.match(/(대한민국\s+[가-힣]+시|[가-힣]+시|서울|성남|울산|수원|인천|부산|판교)/);
+            const locMatch = sentence.match(/(대한민국\s+[가-힣]+시|[가-힣]+시|서울|성남|울산|수원|인천|부산|판교|이천)/);
             if (locMatch) {
                 location = locMatch[1];
+                if (location === '이천' || location === '이천시') location = '대한민국 이천시';
             }
             return;
         }
@@ -349,34 +381,40 @@ function parseCompanyDescription(desc: string) {
         }
         
         // 제품 및 제품 목록 추출 (쉼표로 구분된 부분)
-        if (sentence.includes("제공합니다") || sentence.includes("포함됩니다") || sentence.includes("영위합니다") || sentence.includes("생산") || sentence.includes("제조")) {
-            const cleanText = sentence.replace(/이 회사는|을 포함한|제품 및 서비스가 포함됩니다|등을 제공합니다|제공합니다|영위하고 있습니다/g, "");
+        if (sentence.includes("제공합니다") || sentence.includes("포함됩니다") || sentence.includes("영위합니다") || sentence.includes("생산") || sentence.includes("제조") || sentence.includes("DRAM") || sentence.includes("메모리") || sentence.includes("참여하고 있습니다")) {
+            const cleanText = sentence.replace(/이 회사는|을 포함한|제품 및 서비스가 포함됩니다|등을 제공합니다|제공합니다|영위하고 있습니다|판매에 참여하고 있습니다|참여하고 있습니다/g, "");
             const items = cleanText.split(/[,;]/).map(i => {
                 let s = i.trim();
                 s = s.replace(/^(및|또한|그리고)\s+/g, '');
-                s = s.replace(/(을|를|과|와|및|등|같은|주요)$/g, '').trim();
+                s = s.replace(/(을|를|과|와|및|등|같은|주요|으로)$/g, '').trim();
                 return s;
-            }).filter(i => i.length > 1 && i.length < 25);
+            }).filter(i => i.length > 1 && i.length < 25 && !regionKeywords.includes(i));
             products.push(...items);
-        } else if (sentence.includes("솔루션") || sentence.includes("기술") || sentence.includes("시스템")) {
+        } else if (sentence.includes("솔루션") || sentence.includes("기술") || sentence.includes("시스템") || sentence.includes("연구") || sentence.includes("개발")) {
             const items = sentence.replace(/솔루션도 제공하고 있다|등을 제공합니다|제공합니다/g, "").split(/[,;]/).map(i => {
                 let s = i.trim();
                 s = s.replace(/^(및|또한|그리고)\s+/g, '');
-                s = s.replace(/(을|를|과|와|및|등|같은|주요)$/g, '').trim();
+                s = s.replace(/(을|를|과|와|및|등|같은|주요|으로)$/g, '').trim();
                 return s;
-            }).filter(i => i.length > 1 && i.length < 25);
+            }).filter(i => i.length > 1 && i.length < 25 && !regionKeywords.includes(i));
             technologies.push(...items);
         }
     });
     
-    // 중복 제거
-    const uniqueProducts = Array.from(new Set(products)).slice(0, 12);
+    // 중복 제거 및 클린업
+    const uniqueProducts = Array.from(new Set(products)).filter(p => !p.includes("소비자 메모리와 같은")).slice(0, 10);
+    if (products.some(p => p.includes("DRAM")) && !uniqueProducts.includes("DRAM 메모리")) {
+        uniqueProducts.unshift("DRAM 메모리");
+    }
     const uniqueTech = Array.from(new Set(technologies)).slice(0, 8);
     
     return {
         basicIntro,
         establishment,
+        historyYears,
         location,
+        globalPresence: globalPresence.slice(0, 6),
+        applications: applications.slice(0, 4),
         products: uniqueProducts,
         technologies: uniqueTech,
         rawSentences: sentences
@@ -1676,88 +1714,159 @@ function DiscoveryContent() {
                                                 if (!parsed) return null;
                                                 
                                                 return (
-                                                    <div className="mb-8 rounded-3xl bg-gradient-to-br from-indigo-950/30 via-zinc-950 to-black border border-indigo-500/20 p-6 md:p-7 shadow-2xl relative overflow-hidden group">
-                                                        {/* 배경 광원 효과 */}
-                                                        <div className="absolute -top-16 -right-16 w-56 h-56 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-125 duration-700" />
+                                                    <div className="mb-8 rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border border-indigo-500/25 p-6 md:p-8 shadow-2xl relative overflow-hidden group">
+                                                        {/* Ambient Aurora Glows */}
+                                                        <div className="absolute -top-20 -right-20 w-72 h-72 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none transition-transform group-hover:scale-125 duration-700 -z-0" />
+                                                        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none -z-0" />
                                                         
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-b border-white/10 pb-4 mb-5 relative z-10">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-9 h-9 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shadow-inner">
-                                                                    <Building2 className="w-5 h-5 text-indigo-300" />
+                                                        {/* Top Header Row */}
+                                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-5 mb-6 relative z-10">
+                                                            <div className="flex items-center gap-3.5">
+                                                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/40 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.25)] shrink-0">
+                                                                    <Building2 className="w-6 h-6 text-indigo-300" />
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="text-sm md:text-base font-black text-white tracking-wide flex items-center gap-2">
-                                                                        <span>기업 개요</span>
-                                                                        <span className="text-[11px] font-mono font-bold text-indigo-400/90 tracking-wider">COMPANY PROFILE</span>
-                                                                    </h4>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <h4 className="text-lg md:text-xl font-black text-white tracking-tight">
+                                                                            {stock.name || stock.symbol} 기업 개요
+                                                                        </h4>
+                                                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                                            COMPANY PROFILE
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                                                                        글로벌 시장 내 비즈니스 모델 및 핵심 밸류체인 인텔리전스
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                             
+                                                            {/* Executive Meta Badges */}
                                                             <div className="flex flex-wrap items-center gap-2">
                                                                 {parsed.establishment && (
-                                                                    <span className="text-xs font-bold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-                                                                        <span>📅</span> {parsed.establishment}
-                                                                    </span>
+                                                                    <div className="px-3 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center gap-2 shadow-sm">
+                                                                        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                                                                        <div className="text-left">
+                                                                            <div className="text-[10px] text-indigo-300/80 font-bold leading-none">설립 연도</div>
+                                                                            <div className="text-xs font-bold text-white font-mono mt-0.5">{parsed.establishment} {parsed.historyYears ? `(${parsed.historyYears}년차)` : ''}</div>
+                                                                        </div>
+                                                                    </div>
                                                                 )}
                                                                 {parsed.location && (
-                                                                    <span className="text-xs font-bold text-purple-200 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-                                                                        <span>📍</span> {parsed.location}
-                                                                    </span>
+                                                                    <div className="px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center gap-2 shadow-sm">
+                                                                        <MapPin className="w-3.5 h-3.5 text-purple-400" />
+                                                                        <div className="text-left">
+                                                                            <div className="text-[10px] text-purple-300/80 font-bold leading-none">본사 소재지</div>
+                                                                            <div className="text-xs font-bold text-white mt-0.5">{parsed.location}</div>
+                                                                        </div>
+                                                                    </div>
                                                                 )}
+                                                                <div className="px-3 py-1.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center gap-2 shadow-sm">
+                                                                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                                                                    <div className="text-left">
+                                                                        <div className="text-[10px] text-cyan-300/80 font-bold leading-none">상장 시장</div>
+                                                                        <div className="text-xs font-bold text-white font-mono mt-0.5">{stock.symbol}</div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        {/* 기본 회사 소개 */}
+                                                        {/* Key Executive Synopsis Container */}
                                                         {parsed.basicIntro && (
-                                                            <div className="mb-5 bg-white/[0.02] border-l-4 border-l-indigo-500 p-4 rounded-r-2xl border-y border-r border-white/5 relative z-10">
-                                                                <p className="text-zinc-100 text-sm md:text-[15px] leading-relaxed font-semibold">
+                                                            <div className="mb-6 bg-gradient-to-r from-indigo-950/40 via-zinc-900/60 to-zinc-950 border-l-4 border-l-indigo-400 border-y border-r border-white/10 p-5 rounded-r-2xl relative z-10 shadow-lg">
+                                                                <div className="flex items-center gap-2 text-xs font-black text-indigo-300 mb-2">
+                                                                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                                                                    <span>핵심 사업 영역 및 글로벌 비즈니스 모델 요약</span>
+                                                                </div>
+                                                                <p className="text-zinc-100 text-sm md:text-[15.5px] leading-relaxed font-semibold">
                                                                     {parsed.basicIntro}
                                                                 </p>
                                                             </div>
                                                         )}
 
-                                                        {/* 주요 사업 배지 */}
-                                                        {parsed.products.length > 0 && (
-                                                            <div className="mb-4 relative z-10">
-                                                                <h5 className="text-xs font-black text-indigo-300 flex items-center gap-1.5 mb-2.5">
-                                                                    <span>🚢 주요 사업 및 핵심 비즈니스 포트폴리오</span>
-                                                                </h5>
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {parsed.products.map((item, idx) => (
-                                                                        <span key={idx} className="text-xs font-bold text-zinc-200 bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-indigo-500/40 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                                                            {item}
+                                                        {/* Key Global Presence Ribbon */}
+                                                        {parsed.globalPresence.length > 0 && (
+                                                            <div className="mb-6 p-4 rounded-2xl bg-zinc-900/70 border border-white/10 relative z-10 flex flex-wrap items-center justify-between gap-3 shadow-md">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Globe className="w-4 h-4 text-blue-400" />
+                                                                    <span className="text-xs font-bold text-zinc-300">글로벌 거점 및 시장 네트워크</span>
+                                                                </div>
+                                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                                    {parsed.globalPresence.map((country, idx) => (
+                                                                        <span key={idx} className="text-xs font-bold text-blue-300 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-xl shadow-sm flex items-center gap-1.5">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                                                            {country}
                                                                         </span>
                                                                     ))}
                                                                 </div>
                                                             </div>
                                                         )}
 
-                                                        {/* 핵심 기술 배지 */}
-                                                        {parsed.technologies.length > 0 && (
-                                                            <div className="mb-4 relative z-10">
-                                                                <h5 className="text-xs font-black text-purple-300 flex items-center gap-1.5 mb-2.5">
-                                                                    <span>⚡ 핵심 기술 및 솔루션</span>
-                                                                </h5>
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {parsed.technologies.map((item, idx) => (
-                                                                        <span key={idx} className="text-xs font-bold text-purple-200 bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                                                                            {item}
+                                                        {/* Segmented Pillars Grid */}
+                                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 relative z-10">
+                                                            {/* 1. 핵심 생산 제품 */}
+                                                            {parsed.products.length > 0 && (
+                                                                <div className="bg-zinc-950/80 border border-white/10 hover:border-indigo-500/40 p-5 rounded-2xl shadow-xl transition-all">
+                                                                    <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-white/5">
+                                                                        <h5 className="text-xs md:text-sm font-black text-indigo-300 flex items-center gap-2">
+                                                                            <span>📦 주요 사업 및 생산 품목 라인업</span>
+                                                                        </h5>
+                                                                        <span className="text-[10px] font-mono font-bold text-indigo-400/80 bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded-md">
+                                                                            {parsed.products.length} CATEGORIES
                                                                         </span>
-                                                                    ))}
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {parsed.products.map((item, idx) => (
+                                                                            <span key={idx} className="text-xs font-bold text-zinc-200 bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-indigo-400/50 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
+                                                                                {item}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
+                                                            )}
+
+                                                            {/* 2. 핵심 기술 & 솔루션 또는 전방 응용 분야 */}
+                                                            {(parsed.technologies.length > 0 || parsed.applications.length > 0) && (
+                                                                <div className="bg-zinc-950/80 border border-white/10 hover:border-purple-500/40 p-5 rounded-2xl shadow-xl transition-all">
+                                                                    <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-white/5">
+                                                                        <h5 className="text-xs md:text-sm font-black text-purple-300 flex items-center gap-2">
+                                                                            <span>⚡ 핵심 기술 및 전방 응용 분야</span>
+                                                                        </h5>
+                                                                        <span className="text-[10px] font-mono font-bold text-purple-400/80 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md">
+                                                                            TECH & APPLICATION
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {parsed.technologies.map((item, idx) => (
+                                                                            <span key={`tech-${idx}`} className="text-xs font-bold text-purple-200 bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30 hover:border-purple-400/50 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></span>
+                                                                                {item}
+                                                                            </span>
+                                                                        ))}
+                                                                        {parsed.applications.map((item, idx) => (
+                                                                            <span key={`app-${idx}`} className="text-xs font-bold text-emerald-200 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 hover:border-emerald-400/50 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                                                                                {item}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         
                                                         {/* 설명 전문 보기 아코디언 */}
-                                                        <details className="mt-5 border-t border-white/10 pt-3 group relative z-10">
-                                                            <summary className="text-xs text-zinc-400 font-bold hover:text-white cursor-pointer list-none flex items-center gap-1.5 select-none transition-colors">
-                                                                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                                                                <span>기업 상세 설명 전문 보기</span>
-                                                                <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180 text-zinc-500 group-hover:text-zinc-300" />
+                                                        <details className="border-t border-white/10 pt-4 group relative z-10">
+                                                            <summary className="text-xs text-zinc-400 font-bold hover:text-white cursor-pointer list-none flex items-center justify-between select-none transition-colors p-2.5 rounded-xl hover:bg-white/5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                                                                    <span>기업 상세 공시 및 비즈니스 설명 전문 열람</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 text-zinc-500 group-hover:text-zinc-300">
+                                                                    <span className="text-[11px] font-mono font-bold">FULL TEXT</span>
+                                                                    <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                                                                </div>
                                                             </summary>
-                                                            <div className="mt-3 p-4 bg-black/40 border border-white/10 rounded-2xl">
+                                                            <div className="mt-3 p-5 bg-black/60 border border-white/10 rounded-2xl">
                                                                 <p className="text-zinc-300 text-xs md:text-sm leading-relaxed whitespace-pre-wrap font-normal">
                                                                     {stock.description}
                                                                 </p>
