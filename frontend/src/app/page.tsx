@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { 
   BookOpen, Newspaper, ChevronRight, TrendingUp, Bell, Shield, BarChart3, 
   HelpCircle, Sparkles, ArrowUpRight, Cpu, Layers, CheckCircle2, Award, 
-  Lock, Globe, Database, Scale
+  Lock, Globe, Database, Scale, Trophy, Calculator, Compass, Zap
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -149,6 +149,78 @@ export default async function Home() {
                   <p className="text-gray-400 text-xs md:text-sm leading-relaxed">{desc}</p>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* 실시간 인기 스마트 금융 도구 4선 */}
+          <section className="bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-blue-950/20 border border-purple-500/20 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" /> 실시간 인기 퀀트 금융 도구
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  투자자들의 수익률을 극대화하는 핵심 분석 시뮬레이터와 VIP 리더보드입니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link 
+                href="/ranking"
+                className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/30 hover:border-amber-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-amber-400/20 text-amber-300">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">VIP 랭킹</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-amber-300 transition-colors">주식 고수 랭킹</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">전국 고수들의 관심종목 실시간 수익률과 명예의 전당 TOP 100</p>
+              </Link>
+
+              <Link 
+                href="/calculator"
+                className="p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/30 hover:border-blue-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-blue-400/20 text-blue-300">
+                    <Calculator className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black bg-blue-400/20 text-blue-300 px-2 py-0.5 rounded-full">시뮬레이터</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-blue-300 transition-colors">스마트 물타기 계산기</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">추가 매수 시 평단가 인하 효과와 원금 회복 탈출 시나리오 산출</p>
+              </Link>
+
+              <Link 
+                href="/signals"
+                className="p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 hover:border-red-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-orange-400/20 text-orange-300">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black bg-orange-400/20 text-orange-300 px-2 py-0.5 rounded-full">실시간</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-orange-300 transition-colors">글로벌 마켓 시그널</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">외인·기관 대량 수급 변동 및 DART 공시 실시간 레이더 감지</p>
+              </Link>
+
+              <Link 
+                href="/portfolio"
+                className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-emerald-400/20 text-emerald-300">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black bg-emerald-400/20 text-emerald-300 px-2 py-0.5 rounded-full">AI 진단</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-emerald-300 transition-colors">포트폴리오 자산 진단</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">6대 팩터 모델 기반 보유 종목의 변동성과 분산도 정밀 진단</p>
+              </Link>
             </div>
           </section>
 

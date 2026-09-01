@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight } from "lucide-react";
+import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
@@ -24,6 +24,7 @@ const navigationGroups = [
     {
         groupName: "프리미엄 & 리포트",
         items: [
+            { name: "주식 고수 랭킹 (VIP)", href: "/ranking", icon: Trophy, desc: "전국 주식 고수들의 포트폴리오 수익률과 명예의 전당 랭킹입니다." },
             { name: "VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다." },
             { name: "주말 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "주말에 발행되는 프리미엄 마켓 요약 리포트입니다." },
             { name: "주말 고래 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "세력과 외국인이 매집한 TOP 10 종목을 파헤치는 주말 프리미엄 리포트입니다." },
@@ -46,7 +47,7 @@ const navigationGroups = [
         items: [
             { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
             { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
-            { name: "물타기 평단 계산기", href: "/calculator", icon: Activity, desc: "추가 매수 시 변화하는 평단가와 수익 전환 가격을 빠르고 쉽게 계산합니다." },
+            { name: "물타기 평단 계산기", href: "/calculator", icon: Calculator, desc: "추가 매수 시 변화하는 평단가와 탈출 시나리오를 계산합니다." },
         ]
     },
     {
