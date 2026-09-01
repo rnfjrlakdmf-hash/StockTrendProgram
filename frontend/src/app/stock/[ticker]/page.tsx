@@ -11,6 +11,7 @@ import OnDemandAiAnalysis from "@/components/OnDemandAiAnalysis";
 import PremiumContent from "@/components/PremiumContent";
 import RiskGaugeWidget from "@/components/RiskGaugeWidget";
 import MtsOrderButton from "@/components/MtsOrderButton";
+import EasyFinancialReader from "@/components/EasyFinancialReader";
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -277,6 +278,18 @@ export default async function StockSeoPage({ params }: Props) {
                         </div>
                     </PremiumContent>
                 </div>
+
+                {/* AI 초보자 맞춤형 재무제표 3분 완벽 해설기 */}
+                <EasyFinancialReader 
+                    stockName={name}
+                    ticker={decodedTicker}
+                    price={data.price}
+                    per={data.per}
+                    pbr={data.pbr}
+                    dividendYield={data.dividendYield}
+                    marketCap={data.marketCap}
+                    financials={data.financials}
+                />
 
                 {/* On-Demand AI Analysis Section */}
                 <PremiumContent>

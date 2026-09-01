@@ -55,6 +55,56 @@ import requests
 from bs4 import BeautifulSoup
 
 # Cache for 6 hours to prevent rate limits
+
+def parse_naver_cop_table(soup):
+    try:
+        table = soup.select_one('.section.cop_analysis table')
+        if not table:
+            return None
+            
+        thead_ths = [th.text.strip() for th in table.select('thead tr:nth-of-type(2) th')]
+        years = [y for y in thead_ths[:4] if y]
+        rows = table.select('tbody tr')
+        
+        def get_row_floats(row_idx):
+            if row_idx >= len(rows): return []
+            tds = rows[row_idx].select('td')
+            vals = []
+            for td in tds[:4]:
+                t = td.text.strip().replace(',', '')
+                if not t or t == '-' or t == 'N/A':
+                    vals.append(None)
+                else:
+                    try:
+                        vals.append(float(t))
+                    except:
+                        vals.append(None)
+            return vals
+
+        return {
+            "years": years,
+            "revenue": get_row_floats(0),
+            "operating_income": get_row_floats(1),
+            "net_income": get_row_floats(2),
+            "operating_margin": get_row_floats(3),
+            "net_margin": get_row_floats(4),
+            "roe": get_row_floats(5),
+            "debt_ratio": get_row_floats(6),
+            "quick_ratio": get_row_floats(7),
+            "reserve_ratio": get_row_floats(8),
+            "eps": get_row_floats(9),
+            "per": get_row_floats(10),
+            "bps": get_row_floats(11),
+            "pbr": get_row_floats(12),
+            "dps": get_row_floats(13),
+            "dividend_yield": get_row_floats(14),
+            "payout_ratio": get_row_floats(15)
+        }
+    except Exception as e:
+        logger.error(f"Error parsing Naver cop table: {e}")
+        return None
+
+
 @cached(cache=TTLCache(maxsize=2000, ttl=21600))
 def get_cached_stock_info(ticker: str):
     try:
@@ -96,6 +146,26 @@ def get_cached_stock_info(ticker: str):
             ex_div_str = ex_div_date.strftime('%Y-%m-%d') if ex_div_date else None
             pay_str = pay_date.strftime('%Y-%m-%d') if pay_date else None
             
+            financials = {
+                "years": ["최근 12개월"],
+                "revenue": [info.get('totalRevenue') / 100000000 if info.get('totalRevenue') else None],
+                "operating_income": [info.get('operatingIncome') / 100000000 if info.get('operatingIncome') else None],
+                "net_income": [info.get('netIncomeToCommon') / 100000000 if info.get('netIncomeToCommon') else None],
+                "operating_margin": [info.get('operatingMargins') * 100 if info.get('operatingMargins') else None],
+                "net_margin": [info.get('profitMargins') * 100 if info.get('profitMargins') else None],
+                "roe": [info.get('returnOnEquity') * 100 if info.get('returnOnEquity') else None],
+                "debt_ratio": [info.get('debtToEquity') if info.get('debtToEquity') else None],
+                "quick_ratio": [info.get('quickRatio') * 100 if info.get('quickRatio') else None],
+                "reserve_ratio": None,
+                "eps": [info.get('trailingEps')],
+                "per": [per],
+                "bps": [info.get('bookValue')],
+                "pbr": [pbr],
+                "dps": [info.get('dividendRate')],
+                "dividend_yield": [div * 100 if div else None],
+                "payout_ratio": [info.get('payoutRatio') * 100 if info.get('payoutRatio') else None]
+            }
+            
         else:
             # Handle Korean Stock via Naver
             url = f"https://finance.naver.com/item/main.naver?code={ticker}"
@@ -127,6 +197,8 @@ def get_cached_stock_info(ticker: str):
             
             summary_el = soup.select_one('.summary_info p')
             summary = summary_el.text.strip() if summary_el else "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
+            
+            financials = parse_naver_cop_table(soup)
             
             cap_el = soup.select_one('#_market_sum')
             if cap_el:
@@ -183,7 +255,8 @@ def get_cached_stock_info(ticker: str):
             "summary": summary,
             "exDividendDate": ex_div_str,
             "paymentDate": pay_str,
-            "relatedStocks": related_stocks
+            "relatedStocks": related_stocks,
+            "financials": financials
         }
     except Exception as e:
         import traceback
