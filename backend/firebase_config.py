@@ -235,8 +235,8 @@ def send_push_notification(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='/icon.png',
-                badge='/badge.png',
+                icon='https://stock-trend-program.co.kr/icon.png',
+                badge='https://stock-trend-program.co.kr/badge.png',
                 vibrate=[200, 100, 200],
                 tag=fcm_tag,
                 renotify=True
@@ -451,6 +451,8 @@ def send_multicast_notification(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
+                icon='https://stock-trend-program.co.kr/icon.png',
+                badge='https://stock-trend-program.co.kr/badge.png',
                 vibrate=[200, 100, 200],
                 tag=fcm_tag,
                 renotify=True
@@ -460,12 +462,13 @@ def send_multicast_notification(
             )
         )
         
-        # Android 설정 (네이티브 앱용 태그 추가)
+        # Android 설정 (네이티브 앱용 태그 및 뱃지/아이콘 추가)
         android_config = messaging.AndroidConfig(
             priority='high',
             notification=messaging.AndroidNotification(
                 sound='default',
                 color='#3B82F6',
+                icon='ic_stat_notification',
                 channel_id='price_alerts',
                 priority='high',
                 default_vibrate_timings=True,
@@ -707,8 +710,8 @@ def send_topic_push(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='/icon.png',
-                badge='/badge.png',
+                icon='https://stock-trend-program.co.kr/icon.png',
+                badge='https://stock-trend-program.co.kr/badge.png',
                 renotify=True
             ),
             fcm_options=messaging.WebpushFCMOptions(
