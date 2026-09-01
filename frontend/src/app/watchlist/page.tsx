@@ -215,7 +215,7 @@ export default function WatchlistPage() {
     // [v2] 가격 변동 감지 → 브라우저 알림 트리거
     // ─────────────────────────────────────────────
     const checkPriceAlerts = (newQuotes: Record<string, any>, alertsList: Alert[]) => {
-        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+        if (typeof window === 'undefined' || !('Notification' in window) || (window as any).Notification.permission !== 'granted') return;
         Object.entries(newQuotes).forEach(([symbol, q]) => {
             const newPrice = parseFloat(String(q.price || '0').replace(/[^0-9.]/g, ''));
             const oldPrice = parseFloat(prevPricesRef.current[symbol] || '0');
@@ -226,8 +226,8 @@ export default function WatchlistPage() {
                 if (a.symbol !== symbol || a.status === 'triggered') return;
                 if (a.type === 'PRICE' || !a.type) {
                     const hit = a.condition === 'above' ? newPrice >= a.target_price : newPrice <= a.target_price;
-                    if (hit) {
-                        new Notification(`⚡ ${symbol} 목표가 도달!`, {
+                    if (hit && typeof window !== 'undefined' && 'Notification' in window) {
+                        new (window as any).Notification(`⚡ ${symbol} 목표가 도달!`, {
                             body: `현재가 ${newPrice.toLocaleString()} (목표: ${a.target_price.toLocaleString()})`,
                             icon: '/favicon.ico',
                         });

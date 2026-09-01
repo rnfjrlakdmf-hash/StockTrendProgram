@@ -103,6 +103,11 @@ export async function requestFCMToken(): Promise<string> {
     }
 
     // [Web 브라우저 / PWA 환경]
+    if (typeof window === 'undefined' || !('Notification' in window) || typeof (window as any).Notification === 'undefined') {
+        console.error('[Firebase] Notification API not supported in this environment');
+        throw new Error('FCM_UNAVAILABLE');
+    }
+
     const msg = getFirebaseMessaging();
     if (!msg) {
         console.error('[Firebase] Messaging not available');
@@ -110,7 +115,7 @@ export async function requestFCMToken(): Promise<string> {
     }
 
     try {
-        const permission = await Notification.requestPermission();
+        const permission = await window.Notification.requestPermission();
         if (permission !== 'granted') {
             console.log('[Firebase] Notification permission denied');
             throw new Error('PERMISSION_DENIED');
@@ -216,32 +221,27 @@ export function onNotificationClick(callback: (payload: any) => void) {
  * 알림 권한 상태 확인
  */
 export function getNotificationPermission(): NotificationPermission {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
+    if (typeof window === 'undefined' || !('Notification' in window) || typeof (window as any).Notification === 'undefined') {
         return 'default';
     }
-    return Notification.permission;
+    return window.Notification.permission;
 }
 
 /**
  * 브라우저 알림 표시
  */
 export function showNotification(title: string, options?: NotificationOptions) {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
+    if (typeof window === 'undefined' || !('Notification' in window) || typeof (window as any).Notification === 'undefined') {
         console.warn('[Notification] Browser does not support notifications');
         return;
     }
 
-    if (Notification.permission !== 'granted') {
+    if (window.Notification.permission !== 'granted') {
         console.warn('[Notification] Permission not granted');
         return;
     }
 
     try {
-        // [Debug] Add alert for local testing feedback
-        if (options?.tag === 'local-test') {
-            console.log('[Notification] Local test triggered');
-        }
-
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistration().then(registration => {
                 if (registration) {
@@ -252,16 +252,16 @@ export function showNotification(title: string, options?: NotificationOptions) {
                         ...options
                     } as any).catch(err => {
                         console.error('[Notification] SW Error:', err);
-                        // Fallback
-                        new Notification(title, options);
+                        if (typeof window !== 'undefined' && 'Notification' in window) {
+                            new window.Notification(title, options);
+                        }
                     });
-                } else {
-                    // Fallback if no SW registered yet
-                    new Notification(title, options);
+                } else if (typeof window !== 'undefined' && 'Notification' in window) {
+                    new window.Notification(title, options);
                 }
             });
-        } else {
-            new Notification(title, options);
+        } else if (typeof window !== 'undefined' && 'Notification' in window) {
+            new window.Notification(title, options);
         }
     } catch (e) {
         console.error("[Notification] Fatal Error:", e);

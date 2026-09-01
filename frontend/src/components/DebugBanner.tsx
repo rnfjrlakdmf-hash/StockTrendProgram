@@ -11,7 +11,7 @@ export default function DebugBanner() {
             </span>
             <button
                 onClick={() => {
-                    const permission = Notification.permission;
+                    const permission = typeof window !== 'undefined' && 'Notification' in window ? (window as any).Notification.permission : 'default';
                     if (permission === 'denied') {
                         alert('알림이 차단되어 있습니다. 주소창 자물쇠 버튼을 눌러 허용해주세요.');
                     } else {
