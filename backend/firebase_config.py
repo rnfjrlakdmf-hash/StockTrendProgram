@@ -259,10 +259,14 @@ def send_push_notification(
             )
         )
         
-        # 메시지 생성
+        # 메시지 생성 (WebPush 뱃지 정상 노출을 위해 data에 title/body 포함)
+        safe_data = {k: str(v) for k, v in (data or {}).items()}
+        safe_data['title'] = title
+        safe_data['body'] = body
+        safe_data['url'] = click_url
+
         message = messaging.Message(
-            notification=notification,
-            data=data or {},
+            data=safe_data,
             token=token,
             android=android_config,
             apns=apns_config,
@@ -491,8 +495,11 @@ def send_multicast_notification(
         
         for idx, token in enumerate(tokens):
             try:
+                safe_data['title'] = title
+                safe_data['body'] = body
+                safe_data['url'] = click_url
+
                 msg = messaging.Message(
-                    notification=notification,
                     data=safe_data,
                     token=token,
                     android=android_config,
