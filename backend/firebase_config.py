@@ -203,17 +203,8 @@ def send_push_notification(
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
         symbol = (data or {}).get('symbol', '')
         
-        # [Fix] 동일 알림 중복 수신 방지를 위한 Native Tag 생성
-        if alert_type == 'disclosure_alert':
-            fcm_tag = f"disc-{symbol}" if symbol else 'disc-alert'
-        elif alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
-            fcm_tag = f"news-{symbol}" if symbol else 'news-alert'
-        elif alert_type == 'market_summary':
-            fcm_tag = 'market-summary'
-        elif alert_type == 'portfolio_summary':
-            fcm_tag = 'portfolio-summary'
-        else:
-            fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
+        # [Fix] 안드로이드 묶음(하얀 네모 상자) 방지를 위한 단일 슬롯 태그 강제
+        fcm_tag = 'stock-trend-live-alert'
         
         if alert_type in ['news_alert', 'news_naver', 'news_google', 'disclosure_alert']:
             import urllib.parse
@@ -424,17 +415,8 @@ def send_multicast_notification(
         click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
         symbol = (data or {}).get('symbol', '')
         
-        # [Fix] 동일 알림 중복 수신 방지를 위한 Native Tag 생성
-        if alert_type == 'disclosure_alert':
-            fcm_tag = f"disc-{symbol}" if symbol else 'disc-alert'
-        elif alert_type == 'news_alert' or alert_type == 'news_naver' or alert_type == 'news_google':
-            fcm_tag = f"news-{symbol}" if symbol else 'news-alert'
-        elif alert_type == 'market_summary':
-            fcm_tag = 'market-summary'
-        elif alert_type == 'portfolio_summary':
-            fcm_tag = 'portfolio-summary'
-        else:
-            fcm_tag = f"stock-alert-{symbol}" if symbol else 'stock-alert'
+        # [Fix] 안드로이드 묶음(하얀 네모 상자) 방지를 위한 단일 슬롯 태그 강제
+        fcm_tag = 'stock-trend-live-alert'
         
         # [Fix] 네이티브 WebPush 클릭 시에도 뉴스 속보 및 공시는 경유 페이지로 가도록 강제 처리
         if alert_type in ['news_alert', 'news_naver', 'news_google', 'disclosure_alert']:
