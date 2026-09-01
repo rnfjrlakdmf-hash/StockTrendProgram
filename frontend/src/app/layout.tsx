@@ -230,7 +230,7 @@ export default function RootLayout({
             <FCMWrapper />
             
             {/* Mobile Bottom Tab Bar */}
-            <KakaoStickyBottomAd />
+            {/* <KakaoStickyBottomAd /> */}
             <BottomTabBar />
 
             {/* Smart Floating Quick Menu */}

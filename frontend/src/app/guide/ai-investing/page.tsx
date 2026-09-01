@@ -46,6 +46,41 @@ export default function AIInvestingGuide() {
                     <p>
                         AI 주식 투자는 인간의 직관을 100% 무시하라는 뜻이 아닙니다. 인간이 발견하지 못한 패턴을 AI가 찾아주고, 인간이 두려워할 때 AI가 객관적인 데이터를 제시해 줌으로써 투자 판단의 승률을 극대화하는 **가장 든든한 파트너**가 되는 것입니다. 지금 바로 AI의 분석 리포트를 확인하고 여러분의 투자 전략에 적용해 보세요!
                     </p>
+                
+                {/* E-E-A-T Author & Data Source Credibility Box */}
+                <section className="mt-16 pt-10 border-t border-white/10 not-prose">
+                  <div className="bg-gradient-to-br from-blue-900/10 via-zinc-900/60 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 md:p-8 space-y-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
+                          AI
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 font-mono">
+                        최종 검증: 2026년 9월
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-400">
+                      <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                        <strong className="text-gray-300 block font-semibold">데이터 출처 및 기준</strong>
+                        <p className="leading-relaxed">한국거래소(KRX) 유가증권·코스닥 시장 데이터, 금융감독원 전자공시시스템(DART), 미국 증권거래위원회(SEC EDGAR) 및 공인 금융 공학 이론에 근거하여 작성되었습니다.</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                        <strong className="text-gray-300 block font-semibold">법적 고지 및 면책 공지</strong>
+                        <p className="leading-relaxed">본 가이드는 투자자의 이해를 돕기 위한 순수 금융 지식 및 교육 목적의 콘텐츠이며, 자본시장법상 투자 권유 또는 자문에 해당하지 않습니다. 최종 투자 판단과 책임은 투자자 본인에게 있습니다.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
                 </article>
             </main>
         </div>
