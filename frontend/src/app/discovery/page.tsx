@@ -8,7 +8,7 @@ import GaugeChart from "@/components/GaugeChart";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import SeoContentBlock from "@/components/SeoContentBlock";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown } from "lucide-react";
+import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
@@ -331,11 +331,11 @@ function parseCompanyDescription(desc: string) {
     sentences.forEach((sentence, idx) => {
         // 설립 및 본사 정보 찾기
         if (sentence.includes("설립") || sentence.includes("본사")) {
-            const estMatch = sentence.match(/(\d{4})년에\s+설립/);
+            const estMatch = sentence.match(/(\d{4})년에?\s*설립/);
             if (estMatch) {
                 establishment = estMatch[1] + "년 설립";
             }
-            const locMatch = sentence.match(/(대한민국\s+[가-힣]+시|[가-힣]+시|서울|성남|울산|수원|인천|부산)/);
+            const locMatch = sentence.match(/(대한민국\s+[가-힣]+시|[가-힣]+시|서울|성남|울산|수원|인천|부산|판교)/);
             if (locMatch) {
                 location = locMatch[1];
             }
@@ -349,12 +349,22 @@ function parseCompanyDescription(desc: string) {
         }
         
         // 제품 및 제품 목록 추출 (쉼표로 구분된 부분)
-        if (sentence.includes("제공합니다") || sentence.includes("포함됩니다") || sentence.includes("영위합니다") || sentence.includes("생산")) {
-            const cleanText = sentence.replace(/이 회사는|을 포함한|제품 및 서비스가 포함됩니다|등을 제공합니다|제공합니다/g, "");
-            const items = cleanText.split(/[,;]/).map(i => i.trim()).filter(i => i.length > 1 && i.length < 20);
+        if (sentence.includes("제공합니다") || sentence.includes("포함됩니다") || sentence.includes("영위합니다") || sentence.includes("생산") || sentence.includes("제조")) {
+            const cleanText = sentence.replace(/이 회사는|을 포함한|제품 및 서비스가 포함됩니다|등을 제공합니다|제공합니다|영위하고 있습니다/g, "");
+            const items = cleanText.split(/[,;]/).map(i => {
+                let s = i.trim();
+                s = s.replace(/^(및|또한|그리고)\s+/g, '');
+                s = s.replace(/(을|를|과|와|및|등|같은|주요)$/g, '').trim();
+                return s;
+            }).filter(i => i.length > 1 && i.length < 25);
             products.push(...items);
         } else if (sentence.includes("솔루션") || sentence.includes("기술") || sentence.includes("시스템")) {
-            const items = sentence.replace(/솔루션도 제공하고 있다|등을 제공합니다|제공합니다/g, "").split(/[,;]/).map(i => i.trim()).filter(i => i.length > 1 && i.length < 20);
+            const items = sentence.replace(/솔루션도 제공하고 있다|등을 제공합니다|제공합니다/g, "").split(/[,;]/).map(i => {
+                let s = i.trim();
+                s = s.replace(/^(및|또한|그리고)\s+/g, '');
+                s = s.replace(/(을|를|과|와|및|등|같은|주요)$/g, '').trim();
+                return s;
+            }).filter(i => i.length > 1 && i.length < 25);
             technologies.push(...items);
         }
     });
@@ -1532,22 +1542,30 @@ function DiscoveryContent() {
                                 </div>
 
                                 {/* Detailed Analysis Text */}
-                                <div className="rounded-3xl bg-black/40 border border-white/20 p-8 shadow-lg">
+                                <div className="rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border border-white/10 p-5 md:p-8 shadow-2xl relative">
                                     {/* Tab Navigation */}
-                                    <div className="flex items-center gap-3 md:gap-6 border-b border-white/10 mb-6 font-bold text-sm md:text-lg overflow-x-auto scrollbar-hide py-2">
+                                    <div className="flex items-center gap-2 p-1.5 bg-zinc-950/90 backdrop-blur-xl border border-white/10 rounded-2xl mb-7 overflow-x-auto scrollbar-none shadow-2xl">
                                         <button
-                                            className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'analysis' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                            className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                                                activeTab === 'analysis'
+                                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-lg shadow-blue-500/25 border border-blue-400/30"
+                                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                            }`}
                                             onClick={() => setActiveTab('analysis')}
                                         >
+                                            <Layers className="w-4 h-4" />
                                             <span>데이터 종합 분석</span>
                                         </button>
 
-
-
                                         <button
-                                            className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'daily' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                            className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 ${
+                                                activeTab === 'daily'
+                                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-lg shadow-blue-500/25 border border-blue-400/30"
+                                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                            }`}
                                             onClick={() => setActiveTab('daily')}
                                         >
+                                            <Calendar className="w-4 h-4" />
                                             <span>일일 시세</span>
                                         </button>
 
@@ -1559,33 +1577,55 @@ function DiscoveryContent() {
                                                     return (
                                                         <>
                                                             <button
-                                                                className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'investor' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-gray-400 hover:text-white'}`}
+                                                                className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                                    activeTab === 'investor'
+                                                                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black shadow-lg shadow-indigo-500/25 border border-indigo-400/30"
+                                                                        : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                                                }`}
                                                                 onClick={() => setActiveTab('investor')}
                                                             >
-                                                                <span>📈 {isGlobal ? '주요 주주' : '투자자 동향'}</span> <span className="text-xs bg-indigo-500/20 px-2 py-0.5 rounded-full ml-1 text-indigo-300">{isGlobal ? 'US' : 'New'}</span>
+                                                                <TrendingUp className="w-4 h-4 text-indigo-400" />
+                                                                <span>{isGlobal ? '주요 주주' : '투자자 동향'}</span>
+                                                                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded-md font-bold ml-1">{isGlobal ? 'US' : 'New'}</span>
                                                             </button>
                                                             <button
-                                                                className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'financials' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-400 hover:text-white'}`}
+                                                                className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                                    activeTab === 'financials'
+                                                                        ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black shadow-lg shadow-emerald-500/25 border border-emerald-400/30"
+                                                                        : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                                                }`}
                                                                 onClick={() => setActiveTab('financials')}
                                                             >
-                                                                <span>💰 재무제표</span> <span className="text-xs bg-emerald-500/20 px-2 py-0.5 rounded-full ml-1 text-emerald-300">Detailed</span>
+                                                                <Database className="w-4 h-4 text-emerald-400" />
+                                                                <span>재무제표</span>
+                                                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded-md font-bold ml-1">Detailed</span>
                                                             </button>
                                                             
                                                             {!isGlobal && (
-                                                                <>
-                                                                    <button
-                                                                        className={`pb-3 whitespace-nowrap flex items-center gap-1 ${activeTab === 'overhang' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
-                                                                        onClick={() => setActiveTab('overhang')}
-                                                                    >
-                                                                        <span>⚠️ 오버행/타법인</span> <span className="text-xs bg-yellow-500/20 px-2 py-0.5 rounded-full ml-1 text-yellow-300">New</span>
-                                                                    </button>
-                                                                </>
+                                                                <button
+                                                                    className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                                        activeTab === 'overhang'
+                                                                            ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white font-black shadow-lg shadow-amber-500/25 border border-amber-400/30"
+                                                                            : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                                                    }`}
+                                                                    onClick={() => setActiveTab('overhang')}
+                                                                >
+                                                                    <AlertCircle className="w-4 h-4 text-yellow-400" />
+                                                                    <span>오버행/타법인</span>
+                                                                    <span className="text-[10px] bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 px-1.5 py-0.5 rounded-md font-bold ml-1">New</span>
+                                                                </button>
                                                             )}
                                                             <button
-                                                                className={`pb-3 whitespace-nowrap ${activeTab === 'disclosure' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                                                className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                                    activeTab === 'disclosure'
+                                                                        ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-black shadow-lg shadow-blue-500/25 border border-blue-400/30"
+                                                                        : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                                                }`}
                                                                 onClick={() => setActiveTab('disclosure')}
                                                             >
-                                                                <span>공시({isGlobal ? 'SEC' : 'DART'})</span> <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full ml-1 text-gray-300">New</span>
+                                                                <Zap className="w-4 h-4 text-blue-400" />
+                                                                <span>공시({isGlobal ? 'SEC' : 'DART'})</span>
+                                                                <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-md font-bold ml-1">Live</span>
                                                             </button>
                                                         </>
                                                     );
@@ -1594,13 +1634,16 @@ function DiscoveryContent() {
                                         )}
 
                                         <button
-                                            className={`pb-2 md:pb-3 whitespace-nowrap ${activeTab === 'news' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
+                                            className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                activeTab === 'news'
+                                                    ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-black shadow-lg shadow-indigo-500/25 border border-indigo-400/30"
+                                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                            }`}
                                             onClick={() => setActiveTab('news')}
                                         >
+                                            <Globe className="w-4 h-4 text-indigo-400" />
                                             <span>관련 뉴스</span>
                                         </button>
-
-
                                     </div>
 
                                     {activeTab === 'investor' ? (
@@ -1617,8 +1660,6 @@ function DiscoveryContent() {
                                         <>
                                             {/* Chart Section Hidden */}
 
-                                            {/* AI Opinion */}
-                                            {/* AI Opinion */}
                                             {/* [New] Detailed Corporate Overview Section (KR Only) */}
                                             {(stock.symbol.split('.')[0].length === 6 && /^\d+$/.test(stock.symbol.split('.')[0])) && (
                                                 <div className="mb-10">
@@ -1629,37 +1670,38 @@ function DiscoveryContent() {
                                                 </div>
                                             )}
 
-
-
                                             {/* [New] Corporate Overview Section (Basic Description) */}
                                             {stock.description && (() => {
                                                 const parsed = parseCompanyDescription(stock.description);
                                                 if (!parsed) return null;
                                                 
                                                 return (
-                                                    <div className="mb-8 rounded-3xl bg-gradient-to-br from-indigo-950/20 to-purple-950/20 border border-indigo-500/10 p-5 md:p-6 shadow-2xl relative overflow-hidden group">
+                                                    <div className="mb-8 rounded-3xl bg-gradient-to-br from-indigo-950/30 via-zinc-950 to-black border border-indigo-500/20 p-6 md:p-7 shadow-2xl relative overflow-hidden group">
                                                         {/* 배경 광원 효과 */}
-                                                        <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-150 duration-700" />
+                                                        <div className="absolute -top-16 -right-16 w-56 h-56 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-125 duration-700" />
                                                         
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 relative z-10">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                                                                    <Building2 className="w-4 h-4 text-indigo-400" />
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 border-b border-white/10 pb-4 mb-5 relative z-10">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-9 h-9 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shadow-inner">
+                                                                    <Building2 className="w-5 h-5 text-indigo-300" />
                                                                 </div>
-                                                                <h4 className="text-sm font-black text-indigo-300 uppercase tracking-widest">
-                                                                    기업 개요 (Company Profile)
-                                                                </h4>
+                                                                <div>
+                                                                    <h4 className="text-sm md:text-base font-black text-white tracking-wide flex items-center gap-2">
+                                                                        <span>기업 개요</span>
+                                                                        <span className="text-[11px] font-mono font-bold text-indigo-400/90 tracking-wider">COMPANY PROFILE</span>
+                                                                    </h4>
+                                                                </div>
                                                             </div>
                                                             
-                                                            <div className="flex gap-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
                                                                 {parsed.establishment && (
-                                                                    <span className="text-[10px] md:text-xs font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
-                                                                        📅 {parsed.establishment}
+                                                                    <span className="text-xs font-bold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                        <span>📅</span> {parsed.establishment}
                                                                     </span>
                                                                 )}
                                                                 {parsed.location && (
-                                                                    <span className="text-[10px] md:text-xs font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
-                                                                        📍 {parsed.location}
+                                                                    <span className="text-xs font-bold text-purple-200 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                        <span>📍</span> {parsed.location}
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -1667,20 +1709,23 @@ function DiscoveryContent() {
 
                                                         {/* 기본 회사 소개 */}
                                                         {parsed.basicIntro && (
-                                                            <p className="text-gray-200 text-sm md:text-base leading-relaxed font-semibold mb-5 border-l-2 border-indigo-500/40 pl-3 relative z-10">
-                                                                {parsed.basicIntro}
-                                                            </p>
+                                                            <div className="mb-5 bg-white/[0.02] border-l-4 border-l-indigo-500 p-4 rounded-r-2xl border-y border-r border-white/5 relative z-10">
+                                                                <p className="text-zinc-100 text-sm md:text-[15px] leading-relaxed font-semibold">
+                                                                    {parsed.basicIntro}
+                                                                </p>
+                                                            </div>
                                                         )}
 
                                                         {/* 주요 사업 배지 */}
                                                         {parsed.products.length > 0 && (
                                                             <div className="mb-4 relative z-10">
-                                                                <h5 className="text-[10px] md:text-[11px] font-black text-indigo-400/80 uppercase tracking-widest mb-2">
-                                                                    🚢 주요 사업 및 생산 품목
+                                                                <h5 className="text-xs font-black text-indigo-300 flex items-center gap-1.5 mb-2.5">
+                                                                    <span>🚢 주요 사업 및 핵심 비즈니스 포트폴리오</span>
                                                                 </h5>
-                                                                <div className="flex flex-wrap gap-1.5">
+                                                                <div className="flex flex-wrap gap-2">
                                                                     {parsed.products.map((item, idx) => (
-                                                                        <span key={idx} className="text-xs font-semibold text-gray-300 bg-white/5 hover:bg-white/10 transition-colors border border-white/10 px-2.5 py-1.5 rounded-xl">
+                                                                        <span key={idx} className="text-xs font-bold text-zinc-200 bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-indigo-500/40 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                                                                             {item}
                                                                         </span>
                                                                     ))}
@@ -1691,12 +1736,13 @@ function DiscoveryContent() {
                                                         {/* 핵심 기술 배지 */}
                                                         {parsed.technologies.length > 0 && (
                                                             <div className="mb-4 relative z-10">
-                                                                <h5 className="text-[10px] md:text-[11px] font-black text-purple-400/80 uppercase tracking-widest mb-2">
-                                                                    ⚡ 핵심 기술 및 솔루션
+                                                                <h5 className="text-xs font-black text-purple-300 flex items-center gap-1.5 mb-2.5">
+                                                                    <span>⚡ 핵심 기술 및 솔루션</span>
                                                                 </h5>
-                                                                <div className="flex flex-wrap gap-1.5">
+                                                                <div className="flex flex-wrap gap-2">
                                                                     {parsed.technologies.map((item, idx) => (
-                                                                        <span key={idx} className="text-xs font-semibold text-purple-200 bg-purple-500/5 hover:bg-purple-500/10 transition-colors border border-purple-500/10 px-2.5 py-1.5 rounded-xl">
+                                                                        <span key={idx} className="text-xs font-bold text-purple-200 bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
                                                                             {item}
                                                                         </span>
                                                                     ))}
@@ -1705,25 +1751,40 @@ function DiscoveryContent() {
                                                         )}
                                                         
                                                         {/* 설명 전문 보기 아코디언 */}
-                                                        <details className="mt-4 border-t border-white/5 pt-3 group relative z-10">
-                                                            <summary className="text-[10px] md:text-xs text-gray-500 font-bold hover:text-gray-300 cursor-pointer list-none flex items-center gap-1 select-none">
-                                                                <span>📄 설명 전문 보기</span>
-                                                                <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
+                                                        <details className="mt-5 border-t border-white/10 pt-3 group relative z-10">
+                                                            <summary className="text-xs text-zinc-400 font-bold hover:text-white cursor-pointer list-none flex items-center gap-1.5 select-none transition-colors">
+                                                                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                                                                <span>기업 상세 설명 전문 보기</span>
+                                                                <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180 text-zinc-500 group-hover:text-zinc-300" />
                                                             </summary>
-                                                            <p className="text-gray-400 text-xs md:text-sm leading-relaxed mt-2 whitespace-pre-wrap">
-                                                                {stock.description}
-                                                            </p>
+                                                            <div className="mt-3 p-4 bg-black/40 border border-white/10 rounded-2xl">
+                                                                <p className="text-zinc-300 text-xs md:text-sm leading-relaxed whitespace-pre-wrap font-normal">
+                                                                    {stock.description}
+                                                                </p>
+                                                            </div>
                                                         </details>
                                                     </div>
                                                 );
                                             })()}
 
-                                            <h4 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2 text-white">
-                                                <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-blue-400" /> 종합 분석 리포트
-                                            </h4>
-                                            <div className={`leading-relaxed text-sm md:text-lg font-medium whitespace-pre-wrap mb-6 min-h-[100px] ${(stock.summary || "").includes("오류") ? 'text-red-300' : 'text-gray-100'}`}>
+                                            {/* AI 종합 분석 리포트 영역 */}
+                                            <div className="mb-6">
+                                                <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-white/10">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shadow-inner">
+                                                            <TrendingUp className="h-4 w-4 text-blue-400" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+                                                                <span>AI 퀀트 종합 진단 리포트</span>
+                                                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">LIVE INTELLIGENCE</span>
+                                                            </h4>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
                                                 {isAnalyzing && (!stock?.summary || (stock.summary && stock.summary.length < 50)) ? (
-                                                    <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/40 to-indigo-950/40 overflow-hidden">
+                                                    <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/40 to-indigo-950/40 overflow-hidden mb-6">
                                                         {/* 진행 단계 헤더 */}
                                                         <div className="flex items-center gap-3 px-5 py-4 border-b border-blue-500/10">
                                                             <div className="relative flex items-center justify-center w-9 h-9 rounded-full bg-blue-500/20">
@@ -1779,42 +1840,152 @@ function DiscoveryContent() {
                                                             ))}
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <span>{stock.summary || "분석 내용이 없습니다."}</span>
-                                                )}
+                                                ) : (() => {
+                                                    const summaryText = stock.summary || "";
+                                                    if (!summaryText || summaryText === "분석 내용이 없습니다.") {
+                                                        return (
+                                                            <div className="p-6 text-center text-zinc-500 bg-zinc-900/50 rounded-2xl border border-white/5 mb-6">
+                                                                종합 분석 리포트 데이터가 준비 중입니다.
+                                                            </div>
+                                                        );
+                                                    }
 
+                                                    const lines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
+                                                    return (
+                                                        <div className="space-y-3 mb-6">
+                                                            {lines.map((line, idx) => {
+                                                                let cardBorder = "border-l-4 border-l-blue-400 border-white/5 bg-gradient-to-r from-blue-950/30 via-zinc-900/60 to-black";
+                                                                let badgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/30";
+                                                                let badgeLabel = "핵심 분석";
+
+                                                                if (line.includes("PER") || line.includes("PBR") || line.includes("시가총액") || line.startsWith("📊")) {
+                                                                    cardBorder = "border-l-4 border-l-cyan-400 border-white/5 bg-gradient-to-r from-cyan-950/30 via-zinc-900/60 to-black";
+                                                                    badgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/30";
+                                                                    badgeLabel = "📊 밸류에이션 진단";
+                                                                } else if (line.includes("약화") || line.includes("주의") || line.includes("위험") || line.includes("경고") || line.startsWith("⚠️")) {
+                                                                    cardBorder = "border-l-4 border-l-amber-400 border-white/5 bg-gradient-to-r from-amber-950/30 via-zinc-900/60 to-black";
+                                                                    badgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+                                                                    badgeLabel = "⚠️ 시장 리스크 점검";
+                                                                } else if (line.includes("상승") || line.includes("모멘텀") || line.includes("수급") || line.startsWith("⚡") || line.startsWith("🔥")) {
+                                                                    cardBorder = "border-l-4 border-l-purple-400 border-white/5 bg-gradient-to-r from-purple-950/30 via-zinc-900/60 to-black";
+                                                                    badgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/30";
+                                                                    badgeLabel = "⚡ 수급·모멘텀 포착";
+                                                                } else if (line.startsWith("📑") || line.includes("혼조세") || line.includes("코스피") || line.includes("코스닥")) {
+                                                                    cardBorder = "border-l-4 border-l-indigo-400 border-white/5 bg-gradient-to-r from-indigo-950/30 via-zinc-900/60 to-black";
+                                                                    badgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/30";
+                                                                    badgeLabel = "📑 섹터 및 장세 흐름";
+                                                                }
+
+                                                                return (
+                                                                    <div 
+                                                                        key={idx} 
+                                                                        className={`${cardBorder} border p-4 md:p-4.5 rounded-2xl shadow-lg transition-all hover:border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3`}
+                                                                    >
+                                                                        <p className="text-zinc-100 text-sm md:text-[15px] font-semibold leading-relaxed">
+                                                                            {line}
+                                                                        </p>
+                                                                        <span className={`self-start sm:self-center shrink-0 text-[11px] font-black px-3 py-1 rounded-xl border ${badgeStyle} shadow-sm`}>
+                                                                            {badgeLabel}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* [New] 3-Line Rationale with Beginner Terms Guide */}
                                             {(stock.rationale && stock.rationale.supply) ? (
-                                                <div className="mb-6 space-y-3 animate-in fade-in duration-500">
+                                                <div className="mb-6 space-y-4 animate-in fade-in duration-500">
                                                     {/* 용어 설명 토글 버튼 */}
-                                                    <details className="group bg-white/5 border border-white/10 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-                                                        <summary className="flex items-center gap-2 p-3 cursor-pointer text-sm font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
-                                                            <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                                                                <Info className="w-4 h-4" />
+                                                    <details className="group bg-gradient-to-br from-blue-950/20 via-indigo-950/20 to-black/40 border border-blue-500/20 rounded-2xl overflow-hidden [&_summary::-webkit-details-marker]:hidden shadow-lg transition-all">
+                                                        <summary className="flex items-center justify-between p-4 cursor-pointer text-xs md:text-sm font-bold text-blue-200 hover:text-white hover:bg-blue-500/10 transition-colors">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="w-7 h-7 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                                                                    <Info className="w-4 h-4" />
+                                                                </div>
+                                                                <span>주식 초보자를 위한 핵심 투자 용어 쉽게 이해하기 (클릭)</span>
                                                             </div>
-                                                            <span>주식 초보자를 위한 용어 쉽게 이해하기 (클릭)</span>
+                                                            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180 text-blue-400" />
                                                         </summary>
-                                                        <div className="p-4 pt-2 text-sm text-gray-300 space-y-3 border-t border-white/5 bg-black/20 leading-relaxed">
-                                                            <p><strong className="text-blue-400">✅ 수급 (Supply):</strong> <span className="text-gray-400">"지금 이 주식을 누가 열정적으로 사고 있나?"</span><br/>외국인이나 기관 등 돈이 많은 큰손들이 이 주식을 많이 담고 있다면 수급이 좋다고 해요. 그만큼 인기몰이 중이라는 뜻이죠!</p>
-                                                            <p><strong className="text-purple-400">🔥 모멘텀 (Momentum):</strong> <span className="text-gray-400">"앞으로 주가가 오를 만한 착한 소식이나 에너지가 있나?"</span><br/>신제품 대박, 역대급 실적 달성 등 앞으로 주가를 강하게 끌어올릴 만한 원동력을 나타내요.</p>
-                                                            <p><strong className="text-red-400">⚠️ 리스크 (Risk):</strong> <span className="text-gray-400">"투자하기 전 조심해야 할 위험 요소는 무엇인가?"</span><br/>회사에 나쁜 소식이 있거나, 주가가 너무 비싼 상태 등 주가가 떨어질 수 있는 불안 요소들을 짚어줘요.</p>
+                                                        <div className="p-5 pt-3 space-y-3 border-t border-white/10 bg-black/40">
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                                <div className="bg-blue-950/30 border border-blue-500/20 p-3.5 rounded-xl">
+                                                                    <p className="text-xs font-black text-blue-300 mb-1 flex items-center gap-1.5">
+                                                                        <span>✅ 수급 (Supply)</span>
+                                                                    </p>
+                                                                    <p className="text-xs text-zinc-300 leading-relaxed">
+                                                                        <span className="text-blue-200 font-semibold">"누가 열정적으로 사고 있나?"</span><br/>
+                                                                        외국인·기관 등 큰손들의 매수 유입 강도를 나타냅니다.
+                                                                    </p>
+                                                                </div>
+                                                                <div className="bg-purple-950/30 border border-purple-500/20 p-3.5 rounded-xl">
+                                                                    <p className="text-xs font-black text-purple-300 mb-1 flex items-center gap-1.5">
+                                                                        <span>🔥 모멘텀 (Momentum)</span>
+                                                                    </p>
+                                                                    <p className="text-xs text-zinc-300 leading-relaxed">
+                                                                        <span className="text-purple-200 font-semibold">"주가를 올릴 강력한 에너지가 있나?"</span><br/>
+                                                                        실적 대박, 신사업 등 주가를 끌어올릴 상승 원동력입니다.
+                                                                    </p>
+                                                                </div>
+                                                                <div className="bg-rose-950/30 border border-rose-500/20 p-3.5 rounded-xl">
+                                                                    <p className="text-xs font-black text-rose-300 mb-1 flex items-center gap-1.5">
+                                                                        <span>⚠️ 리스크 (Risk)</span>
+                                                                    </p>
+                                                                    <p className="text-xs text-zinc-300 leading-relaxed">
+                                                                        <span className="text-rose-200 font-semibold">"투자 전 조심할 위험 요소는?"</span><br/>
+                                                                        고평가 논란, 시장 변동성 등 주가 하락 불안 요소를 짚어줍니다.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </details>
 
                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-lg">
-                                                            <div className="text-blue-400 font-bold mb-1 flex items-center gap-2"><span>✅ 수급 (Supply)</span></div>
-                                                            <div className="text-sm text-gray-200"><span>{stock.rationale.supply}</span></div>
+                                                        {/* 수급 카드 */}
+                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-blue-500/30 hover:border-blue-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] flex flex-col justify-between">
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
+                                                                    <span className="text-xs font-black text-blue-300 bg-blue-500/15 border border-blue-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                        <span>✅</span> 수급 진단 (Supply)
+                                                                    </span>
+                                                                    <span className="text-[10px] font-mono font-bold text-blue-400/80">FLOW</span>
+                                                                </div>
+                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
+                                                                    {stock.rationale.supply}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div className="bg-white/5 p-4 rounded-xl border border-white/10 shadow-lg">
-                                                            <div className="text-purple-400 font-bold mb-1 flex items-center gap-2"><span>🔥 모멘텀 (Momentum)</span></div>
-                                                            <div className="text-sm text-gray-200"><span>{stock.rationale.momentum}</span></div>
+
+                                                        {/* 모멘텀 카드 */}
+                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-purple-500/30 hover:border-purple-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)] flex flex-col justify-between">
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
+                                                                    <span className="text-xs font-black text-purple-300 bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                        <span>🔥</span> 모멘텀 (Momentum)
+                                                                    </span>
+                                                                    <span className="text-[10px] font-mono font-bold text-purple-400/80">DRIVE</span>
+                                                                </div>
+                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
+                                                                    {stock.rationale.momentum}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div className="bg-white/5 p-4 rounded-xl border border-red-500/30 shadow-lg">
-                                                            <div className="text-red-400 font-bold mb-1 flex items-center gap-2"><span>⚠️ 리스크 (Risk)</span></div>
-                                                            <div className="text-sm text-gray-200"><span>{stock.rationale.risk}</span></div>
+
+                                                        {/* 리스크 카드 */}
+                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-950 to-black p-5 rounded-2xl border border-rose-500/30 hover:border-rose-400/50 shadow-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)] flex flex-col justify-between">
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/5">
+                                                                    <span className="text-xs font-black text-rose-300 bg-rose-500/15 border border-rose-500/30 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                                                        <span>⚠️</span> 리스크 점검 (Risk)
+                                                                    </span>
+                                                                    <span className="text-[10px] font-mono font-bold text-rose-400/80">GUARD</span>
+                                                                </div>
+                                                                <p className="text-sm font-semibold text-zinc-100 leading-relaxed">
+                                                                    {stock.rationale.risk}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1837,8 +2008,6 @@ function DiscoveryContent() {
                                                     ))}
                                                 </div>
                                             ) : null}
-
-
 
                                             <AIDisclaimer className="mt-6" />
                                         </>
