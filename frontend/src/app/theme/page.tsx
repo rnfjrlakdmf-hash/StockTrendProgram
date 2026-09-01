@@ -340,15 +340,21 @@ function ThemePageContent() {
                 <div className="hidden md:flex justify-center -mt-2 mb-4">
                     <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
                 </div>
-                {/* Search Hero */}
-                <div className="text-center space-y-7 py-8 relative">
-                    {/* Background Glow */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+                {/* Search Hero - Ultra Luxury VIP Design */}
+                <div className="text-center space-y-8 py-8 relative overflow-hidden">
+                    {/* Background Radial Glow */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-4/5 bg-gradient-to-r from-orange-600/15 via-amber-500/10 to-yellow-600/15 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+
+                    {/* Top VIP Badge */}
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-orange-500/15 to-amber-500/15 border border-orange-500/30 text-orange-400 text-xs font-black shadow-lg shadow-orange-500/10 backdrop-blur-md">
+                        <Flame className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+                        <span>AI 실시간 주도 테마 & 대장주 발굴 레이더</span>
+                    </div>
 
                     <div className="flex items-center justify-center gap-3">
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400 tracking-tight drop-shadow-lg flex items-center justify-center gap-2 flex-wrap">
-                            <span>🔥 실시간 주도 테마 레이더</span>
-                            <span className="text-xl md:text-2xl text-orange-400 font-bold align-middle">(테마 발굴)</span>
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight flex items-center justify-center gap-2 flex-wrap">
+                            <span>실시간 주도 테마 레이더</span>
+                            <span className="text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300 font-bold">(테마발굴)</span>
                         </h2>
                         <button 
                             onClick={() => setShowHelp(true)}
@@ -358,20 +364,21 @@ function ThemePageContent() {
                             <Info className="w-5 h-5" />
                         </button>
                     </div>
-                    <p className="text-gray-300 text-base md:text-lg font-medium tracking-wide">
-                        관심있는 테마 키워드를 입력하면 <span className="text-orange-400 font-bold">대장주와 핵심 리스크</span>를 즉각적으로 분석합니다.
+                    <p className="text-gray-300 text-sm sm:text-base md:text-lg font-medium tracking-wide max-w-2xl mx-auto leading-relaxed">
+                        관심있는 테마 키워드를 입력하면 <span className="text-orange-400 font-bold bg-orange-400/10 px-2 py-0.5 rounded-md border border-orange-500/20">대장주와 핵심 리스크</span>를 즉각적으로 분석합니다.
                     </p>
 
+                    {/* 럭셔리 글래스모피즘 검색창 */}
                     <div className="relative max-w-2xl mx-auto group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500/20 via-amber-500/20 to-yellow-500/20 rounded-3xl blur opacity-30 group-hover:opacity-70 transition duration-500"></div>
-                        <div className="relative flex items-center">
-                            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                                <Search className="h-6 w-6 text-orange-400/80" />
+                        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500/30 via-amber-500/30 to-yellow-500/30 rounded-3xl blur-lg opacity-40 group-hover:opacity-80 transition duration-500"></div>
+                        <div className="relative flex items-center shadow-2xl rounded-2xl overflow-hidden">
+                            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none z-10">
+                                <Search className="h-6 w-6 text-orange-400/90" />
                             </div>
                             <input
                                 type="text"
-                                placeholder="예: 비만치료제, 온디바이스AI, 전력기기..."
-                                className="w-full h-16 pl-16 pr-28 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl text-lg md:text-xl font-bold outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all text-white placeholder-gray-500 shadow-2xl"
+                                placeholder="예: 비만치료제, 온디바이스AI, 전력기기, 2차전지..."
+                                className="w-full h-16 pl-16 pr-28 bg-zinc-950/80 backdrop-blur-2xl border border-white/15 focus:border-orange-400 rounded-2xl text-base sm:text-lg md:text-xl font-bold outline-none focus:ring-2 focus:ring-orange-500/30 transition-all text-white placeholder-zinc-500 shadow-inner"
                                 value={keyword}
                                 onChange={(e) => setKeyword(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -379,53 +386,82 @@ function ThemePageContent() {
                             <button
                                 onClick={handleAnalyze}
                                 disabled={loading}
-                                className="absolute right-2.5 top-2.5 bottom-2.5 px-6 flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)] disabled:opacity-50 disabled:shadow-none cursor-pointer active:scale-95"
+                                className="absolute right-2 top-2 bottom-2 px-6 flex items-center justify-center bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-white rounded-xl font-black transition-all shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_30px_rgba(249,115,22,0.7)] disabled:opacity-50 disabled:shadow-none cursor-pointer active:scale-95 z-10"
                             >
-                                {loading ? <Loader2 className="animate-spin text-white w-6 h-6" /> : <ArrowRight className="text-white w-6 h-6" />}
+                                {loading ? <Loader2 className="animate-spin text-white w-6 h-6" /> : <ArrowRight className="text-white w-6 h-6 stroke-[3]" />}
                             </button>
                         </div>
                     </div>
 
-                    {/* 최근 검색어 칩 */}
-                    {recentSearches.length > 0 && (
-                        <div className="max-w-2xl mx-auto flex items-center justify-between text-xs text-gray-400 px-1 flex-wrap gap-2">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-gray-500">최근 검색:</span>
-                                {recentSearches.map((s, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => {
-                                            setKeyword(s);
-                                            handleAnalyze(s);
-                                        }}
-                                        className="px-2 py-0.5 bg-white/5 hover:bg-white/15 rounded-lg text-gray-300 hover:text-white transition-colors"
-                                    >
-                                        #{s}
-                                    </button>
-                                ))}
-                            </div>
-                            <button
-                                onClick={clearRecentSearches}
-                                className="text-gray-500 hover:text-gray-300 underline text-[11px]"
-                            >
-                                기록 지우기
-                            </button>
+                    {/* 추천 핫 테마 칩 & 최근 검색어 */}
+                    <div className="max-w-2xl mx-auto space-y-2">
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap text-xs">
+                            <span className="text-zinc-500 font-bold flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-amber-400" /> 인기 추천:
+                            </span>
+                            {['온디바이스AI', '전력기기', '비만치료제', '2차전지', 'CXL반도체', '휴머노이드'].map((s, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setKeyword(s);
+                                        handleAnalyze(s);
+                                    }}
+                                    className="px-2.5 py-1 bg-white/5 hover:bg-orange-500/20 hover:text-orange-300 border border-white/10 hover:border-orange-500/30 rounded-xl text-zinc-300 transition-all font-medium active:scale-95"
+                                >
+                                    #{s}
+                                </button>
+                            ))}
                         </div>
-                    )}
 
-                    {/* TOP 10 실시간 인기 테마 섹션 */}
-                    <div className="pt-6 w-full max-w-5xl mx-auto">
-                        <div className="flex items-center justify-between gap-2 mb-4 px-1">
+                        {recentSearches.length > 0 && (
+                            <div className="flex items-center justify-between text-xs text-zinc-400 px-1 pt-1 border-t border-white/5 flex-wrap gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-zinc-500">최근 검색:</span>
+                                    {recentSearches.map((s, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                setKeyword(s);
+                                                handleAnalyze(s);
+                                            }}
+                                            className="px-2 py-0.5 bg-white/5 hover:bg-white/15 rounded-lg text-zinc-300 hover:text-white transition-colors"
+                                        >
+                                            #{s}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={clearRecentSearches}
+                                    className="text-zinc-500 hover:text-zinc-300 underline text-[11px]"
+                                >
+                                    기록 지우기
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 🏆 TOP 10 실시간 인기 테마 섹션 (Luxury VIP Grid) */}
+                    <div className="pt-8 w-full max-w-5xl mx-auto">
+                        <div className="flex items-center justify-between gap-2 mb-4 px-1 pb-2 border-b border-white/10">
                             <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
-                                <span className="text-white font-bold text-sm tracking-wider">
+                                <div className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                                    <Sparkles className="w-4 h-4 text-orange-400 animate-pulse" />
+                                </div>
+                                <h3 className="text-white font-black text-sm sm:text-base tracking-wide">
                                     실시간 인기 테마 TOP 10
+                                </h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <span className="text-[11px] text-zinc-400 font-mono font-medium">
+                                    1분 주기 실시간 자동 갱신
                                 </span>
                             </div>
-                            <span className="text-[11px] text-gray-400 font-medium">
-                                🔄 1분 주기 실시간 자동 갱신
-                            </span>
                         </div>
+
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             {trendingThemes.length === 0 ? (
                                 Array.from({ length: 10 }).map((_, i) => (
@@ -435,7 +471,10 @@ function ThemePageContent() {
                             trendingThemes.slice(0, 10).map((t, idx) => {
                                 const rawName = typeof t === 'string' ? t : t.name;
                                 const cleanName = cleanThemeTitle(rawName);
-                                const isTop3 = idx < 3;
+                                const isTop1 = idx === 0;
+                                const isTop2 = idx === 1;
+                                const isTop3 = idx === 2;
+                                const isTop3Group = idx < 3;
                                 
                                 return (
                                     <button
@@ -445,34 +484,42 @@ function ThemePageContent() {
                                             setKeyword(rawName); 
                                             handleAnalyze(rawName); 
                                         }}
-                                        className={`group relative p-3.5 rounded-2xl bg-black/50 backdrop-blur-md border ${isTop3 ? 'border-orange-500/30 hover:border-orange-400/70 shadow-[0_4px_20px_rgba(249,115,22,0.1)]' : 'border-white/10 hover:border-white/30'} hover:bg-orange-950/20 transition-all hover:-translate-y-1 text-left overflow-hidden flex flex-col justify-between h-full min-h-[92px] active:scale-95`}
+                                        className={`group relative p-4 rounded-2xl transition-all duration-300 text-left overflow-hidden flex flex-col justify-between h-full min-h-[102px] active:scale-95 shadow-lg ${
+                                            isTop1 
+                                                ? 'bg-gradient-to-br from-amber-950/50 via-zinc-900/90 to-yellow-950/40 border border-amber-400/50 hover:border-amber-300 shadow-[0_4px_25px_rgba(245,158,11,0.15)] ring-1 ring-amber-400/20' 
+                                                : isTop2
+                                                ? 'bg-gradient-to-br from-slate-900/80 via-zinc-900/90 to-zinc-950 border border-slate-400/40 hover:border-slate-300 shadow-[0_4px_20px_rgba(148,163,184,0.1)]'
+                                                : isTop3
+                                                ? 'bg-gradient-to-br from-amber-950/40 via-zinc-900/90 to-zinc-950 border border-amber-600/40 hover:border-amber-500 shadow-[0_4px_20px_rgba(217,119,6,0.1)]'
+                                                : 'bg-zinc-900/70 backdrop-blur-md border border-white/10 hover:border-orange-500/40 hover:bg-zinc-900/90'
+                                        } hover:-translate-y-1`}
                                     >
-                                        <div className="flex justify-between items-center mb-1.5 z-10 w-full">
-                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 ${
-                                                idx === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.3)]' :
-                                                idx === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/40' :
-                                                idx === 2 ? 'bg-amber-700/20 text-amber-200 border border-amber-700/40' :
-                                                'bg-white/5 text-gray-400 border border-white/5 group-hover:text-gray-200'
+                                        <div className="flex justify-between items-center mb-2 z-10 w-full">
+                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm ${
+                                                isTop1 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black ring-2 ring-amber-400/30' :
+                                                isTop2 ? 'bg-slate-300 text-black font-black' :
+                                                isTop3 ? 'bg-amber-600 text-white font-bold' :
+                                                'bg-white/5 text-zinc-400 font-mono border border-white/5 group-hover:text-zinc-200'
                                             }`}>
-                                                {idx === 0 ? '🥇 1위' : idx === 1 ? '🥈 2위' : idx === 2 ? '🥉 3위' : `${String(idx + 1).padStart(2, '0')}`}
+                                                {isTop1 ? '👑 1위' : isTop2 ? '🥈 2위' : isTop3 ? '🥉 3위' : `${String(idx + 1).padStart(2, '0')}`}
                                             </span>
                                             {typeof t !== 'string' && t.change && (
-                                                <span className={`text-[12px] font-black tracking-tight ${
+                                                <span className={`text-[12px] font-black font-mono tracking-tight ${
                                                     (t.change.includes('+') || !t.change.includes('-')) && t.change !== '0.00%' 
-                                                        ? 'text-red-400' 
-                                                        : 'text-blue-400'
+                                                        ? 'text-rose-400' 
+                                                        : 'text-sky-400'
                                                 }`}>
-                                                    {t.change}
+                                                    {t.change.startsWith('+') ? t.change : `+${t.change}`}
                                                 </span>
                                             )}
                                         </div>
                                         
-                                        <div className="z-10 flex flex-col w-full">
-                                            <span className="font-bold text-gray-100 group-hover:text-orange-300 text-sm transition-colors truncate w-full" title={rawName}>
+                                        <div className="z-10 flex flex-col w-full space-y-0.5">
+                                            <span className="font-black text-white group-hover:text-amber-300 text-sm transition-colors truncate w-full" title={rawName}>
                                                 {cleanName}
                                             </span>
                                             {typeof t !== 'string' && t.desc && (
-                                                <span className="text-[11px] text-gray-400 group-hover:text-gray-300 mt-1 line-clamp-1 transition-colors w-full">
+                                                <span className="text-[11px] text-zinc-400 group-hover:text-zinc-300 line-clamp-1 transition-colors w-full">
                                                     {t.desc}
                                                 </span>
                                             )}
