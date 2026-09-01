@@ -2322,8 +2322,7 @@ function DiscoveryContent() {
                                                 
 
                                             </div>
-
-                                            <div className="space-y-3 max-h-[800px] overflow-y-auto pr-2">
+                                             <div className="space-y-3 max-h-[800px] overflow-y-auto pr-2">
                                                 {newsLoading ? (
                                                     <div className="flex flex-col items-center justify-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
                                                         <Loader2 className="h-8 w-8 text-yellow-400 animate-spin mb-4" />
@@ -2423,57 +2422,57 @@ function DiscoveryContent() {
                                                 {validPrices.length > 0 && (
                                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                                                         {/* 최고가 */}
-                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-rose-500/20 shadow-md">
-                                                            <div className="flex items-center justify-between text-[11px] font-bold text-rose-300/80 mb-1">
-                                                                <span>🏆 기간 최고가</span>
-                                                                <span className="text-[10px] font-mono text-zinc-500">{highestDayItem?.date ? toKoreanDate(highestDayItem.date) : ''}</span>
+                                                        <div className="bg-gradient-to-br from-rose-950/40 via-zinc-900/80 to-black p-5 rounded-2xl border border-rose-500/30 shadow-lg">
+                                                            <div className="flex items-center justify-between text-xs font-black text-rose-300 mb-1.5">
+                                                                <span className="flex items-center gap-1">🏆 기간 최고가</span>
+                                                                <span className="text-[11px] font-mono font-bold text-zinc-300 bg-white/10 border border-white/10 px-2 py-0.5 rounded-lg">{highestDayItem?.date ? toKoreanDate(highestDayItem.date) : ''}</span>
                                                             </div>
-                                                            <div className="text-base md:text-lg font-black text-rose-400 font-mono tracking-tight">
+                                                            <div className="text-lg md:text-xl font-black text-rose-400 font-mono tracking-tight">
                                                                 {stock.currency === 'KRW' ? '₩' : '$'}{maxPrice.toLocaleString()}
                                                             </div>
-                                                            <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                            <div className="text-xs font-semibold text-zinc-300 mt-1">
                                                                 기간 내 최고점 터치
                                                             </div>
                                                         </div>
 
                                                         {/* 최저가 */}
-                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-blue-500/20 shadow-md">
-                                                            <div className="flex items-center justify-between text-[11px] font-bold text-blue-300/80 mb-1">
-                                                                <span>📉 기간 최저가</span>
-                                                                <span className="text-[10px] font-mono text-zinc-500">{lowestDayItem?.date ? toKoreanDate(lowestDayItem.date) : ''}</span>
+                                                        <div className="bg-gradient-to-br from-blue-950/40 via-zinc-900/80 to-black p-5 rounded-2xl border border-blue-500/30 shadow-lg">
+                                                            <div className="flex items-center justify-between text-xs font-black text-blue-300 mb-1.5">
+                                                                <span className="flex items-center gap-1">📉 기간 최저가</span>
+                                                                <span className="text-[11px] font-mono font-bold text-zinc-300 bg-white/10 border border-white/10 px-2 py-0.5 rounded-lg">{lowestDayItem?.date ? toKoreanDate(lowestDayItem.date) : ''}</span>
                                                             </div>
-                                                            <div className="text-base md:text-lg font-black text-blue-400 font-mono tracking-tight">
+                                                            <div className="text-lg md:text-xl font-black text-blue-400 font-mono tracking-tight">
                                                                 {stock.currency === 'KRW' ? '₩' : '$'}{minPrice.toLocaleString()}
                                                             </div>
-                                                            <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                            <div className="text-xs font-semibold text-zinc-300 mt-1">
                                                                 기간 내 바닥 지지선
                                                             </div>
                                                         </div>
 
                                                         {/* 기간 총 등락률 */}
-                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-purple-500/20 shadow-md">
-                                                            <div className="flex items-center justify-between text-[11px] font-bold text-purple-300/80 mb-1">
-                                                                <span>⚡ 기간 누적 수익률</span>
-                                                                <span className="text-[10px] font-mono text-zinc-500">{validPrices.length}거래일</span>
+                                                        <div className="bg-gradient-to-br from-purple-950/40 via-zinc-900/80 to-black p-5 rounded-2xl border border-purple-500/30 shadow-lg">
+                                                            <div className="flex items-center justify-between text-xs font-black text-purple-300 mb-1.5">
+                                                                <span className="flex items-center gap-1">⚡ 기간 누적 수익률</span>
+                                                                <span className="text-[11px] font-mono font-bold text-zinc-300 bg-white/10 border border-white/10 px-2 py-0.5 rounded-lg">{validPrices.length}거래일</span>
                                                             </div>
-                                                            <div className={`text-base md:text-lg font-black font-mono tracking-tight ${periodChangePct > 0 ? 'text-rose-400' : periodChangePct < 0 ? 'text-blue-400' : 'text-zinc-300'}`}>
+                                                            <div className={`text-lg md:text-xl font-black font-mono tracking-tight ${periodChangePct > 0 ? 'text-rose-400' : periodChangePct < 0 ? 'text-blue-400' : 'text-zinc-200'}`}>
                                                                 {periodChangePct > 0 ? '▲ +' : periodChangePct < 0 ? '▼ ' : ''}{periodChangePct.toFixed(2)}%
                                                             </div>
-                                                            <div className="text-[11px] text-zinc-400 mt-0.5 font-mono">
+                                                            <div className="text-xs font-bold text-zinc-300 mt-1 font-mono">
                                                                 {periodChangeVal > 0 ? '+' : ''}{periodChangeVal.toLocaleString()}{stock.currency === 'KRW' ? '원' : '$'}
                                                             </div>
                                                         </div>
 
                                                         {/* 일평균 거래량 */}
-                                                        <div className="bg-gradient-to-br from-indigo-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-indigo-500/20 shadow-md">
-                                                            <div className="flex items-center justify-between text-[11px] font-bold text-indigo-300/80 mb-1">
-                                                                <span>📊 일평균 거래량</span>
-                                                                <span className="text-[10px] font-mono text-indigo-400/80">AVG VOL</span>
+                                                        <div className="bg-gradient-to-br from-indigo-950/40 via-zinc-900/80 to-black p-5 rounded-2xl border border-indigo-500/30 shadow-lg">
+                                                            <div className="flex items-center justify-between text-xs font-black text-indigo-300 mb-1.5">
+                                                                <span className="flex items-center gap-1">📊 일평균 거래량</span>
+                                                                <span className="text-[10px] font-mono font-black text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md">AVG VOL</span>
                                                             </div>
-                                                            <div className="text-base md:text-lg font-black text-zinc-100 font-mono tracking-tight">
+                                                            <div className="text-lg md:text-xl font-black text-white font-mono tracking-tight">
                                                                 {avgVolume.toLocaleString()}주
                                                             </div>
-                                                            <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                            <div className="text-xs font-semibold text-zinc-300 mt-1">
                                                                 일평균 {latestDay?.close ? formatTradingValue(avgVolume * latestDay.close, stock.currency) : '-'}
                                                             </div>
                                                         </div>
@@ -2481,23 +2480,23 @@ function DiscoveryContent() {
                                                 )}
 
                                                 {/* 3. Luxury Daily Quote Table Container */}
-                                                <div className="rounded-3xl border border-white/10 bg-zinc-950/90 shadow-2xl overflow-hidden">
-                                                    <div className="overflow-x-auto max-h-[620px] overflow-y-auto">
+                                                <div className="rounded-3xl border border-white/15 bg-zinc-950/95 shadow-2xl overflow-hidden">
+                                                    <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
                                                         <table className="w-full text-left border-collapse relative">
-                                                            <thead className="sticky top-0 bg-[#090d16] backdrop-blur-xl border-b border-white/10 shadow-lg z-10">
-                                                                <tr className="text-zinc-400 text-xs font-bold uppercase tracking-wider">
-                                                                    <th className="py-3.5 px-4">일자</th>
-                                                                    <th className="py-3.5 px-3">종가</th>
-                                                                    <th className="py-3.5 px-3">전일대비</th>
-                                                                    <th className="py-3.5 px-3 text-center hidden md:table-cell">장중 고저 진폭</th>
-                                                                    <th className="py-3.5 px-3 text-right">시가</th>
-                                                                    <th className="py-3.5 px-3 text-right">고가</th>
-                                                                    <th className="py-3.5 px-3 text-right">저가</th>
-                                                                    <th className="py-3.5 px-4 text-right">거래량</th>
-                                                                    <th className="py-3.5 px-4 text-right hidden sm:table-cell">추정 거래대금</th>
+                                                            <thead className="sticky top-0 bg-[#0c1222] backdrop-blur-xl border-b-2 border-blue-500/30 shadow-xl z-10">
+                                                                <tr className="text-zinc-100 text-xs md:text-sm font-black uppercase tracking-wider">
+                                                                    <th className="py-4 px-4">일자</th>
+                                                                    <th className="py-4 px-3">종가</th>
+                                                                    <th className="py-4 px-3">전일대비</th>
+                                                                    <th className="py-4 px-3 text-center hidden md:table-cell">장중 고저 진폭 & 레인지</th>
+                                                                    <th className="py-4 px-3 text-right">시가</th>
+                                                                    <th className="py-4 px-3 text-right">고가</th>
+                                                                    <th className="py-4 px-3 text-right">저가</th>
+                                                                    <th className="py-4 px-4 text-right">거래량</th>
+                                                                    <th className="py-4 px-4 text-right hidden sm:table-cell">추정 거래대금</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody className="divide-y divide-white/5 text-xs font-mono">
+                                                            <tbody className="divide-y divide-white/10 text-xs md:text-sm font-mono">
                                                                 {validPrices.length > 0 ? (
                                                                     validPrices.map((day: any, idx: number) => {
                                                                         const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
@@ -2506,65 +2505,60 @@ function DiscoveryContent() {
                                                                         const changeVal = Math.abs(day.change_val || 0);
                                                                         const intradaySpread = day.high > day.low ? ((day.high - day.low) / (day.low || 1)) * 100 : 0;
                                                                         
-                                                                        // High-Low Range calculation for bar
                                                                         const rangeTotal = day.high - day.low;
                                                                         const closePos = rangeTotal > 0 ? Math.min(100, Math.max(0, ((day.close - day.low) / rangeTotal) * 100)) : 50;
 
-                                                                        // Trading Value Calculation
                                                                         const approxTradeVal = (day.close || 0) * (day.volume || 0);
 
                                                                         return (
                                                                             <tr 
                                                                                 key={idx} 
-                                                                                className="hover:bg-gradient-to-r hover:from-blue-500/10 hover:via-indigo-500/5 hover:to-transparent transition-colors group"
+                                                                                className="hover:bg-gradient-to-r hover:from-blue-500/15 hover:via-indigo-500/10 hover:to-transparent transition-colors group"
                                                                             >
-                                                                                {/* 일자 */}
-                                                                                <td className="py-3.5 px-4 text-zinc-300 font-bold whitespace-nowrap">
-                                                                                    <div className="flex items-center gap-1.5">
-                                                                                        <span>{toKoreanDate(day.date)}</span>
+                                                                                <td className="py-3.5 px-4 text-zinc-100 font-bold whitespace-nowrap">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-sm font-bold text-white">{toKoreanDate(day.date)}</span>
                                                                                         {idx === 0 && (
-                                                                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-500/30 text-blue-200 border border-blue-400/50 shadow-sm">
                                                                                                 최근
                                                                                             </span>
                                                                                         )}
                                                                                     </div>
                                                                                 </td>
 
-                                                                                {/* 종가 */}
-                                                                                <td className="py-3.5 px-3 font-black text-white text-[13px] whitespace-nowrap">
+                                                                                <td className="py-3.5 px-3 font-extrabold text-white text-sm md:text-[15px] whitespace-nowrap">
                                                                                     <span>{stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}</span>
                                                                                 </td>
 
-                                                                                {/* 전일비 뱃지 */}
                                                                                 <td className="py-3.5 px-3 whitespace-nowrap">
-                                                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-sm ${
+                                                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs md:text-sm font-black border shadow-md ${
                                                                                         isUp 
-                                                                                            ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' 
+                                                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]' 
                                                                                             : isDown 
-                                                                                            ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' 
-                                                                                            : 'bg-zinc-800/60 text-zinc-400 border-white/10'
+                                                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+                                                                                            : 'bg-zinc-800 text-zinc-300 border-zinc-700'
                                                                                     }`}>
                                                                                         <span>{isUp ? '▲' : isDown ? '▼' : '•'}</span>
                                                                                         <span>{isUp ? '+' : isDown ? '-' : ''}{changeVal.toLocaleString()}</span>
-                                                                                        <span className="text-[10px] opacity-80">({isUp ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
+                                                                                        <span className="text-xs opacity-90 font-bold">({isUp ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
                                                                                     </span>
                                                                                 </td>
 
                                                                                 {/* 장중 레인지 밴드 (Desktop) */}
                                                                                 <td className="py-3.5 px-3 text-center hidden md:table-cell">
-                                                                                    <div className="w-36 mx-auto">
-                                                                                        <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1">
-                                                                                            <span className="text-blue-400/80">{day.low ? day.low.toLocaleString() : '-'}</span>
-                                                                                            <span className="text-zinc-400 text-[9px] font-mono">진폭 {intradaySpread.toFixed(1)}%</span>
-                                                                                            <span className="text-rose-400/80">{day.high ? day.high.toLocaleString() : '-'}</span>
+                                                                                    <div className="w-40 mx-auto">
+                                                                                        <div className="flex items-center justify-between text-xs font-bold mb-1">
+                                                                                            <span className="text-blue-300 font-mono">{day.low ? day.low.toLocaleString() : '-'}</span>
+                                                                                            <span className="text-xs font-black text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-md">진폭 {intradaySpread.toFixed(1)}%</span>
+                                                                                            <span className="text-rose-300 font-mono">{day.high ? day.high.toLocaleString() : '-'}</span>
                                                                                         </div>
-                                                                                        <div className="w-full h-1.5 bg-zinc-800 rounded-full relative overflow-hidden">
+                                                                                        <div className="w-full h-2 bg-zinc-800 rounded-full relative overflow-hidden border border-white/10">
                                                                                             <div 
-                                                                                                className="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500 via-indigo-400 to-rose-500 rounded-full opacity-60"
+                                                                                                className="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500 via-indigo-400 to-rose-500 rounded-full opacity-70"
                                                                                                 style={{ width: '100%' }}
                                                                                             />
                                                                                             <div 
-                                                                                                className="absolute top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_8px_white] -ml-1"
+                                                                                                className="absolute top-0 bottom-0 w-2.5 bg-white rounded-full shadow-[0_0_10px_white] -ml-1"
                                                                                                 style={{ left: `${closePos}%` }}
                                                                                             />
                                                                                         </div>
@@ -2572,24 +2566,24 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 시가 */}
-                                                                                <td className="py-3.5 px-3 text-right text-zinc-300 whitespace-nowrap font-medium">
+                                                                                <td className="py-3.5 px-3 text-right text-zinc-100 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
                                                                                     {day.open ? day.open.toLocaleString() : '-'}
                                                                                 </td>
 
                                                                                 {/* 고가 */}
-                                                                                <td className="py-3.5 px-3 text-right text-rose-400 font-bold whitespace-nowrap">
+                                                                                <td className="py-3.5 px-3 text-right text-rose-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
                                                                                     {day.high ? day.high.toLocaleString() : '-'}
                                                                                 </td>
 
                                                                                 {/* 저가 */}
-                                                                                <td className="py-3.5 px-3 text-right text-blue-400 font-bold whitespace-nowrap">
+                                                                                <td className="py-3.5 px-3 text-right text-blue-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
                                                                                     {day.low ? day.low.toLocaleString() : '-'}
                                                                                 </td>
 
                                                                                 {/* 거래량 */}
                                                                                 <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                                                                    <div className="font-bold text-zinc-200">{day.volume ? day.volume.toLocaleString() : '0'}</div>
-                                                                                    <div className="w-20 ml-auto h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
+                                                                                    <div className="font-bold text-zinc-100 text-xs md:text-sm font-mono">{day.volume ? day.volume.toLocaleString() : '0'}</div>
+                                                                                    <div className="w-24 ml-auto h-1.5 bg-zinc-800 rounded-full mt-1 overflow-hidden border border-white/5">
                                                                                         <div 
                                                                                             className="h-full bg-blue-400 rounded-full"
                                                                                             style={{ width: `${Math.min(100, Math.max(5, ((day.volume || 0) / maxVolume) * 100))}%` }}
@@ -2598,8 +2592,8 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 추정 거래대금 */}
-                                                                                <td className="py-3.5 px-4 text-right text-zinc-300 font-bold whitespace-nowrap hidden sm:table-cell">
-                                                                                    <span className="text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                                                                                <td className="py-3.5 px-4 text-right whitespace-nowrap hidden sm:table-cell">
+                                                                                    <span className="text-indigo-200 font-black text-xs md:text-sm bg-indigo-500/20 px-2.5 py-1 rounded-xl border border-indigo-500/40 shadow-sm font-mono">
                                                                                         {formatTradingValue(approxTradeVal, stock.currency)}
                                                                                     </span>
                                                                                 </td>
