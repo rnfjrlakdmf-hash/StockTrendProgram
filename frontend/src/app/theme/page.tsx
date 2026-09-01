@@ -22,6 +22,126 @@ const THEME_CACHE: Record<string, { data: any, timestamp: number, quotes?: Recor
 const TRENDING_CACHE: { data: any[], timestamp: number } = { data: [], timestamp: 0 };
 const CACHE_DURATION = 60 * 1000 * 5; // 5 minute cache
 
+
+function StockCardItem({ 
+    stock, 
+    idx, 
+    router, 
+    isFollower = false, 
+    unifiedRank, 
+    isUnifiedSort = false 
+}: { 
+    stock: any; 
+    idx: number; 
+    router: any; 
+    isFollower?: boolean; 
+    unifiedRank?: number; 
+    isUnifiedSort?: boolean; 
+}) {
+    const isLeader = stock.isLeader;
+    
+    return (
+        <div
+            className={`p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-zinc-900/95 to-zinc-950 border transition-all hover:-translate-y-1 shadow-xl group flex flex-col justify-between gap-4 relative overflow-hidden ${
+                stock.is_real 
+                    ? 'border-emerald-500/30 hover:border-emerald-400/70 shadow-[0_4px_20px_rgba(16,185,129,0.08)]' 
+                    : isLeader 
+                    ? 'border-orange-500/30 hover:border-orange-400/70' 
+                    : 'border-white/10 hover:border-blue-500/50'
+            }`}
+        >
+            {/* Top Row: Rank Badge, Stock Name, Real Badge & Price */}
+            <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {isUnifiedSort ? (
+                            <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-sm ${
+                                unifiedRank === 1 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black ring-2 ring-amber-400/30' :
+                                unifiedRank === 2 ? 'bg-slate-300 text-black font-black' :
+                                unifiedRank === 3 ? 'bg-amber-700 text-white font-bold' :
+                                'bg-white/10 text-zinc-300 font-mono'
+                            }`}>
+                                {unifiedRank === 1 ? '👑 1위' : unifiedRank === 2 ? '🥈 2위' : unifiedRank === 3 ? '🥉 3위' : `#${unifiedRank}위`}
+                            </span>
+                        ) : isFollower ? (
+                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                                ⚡ 후발/관련주
+                            </span>
+                        ) : (
+                            <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-sm ${
+                                idx === 0 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black ring-2 ring-amber-400/30' :
+                                idx === 1 ? 'bg-slate-300 text-black font-black' :
+                                'bg-amber-700 text-white font-bold'
+                            }`}>
+                                {idx === 0 ? '👑 1대장' : idx === 1 ? '🥈 2대장' : '🥉 3대장'}
+                            </span>
+                        )}
+
+                        {isLeader && isUnifiedSort && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                대장주
+                            </span>
+                        )}
+                        
+                        {stock.is_real ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                <ShieldCheck className="w-3 h-3 text-emerald-400" /> 찐수혜 검증
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                <AlertOctagon className="w-3 h-3 text-amber-400" /> 테마 편승주의
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 pt-0.5">
+                        <span className="text-lg md:text-xl font-black text-white group-hover:text-amber-300 transition-colors">
+                            {stock.name}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-zinc-400 bg-white/10 px-2 py-0.5 rounded-md">
+                            {stock.symbol}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Price Block */}
+                <div className="text-right shrink-0">
+                    <div className="text-lg md:text-xl font-black text-white font-mono">
+                        {stock.price !== '-' ? `${stock.price}원` : '-'}
+                    </div>
+                    <div className={`text-xs font-black font-mono tracking-tight ${
+                        stock.isPositive ? 'text-rose-400' : stock.isNegative ? 'text-sky-400' : 'text-zinc-400'
+                    }`}>
+                        {stock.change}
+                    </div>
+                </div>
+            </div>
+
+            {/* Reason Text */}
+            <div className="p-3.5 rounded-2xl bg-black/50 border border-white/5 text-xs text-zinc-300 leading-relaxed font-medium">
+                💡 {stock.reason || "해당 테마와 사업 연관성이 확인된 종목입니다."}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                    onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
+                    className="py-2.5 px-3 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                >
+                    <span>실시간 캔들차트</span>
+                    <ExternalLink className="w-3 h-3" />
+                </button>
+                <button
+                    onClick={() => router.push(`/stock/${stock.symbol}`)}
+                    className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-200 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                >
+                    <span>수급·재무 분석</span>
+                    <ChevronRight className="w-3 h-3" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 function ThemePageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -1014,190 +1134,95 @@ function ThemePageContent() {
 
                             {/* View Mode 1: Cards */}
                             {viewMode === "card" && (
-                                <div className="grid lg:grid-cols-2 gap-6">
-                                    {/* Primary Leaders Column */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between px-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-2 bg-orange-500/20 text-orange-400 rounded-xl border border-orange-500/30">
-                                                    <Award className="w-4 h-4" />
-                                                </div>
-                                                <span className="text-white font-black text-base">
-                                                    핵심 대장주 (Primary Leaders)
+                                <div className="space-y-4">
+                                    {/* Active Filter Description Banner */}
+                                    <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2">
+                                            {sortBy === "default" && (
+                                                <span className="text-orange-400 font-bold flex items-center gap-1.5">
+                                                    <Award className="w-4 h-4" /> <strong>대장주 분류 기준</strong>: 1~3대장주와 후발 주변주를 구분하여 표시합니다.
                                                 </span>
-                                            </div>
-                                            <span className="text-xs text-orange-400 font-bold bg-orange-500/10 px-2.5 py-0.5 rounded-full border border-orange-500/20">
-                                                {processedStocks.leaders.length}개사 정밀 분석
-                                            </span>
+                                            )}
+                                            {sortBy === "change" && (
+                                                <span className="text-rose-400 font-bold flex items-center gap-1.5">
+                                                    <TrendingUp className="w-4 h-4" /> <strong>실시간 등락률 순 정렬</strong>: 당일 상승률이 가장 높은 종목부터 순서대로 전체 정렬되었습니다.
+                                                </span>
+                                            )}
+                                            {sortBy === "real" && (
+                                                <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                                                    <ShieldCheck className="w-4 h-4" /> <strong>실수혜 검증 우선 정렬</strong>: 공시 및 실적이 확인된 '진짜 수혜 기업'이 최상단에 우선 배치되었습니다.
+                                                </span>
+                                            )}
                                         </div>
-
-                                        <div className="space-y-3.5">
-                                            {processedStocks.leaders.map((stock: any, idx: number) => (
-                                                <div
-                                                    key={stock.symbol}
-                                                    className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-zinc-900/95 to-zinc-950 border border-orange-500/30 hover:border-orange-400/70 transition-all hover:-translate-y-1 shadow-xl group flex flex-col justify-between gap-4 relative overflow-hidden"
-                                                >
-                                                    {/* Top Row: Rank Badge, Stock Name, Real Badge & Price */}
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="space-y-1.5 min-w-0">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-sm ${
-                                                                    idx === 0 ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black ring-2 ring-amber-400/30' :
-                                                                    idx === 1 ? 'bg-slate-300 text-black font-black' :
-                                                                    'bg-amber-700 text-white font-bold'
-                                                                }`}>
-                                                                    {idx === 0 ? '👑 1대장' : idx === 1 ? '🥈 2대장' : '🥉 3대장'}
-                                                                </span>
-                                                                
-                                                                {stock.is_real ? (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                                                        <ShieldCheck className="w-3 h-3 text-emerald-400" /> 찐수혜 검증
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                                                        <AlertOctagon className="w-3 h-3 text-amber-400" /> 테마 편승주의
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-2 pt-0.5">
-                                                                <span className="text-lg md:text-xl font-black text-white group-hover:text-orange-400 transition-colors">
-                                                                    {stock.name}
-                                                                </span>
-                                                                <span className="text-xs font-mono font-bold text-zinc-400 bg-white/10 px-2 py-0.5 rounded-md">
-                                                                    {stock.symbol}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Price Block */}
-                                                        <div className="text-right shrink-0">
-                                                            <div className="text-lg md:text-xl font-black text-white font-mono">
-                                                                {stock.price !== '-' ? `${stock.price}원` : '-'}
-                                                            </div>
-                                                            <div className={`text-xs font-black font-mono tracking-tight ${
-                                                                stock.isPositive ? 'text-rose-400' : stock.isNegative ? 'text-sky-400' : 'text-zinc-400'
-                                                            }`}>
-                                                                {stock.change}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Reason Text */}
-                                                    <div className="p-3.5 rounded-2xl bg-black/50 border border-white/5 text-xs text-zinc-300 leading-relaxed font-medium">
-                                                        💡 {stock.reason || "해당 테마와 직접적인 사업 연관성이 확인된 종목입니다."}
-                                                    </div>
-
-                                                    {/* Action Buttons */}
-                                                    <div className="grid grid-cols-2 gap-2 pt-1">
-                                                        <button
-                                                            onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
-                                                            className="py-2.5 px-3 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
-                                                        >
-                                                            <span>실시간 캔들차트</span>
-                                                            <ExternalLink className="w-3 h-3" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => router.push(`/stock/${stock.symbol}`)}
-                                                            className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-200 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
-                                                        >
-                                                            <span>수급·재무 분석</span>
-                                                            <ChevronRight className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <span className="text-zinc-500 font-mono text-[11px]">
+                                            총 {processedStocks.allSorted.length}개 종목
+                                        </span>
                                     </div>
 
-                                    {/* Secondary Followers Column */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between px-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
-                                                    <Zap className="w-4 h-4" />
+                                    {/* Default View: 2 Columns (Leaders vs Followers) */}
+                                    {sortBy === "default" ? (
+                                        <div className="grid lg:grid-cols-2 gap-6">
+                                            {/* Primary Leaders Column */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between px-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-2 bg-orange-500/20 text-orange-400 rounded-xl border border-orange-500/30">
+                                                            <Award className="w-4 h-4" />
+                                                        </div>
+                                                        <span className="text-white font-black text-base">
+                                                            핵심 대장주 (Primary Leaders)
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs text-orange-400 font-bold bg-orange-500/10 px-2.5 py-0.5 rounded-full border border-orange-500/20">
+                                                        {processedStocks.leaders.length}개사 분석
+                                                    </span>
                                                 </div>
-                                                <span className="text-white font-black text-base">
-                                                    주변 연관 기업 (Secondary Followers)
-                                                </span>
+
+                                                <div className="space-y-3.5">
+                                                    {processedStocks.leaders.map((stock: any, idx: number) => (
+                                                        <StockCardItem key={stock.symbol} stock={stock} idx={idx} router={router} />
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <span className="text-xs text-blue-400 font-bold bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
-                                                {processedStocks.followers.length}개사 정밀 분석
-                                            </span>
-                                        </div>
 
-                                        <div className="space-y-3.5">
-                                            {processedStocks.followers.map((stock: any, idx: number) => (
-                                                <div
-                                                    key={stock.symbol}
-                                                    className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-zinc-900/95 to-zinc-950 border border-white/10 hover:border-blue-500/50 transition-all hover:-translate-y-1 shadow-xl group flex flex-col justify-between gap-4 relative overflow-hidden"
-                                                >
-                                                    {/* Top Row */}
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="space-y-1.5 min-w-0">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                                                                    ⚡ 후발/관련주
-                                                                </span>
-                                                                
-                                                                {stock.is_real ? (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                                                        <ShieldCheck className="w-3 h-3 text-emerald-400" /> 실수혜 검증
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-white/5">
-                                                                        <AlertOctagon className="w-3 h-3 text-zinc-400" /> 단순 편승주의
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-2 pt-0.5">
-                                                                <span className="text-lg md:text-xl font-black text-white group-hover:text-blue-400 transition-colors">
-                                                                    {stock.name}
-                                                                </span>
-                                                                <span className="text-xs font-mono font-bold text-zinc-400 bg-white/10 px-2 py-0.5 rounded-md">
-                                                                    {stock.symbol}
-                                                                </span>
-                                                            </div>
+                                            {/* Secondary Followers Column */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between px-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
+                                                            <Zap className="w-4 h-4" />
                                                         </div>
-
-                                                        {/* Price Block */}
-                                                        <div className="text-right shrink-0">
-                                                            <div className="text-lg md:text-xl font-black text-white font-mono">
-                                                                {stock.price !== '-' ? `${stock.price}원` : '-'}
-                                                            </div>
-                                                            <div className={`text-xs font-black font-mono tracking-tight ${
-                                                                stock.isPositive ? 'text-rose-400' : stock.isNegative ? 'text-sky-400' : 'text-zinc-400'
-                                                            }`}>
-                                                                {stock.change}
-                                                            </div>
-                                                        </div>
+                                                        <span className="text-white font-black text-base">
+                                                            주변 연관 기업 (Secondary Followers)
+                                                        </span>
                                                     </div>
-
-                                                    {/* Reason Text */}
-                                                    <div className="p-3.5 rounded-2xl bg-black/50 border border-white/5 text-xs text-zinc-300 leading-relaxed font-medium">
-                                                        📌 {stock.reason || "해당 테마와 간접적인 사업 연관성이 있는 후발 종목입니다."}
-                                                    </div>
-
-                                                    {/* Action Buttons */}
-                                                    <div className="grid grid-cols-2 gap-2 pt-1">
-                                                        <button
-                                                            onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
-                                                            className="py-2.5 px-3 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
-                                                        >
-                                                            <span>실시간 캔들차트</span>
-                                                            <ExternalLink className="w-3 h-3" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => router.push(`/stock/${stock.symbol}`)}
-                                                            className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-zinc-200 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
-                                                        >
-                                                            <span>수급·재무 분석</span>
-                                                            <ChevronRight className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
+                                                    <span className="text-xs text-blue-400 font-bold bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
+                                                        {processedStocks.followers.length}개사 분석
+                                                    </span>
                                                 </div>
+
+                                                <div className="space-y-3.5">
+                                                    {processedStocks.followers.map((stock: any, idx: number) => (
+                                                        <StockCardItem key={stock.symbol} stock={stock} idx={idx} router={router} isFollower />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        /* Sorted View: Unified 2-Column Grid of All Stocks Sorted by Selected Criteria */
+                                        <div className="grid sm:grid-cols-2 gap-4">
+                                            {processedStocks.allSorted.map((stock: any, idx: number) => (
+                                                <StockCardItem 
+                                                    key={stock.symbol} 
+                                                    stock={stock} 
+                                                    idx={idx} 
+                                                    router={router} 
+                                                    unifiedRank={idx + 1}
+                                                    isUnifiedSort 
+                                                />
                                             ))}
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             )}
 
