@@ -1,16 +1,13 @@
 /**
  * Firebase Cloud Messaging Service Worker
- * 백그라운드 푸시 알림 처리 (SW Version: 2026.09.01-v4-single-slot)
+ * 백그라운드 푸시 알림 처리 (SW Version: 2026.09.01-v5-multi-category)
  * 
- * [안드로이드 묶음 방지 핵심 기술]
- * 안드로이드 OS는 2개 이상의 알림이 쌓이면 시스템 기본 런처 아이콘으로 '묶음 요약'을 생성하여
- * 하얀 네모 상자로 변환시킵니다.
- * 이를 원천 차단하기 위해:
- * 1. 새 알림 수신 시 이전 알림을 즉시 닫고 최신 알림으로 단일 슬롯 교체
- * 2. tag: 'stock-trend-live-alert' 로 단일 태그 유지
+ * [스마트 카테고리별 다중 알림 시스템]
+ * - 브리핑, 공시, 뉴스, 각 종목별 급등 알림이 서로를 지우지 않고 독립적으로 수신됩니다.
+ * - 동일 종목의 연속적인 가격 변동만 깔끔하게 최신 정보로 갱신됩니다.
  */
 
-const SW_VERSION = '2026.09.01-v4-single-slot';
+const SW_VERSION = '2026.09.01-v5-multi-category';
 
 // Firebase SDK 로드
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -30,32 +27,35 @@ const messaging = firebase.messaging();
 
 // 백그라운드 메시지 수신
 messaging.onBackgroundMessage(async (payload) => {
-    console.log('[SW] Background message received (v4 single-slot):', payload);
+    console.log('[SW] Background message received (v5 multi-category):', payload);
 
     const notificationTitle = payload.notification?.title || payload.data?.title || '새 알림';
     const notificationBody = payload.notification?.body || payload.data?.body || '';
     const symbol = payload.data?.symbol || '';
+    const alertType = payload.data?.type || 'stock-alert';
 
-    // 1. 기존 알림을 모두 닫아서 안드로이드가 '묶음(하얀 네모)'을 만들지 못하도록 원천 차단
-    try {
-        const activeNotifs = await self.registration.getNotifications();
-        if (activeNotifs && activeNotifs.length > 0) {
-            for (const n of activeNotifs) {
-                n.close();
-            }
-        }
-    } catch (e) {
-        console.warn('[SW] Clear previous notifications error:', e);
+    // 카테고리 및 종목별 독립 태그 생성:
+    // 서로 다른 종목과 서로 다른 알림(브리핑, 공시, 뉴스, 급등)은 각각 독립적으로 화면에 쌓임
+    let tag;
+    if (alertType === 'disclosure_alert') {
+        tag = symbol ? `disc-${symbol}` : `disc-${Date.now()}`;
+    } else if (alertType === 'news_alert') {
+        tag = symbol ? `news-${symbol}` : `news-${Date.now()}`;
+    } else if (alertType === 'market_summary' || alertType === 'portfolio_summary') {
+        tag = 'market-briefing-latest';
+    } else if (symbol) {
+        tag = `stock-price-${symbol}`;
+    } else {
+        tag = `alert-${Date.now()}`;
     }
 
-    // 2. 단일 고유 태그로 갱신하여 항상 1개의 선명한 [상승 차트 뱃지] 유지
     const notificationOptions = {
         body: notificationBody,
         icon: 'https://stock-trend-program.co.kr/icon.png',
         badge: 'https://stock-trend-program.co.kr/badge.png',
         vibrate: [200, 100, 200, 100, 200, 100, 200],
         data: payload.data,
-        tag: 'stock-trend-live-alert',
+        tag: tag,
         renotify: true,
         requireInteraction: false,
         silent: false,
