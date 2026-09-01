@@ -2276,93 +2276,273 @@ function DiscoveryContent() {
                                                 )}
                                             </div>
                                         </div>
-                                    ) : activeTab === 'daily' && stock.symbol ? (
-                                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                                <h4 className="text-xl font-bold flex items-center gap-2 text-white">
-                                                    📅 일일 시세
-                                                    {dailyLoading && <span className="ml-2 w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>}
-                                                </h4>
-                                                
-                                                <div className="flex gap-2">
-                                                    {[
-                                                        { id: '1mo', label: '1개월' },
-                                                        { id: '3mo', label: '3개월' },
-                                                        { id: '6mo', label: '6개월' },
-                                                        { id: '1y', label: '1년' }
-                                                    ].map(period => (
-                                                        <button
-                                                            key={period.id}
-                                                            onClick={() => setDailyRange(period.id)}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${dailyRange === period.id
-                                                                ? 'bg-primary text-white shadow-md'
-                                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                                                }`}
-                                                        >
-                                                            {period.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                    ) : activeTab === 'daily' && stock.symbol ? (() => {
+                                        const validPrices = Array.isArray(dailyPricesData) ? dailyPricesData : [];
+                                        const maxPrice = validPrices.length > 0 ? Math.max(...validPrices.map((d: any) => d.high || d.close || 0)) : 0;
+                                        const minPrice = validPrices.length > 0 ? Math.min(...validPrices.map((d: any) => (d.low && d.low > 0 ? d.low : d.close) || 0)) : 0;
+                                        const latestDay = validPrices[0];
+                                        const oldestDay = validPrices[validPrices.length - 1];
+                                        const periodChangePct = (latestDay && oldestDay && oldestDay.close > 0)
+                                            ? ((latestDay.close - oldestDay.close) / oldestDay.close) * 100
+                                            : 0;
+                                        const periodChangeVal = (latestDay && oldestDay) ? latestDay.close - oldestDay.close : 0;
+                                        const avgVolume = validPrices.length > 0
+                                            ? Math.round(validPrices.reduce((acc: number, d: any) => acc + (d.volume || 0), 0) / validPrices.length)
+                                            : 0;
+                                        const maxVolume = validPrices.length > 0 ? Math.max(...validPrices.map((d: any) => d.volume || 0)) : 1;
 
-                                            <div className="overflow-x-auto bg-white/5 rounded-xl border border-white/10 max-h-[600px] overflow-y-auto">
-                                                <table className="w-full text-left border-collapse relative">
-                                                    <thead className="sticky top-0 bg-[#0f172a] shadow-sm z-10">
-                                                        <tr className="border-b border-white/10 text-gray-400 text-sm">
-                                                            <th className="py-3 px-2">날짜</th>
-                                                            <th className="py-3 px-2">종가</th>
-                                                            <th className="py-3 px-2">전일비</th>
-                                                            <th className="py-3 px-2">시가</th>
-                                                            <th className="py-3 px-2">고가</th>
-                                                            <th className="py-3 px-2">저가</th>
-                                                            <th className="py-3 px-2 text-right">거래량</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-white/5">
-                                                        {dailyPricesData && Array.isArray(dailyPricesData) && dailyPricesData.length > 0 ? (
-                                                            dailyPricesData.map((day: any, idx: number) => {
-                                                                const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
-                                                                return (
-                                                                    <tr key={idx} className="hover:bg-white/5 transition-colors">
-                                                                        <td className="py-3 px-2 text-gray-300 font-mono text-sm">
-                                                                            <span>{toKoreanDate(day.date)}</span>
-                                                                        </td>
-                                                                        <td className="py-3 px-2 font-mono font-bold">
-                                                                            <span>{stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}</span>
-                                                                        </td>
-                                                                        <td className={`py-3 px-2 font-mono font-bold ${safeChange > 0 ? 'text-red-400' : safeChange < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <span>{safeChange > 0 ? '▲' : safeChange < 0 ? '▼' : null}</span>
-                                                                                <span>{Math.abs(day.change_val || 0).toLocaleString()}</span>
-                                                                                <span className="text-[10px] ml-1 opacity-70">({safeChange > 0 ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="py-3 px-2 text-gray-400 font-mono text-sm">
-                                                                            <span>{day.open.toLocaleString()}</span>
-                                                                        </td>
-                                                                        <td className="py-3 px-2 text-gray-400 font-mono text-sm">
-                                                                            <span className="text-red-400/80">{day.high.toLocaleString()}</span>
-                                                                        </td>
-                                                                        <td className="py-3 px-2 text-gray-400 font-mono text-sm">
-                                                                            <span className="text-blue-400/80">{day.low.toLocaleString()}</span>
-                                                                        </td>
-                                                                        <td className="py-3 px-2 text-right text-gray-400 font-mono text-sm">
-                                                                            <span>{day.volume.toLocaleString()}</span>
+                                        const highestDayItem = validPrices.find((d: any) => (d.high || d.close) === maxPrice);
+                                        const lowestDayItem = validPrices.find((d: any) => (d.low && d.low > 0 ? d.low : d.close) === minPrice);
+
+                                        return (
+                                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+                                                {/* 1. Header & Period Pill Tab */}
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center shadow-inner">
+                                                            <Calendar className="w-5 h-5 text-blue-400" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="text-lg md:text-xl font-black text-white tracking-tight">
+                                                                    일일 시세 인텔리전스
+                                                                </h4>
+                                                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                                                    DAILY QUOTES
+                                                                </span>
+                                                                {dailyLoading && <Loader2 className="w-4 h-4 text-blue-400 animate-spin ml-1" />}
+                                                            </div>
+                                                            <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                                                                기간별 종가, 장중 고저 진폭, 거래량 및 거래대금 정밀 분석
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Glassmorphic Period Selector */}
+                                                    <div className="flex items-center gap-1.5 p-1 bg-zinc-950/80 rounded-2xl border border-white/10 shadow-inner w-fit">
+                                                        {[
+                                                            { id: '1mo', label: '1개월' },
+                                                            { id: '3mo', label: '3개월' },
+                                                            { id: '6mo', label: '6개월' },
+                                                            { id: '1y', label: '1년' }
+                                                        ].map(period => (
+                                                            <button
+                                                                key={period.id}
+                                                                onClick={() => setDailyRange(period.id)}
+                                                                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${dailyRange === period.id
+                                                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400/40'
+                                                                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                                                                    }`}
+                                                            >
+                                                                <span>{period.label}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* 2. Executive 4-KPI Stats Ribbon */}
+                                                {validPrices.length > 0 && (
+                                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                                                        {/* 최고가 */}
+                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-rose-500/20 shadow-md">
+                                                            <div className="flex items-center justify-between text-[11px] font-bold text-rose-300/80 mb-1">
+                                                                <span>🏆 기간 최고가</span>
+                                                                <span className="text-[10px] font-mono text-zinc-500">{highestDayItem?.date ? toKoreanDate(highestDayItem.date) : ''}</span>
+                                                            </div>
+                                                            <div className="text-base md:text-lg font-black text-rose-400 font-mono tracking-tight">
+                                                                {stock.currency === 'KRW' ? '₩' : '$'}{maxPrice.toLocaleString()}
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                                기간 내 최고점 터치
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 최저가 */}
+                                                        <div className="bg-gradient-to-br from-blue-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-blue-500/20 shadow-md">
+                                                            <div className="flex items-center justify-between text-[11px] font-bold text-blue-300/80 mb-1">
+                                                                <span>📉 기간 최저가</span>
+                                                                <span className="text-[10px] font-mono text-zinc-500">{lowestDayItem?.date ? toKoreanDate(lowestDayItem.date) : ''}</span>
+                                                            </div>
+                                                            <div className="text-base md:text-lg font-black text-blue-400 font-mono tracking-tight">
+                                                                {stock.currency === 'KRW' ? '₩' : '$'}{minPrice.toLocaleString()}
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                                기간 내 바닥 지지선
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 기간 총 등락률 */}
+                                                        <div className="bg-gradient-to-br from-purple-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-purple-500/20 shadow-md">
+                                                            <div className="flex items-center justify-between text-[11px] font-bold text-purple-300/80 mb-1">
+                                                                <span>⚡ 기간 누적 수익률</span>
+                                                                <span className="text-[10px] font-mono text-zinc-500">{validPrices.length}거래일</span>
+                                                            </div>
+                                                            <div className={`text-base md:text-lg font-black font-mono tracking-tight ${periodChangePct > 0 ? 'text-rose-400' : periodChangePct < 0 ? 'text-blue-400' : 'text-zinc-300'}`}>
+                                                                {periodChangePct > 0 ? '▲ +' : periodChangePct < 0 ? '▼ ' : ''}{periodChangePct.toFixed(2)}%
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-400 mt-0.5 font-mono">
+                                                                {periodChangeVal > 0 ? '+' : ''}{periodChangeVal.toLocaleString()}{stock.currency === 'KRW' ? '원' : '$'}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 일평균 거래량 */}
+                                                        <div className="bg-gradient-to-br from-indigo-950/30 via-zinc-900/60 to-black p-4.5 rounded-2xl border border-indigo-500/20 shadow-md">
+                                                            <div className="flex items-center justify-between text-[11px] font-bold text-indigo-300/80 mb-1">
+                                                                <span>📊 일평균 거래량</span>
+                                                                <span className="text-[10px] font-mono text-indigo-400/80">AVG VOL</span>
+                                                            </div>
+                                                            <div className="text-base md:text-lg font-black text-zinc-100 font-mono tracking-tight">
+                                                                {avgVolume.toLocaleString()}주
+                                                            </div>
+                                                            <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                                일평균 {latestDay?.close ? formatTradingValue(avgVolume * latestDay.close, stock.currency) : '-'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* 3. Luxury Daily Quote Table Container */}
+                                                <div className="rounded-3xl border border-white/10 bg-zinc-950/90 shadow-2xl overflow-hidden">
+                                                    <div className="overflow-x-auto max-h-[620px] overflow-y-auto">
+                                                        <table className="w-full text-left border-collapse relative">
+                                                            <thead className="sticky top-0 bg-[#090d16] backdrop-blur-xl border-b border-white/10 shadow-lg z-10">
+                                                                <tr className="text-zinc-400 text-xs font-bold uppercase tracking-wider">
+                                                                    <th className="py-3.5 px-4">일자</th>
+                                                                    <th className="py-3.5 px-3">종가</th>
+                                                                    <th className="py-3.5 px-3">전일대비</th>
+                                                                    <th className="py-3.5 px-3 text-center hidden md:table-cell">장중 고저 진폭</th>
+                                                                    <th className="py-3.5 px-3 text-right">시가</th>
+                                                                    <th className="py-3.5 px-3 text-right">고가</th>
+                                                                    <th className="py-3.5 px-3 text-right">저가</th>
+                                                                    <th className="py-3.5 px-4 text-right">거래량</th>
+                                                                    <th className="py-3.5 px-4 text-right hidden sm:table-cell">추정 거래대금</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-white/5 text-xs font-mono">
+                                                                {validPrices.length > 0 ? (
+                                                                    validPrices.map((day: any, idx: number) => {
+                                                                        const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
+                                                                        const isUp = safeChange > 0;
+                                                                        const isDown = safeChange < 0;
+                                                                        const changeVal = Math.abs(day.change_val || 0);
+                                                                        const intradaySpread = day.high > day.low ? ((day.high - day.low) / (day.low || 1)) * 100 : 0;
+                                                                        
+                                                                        // High-Low Range calculation for bar
+                                                                        const rangeTotal = day.high - day.low;
+                                                                        const closePos = rangeTotal > 0 ? Math.min(100, Math.max(0, ((day.close - day.low) / rangeTotal) * 100)) : 50;
+
+                                                                        // Trading Value Calculation
+                                                                        const approxTradeVal = (day.close || 0) * (day.volume || 0);
+
+                                                                        return (
+                                                                            <tr 
+                                                                                key={idx} 
+                                                                                className="hover:bg-gradient-to-r hover:from-blue-500/10 hover:via-indigo-500/5 hover:to-transparent transition-colors group"
+                                                                            >
+                                                                                {/* 일자 */}
+                                                                                <td className="py-3.5 px-4 text-zinc-300 font-bold whitespace-nowrap">
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span>{toKoreanDate(day.date)}</span>
+                                                                                        {idx === 0 && (
+                                                                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                                                                                최근
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
+
+                                                                                {/* 종가 */}
+                                                                                <td className="py-3.5 px-3 font-black text-white text-[13px] whitespace-nowrap">
+                                                                                    <span>{stock.currency === 'KRW' ? '₩' : '$'}{day.close.toLocaleString()}</span>
+                                                                                </td>
+
+                                                                                {/* 전일비 뱃지 */}
+                                                                                <td className="py-3.5 px-3 whitespace-nowrap">
+                                                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-sm ${
+                                                                                        isUp 
+                                                                                            ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' 
+                                                                                            : isDown 
+                                                                                            ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' 
+                                                                                            : 'bg-zinc-800/60 text-zinc-400 border-white/10'
+                                                                                    }`}>
+                                                                                        <span>{isUp ? '▲' : isDown ? '▼' : '•'}</span>
+                                                                                        <span>{isUp ? '+' : isDown ? '-' : ''}{changeVal.toLocaleString()}</span>
+                                                                                        <span className="text-[10px] opacity-80">({isUp ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
+                                                                                    </span>
+                                                                                </td>
+
+                                                                                {/* 장중 레인지 밴드 (Desktop) */}
+                                                                                <td className="py-3.5 px-3 text-center hidden md:table-cell">
+                                                                                    <div className="w-36 mx-auto">
+                                                                                        <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1">
+                                                                                            <span className="text-blue-400/80">{day.low ? day.low.toLocaleString() : '-'}</span>
+                                                                                            <span className="text-zinc-400 text-[9px] font-mono">진폭 {intradaySpread.toFixed(1)}%</span>
+                                                                                            <span className="text-rose-400/80">{day.high ? day.high.toLocaleString() : '-'}</span>
+                                                                                        </div>
+                                                                                        <div className="w-full h-1.5 bg-zinc-800 rounded-full relative overflow-hidden">
+                                                                                            <div 
+                                                                                                className="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500 via-indigo-400 to-rose-500 rounded-full opacity-60"
+                                                                                                style={{ width: '100%' }}
+                                                                                            />
+                                                                                            <div 
+                                                                                                className="absolute top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_8px_white] -ml-1"
+                                                                                                style={{ left: `${closePos}%` }}
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </td>
+
+                                                                                {/* 시가 */}
+                                                                                <td className="py-3.5 px-3 text-right text-zinc-300 whitespace-nowrap font-medium">
+                                                                                    {day.open ? day.open.toLocaleString() : '-'}
+                                                                                </td>
+
+                                                                                {/* 고가 */}
+                                                                                <td className="py-3.5 px-3 text-right text-rose-400 font-bold whitespace-nowrap">
+                                                                                    {day.high ? day.high.toLocaleString() : '-'}
+                                                                                </td>
+
+                                                                                {/* 저가 */}
+                                                                                <td className="py-3.5 px-3 text-right text-blue-400 font-bold whitespace-nowrap">
+                                                                                    {day.low ? day.low.toLocaleString() : '-'}
+                                                                                </td>
+
+                                                                                {/* 거래량 */}
+                                                                                <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                                                                                    <div className="font-bold text-zinc-200">{day.volume ? day.volume.toLocaleString() : '0'}</div>
+                                                                                    <div className="w-20 ml-auto h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
+                                                                                        <div 
+                                                                                            className="h-full bg-blue-400 rounded-full"
+                                                                                            style={{ width: `${Math.min(100, Math.max(5, ((day.volume || 0) / maxVolume) * 100))}%` }}
+                                                                                        />
+                                                                                    </div>
+                                                                                </td>
+
+                                                                                {/* 추정 거래대금 */}
+                                                                                <td className="py-3.5 px-4 text-right text-zinc-300 font-bold whitespace-nowrap hidden sm:table-cell">
+                                                                                    <span className="text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                                                                                        {formatTradingValue(approxTradeVal, stock.currency)}
+                                                                                    </span>
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })
+                                                                ) : (
+                                                                    <tr>
+                                                                        <td colSpan={9} className="py-12 text-center text-zinc-500">
+                                                                            일일 시세 데이터가 준비되지 않았습니다.
                                                                         </td>
                                                                     </tr>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <tr>
-                                                                <td colSpan={7} className="py-4 text-center text-gray-500">일일 시세 데이터 없음</td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
+                                                                )}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        );
+                                    })()
 
-                                    ) : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'disclosure' ? (
+                                    : (stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET"))) && activeTab === 'disclosure' ? (
                                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                                             <DisclosureTable symbol={stock.symbol} />
                                         </div>
@@ -2462,6 +2642,23 @@ interface ScoreHistory {
     financial: number;
     news: number;
 }
+
+/** [Helper] 거래대금 포맷팅 (억원/조원 및 $M) */
+const formatTradingValue = (val: number, currency: string = 'KRW'): string => {
+    if (!val || isNaN(val)) return '-';
+    if (currency === 'KRW') {
+        const inEok = val / 100000000;
+        if (inEok >= 10000) {
+            const jo = Math.floor(inEok / 10000);
+            const remainder = Math.round(inEok % 10000);
+            return `${jo}조 ${remainder > 0 ? remainder.toLocaleString() + '억' : ''}`;
+        }
+        return `${Math.round(inEok).toLocaleString()}억원`;
+    } else {
+        const inMillion = val / 1000000;
+        return `$${inMillion.toFixed(1)}M`;
+    }
+};
 
 /** [Helper] 날짜를 한국 표기법으로 변환 (YYYY년 MM월 DD일) */
 const toKoreanDate = (val: any) => {
