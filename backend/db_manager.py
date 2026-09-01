@@ -2693,6 +2693,29 @@ def delete_ad_revenue_log(log_id: int):
     finally:
         conn.close()
 
+def ensure_search_keyword_table(cursor):
+    """search_keyword_logs 테이블 생성 및 컬럼 자동 마이그레이션"""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS search_keyword_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            keyword TEXT NOT NULL UNIQUE,
+            source TEXT DEFAULT 'internal',
+            count INTEGER DEFAULT 1,
+            rank_change TEXT DEFAULT '-',
+            price_change TEXT DEFAULT '',
+            search_ratio TEXT DEFAULT '',
+            last_searched TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("PRAGMA table_info(search_keyword_logs)")
+    cols = [c[1] for c in cursor.fetchall()]
+    if 'search_ratio' not in cols:
+        cursor.execute("ALTER TABLE search_keyword_logs ADD COLUMN search_ratio TEXT DEFAULT ''")
+    if 'price_change' not in cols:
+        cursor.execute("ALTER TABLE search_keyword_logs ADD COLUMN price_change TEXT DEFAULT ''")
+    if 'rank_change' not in cols:
+        cursor.execute("ALTER TABLE search_keyword_logs ADD COLUMN rank_change TEXT DEFAULT '-'")
+
 def sync_live_market_search_trends():
     """네이버 및 국내외 증시 실시간 검색 상위 종목을 DB에 동기화"""
     import requests
@@ -2701,18 +2724,7 @@ def sync_live_market_search_trends():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS search_keyword_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                keyword TEXT NOT NULL UNIQUE,
-                source TEXT DEFAULT 'internal',
-                count INTEGER DEFAULT 1,
-                rank_change TEXT DEFAULT '-',
-                price_change TEXT DEFAULT '',
-                search_ratio TEXT DEFAULT '',
-                last_searched TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        ensure_search_keyword_table(cursor)
         
         # 1. 네이버 실시간 검색 상위 종목 크롤링
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'}
@@ -2783,18 +2795,7 @@ def record_search_query(keyword: str, source: str = "internal"):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS search_keyword_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                keyword TEXT NOT NULL UNIQUE,
-                source TEXT DEFAULT 'internal',
-                count INTEGER DEFAULT 1,
-                rank_change TEXT DEFAULT '-',
-                price_change TEXT DEFAULT '',
-                search_ratio TEXT DEFAULT '',
-                last_searched TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        ensure_search_keyword_table(cursor)
         cursor.execute("""
             SELECT id, count FROM search_keyword_logs WHERE keyword = ?
         """, (clean_kw,))
@@ -2827,6 +2828,7 @@ def get_search_keyword_stats():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        ensure_search_keyword_table(cursor)
         cursor.execute("""
             SELECT keyword, source, count, search_ratio, price_change, last_searched
             FROM search_keyword_logs

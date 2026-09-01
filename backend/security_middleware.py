@@ -65,10 +65,14 @@ class SecurityWatchdogMiddleware(BaseHTTPMiddleware):
         # -------------------------------------------------------------
         # 2. 악성 봇 / 스캐너 User-Agent 검사
         # -------------------------------------------------------------
-        for bad_agent in MALICIOUS_USER_AGENTS:
-            if bad_agent in user_agent:
-                self.block_ip(client_ip, f"Malicious Scanner Tool Detected ({bad_agent})")
-                return JSONResponse(status_code=403, content={"status": "error", "message": "Security Alert."})
+        SEARCH_BOTS = ["googlebot", "mediapartners-google", "adsbot-google", "google-adwords", "yeti", "bingbot", "daumoa", "slurp"]
+        is_trusted_bot = any(bot in user_agent for bot in SEARCH_BOTS)
+
+        if not is_trusted_bot:
+            for bad_agent in MALICIOUS_USER_AGENTS:
+                if bad_agent in user_agent:
+                    self.block_ip(client_ip, f"Malicious Scanner Tool Detected ({bad_agent})")
+                    return JSONResponse(status_code=403, content={"status": "error", "message": "Security Alert."})
 
         # -------------------------------------------------------------
         # 3. 경로 스캐닝 검사 (취약점 찌르기)
@@ -88,10 +92,16 @@ class SecurityWatchdogMiddleware(BaseHTTPMiddleware):
                     return JSONResponse(status_code=403, content={"status": "error", "message": "Attack Signature Blocked."})
 
         # -------------------------------------------------------------
+        # 4.5. 구글 애드센스 / 검색엔진 공식 크롤러 화이트리스트 (심사 봇 차단 방지)
+        # -------------------------------------------------------------
+        SEARCH_BOTS = ["googlebot", "mediapartners-google", "adsbot-google", "google-adwords", "yeti", "bingbot", "daumoa", "slurp"]
+        is_trusted_bot = any(bot in user_agent for bot in SEARCH_BOTS)
+
+        # -------------------------------------------------------------
         # 5. Anti-DDoS & Rate Limiting (10초 슬라이딩 윈도우)
         # -------------------------------------------------------------
-        # 로컬호스트 루프백 제외
-        if client_ip not in ["127.0.0.1", "localhost", "::1"]:
+        # 로컬호스트 및 공식 검색엔진 크롤러 제외
+        if client_ip not in ["127.0.0.1", "localhost", "::1"] and not is_trusted_bot:
             bucket = RATE_LIMIT_BUCKETS[client_ip]
             # 10초 이전 기록 청소
             RATE_LIMIT_BUCKETS[client_ip] = [t for t in bucket if now - t < 10.0]
