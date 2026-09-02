@@ -2645,23 +2645,23 @@ function DiscoveryContent() {
                                                 )}
 
                                                 {/* 3. Luxury Daily Quote Table Container */}
-                                                <div className="rounded-3xl border border-white/15 bg-zinc-950/95 shadow-2xl overflow-hidden">
-                                                    <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
-                                                        <table className="w-full text-left border-collapse relative">
-                                                            <thead className="sticky top-0 bg-[#0c1222] backdrop-blur-xl border-b-2 border-blue-500/30 shadow-xl z-10">
-                                                                <tr className="text-zinc-100 text-xs md:text-sm font-black uppercase tracking-wider whitespace-nowrap">
-                                                                    <th className="py-4 px-4 whitespace-nowrap">일자</th>
-                                                                    <th className="py-4 px-4 whitespace-nowrap">종가</th>
-                                                                    <th className="py-4 px-4 whitespace-nowrap">전일대비</th>
-                                                                    <th className="py-4 px-5 text-center hidden md:table-cell whitespace-nowrap min-w-[220px]">장중 고저 진폭 & 레인지</th>
-                                                                    <th className="py-4 px-4 text-right whitespace-nowrap">시가</th>
-                                                                    <th className="py-4 px-4 text-right whitespace-nowrap">고가</th>
-                                                                    <th className="py-4 px-4 text-right whitespace-nowrap">저가</th>
-                                                                    <th className="py-4 px-5 text-right whitespace-nowrap">거래량</th>
-                                                                    <th className="py-4 px-5 text-right whitespace-nowrap hidden sm:table-cell">추정 거래대금</th>
+                                                <div className="rounded-3xl border border-white/15 bg-[#090d18] shadow-2xl overflow-hidden">
+                                                    <div className="overflow-x-auto max-h-[640px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700">
+                                                        <table className="w-full text-left border-collapse relative min-w-[760px] lg:min-w-full">
+                                                            <thead className="sticky top-0 bg-[#0c1222] border-b-2 border-blue-500/40 shadow-xl z-20">
+                                                                <tr className="text-zinc-200 text-xs md:text-sm font-black uppercase tracking-wider whitespace-nowrap">
+                                                                    <th className="py-3 px-3 md:px-4 whitespace-nowrap">일자</th>
+                                                                    <th className="py-3 px-2.5 md:px-3 whitespace-nowrap">종가</th>
+                                                                    <th className="py-3 px-2.5 md:px-3 whitespace-nowrap">전일대비</th>
+                                                                    <th className="py-3 px-3 text-center hidden md:table-cell whitespace-nowrap min-w-[165px] max-w-[190px]">장중 고저 진폭 & 레인지</th>
+                                                                    <th className="py-3 px-2 md:px-2.5 text-right whitespace-nowrap">시가</th>
+                                                                    <th className="py-3 px-2 md:px-2.5 text-right whitespace-nowrap">고가</th>
+                                                                    <th className="py-3 px-2 md:px-2.5 text-right whitespace-nowrap">저가</th>
+                                                                    <th className="py-3 px-2.5 md:px-3 text-right whitespace-nowrap">거래량</th>
+                                                                    <th className="py-3 px-3 md:px-4 text-right whitespace-nowrap">추정 거래대금</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody className="divide-y divide-white/10 text-xs md:text-sm font-mono">
+                                                            <tbody className="divide-y divide-white/10 text-xs md:text-sm font-mono bg-[#090d18]">
                                                                 {validPrices.length > 0 ? (
                                                                     validPrices.map((day: any, idx: number) => {
                                                                         const safeChange = Math.abs(day.change || 0) > 500 ? 0 : (day.change || 0);
@@ -2690,11 +2690,11 @@ function DiscoveryContent() {
                                                                                 className="hover:bg-gradient-to-r hover:from-blue-500/15 hover:via-indigo-500/10 hover:to-transparent transition-colors group whitespace-nowrap"
                                                                             >
                                                                                 {/* 일자 */}
-                                                                                <td className="py-3.5 px-4 text-zinc-100 font-bold whitespace-nowrap">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-sm font-bold text-white">{toKoreanDate(day.date)}</span>
+                                                                                <td className="py-2.5 md:py-3 px-3 md:px-4 text-zinc-100 font-bold whitespace-nowrap">
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="text-xs md:text-sm font-bold text-white">{toKoreanDate(day.date)}</span>
                                                                                         {idx === 0 && (
-                                                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-500/30 text-blue-200 border border-blue-400/50 shadow-sm">
+                                                                                            <span className="text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-200 border border-blue-400/50 shadow-sm">
                                                                                                 최근
                                                                                             </span>
                                                                                         )}
@@ -2702,40 +2702,40 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 종가 */}
-                                                                                <td className="py-3.5 px-4 font-extrabold text-white text-sm md:text-[15px] whitespace-nowrap">
+                                                                                <td className="py-2.5 md:py-3 px-2.5 md:px-3 font-extrabold text-white text-xs md:text-sm whitespace-nowrap">
                                                                                     <span>{stock.currency === 'KRW' ? '₩' : '$'}{formatTablePrice(day.close)}</span>
                                                                                 </td>
 
                                                                                 {/* 전일비 뱃지 */}
-                                                                                <td className="py-3.5 px-4 whitespace-nowrap">
-                                                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs md:text-sm font-black border shadow-md whitespace-nowrap ${
+                                                                                <td className="py-2.5 md:py-3 px-2.5 md:px-3 whitespace-nowrap">
+                                                                                    <span className={`inline-flex items-center gap-1 px-2 md:px-2.5 py-1 rounded-lg text-xs font-black border shadow-sm whitespace-nowrap ${
                                                                                         isUp 
-                                                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]' 
+                                                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.15)]' 
                                                                                             : isDown 
-                                                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+                                                                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_8px_rgba(59,130,246,0.15)]'
                                                                                             : 'bg-zinc-800 text-zinc-300 border-zinc-700'
                                                                                     }`}>
                                                                                         <span>{isUp ? '▲' : isDown ? '▼' : '•'}</span>
                                                                                         <span>{isUp ? '+' : isDown ? '-' : ''}{formatTablePrice(changeVal)}</span>
-                                                                                        <span className="text-xs opacity-90 font-bold">({isUp ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
+                                                                                        <span className="text-[11px] opacity-90 font-bold">({isUp ? '+' : ''}{Number(safeChange).toFixed(2)}%)</span>
                                                                                     </span>
                                                                                 </td>
 
                                                                                 {/* 장중 레인지 밴드 (Desktop) */}
-                                                                                <td className="py-3.5 px-5 text-center hidden md:table-cell whitespace-nowrap min-w-[220px]">
-                                                                                    <div className="w-full max-w-[220px] mx-auto">
-                                                                                        <div className="flex items-center justify-between text-xs font-bold mb-1 gap-2">
+                                                                                <td className="py-2.5 md:py-3 px-3 text-center hidden md:table-cell whitespace-nowrap min-w-[165px] max-w-[190px]">
+                                                                                    <div className="w-full max-w-[180px] mx-auto">
+                                                                                        <div className="flex items-center justify-between text-[11px] font-bold mb-1 gap-1.5">
                                                                                             <span className="text-blue-300 font-mono font-bold whitespace-nowrap">{formatTablePrice(day.low)}</span>
-                                                                                            <span className="text-xs font-black text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">진폭 {intradaySpread.toFixed(1)}%</span>
+                                                                                            <span className="text-[10px] font-black text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.2 rounded whitespace-nowrap shrink-0">진폭 {intradaySpread.toFixed(1)}%</span>
                                                                                             <span className="text-rose-300 font-mono font-bold whitespace-nowrap">{formatTablePrice(day.high)}</span>
                                                                                         </div>
-                                                                                        <div className="w-full h-2 bg-zinc-800 rounded-full relative overflow-hidden border border-white/10">
+                                                                                        <div className="w-full h-1.5 bg-zinc-800 rounded-full relative overflow-hidden border border-white/10">
                                                                                             <div 
                                                                                                 className="absolute top-0 bottom-0 bg-gradient-to-r from-blue-500 via-indigo-400 to-rose-500 rounded-full opacity-70"
                                                                                                 style={{ width: '100%' }}
                                                                                             />
                                                                                             <div 
-                                                                                                className="absolute top-0 bottom-0 w-2.5 bg-white rounded-full shadow-[0_0_10px_white] -ml-1"
+                                                                                                className="absolute top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_8px_white] -ml-1"
                                                                                                 style={{ left: `${closePos}%` }}
                                                                                             />
                                                                                         </div>
@@ -2743,24 +2743,24 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 시가 */}
-                                                                                <td className="py-3.5 px-4 text-right text-zinc-100 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
+                                                                                <td className="py-2.5 md:py-3 px-2 md:px-2.5 text-right text-zinc-300 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
                                                                                     {formatTablePrice(day.open)}
                                                                                 </td>
 
                                                                                 {/* 고가 */}
-                                                                                <td className="py-3.5 px-4 text-right text-rose-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
+                                                                                <td className="py-2.5 md:py-3 px-2 md:px-2.5 text-right text-rose-400 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
                                                                                     {formatTablePrice(day.high)}
                                                                                 </td>
 
                                                                                 {/* 저가 */}
-                                                                                <td className="py-3.5 px-4 text-right text-blue-400 font-extrabold whitespace-nowrap text-xs md:text-sm font-mono">
+                                                                                <td className="py-2.5 md:py-3 px-2 md:px-2.5 text-right text-blue-400 font-bold whitespace-nowrap text-xs md:text-sm font-mono">
                                                                                     {formatTablePrice(day.low)}
                                                                                 </td>
 
                                                                                 {/* 거래량 */}
-                                                                                <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                                                                                <td className="py-2.5 md:py-3 px-2.5 md:px-3 text-right whitespace-nowrap">
                                                                                     <div className="font-bold text-zinc-100 text-xs md:text-sm font-mono">{day.volume ? Math.round(day.volume).toLocaleString() : '0'}</div>
-                                                                                    <div className="w-24 ml-auto h-1.5 bg-zinc-800 rounded-full mt-1 overflow-hidden border border-white/5">
+                                                                                    <div className="w-16 md:w-20 ml-auto h-1.5 bg-zinc-800 rounded-full mt-1 overflow-hidden border border-white/5">
                                                                                         <div 
                                                                                             className="h-full bg-blue-400 rounded-full"
                                                                                             style={{ width: `${Math.min(100, Math.max(5, ((day.volume || 0) / maxVolume) * 100))}%` }}
@@ -2769,8 +2769,8 @@ function DiscoveryContent() {
                                                                                 </td>
 
                                                                                 {/* 추정 거래대금 */}
-                                                                                <td className="py-3.5 px-5 text-right whitespace-nowrap hidden sm:table-cell">
-                                                                                    <span className="text-indigo-200 font-black text-xs md:text-sm bg-indigo-500/20 px-2.5 py-1 rounded-xl border border-indigo-500/40 shadow-sm font-mono whitespace-nowrap">
+                                                                                <td className="py-2.5 md:py-3 px-3 md:px-4 text-right whitespace-nowrap">
+                                                                                    <span className="text-indigo-200 font-black text-xs md:text-sm bg-indigo-500/20 px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg border border-indigo-500/40 shadow-sm font-mono whitespace-nowrap">
                                                                                         {formatTradingValue(approxTradeVal, stock.currency)}
                                                                                     </span>
                                                                                 </td>
