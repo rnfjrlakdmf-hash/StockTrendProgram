@@ -43,7 +43,7 @@ const METRIC_CONFIG: Record<string, {
         label: "영업이익", 
         unit: "억원", 
         emoji: "📈", 
-        description: "순수 본업을 통해 벌어들인 실제 알짜 사업 이익 (매출 - 매출원가 - 판관비)입니다.", 
+        description: "순수 본업을 통해 벌어들인 실제 알짜 사업 이익 (매출 - 원가 - 판관비)입니다.", 
         beginnerNote: "원가와 인건비를 빼고 진짜 장사로 남긴 돈으로, 기업 가치 평가에서 가장 중요합니다.",
         higherIsBetter: true, 
         format: 'number',
@@ -70,7 +70,7 @@ const METRIC_CONFIG: Record<string, {
         higherIsBetter: true, 
         format: 'percent',
         goodBenchmark: "10% 이상 우수",
-        category: "수익성 지표"
+        category: "수익성 & 마진"
     },
     net_income_margin: { 
         label: "순이익률", 
@@ -81,7 +81,7 @@ const METRIC_CONFIG: Record<string, {
         higherIsBetter: true, 
         format: 'percent',
         goodBenchmark: "5~10% 이상 양호",
-        category: "수익성 지표"
+        category: "수익성 & 마진"
     },
     roe: { 
         label: "ROE (자기자본이익률)", 
@@ -92,7 +92,7 @@ const METRIC_CONFIG: Record<string, {
         higherIsBetter: true, 
         format: 'percent',
         goodBenchmark: "10% 이상 특급",
-        category: "수익성 지표"
+        category: "수익성 & 마진"
     },
     debt_ratio: { 
         label: "부채비율", 
@@ -250,8 +250,8 @@ function getTrend(values: (number | null)[], idx: number): 'up' | 'down' | 'flat
 function getColorClass(val: number, higherIsBetter: boolean, isZero: boolean): string {
     if (isZero) return 'text-zinc-500';
     if (higherIsBetter) {
-        if (val > 0) return 'text-emerald-400 font-extrabold';
-        if (val < 0) return 'text-rose-400 font-extrabold';
+        if (val > 0) return 'text-emerald-400 font-black';
+        if (val < 0) return 'text-rose-400 font-black';
         return 'text-zinc-300';
     } else {
         return 'text-zinc-100 font-bold';
@@ -437,7 +437,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
             {/* 1. Header & Title Ribbon */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center shadow-inner shrink-0">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/20 to-indigo-500/20 border border-amber-500/30 flex items-center justify-center shadow-inner shrink-0">
                         <BookOpen className="w-5 h-5 text-amber-300" />
                     </div>
                     <div>
@@ -460,21 +460,21 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 {/* 4대 퀵 요약 미니 배지 */}
                 {aiSummary && (
                     <div className="flex items-center gap-2 flex-wrap">
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-white/10 text-center shadow-inner">
-                            <div className="text-[9px] text-zinc-400 font-bold uppercase">최근 매출</div>
-                            <div className="text-xs font-black text-white font-mono">{aiSummary.latestRev}</div>
+                        <div className="px-3.5 py-2 rounded-2xl bg-zinc-950 border border-white/10 text-center shadow-inner">
+                            <div className="text-[10px] text-zinc-400 font-bold uppercase">최근 매출</div>
+                            <div className="text-xs md:text-sm font-black text-white font-mono mt-0.5">{aiSummary.latestRev}</div>
                         </div>
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-white/10 text-center shadow-inner">
-                            <div className="text-[9px] text-zinc-400 font-bold uppercase">최근 영업익</div>
-                            <div className="text-xs font-black text-emerald-400 font-mono">{aiSummary.latestOp}</div>
+                        <div className="px-3.5 py-2 rounded-2xl bg-zinc-950 border border-white/10 text-center shadow-inner">
+                            <div className="text-[10px] text-zinc-400 font-bold uppercase">최근 영업익</div>
+                            <div className="text-xs md:text-sm font-black text-emerald-400 font-mono mt-0.5">{aiSummary.latestOp}</div>
                         </div>
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-white/10 text-center shadow-inner">
-                            <div className="text-[9px] text-zinc-400 font-bold uppercase">최근 ROE</div>
-                            <div className="text-xs font-black text-purple-300 font-mono">{aiSummary.latestRoe}</div>
+                        <div className="px-3.5 py-2 rounded-2xl bg-zinc-950 border border-white/10 text-center shadow-inner">
+                            <div className="text-[10px] text-zinc-400 font-bold uppercase">최근 ROE</div>
+                            <div className="text-xs md:text-sm font-black text-purple-300 font-mono mt-0.5">{aiSummary.latestRoe}</div>
                         </div>
-                        <div className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-white/10 text-center shadow-inner">
-                            <div className="text-[9px] text-zinc-400 font-bold uppercase">부채비율</div>
-                            <div className="text-xs font-black text-cyan-300 font-mono">{aiSummary.latestDebt}</div>
+                        <div className="px-3.5 py-2 rounded-2xl bg-zinc-950 border border-white/10 text-center shadow-inner">
+                            <div className="text-[10px] text-zinc-400 font-bold uppercase">부채비율</div>
+                            <div className="text-xs md:text-sm font-black text-cyan-300 font-mono mt-0.5">{aiSummary.latestDebt}</div>
                         </div>
                     </div>
                 )}
@@ -502,23 +502,23 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
                         {aiSummary.points.map((pt, i) => (
-                            <div key={i} className="p-4 rounded-2xl bg-zinc-900/90 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-lg">
+                            <div key={i} className="p-4.5 rounded-2xl bg-zinc-900/95 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-lg">
                                 <div>
-                                    <div className="flex items-center justify-between text-xs font-black mb-1.5">
-                                        <span className="text-zinc-300 flex items-center gap-1.5 font-bold">
+                                    <div className="flex items-center justify-between text-xs font-black mb-2">
+                                        <span className="text-zinc-200 flex items-center gap-1.5 font-bold">
                                             <span className="w-2 h-2 rounded-full bg-indigo-500" />
                                             {pt.category}
                                         </span>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                        <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-md border ${
                                             pt.status === 'positive' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                                         }`}>
                                             {pt.badge}
                                         </span>
                                     </div>
-                                    <div className="font-extrabold text-sm text-white">
+                                    <div className="font-extrabold text-sm md:text-base text-white">
                                         {pt.title}
                                     </div>
-                                    <p className="text-xs text-zinc-300 leading-relaxed font-medium mt-1.5">
+                                    <p className="text-xs md:text-sm text-zinc-300 leading-relaxed font-medium mt-2">
                                         {pt.desc}
                                     </p>
                                 </div>
@@ -528,46 +528,52 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 </div>
             )}
 
-            {/* 3. [NEW & EXCLUSIVE] 선택 지표 인터랙티브 인텔리전스 가이드 바 (Glitch-Free Solid Info Bar) */}
+            {/* 3. [NEW] 선택 지표 인터랙티브 인텔리전스 가이드 바 (깔끔한 2단 블록 레이아웃으로 줄바꿈 깨짐 완전 해결) */}
             {activeMetricConfig && (
-                <div className="p-4.5 rounded-2xl bg-zinc-950 border border-amber-500/30 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-200">
-                    <div className="flex items-start md:items-center gap-3">
-                        <div className="p-2.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xl shrink-0">
-                            {activeMetricConfig.emoji}
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm md:text-base font-black text-white">
-                                    {activeMetricConfig.label} ({activeMetricConfig.unit})
-                                </span>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/10 text-zinc-300 border border-white/10">
-                                    {activeMetricConfig.category}
-                                </span>
-                                {activeMetricConfig.goodBenchmark && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                                        <Check className="w-3 h-3" /> 우수 기준: {activeMetricConfig.goodBenchmark}
-                                    </span>
-                                )}
+                <div className="p-5 rounded-3xl bg-zinc-950 border border-amber-500/35 shadow-2xl space-y-3 relative overflow-hidden animate-in fade-in duration-200">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xl flex items-center justify-center shrink-0">
+                                {activeMetricConfig.emoji}
                             </div>
-                            <p className="text-xs text-zinc-300 font-medium mt-1">
-                                {activeMetricConfig.description}
-                            </p>
-                            <p className="text-xs text-amber-200 font-semibold mt-1 flex items-center gap-1">
-                                <span>💡 <span className="underline decoration-amber-400/50">초보자 실전 팁</span>:</span>
-                                <span>{activeMetricConfig.beginnerNote}</span>
-                            </p>
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-base md:text-lg font-black text-white">
+                                        {activeMetricConfig.label}
+                                    </span>
+                                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-white/10 text-zinc-300">
+                                        단위: {activeMetricConfig.unit}
+                                    </span>
+                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                        {activeMetricConfig.category}
+                                    </span>
+                                </div>
+                                <p className="text-xs md:text-sm text-zinc-300 font-medium mt-1">
+                                    {activeMetricConfig.description}
+                                </p>
+                            </div>
                         </div>
+
+                        {activeMetricConfig.goodBenchmark && (
+                            <div className="shrink-0 self-start md:self-center">
+                                <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                    <span>우수 기준: {activeMetricConfig.goodBenchmark}</span>
+                                </span>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="text-[11px] text-zinc-500 font-medium shrink-0 flex items-center gap-1 self-end md:self-center bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-                        <Eye className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>아래 표에서 원하는 지표를 클릭하면 실시간 해설이 바뀝니다.</span>
+                    {/* 초보자 전용 팁 콜아웃 박스 (줄바꿈이 깨지지 않도록 단독 블록 배치) */}
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs md:text-sm text-amber-200">
+                        <span className="font-black text-amber-400 shrink-0 mt-0.5">💡 초보자 실전 팁:</span>
+                        <span className="font-semibold leading-relaxed text-zinc-200">{activeMetricConfig.beginnerNote}</span>
                     </div>
                 </div>
             )}
 
             {/* 4. 카테고리 필터 탭 바 */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {CATEGORIES.map(cat => {
                     const Icon = cat.icon;
                     const isActive = activeCategory === cat.id;
@@ -575,28 +581,28 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                         <button
                             key={cat.id}
                             onClick={() => setActiveCategory(cat.id)}
-                            className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
+                            className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
                                 isActive 
-                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/25' 
+                                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' 
                                     : 'bg-zinc-950 border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white'
                             }`}
                         >
-                            <Icon className="w-3.5 h-3.5" />
+                            <Icon className="w-4 h-4" />
                             <span>{cat.title}</span>
                         </button>
                     );
                 })}
             </div>
 
-            {/* 5. [UNIFIED MASTER TABLE] 원스톱 단일 통합 재무제표 마스터 테이블 */}
+            {/* 5. [UNIFIED MASTER TABLE] 원스톱 단일 통합 재무제표 마스터 테이블 (강력한 좌측 고정 칼럼 분리선 장착) */}
             <div className="bg-zinc-950/95 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700">
-                    <table className="w-full text-left border-collapse min-w-[950px]">
+                    <table className="w-full text-left border-collapse min-w-[980px]">
                         <thead>
                             {/* 1단 헤더: 연간 vs 분기 뱃지 */}
                             <tr className="bg-[#0b1020] border-b border-white/10">
-                                <th className="py-3 px-4 sticky left-0 bg-[#0b1020] z-30 w-48 border-r border-white/15">
-                                    <span className="text-[11px] font-black uppercase text-zinc-400 tracking-wider">주요 재무 지표</span>
+                                <th className="py-3 px-5 sticky left-0 bg-[#0b1020] z-30 w-52 min-w-[200px] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)]">
+                                    <span className="text-xs font-black uppercase text-zinc-300 tracking-wider">주요 재무 지표</span>
                                 </th>
                                 <th colSpan={annualDates.length} className="py-2.5 px-3 text-xs font-black uppercase tracking-wider text-emerald-300 text-center border-b border-emerald-500/40 bg-emerald-950/30">
                                     📊 연간 실적 (Yearly Performance)
@@ -608,8 +614,8 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                 )}
                             </tr>
                             {/* 2단 헤더: 날짜 */}
-                            <tr className="border-b-2 border-indigo-500/30 bg-[#0e162e] text-xs">
-                                <th className="py-3 px-4 text-zinc-300 font-extrabold uppercase tracking-wider sticky left-0 bg-[#0e162e] z-30 backdrop-blur-md w-48 border-r border-white/15 whitespace-nowrap">
+                            <tr className="border-b-2 border-indigo-500/40 bg-[#0e162e] text-xs">
+                                <th className="py-3.5 px-5 text-zinc-300 font-extrabold uppercase tracking-wider sticky left-0 bg-[#0e162e] z-30 backdrop-blur-md w-52 min-w-[200px] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
                                     지표명 (단위)
                                 </th>
                                 {dates.map((date: string, idx: number) => {
@@ -618,13 +624,13 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                     return (
                                         <th 
                                             key={idx} 
-                                            className={`py-3 px-3 text-center whitespace-nowrap font-black font-mono ${
+                                            className={`py-3.5 px-3.5 text-center whitespace-nowrap font-black font-mono text-xs md:text-sm ${
                                                 isEstimate(date) 
                                                     ? 'text-purple-300 bg-purple-500/15' 
                                                     : isQDate 
                                                         ? 'text-blue-200' 
                                                         : 'text-zinc-100'
-                                            } ${isFirstQ ? 'border-l border-white/20' : ''}`}
+                                            } ${isFirstQ ? 'border-l-2 border-blue-500/30' : ''}`}
                                         >
                                             {date}
                                         </th>
@@ -636,13 +642,13 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                         <tbody className="divide-y divide-white/5 font-mono text-xs md:text-sm">
                             {displayedGroups.map((group, gIdx) => (
                                 <React.Fragment key={group.title}>
-                                    {/* 카테고리 구분 섹션 바 */}
-                                    <tr className="bg-gradient-to-r from-zinc-900 via-indigo-950/40 to-zinc-900 border-t-2 border-b border-white/10">
-                                        <td colSpan={dates.length + 1} className="py-2.5 px-4 font-black text-xs text-indigo-300 uppercase tracking-wider sticky left-0 z-20">
-                                            <div className="flex items-center gap-2">
-                                                <span>{group.title}</span>
-                                                <span className="text-[10px] text-zinc-400 font-normal">({group.desc})</span>
-                                            </div>
+                                    {/* 카테고리 구분 섹션 바 (좌측 고정 셀과 일체감 형성) */}
+                                    <tr className="bg-gradient-to-r from-[#111933] via-zinc-900 to-zinc-950 border-t-2 border-b border-white/15">
+                                        <td className="py-3 px-5 font-black text-xs md:text-sm text-amber-300 uppercase tracking-wider sticky left-0 z-20 bg-[#111933] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
+                                            {group.title}
+                                        </td>
+                                        <td colSpan={dates.length} className="py-3 px-4 text-xs text-zinc-400 font-medium">
+                                            • {group.desc}
                                         </td>
                                     </tr>
 
@@ -664,11 +670,11 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                 }`}
                                             >
                                                 {/* 좌측 고정 지표명 셀 */}
-                                                <td className={`py-3.5 px-4 sticky left-0 z-20 backdrop-blur-md border-r border-white/15 shadow-[4px_0_12px_rgba(0,0,0,0.5)] whitespace-nowrap transition-colors ${
-                                                    isSelected ? 'bg-[#152040]' : 'bg-[#0d1322] group-hover:bg-[#131c33]'
+                                                <td className={`py-4 px-5 sticky left-0 z-20 backdrop-blur-md border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap transition-colors w-52 min-w-[200px] ${
+                                                    isSelected ? 'bg-[#18244a]' : 'bg-[#0d1322] group-hover:bg-[#131c33]'
                                                 }`}>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-base shrink-0">{config.emoji}</span>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="text-lg shrink-0">{config.emoji}</span>
                                                         <div className="truncate">
                                                             <div className={`text-xs md:text-sm font-black transition-colors flex items-center gap-1.5 ${
                                                                 isSelected ? 'text-amber-300' : 'text-white group-hover:text-amber-300'
@@ -694,19 +700,19 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                     return (
                                                         <td 
                                                             key={idx} 
-                                                            className={`py-3.5 px-3.5 text-center whitespace-nowrap transition-colors min-w-[90px] ${
+                                                            className={`py-4 px-3.5 text-center whitespace-nowrap transition-colors min-w-[95px] ${
                                                                 isEstimate(dates[idx]) 
                                                                     ? 'bg-purple-500/5' 
                                                                     : isQuarter 
                                                                         ? 'bg-blue-500/[0.03]' 
                                                                         : 'bg-emerald-500/[0.02]'
-                                                            } ${isFirstQ ? 'border-l border-white/15' : ''}`}
+                                                            } ${isFirstQ ? 'border-l-2 border-blue-500/30' : ''}`}
                                                         >
                                                             {val === null ? (
-                                                                <span className="text-zinc-700 text-xs font-bold">-</span>
+                                                                <span className="text-zinc-600 text-xs font-bold">-</span>
                                                             ) : (
-                                                                <div className="flex flex-col items-center gap-0.5">
-                                                                    <span className={`tracking-tight ${colorClass}`}>
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <span className={`tracking-tight text-xs md:text-sm ${colorClass}`}>
                                                                         {formatValue(val, config.format, config.unit, currency)}
                                                                     </span>
                                                                     {/* 전기 대비 추세 화살표 */}
