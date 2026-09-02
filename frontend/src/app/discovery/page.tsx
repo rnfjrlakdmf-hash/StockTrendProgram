@@ -1554,39 +1554,7 @@ function DiscoveryContent() {
                                         </div>
                                     </div>
 
-                                    {/* [New] 상단 관련 섹터 종목 퀵 위젯 (사용자 지정 위치) */}
-                                    {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
-                                        <div className="w-full lg:w-auto my-3 lg:my-0 p-3.5 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl self-stretch lg:self-center flex flex-col justify-center min-w-[280px] max-w-md">
-                                            <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
-                                                <span className="flex items-center gap-1.5 text-blue-400">
-                                                    <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
-                                                    <span className="font-extrabold text-white">관련 섹터 종목</span>
-                                                </span>
-                                                <span className="text-[10px] text-zinc-400 font-medium">클릭 시 이동</span>
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                {stock.related_stocks.slice(0, 3).map((item, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        onClick={() => handleSearch(item.symbol)}
-                                                        className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
-                                                    >
-                                                        <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
-                                                            {item.name}
-                                                        </div>
-                                                        <div className="flex items-center justify-between gap-1 mt-1 font-mono text-[11px]">
-                                                            <span className="text-zinc-300 font-bold truncate">{item.price || item.symbol}</span>
-                                                            {item.change && (
-                                                                <span className={`text-[10px] font-black px-1 rounded shrink-0 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText} ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorBg}`}>
-                                                                    {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                    
 
                                     <div className="w-full md:w-auto flex flex-wrap md:flex-col justify-between md:justify-end items-center md:items-end gap-4 md:gap-0 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
                                         <div className="flex items-center gap-3 md:flex-col md:items-end">
@@ -1614,6 +1582,40 @@ function DiscoveryContent() {
                                                 </a>
                                             )}
                                         </div>
+                                    
+                                        {/* [New] 우측 하단 관련 섹터 종목 퀵 위젯 (사용자 화살표 지정 위치) */}
+                                        {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
+                                            <div className="w-full mt-3 p-3 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl flex flex-col min-w-[280px] max-w-sm">
+                                                <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
+                                                    <span className="flex items-center gap-1.5 text-blue-400">
+                                                        <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
+                                                        <span className="font-extrabold text-white">관련 섹터 종목</span>
+                                                    </span>
+                                                    <span className="text-[10px] text-zinc-400 font-medium">클릭 시 이동</span>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-1.5">
+                                                    {stock.related_stocks.slice(0, 3).map((item, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => handleSearch(item.symbol)}
+                                                            className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
+                                                        >
+                                                            <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
+                                                                {item.name}
+                                                            </div>
+                                                            <div className="flex flex-col mt-0.5 font-mono">
+                                                                <span className="text-zinc-300 font-bold text-[11px] truncate">{item.price || item.symbol}</span>
+                                                                {item.change && (
+                                                                    <span className={`text-[9px] font-black mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
+                                                                        {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
