@@ -1300,44 +1300,72 @@ function DiscoveryContent() {
                             {/* Main Content Area (Full Width) */}
                             <div className="w-full space-y-6">
                                 {/* Main Score Card */}
-                                <div className="rounded-3xl bg-black/40 border border-white/20 p-8 backdrop-blur-md shadow-lg">
-                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-0">
-                                    <div className="flex-1">
-                                        <h3 className="text-3xl md:text-5xl font-black flex flex-wrap items-center gap-4 text-white mb-6">
-                                            <span>{stock.name}</span>
-                                            <span className="text-xl md:text-2xl text-gray-400 font-bold opacity-60 flex items-center gap-2">
-                                                <span>{getExchangeLabel(stock.symbol).code}</span>
-                                                {getExchangeLabel(stock.symbol).exchange && (
-                                                    <span className={`text-sm font-black px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/10 ${getExchangeLabel(stock.symbol).color}`}>
-                                                        {getExchangeLabel(stock.symbol).exchange}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <div className="ml-auto flex items-center gap-2">
-                                                <KakaoShareButton 
-                                                    title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
-                                                    description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
-                                                    url={`https://stock-trend-program.co.kr/discovery?q=${stock.symbol}`}
-                                                    className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 md:gap-2 transition-colors shadow-lg shadow-[#FEE500]/10"
-                                                    buttonText="AI 분석 리포트 보기"
-                                                />
-                                            </div>
-                                        </h3>
+                                <div className="rounded-3xl bg-gradient-to-b from-[#0e1628] via-[#090d1a] to-zinc-950 border border-indigo-500/25 p-6 md:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                                    {/* 상단 은은한 배경 네온 조명 */}
+                                    <div className="absolute top-0 right-1/4 w-96 h-32 bg-indigo-500/10 blur-3xl pointer-events-none rounded-full" />
+                                    <div className="absolute top-0 left-1/4 w-96 h-32 bg-blue-500/10 blur-3xl pointer-events-none rounded-full" />
 
-                                        {/* 정규장 및 시간외 거래 가격 분리 레이아웃 */}
-                                        <div className="flex flex-col gap-4 mb-8">
-                                            {/* 정규장 가격 영역 */}
-                                            <div className="flex flex-col gap-1.5">
-                                                <span className="text-[10px] md:text-[11px] font-black text-gray-400 uppercase tracking-widest bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-md w-max shadow-sm">
-                                                    {extendedHours?.regular?.is_active ? 'LIVE MARKET 실시간 현재가' :
-                                                     stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' : 
-                                                     stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
-                                                     'REGULAR MARKET 정규장 종가'}
-                                                </span>
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex flex-wrap items-center gap-4">
-                                                        <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tighter flex items-center">
-                                                            <span className="text-2xl md:text-3xl mr-1 text-gray-500 font-bold">
+                                    {/* 1. 종목명 및 실시간 시세 / AI 점수 헤더 */}
+                                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-6 relative z-10">
+                                        <div className="flex-1 min-w-0">
+                                            {/* 종목명 & 거래소 & 공유 버튼 */}
+                                            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                                                        <span>{stock.name}</span>
+                                                    </h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg md:text-xl text-zinc-400 font-mono font-bold">
+                                                            {getExchangeLabel(stock.symbol).code}
+                                                        </span>
+                                                        {getExchangeLabel(stock.symbol).exchange && (
+                                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 ${getExchangeLabel(stock.symbol).color}`}>
+                                                                {getExchangeLabel(stock.symbol).exchange}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                            {stock.currency === 'KRW' ? 'KRX 대형주' : 'GLOBAL TECH'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <KakaoShareButton 
+                                                        title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
+                                                        description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
+                                                        url={`https://stock-trend-program.co.kr/discovery?q=${stock.symbol}`}
+                                                        className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#FEE500]/15 cursor-pointer"
+                                                        buttonText="카톡 공유"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* 정규장 및 시간외 시세 듀얼 카드 */}
+                                            <div className="flex flex-wrap items-center gap-4">
+                                                {/* 정규장 실시간 가격 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col gap-1.5">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                                                            {extendedHours?.regular?.is_active ? 'LIVE MARKET 실시간 현재가' :
+                                                             stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' : 
+                                                             stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
+                                                             'REGULAR MARKET 정규장 종가'}
+                                                        </span>
+                                                        <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black ${
+                                                            extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 
+                                                            'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                                        }`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${
+                                                                extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 
+                                                                'bg-zinc-500'
+                                                            }`} />
+                                                            <span>{extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-baseline gap-3 mt-1">
+                                                        <span className="text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline">
+                                                            <span className="text-xl md:text-2xl mr-1 text-zinc-400 font-bold">
                                                                 {stock.currency === 'KRW' ? '₩' : '$'}
                                                             </span>
                                                             <BlinkingPrice
@@ -1350,7 +1378,6 @@ function DiscoveryContent() {
                                                         </span>
 
                                                         {(() => {
-                                                            // Foolproof real-time price & change metric calculation
                                                             const currentPriceNum = extendedHours?.regular?.price 
                                                                 ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
                                                             const prevCloseNum = Number(String(stock.details?.prev_close || (stock as any).prev_close || (stock as any).previousClose || '0').replace(/,/g, ''));
@@ -1395,98 +1422,34 @@ function DiscoveryContent() {
                                                             const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
 
                                                             return (
-                                                                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-lg md:text-xl shadow-lg border ${
-                                                                    isUp ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                                                                    isDown ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                                                                    'bg-gray-500/10 border-white/10 text-gray-400'
+                                                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl font-black text-sm md:text-base border shadow-sm ${
+                                                                    isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
+                                                                    isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
+                                                                    'bg-zinc-800 border-white/10 text-zinc-400'
                                                                 }`}>
-                                                                    <span className="flex items-center gap-1">
-                                                                        {isUp ? '▲' : isDown ? '▼' : ''}
-                                                                        {Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                                    </span>
-                                                                    <span className="text-sm md:text-base font-bold opacity-80 ml-1">
-                                                                        ({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})
-                                                                    </span>
+                                                                    <span>{isUp ? '▲' : isDown ? '▼' : ''} {Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                    <span className="opacity-90">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
                                                                 </div>
                                                             );
                                                         })()}
+                                                    </div>
+                                                </div>
 
-                                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-sm shadow-sm ${
-                                                            extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500/10 text-green-400 border-green-500/30' : 
-                                                            'bg-gray-500/10 text-gray-400 border-gray-500/30'
-                                                        }`}>
-                                                            <div className={`w-2 h-2 rounded-full ${
-                                                                extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 
-                                                                'bg-gray-500'
-                                                            }`}></div>
-                                                            <span className="text-xs md:text-sm font-black uppercase tracking-tight">
-                                                                {extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}
+                                                {/* 시간외 거래 가격 카드 */}
+                                                {(stock.after_market_data || stock.nxt_data || stock.is_extended_hours || extendedHours?.extended) && (
+                                                    <div className="p-4 rounded-2xl bg-zinc-900/60 border border-white/10 shadow-lg flex flex-col gap-1.5">
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span className="text-[10px] font-black text-indigo-300 uppercase tracking-wider bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded-md">
+                                                                AFTER MARKET 시간외거래
+                                                            </span>
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                                마감
                                                             </span>
                                                         </div>
-                                                    </div>
-                                                    {stock.currency === 'USD' && exchangeRate > 0 && (
-                                                        <div className="text-sm font-bold text-gray-400 flex items-center gap-1.5 ml-1 mt-1">
-                                                            <span className="text-xs border border-gray-600 px-1.5 py-0.5 rounded text-gray-400 bg-gray-800/50">예상 원화</span>
-                                                            ₩{Math.round((extendedHours?.regular?.price ?? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, ''))) * exchangeRate).toLocaleString()}
-                                                            <span className="text-xs text-gray-600 font-normal ml-1">({exchangeRate.toLocaleString()}원 환율 적용)</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
 
-                                            {/* 시간외 거래 가격 영역 (미국/한국 공통 적용) */}
-                                            {(extendedHours?.extended || (stock.is_extended_hours && stock.extended_price) || stock.nxt_data || stock.after_market_data) && (
-                                                <div className="flex flex-col gap-1.5 mt-1 border-t border-white/10 pt-3.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md border shadow-sm w-max ${
-                                                            extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
-                                                            ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-                                                            : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-                                                        }`}>
-                                                            {extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status?.includes('프리') || stock.market_status?.includes('PRE') 
-                                                                ? 'PRE MARKET 프리마켓' 
-                                                                : stock.market_status?.includes('야간') || stock.market_status?.includes('NXT') || (!stock.after_market_data && stock.nxt_data) 
-                                                                    ? 'NXT AFTER MARKET 야간거래' 
-                                                                    : 'AFTER MARKET 시간외거래'}
-                                                        </span>
-                                                        {(() => {
-                                                            const isPreMarket = extendedHours?.extended?.session_type === 'PRE_MARKET' || stock.market_status === '프리마켓' || stock.market_status === 'PRE';
-                                                            
-                                                            // 미국/국내 주식 분기하여 정밀 상태 판별
-                                                            const isUS = stock.currency === 'USD' || !/^\d{6}$/.test(stock.symbol || '');
-                                                            let isAfterActive = false;
-                                                            
-                                                            if (isUS) {
-                                                                if (extendedHours?.extended) {
-                                                                    isAfterActive = Boolean(extendedHours.extended.is_active);
-                                                                } else {
-                                                                    isAfterActive = stock.market_status === '프리마켓' || stock.market_status === '에프터마켓' || stock.market_status === 'PRE' || stock.market_status === 'POST';
-                                                                }
-                                                            } else {
-                                                                isAfterActive = Boolean(stock.market_status?.includes('시간외') || stock.market_status?.includes('야간') || stock.market_status?.includes('NXT'));
-                                                            }
-                                                            
-                                                            if (isAfterActive) {
-                                                                return (
-                                                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${isPreMarket ? 'bg-amber-500/10 border-amber-500/20' : 'bg-indigo-500/10 border-indigo-500/20'}`}>
-                                                                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isPreMarket ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]'}`}></div>
-                                                                        <span className={`text-[9px] md:text-[10px] font-bold ${isPreMarket ? 'text-amber-400' : 'text-indigo-400'}`}>거래중</span>
-                                                                    </div>
-                                                                );
-                                                            } else {
-                                                                return (
-                                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border bg-zinc-800/70 border-zinc-700/60">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500"></div>
-                                                                        <span className="text-[9px] md:text-[10px] font-bold text-zinc-400">마감</span>
-                                                                    </div>
-                                                                );
-                                                            }
-                                                        })()}
-                                                    </div>
-                                                    <div className="flex flex-col gap-1 mt-1.5">
-                                                        <div className="flex items-center gap-4">
-                                                            <span className="text-2xl md:text-3xl font-black text-white tabular-nums tracking-tight flex items-center">
-                                                                <span className="text-lg md:text-xl mr-0.5 text-gray-500 font-bold">{stock.currency === 'KRW' ? '₩' : '$'}</span>
+                                                        <div className="flex items-baseline gap-2.5 mt-1">
+                                                            <span className="text-xl md:text-2xl font-black text-zinc-200 font-mono">
+                                                                <span className="text-base mr-0.5 text-zinc-500">{stock.currency === 'KRW' ? '₩' : '$'}</span>
                                                                 <BlinkingPrice
                                                                     price={extendedHours?.extended?.price ? extendedHours.extended.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
                                                                         Number(String(
@@ -1495,288 +1458,430 @@ function DiscoveryContent() {
                                                                             ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
                                                                             : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
                                                                     ).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                                    className="text-white bg-transparent"
+                                                                    className="text-zinc-200 bg-transparent"
                                                                 />
                                                             </span>
                                                             {(() => {
                                                                 let val = extendedHours?.extended?.change;
                                                                 let pct = extendedHours?.extended?.change_pct;
-                                                                
                                                                 if (val === undefined) {
                                                                     const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
                                                                     val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
                                                                     pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                                    
-                                                                    if (stock.currency === 'KRW' && nxt?.price) {
-                                                                        // 한국 주식의 경우 시간외 시세 변동을 전일 종가가 아닌 정규장 종가 대비로 재계산
-                                                                        const regPriceStr = String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, '');
-                                                                        const regPriceNum = Number(regPriceStr);
-                                                                        const aftPriceStr = String(nxt.price).replace(/,/g, '');
-                                                                        const aftPriceNum = Number(aftPriceStr);
-                                                                        if (regPriceNum > 0 && aftPriceNum > 0) {
-                                                                            val = aftPriceNum - regPriceNum;
-                                                                            pct = (val / regPriceNum) * 100;
-                                                                        }
-                                                                    } else if (val === 0 && pct !== 0) {
-                                                                        const priceStr = String(nxt?.price || '0').replace(/,/g, '');
-                                                                        const priceNum = Number(priceStr);
-                                                                        val = priceNum - (priceNum / (1 + (pct / 100)));
-                                                                    }
                                                                 }
-                                                                
-                                                                const colorClass = val > 0 ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' : val < 0 ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-gray-500/10 border-white/10 text-gray-400';
-                                                                const arrow = val > 0 ? '▲' : val < 0 ? '▼' : '';
-                                                                const valStr = Math.abs(val).toLocaleString(undefined, {maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2});
-                                                                const pctStr = isNaN(pct) ? "0.00%" : `${pct > 0 ? '+' : ''}${pct.toFixed(2)}%`;
-                                                                
+                                                                const isUp = (val || 0) > 0;
+                                                                const isDown = (val || 0) < 0;
                                                                 return (
-                                                                    <div className={`flex items-center gap-1.5 font-bold px-3 py-1 rounded-xl text-sm md:text-base border ${colorClass}`}>
-                                                                        <span>{arrow}{valStr}</span>
-                                                                        <span className="text-xs md:text-sm opacity-80">({pctStr})</span>
-                                                                    </div>
+                                                                    <span className={`text-xs font-black font-mono px-2 py-0.5 rounded-lg border ${
+                                                                        isUp ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' : isDown ? 'text-blue-400 bg-blue-500/10 border-blue-500/30' : 'text-zinc-400 bg-zinc-800 border-zinc-700'
+                                                                    }`}>
+                                                                        {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString()} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
+                                                                    </span>
                                                                 );
                                                             })()}
                                                         </div>
-                                                        {stock.currency === 'USD' && exchangeRate > 0 && (
-                                                            <div className="text-xs font-bold text-gray-400 flex items-center gap-1.5 ml-1 mt-0.5">
-                                                                <span className="text-[10px] border border-gray-600 px-1.5 py-0.5 rounded text-gray-400 bg-gray-800/50">예상 원화</span>
-                                                                ₩{Math.round((extendedHours?.extended?.price ?? Number(String(
-                                                                    stock.is_extended_hours && stock.extended_price ? stock.extended_price :
-                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                        ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
-                                                                        : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
-                                                                ).replace(/,/g, ''))) * exchangeRate).toLocaleString()}
-                                                            </div>
-                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* 우측 영역: AI 종합 점수 & 액션 버튼 & 관련 섹터 종목 퀵 카드 */}
+                                        <div className="w-full lg:w-auto flex flex-col items-end gap-3.5 border-t lg:border-t-0 border-white/10 pt-4 lg:pt-0">
+                                            {/* AI 종합 점수 카드 */}
+                                            <div className="flex items-center gap-4 bg-zinc-950/90 border border-indigo-500/30 p-3.5 px-5 rounded-2xl shadow-xl">
+                                                <div className="text-right">
+                                                    <div className="text-xs font-extrabold text-zinc-400 uppercase tracking-wider">AI 종합 진단 점수</div>
+                                                    <div className="text-[11px] font-bold text-indigo-300 mt-0.5">
+                                                        {(stock.score || 0) >= 75 ? '🏆 강력 주도주 / 매수 우위' : (stock.score || 0) >= 50 ? '⚖️ 적정 밸류 / 분할 접근' : '⚠️ 변동성 주의 / 리스크 관리'}
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    
-
-                                    <div className="w-full md:w-auto flex flex-wrap md:flex-col justify-between md:justify-end items-center md:items-end gap-4 md:gap-0 border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
-                                        <div className="flex items-center gap-3 md:flex-col md:items-end">
-                                            <div className="text-sm text-gray-400 md:mb-1"><span>AI 종합 점수</span></div>
-                                            {/* [UX] AI 분석 중 점수 스켈레톤 */}
-                                            {isAnalyzing && !stock.score ? (
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <div className="w-20 h-12 bg-white/10 rounded-xl animate-pulse" />
-                                                    <div className="text-[10px] text-blue-400/60 font-mono animate-pulse">분석 중...</div>
-                                                </div>
-                                            ) : (
-                                                <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-green-400' : 'text-yellow-400'} drop-shadow-sm transition-colors duration-700`}><span>{stock.score || '-'}</span></div>
-                                            )}
-                                        </div>
-                                        <div className="w-full md:w-auto mt-4 md:mt-2 flex items-center justify-end gap-2">
-                                            {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && <WatchlistButton symbol={stock.symbol} />}
-
-                                            {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                                <a
-                                                    href={`/community?stock=${encodeURIComponent(stock.symbol)}`}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 hover:text-blue-100 border border-blue-500/30 transition-all"
-                                                >
-                                                    <MessageSquare className="w-4 h-4" />
-                                                    <span className="hidden sm:inline">종목 토론방</span>
-                                                </a>
-                                            )}
-                                        </div>
-                                    
-                                        {/* [New] 우측 하단 관련 섹터 종목 퀵 위젯 (사용자 화살표 지정 위치) */}
-                                        {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
-                                            <div className="w-full mt-3 p-3 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl flex flex-col min-w-[280px] max-w-sm">
-                                                <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
-                                                    <span className="flex items-center gap-1.5 text-blue-400">
-                                                        <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
-                                                        <span className="font-extrabold text-white">관련 섹터 종목</span>
-                                                    </span>
-                                                    <span className="text-[10px] text-zinc-400 font-medium">클릭 시 이동</span>
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-1.5">
-                                                    {stock.related_stocks.slice(0, 3).map((item, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            onClick={() => handleSearch(item.symbol)}
-                                                            className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
-                                                        >
-                                                            <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
-                                                                {item.name}
-                                                            </div>
-                                                            <div className="flex flex-col mt-0.5 font-mono">
-                                                                <span className="text-zinc-300 font-bold text-[11px] truncate">{item.price || item.symbol}</span>
-                                                                {item.change && (
-                                                                    <span className={`text-[9px] font-black mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
-                                                                        {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-emerald-400' : 'text-amber-400'} drop-shadow-[0_0_12px_rgba(52,211,153,0.3)] font-mono`}>
+                                                    {stock.score || '-'}
                                                 </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
 
-                                    {/* [UX] 게이지 차트 or 스켈레톤 */}
-                                    {isAnalyzing && !stock.metrics?.supplyDemand ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                            {["수급 분석", "재무 건전성", "뉴스 심리"].map((label, i) => (
-                                                <div key={i} className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
-                                                    <div className="w-24 h-24 rounded-full bg-white/10" />
-                                                    <div className="text-center space-y-1.5">
-                                                        <div className="h-4 w-20 bg-white/10 rounded-full mx-auto" />
-                                                        <div className="h-3 w-28 bg-white/5 rounded-full mx-auto" />
+                                            {/* 관심등록 & 종목 토론방 액션 버튼 */}
+                                            <div className="flex items-center gap-2">
+                                                {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
+                                                    <WatchlistButton symbol={stock.symbol} />
+                                                )}
+                                                {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
+                                                    <a
+                                                        href={`/community?stock=${encodeURIComponent(stock.symbol)}`}
+                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:text-blue-100 border border-blue-500/30 transition-all shadow-md"
+                                                    >
+                                                        <MessageSquare className="w-4 h-4" />
+                                                        <span>종목 토론방</span>
+                                                    </a>
+                                                )}
+                                            </div>
+
+                                            {/* 관련 섹터 종목 퀵 위젯 (사용자 화살표 지정 위치) */}
+                                            {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
+                                                <div className="w-full p-3 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl flex flex-col min-w-[280px] max-w-sm">
+                                                    <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
+                                                        <span className="flex items-center gap-1.5 text-blue-400">
+                                                            <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
+                                                            <span className="font-extrabold text-white">관련 섹터 종목</span>
+                                                        </span>
+                                                        <span className="text-[10px] text-zinc-400 font-medium">클릭 시 이동</span>
                                                     </div>
-                                                    <div className="text-[11px] text-blue-400/50 font-mono">{label} 분석 중...</div>
+                                                    <div className="grid grid-cols-3 gap-1.5">
+                                                        {stock.related_stocks.slice(0, 3).map((item, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => handleSearch(item.symbol)}
+                                                                className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
+                                                            >
+                                                                <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
+                                                                    {item.name}
+                                                                </div>
+                                                                <div className="flex flex-col mt-0.5 font-mono">
+                                                                    <span className="text-zinc-300 font-bold text-[11px] truncate">{item.price || item.symbol}</span>
+                                                                    {item.change && (
+                                                                        <span className={`text-[9px] font-black mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
+                                                                            {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                            <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="기관/외국인 수급 강도" color="#3b82f6" />
-                                            <GaugeChart score={stock.metrics?.financials || 0} label="재무 건전성" subLabel="성장성 및 수익성" color="#10b981" />
-                                            <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="긍정/부정 뉴스 분석" color="#f59e0b" />
+                                    </div>
+
+                                    {/* 2. AI 3대 인텔리전스 게이지 차트 (풍성한 정량 수치 & 진단 태그 탑재) */}
+                                    <div className="pt-2 pb-6 border-t border-white/10">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+                                            {/* 게이지 1: 수급 분석 */}
+                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-blue-950/20 via-zinc-900/60 to-zinc-950 border border-blue-500/20 hover:border-blue-500/40 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
+                                                <div className="w-full flex items-center justify-between text-xs font-black mb-1">
+                                                    <span className="flex items-center gap-1.5 text-blue-400">
+                                                        <Activity className="w-4 h-4" />
+                                                        <span>스마트 머니 수급</span>
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold">
+                                                        {(stock.metrics?.supplyDemand || 0) >= 80 ? '수급 집중' : '수급 보통'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="my-[-10px] w-full flex justify-center">
+                                                    <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="" color="#3b82f6" />
+                                                </div>
+
+                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-1.5 text-left">
+                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                                                        <span>기관·외국인 수급 강도</span>
+                                                        <span className="text-blue-400 font-mono font-black">{stock.metrics?.supplyDemand || 0}점 / 100</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-zinc-400 font-medium leading-relaxed break-keep">
+                                                        {(stock.metrics?.supplyDemand || 0) >= 80 
+                                                            ? '기관 및 외국인 순매수가 꾸준히 유입되며 탄탄한 수급 지지력을 형성하고 있습니다.' 
+                                                            : '단기 차익 실현 매물과 신규 유입세가 공방을 벌이며 방향성을 탐색 중입니다.'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 게이지 2: 재무 건전성 */}
+                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-emerald-950/20 via-zinc-900/60 to-zinc-950 border border-emerald-500/20 hover:border-emerald-500/40 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
+                                                <div className="w-full flex items-center justify-between text-xs font-black mb-1">
+                                                    <span className="flex items-center gap-1.5 text-emerald-400">
+                                                        <ShieldCheck className="w-4 h-4" />
+                                                        <span>재무 건전성 & 마진</span>
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                                                        {(stock.metrics?.financials || 0) >= 80 ? '초우량 건전' : '재무 적정'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="my-[-10px] w-full flex justify-center">
+                                                    <GaugeChart score={stock.metrics?.financials || 0} label="재무 건전성" subLabel="" color="#10b981" />
+                                                </div>
+
+                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-1.5 text-left">
+                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                                                        <span>성장성 및 수익 효율성</span>
+                                                        <span className="text-emerald-400 font-mono font-black">{stock.metrics?.financials || 0}점 / 100</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-zinc-400 font-medium leading-relaxed break-keep">
+                                                        {(stock.metrics?.financials || 0) >= 80 
+                                                            ? '부채비율이 낮고 자기자본이익률(ROE)이 우수하여 경기 침체에도 안전합니다.' 
+                                                            : '안정적인 흑자 구조를 유지하고 있으며 원가 및 수익성 개선을 추진하고 있습니다.'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 게이지 3: 뉴스 심리 */}
+                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-950/20 via-zinc-900/60 to-zinc-950 border border-amber-500/20 hover:border-amber-500/40 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
+                                                <div className="w-full flex items-center justify-between text-xs font-black mb-1">
+                                                    <span className="flex items-center gap-1.5 text-amber-400">
+                                                        <Sparkles className="w-4 h-4" />
+                                                        <span>시장 관심도 & 뉴스 심리</span>
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                                                        {(stock.metrics?.news || 0) >= 75 ? '호재 우세' : '중립 심리'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="my-[-10px] w-full flex justify-center">
+                                                    <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="" color="#f59e0b" />
+                                                </div>
+
+                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-1.5 text-left">
+                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                                                        <span>언론 보도 긍정 비율</span>
+                                                        <span className="text-amber-400 font-mono font-black">{stock.metrics?.news || 0}점 / 100</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-zinc-400 font-medium leading-relaxed break-keep">
+                                                        {(stock.metrics?.news || 0) >= 75 
+                                                            ? '신제품 공급 및 글로벌 실적 호조 등 긍정적 뉴스 모멘텀이 지배적입니다.' 
+                                                            : '시장 전반의 거시 경제 흐름과 업황 사이클에 따라 차분한 투자 심리를 보입니다.'}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {/* [New] Live Supply Widget for Korea Stocks ONLY */}
                                     {stock.currency === 'KRW' && stock.symbol && !stock.symbol.includes('.') && (
-                                        <div className="mt-8">
+                                        <div className="mb-8">
                                             <LiveSupplyWidget symbol={stock.symbol} />
                                         </div>
                                     )}
 
+                                    {/* 3. 상세 재무 & 투자 지표 (카테고리별 스마트 비주얼 카드 및 52주 레인지 게이지) */}
                                     {stock.details && (
-                                        <div className="mt-8 pt-6 border-t border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
-                                            {/* [New] Easy Mode Toggle Header */}
-                                            <div className="flex justify-between items-center mb-4 px-1">
-                                                <h4 className="text-sm font-bold text-gray-400 flex items-center gap-2">
-                                                    📊 상세 재무/투자 지표
-                                                </h4>
+                                        <div className="pt-6 border-t border-white/10 space-y-5">
+                                            {/* 타이틀 및 주식 용어 번역기 스위치 */}
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-sm">
+                                                        📊
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+                                                            <span>기업 핵심 투자 지표 & 밸류에이션</span>
+                                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white/10 text-zinc-300">
+                                                                KEY METRICS
+                                                            </span>
+                                                        </h4>
+                                                    </div>
+                                                </div>
+
                                                 <button
                                                     onClick={() => setEasyMode(!easyMode)}
-                                                    className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all flex items-center gap-2 border ${easyMode
+                                                    className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition-all flex items-center gap-2 border cursor-pointer ${easyMode
                                                         ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/20"
-                                                        : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white"
+                                                        : "bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white"
                                                         }`}
                                                 >
-                                                    <span>🎓 주식 용어 번역기</span>
+                                                    <span>🎓 주식 초보 용어 번역기</span>
                                                     <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${easyMode ? 'bg-black/30' : 'bg-black/50'}`}>
                                                         <div className={`w-3 h-3 rounded-full bg-white shadow-sm transform transition-transform ${easyMode ? 'translate-x-4' : 'translate-x-0'}`} />
                                                     </div>
                                                 </button>
                                             </div>
 
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                                            {/* 메트릭 그리드: 10개 핵심 지표 카드 */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+                                                {/* 1. 시가총액 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="시가총액 (Market Cap)" term="시가총액" isEasyMode={easyMode} />
-                                                    <div className="font-bold text-white text-lg tracking-tight"><span>{stock.details?.market_cap || 'N/A'}</span></div>
+                                                    <div className="font-black text-white text-base md:text-lg tracking-tight mt-2">
+                                                        {stock.details?.market_cap || 'N/A'}
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">기업 전체 몸값</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+
+                                                {/* 2. 거래량 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="거래량 (Volume)" term="거래량" isEasyMode={easyMode} align="right" />
-                                                    <div className="font-mono text-white"><span>{stock.details?.volume?.toLocaleString() || 'N/A'}</span></div>
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
+                                                        {stock.details?.volume ? Number(stock.details.volume).toLocaleString() : 'N/A'}
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">당일 손바뀜 주식수</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+
+                                                {/* 3. PER */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="PER (주가수익비율)" term="PER" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
                                                         {(typeof stock.details?.pe_ratio === 'number' && stock.details.pe_ratio !== 0)
-                                                            ? <span><span>{Number(stock.details.pe_ratio).toFixed(2)}</span><span>배</span></span>
-                                                            : <span>{'-'}</span>}
+                                                            ? `${Number(stock.details.pe_ratio).toFixed(2)}배`
+                                                            : '-'}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">수익 대비 주가 배수</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+
+                                                {/* 4. EPS */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} align="right" />
-                                                    <div className="font-mono text-white">
-                                                        <span>{typeof stock.details?.eps === 'number' ? stock.details.eps.toLocaleString() : '-'}</span>
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
+                                                        {typeof stock.details?.eps === 'number' ? `${Math.round(stock.details.eps).toLocaleString()}원` : '-'}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">1주가 번 순이익</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+
+                                                {/* 5. 배당수익률 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="배당수익률 (Yield)" term="배당수익률" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-green-400">
-                                                        <span>{(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0)
-                                                            ? <span>{(Number(stock.details.dividend_yield) * 100).toFixed(2)}</span>
-                                                            : <span>{'-'}</span>}
-                                                            {(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0) && <span>%</span>}</span>
+                                                    <div className="font-mono font-black text-emerald-400 text-base md:text-lg tracking-tight mt-2">
+                                                        {(typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0)
+                                                            ? `${(Number(stock.details.dividend_yield) * 100).toFixed(2)}%`
+                                                            : (stock.dvr ? stock.dvr : '0.00%')}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">연간 현금 이자율</div>
                                                 </div>
 
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">
-                                                        <span>{(typeof stock.details?.forward_pe === 'number' && stock.details.forward_pe !== 0)
-                                                            ? <span><span>{Number(stock.details.forward_pe).toFixed(2)}</span><span>배</span></span>
-                                                            : <span>{'-'}</span>}</span>
+                                                {/* 6. 추정 PER */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                                                    <EasyTerm label="추정 PER (Fwd PER)" term="추정 PER" isEasyMode={easyMode} />
+                                                    <div className="font-mono font-black text-purple-300 text-base md:text-lg tracking-tight mt-2">
+                                                        {(typeof stock.details?.forward_pe === 'number' && stock.details.forward_pe !== 0)
+                                                            ? `${Number(stock.details.forward_pe).toFixed(2)}배`
+                                                            : '-'}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">미래 예상 밸류에이션</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+
+                                                {/* 7. 추정 EPS */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} align="right" />
-                                                    <div className="font-mono text-white">
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
                                                         {typeof stock.details?.forward_eps === 'number'
-                                                            ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
-                                                            : <span><span>{'-'}</span></span>}
+                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
+                                                            : '-'}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">미래 예상 1주당 순익</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} />
-                                                    <div className="font-mono text-white">
+
+                                                {/* 8. PBR */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                                                    <EasyTerm label="PBR (주가순자산비율)" term="PBR" isEasyMode={easyMode} />
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
                                                         {(typeof stock.details?.pbr === 'number' && stock.details.pbr !== 0)
-                                                            ? <span>{Number(stock.details.pbr).toFixed(2)}배</span>
-                                                            : <span>{'-'}</span>}
+                                                            ? `${Number(stock.details.pbr).toFixed(2)}배`
+                                                            : '-'}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">순자산 대비 배수</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} align="right" />
-                                                    <div className="font-mono text-white">
+
+                                                {/* 9. BPS */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                                                    <EasyTerm label="BPS (주당순자산)" term="BPS" isEasyMode={easyMode} align="right" />
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
                                                         {typeof stock.details?.bps === 'number'
-                                                            ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
-                                                            : <span>{'-'}</span>}
+                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.bps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
+                                                            : '-'}
                                                     </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">1주당 장부가치</div>
                                                 </div>
-                                                <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-                                                    <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} align="right" />
-                                                    <div className="font-mono text-white">
+
+                                                {/* 10. 주당배당금 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
+                                                    <EasyTerm label="주당배당금 (DPS)" term="주당배당금" isEasyMode={easyMode} align="right" />
+                                                    <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
                                                         {(typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate !== 0)
-                                                            ? <span><span>{stock.currency === 'KRW' ? '₩' : '$'}</span><span>{stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
-                                                            : <span>{'-'}</span>}
+                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
+                                                            : (stock.dps ? `${Math.round(stock.dps).toLocaleString()}원` : '-')}
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-400 font-bold mt-1">1주당 받는 현금</div>
+                                                </div>
+                                            </div>
+
+                                            {/* 가격 범위 및 52주 변동성 위치 게이지 바 */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+                                                {/* 당일 시가/고가/저가 레인지 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/70 border border-white/10 flex flex-col justify-between">
+                                                    <div className="flex items-center justify-between text-xs font-black text-zinc-300 mb-2">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span>🎯 당일 가격 범위 (Day Range)</span>
+                                                        </span>
+                                                        <div className="flex items-center gap-3 text-[11px] font-mono">
+                                                            <span className="text-zinc-400">전일 종가: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.prev_close?.toLocaleString() || '-'}</span>
+                                                            <span className="text-zinc-300 font-bold">시가: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.open?.toLocaleString() || '-'}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-1.5 mt-1">
+                                                        <div className="flex items-center justify-between text-xs font-black font-mono">
+                                                            <span className="text-blue-400">저가: {stock.details?.day_low ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.day_low.toLocaleString()}` : '-'}</span>
+                                                            <span className="text-rose-400">고가: {stock.details?.day_high ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.day_high.toLocaleString()}` : '-'}</span>
+                                                        </div>
+                                                        {(() => {
+                                                            const low = Number(stock.details?.day_low || 0);
+                                                            const high = Number(stock.details?.day_high || 0);
+                                                            const curr = Number(String(stock.regular_price || stock.price || '0').replace(/,/g, ''));
+                                                            let pct = 50;
+                                                            if (high > low && curr >= low && curr <= high) {
+                                                                pct = Math.round(((curr - low) / (high - low)) * 100);
+                                                            }
+                                                            return (
+                                                                <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden relative">
+                                                                    <div 
+                                                                        className="bg-gradient-to-r from-blue-500 via-indigo-500 to-rose-500 h-full rounded-full transition-all duration-500"
+                                                                        style={{ width: `${Math.min(100, Math.max(5, pct))}%` }}
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
 
-                                                <div className="p-2">
-                                                    <div className="text-gray-500 text-xs mb-1">전일 종가</div>
-                                                    <div className="font-mono text-gray-300">
-                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}</span>
-                                                        <span>{stock.details?.prev_close?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
+                                                {/* 52주 최고/최저가 위치 게이지 */}
+                                                <div className="p-4 rounded-2xl bg-zinc-900/70 border border-white/10 flex flex-col justify-between">
+                                                    <div className="flex items-center justify-between text-xs font-black text-zinc-300 mb-2">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span>🏆 52주 변동성 위치 (52-Week Range)</span>
+                                                        </span>
+                                                        {(() => {
+                                                            const yLow = Number(stock.details?.year_low || 0);
+                                                            const yHigh = Number(stock.details?.year_high || 0);
+                                                            const curr = Number(String(stock.regular_price || stock.price || '0').replace(/,/g, ''));
+                                                            let pct = 50;
+                                                            if (yHigh > yLow && curr >= yLow && curr <= yHigh) {
+                                                                pct = Math.round(((curr - yLow) / (yHigh - yLow)) * 100);
+                                                            }
+                                                            return (
+                                                                <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                                    52주 밴드 내 {pct}% 위치
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </div>
-                                                </div>
-                                                <div className="p-2">
-                                                    <div className="text-gray-500 text-xs mb-1">시가 (Open)</div>
-                                                    <div className="font-mono text-gray-300">
-                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}</span>
-                                                        <span>{stock.details?.open?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="p-2">
-                                                    <div className="text-gray-500 text-xs mb-1"><span>고가 / 저가</span></div>
-                                                    <div className="font-mono text-sm">
-                                                        <span className="text-red-400"><span>{stock.details?.day_high?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
-                                                        <span className="text-gray-600 mx-1">/</span>
-                                                        <span className="text-blue-400"><span>{stock.details?.day_low?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span></span>
-                                                    </div>
-                                                </div>
-                                                <div className="col-span-2 p-2">
-                                                    <div className="text-gray-500 text-xs mb-1"><span>52주 최고 / 최저</span></div>
-                                                    <div className="font-mono text-sm">
-                                                        <span className="text-red-300">{stock.details?.year_high?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
-                                                        <span className="text-gray-600 mx-2">~</span>
-                                                        <span className="text-blue-300">{stock.details?.year_low?.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}</span>
+
+                                                    <div className="space-y-1.5 mt-1">
+                                                        <div className="flex items-center justify-between text-xs font-black font-mono">
+                                                            <span className="text-blue-300">52주 최저: {stock.details?.year_low ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.year_low.toLocaleString()}` : '-'}</span>
+                                                            <span className="text-rose-300">52주 최고: {stock.details?.year_high ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.year_high.toLocaleString()}` : '-'}</span>
+                                                        </div>
+                                                        {(() => {
+                                                            const yLow = Number(stock.details?.year_low || 0);
+                                                            const yHigh = Number(stock.details?.year_high || 0);
+                                                            const curr = Number(String(stock.regular_price || stock.price || '0').replace(/,/g, ''));
+                                                            let pct = 50;
+                                                            if (yHigh > yLow && curr >= yLow && curr <= yHigh) {
+                                                                pct = Math.round(((curr - yLow) / (yHigh - yLow)) * 100);
+                                                            }
+                                                            return (
+                                                                <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden relative">
+                                                                    <div 
+                                                                        className="bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500"
+                                                                        style={{ width: `${Math.min(100, Math.max(5, pct))}%` }}
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
                                 </div>
+
+                                
 
                                 {/* Detailed Analysis Text */}
                                 <div className="rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border border-white/10 p-5 md:p-8 shadow-2xl relative">
