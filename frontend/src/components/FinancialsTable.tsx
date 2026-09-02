@@ -329,7 +329,6 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
         let dvr = rawData.dvr || rawData.dividend_yield || rawData.detailed?.summary?.dvr || null;
         let dps = rawData.dps || rawData.detailed?.summary?.dps || null;
         
-        // dvr이 string인 경우 ("0.57%")
         let dvrNum = null;
         if (typeof dvr === 'string') {
             const cleaned = parseFloat(dvr.replace(/%/g, ''));
@@ -346,7 +345,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
         };
     }, [rawData]);
 
-    // AI 초보자 3줄 핵심 진단 리포트 생성
+    // AI 초보자 3줄 핵심 진단 리포트 생성 (가독성 & 단어 끊김 방지 최적화)
     const aiSummary = useMemo(() => {
         if (!data) return null;
         
@@ -378,7 +377,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
             points.push({
                 category: "성장 & 실적",
                 title: isOpGood ? "견고한 실적 창출력" : "수익성 개선 추진",
-                desc: `최근 실적 기준 매출액 ${revFmt}, 영업이익 ${opFmt}을 기록하며 본업에서 ${isOpGood ? '안정적인 흑자 구조' : '실적 턴어라운드 흐름'}를 나타내고 있습니다.`,
+                desc: `최근 실적 기준 매출액 ${revFmt}, 영업이익 ${opFmt}을 기록하며 본업에서 ${isOpGood ? '안정적인 흑자 구조를 입증' : '실적 턴어라운드를 추진'}하고 있습니다.`,
                 status: isOpGood ? "positive" : "warning",
                 badge: isOpGood ? "실적 호조" : "수익 주의"
             });
@@ -391,7 +390,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
             const isHighQuality = roeVal >= 10 || opmVal >= 10;
             points.push({
                 category: "수익 효율성",
-                title: isHighQuality ? "우수한 자본 효율성 (High ROE)" : "적정 수익성 유지",
+                title: isHighQuality ? "우수한 자본 효율성 (ROE)" : "적정 수익성 유지",
                 desc: `자기자본이익률(ROE) ${roeVal.toFixed(1)}% 및 영업이익률 ${opmVal.toFixed(1)}%로, ${isHighQuality ? '투자금 대비 뛰어난 이익 창출 마진을 달성' : '적정 수준의 효율성을 유지'}하고 있습니다.`,
                 status: isHighQuality ? "positive" : "neutral",
                 badge: roeVal >= 10 ? "ROE 10% 돌파" : "적정 마진"
@@ -405,7 +404,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
             points.push({
                 category: "재무 안정성",
                 title: isSafe ? "초우량 무차입급 건전성" : "부채 관리 모니터링",
-                desc: `부채비율이 ${debtVal.toFixed(1)}%로, 기준선(100%) 대비 ${isSafe ? '매우 낮아 금융 위기나 불황에도 망하지 않는 안전한 재무구조' : '부채 비중이 다소 있어 이자 부담 점검 필요'}를 갖추고 있습니다.`,
+                desc: `부채비율이 ${debtVal.toFixed(1)}%로, 기준선(100%) 대비 ${isSafe ? '매우 낮아 금융 위기나 불황에도 안전한 재무구조를 유지' : '부채 비중이 다소 있어 이자 부담 점검 필요'}하고 있습니다.`,
                 status: isSafe ? "positive" : "warning",
                 badge: isSafe ? "부채 초안전" : "부채 관리"
             });
@@ -473,7 +472,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                 DART AUDITED
                             </span>
                         </div>
-                        <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                        <p className="text-xs text-zinc-400 font-medium mt-0.5 break-keep">
                             {currency === 'USD'
                                 ? '미국 SEC 공식 공시 데이터 기반 (글로벌 스탠다드)'
                                 : '금융감독원 DART 공식 감사보고서 데이터 기반 (단위: 억원/원/%)'}
@@ -504,7 +503,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 )}
             </div>
 
-            {/* 2. 초보자를 위한 AI 재무 닥터 3줄 요약 카드 */}
+            {/* 2. 초보자를 위한 AI 재무 닥터 3줄 요약 카드 (break-keep & leading-relaxed 완벽 적용) */}
             {aiSummary && (
                 <div className="bg-gradient-to-br from-zinc-950 via-[#0c142e] to-zinc-950 border border-indigo-500/30 rounded-3xl p-5 md:p-6 shadow-2xl space-y-4 relative overflow-hidden">
                     <div className="flex items-center gap-2.5 pb-3 border-b border-white/10">
@@ -518,7 +517,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                     3-POINT SUMMARY
                                 </span>
                             </h3>
-                            <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                            <p className="text-xs text-zinc-400 font-medium mt-0.5 break-keep">
                                 복잡한 회계 수치를 초보 투자자도 1초 만에 이해할 수 있도록 쉽게 풀어냈습니다.
                             </p>
                         </div>
@@ -526,9 +525,9 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
                         {aiSummary.points.map((pt, i) => (
-                            <div key={i} className="p-4.5 rounded-2xl bg-zinc-900/95 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-lg">
+                            <div key={i} className="p-5 rounded-2xl bg-zinc-900/95 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-lg min-h-[140px]">
                                 <div>
-                                    <div className="flex items-center justify-between text-xs font-black mb-2">
+                                    <div className="flex items-center justify-between text-xs font-black mb-2.5">
                                         <span className="text-zinc-200 flex items-center gap-1.5 font-bold">
                                             <span className="w-2 h-2 rounded-full bg-indigo-500" />
                                             {pt.category}
@@ -539,10 +538,10 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                             {pt.badge}
                                         </span>
                                     </div>
-                                    <div className="font-extrabold text-sm md:text-base text-white">
+                                    <div className="font-black text-sm md:text-base text-white break-keep tracking-tight">
                                         {pt.title}
                                     </div>
-                                    <p className="text-xs md:text-sm text-zinc-300 leading-relaxed font-medium mt-2">
+                                    <p className="text-xs md:text-sm text-zinc-300 leading-6 font-medium mt-2 break-keep">
                                         {pt.desc}
                                     </p>
                                 </div>
@@ -552,7 +551,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 </div>
             )}
 
-            {/* 3. 선택 지표 인터랙티브 인텔리전스 가이드 바 */}
+            {/* 3. 선택 지표 인터랙티브 인텔리전스 가이드 바 (break-keep & leading-relaxed 완벽 적용) */}
             {activeMetricConfig && (
                 <div className="p-5 rounded-3xl bg-zinc-950 border border-amber-500/35 shadow-2xl space-y-3 relative overflow-hidden animate-in fade-in duration-200">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-white/10">
@@ -572,7 +571,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                         {activeMetricConfig.category}
                                     </span>
                                 </div>
-                                <p className="text-xs md:text-sm text-zinc-300 font-medium mt-1">
+                                <p className="text-xs md:text-sm text-zinc-300 font-medium mt-1 break-keep leading-relaxed">
                                     {activeMetricConfig.description}
                                 </p>
                             </div>
@@ -580,7 +579,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
 
                         {activeMetricConfig.goodBenchmark && (
                             <div className="shrink-0 self-start md:self-center">
-                                <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                                <span className="text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                     <span>우수 기준: {activeMetricConfig.goodBenchmark}</span>
                                 </span>
@@ -589,8 +588,8 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs md:text-sm text-amber-200">
-                        <span className="font-black text-amber-400 shrink-0 mt-0.5">💡 초보자 실전 팁:</span>
-                        <span className="font-semibold leading-relaxed text-zinc-200">{activeMetricConfig.beginnerNote}</span>
+                        <span className="font-black text-amber-400 shrink-0 mt-0.5 whitespace-nowrap">💡 초보자 실전 팁:</span>
+                        <span className="font-semibold leading-relaxed text-zinc-200 break-keep">{activeMetricConfig.beginnerNote}</span>
                     </div>
                 </div>
             )}
@@ -637,7 +636,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                         SHAREHOLDER RETURN
                                     </span>
                                 </h3>
-                                <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                                <p className="text-xs text-zinc-400 font-medium mt-0.5 break-keep">
                                     정기 결산 배당 및 주주환원 정책을 분석하여 제공합니다.
                                 </p>
                             </div>
@@ -670,7 +669,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                             <div className="text-2xl font-black font-mono text-white mt-1">
                                 {dividendSummary?.dvrRaw || (dividendSummary?.dvrNum !== null ? `${dividendSummary?.dvrNum}%` : '0.00%')}
                             </div>
-                            <p className="text-xs text-zinc-400 mt-2 font-medium">
+                            <p className="text-xs text-zinc-400 mt-2 font-medium break-keep leading-relaxed">
                                 현재 주가 대비 1년간 받는 현금 배당금의 연간 수익률입니다.
                             </p>
                         </div>
@@ -687,7 +686,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                             <div className="text-2xl font-black font-mono text-emerald-400 mt-1">
                                 {dividendSummary?.dps ? `${Math.round(dividendSummary.dps).toLocaleString()}원` : '정기 결산 배당'}
                             </div>
-                            <p className="text-xs text-zinc-400 mt-2 font-medium">
+                            <p className="text-xs text-zinc-400 mt-2 font-medium break-keep leading-relaxed">
                                 주식 1주당 실제 통장으로 입금되는 현금 배당금입니다.
                             </p>
                         </div>
@@ -701,10 +700,10 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                 </span>
                                 <span className="text-[10px] text-zinc-400 font-mono">POLICY</span>
                             </div>
-                            <div className="text-base font-extrabold text-white mt-1">
+                            <div className="text-base font-extrabold text-white mt-1 break-keep">
                                 {dividendSummary?.hasDividend ? '안정적 주주 배당 지속' : '신사업 재투자형 성장 모델'}
                             </div>
-                            <p className="text-xs text-zinc-400 mt-2 font-medium">
+                            <p className="text-xs text-zinc-400 mt-2 font-medium break-keep leading-relaxed">
                                 {dividendSummary?.hasDividend 
                                     ? '벌어들인 이익의 일부를 현금 배당하여 주주에게 안정적으로 환원하고 있습니다.'
                                     : '배당 대신 미래 성장동력 확보를 위한 연구개발(R&D) 및 설비투자에 집중하고 있습니다.'}
@@ -718,7 +717,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                             <Sparkles className="w-4 h-4" />
                             <span>💡 초보자를 위한 배당 투자 꿀팁:</span>
                         </div>
-                        <ul className="text-xs text-zinc-300 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
+                        <ul className="text-xs text-zinc-300 space-y-2 list-disc list-inside font-medium leading-relaxed break-keep">
                             <li><strong className="text-white">배당락일 주의:</strong> 배당을 받으려면 배당기준일 2영업일 전까지 주식을 매수해야 합니다.</li>
                             <li><strong className="text-white">배당소득세:</strong> 배당금 입금 시 15.4%(소득세 14% + 지방소득세 1.4%)가 원천징수 후 세후 금액이 입금됩니다.</li>
                             <li><strong className="text-white">배당 재투자:</strong> 지급받은 배당금으로 주식을 다시 매수하면 복리 효과를 극대화할 수 있습니다.</li>
@@ -776,7 +775,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                             <td className="py-3 px-5 font-black text-xs md:text-sm text-amber-300 uppercase tracking-wider sticky left-0 z-20 bg-[#111933] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
                                                 {group.title}
                                             </td>
-                                            <td colSpan={dates.length} className="py-3 px-4 text-xs text-zinc-400 font-medium">
+                                            <td colSpan={dates.length} className="py-3 px-4 text-xs text-zinc-400 font-medium break-keep">
                                                 • {group.desc}
                                             </td>
                                         </tr>
