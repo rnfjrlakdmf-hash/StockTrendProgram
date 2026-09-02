@@ -1552,15 +1552,15 @@ function DiscoveryContent() {
                                         </div>
                                     </div>
 
-                                    {/* 2. AI 3대 인텔리전스 게이지 차트 (풍성한 정량 수치 & 진단 태그 탑재) */}
+                                    {/* 2. AI 3대 인텔리전스 게이지 차트 (초보자용 1초 쉬운 해설 박스 탑재) */}
                                     <div className="pt-2 pb-6 border-t border-white/10">
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                                             {/* 게이지 1: 수급 분석 */}
-                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-blue-950/20 via-zinc-900/60 to-zinc-950 border border-blue-500/20 hover:border-blue-500/40 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
+                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-blue-950/25 via-zinc-900/70 to-zinc-950 border border-blue-500/25 hover:border-blue-500/45 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
                                                 <div className="w-full flex items-center justify-between text-xs font-black mb-1">
                                                     <span className="flex items-center gap-1.5 text-blue-400">
                                                         <Activity className="w-4 h-4" />
-                                                        <span>스마트 머니 수급</span>
+                                                        <span>스마트 머니 수급 (큰손 파워)</span>
                                                     </span>
                                                     <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold">
                                                         {(stock.metrics?.supplyDemand || 0) >= 80 ? '수급 집중' : '수급 보통'}
@@ -1571,8 +1571,16 @@ function DiscoveryContent() {
                                                     <GaugeChart score={stock.metrics?.supplyDemand || 0} label="수급 분석" subLabel="" color="#3b82f6" />
                                                 </div>
 
-                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-1.5 text-left">
-                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-2 text-left">
+                                                    {/* 초보자 1초 가이드 박스 */}
+                                                    <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-200 flex items-start gap-1.5">
+                                                        <span className="font-black text-blue-400 shrink-0">💡 쉬운 설명:</span>
+                                                        <span className="font-medium leading-relaxed break-keep">
+                                                            <strong>외국인과 기관(큰손)</strong>이 주식을 얼마나 사 모으고 있는지 보여줍니다. 점수가 높을수록 큰손들의 매수 힘이 강합니다!
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300 pt-0.5">
                                                         <span>기관·외국인 수급 강도</span>
                                                         <span className="text-blue-400 font-mono font-black">{stock.metrics?.supplyDemand || 0}점 / 100</span>
                                                     </div>
@@ -1585,11 +1593,11 @@ function DiscoveryContent() {
                                             </div>
 
                                             {/* 게이지 2: 재무 건전성 */}
-                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-emerald-950/20 via-zinc-900/60 to-zinc-950 border border-emerald-500/20 hover:border-emerald-500/40 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
+                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-emerald-950/25 via-zinc-900/70 to-zinc-950 border border-emerald-500/25 hover:border-emerald-500/45 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
                                                 <div className="w-full flex items-center justify-between text-xs font-black mb-1">
                                                     <span className="flex items-center gap-1.5 text-emerald-400">
                                                         <ShieldCheck className="w-4 h-4" />
-                                                        <span>재무 건전성 & 마진</span>
+                                                        <span>재무 건전성 (회사 체력)</span>
                                                     </span>
                                                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                                                         {(stock.metrics?.financials || 0) >= 80 ? '초우량 건전' : '재무 적정'}
@@ -1600,8 +1608,16 @@ function DiscoveryContent() {
                                                     <GaugeChart score={stock.metrics?.financials || 0} label="재무 건전성" subLabel="" color="#10b981" />
                                                 </div>
 
-                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-1.5 text-left">
-                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-2 text-left">
+                                                    {/* 초보자 1초 가이드 박스 */}
+                                                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-200 flex items-start gap-1.5">
+                                                        <span className="font-black text-emerald-400 shrink-0">💡 쉬운 설명:</span>
+                                                        <span className="font-medium leading-relaxed break-keep">
+                                                            회사가 <strong>빚이 적고(안전성), 알짜배기 돈을 잘 버는지</strong> 보는 성적표입니다. 80점 이상이면 부도 걱정 없는 초우량 회사입니다!
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300 pt-0.5">
                                                         <span>성장성 및 수익 효율성</span>
                                                         <span className="text-emerald-400 font-mono font-black">{stock.metrics?.financials || 0}점 / 100</span>
                                                     </div>
@@ -1614,11 +1630,11 @@ function DiscoveryContent() {
                                             </div>
 
                                             {/* 게이지 3: 뉴스 심리 */}
-                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-950/20 via-zinc-900/60 to-zinc-950 border border-amber-500/20 hover:border-amber-500/40 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
+                                            <div className="p-5 rounded-3xl bg-gradient-to-b from-amber-950/25 via-zinc-900/70 to-zinc-950 border border-amber-500/25 hover:border-amber-500/45 transition-all shadow-xl flex flex-col items-center justify-between text-center relative overflow-hidden group">
                                                 <div className="w-full flex items-center justify-between text-xs font-black mb-1">
                                                     <span className="flex items-center gap-1.5 text-amber-400">
                                                         <Sparkles className="w-4 h-4" />
-                                                        <span>시장 관심도 & 뉴스 심리</span>
+                                                        <span>시장 관심도 (뉴스 분위기)</span>
                                                     </span>
                                                     <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
                                                         {(stock.metrics?.news || 0) >= 75 ? '호재 우세' : '중립 심리'}
@@ -1629,8 +1645,16 @@ function DiscoveryContent() {
                                                     <GaugeChart score={stock.metrics?.news || 0} label="뉴스 심리" subLabel="" color="#f59e0b" />
                                                 </div>
 
-                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-1.5 text-left">
-                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                                                <div className="w-full mt-2 pt-3 border-t border-white/10 space-y-2 text-left">
+                                                    {/* 초보자 1초 가이드 박스 */}
+                                                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200 flex items-start gap-1.5">
+                                                        <span className="font-black text-amber-400 shrink-0">💡 쉬운 설명:</span>
+                                                        <span className="font-medium leading-relaxed break-keep">
+                                                            최근 인터넷 뉴스에서 <strong>호재(칭찬)와 악재(우려) 중 무엇이 더 많은지</strong> AI가 측정한 분위기입니다.
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between text-xs font-bold text-zinc-300 pt-0.5">
                                                         <span>언론 보도 긍정 비율</span>
                                                         <span className="text-amber-400 font-mono font-black">{stock.metrics?.news || 0}점 / 100</span>
                                                     </div>
