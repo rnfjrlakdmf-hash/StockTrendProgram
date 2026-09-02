@@ -1296,9 +1296,9 @@ function DiscoveryContent() {
                             <span><span>←</span> <span>다른 종목 검색하기</span></span>
                         </button>
 
-                        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                            {/* Main Content Area (Left) */}
-                            <div className="lg:col-span-8 space-y-6">
+                        <div className="max-w-7xl mx-auto space-y-8">
+                            {/* Main Content Area (Full Width) */}
+                            <div className="w-full space-y-6">
                                 {/* Main Score Card */}
                                 <div className="rounded-3xl bg-black/40 border border-white/20 p-8 backdrop-blur-md shadow-lg">
                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 md:gap-0">
@@ -2650,53 +2650,57 @@ function DiscoveryContent() {
                                 </div>
                             </div>
 
-                            {/* Sidebar / Recommendations (Right) */}
-                        <div className="lg:col-span-4 space-y-6">
+                            {/* Full-width Related Sector Stocks Section */}
                             {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                <div className="rounded-3xl bg-black/40 border border-white/20 p-6 shadow-lg sticky top-24">
-                                    <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
-                                        <div className="w-1.5 h-6 bg-blue-500 rounded-full"></div>
-                                        관련 섹터 종목
-                                    </h3>
-                                        {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 ? (
-                                            <div className="space-y-3">
-                                                {stock.related_stocks.map((item, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        onClick={() => handleSearch(item.symbol)}
-                                                        className="group cursor-pointer flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 transition-all"
-                                                    >
-                                                        <div className="flex-1 min-w-0 pr-3">
-                                                            <div className="font-bold text-white text-sm whitespace-normal break-words group-hover:text-blue-300 transition-colors">
-                                                                <span>{item.name}</span>
+                                <div className="rounded-3xl bg-black/40 border border-white/20 p-6 md:p-8 shadow-xl">
+                                    <div className="flex items-center justify-between mb-5">
+                                        <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-2.5">
+                                            <div className="w-2 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
+                                            <span>관련 섹터 & 동일 테마 핵심 종목</span>
+                                        </h3>
+                                        <span className="text-xs text-zinc-400 font-medium hidden sm:inline">동일 산업군 비교 분석</span>
+                                    </div>
+                                    {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            {stock.related_stocks.map((item, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => handleSearch(item.symbol)}
+                                                    className="group cursor-pointer flex flex-col justify-between p-4.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/40 transition-all shadow-md hover:shadow-blue-500/10"
+                                                >
+                                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                                        <div>
+                                                            <div className="font-extrabold text-white text-base group-hover:text-blue-300 transition-colors">
+                                                                {item.name}
                                                             </div>
-                                                            <div className="text-xs text-gray-500 font-mono mb-1"><span>{item.symbol}</span></div>
-                                                            <div className="text-[10px] text-gray-400 truncate">
-                                                                <span>{item.reason}</span>
-                                                            </div>
+                                                            <div className="text-xs text-zinc-400 font-mono mt-0.5">{item.symbol}</div>
                                                         </div>
-
                                                         <div className="text-right whitespace-nowrap">
                                                             {item.price && (
-                                                                <div className="font-mono text-sm text-white font-bold mb-1">
-                                                                    <span>{item.price}</span>
+                                                                <div className="font-mono text-sm text-white font-black">
+                                                                    {item.price}
                                                                 </div>
                                                             )}
                                                             {item.change && (
-                                                                <div className={`text-xs font-bold px-2 py-1 rounded-md inline-block ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText} ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorBg}`}>
-                                                                    <span>{formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}</span>
+                                                                <div className={`text-xs font-black px-2 py-0.5 rounded-md inline-block mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText} ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorBg}`}>
+                                                                    {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="text-gray-400 mb-4">{stock.name}과(와) 유사한 산업군의 기업들을 비교 분석할 예정입니다. (데이터 수집 중)</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                                                    {item.reason && (
+                                                        <div className="text-xs text-zinc-400 font-medium pt-2 border-t border-white/5 line-clamp-2">
+                                                            {item.reason}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400">{stock.name}과(와) 유사한 산업군의 기업들을 비교 분석할 예정입니다. (데이터 수집 중)</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
