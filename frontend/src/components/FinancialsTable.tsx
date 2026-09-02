@@ -4,7 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { 
     Sparkles, HelpCircle, TrendingUp, TrendingDown, ShieldCheck, 
     DollarSign, Activity, AlertCircle, Award, CheckCircle2, ChevronRight,
-    BarChart3, PieChart, Info, BookOpen, Layers, Check, ArrowUpRight, ArrowDownRight, Eye
+    BarChart3, PieChart, Info, BookOpen, Layers, Check, ArrowUpRight, ArrowDownRight, Eye,
+    Gift, Coins, Percent, Calendar
 } from 'lucide-react';
 
 interface FinancialMetric {
@@ -322,6 +323,29 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
     const hasQuarterlyData = quarterlyDates.length > 0;
     const isEstimate = (d: string) => d?.includes('(E)');
 
+    // 배당 요약 정보 추출 (Summary dvr 및 추가 배당 메타데이터)
+    const dividendSummary = useMemo(() => {
+        if (!rawData) return null;
+        let dvr = rawData.dvr || rawData.dividend_yield || rawData.detailed?.summary?.dvr || null;
+        let dps = rawData.dps || rawData.detailed?.summary?.dps || null;
+        
+        // dvr이 string인 경우 ("0.57%")
+        let dvrNum = null;
+        if (typeof dvr === 'string') {
+            const cleaned = parseFloat(dvr.replace(/%/g, ''));
+            if (!isNaN(cleaned)) dvrNum = cleaned;
+        } else if (typeof dvr === 'number') {
+            dvrNum = dvr;
+        }
+
+        return {
+            dvrRaw: dvr,
+            dvrNum,
+            dps,
+            hasDividend: dvrNum !== null && dvrNum > 0
+        };
+    }, [rawData]);
+
     // AI 초보자 3줄 핵심 진단 리포트 생성
     const aiSummary = useMemo(() => {
         if (!data) return null;
@@ -528,7 +552,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 </div>
             )}
 
-            {/* 3. [NEW] 선택 지표 인터랙티브 인텔리전스 가이드 바 (깔끔한 2단 블록 레이아웃으로 줄바꿈 깨짐 완전 해결) */}
+            {/* 3. 선택 지표 인터랙티브 인텔리전스 가이드 바 */}
             {activeMetricConfig && (
                 <div className="p-5 rounded-3xl bg-zinc-950 border border-amber-500/35 shadow-2xl space-y-3 relative overflow-hidden animate-in fade-in duration-200">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-white/10">
@@ -564,7 +588,6 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                         )}
                     </div>
 
-                    {/* 초보자 전용 팁 콜아웃 박스 (줄바꿈이 깨지지 않도록 단독 블록 배치) */}
                     <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs md:text-sm text-amber-200">
                         <span className="font-black text-amber-400 shrink-0 mt-0.5">💡 초보자 실전 팁:</span>
                         <span className="font-semibold leading-relaxed text-zinc-200">{activeMetricConfig.beginnerNote}</span>
@@ -580,7 +603,11 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     return (
                         <button
                             key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
+                            onClick={() => {
+                                setActiveCategory(cat.id);
+                                if (cat.id === 'div') setSelectedMetricKey('dividend_yield');
+                                else if (cat.keys.length > 0) setSelectedMetricKey(cat.keys[0]);
+                            }}
                             className={`px-4 py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
                                 isActive 
                                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' 
@@ -594,91 +621,191 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                 })}
             </div>
 
-            {/* 5. [UNIFIED MASTER TABLE] 원스톱 단일 통합 재무제표 마스터 테이블 (강력한 좌측 고정 칼럼 분리선 장착) */}
-            <div className="bg-zinc-950/95 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
-                <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700">
-                    <table className="w-full text-left border-collapse min-w-[980px]">
-                        <thead>
-                            {/* 1단 헤더: 연간 vs 분기 뱃지 */}
-                            <tr className="bg-[#0b1020] border-b border-white/10">
-                                <th className="py-3 px-5 sticky left-0 bg-[#0b1020] z-30 w-52 min-w-[200px] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)]">
-                                    <span className="text-xs font-black uppercase text-zinc-300 tracking-wider">주요 재무 지표</span>
-                                </th>
-                                <th colSpan={annualDates.length} className="py-2.5 px-3 text-xs font-black uppercase tracking-wider text-emerald-300 text-center border-b border-emerald-500/40 bg-emerald-950/30">
-                                    📊 연간 실적 (Yearly Performance)
-                                </th>
-                                {hasQuarterlyData && (
-                                    <th colSpan={quarterlyDates.length} className="py-2.5 px-3 text-xs font-black uppercase tracking-wider text-blue-300 text-center border-b border-blue-500/40 bg-blue-950/30 border-l border-white/15">
-                                        ⏰ 분기 실적 (Quarterly Trend)
+            {/* 5. [UNIFIED MASTER TABLE OR SPECIALIZED DIVIDEND CARD] */}
+            {activeCategory === 'div' && displayedGroups.length === 0 ? (
+                /* 배당 시계열 데이터가 없거나 결산 배당 단독 공시인 경우의 전용 럭셔리 배당 카드 */
+                <div className="bg-gradient-to-br from-zinc-950 via-[#120e28] to-zinc-950 border border-purple-500/30 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+                    <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 text-2xl shadow-inner">
+                                🎁
+                            </div>
+                            <div>
+                                <h3 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                                    <span>기업 배당 & 주주환원 인텔리전스</span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">
+                                        SHAREHOLDER RETURN
+                                    </span>
+                                </h3>
+                                <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                                    정기 결산 배당 및 주주환원 정책을 분석하여 제공합니다.
+                                </p>
+                            </div>
+                        </div>
+
+                        {dividendSummary?.hasDividend ? (
+                            <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <span>배당 지급 기업 (배당주)</span>
+                            </span>
+                        ) : (
+                            <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black flex items-center gap-1.5">
+                                <Info className="w-4 h-4 text-amber-400" />
+                                <span>무배당 / R&D 재투자 성장주</span>
+                            </span>
+                        )}
+                    </div>
+
+                    {/* 배당 핵심 KPI 그리드 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* 1. 최근 배당수익률 */}
+                        <div className="bg-zinc-900/90 border border-white/10 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                            <div className="flex items-center justify-between text-xs font-black text-purple-300 mb-2">
+                                <span className="flex items-center gap-1.5">
+                                    <Percent className="w-4 h-4 text-purple-400" />
+                                    <span>최근 배당수익률</span>
+                                </span>
+                                <span className="text-[10px] text-zinc-400 font-mono">DIVIDEND YIELD</span>
+                            </div>
+                            <div className="text-2xl font-black font-mono text-white mt-1">
+                                {dividendSummary?.dvrRaw || (dividendSummary?.dvrNum !== null ? `${dividendSummary?.dvrNum}%` : '0.00%')}
+                            </div>
+                            <p className="text-xs text-zinc-400 mt-2 font-medium">
+                                현재 주가 대비 1년간 받는 현금 배당금의 연간 수익률입니다.
+                            </p>
+                        </div>
+
+                        {/* 2. 주당 배당금(DPS) 및 정책 */}
+                        <div className="bg-zinc-900/90 border border-white/10 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                            <div className="flex items-center justify-between text-xs font-black text-emerald-300 mb-2">
+                                <span className="flex items-center gap-1.5">
+                                    <Coins className="w-4 h-4 text-emerald-400" />
+                                    <span>주당 배당금 (DPS)</span>
+                                </span>
+                                <span className="text-[10px] text-zinc-400 font-mono">CASH DPS</span>
+                            </div>
+                            <div className="text-2xl font-black font-mono text-emerald-400 mt-1">
+                                {dividendSummary?.dps ? `${Math.round(dividendSummary.dps).toLocaleString()}원` : '정기 결산 배당'}
+                            </div>
+                            <p className="text-xs text-zinc-400 mt-2 font-medium">
+                                주식 1주당 실제 통장으로 입금되는 현금 배당금입니다.
+                            </p>
+                        </div>
+
+                        {/* 3. 주주환원 성향 진단 */}
+                        <div className="bg-zinc-900/90 border border-white/10 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                            <div className="flex items-center justify-between text-xs font-black text-amber-300 mb-2">
+                                <span className="flex items-center gap-1.5">
+                                    <Award className="w-4 h-4 text-amber-400" />
+                                    <span>주주환원 정책 진단</span>
+                                </span>
+                                <span className="text-[10px] text-zinc-400 font-mono">POLICY</span>
+                            </div>
+                            <div className="text-base font-extrabold text-white mt-1">
+                                {dividendSummary?.hasDividend ? '안정적 주주 배당 지속' : '신사업 재투자형 성장 모델'}
+                            </div>
+                            <p className="text-xs text-zinc-400 mt-2 font-medium">
+                                {dividendSummary?.hasDividend 
+                                    ? '벌어들인 이익의 일부를 현금 배당하여 주주에게 안정적으로 환원하고 있습니다.'
+                                    : '배당 대신 미래 성장동력 확보를 위한 연구개발(R&D) 및 설비투자에 집중하고 있습니다.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* 초보자를 위한 배당 투자 핵심 팁 */}
+                    <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/25 space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-black text-purple-300">
+                            <Sparkles className="w-4 h-4" />
+                            <span>💡 초보자를 위한 배당 투자 꿀팁:</span>
+                        </div>
+                        <ul className="text-xs text-zinc-300 space-y-1.5 list-disc list-inside font-medium leading-relaxed">
+                            <li><strong className="text-white">배당락일 주의:</strong> 배당을 받으려면 배당기준일 2영업일 전까지 주식을 매수해야 합니다.</li>
+                            <li><strong className="text-white">배당소득세:</strong> 배당금 입금 시 15.4%(소득세 14% + 지방소득세 1.4%)가 원천징수 후 세후 금액이 입금됩니다.</li>
+                            <li><strong className="text-white">배당 재투자:</strong> 지급받은 배당금으로 주식을 다시 매수하면 복리 효과를 극대화할 수 있습니다.</li>
+                        </ul>
+                    </div>
+                </div>
+            ) : (
+                /* 통합 마스터 테이블 */
+                <div className="bg-zinc-950/95 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700">
+                        <table className="w-full text-left border-collapse min-w-[980px]">
+                            <thead>
+                                <tr className="bg-[#0b1020] border-b border-white/10">
+                                    <th className="py-3 px-5 sticky left-0 bg-[#0b1020] z-30 w-52 min-w-[200px] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)]">
+                                        <span className="text-xs font-black uppercase text-zinc-300 tracking-wider">주요 재무 지표</span>
                                     </th>
-                                )}
-                            </tr>
-                            {/* 2단 헤더: 날짜 */}
-                            <tr className="border-b-2 border-indigo-500/40 bg-[#0e162e] text-xs">
-                                <th className="py-3.5 px-5 text-zinc-300 font-extrabold uppercase tracking-wider sticky left-0 bg-[#0e162e] z-30 backdrop-blur-md w-52 min-w-[200px] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
-                                    지표명 (단위)
-                                </th>
-                                {dates.map((date: string, idx: number) => {
-                                    const isQDate = isQuarterDate(date);
-                                    const isFirstQ = isQDate && !isQuarterDate(dates[idx - 1] || '');
-                                    return (
-                                        <th 
-                                            key={idx} 
-                                            className={`py-3.5 px-3.5 text-center whitespace-nowrap font-black font-mono text-xs md:text-sm ${
-                                                isEstimate(date) 
-                                                    ? 'text-purple-300 bg-purple-500/15' 
-                                                    : isQDate 
-                                                        ? 'text-blue-200' 
-                                                        : 'text-zinc-100'
-                                            } ${isFirstQ ? 'border-l-2 border-blue-500/30' : ''}`}
-                                        >
-                                            {date}
+                                    <th colSpan={annualDates.length} className="py-2.5 px-3 text-xs font-black uppercase tracking-wider text-emerald-300 text-center border-b border-emerald-500/40 bg-emerald-950/30">
+                                        📊 연간 실적 (Yearly Performance)
+                                    </th>
+                                    {hasQuarterlyData && (
+                                        <th colSpan={quarterlyDates.length} className="py-2.5 px-3 text-xs font-black uppercase tracking-wider text-blue-300 text-center border-b border-blue-500/40 bg-blue-950/30 border-l border-white/15">
+                                            ⏰ 분기 실적 (Quarterly Trend)
                                         </th>
-                                    );
-                                })}
-                            </tr>
-                        </thead>
-
-                        <tbody className="divide-y divide-white/5 font-mono text-xs md:text-sm">
-                            {displayedGroups.map((group, gIdx) => (
-                                <React.Fragment key={group.title}>
-                                    {/* 카테고리 구분 섹션 바 (좌측 고정 셀과 일체감 형성) */}
-                                    <tr className="bg-gradient-to-r from-[#111933] via-zinc-900 to-zinc-950 border-t-2 border-b border-white/15">
-                                        <td className="py-3 px-5 font-black text-xs md:text-sm text-amber-300 uppercase tracking-wider sticky left-0 z-20 bg-[#111933] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
-                                            {group.title}
-                                        </td>
-                                        <td colSpan={dates.length} className="py-3 px-4 text-xs text-zinc-400 font-medium">
-                                            • {group.desc}
-                                        </td>
-                                    </tr>
-
-                                    {/* 카테고리 내 지표 행들 */}
-                                    {group.keys.map((key) => {
-                                        const config = METRIC_CONFIG[key];
-                                        const metric = (data as any)[key];
-                                        if (!config || !metric) return null;
-                                        const isSelected = selectedMetricKey === key;
-
+                                    )}
+                                </tr>
+                                <tr className="border-b-2 border-indigo-500/40 bg-[#0e162e] text-xs">
+                                    <th className="py-3.5 px-5 text-zinc-300 font-extrabold uppercase tracking-wider sticky left-0 bg-[#0e162e] z-30 backdrop-blur-md w-52 min-w-[200px] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
+                                        지표명 (단위)
+                                    </th>
+                                    {dates.map((date: string, idx: number) => {
+                                        const isQDate = isQuarterDate(date);
+                                        const isFirstQ = isQDate && !isQuarterDate(dates[idx - 1] || '');
                                         return (
-                                            <tr
-                                                key={key}
-                                                onClick={() => setSelectedMetricKey(key)}
-                                                className={`transition-colors cursor-pointer group whitespace-nowrap ${
-                                                    isSelected 
-                                                        ? 'bg-indigo-500/20' 
-                                                        : 'hover:bg-gradient-to-r hover:from-indigo-500/15 hover:via-purple-500/10 hover:to-transparent'
-                                                }`}
+                                            <th 
+                                                key={idx} 
+                                                className={`py-3.5 px-3.5 text-center whitespace-nowrap font-black font-mono text-xs md:text-sm ${
+                                                    isEstimate(date) 
+                                                        ? 'text-purple-300 bg-purple-500/15' 
+                                                        : isQDate 
+                                                            ? 'text-blue-200' 
+                                                            : 'text-zinc-100'
+                                                } ${isFirstQ ? 'border-l-2 border-blue-500/30' : ''}`}
                                             >
-                                                {/* 좌측 고정 지표명 셀 */}
-                                                <td className={`py-4 px-5 sticky left-0 z-20 backdrop-blur-md border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap transition-colors w-52 min-w-[200px] ${
-                                                    isSelected ? 'bg-[#18244a]' : 'bg-[#0d1322] group-hover:bg-[#131c33]'
-                                                }`}>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className="text-lg shrink-0">{config.emoji}</span>
-                                                        <div className="truncate">
-                                                            <div className={`text-xs md:text-sm font-black transition-colors flex items-center gap-1.5 ${
-                                                                isSelected ? 'text-amber-300' : 'text-white group-hover:text-amber-300'
-                                                            }`}>
+                                                {date}
+                                            </th>
+                                        );
+                                    })}
+                                </tr>
+                            </thead>
+
+                            <tbody className="divide-y divide-white/5 font-mono text-xs md:text-sm">
+                                {displayedGroups.map((group) => (
+                                    <React.Fragment key={group.title}>
+                                        <tr className="bg-gradient-to-r from-[#111933] via-zinc-900 to-zinc-950 border-t-2 border-b border-white/15">
+                                            <td className="py-3 px-5 font-black text-xs md:text-sm text-amber-300 uppercase tracking-wider sticky left-0 z-20 bg-[#111933] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
+                                                {group.title}
+                                            </td>
+                                            <td colSpan={dates.length} className="py-3 px-4 text-xs text-zinc-400 font-medium">
+                                                • {group.desc}
+                                            </td>
+                                        </tr>
+
+                                        {group.keys.map((key) => {
+                                            const config = METRIC_CONFIG[key];
+                                            const metric = (data as any)[key];
+                                            if (!config || !metric) return null;
+                                            const isSelected = selectedMetricKey === key;
+
+                                            return (
+                                                <tr
+                                                    key={key}
+                                                    onClick={() => setSelectedMetricKey(key)}
+                                                    className={`transition-colors cursor-pointer group whitespace-nowrap ${
+                                                        isSelected 
+                                                            ? 'bg-indigo-500/20' 
+                                                            : 'hover:bg-gradient-to-r hover:from-indigo-500/15 hover:via-purple-500/10 hover:to-transparent'
+                                                    }`}
+                                                >
+                                                    <td className={`py-4 px-5 sticky left-0 z-20 backdrop-blur-md border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap transition-colors w-52 min-w-[200px] ${
+                                                        isSelected ? 'bg-[#18244a]' : 'bg-[#0d1322] group-hover:bg-[#131c33]'
+                                                    }`}>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className="text-lg shrink-0">{config.emoji}</span>
+                                                            <div className="truncate">
+                                                                <div className={`text-xs md:text-sm font-black transition-colors flex items-center gap-1.5 ${
+                                                                    isSelected ? 'text-amber-300' : 'text-white group-hover:text-amber-300'
+                                                                }`}>
                                                                 <span>{config.label}</span>
                                                                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-white/10 text-zinc-400 uppercase">
                                                                     {config.unit}
@@ -688,7 +815,6 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                     </div>
                                                 </td>
 
-                                                {/* 날짜별 값들 */}
                                                 {metric.values.map((val: any, idx: number) => {
                                                     const isQuarter = isQuarterDate(dates[idx] || '');
                                                     const isFirstQ = isQuarter && !isQuarterDate(dates[idx - 1] || '');
@@ -715,7 +841,6 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                                     <span className={`tracking-tight text-xs md:text-sm ${colorClass}`}>
                                                                         {formatValue(val, config.format, config.unit, currency)}
                                                                     </span>
-                                                                    {/* 전기 대비 추세 화살표 */}
                                                                     {trend !== 'none' && (
                                                                         <span className={`text-[10px] font-black ${
                                                                             trend === 'up'
@@ -741,6 +866,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     </table>
                 </div>
             </div>
+            )}
 
             {/* 6. 하단 범례 & 데이터 공시 출처 */}
             <div className="p-4 bg-zinc-950/90 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 shadow-inner">
