@@ -345,6 +345,15 @@ def send_multicast_notification(
         print("[Firebase] No tokens provided for multicast")
         return {"success": False, "error": "No tokens provided"}
 
+    alert_type = (data or {}).get('type', '')
+    if alert_type == 'disclosure_alert':
+        title = apply_disclosure_sentiment(title, body)
+    elif alert_type in ['news_alert', 'news_naver', 'news_google']:
+        title = apply_news_sentiment(title, body)
+        
+    # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
+    title, body = sanitize_notification_text(title, body)
+
     # 1. Firestore 알림 센터 저장 (skip_db_save 플래그 및 3분 중복 방지 캐시 지원)
     should_skip = skip_db_save or (data and str(data.get("skip_db_save", "")).lower() == "true")
     
@@ -354,7 +363,10 @@ def send_multicast_notification(
     
     import time as _time
     _now = _time.time()
-    _dedupe_key = f"{str(title).strip()}::{str(body).strip()[:40]}"
+    # 공백 정규화 후 디듀프 키 생성
+    import re
+    _norm_body = re.sub(r'\s+', ' ', str(body).strip())[:50]
+    _dedupe_key = f"{str(title).strip()}::{_norm_body}"
     if _now - send_multicast_notification._recent_saved_cache.get(_dedupe_key, 0) < 180:
         should_skip = True
         print(f"[Firebase-Dedupe] Suppressed duplicate Firestore save within 3m: {title}")
@@ -364,7 +376,7 @@ def send_multicast_notification(
     if not should_skip:
         try:
             db = firestore.client()
-            alert_type = data.get("type", "system_alert") if data else "system_alert"
+            alert_type_save = data.get("type", "system_alert") if data else "system_alert"
             if data and "is_global" in data:
                 val = data["is_global"]
                 is_global = str(val).lower() == "true" if isinstance(val, str) else bool(val)
@@ -376,7 +388,7 @@ def send_multicast_notification(
             alert_doc = {
                 "title": title,
                 "body": body,
-                "type": alert_type,
+                "type": alert_type_save,
                 "timestamp": firestore.SERVER_TIMESTAMP,
                 "is_global": is_global,
                 "target_users": target_users or [],
@@ -415,15 +427,6 @@ def send_multicast_notification(
     
     if not tokens:
         return {"success": False, "error": "No tokens provided"}
-        
-    alert_type = (data or {}).get('type', '')
-    if alert_type == 'disclosure_alert':
-        title = apply_disclosure_sentiment(title, body)
-    elif alert_type in ['news_alert', 'news_naver', 'news_google']:
-        title = apply_news_sentiment(title, body)
-        
-    # 모바일 및 워치용 글씨 잘림 방지를 위한 자동 정돈 적용
-    title, body = sanitize_notification_text(title, body)
     
     try:
         # data의 모든 값을 문자열로 강제 변환 (FCM 정책)
@@ -563,31 +566,6 @@ def send_multicast_notification(
             pass
             
         print(f"[Firebase] Multicast completed. Success: {success_count}, Failure: {failure_count}, Unregistered: {unregistered_count}")
-        
-        # [추가] 프론트엔드 알림 센터 표시를 위해 특정 타입은 Firestore에도 자동 저장
-        try:
-            alert_type = (data or {}).get('type', 'stock_alert')
-            if alert_type in ['market_summary', 'portfolio_summary', 'admin_report', 'ping_test', 'news_alert', 'news_naver', 'news_google']:
-                db_client = firestore.client()
-                doc_data = {
-                    "title": title,
-                    "body": body,
-                    "type": alert_type,
-                    "timestamp": firestore.SERVER_TIMESTAMP,
-                    "is_global": True if not target_users else False,
-                }
-                
-                click_url = (data or {}).get('url', '')
-                if click_url:
-                    doc_data['link'] = click_url
-                
-                if target_users:
-                    doc_data['target_users'] = target_users
-                    
-                db_client.collection("alerts").add(doc_data)
-                print(f"[Firestore] Alert '{title}' ({alert_type}) saved to Firestore.")
-        except Exception as fs_err:
-            print(f"[Firestore] Failed to save alert to Firestore: {fs_err}")
 
         return {
             "success": True if success_count > 0 else False,

@@ -148,11 +148,12 @@ export default function AlertCenterPage() {
                     const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'portfolio_summary', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
                     
                     if (isGlobal || isTargeted || isPublicType || (isAdmin && isAdminType)) {
-                        // Smart Deduplication: clean title + first 40 chars of body + 10-minute time bucket
+                        // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
                         const sec = data.timestamp?.seconds || 0;
-                        const timeBucket = Math.floor(sec / 600); // 10 minutes bucket
-                        const cleanTitle = (data.title || '').trim().toLowerCase();
-                        const cleanBody = (data.body || '').trim().substring(0, 40).toLowerCase();
+                        const timeBucket = Math.floor(sec / 1800); // 30 minutes bucket
+                        const cleanTitle = (data.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                        // 공백 및 줄바꿈 차이로 인한 중복 방지를 위해 공백 통일
+                        const cleanBody = (data.body || '').replace(/\s+/g, ' ').trim().substring(0, 60).toLowerCase();
                         const contentKey = `${cleanTitle}::${cleanBody}::${timeBucket}`;
                         
                         if (!seenContentKeys.has(contentKey)) {
