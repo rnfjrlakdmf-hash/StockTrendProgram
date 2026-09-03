@@ -665,7 +665,7 @@ function SignalsFeedTab({ router }: { router: any }) {
                             onClick={e => { e.stopPropagation(); fetchBriefing(sig.symbol); }}
                             className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-blue-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-purple-600/50 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs font-bold transition-all shadow-sm"
                         >
-                            <Bot className="w-3.5 h-3.5" /> AI 분석
+                            <Sparkles className="w-3.5 h-3.5" /> 정밀 진단
                         </button>
                         
                         <button
@@ -971,10 +971,10 @@ function SignalsFeedTab({ router }: { router: any }) {
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setBriefingSymbol(null)}>
                     <div className="bg-gray-900 border border-white/20 rounded-3xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-blue-400" />AI 1분 브리핑 · {briefingSymbol}</h3>
+                            <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-blue-400" />1분 핵심 브리핑 · {briefingSymbol}</h3>
                             <button onClick={() => setBriefingSymbol(null)} className="text-gray-500 hover:text-white text-xl">✕</button>
                         </div>
-                        {briefingLoading ? <div className="text-center py-8"><Bot className="w-10 h-10 text-blue-400 mx-auto mb-3 animate-pulse" /><p className="text-gray-400">AI 분석 중...</p></div>
+                        {briefingLoading ? <div className="text-center py-8"><Bot className="w-10 h-10 text-blue-400 mx-auto mb-3 animate-pulse" /><p className="text-gray-400">데이터 분석 중...</p></div>
                             : briefing ? (
                                 <div className="space-y-4">
                                     {briefing.price && (
@@ -2785,7 +2785,7 @@ function CalendarTab({ router }: { router: any }) {
                                                     if (aiData && (evt.importance >= 2 || is3Star)) {
                                                         return (
                                                             <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[10px]">
-                                                                <span className="text-gray-400">💡 AI 수혜 테마: <strong className="text-yellow-300">{aiData.theme}</strong></span>
+                                                                <span className="text-gray-400">💡 주도 수혜 테마: <strong className="text-yellow-300">{aiData.theme}</strong></span>
                                                                 <span className="text-gray-500 truncate max-w-[200px]">{aiData.reason}</span>
                                                             </div>
                                                         );

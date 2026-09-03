@@ -548,7 +548,7 @@ function formatUsdToKrwInText(text: string): string {
         let typeBadgeLabel = "📢 스마트 투자 알림";
         let cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";
         let accentBorder = "border-l-4 border-l-cyan-400";
-        let defaultCta = { href: "/discovery", label: "AI 종목 발굴 레이더 바로가기", icon: Sparkles, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
+        let defaultCta = { href: "/discovery", label: "스마트 종목 발굴 레이더 바로가기", icon: Sparkles, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
 
         const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산');
         const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황');
@@ -611,7 +611,7 @@ function formatUsdToKrwInText(text: string): string {
             typeBadgeLabel = "⚡ 실시간 주도 테마 레이더";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
             accentBorder = "border-l-4 border-l-amber-400";
-            defaultCta = { href: "/theme", label: "AI 주도 테마 맵 & 대장주 확인", icon: Zap, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
+            defaultCta = { href: "/theme", label: "주도 테마 맵 & 대장주 확인", icon: Zap, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         } 
         // [5순위: 기타 마켓 뉴스 및 시그널]
         else if (alert.type === 'crypto_bull' || combinedText.includes("코인") || combinedText.includes("비트코인")) {
@@ -694,7 +694,7 @@ function formatUsdToKrwInText(text: string): string {
                                 className="flex-1 min-w-[130px] bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                             >
                                 <Sparkles className="w-4 h-4 text-blue-400" />
-                                AI 종목 심층 분석
+                                종목 정밀 심층 분석
                                 <ChevronRight className="w-4 h-4" />
                             </Link>
                         )}

@@ -555,7 +555,7 @@ function getBeginnerExplanation(line: string, stockName: string = ""): string {
     }
 
     // 기본 Fallback
-    return `AI 퀀트 알고리즘이 실시간 시장 호가와 재무·공시 데이터를 종합 분석하여 도출한 핵심 투자 판단 근거입니다.`;
+    return `계량 퀀트 알고리즘이 실시간 시장 호가와 재무·공시 데이터를 종합 분석하여 도출한 핵심 데이터 근거입니다.`;
 }
 
 function getRationaleExplanation(type: 'supply' | 'momentum' | 'risk', text: string): string {
@@ -1513,7 +1513,7 @@ function DiscoveryContent() {
                                             {/* AI 종합 점수 카드 */}
                                             <div className="flex items-center gap-4 bg-zinc-950/90 border border-indigo-500/30 p-3.5 px-5 rounded-2xl shadow-xl">
                                                 <div className="text-right">
-                                                    <div className="text-xs font-extrabold text-zinc-400 uppercase tracking-wider">AI 종합 진단 점수</div>
+                                                    <div className="text-xs font-extrabold text-zinc-400 uppercase tracking-wider">퀀트 종합 진단 스코어</div>
                                                     <div className="text-[11px] font-bold text-indigo-300 mt-0.5">
                                                         {(stock.score || 0) >= 75 ? '🏆 시장 주도주 / 퀀트 우수' : (stock.score || 0) >= 50 ? '⚖️ 지표 보통 / 중립 추세' : '⚠️ 변동성 확대 / 지표 주의'}
                                                     </div>
@@ -2258,7 +2258,7 @@ function DiscoveryContent() {
                                                         </div>
                                                         <div>
                                                             <h4 className="text-base md:text-lg font-black text-white flex items-center gap-2">
-                                                                <span>AI 퀀트 종합 진단 대시보드</span>
+                                                                <span>퀀트 종합 진단 대시보드</span>
                                                                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">LIVE INTELLIGENCE</span>
                                                             </h4>
                                                         </div>
@@ -2278,12 +2278,12 @@ function DiscoveryContent() {
                                                                 <span className="absolute inset-0 rounded-full border border-blue-400/30 animate-ping" />
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-bold text-blue-200">🤖 AI 분석 엔진 가동 중</p>
+                                                                <p className="text-sm font-bold text-blue-200">⚡ 퀀트 분석 엔진 가동 중</p>
                                                                 <p className="text-[11px] text-blue-400/70 font-mono">
                                                                     {analysisStep === 1 && '수급 데이터 수집 중... (외국인·기관 매매 분석)'}
                                                                     {analysisStep === 2 && '재무제표 검토 중... (매출·영업이익·부채비율)'}
                                                                     {analysisStep === 3 && '뉴스·공시 감지 중... (호재·악재 자동 스캔)'}
-                                                                    {analysisStep === 4 && 'AI 리포트 최종 작성 중... (거의 완료!)'}
+                                                                    {analysisStep === 4 && '정밀 진단 리포트 최종 작성 중... (거의 완료!)'}
                                                                     {analysisStep === 0 && '데이터 요청 중...'}
                                                                 </p>
                                                             </div>
@@ -2911,7 +2911,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
     return (
         <div className="space-y-4">
             <h4 className="text-lg font-bold text-white mb-2 flex items-center justify-between">
-                <span>AI 점수 변화 추이</span>
+                <span>퀀트 스코어 변화 추이</span>
                 {loading && <Loader2 className="animate-spin w-4 h-4 text-blue-400" />}
             </h4>
 
@@ -2959,7 +2959,7 @@ function ScoreHistoryChart({ symbol }: { symbol: string }) {
                             />
                             <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} name="종합 점수" />
                             <Line type="monotone" dataKey="financial" stroke="#10b981" strokeWidth={1} dot={false} name="재무 건전성" strokeDasharray="3 3" />
-                            <Line type="monotone" dataKey="news" stroke="#f59e0b" strokeWidth={1} dot={false} name="AI 심리 점수" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="news" stroke="#f59e0b" strokeWidth={1} dot={false} name="시장 심리 지수" strokeDasharray="3 3" />
                         </LineChart>
                     </ResponsiveContainer>
                     <p className="text-xs text-center mt-2 text-gray-400">
@@ -3347,7 +3347,7 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
             <div className="relative z-[110] bg-[#111] border border-white/20 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-gray-800 to-black">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                        📊 AI 포트폴리오 분석
+                        📊 퀀트 포트폴리오 분석
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">✕</button>
                 </div>
@@ -3384,7 +3384,7 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
                                     ) : (
                                         <ShieldCheck key="icon" />
                                     )}
-                                    <span>{loading ? "AI 분석 중..." : "데이터 분석 시작"}</span>
+                                    <span>{loading ? "정밀 진단 중..." : "데이터 분석 시작"}</span>
                                 </span>
                             </button>
                         </div>
@@ -3404,7 +3404,7 @@ function PortfolioHealthModal({ onClose }: { onClose: () => void }) {
 
                             <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                                 <h4 className="text-blue-400 font-bold mb-2 md:mb-3 flex items-center gap-2 text-sm md:text-base">
-                                    📋 AI 분석 데이터 요약
+                                    📋 퀀트 진단 데이터 요약
                                 </h4>
                                 <p className="text-sm md:text-lg leading-relaxed whitespace-pre-wrap text-gray-200">
                                     {result.prescription}

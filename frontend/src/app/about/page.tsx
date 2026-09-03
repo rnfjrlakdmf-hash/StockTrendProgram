@@ -119,7 +119,7 @@ export default function AboutPage() {
               {[
                 {
                   icon: "📊",
-                  title: "AI 팩트 시황 리포트",
+                  title: "스마트 팩트 시황 리포트",
                   desc: "매일 장 마감 후 KOSPI, KOSDAQ, 미국 S&P500, 나스닥의 수급 동향과 핵심 이슈를 데이터 기반으로 요약합니다. 특정 종목 추천 없이 시장 전체의 팩트를 전달합니다.",
                 },
                 {

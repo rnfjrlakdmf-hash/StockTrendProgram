@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 
 export const metadata: Metadata = {
     title: "글로벌 주식 종목 전체 디렉토리 | 스마트 투자 비서",
-    description: "코스피, 코스닥, 미국 주식, ETF 등 전 종목의 AI 분석 리포트를 확인하세요. 주가 전망, 외국인 수급 현황, 배당금 정보를 한눈에 볼 수 있는 종목 총람입니다.",
+    description: "코스피, 코스닥, 미국 주식, ETF 등 전 종목의 정밀 퀀트 리포트를 확인하세요. 주가 전망, 외국인 수급 현황, 배당금 정보를 한눈에 볼 수 있는 종목 총람입니다.",
 };
 
 export const revalidate = 86400; // 24 hours
@@ -56,14 +56,14 @@ export default async function DirectoryPage(props: {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white">
-            <Header title="종목 디렉토리" subtitle="전 종목 AI 분석 리포트" />
+            <Header title="종목 디렉토리" subtitle="전 종목 정밀 퀀트 리포트" />
             
             <div className="pt-12 pb-12 px-4 max-w-7xl mx-auto">
                 <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 mb-4">
                     글로벌 주식 종목 총람 (A-Z)
                 </h1>
                 <p className="text-slate-400 mb-8 text-lg">
-                    스마트 투자 비서가 제공하는 전 종목 AI 주가 전망 및 핵심 분석 리포트를 확인하세요. 
+                    스마트 투자 비서가 제공하는 전 종목 퀀트 지표 및 핵심 분석 리포트를 확인하세요. 
                     (총 {filteredStocks.length.toLocaleString()}개 종목)
                 </p>
 

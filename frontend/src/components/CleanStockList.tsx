@@ -457,10 +457,10 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         window.location.href = `/discovery?q=${cleanSym}`;
                                     }}
                                     className="hidden sm:flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-2xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
-                                    title="AI 정밀 진단 & 차트 분석"
+                                    title="종목 정밀 진단 & 차트 분석"
                                 >
                                     <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                                    <span>AI 분석</span>
+                                    <span>정밀 분석</span>
                                 </button>
                                 {onAlertClick && (
                                     <button 

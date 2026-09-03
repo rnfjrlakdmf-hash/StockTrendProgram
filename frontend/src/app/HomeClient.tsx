@@ -43,7 +43,7 @@ export default function HomeClient() {
         {/* SEO 최적화 및 봇 인식용 최상단 콘텐츠 (H1) */}
         <div className="text-center pt-2 pb-6 max-w-3xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-black text-white mb-3 tracking-tight">
-            스마트 투자 비서 - AI 주식 분석 및 무료 알림
+            스마트 투자 비서 - 퀀트 주식 분석 및 실시간 알림
           </h1>
           <p className="text-gray-400 text-sm leading-relaxed">
             매일 업데이트되는 전문가 수준의 금융 데이터와 인공지능 분석 리포트를 무료로 제공합니다.<br className="hidden md:block" />
@@ -127,7 +127,7 @@ export default function HomeClient() {
                           <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                             <Newspaper className="w-5 h-5" /> 이번 주 증시 요약 리포트
                           </h3>
-                          <p className="text-sm text-emerald-200 line-clamp-2">한 주간의 코스피/코스닥 흐름과 외국인, 기관의 수급 동향을 AI가 완벽하게 요약했습니다.</p>
+                          <p className="text-sm text-emerald-200 line-clamp-2">한 주간의 코스피/코스닥 흐름과 외국인, 기관의 수급 동향을 시스템이 완벽하게 요약했습니다.</p>
                         </div>
                         <div className="mt-4 flex items-center text-emerald-300 text-sm font-semibold group-hover:text-white transition-colors">
                           리포트 읽기 <ChevronRight className="w-4 h-4 ml-1" />

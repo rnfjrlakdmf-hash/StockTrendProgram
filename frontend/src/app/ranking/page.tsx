@@ -74,7 +74,7 @@ export default function RankingPage() {
             전국 주식 고수 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-300 to-purple-400">VIP 리더보드</span>
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-            실시간 포트폴리오 수익률과 퀀트 AI 진단 점수를 종합하여 매일 엄격하게 산출되는 명예의 전당입니다.
+            실시간 포트폴리오 수익률과 계량 퀀트 진단 점수를 종합하여 매일 엄격하게 산출되는 명예의 전당입니다.
           </p>
         </div>
       </div>

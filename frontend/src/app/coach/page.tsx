@@ -88,17 +88,17 @@ export default function CoachPage() {
                 isOpen={showAdModal}
                 onClose={() => setShowAdModal(false)}
                 onReward={handleAdReward}
-                featureName="AI Trading Coach"
+                featureName="Trading Coach"
             />
 
             <div className="p-6 max-w-2xl mx-auto space-y-6">
                 <div className="text-center space-y-2">
                     <h1 className="text-3xl font-black text-white flex items-center justify-center gap-2">
                         <UserCheck className="w-8 h-8 text-orange-500" />
-                        AI Trading Coach
+                        Trading Coach
                     </h1>
                     <p className="text-gray-400">
-                        잘못된 매매 습관, AI 코치에게 교정 받으세요. (팩폭 주의 🦴)
+                        잘못된 매매 습관, 트레이딩 코치에게 교정 받으세요. (팩폭 주의 🦴)
                     </p>
                 </div>
 
@@ -172,7 +172,7 @@ export default function CoachPage() {
 
                             {/* Viral Watermark (Included in capture) */}
                             <div className="pt-4 border-t border-white/10 flex justify-between items-center text-gray-500 text-xs font-medium">
-                                <span>AI 주식 비서 - 팩폭 맞으러 가기 👉</span>
+                                <span>스마트 투자 비서 - 진단 받으러 가기 👉</span>
                                 <span className="font-bold text-orange-500/70">stock-trend-program.co.kr</span>
                             </div>
                         </div>

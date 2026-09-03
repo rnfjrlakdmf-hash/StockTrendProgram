@@ -476,7 +476,7 @@ function ThemePageContent() {
                     {/* Top VIP Badge */}
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-orange-500/15 to-amber-500/15 border border-orange-500/30 text-orange-400 text-xs font-black shadow-lg shadow-orange-500/10 backdrop-blur-md">
                         <Flame className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
-                        <span>AI 실시간 주도 테마 & 대장주 발굴 레이더</span>
+                        <span>실시간 주도 테마 & 대장주 발굴 레이더</span>
                     </div>
 
                     <div className="flex items-center justify-center gap-3">
@@ -721,7 +721,7 @@ function ThemePageContent() {
                                 
                                 <div>
                                     <h4 className="text-lg font-bold text-white mb-2 border-b border-white/10 pb-2">⏳ 테마 라이프사이클 시계</h4>
-                                    <p className="mb-2">AI가 분석한 현재 테마의 진행 단계를 시계로 표현합니다.</p>
+                                    <p className="mb-2">계량 통계로 분석한 현재 테마의 진행 단계를 시계로 표현합니다.</p>
                                     <ul className="space-y-2 text-xs">
                                         <li><span className="text-blue-400 font-bold">오전 (태동기):</span> 주목받기 시작하는 초기 단계. 잠재력이 높으나 불확실성도 큽니다.</li>
                                         <li><span className="text-red-400 font-bold">점심 (성장/과열):</span> 시장의 관심이 집중되며 가격이 급등하는 구간. 변동성이 극대화됩니다.</li>
@@ -753,7 +753,7 @@ function ThemePageContent() {
                                 <div className="space-y-2">
                                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/40 text-orange-300 text-xs font-black uppercase tracking-wider shadow-md">
                                         <Flame className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
-                                        <span>AI 퀀트 테마 심층 인텔리전스</span>
+                                        <span>퀀트 테마 심층 인텔리전스</span>
                                     </div>
                                     <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-2 sm:gap-3 flex-wrap">
                                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400">#{result.theme}</span>
@@ -773,7 +773,7 @@ function ThemePageContent() {
                                     </button>
                                     <KakaoShareButton 
                                         title={`🔥 [실시간 주도 테마] ${result.theme} 대장주 & 수급 분석`}
-                                        description={result.description || "AI가 정밀 분석한 이 테마의 핵심 대장주와 리스크 요인을 확인하세요."}
+                                        description={result.description || "정밀 데이터로 분석한 이 테마의 핵심 대장주와 리스크 요인을 확인하세요."}
                                         url={`https://stock-trend-program.co.kr/theme?q=${result.theme}`}
                                         className="bg-gradient-to-r from-[#FEE500] to-[#FADA0A] hover:brightness-105 text-black px-5 py-3 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-[#FEE500]/20 cursor-pointer active:scale-95 border border-yellow-400/50"
                                         buttonText="테마 분석 카톡 공유"
@@ -952,7 +952,7 @@ function ThemePageContent() {
                             <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-zinc-950/80 to-purple-500/10 border border-amber-500/30 space-y-3 relative z-10">
                                 <h4 className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
                                     <Sparkles className="w-4 h-4 text-amber-400" />
-                                    <span>AI 테마 매매 실전 전략 가이드</span>
+                                    <span>테마 수급 사이클 실전 전략 가이드</span>
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                                     <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
@@ -980,7 +980,7 @@ function ThemePageContent() {
                                         <span>테마 라이프사이클 레이더 (Lifecycle Clock)</span>
                                     </h4>
                                     <p className="text-xs text-zinc-400">
-                                        AI가 시장의 관심도와 거래대금 사이클을 종합 분석하여 테마의 진입 단계를 진단합니다.
+                                        알고리즘이 시장의 관심도와 거래대금 사이클을 종합 분석하여 테마의 진입 단계를 진단합니다.
                                     </p>
                                 </div>
                                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/5 border border-white/10 rounded-2xl text-xs font-mono font-black text-white shrink-0">
@@ -1053,7 +1053,7 @@ function ThemePageContent() {
                                 <div className="space-y-1">
                                     <div className="text-xs font-black text-orange-400 flex items-center gap-1.5">
                                         <Sparkles className="w-3.5 h-3.5" />
-                                        <span>AI 테마 전략 코멘트</span>
+                                        <span>테마 수급 전략 코멘트</span>
                                     </div>
                                     <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed">
                                         {result.lifecycle?.comment 

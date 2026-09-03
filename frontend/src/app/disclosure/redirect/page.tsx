@@ -43,7 +43,7 @@ export default function DisclosureRedirectPage() {
           <Image src="/logo.png" alt="STOCK AI" width={40} height={40} className="rounded-full" />
         </div>
         
-        <h2 className="text-2xl font-bold mb-2">STOCK AI 공시 분석</h2>
+        <h2 className="text-2xl font-bold mb-2">스마트 공시 분석 센터</h2>
         <p className="text-gray-400 mb-8 text-sm">
           안전하게 원문 서버(SEC/DART)로 연결 중입니다...<br />
           잠시만 기다려주세요.
