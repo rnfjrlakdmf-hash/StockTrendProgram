@@ -10,12 +10,35 @@ export default function GlobalBroadcastListener() {
     const [mounted, setMounted] = useState(false);
     const [popupAlert, setPopupAlert] = useState<any>(null);
     const [isHovered, setIsHovered] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const router = useRouter();
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // 팝업 부드럽게 닫기 함수
+    const closeAlert = () => {
+        setIsClosing(true);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        setTimeout(() => {
+            setPopupAlert(null);
+            setIsClosing(false);
+            setIsHovered(false);
+        }, 300);
+    };
+
+    // 마우스 호버 핸들러 (PC 환경에서만 일시 정지, 모바일 터치 시 고착 방지)
+    const handleMouseEnter = () => {
+        if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+            setIsHovered(true);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        setIsHovered(false);
+    };
 
     // 딩동 알림음 효과음 재생
     const playAlertSound = () => {
@@ -76,6 +99,7 @@ export default function GlobalBroadcastListener() {
                     const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
 
                     if (isGlobal || isTargeted) {
+                        setIsClosing(false);
                         setPopupAlert({ id: change.doc.id, ...data });
                         playAlertSound();
                     }
@@ -88,16 +112,18 @@ export default function GlobalBroadcastListener() {
         return () => unsubscribe();
     }, [mounted]);
 
-    // 6초 자동 닫힘 타이머 (마우스 호버 시 일시 정지)
+    // 6.5초 자동 닫힘 타이머 (하단 프로그레스 바가 다 줄어들면 스르륵 자동 소멸)
     useEffect(() => {
         if (!popupAlert) return;
+        setIsClosing(false);
+
         if (isHovered) {
             if (timerRef.current) clearTimeout(timerRef.current);
             return;
         }
 
         timerRef.current = setTimeout(() => {
-            setPopupAlert(null);
+            closeAlert();
         }, 6500);
 
         return () => {
@@ -204,16 +230,20 @@ export default function GlobalBroadcastListener() {
                 router.push(targetUrl);
             }
         }
-        setPopupAlert(null);
+        closeAlert();
     };
 
     const BadgeIcon = categoryBadge.icon;
 
     return (
         <div 
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] w-[94%] max-w-lg animate-in fade-in slide-in-from-top-6 duration-300"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] w-[94%] max-w-lg transition-all duration-300 ${
+                isClosing 
+                    ? 'opacity-0 -translate-y-8 scale-95 pointer-events-none' 
+                    : 'opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-top-6'
+            }`}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
             <div 
                 className="bg-zinc-950/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(59,130,246,0.25)] rounded-2xl p-4 sm:p-5 border border-blue-500/40 hover:border-blue-400/70 flex flex-col gap-2.5 cursor-pointer relative overflow-hidden group transition-all duration-300 hover:scale-[1.01]"
@@ -252,7 +282,7 @@ export default function GlobalBroadcastListener() {
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setPopupAlert(null);
+                                closeAlert();
                             }}
                             className="p-1.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors cursor-pointer"
                             title="알림 닫기"
@@ -284,15 +314,14 @@ export default function GlobalBroadcastListener() {
                     </span>
                 </div>
 
-                {/* 하단 잔여 시간 프로그레스 바 (6.5초 동안 축소) */}
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 overflow-hidden">
+                {/* 하단 잔여 시간 프로그레스 바 (6.5초 동안 정확히 축소 후 0% 도달 시 자동 소멸) */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 overflow-hidden">
                     <div 
-                        className="h-full bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 transition-all"
+                        className="h-full bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 animate-alert-progress"
                         style={{
-                            width: isHovered ? '100%' : '0%',
-                            transitionDuration: isHovered ? '0s' : '6500ms',
-                            transitionTimingFunction: 'linear'
+                            animationPlayState: isHovered ? 'paused' : 'running'
                         }}
+                        onAnimationEnd={closeAlert}
                     />
                 </div>
             </div>

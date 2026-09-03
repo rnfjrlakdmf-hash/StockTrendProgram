@@ -73,6 +73,18 @@ h1, h2, h3, h4, h5, h6, p, span, div, a, li, button {
   .animate-flash-blue {
     animation: flashBlue 1s ease-out forwards;
   }
+  .animate-alert-progress {
+    animation: alertProgressShrink 6.5s linear forwards;
+  }
+}
+
+@keyframes alertProgressShrink {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
 }
 
 @keyframes flashRed {
