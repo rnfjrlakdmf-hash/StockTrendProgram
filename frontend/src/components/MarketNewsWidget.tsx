@@ -115,10 +115,16 @@ export default function MarketNewsWidget() {
 
             {/* 뉴스 리스트 */}
             <div className="space-y-3">
-                {items.slice(0, 6).map((item, idx) => {
-                    const sentiment = getNewsSentiment(item.title);
-                    const keywords = extractKeywords(item.title);
-                    const redirectUrl = `/news-redirect?target=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.publisher)}`;
+                {(!items || items.length === 0) ? (
+                    <div className="py-12 flex flex-col items-center justify-center text-zinc-500 gap-2.5">
+                        <Globe className="w-8 h-8 opacity-30 animate-pulse" />
+                        <span className="text-xs font-medium text-zinc-400">실시간 최신 글로벌 속보를 집계하고 있습니다...</span>
+                    </div>
+                ) : (
+                    items.slice(0, 6).map((item, idx) => {
+                        const sentiment = getNewsSentiment(item.title);
+                        const keywords = extractKeywords(item.title);
+                        const redirectUrl = `/news-redirect?target=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.publisher)}`;
 
                     return (
                         <a 
@@ -170,7 +176,7 @@ export default function MarketNewsWidget() {
                             </div>
                         </a>
                     );
-                })}
+                }))}
             </div>
         </div>
     );

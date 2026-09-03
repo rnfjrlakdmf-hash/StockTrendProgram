@@ -36,42 +36,71 @@ def get_market_news():
         return []
 
     def fetch_global_category():
+        result = []
+        # 1. 네이버 금융 해외증시 실시간 뉴스 크롤링
         try:
-            import urllib.request
-            import xml.etree.ElementTree as ET
-            import urllib.parse
-            
-            encoded_query = urllib.parse.quote("미국 증시 경제")
-            url = f"https://news.google.com/rss/search?q={encoded_query}&hl=ko&gl=KR&ceid=KR:ko"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            
-            with urllib.request.urlopen(req, timeout=3) as response:
-                root = ET.fromstring(response.read())
-                items = root.find('channel').findall('item')
-                
-                result = []
-                for item in items[:6]:
-                    raw_title = item.find('title').text if item.find('title') is not None else ""
-                    raw_link = item.find('link').text if item.find('link') is not None else ""
-                    raw_time = item.find('pubDate').text[:16] if item.find('pubDate') is not None else ""
-                    
-                    # Extract real publisher from title (e.g. "Headline... - 한국경제")
-                    publisher = "글로벌 특보"
-                    clean_title = raw_title
-                    if " - " in raw_title:
-                        parts = raw_title.rsplit(" - ", 1)
-                        clean_title = parts[0].strip()
-                        publisher = parts[1].strip()
+            import requests
+            from bs4 import BeautifulSoup
+            url = "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258"
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}, timeout=4)
+            if res.status_code == 200:
+                res.encoding = "cp949"
+                soup = BeautifulSoup(res.text, "html.parser")
+                for dl in soup.select("ul.realtimeNewsList li dl"):
+                    a_tag = dl.select_one("dd.articleSubject a") or dl.select_one("dt.articleSubject a")
+                    press = dl.select_one("span.press")
+                    wdate = dl.select_one("span.wdate")
+                    if a_tag:
+                        t = a_tag.text.strip().replace("&quot;", "\"").replace("&amp;", "&")
+                        l = "https://finance.naver.com" + a_tag["href"]
+                        p = press.text.strip() if press else "해외증시"
+                        tm = wdate.text.strip() if wdate else ""
+                        result.append({
+                            "title": t,
+                            "link": l,
+                            "publisher": p,
+                            "time": tm
+                        })
+                        if len(result) >= 6:
+                            break
+        except Exception as e:
+            pass
+
+        # 2. 구글 비즈니스 토픽 RSS 보강 (네이버 뉴스가 6개 미만일 때)
+        if len(result) < 6:
+            try:
+                import xml.etree.ElementTree as ET
+                import requests
+                topic_url = "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ko&gl=KR&ceid=KR:ko"
+                res = requests.get(topic_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=4)
+                if res.status_code == 200:
+                    root = ET.fromstring(res.text)
+                    items = root.findall(".//item")
+                    for item in items:
+                        raw_title = item.find("title").text if item.find("title") is not None else ""
+                        raw_link = item.find("link").text if item.find("link") is not None else ""
+                        raw_time = item.find("pubDate").text[:16] if item.find("pubDate") is not None else ""
                         
-                    result.append({
-                        "title": clean_title,
-                        "link": raw_link,
-                        "publisher": publisher,
-                        "time": raw_time
-                    })
-                return result
-        except:
-            return []
+                        publisher = "글로벌 경제"
+                        clean_title = raw_title
+                        if " - " in raw_title:
+                            parts = raw_title.rsplit(" - ", 1)
+                            clean_title = parts[0].strip()
+                            publisher = parts[1].strip()
+                        
+                        if not any(r["title"] == clean_title for r in result):
+                            result.append({
+                                "title": clean_title,
+                                "link": raw_link,
+                                "publisher": publisher,
+                                "time": raw_time
+                            })
+                        if len(result) >= 6:
+                            break
+            except Exception as e:
+                pass
+
+        return result[:6]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         f_kr = executor.submit(fetch_naver_category, "mainnews")
