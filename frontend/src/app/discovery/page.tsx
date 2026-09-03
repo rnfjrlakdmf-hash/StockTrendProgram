@@ -2815,57 +2815,7 @@ function DiscoveryContent() {
                                 </div>
                             </div>
 
-                            {/* Full-width Related Sector Stocks Section */}
-                            {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                <div className="rounded-3xl bg-black/40 border border-white/20 p-6 md:p-8 shadow-xl">
-                                    <div className="flex items-center justify-between mb-5">
-                                        <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-2.5">
-                                            <div className="w-2 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full"></div>
-                                            <span>관련 섹터 & 동일 테마 핵심 종목</span>
-                                        </h3>
-                                        <span className="text-xs text-zinc-400 font-medium hidden sm:inline">동일 산업군 비교 분석</span>
-                                    </div>
-                                    {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 ? (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                            {stock.related_stocks.map((item, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    onClick={() => handleSearch(item.symbol)}
-                                                    className="group cursor-pointer flex flex-col justify-between p-4.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/40 transition-all shadow-md hover:shadow-blue-500/10"
-                                                >
-                                                    <div className="flex items-start justify-between gap-2 mb-2">
-                                                        <div>
-                                                            <div className="font-extrabold text-white text-base group-hover:text-blue-300 transition-colors">
-                                                                {item.name}
-                                                            </div>
-                                                            <div className="text-xs text-zinc-400 font-mono mt-0.5">{item.symbol}</div>
-                                                        </div>
-                                                        <div className="text-right whitespace-nowrap">
-                                                            {item.price && (
-                                                                <div className="font-mono text-sm text-white font-black">
-                                                                    {item.price}
-                                                                </div>
-                                                            )}
-                                                            {item.change && (
-                                                                <div className={`text-xs font-black px-2 py-0.5 rounded-md inline-block mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText} ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorBg}`}>
-                                                                    {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    {item.reason && (
-                                                        <div className="text-xs text-zinc-400 font-medium pt-2 border-t border-white/5 line-clamp-2">
-                                                            {item.reason}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-400">{stock.name}과(와) 유사한 산업군의 기업들을 비교 분석할 예정입니다. (데이터 수집 중)</p>
-                                    )}
-                                </div>
-                            )}
+
                         </div>
                     </div>
                 )}
