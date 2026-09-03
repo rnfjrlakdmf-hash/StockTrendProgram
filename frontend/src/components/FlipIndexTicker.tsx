@@ -156,7 +156,7 @@ export default function FlipIndexTicker() {
                 .animate-ticker-marquee {
                     display: flex !important;
                     width: max-content !important;
-                    animation: ticker-marquee 24s linear infinite !important;
+                    animation: ticker-marquee 12s linear infinite !important;
                     will-change: transform;
                 }
                 .animate-ticker-marquee:hover {
@@ -178,7 +178,7 @@ export default function FlipIndexTicker() {
             {/* Infinite Marquee Stream */}
             <div 
                 className="animate-ticker-marquee flex items-center gap-4 pl-2" 
-                style={{ display: 'flex', width: 'max-content' }}
+                style={{ display: 'flex', width: 'max-content', animation: 'ticker-marquee 12s linear infinite' }}
             >
                 {[...indices, ...indices].map((idx, i) => (
                     <div 
