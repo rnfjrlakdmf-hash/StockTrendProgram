@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing } from "lucide-react";
+import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing, Star, Briefcase, ChevronRight, LogOut, LogIn, Coins, ShieldCheck, CheckCircle2, Flame, ExternalLink } from "lucide-react";
 import { useEffect, useRef, useState } from 'react';
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
@@ -388,99 +388,247 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                             )}
                         </button>
 
-                        {/* Dropdown Menu */}
+                        {/* Dropdown Menu - Executive Profile Hub */}
                         {isProfileMenuOpen && (
-                            <div className="absolute right-0 mt-3 w-64 glass-panel rounded-2xl p-4 flex flex-col gap-2 z-50 animate-in slide-in-from-top-2 duration-200">
+                            <div className="absolute right-0 mt-3 w-[calc(100vw-2rem)] max-w-[340px] bg-zinc-950/95 backdrop-blur-2xl border border-blue-500/30 rounded-3xl p-4 sm:p-5 flex flex-col gap-3 z-50 animate-in slide-in-from-top-2 duration-200 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(59,130,246,0.2)]">
                                 
-                                {user ? (
-                                    <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5 mb-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-400 text-sm font-medium">보유 코인</span>
-                                            <div className="flex items-center gap-1.5 text-yellow-400 font-bold bg-yellow-500/10 px-2.5 py-1 rounded-lg border border-yellow-500/20">
-                                                <span>🪙</span>
-                                                <span>{coins} C</span>
-                                            </div>
+                                {/* 1. 회원 프로필 헤더 & 회원 등급 */}
+                                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-500/25 text-sm shrink-0">
+                                            {user?.name ? user.name.slice(0, 2) : '👤'}
                                         </div>
-                                        <button 
+                                        <div className="flex flex-col min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-white font-black text-sm truncate max-w-[130px]">
+                                                    {user?.name || (user?.email ? user.email.split('@')[0] : '게스트 투자자')}
+                                                </span>
+                                                {user && !user.is_guest ? (
+                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                                                        VIP 정회원
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-zinc-400 border border-white/10 shrink-0">
+                                                        게스트
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="text-zinc-400 text-[11px] truncate max-w-[160px]">
+                                                {user?.email || '체험 모드 이용 중'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    {user && !user.is_guest ? (
+                                        <button
                                             onClick={() => {
-                                                handleAttendance();
+                                                logout();
                                                 setIsProfileMenuOpen(false);
                                             }}
-                                            disabled={isAttendanceLoading}
-                                            className="w-full bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/20 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                                            className="text-[11px] font-bold text-zinc-400 hover:text-red-400 p-1.5 rounded-xl hover:bg-red-500/10 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+                                            title="로그아웃"
                                         >
-                                            ✅ 출석체크 하기
+                                            <LogOut className="w-3.5 h-3.5" />
+                                            <span>로그아웃</span>
                                         </button>
-                                        {user.is_guest ? (
-                                            <button 
-                                                onClick={() => {
-                                                    setShowLoginModal(true);
-                                                    setIsProfileMenuOpen(false);
-                                                }}
-                                                className="w-full mt-1 bg-white/10 hover:bg-white/20 text-white py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-95 border border-white/10"
-                                            >
-                                                정식 로그인 / 연동하기
-                                            </button>
-                                        ) : (
-                                            <button 
-                                                onClick={() => {
-                                                    logout();
-                                                    setIsProfileMenuOpen(false);
-                                                }}
-                                                className="w-full mt-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-95 border border-red-500/20"
-                                            >
-                                                로그아웃
-                                            </button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5 mb-2">
-                                        <div className="text-sm text-gray-400 text-center mb-1">로그인하고 혜택을 받아보세요!</div>
-                                        <button 
+                                    ) : (
+                                        <button
                                             onClick={() => {
                                                 setShowLoginModal(true);
                                                 setIsProfileMenuOpen(false);
                                             }}
-                                            className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-95"
+                                            className="text-[11px] font-black text-blue-400 hover:text-blue-300 bg-blue-500/15 hover:bg-blue-500/25 px-2.5 py-1 rounded-xl border border-blue-500/30 transition-all active:scale-95 shrink-0 cursor-pointer"
                                         >
-                                            로그인 / 회원가입
+                                            로그인
                                         </button>
-                                    </div>
-                                )}
-
-                                {/* Menu Links */}
-                                <div className="flex flex-col gap-1">
-                                    <Link href="/settings" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center justify-between p-3 rounded-xl hover:bg-blue-500/10 transition-colors text-gray-300 hover:text-blue-400 group border border-transparent hover:border-blue-500/20 mb-1">
-                                        <div className="flex items-center gap-3">
-                                            <BellRing className="h-5 w-5 text-blue-400 group-hover:text-blue-400 transition-colors" />
-                                            <span className="font-bold text-sm text-blue-400">🔔 푸시 알림 설정</span>
-                                        </div>
-                                    </Link>
-
-                                    <a href="https://discord.com/invite/gQrUXaaqB" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#5865F2]/10 transition-colors text-gray-300 hover:text-[#5865F2] group">
-                                        <svg className="w-5 h-5 text-gray-400 group-hover:text-[#5865F2] transition-colors" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
-                                        </svg>
-                                        <span className="font-medium text-sm">주식 오픈채팅 (디스코드)</span>
-                                    </a>
-
-                                    <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="md:hidden flex items-center gap-3 p-3 rounded-xl hover:bg-blue-500/10 transition-colors text-gray-300 hover:text-blue-400 group">
-                                        <Send className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                                        <span className="font-medium text-sm">텔레그램 실시간 속보</span>
-                                    </Link>
-
-                                    <Link href="/guide" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-gray-300 hover:text-white group">
-                                        <HelpCircle className="h-5 w-5 text-gray-400 group-hover:text-white transition-colors" />
-                                        <span className="font-medium text-sm">이용 가이드</span>
-                                    </Link>
-
-                                    {user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') && (
-                                        <Link href="/admin" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-fuchsia-500/10 transition-colors text-gray-300 hover:text-fuchsia-400 group mt-2 border-t border-white/5 pt-3">
-                                            <Users className="h-5 w-5 text-gray-400 group-hover:text-fuchsia-400 transition-colors" />
-                                            <span className="font-medium text-sm">관리자 센터</span>
-                                        </Link>
                                     )}
                                 </div>
+
+                                {/* 2. 스마트 코인 지갑 & 출석체크 리워드 카드 */}
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-zinc-900/90 to-black border border-amber-500/30 space-y-2.5 shadow-inner">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-sm">🪙</span>
+                                            <span className="text-xs font-bold text-zinc-300">나의 보유 코인</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 font-black text-amber-400 font-mono text-sm bg-amber-500/20 px-2.5 py-0.5 rounded-lg border border-amber-500/30">
+                                            <span>{coins}</span>
+                                            <span className="text-xs font-bold text-amber-300">C</span>
+                                        </div>
+                                    </div>
+
+                                    {/* 출석체크 실행 버튼 */}
+                                    <button
+                                        onClick={() => {
+                                            handleAttendance();
+                                            setIsProfileMenuOpen(false);
+                                        }}
+                                        disabled={isAttendanceLoading}
+                                        className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 text-white py-2.5 rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-1.5 hover:scale-[1.01] active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-spin" />
+                                        <span>오늘의 출석체크 (+10 코인 받기)</span>
+                                    </button>
+
+                                    {/* 코인 활용 팁 */}
+                                    <div className="flex items-center justify-between text-[11px] text-zinc-400 px-0.5">
+                                        <span>💡 매일 출석 시 코인 적립</span>
+                                        <span className="text-amber-300/80 font-medium">연속 {attendanceStreak}일 달성 중</span>
+                                    </div>
+
+                                    {user?.is_guest && (
+                                        <button
+                                            onClick={() => {
+                                                setShowLoginModal(true);
+                                                setIsProfileMenuOpen(false);
+                                            }}
+                                            className="w-full bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white py-1.5 rounded-xl text-[11px] font-bold transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
+                                        >
+                                            <span>구글 정식 연동하고 코인 영구 보존하기</span>
+                                            <ChevronRight className="w-3 h-3 text-zinc-400" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* 3. 주요 투자 허브 내비게이션 메뉴 */}
+                                <div className="space-y-1 text-xs">
+                                    {/* 관심종목 */}
+                                    <Link 
+                                        href="/watchlist" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+                                                <Star className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-xs text-white">나의 관심종목</div>
+                                                <div className="text-[10px] text-zinc-400">실시간 목표가 &amp; 수급 추적</div>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+
+                                    {/* 포트폴리오 */}
+                                    <Link 
+                                        href="/portfolio" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                                                <Briefcase className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-xs text-white">포트폴리오 &amp; 수익률 계산</div>
+                                                <div className="text-[10px] text-zinc-400">내 자산 비중 &amp; 리밸런싱</div>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+
+                                    {/* 실시간 알림센터 */}
+                                    <Link 
+                                        href="/alerts" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:bg-cyan-500/20 transition-colors">
+                                                <Bell className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-xs text-white flex items-center gap-1.5">
+                                                    <span>스마트 알림센터</span>
+                                                    {unreadAlertsCount > 0 && (
+                                                        <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-black">
+                                                            {unreadAlertsCount}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-[10px] text-zinc-400">DART 공시·뉴스 속보 모아보기</div>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+
+                                    {/* 푸시 알림 설정 */}
+                                    <Link 
+                                        href="/settings" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                                                <BellRing className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-xs text-white">푸시 알림 설정 (FCM)</div>
+                                                <div className="text-[10px] text-zinc-400">급등락·공시 실시간 수신 제어</div>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+
+                                    {/* 이용 가이드 */}
+                                    <Link 
+                                        href="/guide" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                                                <HelpCircle className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-xs text-white">주식 퀀트 백과 가이드</div>
+                                                <div className="text-[10px] text-zinc-400">46대 지표 &amp; 실전 투자 사전</div>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+                                </div>
+
+                                {/* 4. 커뮤니티 & 실시간 피드 채널 */}
+                                <div className="pt-2.5 border-t border-white/10 grid grid-cols-2 gap-2 text-xs">
+                                    <a 
+                                        href="https://discord.com/invite/gQrUXaaqB" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-[#5865F2]/20 text-zinc-300 hover:text-[#5865F2] border border-white/5 transition-all"
+                                    >
+                                        <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
+                                        </svg>
+                                        <span className="font-bold text-[11px]">디스코드 토론</span>
+                                    </a>
+
+                                    <a 
+                                        href="https://t.me/stocktrend_live" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-sky-500/20 text-zinc-300 hover:text-sky-400 border border-white/5 transition-all"
+                                    >
+                                        <Send className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="font-bold text-[11px]">텔레그램 속보</span>
+                                    </a>
+                                </div>
+
+                                {/* 5. 관리자 시스템 링크 (관리자 이메일 로그인 시만 노출) */}
+                                {user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') && (
+                                    <Link 
+                                        href="/admin" 
+                                        onClick={() => setIsProfileMenuOpen(false)} 
+                                        className="flex items-center justify-between p-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 transition-all font-bold text-xs"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-purple-400" />
+                                            <span>👑 관리자 전용 관제 센터</span>
+                                        </span>
+                                        <ChevronRight className="w-3.5 h-3.5 text-purple-400" />
+                                    </Link>
+                                )}
                             </div>
                         )}
                     </div>
