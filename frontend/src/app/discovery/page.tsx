@@ -1444,9 +1444,16 @@ function DiscoveryContent() {
                                                             <span className="text-[10px] font-black text-indigo-300 uppercase tracking-wider bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded-md">
                                                                 AFTER MARKET 시간외거래
                                                             </span>
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                                                마감
-                                                            </span>
+                                                            {stock.market_status?.includes('시간외') || stock.market_status?.includes('NXT') || (stock.is_extended_hours && !stock.market_status?.includes('마감')) ? (
+                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                                                    거래중
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                                    마감
+                                                                </span>
+                                                            )}
                                                         </div>
 
                                                         <div className="flex items-baseline gap-2.5 mt-1">
