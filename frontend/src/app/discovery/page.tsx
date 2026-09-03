@@ -1228,6 +1228,16 @@ function DiscoveryContent() {
                             <MarketScannerDashboard />
                         </div>
 
+                        {/* 네이티브 인피드 스폰서 배너 (공시 속보와 글로벌 뉴스 사이) */}
+                        <div className="flex justify-center my-4 overflow-hidden">
+                            <div className="block md:hidden">
+                                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                            </div>
+                            <div className="hidden md:block">
+                                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                            </div>
+                        </div>
+
                         {/* 신규: 시장 지수 뉴스 위젯 */}
                         <div className="w-full">
                             <MarketNewsWidget />

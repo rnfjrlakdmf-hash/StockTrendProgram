@@ -46,6 +46,7 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }
     <html style="margin:0;padding:0;overflow:hidden;">
       <head>
         <meta charset="utf-8">
+        <base target="_top">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -57,7 +58,7 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }
           data-ad-unit="${adUnit}"
           data-ad-width="${adWidth}"
           data-ad-height="${adHeight}"></ins>
-        <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+        <script type="text/javascript" src="https://t1.daumcdn.net/kas/static/ba.min.js" async></script>
       </body>
     </html>
   `;

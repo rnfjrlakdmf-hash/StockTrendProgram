@@ -978,15 +978,18 @@ function formatUsdToKrwInText(text: string): string {
                 ) : (
                     <div className="space-y-4">
                         {paginatedAlerts.map((alert, idx) => {
-                            const isHighValue = alert.type === 'insider_trading' || alert.type === 'large_holding';
-                            const isFirstHighValue = isHighValue && idx === filteredAlerts.findIndex(a => a.type === 'insider_trading' || a.type === 'large_holding');
                             return (
                                 <React.Fragment key={alert.id}>
                                     {renderAlertCard(alert)}
-                                    {isFirstHighValue && (
-                                        <div className="bg-zinc-950/80 border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center my-6 shadow-xl">
-                                            <p className="text-[11px] text-gray-500 mb-2 font-semibold">스폰서 광고</p>
-                                            <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                                    {idx === 2 && (
+                                        <div className="bg-zinc-950/80 border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center my-4 shadow-xl">
+                                            <p className="text-[10px] text-zinc-500 mb-2 font-bold uppercase tracking-wider">스폰서 광고</p>
+                                            <div className="block md:hidden">
+                                                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                                            </div>
+                                            <div className="hidden md:block">
+                                                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                                            </div>
                                         </div>
                                     )}
                                 </React.Fragment>
