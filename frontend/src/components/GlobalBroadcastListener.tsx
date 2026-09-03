@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { onSnapshot, collection, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { X, BellRing, Sparkles, ChevronRight, Newspaper, FileText, TrendingUp, Flame, Zap } from "lucide-react";
+import { X, BellRing, Sparkles, ChevronRight, Newspaper, FileText, TrendingUp, Flame, Zap, Clock } from "lucide-react";
 
 export default function GlobalBroadcastListener() {
     const [mounted, setMounted] = useState(false);
@@ -105,6 +105,41 @@ export default function GlobalBroadcastListener() {
         };
     }, [popupAlert, isHovered]);
 
+    const formatAlertTime = (rawTs: any): string => {
+        try {
+            let date: Date | null = null;
+            if (!rawTs) {
+                date = new Date();
+            } else if (typeof rawTs.toDate === 'function') {
+                date = rawTs.toDate();
+            } else if (rawTs.seconds) {
+                date = new Date(rawTs.seconds * 1000);
+            } else if (typeof rawTs === 'number') {
+                date = new Date(rawTs);
+            } else if (typeof rawTs === 'string') {
+                date = new Date(rawTs);
+            } else if (rawTs instanceof Date) {
+                date = rawTs;
+            }
+
+            if (!date || isNaN(date.getTime())) {
+                date = new Date();
+            }
+
+            return date.toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        } catch {
+            return new Date().toLocaleTimeString('ko-KR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+    };
+
     if (!mounted || !popupAlert) return null;
 
     // 타겟 링크 정밀 추출 (통합대시보드 '/'로 빠지는 현상 원천 차단)
@@ -114,6 +149,7 @@ export default function GlobalBroadcastListener() {
     const newsUrl = popupAlert.news_url || '';
     const customUrl = popupAlert.url || '';
     const notifTitle = (popupAlert.title || '').split('\n')[0] || '';
+    const formattedTime = formatAlertTime(popupAlert.timestamp || popupAlert.created_at || popupAlert.time);
 
     let targetUrl = '';
     let categoryBadge = { label: '실시간 핫이슈', color: 'text-blue-400 bg-blue-500/20 border-blue-500/40', icon: BellRing };
@@ -206,16 +242,24 @@ export default function GlobalBroadcastListener() {
                         )}
                     </div>
 
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setPopupAlert(null);
-                        }}
-                        className="p-1.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors cursor-pointer"
-                        title="알림 닫기"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        {/* 사용자 요청: 알림 발송 시간 표기 */}
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-zinc-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md shadow-sm">
+                            <Clock className="w-3 h-3 text-zinc-400" />
+                            <span>{formattedTime}</span>
+                        </span>
+
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setPopupAlert(null);
+                            }}
+                            className="p-1.5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                            title="알림 닫기"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
                 
                 {/* 알림 본체 (제목 + 요약 내용) */}
