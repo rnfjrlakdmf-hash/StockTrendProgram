@@ -25,8 +25,9 @@ import type { Viewport } from 'next';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
 };
 // [TurboQuant V4.1 Final Luxury Fix Trigger]
 export const metadata: Metadata = {
@@ -168,9 +169,9 @@ export default function RootLayout({
         <AuthProvider>
           <Toaster theme="dark" position="bottom-right" richColors />
           <AnalyticsTracker />
-          <div className="flex min-h-screen">
+          <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
             <Sidebar />
-            <main className="flex-1 relative overflow-hidden pb-16 md:pb-0 bg-dark-900 text-foreground">
+            <main className="flex-1 min-w-0 w-full max-w-full relative overflow-x-hidden pb-16 md:pb-0 bg-dark-900 text-foreground">
               {/* Premium Background Mesh Glow Effects */}
               <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary-900/20 blur-[120px] pointer-events-none -z-10 mix-blend-screen" />
               <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none -z-10 mix-blend-screen" />
