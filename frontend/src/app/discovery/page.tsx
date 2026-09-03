@@ -1459,15 +1459,18 @@ function DiscoveryContent() {
                                                             }
 
                                                             let changePct = extendedHours?.regular?.change_pct;
+                                                            if (changePct !== undefined && !isNaN(changePct) && Math.abs(changePct) > 100) {
+                                                                changePct = changePct / 100;
+                                                            }
                                                             if (changePct === undefined || isNaN(changePct)) {
-                                                                if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
-                                                                    changePct = Number(stock.regular_change_pct);
-                                                                } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
                                                                     changePct = ((currentPriceNum - prevCloseNum) / prevCloseNum) * 100;
+                                                                } else if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
+                                                                    changePct = Number(stock.regular_change_pct);
                                                                 } else if (stock.change_percent || stock.change) {
                                                                     const raw = String(stock.change_percent || stock.change || '0');
                                                                     const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                    changePct = isNaN(parsed) ? 0 : parsed;
+                                                                    changePct = isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
                                                                 } else {
                                                                     changePct = 0;
                                                                 }
@@ -1482,12 +1485,32 @@ function DiscoveryContent() {
                                                                     isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
                                                                     'bg-zinc-800 border-white/10 text-zinc-400'
                                                                 }`}>
-                                                                    <span>{isUp ? '▲' : isDown ? '▼' : ''} {Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                    <span>{isUp ? '▲' : isDown ? '▼' : ''} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
                                                                     <span className="opacity-90">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
                                                                 </div>
                                                             );
                                                         })()}
                                                     </div>
+
+                                                    {/* 해외(미국) 주식 원화 환산 가격 표시 */}
+                                                    {stock.currency !== 'KRW' && (() => {
+                                                        const currentPriceNum = extendedHours?.regular?.price 
+                                                            ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                        const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
+                                                        const krwPrice = Math.round(currentPriceNum * rate);
+                                                        
+                                                        return (
+                                                            <div className="flex items-center gap-2 pt-1">
+                                                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-zinc-300 font-mono text-xs shadow-inner">
+                                                                    <span className="text-[11px] font-sans font-semibold text-zinc-400">원화 환산</span>
+                                                                    <span className="font-black text-amber-300 tracking-tight">≈ {krwPrice.toLocaleString()}원</span>
+                                                                </div>
+                                                                <span className="text-[10px] text-zinc-500 font-mono">
+                                                                    (환율 1달러 = {Math.round(rate).toLocaleString()}원 기준)
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
 
                                                 {/* 시간외 거래 가격 카드: 정규장(장중)에는 실시간 현재가에 집중하고, 장마감 후 또는 실제 시간외/야간 세션일 때만 표출 */}

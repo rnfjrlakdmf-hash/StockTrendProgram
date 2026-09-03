@@ -101,12 +101,14 @@ def stock_extended_hours(symbol: str):
             market_status = "OPEN" if market_state == "REGULAR" else "CLOSE"
             regular_price = info.get('regularMarketPrice', 0)
             regular_change = info.get('regularMarketChange', 0)
-            regular_change_pct = info.get('regularMarketChangePercent', 0)
-            prev_close = info.get('regularMarketPreviousClose', regular_price - regular_change)
+            prev_close = info.get('regularMarketPreviousClose') or (regular_price - regular_change if regular_price and regular_change else 0)
             
-            # yfinance는 퍼센트 값이 소수점(예: 0.05 = 5%)이므로 100을 곱해줌
-            if regular_change_pct:
-                regular_change_pct = regular_change_pct * 100
+            # [Fix] 정확한 등락률 직접 계산 (100배 중복 곱셈 오류 원천 방지)
+            if prev_close and prev_close > 0 and regular_change is not None:
+                regular_change_pct = (regular_change / prev_close) * 100
+            else:
+                raw_pct = info.get('regularMarketChangePercent', 0) or 0
+                regular_change_pct = (raw_pct / 100) if abs(raw_pct) > 100 else raw_pct
             
             # 프리/에프터마켓 데이터
             session_type = ""
@@ -121,7 +123,11 @@ def stock_extended_hours(symbol: str):
                 over_status = "OPEN" if market_state in ["PRE", "PREPRE"] else "CLOSE"
                 over_price = info['preMarketPrice']
                 over_change = info.get('preMarketChange', 0)
-                over_change_pct = info.get('preMarketChangePercent', 0) * 100 if info.get('preMarketChangePercent') else 0
+                if prev_close and prev_close > 0 and over_change:
+                    over_change_pct = (over_change / prev_close) * 100
+                else:
+                    raw_p = info.get('preMarketChangePercent', 0) or 0
+                    over_change_pct = (raw_p / 100) if abs(raw_p) > 100 else raw_p
             
             # AFTER MARKET (POST)
             elif 'postMarketPrice' in info and info['postMarketPrice'] is not None:
@@ -129,7 +135,12 @@ def stock_extended_hours(symbol: str):
                 over_status = "OPEN" if market_state in ["POST", "POSTPOST"] else "CLOSE"
                 over_price = info['postMarketPrice']
                 over_change = info.get('postMarketChange', 0)
-                over_change_pct = info.get('postMarketChangePercent', 0) * 100 if info.get('postMarketChangePercent') else 0
+                base_p = regular_price or prev_close
+                if base_p and base_p > 0 and over_change:
+                    over_change_pct = (over_change / base_p) * 100
+                else:
+                    raw_post = info.get('postMarketChangePercent', 0) or 0
+                    over_change_pct = (raw_post / 100) if abs(raw_post) > 100 else raw_post
                 
             over_update_time = ""
             open_price = info.get('regularMarketOpen')
