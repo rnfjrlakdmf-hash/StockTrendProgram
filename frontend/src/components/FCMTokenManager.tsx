@@ -117,6 +117,20 @@ export default function FCMTokenManager() {
                 window.location.href = payload.data.url;
             }
         });
+
+        // Service Worker로부터의 네비게이션 메시지 수신 (창 전환 후 목적지 링크 이동 100% 보장)
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            const handleSwMessage = (event: MessageEvent) => {
+                if (event.data && event.data.type === 'FCM_NAVIGATE' && event.data.url) {
+                    console.log('[FCM] Received FCM_NAVIGATE from SW:', event.data.url);
+                    window.location.href = event.data.url;
+                }
+            };
+            navigator.serviceWorker.addEventListener('message', handleSwMessage);
+            return () => {
+                navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+            };
+        }
     }, []);
 
     // [Init] Load initial token from localStorage

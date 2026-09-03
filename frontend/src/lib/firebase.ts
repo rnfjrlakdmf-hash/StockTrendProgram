@@ -241,6 +241,23 @@ export function showNotification(title: string, options?: NotificationOptions) {
         return;
     }
 
+    const createFallbackNotification = (title: string, options?: NotificationOptions) => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            const notif = new window.Notification(title, options);
+            notif.onclick = (e) => {
+                e.preventDefault();
+                window.focus();
+                const rawData = (options as any)?.data || {};
+                const d = rawData.FCM_MSG?.data || rawData.data || rawData;
+                const symbol = d.symbol ? (d.symbol.split('.')[0] || d.symbol) : '';
+                const targetUrl = d.url || d.dart_url || d.news_url || (symbol ? `/discovery?q=${symbol}` : '/alerts');
+                if (targetUrl) {
+                    window.location.href = targetUrl;
+                }
+            };
+        }
+    };
+
     try {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistration().then(registration => {
@@ -252,16 +269,14 @@ export function showNotification(title: string, options?: NotificationOptions) {
                         ...options
                     } as any).catch(err => {
                         console.error('[Notification] SW Error:', err);
-                        if (typeof window !== 'undefined' && 'Notification' in window) {
-                            new window.Notification(title, options);
-                        }
+                        createFallbackNotification(title, options);
                     });
-                } else if (typeof window !== 'undefined' && 'Notification' in window) {
-                    new window.Notification(title, options);
+                } else {
+                    createFallbackNotification(title, options);
                 }
             });
-        } else if (typeof window !== 'undefined' && 'Notification' in window) {
-            new window.Notification(title, options);
+        } else {
+            createFallbackNotification(title, options);
         }
     } catch (e) {
         console.error("[Notification] Fatal Error:", e);

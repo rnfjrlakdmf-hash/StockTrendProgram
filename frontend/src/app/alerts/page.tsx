@@ -499,7 +499,8 @@ function formatUsdToKrwInText(text: string): string {
 
     const renderAlertCard = (alert: any) => {
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
-        const symbol = alert.symbol || alert.code || '';
+        const rawSymbol = alert.symbol || alert.code || '';
+        const cleanSymbol = rawSymbol ? (rawSymbol.split('.')[0] || rawSymbol) : '';
         const marketBadge = getMarketBadge(alert);
 
         let targetUrl = alert.url || '';
@@ -510,12 +511,30 @@ function formatUsdToKrwInText(text: string): string {
             } catch(e){}
         }
 
-        if ((alert as any).news_url) {
+        // 통합 대시보드('/')로 잘못 설정되어 있는 경우 빈 문자열로 초기화하여 재계산
+        if (!targetUrl || targetUrl === '/' || targetUrl === 'https://stock-trend-program.co.kr' || targetUrl === 'https://stock-trend-program.co.kr/') {
+            targetUrl = '';
+        }
+
+        const dartUrl = (alert as any).dart_url || '';
+        const newsUrl = (alert as any).news_url || '';
+
+        if (dartUrl) {
             const params = new URLSearchParams();
-            params.set("url", (alert as any).news_url);
-            if (symbol) params.set("symbol", symbol);
+            params.set("url", dartUrl);
+            params.set("type", "disclosure");
+            if (cleanSymbol) params.set("symbol", cleanSymbol);
             if (alert.title) params.set("title", alert.title);
             targetUrl = `/news-redirect?${params.toString()}`;
+        } else if (newsUrl) {
+            const params = new URLSearchParams();
+            params.set("url", newsUrl);
+            params.set("type", "news");
+            if (cleanSymbol) params.set("symbol", cleanSymbol);
+            if (alert.title) params.set("title", alert.title);
+            targetUrl = `/news-redirect?${params.toString()}`;
+        } else if (!targetUrl && cleanSymbol) {
+            targetUrl = `/discovery?q=${cleanSymbol}`;
         }
 
         // Title and Body text analysis for smart categorization
@@ -668,9 +687,10 @@ function formatUsdToKrwInText(text: string): string {
                 {/* Action Buttons for Disclosures / Stocks */}
                 {isDisclosure ? (
                     <div className="flex flex-wrap gap-2.5 mt-5 pt-4 border-t border-white/10">
-                        {symbol && (
+                        {cleanSymbol && (
                             <Link 
-                                href={`/stock/${symbol}`} 
+                                href={`/discovery?q=${cleanSymbol}`} 
+                                onClick={(e) => e.stopPropagation()}
                                 className="flex-1 min-w-[130px] bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                             >
                                 <Sparkles className="w-4 h-4 text-blue-400" />
@@ -678,16 +698,15 @@ function formatUsdToKrwInText(text: string): string {
                                 <ChevronRight className="w-4 h-4" />
                             </Link>
                         )}
-                        {((alert as any).dart_url || targetUrl) && ((alert as any).dart_url || targetUrl).startsWith("http") && (
-                            <a 
-                                href={(alert as any).dart_url || targetUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
+                        {(dartUrl || targetUrl) && (
+                            <Link 
+                                href={targetUrl || dartUrl} 
+                                onClick={(e) => e.stopPropagation()}
                                 className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                             >
                                 <ExternalLink className="w-4 h-4 text-gray-400" />
                                 공시 원문 보기
-                            </a>
+                            </Link>
                         )}
                     </div>
                 ) : !isPortfolio && (
@@ -700,6 +719,7 @@ function formatUsdToKrwInText(text: string): string {
                         ) : defaultCta ? (
                             <Link
                                 href={defaultCta.href}
+                                onClick={(e) => e.stopPropagation()}
                                 className={`w-full py-2.5 px-4 rounded-xl border text-xs md:text-sm font-bold transition-all flex items-center justify-between shadow-sm active:scale-95 cursor-pointer ${defaultCta.style}`}
                             >
                                 <span className="flex items-center gap-2">
@@ -714,33 +734,22 @@ function formatUsdToKrwInText(text: string): string {
             </div>
         );
 
-        if (isDisclosure) {
-            return <div key={alert.id}>{cardContent}</div>;
-        }
+        // 카드 클릭 시 이동할 최종 목적지 URL (통합 대시보드로 떨어지지 않도록 정밀 계산)
+        const finalHref = targetUrl || (cleanSymbol ? `/discovery?q=${cleanSymbol}` : (defaultCta?.href || '/discovery'));
 
-        if (targetUrl) {
-            if (targetUrl.startsWith("http")) {
-                return (
-                    <a key={alert.id} href={targetUrl} target="_blank" rel="noopener noreferrer" className="block cursor-pointer">
-                        {cardContent}
-                    </a>
-                );
-            } else {
-                return (
-                    <Link key={alert.id} href={targetUrl} className="block cursor-pointer">
-                        {cardContent}
-                    </Link>
-                );
-            }
-        } else if (symbol) {
+        if (finalHref.startsWith("http")) {
             return (
-                <Link key={alert.id} href={`/stock/${symbol}`} className="block cursor-pointer">
+                <a key={alert.id} href={finalHref} target="_blank" rel="noopener noreferrer" className="block cursor-pointer">
+                    {cardContent}
+                </a>
+            );
+        } else {
+            return (
+                <Link key={alert.id} href={finalHref} className="block cursor-pointer">
                     {cardContent}
                 </Link>
             );
         }
-
-        return <div key={alert.id} className="cursor-pointer">{cardContent}</div>;
     };
 
     // Filter Navigation Tabs (관리자 로그인 시 '👑 관리자 알림' 탭 추가)

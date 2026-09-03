@@ -157,6 +157,51 @@ def sanitize_notification_text(title: str, body: str):
     return clean_title, clean_body
 
 
+
+def resolve_click_url(title: str, data: dict = None) -> str:
+    """
+    FCM 및 알림센터에서 알림 클릭 시 '통합 대시보드(/)'로 잘못 빠지지 않고
+    공시/뉴스 원문 또는 해당 종목 분석창(/discovery?q=종목코드)으로 정확히 이동하도록 URL을 생성합니다.
+    """
+    if not data:
+        data = {}
+
+    import urllib.parse
+
+    raw_url = str(data.get('url', '')).strip()
+    symbol = str(data.get('symbol', '')).strip()
+    clean_symbol = symbol.split('.')[0] if '.' in symbol else symbol
+    dart_url = str(data.get('dart_url', '')).strip()
+    news_url = str(data.get('news_url', '')).strip()
+    notif_title = title.split('\n')[0] if title else ''
+
+    # 1. DART 공시 원문 링크가 있는 경우 -> 경유 페이지(광고+카운트다운) 거쳐 원문 이동
+    if dart_url:
+        params = {'url': dart_url, 'type': 'disclosure'}
+        if clean_symbol: params['symbol'] = clean_symbol
+        if notif_title: params['title'] = notif_title
+        click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
+    # 2. 뉴스 기사 원문 링크가 있는 경우 -> 경유 페이지 거쳐 원문 이동
+    elif news_url:
+        params = {'url': news_url, 'type': 'news'}
+        if clean_symbol: params['symbol'] = clean_symbol
+        if notif_title: params['title'] = notif_title
+        click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
+    # 3. 명시적 url이 존재하고, 루트 메인('/')이 아닌 유의미한 상세 경로인 경우
+    elif raw_url and raw_url not in ['/', 'https://stock-trend-program.co.kr', 'https://stock-trend-program.co.kr/', 'http://stock-trend-program.co.kr', 'http://stock-trend-program.co.kr/']:
+        click_url = raw_url
+    # 4. 종목 심볼이 있는 경우 -> 통합대시보드가 아닌 해당 종목 심층 분석창(/discovery?q=코드)으로 바로 진입
+    elif clean_symbol:
+        click_url = f"/discovery?q={clean_symbol}"
+    # 5. 그 외의 경우 알림센터로 이동 (통합 대시보드로 떨어지지 않도록)
+    else:
+        click_url = "/alerts"
+
+    if click_url and not click_url.startswith('http'):
+        click_url = f'https://stock-trend-program.co.kr{click_url}'
+
+    return click_url
+
 def send_push_notification(
     token: str,
     title: str,
@@ -200,27 +245,9 @@ def send_push_notification(
             image=image_url
         )
         
-        click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
-        symbol = (data or {}).get('symbol', '')
-        
-        # [Fix] 안드로이드 묶음(하얀 네모 상자) 방지를 위한 단일 슬롯 태그 강제
+        # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
+        click_url = resolve_click_url(title, data)
         fcm_tag = 'stock-trend-live-alert'
-        
-        if alert_type in ['news_alert', 'news_naver', 'news_google', 'disclosure_alert']:
-            import urllib.parse
-            target_url = (data or {}).get('news_url', '') if alert_type != 'disclosure_alert' else (data or {}).get('dart_url', '')
-            notif_title = title.split('\n')[0] if title else ''
-            
-            # 테스트 알림 호환성을 위해 target_url이 없으면 임시 구글 링크라도 넣음
-            if not target_url: target_url = 'https://news.google.com'
-                
-            params = {'url': target_url}
-            if symbol: params['symbol'] = symbol
-            if notif_title: params['title'] = notif_title
-            click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
-
-        if click_url and not click_url.startswith('http'):
-            click_url = f'https://stock-trend-program.co.kr{click_url}'
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
@@ -344,19 +371,19 @@ def send_multicast_notification(
             else:
                 is_global = False if target_users else True
             
-            # Firestore에 알림 데이터 저장
+            # Firestore에 알림 데이터 저장 (정확한 click_url 사전 계산 저장)
+            resolved_url = resolve_click_url(title, data)
             alert_doc = {
                 "title": title,
                 "body": body,
                 "type": alert_type,
                 "timestamp": firestore.SERVER_TIMESTAMP,
                 "is_global": is_global,
-                "target_users": target_users or []
+                "target_users": target_users or [],
+                "url": resolved_url
             }
             
             if data:
-                if "url" in data:
-                    alert_doc["url"] = data["url"]
                 if "news_url" in data:
                     alert_doc["news_url"] = data["news_url"]
                 if "symbol" in data:
@@ -412,26 +439,9 @@ def send_multicast_notification(
             image=image_url
         )
         
-        click_url = (data or {}).get('url', 'https://stock-trend-program.co.kr')
-        symbol = (data or {}).get('symbol', '')
-        
-        # [Fix] 안드로이드 묶음(하얀 네모 상자) 방지를 위한 단일 슬롯 태그 강제
+        # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
+        click_url = resolve_click_url(title, data)
         fcm_tag = 'stock-trend-live-alert'
-        
-        # [Fix] 네이티브 WebPush 클릭 시에도 뉴스 속보 및 공시는 경유 페이지로 가도록 강제 처리
-        if alert_type in ['news_alert', 'news_naver', 'news_google', 'disclosure_alert']:
-            import urllib.parse
-            target_url = (data or {}).get('news_url', '') if alert_type != 'disclosure_alert' else (data or {}).get('dart_url', '')
-            notif_title = title.split('\n')[0] if title else ''
-            
-            if target_url:
-                params = {'url': target_url}
-                if symbol: params['symbol'] = symbol
-                if notif_title: params['title'] = notif_title
-                click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
-
-        if click_url and not click_url.startswith('http'):
-            click_url = f'https://stock-trend-program.co.kr{click_url}'
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
@@ -723,7 +733,7 @@ def send_topic_push(
         print(f"[Firebase] Error sending topic message: {e}")
         return {"success": False, "error": str(e)}
 
-def save_alert_to_firestore(title, body, alert_type="system_alert", url="/", is_global=True, target_users=None):
+def save_alert_to_firestore(title, body, alert_type="system_alert", url="/alerts", is_global=True, target_users=None):
     """
     푸시 발송 없이 Firestore 알림 센터에만 기록을 남깁니다.
     주로 텔레그램 공지사항 등을 웹앱 알림센터와 동기화할 때 사용합니다.

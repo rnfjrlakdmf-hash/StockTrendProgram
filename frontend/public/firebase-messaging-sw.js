@@ -1,13 +1,13 @@
 /**
  * Firebase Cloud Messaging Service Worker
- * 백그라운드 푸시 알림 처리 (SW Version: 2026.09.01-v5-multi-category)
+ * 백그라운드 푸시 알림 처리 (SW Version: 2026.09.03-v6-navigation-fix)
  * 
- * [스마트 카테고리별 다중 알림 시스템]
+ * [스마트 카테고리별 다중 알림 시스템 & 원클릭 타겟 링크 직행]
  * - 브리핑, 공시, 뉴스, 각 종목별 급등 알림이 서로를 지우지 않고 독립적으로 수신됩니다.
- * - 동일 종목의 연속적인 가격 변동만 깔끔하게 최신 정보로 갱신됩니다.
+ * - 알림 클릭 시 단순 통합 대시보드(/)가 아닌, 공시/뉴스 원문 또는 해당 종목 심층 분석창(/discovery?q=종목코드)으로 즉시 직행합니다.
  */
 
-const SW_VERSION = '2026.09.01-v5-multi-category';
+const SW_VERSION = '2026.09.03-v6-navigation-fix';
 
 // Firebase SDK 로드
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -27,7 +27,7 @@ const messaging = firebase.messaging();
 
 // 백그라운드 메시지 수신
 messaging.onBackgroundMessage(async (payload) => {
-    console.log('[SW] Background message received (v5 multi-category):', payload);
+    console.log('[SW] Background message received (v6 navigation fix):', payload);
 
     const notificationTitle = payload.notification?.title || payload.data?.title || '새 알림';
     const notificationBody = payload.notification?.body || payload.data?.body || '';
@@ -35,7 +35,6 @@ messaging.onBackgroundMessage(async (payload) => {
     const alertType = payload.data?.type || 'stock-alert';
 
     // 카테고리 및 종목별 독립 태그 생성:
-    // 서로 다른 종목과 서로 다른 알림(브리핑, 공시, 뉴스, 급등)은 각각 독립적으로 화면에 쌓임
     let tag;
     if (alertType === 'disclosure_alert') {
         tag = symbol ? `disc-${symbol}` : `disc-${Date.now()}`;
@@ -74,7 +73,7 @@ messaging.onBackgroundMessage(async (payload) => {
     return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// 알림 클릭 이벤트
+// 알림 클릭 이벤트 핸들러
 self.addEventListener('notificationclick', (event) => {
     console.log('[SW] Notification clicked:', event);
 
@@ -84,72 +83,110 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    const data = event.notification.data || {};
-    const alertType = data.type || '';
+    // FCM 내부 계층 구조 안전 언래핑
+    const rawData = event.notification.data || {};
+    const data = rawData.FCM_MSG?.data || rawData.data || rawData;
+
     const symbol = data.symbol || '';
+    const cleanSymbol = symbol ? (symbol.split('.')[0] || symbol) : '';
     const newsUrl = data.news_url || '';
     const dartUrl = data.dart_url || '';
+    const customUrl = data.url || '';
     const notifTitle = event.notification.body?.split('\n')[0] || '';
 
     let targetUrl;
 
-    if (event.action === 'view_stock' && symbol) {
-        targetUrl = `/stock/${symbol}`;
+    // 액션 버튼 클릭에 따른 스마트 분기
+    if (event.action === 'view_stock' && cleanSymbol) {
+        targetUrl = `/discovery?q=${cleanSymbol}`;
     } else if (event.action === 'view_doc') {
-        if (dartUrl) {
-            targetUrl = dartUrl;
-        } else if (newsUrl) {
-            targetUrl = newsUrl;
-        } else {
-            targetUrl = data.url || '/alerts';
-        }
-    } else if (alertType === 'disclosure_alert' || alertType === 'whale_alert') {
         if (dartUrl) {
             const params = new URLSearchParams();
             params.set('url', dartUrl);
             params.set('type', 'disclosure');
-            if (symbol) params.set('symbol', symbol);
+            if (cleanSymbol) params.set('symbol', cleanSymbol);
             if (notifTitle) params.set('title', notifTitle);
             targetUrl = `/news-redirect?${params.toString()}`;
-        } else {
-            targetUrl = data.url || '/alerts';
-        }
-    } else if (alertType === 'news_alert') {
-        if (newsUrl) {
+        } else if (newsUrl) {
             const params = new URLSearchParams();
             params.set('url', newsUrl);
-            if (symbol) params.set('symbol', symbol);
+            params.set('type', 'news');
+            if (cleanSymbol) params.set('symbol', cleanSymbol);
             if (notifTitle) params.set('title', notifTitle);
             targetUrl = `/news-redirect?${params.toString()}`;
+        } else if (cleanSymbol) {
+            targetUrl = `/discovery?q=${cleanSymbol}`;
         } else {
-            targetUrl = data.url || '/alerts';
+            targetUrl = '/alerts';
         }
+    } 
+    // 기본 알림 본체 클릭 시: 공시 원문 > 뉴스 원문 > 종목 심층 분석 > 알림센터 순으로 정밀 타겟팅
+    else if (dartUrl) {
+        const params = new URLSearchParams();
+        params.set('url', dartUrl);
+        params.set('type', 'disclosure');
+        if (cleanSymbol) params.set('symbol', cleanSymbol);
+        if (notifTitle) params.set('title', notifTitle);
+        targetUrl = `/news-redirect?${params.toString()}`;
+    } else if (newsUrl) {
+        const params = new URLSearchParams();
+        params.set('url', newsUrl);
+        params.set('type', 'news');
+        if (cleanSymbol) params.set('symbol', cleanSymbol);
+        if (notifTitle) params.set('title', notifTitle);
+        targetUrl = `/news-redirect?${params.toString()}`;
+    } else if (customUrl && customUrl !== '/' && !customUrl.endsWith('stock-trend-program.co.kr') && !customUrl.endsWith('stock-trend-program.co.kr/')) {
+        targetUrl = customUrl;
+    } else if (cleanSymbol) {
+        targetUrl = `/discovery?q=${cleanSymbol}`;
     } else {
-        targetUrl = data.url || '/alerts';
+        targetUrl = '/alerts';
     }
 
     const isSameOrigin = targetUrl.startsWith('/') || targetUrl.startsWith(self.location.origin);
     const fullUrl = isSameOrigin ? new URL(targetUrl, self.location.origin).href : targetUrl;
     const baseOrigin = self.location.origin;
 
-    // 앱 열기 또는 포커스
+    console.log('[SW] Navigating to targetUrl:', targetUrl, 'fullUrl:', fullUrl);
+
+    // 앱 열기 또는 포커스 및 네비게이션 강제
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then((clientList) => {
+            .then(async (clientList) => {
                 if (!isSameOrigin) {
-                    return clients.openWindow(fullUrl);
+                    if (clients.openWindow) return clients.openWindow(fullUrl);
+                    return;
                 }
 
+                // 이미 사이트가 열려 있는 탭 검색
                 const existingClient = clientList.find(client =>
-                    client.url.startsWith(baseOrigin)
+                    client.url && client.url.startsWith(baseOrigin)
                 );
 
-                if (existingClient && 'focus' in existingClient) {
-                    return existingClient.focus().then(() => {
-                        return existingClient.navigate(fullUrl);
+                if (existingClient) {
+                    // 브라우저 네이티브 창 이동 시도
+                    try {
+                        if ('navigate' in existingClient) {
+                            await existingClient.navigate(fullUrl);
+                        }
+                    } catch (navErr) {
+                        console.warn('[SW] client.navigate() error, will use postMessage fallback:', navErr);
+                    }
+
+                    // 탭 포커스 활성화
+                    if ('focus' in existingClient) {
+                        await existingClient.focus();
+                    }
+
+                    // SPA 환경에서 router 이동을 100% 보장하기 위해 포스트 메시지 브로드캐스트
+                    existingClient.postMessage({
+                        type: 'FCM_NAVIGATE',
+                        url: fullUrl
                     });
+                    return;
                 }
 
+                // 열려 있는 탭이 없으면 새 창으로 열기
                 if (clients.openWindow) {
                     return clients.openWindow(fullUrl);
                 }

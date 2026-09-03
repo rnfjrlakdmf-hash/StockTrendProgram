@@ -49,7 +49,11 @@ function NewsRedirectContent() {
 
     useEffect(() => {
         if (!decodedUrl) {
-            router.replace('/discovery');
+            if (symbol) {
+                router.replace(`/discovery?q=${symbol}`);
+            } else {
+                router.replace('/alerts');
+            }
             return;
         }
 
