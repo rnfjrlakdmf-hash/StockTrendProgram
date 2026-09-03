@@ -1131,15 +1131,15 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                         market_status = "장마감"
                     else:
                         hm = now.strftime("%H%M")
-                        if "0830" <= hm < "0840":
-                            market_status = "장전시간외"
-                        elif "0840" <= hm < "0900":
+                        if "0800" <= hm < "0850":
+                            market_status = "프리마켓"
+                        elif "0850" <= hm < "0900":
                             market_status = "동시호가"
-                        elif "0900" <= hm < "1530":
+                        elif "0900" <= hm < "1520":
                             market_status = "장중"
-                        elif "1530" <= hm < "1540":
+                        elif "1520" <= hm < "1540":
                             market_status = "동시호가"
-                        elif "1540" <= hm < "1800":
+                        elif "1540" <= hm < "2000":
                             market_status = "시간외단일가"
                         else:
                             market_status = "장마감"

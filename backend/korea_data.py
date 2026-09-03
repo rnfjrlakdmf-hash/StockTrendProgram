@@ -415,8 +415,12 @@ def gather_naver_stock_data(symbol: str):
 
         if is_weekend:
             market_status = "휴장 (주말)"
-        elif 900 <= current_time_num <= 1530:
+        elif 800 <= current_time_num < 850:
+            market_status = "프리마켓"
+        elif 900 <= current_time_num <= 1520:
             market_status = "장중"
+        elif 1540 <= current_time_num < 2000:
+            market_status = "시간외단일가"
         else:
             market_status = "장마감"
 
