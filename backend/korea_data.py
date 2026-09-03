@@ -510,10 +510,19 @@ def gather_naver_stock_data(symbol: str):
                             ov_p = float(ov_p_str) if ov_p_str else 0.0
                             ov_r_str = str(m_info.get('fluctuationsRatio', '0')).replace('%', '').strip()
                             ov_r = float(ov_r_str) if ov_r_str else 0.0
+                            
+                            ov_val = None
+                            if m_info.get('fluctuations'):
+                                try: ov_val = float(str(m_info.get('fluctuations')).replace(',', ''))
+                                except: pass
+                            if ov_val is None and prev_close and ov_p > 0:
+                                ov_val = ov_p - prev_close
+
                             if ov_p > 0:
                                 nxt_data = {
                                     "price": f"{ov_p:,.0f}",
-                                    "change_pct": ov_r
+                                    "change_pct": ov_r,
+                                    "change_val": ov_val or (ov_p - prev_close if prev_close else 0)
                                 }
                         except Exception:
                             pass
@@ -1379,7 +1388,8 @@ def get_naver_stock_info(symbol: str):
                             "market_status": market_status,
                             "nxt_data": {
                                 "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
-                                "change_pct": float(m_info.get('fluctuationsRatio', 0))
+                                "change_pct": float(m_info.get('fluctuationsRatio', 0)),
+                                "change_val": float(str(m_info.get('fluctuations', 0)).replace(',', '')) if m_info.get('fluctuations') else None
                             } if m_info.get('overPrice') else None
                         }
         except Exception as e:

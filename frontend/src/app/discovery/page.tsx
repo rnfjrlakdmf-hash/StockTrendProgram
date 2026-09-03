@@ -1465,10 +1465,24 @@ function DiscoveryContent() {
                                                             {(() => {
                                                                 let val = extendedHours?.extended?.change;
                                                                 let pct = extendedHours?.extended?.change_pct;
-                                                                if (val === undefined) {
+                                                                if (val === undefined || val === 0) {
                                                                     const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
                                                                     val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
                                                                     pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                                    
+                                                                    // [Fix] 변동 금액(val)이 0으로 집계된 경우 시간외가격과 전일종가 차이로 자동 계산
+                                                                    if (!val || val === 0) {
+                                                                        const extP = Number(String(
+                                                                            extendedHours?.extended?.price || 
+                                                                            (stock.is_extended_hours && stock.extended_price ? stock.extended_price : (nxt?.price || 0))
+                                                                        ).replace(/[^0-9.]/g, ''));
+                                                                        const prevClose = Number(stock.details?.prev_close || stock.regular_close || 0);
+                                                                        if (extP > 0 && prevClose > 0) {
+                                                                            val = extP - prevClose;
+                                                                        } else if (prevClose > 0 && pct) {
+                                                                            val = Math.round(prevClose * (pct / 100));
+                                                                        }
+                                                                    }
                                                                 }
                                                                 const isUp = (val || 0) > 0;
                                                                 const isDown = (val || 0) < 0;
@@ -1476,7 +1490,7 @@ function DiscoveryContent() {
                                                                     <span className={`text-xs font-black font-mono px-2 py-0.5 rounded-lg border ${
                                                                         isUp ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' : isDown ? 'text-blue-400 bg-blue-500/10 border-blue-500/30' : 'text-zinc-400 bg-zinc-800 border-zinc-700'
                                                                     }`}>
-                                                                        {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString()} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
+                                                                        {isUp ? '▲ ' : isDown ? '▼ ' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
                                                                     </span>
                                                                 );
                                                             })()}
