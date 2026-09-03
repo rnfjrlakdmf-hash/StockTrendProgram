@@ -1775,9 +1775,24 @@ function DiscoveryContent() {
                                                 <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
-                                                        {typeof stock.details?.forward_eps === 'number'
-                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : '-'}
+                                                        {(() => {
+                                                            if (typeof stock.details?.forward_eps === 'number' && stock.details.forward_eps > 0) {
+                                                                return `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.forward_eps.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`;
+                                                            }
+                                                            // 추정 PER과 현재가가 있으면 시장 내재 예상 EPS 자동 역산
+                                                            const curP = parseFloat(String(stock.price || '0').replace(/[^0-9.]/g, ''));
+                                                            const fwdPe = typeof stock.details?.forward_pe === 'number' ? stock.details.forward_pe : 0;
+                                                            if (curP > 0 && fwdPe > 0) {
+                                                                const impliedFwdEps = Math.round(curP / fwdPe);
+                                                                return (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <span>{stock.currency === 'KRW' ? '₩' : '$'}{impliedFwdEps.toLocaleString()}</span>
+                                                                        <span className="text-[9px] font-bold text-indigo-300 bg-indigo-500/20 px-1 py-0.2 rounded font-sans">추정치</span>
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return <span className="text-zinc-500 text-xs font-bold font-sans">컨센서스 없음</span>;
+                                                        })()}
                                                     </div>
                                                     <div className="text-[10px] text-zinc-400 font-bold mt-1">미래 예상 1주당 순익</div>
                                                 </div>
@@ -1808,9 +1823,16 @@ function DiscoveryContent() {
                                                 <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="주당배당금 (DPS)" term="주당배당금" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
-                                                        {(typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate !== 0)
-                                                            ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`
-                                                            : (stock.dps ? `${Math.round(stock.dps).toLocaleString()}원` : '-')}
+                                                        {(() => {
+                                                            if (typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate > 0) {
+                                                                return `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.dividend_rate.toLocaleString(undefined, { maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}`;
+                                                            }
+                                                            if (stock.dps && Number(stock.dps) > 0) {
+                                                                return `${Math.round(Number(stock.dps)).toLocaleString()}원`;
+                                                            }
+                                                            // 배당을 지급하지 않는 종목
+                                                            return <span className="text-zinc-400 text-xs font-bold font-sans">0원 (무배당)</span>;
+                                                        })()}
                                                     </div>
                                                     <div className="text-[10px] text-zinc-400 font-bold mt-1">1주당 받는 현금</div>
                                                 </div>
