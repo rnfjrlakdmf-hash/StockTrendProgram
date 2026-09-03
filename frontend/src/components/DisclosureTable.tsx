@@ -8,6 +8,7 @@ import {
     Calendar, Filter, Eye
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
+import AIDisclaimer from '@/components/AIDisclaimer';
 
 // 공시 유형 분류 및 쉬운 해설 헬퍼
 function getDisclosureCategory(title: string) {
@@ -24,7 +25,7 @@ function getDisclosureCategory(title: string) {
             category: "임원·내부자 지분",
             tagColor: "bg-blue-500/20 text-blue-300 border-blue-500/40",
             icon: "👔",
-            note: "회사 핵심 임원의 자사주 매매 공시입니다. 임원의 자사주 매수는 주가 자신감의 시그널입니다."
+            note: "회사 핵심 임원의 자사주 매매 공시입니다. 임원의 자사주 취득은 책임 경영 의지를 확인하는 객관적 지표로 활용됩니다."
         };
     }
     if (title.includes("사업보고서") || title.includes("분기보고서") || title.includes("반기보고서")) {
@@ -426,7 +427,7 @@ export default function DisclosureTable({ symbol }: { symbol: string }) {
                             <span>2. 임원·주요주주 소유상황</span>
                         </div>
                         <p className="text-zinc-300 text-xs leading-relaxed">
-                            대표이사나 사내외 이사, 주요 임원진이 자사주를 1주라도 사고팔면 즉시 제출해야 합니다. 회사 내부 사정을 가장 잘 아는 <strong className="text-white">'핵심 임원의 자사주 매수'</strong>는 주가 저평가와 향후 실적 성장에 대한 강력한 신뢰 시그널로 통합니다.
+                            대표이사나 사내외 이사, 주요 임원진이 자사주를 1주라도 사고팔면 즉시 제출해야 합니다. 회사 내부 사정을 가장 잘 아는 <strong className="text-white">'핵심 임원의 자사주 보유 변동'</strong>은 책임 경영 의지와 지분 현황을 객관적으로 파악하는 지표로 활용됩니다.
                         </p>
                     </div>
 
@@ -441,6 +442,7 @@ export default function DisclosureTable({ symbol }: { symbol: string }) {
                     </div>
                 </div>
             </div>
+            <AIDisclaimer className="mt-4" isCompact={true} />
         </div>
     );
 }

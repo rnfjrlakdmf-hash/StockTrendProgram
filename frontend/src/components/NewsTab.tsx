@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import AIDisclaimer from '@/components/AIDisclaimer';
 import { 
     TrendingUp, ExternalLink, Loader2, Info, RefreshCw, 
     ShieldCheck, CheckCircle2, Sparkles, BookOpen, Layers, 
@@ -511,6 +512,7 @@ export default function NewsTab({ symbol, stockName, news, loading, onRefresh }:
                     </div>
                 </div>
             </div>
+            <AIDisclaimer className="mt-4" isCompact={true} />
         </div>
     );
 }

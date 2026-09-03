@@ -7,6 +7,7 @@ import {
     ArrowUpRight, HelpCircle, FileText, Check, ShieldAlert
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
+import AIDisclaimer from '@/components/AIDisclaimer';
 
 interface OverhangData {
     title: string;
@@ -449,6 +450,7 @@ export default function OverhangTab({ symbol, stockName }: OverhangTabProps) {
                     </div>
                 </div>
             </div>
+            <AIDisclaimer className="mt-4" isCompact={true} />
         </div>
     );
 }

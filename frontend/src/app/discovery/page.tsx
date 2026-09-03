@@ -1493,7 +1493,7 @@ function DiscoveryContent() {
                                                 <div className="text-right">
                                                     <div className="text-xs font-extrabold text-zinc-400 uppercase tracking-wider">AI 종합 진단 점수</div>
                                                     <div className="text-[11px] font-bold text-indigo-300 mt-0.5">
-                                                        {(stock.score || 0) >= 75 ? '🏆 강력 주도주 / 매수 우위' : (stock.score || 0) >= 50 ? '⚖️ 적정 밸류 / 분할 접근' : '⚠️ 변동성 주의 / 리스크 관리'}
+                                                        {(stock.score || 0) >= 75 ? '🏆 시장 주도주 / 퀀트 우수' : (stock.score || 0) >= 50 ? '⚖️ 지표 보통 / 중립 추세' : '⚠️ 변동성 확대 / 지표 주의'}
                                                     </div>
                                                 </div>
                                                 <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-emerald-400' : 'text-amber-400'} drop-shadow-[0_0_12px_rgba(52,211,153,0.3)] font-mono`}>
