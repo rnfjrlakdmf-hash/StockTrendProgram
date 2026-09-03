@@ -218,7 +218,7 @@ def run_system_health_check():
                     body=body,
                     data={"url": "/", "is_global": "false", "type": "admin_report"},
                     target_users=admin_uids,
-                    skip_db_save=True
+                    skip_db_save=False
                 )
                 print(f"[HealthSentinel] Sent alert to {len(tokens)} admin tokens.")
         except Exception as e:
