@@ -1436,8 +1436,9 @@ function DiscoveryContent() {
                                                     </div>
                                                 </div>
 
-                                                {/* 시간외 거래 가격 카드 */}
-                                                {(stock.after_market_data || stock.nxt_data || stock.is_extended_hours || extendedHours?.extended) && (
+                                                {/* 시간외 거래 가격 카드: 정규장(장중)에는 실시간 현재가에 집중하고, 장마감 후 또는 실제 시간외/야간 세션일 때만 표출 */}
+                                                {(!stock.market_status?.includes('장중') || stock.is_extended_hours) &&
+                                                (stock.after_market_data || stock.nxt_data || stock.is_extended_hours || extendedHours?.extended) && (
                                                     <div className="p-4 rounded-2xl bg-zinc-900/60 border border-white/10 shadow-lg flex flex-col gap-1.5">
                                                         <div className="flex items-center justify-between gap-3">
                                                             <span className="text-[10px] font-black text-indigo-300 uppercase tracking-wider bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded-md">

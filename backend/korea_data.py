@@ -505,27 +505,30 @@ def gather_naver_stock_data(symbol: str):
                     # 2. 시간외(After-market) 거래 데이터 안전 추출
                     m_info = item.get('overMarketPriceInfo')
                     if m_info and m_info.get('overPrice'):
-                        try:
-                            ov_p_str = str(m_info.get('overPrice', '')).replace(',', '').strip()
-                            ov_p = float(ov_p_str) if ov_p_str else 0.0
-                            ov_r_str = str(m_info.get('fluctuationsRatio', '0')).replace('%', '').strip()
-                            ov_r = float(ov_r_str) if ov_r_str else 0.0
-                            
-                            ov_val = None
-                            if m_info.get('fluctuations'):
-                                try: ov_val = float(str(m_info.get('fluctuations')).replace(',', ''))
-                                except: pass
-                            if ov_val is None and prev_close and ov_p > 0:
-                                ov_val = ov_p - prev_close
+                        session_type = m_info.get('tradingSessionType', '')
+                        # [Fix] 정규장(REGULAR_MARKET) 중에는 overPrice가 정규장 현재가를 단순 복제한 값이므로 nxt_data로 취급하지 않음
+                        if session_type != 'REGULAR_MARKET':
+                            try:
+                                ov_p_str = str(m_info.get('overPrice', '')).replace(',', '').strip()
+                                ov_p = float(ov_p_str) if ov_p_str else 0.0
+                                ov_r_str = str(m_info.get('fluctuationsRatio', '0')).replace('%', '').strip()
+                                ov_r = float(ov_r_str) if ov_r_str else 0.0
+                                
+                                ov_val = None
+                                if m_info.get('fluctuations'):
+                                    try: ov_val = float(str(m_info.get('fluctuations')).replace(',', ''))
+                                    except: pass
+                                if ov_val is None and prev_close and ov_p > 0:
+                                    ov_val = ov_p - prev_close
 
-                            if ov_p > 0:
-                                nxt_data = {
-                                    "price": f"{ov_p:,.0f}",
-                                    "change_pct": ov_r,
-                                    "change_val": ov_val or (ov_p - prev_close if prev_close else 0)
-                                }
-                        except Exception:
-                            pass
+                                if ov_p > 0:
+                                    nxt_data = {
+                                        "price": f"{ov_p:,.0f}",
+                                        "change_pct": ov_r,
+                                        "change_val": ov_val or (ov_p - prev_close if prev_close else 0)
+                                    }
+                            except Exception:
+                                pass
         except Exception as e:
             print(f"[gather_naver_stock_data] Failed to fetch real-time JSON patch: {e}")
 
@@ -1390,7 +1393,7 @@ def get_naver_stock_info(symbol: str):
                                 "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
                                 "change_pct": float(m_info.get('fluctuationsRatio', 0)),
                                 "change_val": float(str(m_info.get('fluctuations', 0)).replace(',', '')) if m_info.get('fluctuations') else None
-                            } if m_info.get('overPrice') else None
+                            } if m_info.get('overPrice') and m_info.get('tradingSessionType') != 'REGULAR_MARKET' else None
                         }
         except Exception as e:
             print(f"[get_naver_stock_info] Domestic New API failed: {e}")
