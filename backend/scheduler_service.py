@@ -963,11 +963,12 @@ def run_market_scheduler():
             day_of_week = now.weekday()
             current_date = now.strftime('%Y-%m-%d')
             
-            # [매일 실행] 자정 ~ 새벽 1시 사이 시스템 헬스체크 (1회 발송)
+            # [매일 실행] 자정 ~ 새벽 1시 사이 시스템 헬스체크 (1회 발송, 비동기 스레드 실행)
             if now.hour == 0 and current_date != last_run_health_check:
                 try:
+                    import threading
                     from system_health_check import run_system_health_check
-                    run_system_health_check()
+                    threading.Thread(target=run_system_health_check, daemon=True).start()
                 except Exception as e:
                     print(f"[Scheduler] System health check error: {e}")
                 last_run_health_check = current_date

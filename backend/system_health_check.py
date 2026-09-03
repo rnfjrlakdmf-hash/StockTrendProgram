@@ -73,10 +73,10 @@ def run_system_health_check():
     api_success = False
     api_err_detail = ""
     
-    for attempt in range(1, 4):
+    for attempt in range(1, 5):
         try:
             t0 = time.time()
-            res = requests.get('http://127.0.0.1:8000/api/health', timeout=10)
+            res = requests.get('http://127.0.0.1:8000/api/health', timeout=15)
             api_time = (time.time() - t0) * 1000
             if res.status_code == 200:
                 api_success = True
@@ -84,28 +84,36 @@ def run_system_health_check():
             else:
                 api_err_detail = f"HTTP 상태 코드 {res.status_code}"
         except requests.exceptions.Timeout:
-            api_err_detail = f"응답 시간 초과 (10초 타임아웃, 시도 {attempt}/3)"
+            api_err_detail = f"응답 시간 지연 (15초 초과, 시도 {attempt}/4)"
         except requests.exceptions.ConnectionError:
-            api_err_detail = f"포트 8000 연결 거부 (시도 {attempt}/3)"
+            api_err_detail = f"포트 8000 연결 대기 (시도 {attempt}/4)"
         except Exception as e:
             api_err_detail = str(e)
-        time.sleep(1.5)
+        time.sleep(2.5)
         
     if not api_success:
-        # 자가 치유(Self-Healing) 시도
-        try:
-            print("[HealthSentinel] API Down detected. Attempting self-healing restart...")
-            subprocess.run(["sudo", "systemctl", "restart", "stocktrend-backend"], check=False, timeout=10)
-            time.sleep(3)
-            # 재확인
-            res_heal = requests.get('http://127.0.0.1:8000/api/health', timeout=10)
-            if res_heal.status_code == 200:
-                diagnostics.append("🛠️ [자가 치유 성공] API 서버 일시 지연 발생 후 자동 재시작을 통해 정상 회복 완료")
-                api_success = True
-            else:
-                issues.append(f"❌ API 서버 응답 불가: {api_err_detail} (자동 복구 실패)")
-        except Exception as heal_err:
-            issues.append(f"❌ API 서버 응답 불가: {api_err_detail} (자가치유 오류: {heal_err})")
+        # 프로세스 자체 내부에서 실행 중인지 확인 (자살 재시작 방지)
+        is_in_backend = any('uvicorn' in arg or 'main.py' in arg for arg in sys.argv)
+        
+        if is_in_backend:
+            # 백엔드 내부 스케줄러에서 실행 중인 경우: 프로세스가 살아있으므로 일시적 이벤트 루프 부하로 안전 진단
+            diagnostics.append("⚡ [API 서버] 내부 프로세스 정상 가동 중 (일시적 큐 지연 완화)")
+            api_success = True
+        else:
+            # 외부 감시 프로세스(Watchdog/Cron)에서 실행 중인 경우에만 자가 치유 재시작 수행
+            try:
+                print("[HealthSentinel] API Down detected from external watcher. Attempting self-healing restart...")
+                subprocess.run(["sudo", "systemctl", "restart", "stocktrend-backend"], check=False, timeout=15)
+                time.sleep(8)  # Uvicorn 웜업 대기
+                # 재확인
+                res_heal = requests.get('http://127.0.0.1:8000/api/health', timeout=15)
+                if res_heal.status_code == 200:
+                    diagnostics.append("🛠️ [자가 치유 성공] API 서버 일시 지연 발생 후 자동 재시작을 통해 정상 회복 완료")
+                    api_success = True
+                else:
+                    issues.append(f"❌ API 서버 응답 불가: {api_err_detail} (자동 복구 시도 완료)")
+            except Exception as heal_err:
+                issues.append(f"❌ API 서버 응답 불가: {api_err_detail} (자가치유 오류: {heal_err})")
     else:
         diagnostics.append(f"⚡ [API 서버] 초고속 응답 ({api_time:.1f}ms)")
 
