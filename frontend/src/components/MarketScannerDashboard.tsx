@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Activity, Radio, AlertCircle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from 'lucide-react';
+import { Activity, Radio, AlertCircle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, ExternalLink, Clock, FileText } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from './KakaoShareButton';
 import { MarketScannerSkeleton } from './SkeletonCard';
@@ -197,6 +197,25 @@ export default function MarketScannerDashboard() {
                 </div>
             </div>
         );
+    };
+
+    const getDisclosureCategory = (title: string) => {
+        if (title.includes('수주') || title.includes('계약') || title.includes('공급') || title.includes('MOU')) {
+            return { label: '대규모 수주·공급계약', icon: '💎', color: 'text-amber-300 bg-amber-500/10 border-amber-500/20' };
+        }
+        if (title.includes('유상증자') || title.includes('전환사채') || title.includes('CB') || title.includes('BW') || title.includes('감자')) {
+            return { label: '자본변동·CB발행', icon: '⚠️', color: 'text-rose-300 bg-rose-500/10 border-rose-500/20' };
+        }
+        if (title.includes('무상증자') || title.includes('배당') || title.includes('자사주') || title.includes('소각')) {
+            return { label: '주주환원·자사주', icon: '🎁', color: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20' };
+        }
+        if (title.includes('지분') || title.includes('매집') || title.includes('최대주주') || title.includes('공개매수') || title.includes('합병') || title.includes('취득') || title.includes('처분')) {
+            return { label: '지분변동·M&A', icon: '🏢', color: 'text-blue-300 bg-blue-500/10 border-blue-500/20' };
+        }
+        if (title.includes('실적') || title.includes('잠정') || title.includes('영업익') || title.includes('매출')) {
+            return { label: '잠정실적 공시', icon: '📊', color: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20' };
+        }
+        return { label: '핵심 시장 공시', icon: '📑', color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' };
     };
 
     const getNewsBadge = (title: string) => {
@@ -404,57 +423,88 @@ export default function MarketScannerDashboard() {
                 </div>
             </div>
 
-            {/* 3. 특이 공시 속보 (Breaking Disclosures) */}
-            <div className="bg-zinc-900/80 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl backdrop-blur-md">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 pb-3 border-b border-white/5">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <Radio className={`w-4 h-4 text-red-500 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
-                            <h3 className="text-sm md:text-base font-black text-white">특이 공시 속보</h3>
+            {/* 3. 특이 공시 속보 (Breaking Disclosures) - Executive Radar */}
+            <div className="bg-zinc-950/80 border border-white/10 rounded-3xl p-5 md:p-6 shadow-2xl backdrop-blur-xl">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 pb-4 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                        <div className="relative p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                            <Radio className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : 'animate-pulse'}`} />
+                            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                            유상증자·수주·계약 등 시장에 영향력 있는 핵심 공시를 신속 포착합니다.
-                        </p>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm md:text-base font-black text-white tracking-tight">실시간 특이 공시 속보 레이더</h3>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                    LIVE DART
+                                </span>
+                            </div>
+                            <p className="text-xs text-zinc-400 mt-0.5">
+                                유상증자 · 대규모 수주계약 · CB발행 · 지분변동 등 주가 변동성을 촉발하는 핵심 공시 전산 포착
+                            </p>
+                        </div>
                     </div>
+
                     {lastUpdated && (
-                        <span className="text-[11px] text-gray-400 font-mono flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 self-start sm:self-auto">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>{lastUpdated} 기준</span>
+                        <span className="text-[11px] text-zinc-400 font-mono flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 self-start sm:self-auto">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>{lastUpdated} 기준 수신</span>
                         </span>
                     )}
                 </div>
                 
                 {Array.isArray(data.disclosures) && data.disclosures.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {data.disclosures.slice(0, 9).map((item, idx) => (
-                            <a
-                                key={idx}
-                                href={item.link}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex flex-col justify-between p-3.5 rounded-2xl bg-black/30 hover:bg-white/5 border border-white/5 hover:border-white/15 transition-all group h-full shadow-sm"
-                            >
-                                <div>
-                                    <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono mb-2">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-amber-300/90 font-bold px-1.5 py-0.5 bg-amber-400/10 rounded-md border border-amber-400/20">
-                                                {item.press}
-                                            </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        {data.disclosures.slice(0, 6).map((item, idx) => {
+                            const cat = getDisclosureCategory(item.title);
+                            const redirectUrl = `/news-redirect?target=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.press || '공시정보')}`;
+
+                            return (
+                                <a
+                                    key={idx}
+                                    href={redirectUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex flex-col justify-between p-4 rounded-2xl bg-zinc-900/60 hover:bg-zinc-900 border border-white/5 hover:border-amber-500/40 transition-all duration-200 group h-full shadow-sm hover:shadow-xl relative overflow-hidden"
+                                >
+                                    <div>
+                                        {/* 상단 뱃지 라인 */}
+                                        <div className="flex justify-between items-center text-[10px] font-mono mb-2.5">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className={`px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 ${cat.color}`}>
+                                                    <span>{cat.icon}</span>
+                                                    <span>{cat.label}</span>
+                                                </span>
+                                                {item.press && (
+                                                    <span className="text-zinc-400 font-medium px-1.5 py-0.5 bg-white/5 rounded border border-white/5">
+                                                        {item.press}
+                                                    </span>
+                                                )}
+                                            </div>
                                             {getNewsBadge(item.title)}
                                         </div>
-                                        <span className="text-gray-500 bg-white/5 px-2 py-0.5 rounded-md">{item.date}</span>
+
+                                        {/* 공시 헤드라인 */}
+                                        <h4 className="text-xs md:text-sm font-bold text-zinc-100 group-hover:text-amber-300 leading-snug transition-colors line-clamp-2 mb-3">
+                                            {item.title}
+                                        </h4>
                                     </div>
-                                    <h4 className="text-xs md:text-sm font-bold text-gray-200 group-hover:text-amber-300 leading-snug transition-colors line-clamp-2">
-                                        {item.title}
-                                    </h4>
-                                </div>
-                            </a>
-                        ))}
+
+                                    {/* 하단 푸터 라인 */}
+                                    <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-500">
+                                        <span className="font-mono">{item.date || '오늘'}</span>
+                                        <div className="flex items-center gap-1 text-zinc-400 group-hover:text-amber-400 transition-colors font-medium text-[11px]">
+                                            <span>원문 확인</span>
+                                            <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                        </div>
+                                    </div>
+                                </a>
+                            );
+                        })}
                     </div>
                 ) : (
-                    <div className="py-10 flex flex-col items-center justify-center text-gray-500 text-xs space-y-2 bg-black/20 rounded-2xl border border-white/5">
-                        <AlertCircle className="w-6 h-6 opacity-40" />
-                        <p>현재 포착된 특이 공시가 없습니다.</p>
+                    <div className="py-12 flex flex-col items-center justify-center text-zinc-500 text-xs space-y-2 bg-black/20 rounded-2xl border border-white/5">
+                        <AlertCircle className="w-7 h-7 opacity-40 text-zinc-500" />
+                        <p>현재 시장에 영향력이 큰 특이 공시가 감지되지 않았습니다.</p>
                     </div>
                 )}
             </div>

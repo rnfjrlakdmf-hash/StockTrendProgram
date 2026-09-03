@@ -16,7 +16,7 @@ def get_market_news():
     import sys
     
     def fetch_naver_category(cat):
-        url = f"https://m.stock.naver.com/api/news/list?category={cat}&pageSize=5"
+        url = f"https://m.stock.naver.com/api/news/list?category={cat}&pageSize=6"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
@@ -28,9 +28,9 @@ def get_market_news():
                     {
                         "title": item.get("tit", "").replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">"),
                         "link": f"https://n.news.naver.com/mnews/article/{item.get('oid')}/{item.get('aid')}",
-                        "publisher": item.get("ohnm"),
+                        "publisher": item.get("ohnm") or "주요 언론사",
                         "time": item.get("dt", "")[:8],
-                    } for item in data
+                    } for item in data[:6]
                 ]
         except: pass
         return []
@@ -49,14 +49,27 @@ def get_market_news():
                 root = ET.fromstring(response.read())
                 items = root.find('channel').findall('item')
                 
-                return [
-                    {
-                        "title": item.find('title').text if item.find('title') is not None else "",
-                        "link": item.find('link').text if item.find('link') is not None else "",
-                        "publisher": "Google News",
-                        "time": item.find('pubDate').text[:16] if item.find('pubDate') is not None else ""
-                    } for item in items[:5]
-                ]
+                result = []
+                for item in items[:6]:
+                    raw_title = item.find('title').text if item.find('title') is not None else ""
+                    raw_link = item.find('link').text if item.find('link') is not None else ""
+                    raw_time = item.find('pubDate').text[:16] if item.find('pubDate') is not None else ""
+                    
+                    # Extract real publisher from title (e.g. "Headline... - 한국경제")
+                    publisher = "글로벌 특보"
+                    clean_title = raw_title
+                    if " - " in raw_title:
+                        parts = raw_title.rsplit(" - ", 1)
+                        clean_title = parts[0].strip()
+                        publisher = parts[1].strip()
+                        
+                    result.append({
+                        "title": clean_title,
+                        "link": raw_link,
+                        "publisher": publisher,
+                        "time": raw_time
+                    })
+                return result
         except:
             return []
 

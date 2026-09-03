@@ -3453,15 +3453,15 @@ def get_live_disclosures():
             if is_target:
                 results.append(item)
 
-        # 3개가 나오도록 설정 (유저 요청)
-        if len(results) < 3:
+        # 4~6개가 나오도록 설정 (그리드 레이아웃 최적화)
+        if len(results) < 6:
             for item in fallback_results:
                 if item not in results:
                     results.append(item)
-                if len(results) >= 3:
+                if len(results) >= 6:
                     break
         
-        results = results[:3]
+        results = results[:6]
 
     except Exception as e:
         print(f"Live Disclosures fetch error: {e}")
