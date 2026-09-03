@@ -1908,7 +1908,7 @@ function DiscoveryContent() {
                                 
 
                                 {/* Detailed Analysis Text */}
-                                <div className="rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border border-white/10 p-5 md:p-8 shadow-2xl relative">
+                                <div className="rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border border-white/10 p-3.5 sm:p-5 md:p-8 shadow-2xl relative overflow-hidden">
                                     {/* Tab Navigation */}
                                     <div className="flex items-center gap-2 p-1.5 bg-zinc-950/90 backdrop-blur-xl border border-white/10 rounded-2xl mb-7 overflow-x-auto scrollbar-none shadow-2xl">
                                         <button
