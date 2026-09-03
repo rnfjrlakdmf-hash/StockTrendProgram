@@ -156,7 +156,7 @@ export default function FlipIndexTicker() {
                 .animate-ticker-marquee {
                     display: flex !important;
                     width: max-content !important;
-                    animation: ticker-marquee 45s linear infinite !important;
+                    animation: ticker-marquee 24s linear infinite !important;
                     will-change: transform;
                 }
                 .animate-ticker-marquee:hover {
