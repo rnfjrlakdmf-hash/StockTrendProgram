@@ -1,5 +1,5 @@
 import React from 'react';
-import { Minus, ChevronRight, Trash2, Shield } from 'lucide-react';
+import { Minus, ChevronRight, Trash2, Shield, Sparkles, Pencil, TrendingUp, TrendingDown } from 'lucide-react';
 import BlinkingPrice from './BlinkingPrice';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from '@/components/KakaoShareButton';
@@ -151,6 +151,15 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
 
                 const textColorClass = isPositive ? 'text-rose-400' : isNegative ? 'text-sky-400' : 'text-gray-300';
                 
+                const curPriceNum = parseFloat(String(item.price || '0').replace(/[^0-9.]/g, ''));
+                let upsidePct: number | null = null;
+                if (item.proInsights?.target_price && curPriceNum > 0) {
+                    const targetPriceNum = parseFloat(String(item.proInsights.target_price).replace(/[^0-9.]/g, ''));
+                    if (targetPriceNum > 0) {
+                        upsidePct = ((targetPriceNum - curPriceNum) / curPriceNum) * 100;
+                    }
+                }
+                
                 return (
                     <div
                         key={item.symbol}
@@ -253,9 +262,16 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                             <BadgeTooltip
                                                 title="증권사 리서치 평균 목표주가"
                                                 desc={`국내 증권사 리서치센터 애널리스트들의 최근 3개월 평균 목표주가(컨센서스) 집계치입니다. (공개 통계 자료)`}
-                                                badgeClass="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
+                                                badgeClass="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"
                                             >
-                                                🎯 증권사 목표가 {item.proInsights.target_price}원
+                                                <span>🎯 증권사 목표가 {item.proInsights.target_price}원</span>
+                                                {upsidePct !== null && (
+                                                    <span className={`font-mono text-[10px] font-black px-1.5 py-0.5 rounded ${
+                                                        upsidePct > 0 ? 'bg-purple-500/30 text-purple-200' : 'bg-zinc-800 text-zinc-400'
+                                                    }`}>
+                                                        {upsidePct > 0 ? `+${upsidePct.toFixed(1)}%` : `${upsidePct.toFixed(1)}%`}
+                                                    </span>
+                                                )}
                                             </BadgeTooltip>
                                         )}
                                         {item.proInsights.per && item.proInsights.per !== 'N/A' && (
@@ -292,7 +308,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         return (
                                             <div 
                                                 key={p.id || idx} 
-                                                className={`flex items-center gap-3 px-3.5 py-2 rounded-2xl border transition-all hover:border-white/20 cursor-pointer bg-zinc-950/70 shadow-sm`}
+                                                className="flex items-center gap-3 px-3.5 py-2 rounded-2xl border border-white/10 hover:border-blue-500/40 cursor-pointer bg-zinc-950/80 hover:bg-zinc-900/90 shadow-md transition-all group/chip"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     if (onEditAddedPrice) onEditAddedPrice(item.symbol, p.buy_price, p.quantity);
@@ -300,10 +316,13 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                 title="클릭하여 매수 단가 및 수량 수정"
                                             >
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] text-gray-500 font-bold">
-                                                        {item.purchases && item.purchases.length > 1 ? `${idx+1}차 매수` : '매수단가'}
-                                                        {p.quantity > 0 ? ` (${p.quantity.toLocaleString()}주)` : ''}
-                                                    </span>
+                                                    <div className="flex items-center gap-1 text-[10px] text-zinc-400 font-bold">
+                                                        <span>{item.purchases && item.purchases.length > 1 ? `${idx+1}차 매수` : '내 매수단가'}</span>
+                                                        {p.quantity > 0 && (
+                                                            <span className="text-zinc-300 font-mono">({p.quantity.toLocaleString()}주)</span>
+                                                        )}
+                                                        <Pencil className="w-2.5 h-2.5 text-zinc-500 group-hover/chip:text-blue-400 transition-colors ml-0.5" />
+                                                    </div>
                                                     <span className="text-xs md:text-sm font-black font-mono text-white">
                                                         {currencySign}
                                                         {isUSD ? p.buy_price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : p.buy_price.toLocaleString()}
@@ -427,7 +446,22 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                             </div>
 
                             {/* 4. Action Buttons (Rightmost) */}
-                            <div className="flex items-center gap-2 shrink-0 pl-1 md:pl-2">
+                            <div className="flex items-center gap-1.5 shrink-0 pl-1 md:pl-2">
+                                {/* AI 정밀 분석 직행 버튼 */}
+                                <button
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const cleanSym = item.symbol ? (item.symbol.split('.')[0] || item.symbol) : item.symbol;
+                                        window.location.href = `/discovery?q=${cleanSym}`;
+                                    }}
+                                    className="hidden sm:flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-2xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    title="AI 정밀 진단 & 차트 분석"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                                    <span>AI 분석</span>
+                                </button>
                                 {onAlertClick && (
                                     <button 
                                         onPointerDown={(e) => e.stopPropagation()}

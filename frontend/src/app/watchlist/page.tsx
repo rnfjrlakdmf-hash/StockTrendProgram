@@ -10,6 +10,8 @@ import WatchlistPurchaseModal from "@/components/WatchlistPurchaseModal";
 import AdBanner from "@/components/AdBanner";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
+import AIDisclaimer from "@/components/AIDisclaimer";
+import { Plus, Wallet, TrendingUp, TrendingDown, ArrowUpRight, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { isFreeModeEnabled } from "@/lib/adminMode";
 
@@ -288,7 +290,36 @@ export default function WatchlistPage() {
             }, 10000);
             // CB 알림은 5분마다 (API 부하 제한)
             const cbInterval = setInterval(fetchCbAlerts, 300000);
-            return () => { clearInterval(interval); clearInterval(cbInterval); };
+            // [투자금액 및 총 평가손익 실시간 계산]
+    let totalInvested = 0;
+    let totalValuation = 0;
+    let hasInvestmentData = false;
+
+    watchlist.forEach(item => {
+        const q = quotes[item.symbol];
+        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
+        
+        if (item.purchases && item.purchases.length > 0) {
+            item.purchases.forEach((p: any) => {
+                if (p.buy_price > 0 && p.quantity > 0) {
+                    totalInvested += p.buy_price * p.quantity;
+                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
+                    hasInvestmentData = true;
+                }
+            });
+        } else if (item.added_price && item.quantity) {
+            totalInvested += item.added_price * item.quantity;
+            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
+            hasInvestmentData = true;
+        }
+    });
+
+    const totalProfit = totalValuation - totalInvested;
+    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+    const isProfitPos = totalProfit > 0;
+    const isProfitNeg = totalProfit < 0;
+
+    return () => { clearInterval(interval); clearInterval(cbInterval); };
         } else {
             // 캐시가 없고 비회원인 경우에만 로딩을 끕니다.
             setLoading(false);
@@ -338,7 +369,36 @@ export default function WatchlistPage() {
         };
         fetchProInsights();
 
-        return () => clearInterval(quotesTimer);
+        // [투자금액 및 총 평가손익 실시간 계산]
+    let totalInvested = 0;
+    let totalValuation = 0;
+    let hasInvestmentData = false;
+
+    watchlist.forEach(item => {
+        const q = quotes[item.symbol];
+        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
+        
+        if (item.purchases && item.purchases.length > 0) {
+            item.purchases.forEach((p: any) => {
+                if (p.buy_price > 0 && p.quantity > 0) {
+                    totalInvested += p.buy_price * p.quantity;
+                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
+                    hasInvestmentData = true;
+                }
+            });
+        } else if (item.added_price && item.quantity) {
+            totalInvested += item.added_price * item.quantity;
+            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
+            hasInvestmentData = true;
+        }
+    });
+
+    const totalProfit = totalValuation - totalInvested;
+    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+    const isProfitPos = totalProfit > 0;
+    const isProfitNeg = totalProfit < 0;
+
+    return () => clearInterval(quotesTimer);
     }, [watchlist]);
 
     const handleRemoveItem = async (symbol: string) => {
@@ -381,43 +441,92 @@ export default function WatchlistPage() {
         return chg < 0;
     }).length;
 
+    // [투자금액 및 총 평가손익 실시간 계산]
+    let totalInvested = 0;
+    let totalValuation = 0;
+    let hasInvestmentData = false;
+
+    watchlist.forEach(item => {
+        const q = quotes[item.symbol];
+        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
+        
+        if (item.purchases && item.purchases.length > 0) {
+            item.purchases.forEach((p: any) => {
+                if (p.buy_price > 0 && p.quantity > 0) {
+                    totalInvested += p.buy_price * p.quantity;
+                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
+                    hasInvestmentData = true;
+                }
+            });
+        } else if (item.added_price && item.quantity) {
+            totalInvested += item.added_price * item.quantity;
+            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
+            hasInvestmentData = true;
+        }
+    });
+
+    const totalProfit = totalValuation - totalInvested;
+    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+    const isProfitPos = totalProfit > 0;
+    const isProfitNeg = totalProfit < 0;
+
     return (
         <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-6">
             {/* 상단 스마트 반응형 광고 */}
             <KakaoRevenueAd type="feed" />
 
-            {/* Header & Quick Summary */}
-            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-md">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-white/5">
+            {/* Header & Quick Summary - Executive Portfolio Master */}
+            <div className="bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl relative overflow-hidden">
+                {/* 상단 앰비언트 글로우 라인 */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-blue-500 to-indigo-500"></div>
+
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-6 border-b border-white/10">
                     <div>
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                            <div className="p-2.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl shadow-lg shadow-amber-500/10">
                                 <Star className="w-7 h-7 text-amber-400 fill-amber-400" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                                    MY 관심종목
-                                </h1>
-                                <p className="text-gray-400 mt-1 flex items-center gap-2 text-xs font-medium">
-                                    <RefreshCw className={`w-3.5 h-3.5 ${quotesRefreshing ? 'animate-spin text-blue-400' : ''}`} />
-                                    <span>10초 자동 갱신 · 최근 갱신: {lastUpdated.toLocaleTimeString()}</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                                        MY 관심종목
+                                    </h1>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                        실시간 포트폴리오 레이더
+                                    </span>
+                                </div>
+                                <p className="text-zinc-400 mt-1 flex items-center gap-2 text-xs font-medium">
+                                    <RefreshCw className={`w-3.5 h-3.5 ${quotesRefreshing ? 'animate-spin text-blue-400' : 'text-zinc-500'}`} />
+                                    <span>10초 자동 갱신 · 최근 동기화: {lastUpdated.toLocaleTimeString()}</span>
                                     {quotesRefreshing && <span className="text-blue-400 text-[10px] font-bold animate-pulse">실시간 수신중...</span>}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full md:w-auto">
+                    {/* 액션 버튼 그룹 */}
+                    <div className="flex items-center gap-2.5 w-full lg:w-auto flex-wrap">
+                        {/* 새 종목 발굴 & 추가 */}
+                        <Link
+                            href="/discovery"
+                            className="flex-1 lg:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition-all font-black text-xs shadow-lg shadow-blue-500/25 active:scale-95 cursor-pointer"
+                        >
+                            <Sparkles className="w-4 h-4 text-blue-200" />
+                            <span>+ 새 종목 발굴·추가</span>
+                        </Link>
+
+                        {/* 리스트 새로고침 */}
                         <button
                             onClick={() => {
                                 setLoading(true);
                                 fetchWatchlist();
                             }}
-                            className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white transition-all font-bold text-xs border border-white/10 shadow-sm active:scale-95"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700/90 text-zinc-200 hover:text-white transition-all font-bold text-xs border border-white/10 shadow-sm active:scale-95 cursor-pointer"
                         >
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                            리스트 새로고침
+                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
+                            <span>시세 즉시 갱신</span>
                         </button>
+
                         {isAdmin && (
                             <button
                                 onClick={() => {
@@ -429,7 +538,7 @@ export default function WatchlistPage() {
                                     }, null, 2);
                                     alert(`[데이터 상태 점검]\n${debugInfo}`);
                                 }}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all font-bold text-xs border border-blue-500/20"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-all font-bold text-xs border border-purple-500/20 cursor-pointer"
                             >
                                 점검
                             </button>
@@ -437,60 +546,120 @@ export default function WatchlistPage() {
                     </div>
                 </div>
 
-                {/* Stat Pills */}
+                {/* [실시간 포트폴리오 자산 종합 평가 바] (매수단가 입력 종목이 있을 때) */}
+                {hasInvestmentData && (
+                    <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-zinc-950 via-zinc-900 to-black border border-white/10 shadow-inner grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex flex-col">
+                            <span className="text-[11px] text-zinc-400 font-bold flex items-center gap-1">
+                                <Wallet className="w-3.5 h-3.5 text-zinc-500" />
+                                <span>총 투자원금 (매수액)</span>
+                            </span>
+                            <span className="text-base sm:text-lg font-black font-mono text-white mt-1">
+                                ₩{Math.round(totalInvested).toLocaleString()}
+                            </span>
+                        </div>
+
+                        <div className="flex flex-col">
+                            <span className="text-[11px] text-zinc-400 font-bold flex items-center gap-1">
+                                <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+                                <span>실시간 총 평가금액</span>
+                            </span>
+                            <span className="text-base sm:text-lg font-black font-mono text-white mt-1">
+                                ₩{Math.round(totalValuation).toLocaleString()}
+                            </span>
+                        </div>
+
+                        <div className="flex flex-col col-span-2 md:col-span-2 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                            <span className="text-[11px] text-zinc-400 font-bold flex items-center justify-between">
+                                <span>총 평가손익 &amp; 수익률</span>
+                                <span className="text-[10px] text-zinc-500">실시간 체결가 기준</span>
+                            </span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-lg sm:text-xl font-black font-mono tracking-tight ${
+                                    isProfitPos ? 'text-rose-400' : isProfitNeg ? 'text-sky-400' : 'text-zinc-300'
+                                }`}>
+                                    {isProfitPos ? '+' : ''}₩{Math.round(totalProfit).toLocaleString()}
+                                </span>
+                                <span className={`text-xs sm:text-sm font-black font-mono px-2 py-0.5 rounded-lg border ${
+                                    isProfitPos 
+                                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
+                                        : isProfitNeg 
+                                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' 
+                                        : 'bg-zinc-800 text-zinc-400 border-white/10'
+                                }`}>
+                                    {isProfitPos ? '▲ +' : isProfitNeg ? '▼ ' : ''}{totalReturnRate.toFixed(2)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 4대 마켓 현황 통계 카드 */}
                 {watchlist.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
-                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
-                            <span className="text-xs text-gray-400 font-bold">보유 종목수</span>
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between hover:border-white/10 transition-colors">
+                            <span className="text-xs text-zinc-400 font-bold">보유 종목수</span>
                             <span className="text-sm md:text-base font-black font-mono text-white">{watchlist.length}개</span>
                         </div>
-                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
-                            <span className="text-xs text-rose-400 font-bold">상승 종목</span>
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between hover:border-rose-500/20 transition-colors">
+                            <span className="text-xs text-rose-400 font-bold flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                                <span>상승 종목</span>
+                            </span>
                             <span className="text-sm md:text-base font-black font-mono text-rose-400">▲ {upCount}개</span>
                         </div>
-                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between hover:border-sky-500/20 transition-colors">
                             <span className="text-xs text-sky-400 font-bold">하락 종목</span>
                             <span className="text-sm md:text-base font-black font-mono text-sky-400">▼ {downCount}개</span>
                         </div>
-                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between">
-                            <span className="text-xs text-purple-400 font-bold">가격 알림</span>
-                            <span className="text-sm md:text-base font-black font-mono text-purple-400">{alerts.length}건</span>
+                        <div className="bg-zinc-950/70 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between hover:border-purple-500/20 transition-colors">
+                            <span className="text-xs text-purple-400 font-bold">가격 감시 알림</span>
+                            <span className="text-sm md:text-base font-black font-mono text-purple-400">{alerts.length}건 등록</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Segmented Tab Navigation */}
-            <div className="flex p-1.5 bg-zinc-900 border border-white/10 rounded-2xl w-full sm:w-fit shadow-md">
+            {/* Segmented Tab Navigation - Premium Pill Style */}
+            <div className="flex p-1.5 bg-zinc-950/90 border border-white/10 rounded-2xl w-full sm:w-fit shadow-xl backdrop-blur-md gap-1">
                 <button
                     onClick={() => setActiveTab("quotes")}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
                         activeTab === "quotes" 
-                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
-                            : "text-gray-400 hover:text-gray-200"
+                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]" 
+                            : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Star className="w-4 h-4" /> 실시간 시세 ({watchlist.length})
+                    <Star className="w-4 h-4 text-amber-400" />
+                    <span>실시간 시세</span>
+                    <span className="text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
+                        {watchlist.length}
+                    </span>
                 </button>
                 <button
                     onClick={() => setActiveTab("schedules")}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
                         activeTab === "schedules" 
-                            ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
-                            : "text-gray-400 hover:text-gray-200"
+                            ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]" 
+                            : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Zap className="w-4 h-4" /> 실적/배당 캘린더
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <span>실적·배당 캘린더</span>
                 </button>
                 <button
                     onClick={() => setActiveTab("alerts")}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
                         activeTab === "alerts" 
-                            ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20" 
-                            : "text-gray-400 hover:text-gray-200"
+                            ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25 scale-[1.02]" 
+                            : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Bell className="w-4 h-4" /> 알림/공시 ({alerts.length})
+                    <Bell className="w-4 h-4 text-purple-400" />
+                    <span>알림·공시</span>
+                    <span className="text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
+                        {alerts.length}
+                    </span>
                 </button>
             </div>
 
@@ -552,7 +721,10 @@ export default function WatchlistPage() {
                                             proInsights: proInsights[item.symbol],
                                         };
                                     })}
-                                    onItemClick={(sym) => { window.location.href = `/?q=${sym}`; }}
+                                    onItemClick={(sym) => { 
+                                        const cleanSym = sym ? (sym.split('.')[0] || sym) : sym;
+                                        window.location.href = `/discovery?q=${cleanSym}`; 
+                                    }}
                                     onDelete={handleRemoveItem}
                                     onAlertClick={(symbol, price, addedPrice) => { setAlertStock({ symbol, price, addedPrice }); }}
                                     onEditAddedPrice={(symbol) => {
@@ -596,7 +768,36 @@ export default function WatchlistPage() {
                                     };
                                     const conf = typeConfig[ev.type] || { color: "gray", label: "공시", icon: "📄" };
 
-                                    return (
+                                    // [투자금액 및 총 평가손익 실시간 계산]
+    let totalInvested = 0;
+    let totalValuation = 0;
+    let hasInvestmentData = false;
+
+    watchlist.forEach(item => {
+        const q = quotes[item.symbol];
+        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
+        
+        if (item.purchases && item.purchases.length > 0) {
+            item.purchases.forEach((p: any) => {
+                if (p.buy_price > 0 && p.quantity > 0) {
+                    totalInvested += p.buy_price * p.quantity;
+                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
+                    hasInvestmentData = true;
+                }
+            });
+        } else if (item.added_price && item.quantity) {
+            totalInvested += item.added_price * item.quantity;
+            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
+            hasInvestmentData = true;
+        }
+    });
+
+    const totalProfit = totalValuation - totalInvested;
+    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+    const isProfitPos = totalProfit > 0;
+    const isProfitNeg = totalProfit < 0;
+
+    return (
                                         <div key={i} className={`p-5 rounded-2xl border bg-black/40 hover:bg-black/60 transition-all border-${conf.color}-500/20 group relative overflow-hidden`}>
                                             <div className="flex items-start justify-between mb-3">
                                                 <div className="flex items-center gap-3">
@@ -764,15 +965,8 @@ export default function WatchlistPage() {
                 )}
             </div>
 
-            {/* 유사투자자문업 법적 면책 안내 (공식 표준) */}
-            <div className="p-4 bg-zinc-950/80 border border-white/5 rounded-2xl text-[11px] text-gray-400 space-y-1">
-                <p className="font-bold text-gray-300 flex items-center gap-1.5">
-                    <span>🛡️</span> 투자 정보 법적 안내 및 유의사항
-                </p>
-                <p className="leading-relaxed text-gray-500">
-                    본 관심종목 화면에서 제공되는 수급 통계, 증권사 리서치 컨센서스 목표주가, 밸류에이션 지표 등은 공시 데이터 및 금융 시장 공개 통계를 기반으로 집계된 단순 참고 정보이며, 특정 종목의 매수·매도를 권유하거나 개별 투자 자문을 수행하지 않습니다. 모든 투자 판단 및 결과에 대한 책임은 투자자 본인에게 귀속됩니다.
-                </p>
-            </div>
+            {/* 유사투자자문업 법적 면책 안내 & 컴플라이언스 표준 고지 */}
+            <AIDisclaimer pageName="MY 관심종목" />
 
             {/* 하단 세로 배너 광고 (320x480) */}
             <div className="mt-8 flex justify-center">
