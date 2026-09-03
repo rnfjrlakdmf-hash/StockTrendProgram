@@ -290,8 +290,13 @@ function NewsRedirectContent() {
 
                 {/* 광고 영역 (하단) */}
                 <div className="mt-4 flex flex-col items-center gap-4">
-                    {/* 카카오 애드핏 (320x50) */}
-                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                    {/* 카카오 애드핏 (모바일: 300x250, PC: 728x90) */}
+                    <div className="block md:hidden">
+                        <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                    </div>
+                    <div className="hidden md:block">
+                        <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                    </div>
                     {/* 구글 애드센스 */}
                     <AdBanner adSlot="3412955102" adFormat="auto" />
                 </div>

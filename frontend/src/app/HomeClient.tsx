@@ -56,7 +56,7 @@ export default function HomeClient() {
           {/* 좌측/중앙 배너 (모바일: 320x50, PC: 728x90) */}
           <div className="flex justify-center rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-black/20 p-2">
             <div className="block md:hidden">
-              <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
             <div className="hidden md:block">
               <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />

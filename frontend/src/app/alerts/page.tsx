@@ -981,7 +981,7 @@ function formatUsdToKrwInText(text: string): string {
                             return (
                                 <React.Fragment key={alert.id}>
                                     {renderAlertCard(alert)}
-                                    {idx === 2 && (
+                                    {(idx === 2 || idx === 7) && (
                                         <div className="bg-zinc-950/80 border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center my-4 shadow-xl">
                                             <p className="text-[10px] text-zinc-500 mb-2 font-bold uppercase tracking-wider">스폰서 광고</p>
                                             <div className="block md:hidden">

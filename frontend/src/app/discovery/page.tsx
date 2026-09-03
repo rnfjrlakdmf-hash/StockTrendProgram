@@ -1071,9 +1071,9 @@ function DiscoveryContent() {
             <Header title="종목 발굴 & 데이터 분석" subtitle="실시간 기업 재무 및 핵심 수급 데이터 현황" />
 
             <div className="p-6 space-y-8">
-                {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
+                {/* 상단 통합 배너 광고 (모바일: 300x250 고수익 배너, PC: 728x90) */}
                 <div className="flex md:hidden justify-center -mt-2 mb-4">
-                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
+                    <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
                 </div>
                 <div className="hidden md:flex justify-center -mt-2 mb-4">
                     <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
@@ -2029,7 +2029,15 @@ function DiscoveryContent() {
                                     )}
                                 </div>
 
-                                
+                                {/* [광고 수익 극대화] 핵심 노출 영역 인피드 배너 (모바일: 300x250, PC: 728x90) */}
+                                <div className="flex justify-center my-4 overflow-hidden rounded-2xl bg-zinc-950/60 p-2 border border-white/10 shadow-xl">
+                                    <div className="block md:hidden">
+                                        <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+                                    </div>
+                                    <div className="hidden md:block">
+                                        <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                                    </div>
+                                </div>
 
                                 {/* Detailed Analysis Text */}
                                 <div className="rounded-3xl bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-black border border-white/10 p-3.5 sm:p-5 md:p-8 shadow-2xl relative overflow-hidden">
