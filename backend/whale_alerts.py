@@ -205,6 +205,11 @@ def check_large_holding_alerts():
 
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
+    current_time_num = now.hour * 100 + now.minute
+    if now.weekday() >= 5 or not (730 <= current_time_num < 1900):
+        print(f"[Whale Large] 야간/비영업 시간({now.strftime('%H:%M')}) - 대량보유 알림 발송 생략")
+        return
+
     today_str = now.strftime('%Y-%m-%d')
 
     state = load_state()
@@ -341,6 +346,11 @@ def check_insider_trading_alerts():
 
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
+    current_time_num = now.hour * 100 + now.minute
+    if now.weekday() >= 5 or not (730 <= current_time_num < 1900):
+        print(f"[Whale Insider] 야간/비영업 시간({now.strftime('%H:%M')}) - 내부자 알림 발송 생략")
+        return
+
     today_str = now.strftime('%Y-%m-%d')
 
     state = load_state()

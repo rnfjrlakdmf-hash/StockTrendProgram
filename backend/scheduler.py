@@ -56,9 +56,15 @@ async def check_and_notify_disclosures():
     import pytz
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
-    # 주말(토/일)은 국내 증시 휴장이므로 공시 알림 발송 스킵
+    # 1. 주말(토/일)은 국내 증시 휴장이므로 공시 알림 발송 스킵
     if now.weekday() >= 5:
         logger.debug("[공시Monitor] 주말(토/일)에는 DART 공시 알림을 발송하지 않습니다.")
+        return
+
+    # 2. [야간 소음 방지] DART 공시 업무 시간(평일 07:30 ~ 19:00) 외 야간/새벽에는 국내 공시 알림 발송 전면 차단
+    current_time_num = now.hour * 100 + now.minute
+    if not (730 <= current_time_num < 1900):
+        logger.info(f"[공시Monitor] 야간/비영업 시간({now.strftime('%H:%M')})에는 국내 DART 공시 알림을 발송하지 않습니다.")
         return
 
     from dart_api_client import dart_api_client
