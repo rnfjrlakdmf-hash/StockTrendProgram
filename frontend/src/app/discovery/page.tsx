@@ -1082,102 +1082,146 @@ function DiscoveryContent() {
                 {/* Initial View: Search, Widgets, Dashboard */}
                 {!stock && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        {/* Search / Hero Section */}
-                        <div className="relative rounded-3xl bg-gradient-to-r from-blue-950/80 via-slate-900/90 to-purple-950/80 p-5 sm:p-7 border border-white/15 shadow-2xl overflow-visible backdrop-blur-xl">
-                            <div className="relative z-20 max-w-3xl">
-                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black mb-2.5">
-                                    <Zap className="w-3.5 h-3.5 text-yellow-400" />
-                                    <span>정밀 기업 데이터 분석</span>
-                                </div>
-                                <h2 className="text-xl sm:text-2xl md:text-3xl font-black mb-1.5 text-white tracking-tight drop-shadow-md">
-                                    종목 데이터 종합 분석
-                                </h2>
-                                <p className="text-gray-300 mb-4 text-xs sm:text-sm leading-relaxed">
-                                    종목명 또는 티커(코드)를 입력하여 기업의 실시간 재무 건전성, 수급 현황, 종합 퀀트 지표를 한눈에 확인하세요.
-                                </p>
+                        {/* Search / Hero Section - Executive Institutional Terminal */}
+                        <div className="relative rounded-3xl bg-gradient-to-br from-slate-950 via-zinc-900 to-slate-950 p-6 sm:p-8 border border-white/15 shadow-2xl overflow-hidden backdrop-blur-2xl">
+                            {/* 앰비언트 배경 글로우 */}
+                            <div className="absolute -top-24 -left-24 w-96 h-96 bg-cyan-500/15 rounded-full blur-[100px] pointer-events-none" />
+                            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/15 rounded-full blur-[100px] pointer-events-none" />
+                            <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none opacity-40" />
 
-                                <div className="flex gap-2">
-                                    <div className="relative flex-1">
-                                        <input
-                                            type="text"
-                                            placeholder="종목명 또는 티커 입력... (예: 삼성전자, AAPL, NVDA)"
-                                            className="w-full rounded-2xl bg-black/60 border border-white/20 px-4 py-3 sm:py-3.5 text-sm sm:text-base outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 font-medium shadow-inner transition-all"
-                                            value={searchInput}
-                                            onChange={(e) => setSearchInput(e.target.value)}
-                                            onKeyDown={handleKeyDown}
-                                            onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                                        />
-                                        
-                                        {/* [New] Search Results Dropdown */}
-                                        {showResults && searchResults.length > 0 && (
-                                            <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-gray-900 border border-white/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[300px] overflow-y-auto">
-                                                {searchResults.map((res, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onMouseEnter={() => prefetchStock(res.symbol || res.code)}
-                                                        onClick={() => {
-                                                            setSearchInput(res.name);
-                                                            setShowResults(false);
-                                                            handleSearch(res.symbol || res.code);
-                                                        }}
-                                                        className="w-full text-left px-4 py-3 hover:bg-blue-600/30 transition-colors border-b border-white/5 last:border-b-0 flex items-center justify-between"
-                                                    >
-                                                        <div>
-                                                            <div className="font-bold text-white text-sm md:text-base">{res.name}</div>
-                                                            <div className="text-xs text-gray-400 font-mono uppercase">{res.symbol || res.code}</div>
-                                                        </div>
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                                                            res.market === 'Global' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                                                        }`}>
-                                                            {res.market}
-                                                        </span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                <div className="max-w-2xl flex-1">
+                                    {/* 상단 뱃지 & 실시간 상태 */}
+                                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-black shadow-sm">
+                                            <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                                            <span>정밀 기업 퀀트 레이더</span>
+                                        </div>
+                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-400 text-[11px] font-mono">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            <span>KRX · DART 전산 실시간 연동</span>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleSearch()}
-                                        disabled={loading}
-                                        className="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 sm:px-6 py-3 sm:py-3.5 font-black text-white hover:from-blue-500 hover:to-indigo-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-600/30 text-sm sm:text-base whitespace-nowrap active:scale-95 shrink-0"
-                                    >
-                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <span>분석 시작</span>}
-                                    </button>
-                                </div>
 
-                                {/* 빠른 검색 추천 칩 */}
-                                <div className="flex items-center gap-1.5 mt-3 flex-wrap text-xs">
-                                    <span className="text-gray-400 font-bold mr-1">추천 검색:</span>
-                                    {[
-                                        { name: "삼성전자", code: "005930" },
-                                        { name: "SK하이닉스", code: "000660" },
-                                        { name: "현대차", code: "005380" },
-                                        { name: "NVDA", code: "NVDA" },
-                                        { name: "AAPL", code: "AAPL" },
-                                        { name: "TSLA", code: "TSLA" }
-                                    ].map((item) => (
+                                    {/* 메인 타이틀 & 설명 */}
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-2 text-white tracking-tight drop-shadow-md">
+                                        종목 데이터 종합 퀀트 분석
+                                    </h2>
+                                    <p className="text-zinc-300 mb-5 text-xs sm:text-sm leading-relaxed max-w-xl">
+                                        종목명 또는 티커를 입력하여 국내외 상장 기업의 실시간 재무 건전성, DART 공시, 수급 동향 및 밸류에이션 종합 스코어를 1초 만에 확인하세요.
+                                    </p>
+
+                                    {/* 검색창 & 분석 버튼 */}
+                                    <div className="flex flex-col sm:flex-row gap-2.5">
+                                        <div className="relative flex-1">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+                                                <Search className="w-4 h-4" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="종목명 또는 티커 입력... (예: 삼성전자, 005930, NVDA)"
+                                                className="w-full rounded-2xl bg-black/70 border border-white/20 pl-11 pr-4 py-3.5 sm:py-4 text-sm sm:text-base outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 text-white placeholder-zinc-500 font-medium shadow-inner transition-all"
+                                                value={searchInput}
+                                                onChange={(e) => setSearchInput(e.target.value)}
+                                                onKeyDown={handleKeyDown}
+                                                onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                                            />
+                                            
+                                            {/* 실시간 자동완성 드롭다운 */}
+                                            {showResults && searchResults.length > 0 && (
+                                                <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-zinc-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[300px] overflow-y-auto">
+                                                    {searchResults.map((res, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            onMouseEnter={() => prefetchStock(res.symbol || res.code)}
+                                                            onClick={() => {
+                                                                setSearchInput(res.name);
+                                                                setShowResults(false);
+                                                                handleSearch(res.symbol || res.code);
+                                                            }}
+                                                            className="w-full text-left px-4 py-3 hover:bg-cyan-500/20 transition-colors border-b border-white/5 last:border-b-0 flex items-center justify-between group"
+                                                        >
+                                                            <div>
+                                                                <div className="font-bold text-white text-sm md:text-base group-hover:text-cyan-200 transition-colors">{res.name}</div>
+                                                                <div className="text-xs text-zinc-400 font-mono uppercase">{res.symbol || res.code}</div>
+                                                            </div>
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                                                res.market === 'Global' ? 'bg-orange-500/15 text-orange-300 border-orange-500/30' : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                                                            }`}>
+                                                                {res.market}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <button
-                                            key={item.code}
-                                            onClick={() => {
-                                                setSearchInput(item.name);
-                                                handleSearch(item.code);
-                                            }}
-                                            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white border border-white/10 text-[11px] font-bold transition-all"
+                                            onClick={() => handleSearch()}
+                                            disabled={loading}
+                                            className="rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:via-blue-500 hover:to-indigo-500 px-6 sm:px-7 py-3.5 sm:py-4 font-black text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 text-sm sm:text-base whitespace-nowrap active:scale-95 shrink-0"
                                         >
-                                            #{item.name}
+                                            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
+                                                <>
+                                                    <Sparkles className="w-4 h-4 text-cyan-200" />
+                                                    <span>정밀 진단 시작</span>
+                                                </>
+                                            )}
                                         </button>
-                                    ))}
+                                    </div>
+
+                                    {/* 빠른 검색 추천 칩 (국기 & 뱃지 적용) */}
+                                    <div className="flex items-center gap-2 mt-4 flex-wrap text-xs">
+                                        <span className="text-zinc-400 font-bold flex items-center gap-1">
+                                            <span>⚡ 인기 검색:</span>
+                                        </span>
+                                        {[
+                                            { name: "삼성전자", code: "005930", flag: "🇰🇷" },
+                                            { name: "SK하이닉스", code: "000660", flag: "🇰🇷" },
+                                            { name: "현대차", code: "005380", flag: "🇰🇷" },
+                                            { name: "엔비디아", code: "NVDA", flag: "🇺🇸" },
+                                            { name: "애플", code: "AAPL", flag: "🇺🇸" },
+                                            { name: "테슬라", code: "TSLA", flag: "🇺🇸" }
+                                        ].map((item) => (
+                                            <button
+                                                key={item.code}
+                                                onClick={() => {
+                                                    setSearchInput(item.name);
+                                                    handleSearch(item.code);
+                                                }}
+                                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-cyan-500/15 text-zinc-300 hover:text-cyan-200 border border-white/10 hover:border-cyan-500/30 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                                            >
+                                                <span>{item.flag}</span>
+                                                <span>{item.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {error && <p className="text-rose-400 mt-3 font-semibold bg-rose-950/50 border border-rose-500/30 p-2.5 rounded-xl text-xs inline-block">{error}</p>}
                                 </div>
 
-                                {error && <p className="text-red-400 mt-3 font-semibold bg-red-900/40 p-2 rounded-lg inline-block">{error}</p>}
-                            </div>
-                            <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-                                <ShieldCheck className="absolute right-0 top-1/2 -translate-y-1/2 h-64 w-64 text-white/5 -rotate-12" />
+                                {/* 우측 3대 팩트 인텔리전스 인포 배지 (대형 화면용 프리미엄 위젯) */}
+                                <div className="hidden lg:flex flex-col gap-2.5 shrink-0 w-72 p-4 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md">
+                                    <div className="text-xs font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                                        <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                                        <span>터미널 핵심 데이터 커버리지</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5">
+                                        <span className="text-xs text-zinc-300 font-medium">국내외 종목 커버리지</span>
+                                        <span className="text-xs font-black font-mono text-cyan-400">2,600+ 전 종목</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5">
+                                        <span className="text-xs text-zinc-300 font-medium">DART 전자공시</span>
+                                        <span className="text-xs font-black font-mono text-emerald-400">실시간 연동</span>
+                                    </div>
+                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5">
+                                        <span className="text-xs text-zinc-300 font-medium">퀀트 지표 산출</span>
+                                        <span className="text-xs font-black font-mono text-amber-400">실시간 스코어링</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Market Traffic Light & Health Check Entry */}
-                        {/* Moved into MarketScannerDashboard */}
 
                         {/* 신규: 팩트 기반 증시 스캐너 & LIVE 공시 속보 */}
                         <div className="w-full">
