@@ -1355,30 +1355,30 @@ function DiscoveryContent() {
                             {/* Main Content Area (Full Width) */}
                             <div className="w-full space-y-6">
                                 {/* Main Score Card */}
-                                <div className="rounded-3xl bg-gradient-to-b from-[#0e1628] via-[#090d1a] to-zinc-950 border border-indigo-500/25 p-6 md:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                                <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-[#0e1628] via-[#090d1a] to-zinc-950 border border-indigo-500/25 p-4 sm:p-6 md:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
                                     {/* 상단 은은한 배경 네온 조명 */}
                                     <div className="absolute top-0 right-1/4 w-96 h-32 bg-indigo-500/10 blur-3xl pointer-events-none rounded-full" />
                                     <div className="absolute top-0 left-1/4 w-96 h-32 bg-blue-500/10 blur-3xl pointer-events-none rounded-full" />
 
                                     {/* 1. 종목명 및 실시간 시세 / AI 점수 헤더 */}
-                                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-6 relative z-10">
-                                        <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 md:mb-8 gap-5 sm:gap-6 relative z-10">
+                                        <div className="flex-1 min-w-0 w-full">
                                             {/* 종목명 & 거래소 & 공유 버튼 */}
                                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                                                <div className="flex flex-wrap items-center gap-3">
-                                                    <h3 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                    <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight flex items-center gap-2">
                                                         <span>{stock.name}</span>
                                                     </h3>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-lg md:text-xl text-zinc-400 font-mono font-bold">
+                                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                                        <span className="text-sm sm:text-base md:text-xl text-zinc-400 font-mono font-bold">
                                                             {getExchangeLabel(stock.symbol).code}
                                                         </span>
                                                         {getExchangeLabel(stock.symbol).exchange && (
-                                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 ${getExchangeLabel(stock.symbol).color}`}>
+                                                            <span className={`text-[10px] sm:text-xs font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-white/10 border border-white/15 ${getExchangeLabel(stock.symbol).color}`}>
                                                                 {getExchangeLabel(stock.symbol).exchange}
                                                             </span>
                                                         )}
-                                                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                        <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                                                             {stock.currency === 'KRW' ? 'KRX 대형주' : 'GLOBAL TECH'}
                                                         </span>
                                                     </div>

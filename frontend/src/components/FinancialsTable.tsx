@@ -736,12 +736,12 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     </div>
 
                     <div className="bg-zinc-950/95 border border-white/15 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl w-full">
-                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700 w-full">
-                            <table className="w-full text-left border-collapse min-w-[620px] sm:min-w-[740px] md:min-w-full">
+                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700 w-full touch-pan-x">
+                            <table className="w-full text-left border-collapse min-w-[540px] sm:min-w-[700px] md:min-w-full">
                                 <thead>
                                     <tr className="bg-[#0b1020] border-b border-white/10">
-                                        <th className="py-2.5 sm:py-3 px-2.5 sm:px-4 md:px-5 sticky left-0 bg-[#0b1020] z-30 w-32 sm:w-40 md:w-48 border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)]">
-                                            <span className="text-[11px] sm:text-xs md:text-sm font-black uppercase text-zinc-300 tracking-wider">주요 재무 지표</span>
+                                        <th className="py-2 sm:py-3 px-2 sm:px-4 md:px-5 sticky left-0 bg-[#0b1020] z-30 w-24 sm:w-36 md:w-48 border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)]">
+                                            <span className="text-[10px] sm:text-xs md:text-sm font-black uppercase text-zinc-300 tracking-wider">주요 재무 지표</span>
                                         </th>
                                     <th colSpan={annualDates.length} className="py-2.5 px-3 text-xs md:text-sm font-black uppercase tracking-wider text-emerald-300 text-center border-b border-emerald-500/40 bg-emerald-950/30">
                                         📊 연간 실적 (Yearly Performance)
@@ -753,7 +753,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                     )}
                                 </tr>
                                 <tr className="border-b-2 border-indigo-500/40 bg-[#0e162e] text-xs">
-                                    <th className="py-2.5 sm:py-3 px-2.5 sm:px-4 md:px-5 text-zinc-300 font-extrabold uppercase tracking-wider sticky left-0 bg-[#0e162e] z-30 backdrop-blur-md w-32 sm:w-40 md:w-48 border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
+                                    <th className="py-2 sm:py-3 px-2 sm:px-4 md:px-5 text-zinc-300 font-extrabold uppercase tracking-wider sticky left-0 bg-[#0e162e] z-30 backdrop-blur-md w-24 sm:w-36 md:w-48 border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap">
                                         지표명 (단위)
                                     </th>
                                     {dates.map((date: string, idx: number) => {
@@ -762,7 +762,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                         return (
                                             <th 
                                                 key={idx} 
-                                                className={`py-3 px-2.5 md:px-3 text-center whitespace-nowrap font-black font-mono text-xs md:text-sm ${
+                                                className={`py-2.5 sm:py-3 px-1.5 sm:px-2.5 md:px-3 text-center whitespace-nowrap font-black font-mono text-[11px] sm:text-xs md:text-sm min-w-[65px] sm:min-w-[80px] ${
                                                     isEstimate(date) 
                                                         ? 'text-purple-300 bg-purple-500/15' 
                                                         : isQDate 
@@ -781,10 +781,10 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                 {displayedGroups.map((group) => (
                                     <React.Fragment key={group.title}>
                                         <tr className="bg-gradient-to-r from-[#111933] via-zinc-900 to-zinc-950 border-t-2 border-b border-white/15">
-                                            <td className="py-2.5 sm:py-3 px-2.5 sm:px-4 md:px-5 font-black text-xs md:text-sm text-amber-300 uppercase tracking-wider sticky left-0 z-20 bg-[#111933] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap w-32 sm:w-40 md:w-48">
+                                            <td className="py-2 sm:py-3 px-2 sm:px-4 md:px-5 font-black text-[11px] sm:text-xs md:text-sm text-amber-300 uppercase tracking-wider sticky left-0 z-20 bg-[#111933] border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap w-24 sm:w-36 md:w-48 truncate">
                                                 {group.title}
                                             </td>
-                                            <td colSpan={dates.length} className="py-3 px-4 text-xs md:text-sm text-zinc-400 font-medium break-keep">
+                                            <td colSpan={dates.length} className="py-2.5 sm:py-3 px-3 sm:px-4 text-[11px] sm:text-xs md:text-sm text-zinc-400 font-medium break-keep">
                                                 • {group.desc}
                                             </td>
                                         </tr>
@@ -805,22 +805,22 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                             : 'hover:bg-gradient-to-r hover:from-indigo-500/15 hover:via-purple-500/10 hover:to-transparent'
                                                     }`}
                                                 >
-                                                    <td className={`py-2.5 sm:py-3.5 px-2.5 sm:px-4 md:px-5 sticky left-0 z-20 backdrop-blur-md border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap transition-colors w-32 sm:w-40 md:w-48 ${
+                                                    <td className={`py-2 sm:py-3 px-1.5 sm:px-3 md:px-5 sticky left-0 z-20 backdrop-blur-md border-r-2 border-indigo-500/40 shadow-[4px_0_15px_rgba(0,0,0,0.8)] whitespace-nowrap transition-colors w-24 sm:w-36 md:w-48 ${
                                                         isSelected ? 'bg-[#18244a]' : 'bg-[#0d1322] group-hover:bg-[#131c33]'
                                                     }`}>
-                                                        <div className="flex items-center gap-1.5 sm:gap-2">
-                                                            <span className="text-base sm:text-lg shrink-0">{config.emoji}</span>
-                                                            <div className="truncate">
-                                                                <div className={`text-xs md:text-sm font-black transition-colors flex items-center gap-1 ${
+                                                        <div className="flex items-center gap-1 sm:gap-2">
+                                                            <span className="text-sm sm:text-base shrink-0">{config.emoji}</span>
+                                                            <div className="truncate min-w-0">
+                                                                <div className={`text-[10px] sm:text-xs md:text-sm font-black transition-colors flex items-center gap-0.5 sm:gap-1 ${
                                                                     isSelected ? 'text-amber-300' : 'text-white group-hover:text-amber-300'
                                                                 }`}>
-                                                                <span>{config.label}</span>
-                                                                <span className="text-[8px] sm:text-[9px] font-bold px-1 py-0.2 rounded bg-white/10 text-zinc-400 uppercase">
-                                                                    {config.unit}
-                                                                </span>
+                                                                    <span className="truncate">{config.label}</span>
+                                                                    <span className="text-[7px] sm:text-[9px] font-bold px-0.5 sm:px-1 py-0.2 rounded bg-white/10 text-zinc-400 uppercase shrink-0">
+                                                                        {config.unit}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
                                                 </td>
 
                                                 {metric.values.map((val: any, idx: number) => {

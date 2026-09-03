@@ -107,7 +107,7 @@ export default function FloatingQuickMenu() {
 
     return (
         <>
-        <div ref={menuRef} className="fixed bottom-24 md:bottom-6 right-4 md:right-6 z-[1000] flex flex-col items-end">
+        <div ref={menuRef} className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-40 flex flex-col items-end">
             {/* Mini Watchlist Panel */}
             <div 
                 className={`absolute bottom-16 right-16 w-72 mb-4 bg-black/80 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl shadow-[0_8px_32px_rgba(6,182,212,0.2)] overflow-hidden transition-all duration-300 transform origin-bottom-right ${
@@ -290,7 +290,7 @@ export default function FloatingQuickMenu() {
                         setIsSearchOpen(false);
                     }
                 }}
-                className={`relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500 border shadow-[0_0_30px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] ${
+                className={`relative flex items-center justify-center w-11 h-11 sm:w-13 sm:h-13 rounded-full transition-all duration-500 border shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] ${
                     isOpen 
                         ? "bg-cyan-600 border-cyan-400 rotate-45" 
                         : "bg-gradient-to-br from-cyan-500 to-blue-600 border-cyan-400/50 hover:scale-110"
@@ -298,9 +298,9 @@ export default function FloatingQuickMenu() {
             >
                 <div className="absolute inset-0 bg-white/20 rounded-full blur-md pointer-events-none" />
                 {isOpen ? (
-                    <X className="w-6 h-6 text-white relative z-10" />
+                    <X className="w-5 h-5 text-white relative z-10" />
                 ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white relative z-10">
                         <rect x="6" y="2" width="12" height="20" rx="3" />
                         <circle cx="12" cy="6.5" r="1.5" fill="currentColor" />
                         <circle cx="12" cy="12" r="2.5" />
