@@ -35,7 +35,7 @@ const navigationGroups = [
     {
         groupName: "종목 발굴 & 분석",
         items: [
-            { name: "종목 발굴 & 분석", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다.", badge: "AI" },
+            { name: "종목 발굴 & 분석", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다." },
             { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사의 실적, 부채, 밸류에이션 등 재무 건전성을 체계적으로 검사합니다." },
             { name: "기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스, 지지선/저항선, 캔들 차트 패턴을 정밀 분석합니다." },
             { name: "ETF 포트폴리오 분석", href: "/etf", icon: Activity, desc: "시장 전체나 유망 산업 분야에 분산 투자할 수 있는 ETF를 비교합니다." },
