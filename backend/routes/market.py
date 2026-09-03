@@ -402,6 +402,8 @@ def get_multi_quotes(symbols: str = Query(...)):
                     "market_status": market_status,
                     "extended_price": ext_price,
                     "extended_change": ext_change,
+                    "nxt_data": data.get("nxt_data") or data.get("after_market_data"),
+                    "after_market_data": data.get("after_market_data") or data.get("nxt_data"),
                 }
         except Exception as e:
             print(f"[MarketAPI] Failed to get multi-quote for {sym}: {e}")

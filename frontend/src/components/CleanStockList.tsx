@@ -381,16 +381,23 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                     </span>
                                 )}
 
-                                {/* 프리/에프터 가격 */}
+                                {/* 프리/에프터 및 국내 시간외 가격 */}
                                 {item.extendedPrice && (
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-[9px] text-indigo-300 font-black bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.25 rounded">
-                                            {item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER'}
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
+                                        <span className="text-[9px] text-indigo-300 font-black flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                                            {item.currency === 'KRW' ? '시간외' : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
                                         </span>
-                                        <span className={`text-[11px] font-bold font-mono ${
-                                            parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) > 0 ? 'text-rose-400' : 'text-sky-400'
+                                        <span className={`text-[11px] font-black font-mono ${
+                                            parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) > 0 ? 'text-rose-400' : 
+                                            parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) < 0 ? 'text-sky-400' : 'text-zinc-300'
                                         }`}>
-                                            {item.extendedPrice}
+                                            {item.currency === 'KRW' ? `${item.extendedPrice}원` : `$${item.extendedPrice}`}
+                                            {item.extendedChange && (
+                                                <span className="ml-1 text-[10px] font-bold">
+                                                    {item.extendedChange.includes('(') ? item.extendedChange : `(${item.extendedChange})`}
+                                                </span>
+                                            )}
                                         </span>
                                     </div>
                                 )}

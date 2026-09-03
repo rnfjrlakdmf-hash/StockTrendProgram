@@ -711,9 +711,9 @@ export default function WatchlistPage() {
                                             purchases: item.purchases,
                                             // [v2] 세션 배지 (장 상태 표시)
                                             sessionBadge: sessionBadge || undefined,
-                                            // [v2] 프리/에프터 가격
-                                            extendedPrice: data?.extended_price || null,
-                                            extendedChange: data?.extended_change || null,
+                                            // [v2] 프리/에프터 및 국내 시간외 가격
+                                            extendedPrice: data?.extended_price || (data?.nxt_data ? data.nxt_data.price : (data?.after_market_data ? data.after_market_data.price : null)),
+                                            extendedChange: data?.extended_change || (data?.nxt_data?.change_pct !== undefined ? `${data.nxt_data.change_pct > 0 ? '+' : ''}${data.nxt_data.change_pct}%` : null),
                                             // [v3] 통화 정보 (해외주식 $ 표시 + 원화 병기)
                                             currency: data?.currency || 'KRW',
                                             price_krw: data?.price_krw || null,

@@ -1147,6 +1147,23 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                     market_status = yf_info.get('market_status', '장마감')
 
                 change_val = yf_info.get('change_val') or (yf_info.get('price', 0) - yf_info.get('prev_close', 0))
+                
+                nxt_data = yf_info.get('nxt_data') or yf_info.get('after_market_data')
+                ext_price = None
+                ext_change = None
+                if nxt_data and nxt_data.get('price'):
+                    ext_price = str(nxt_data.get('price'))
+                    try:
+                        raw_nxt = float(str(ext_price).replace(',', ''))
+                        raw_reg = float(str(raw_price).replace(',', ''))
+                        if raw_reg > 0:
+                            diff_pct = ((raw_nxt - raw_reg) / raw_reg) * 100
+                            ext_change = f"{diff_pct:+.2f}%"
+                        else:
+                            ext_change = f"{nxt_data.get('change_pct', 0):+.2f}%"
+                    except:
+                        ext_change = f"{nxt_data.get('change_pct', 0):+.2f}%"
+
                 return {
                     "symbol": symbol,
                     "name": yf_info.get('name', symbol),
@@ -1161,7 +1178,11 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                     "up": change_pct_val >= 0,
                     "currency": "KRW",
                     "market_status": market_status,
-                    "raw_price": float(yf_info.get('price', 0))
+                    "raw_price": float(yf_info.get('price', 0)),
+                    "extended_price": ext_price,
+                    "extended_change": ext_change,
+                    "nxt_data": nxt_data,
+                    "after_market_data": nxt_data
                 }
         except Exception as e:
             print(f"[get_simple_quote] Legal yfinance Engine Error for {symbol}: {e}")
