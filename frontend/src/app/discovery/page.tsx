@@ -1820,7 +1820,9 @@ function DiscoveryContent() {
                                                 <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 shadow-md flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                                     <EasyTerm label="EPS (주당순이익)" term="EPS" isEasyMode={easyMode} align="right" />
                                                     <div className="font-mono font-black text-white text-base md:text-lg tracking-tight mt-2">
-                                                        {typeof stock.details?.eps === 'number' ? `${Math.round(stock.details.eps).toLocaleString()}원` : '-'}
+                                                        {typeof stock.details?.eps === 'number'
+                                                            ? `${stock.currency === 'KRW' ? '' : '$'}${stock.details.eps.toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}${stock.currency === 'KRW' ? '원' : ''}`
+                                                            : '-'}
                                                     </div>
                                                     <div className="text-[10px] text-zinc-400 font-bold mt-1">1주가 번 순이익</div>
                                                 </div>
@@ -1907,7 +1909,7 @@ function DiscoveryContent() {
                                                                 return `${Math.round(Number(stock.dps)).toLocaleString()}원`;
                                                             }
                                                             // 배당을 지급하지 않는 종목
-                                                            return <span className="text-zinc-400 text-xs font-bold font-sans">0원 (무배당)</span>;
+                                                            return <span className="text-zinc-400 text-xs font-bold font-sans">{stock.currency === 'KRW' ? '0원 (무배당)' : '$0 (무배당)'}</span>;
                                                         })()}
                                                     </div>
                                                     <div className="text-[10px] text-zinc-400 font-bold mt-1">1주당 받는 현금</div>
@@ -1923,15 +1925,15 @@ function DiscoveryContent() {
                                                             <span>🎯 당일 가격 범위 (Day Range)</span>
                                                         </span>
                                                         <div className="flex items-center gap-3 text-[11px] font-mono">
-                                                            <span className="text-zinc-400">전일 종가: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.prev_close?.toLocaleString() || '-'}</span>
-                                                            <span className="text-zinc-300 font-bold">시가: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.open?.toLocaleString() || '-'}</span>
+                                                            <span className="text-zinc-400">전일 종가: {stock.currency === 'KRW' ? '₩' : '$'}{(stock.details?.prev_close && Number(stock.details.prev_close) > 0) ? Number(stock.details.prev_close).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : (stock.prev_close && Number(stock.prev_close) > 0 ? Number(stock.prev_close).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : '-')}</span>
+                                                            <span className="text-zinc-300 font-bold">시가: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.open ? Number(stock.details.open).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : '-'}</span>
                                                         </div>
                                                     </div>
 
                                                     <div className="space-y-1.5 mt-1">
                                                         <div className="flex items-center justify-between text-xs font-black font-mono">
-                                                            <span className="text-blue-400">저가: {stock.details?.day_low ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.day_low.toLocaleString()}` : '-'}</span>
-                                                            <span className="text-rose-400">고가: {stock.details?.day_high ? `${stock.currency === 'KRW' ? '₩' : '$'}${stock.details.day_high.toLocaleString()}` : '-'}</span>
+                                                            <span className="text-blue-400">저가: {stock.details?.day_low ? `${stock.currency === 'KRW' ? '₩' : '$'}${Number(stock.details.day_low).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}` : '-'}</span>
+                                                            <span className="text-rose-400">고가: {stock.details?.day_high ? `${stock.currency === 'KRW' ? '₩' : '$'}${Number(stock.details.day_high).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 })}` : '-'}</span>
                                                         </div>
                                                         {(() => {
                                                             const low = Number(stock.details?.day_low || 0);

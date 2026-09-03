@@ -801,9 +801,7 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                 current_price = float(current_price.replace(',', ''))
             except:
                 current_price = 0
-        previous_close = winner_data.get('prev_close', 0)
-        if not previous_close:
-            previous_close = 0
+        previous_close = winner_data.get('prev_close') or info.get('previousClose') or info.get('regularMarketPreviousClose') or 0
         currency = winner_data.get('currency', None)
 
         # KRW Fix
