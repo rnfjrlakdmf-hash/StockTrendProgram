@@ -2463,14 +2463,16 @@ def get_market_status():
         except:
             pct = 0.0
 
-        if pct < -0.5:
-            signal, msg, reason = 'red', '시장 흐름이 좋지 않아요', '코스피가 뚜렷한 하락세입니다.'
+        if pct < -0.8:
+            signal, msg, reason = 'red', '하방 변동성 경계 (Bearish)', f'코스피 {kospi_val}p ({pct:+.2f}%) 하락세로 매도 압력이 우세하여 리스크 관리가 필요한 국면입니다.'
         elif pct < 0:
-            signal, msg, reason = 'yellow', '시장이 다소 부진해요', '코스피가 소폭 하락했습니다.'
+            signal, msg, reason = 'yellow', '차별화 혼조세 (Cautious)', f'코스피 {kospi_val}p ({pct:+.2f}%) 소폭 약세 속 지수 방어와 종목별 개별 장세가 이어지고 있습니다.'
+        elif pct > 0.8:
+            signal, msg, reason = 'green', '강한 상승 탄력 (Strong Bullish)', f'코스피 {kospi_val}p ({pct:+.2f}%) 강세로 시장 전반에 강력한 매수세와 수급 모멘텀이 유입 중입니다.'
         elif pct > 0:
-            signal, msg, reason = 'green', '시장 분위기가 좋아요', '코스피가 상승세입니다!'
+            signal, msg, reason = 'green', '매수 우세 (Positive)', f'코스피 {kospi_val}p ({pct:+.2f}%) 상승 흐름을 유지하며 대형주 중심 견조한 흐름이 지속되고 있습니다.'
         else:
-            signal, msg, reason = 'yellow', '시장이 보합세예요', '큰 변동 없이 잔잔한 흐름입니다.'
+            signal, msg, reason = 'yellow', '보합 관망세 (Neutral)', '뚜렷한 방향성 없이 매수·매도 수급이 팽팽히 맞서는 관망 국면입니다.'
 
         return {
             "signal": signal,
@@ -2478,7 +2480,9 @@ def get_market_status():
             "reason": reason,
             "details": {
                 "kospi": kospi_val if kospi_val else '-',
+                "kospi_pct": kospi_percent,
                 "kosdaq": kosdaq_val if kosdaq_val else '-',
+                "kosdaq_pct": kosdaq.get('percent', '0.00%'),
                 "usd": usd_display
             }
         }

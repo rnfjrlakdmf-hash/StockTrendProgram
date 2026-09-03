@@ -3285,6 +3285,8 @@ def get_market_summary_stats():
                 stats[market_key]['up'] = v_up + v_up_limit
                 stats[market_key]['same'] = v_same
                 stats[market_key]['down'] = v_down + v_down_limit
+                stats[market_key]['up_limit'] = v_up_limit
+                stats[market_key]['down_limit'] = v_down_limit
 
         extract_stats('.kospi_area', 'kospi')
         extract_stats('.kosdaq_area', 'kosdaq')
