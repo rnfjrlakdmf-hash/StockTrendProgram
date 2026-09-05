@@ -774,6 +774,7 @@ def get_watchlist_events(symbols: str = ""):
                 original_sym = kr_base_map.get(stock_code, stock_code)
                 corp_name_fallback = code_to_name.get(stock_code, stock_code)
 
+                contract_count = 0
                 for item in res["list"]:
                     title = item.get("report_nm", "").strip()
                     corp_name = item.get("corp_name", "").strip() or corp_name_fallback
@@ -781,78 +782,110 @@ def get_watchlist_events(symbols: str = ""):
                     date_str = f"{rcept_dt[:4]}-{rcept_dt[4:6]}-{rcept_dt[6:]}" if len(rcept_dt) == 8 else today_str
                     dart_link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={item.get('rcept_no', '')}"
 
-                    # 📈 실적 관련 정기/잠정 공시
-                    if any(kw in title for kw in ["영업(잠정)실적", "잠정실적", "연결재무제표기준영업", "결산실적", "분기보고서", "반기보고서", "사업보고서"]):
+                    # 1. 📈 실적 관련 정기/잠정 공시 (가장 중요)
+                    if any(kw in title for kw in ["영업(잠정)실적", "잠정실적", "연결재무제표기준영업", "결산실적"]):
+                        # 분기 잠정실적
+                        display_title = title.replace("(공정공시)", "").replace("연결재무제표기준", "").strip()
                         sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "earnings",
                             "date": date_str,
-                            "detail": f"📋 {title[:35]} (DART 확정)",
+                            "detail": f"📊 {display_title}",
+                            "desc": "분기 잠정 매출 및 영업이익 공시",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "실적공시"
+                            "badge": "잠정실적"
                         })
-                    # 💰 배당 관련 공시
+                    elif any(kw in title for kw in ["분기보고서", "반기보고서", "사업보고서"]):
+                        # 정기 확정 실적 보고서
+                        period_str = ""
+                        if "반기보고서" in title:
+                            period_str = "상반기(2분기) 확정 재무보고서"
+                        elif "사업보고서" in title:
+                            period_str = "연간 확정 사업보고서"
+                        elif "1분기" in title or "03" in title:
+                            period_str = "1분기 확정 재무보고서"
+                        elif "3분기" in title or "09" in title:
+                            period_str = "3분기 확정 재무보고서"
+                        else:
+                            period_str = "정기 실적 재무보고서"
+
+                        sym_events.append({
+                            "symbol": original_sym,
+                            "name": corp_name,
+                            "type": "earnings",
+                            "date": date_str,
+                            "detail": f"📑 {period_str} ({title.split('(')[-1].replace(')', '') if '(' in title else ''})",
+                            "desc": "금융감독원 정기 결산 재무제표 확정 공시",
+                            "source": "DART",
+                            "link": dart_link,
+                            "badge": "확정실적"
+                        })
+
+                    # 2. 💰 배당 관련 공시
                     elif any(kw in title for kw in ["현금ㆍ현물배당", "배당결정", "배당금지급"]):
                         sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "dividend",
                             "date": date_str,
-                            "detail": f"💰 {title[:35]} (DART 확정)",
+                            "detail": f"💰 주당 배당금 결정 공시",
+                            "desc": "주주 배당금 지급 및 기준일 결정",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "배당공시"
+                            "badge": "배당결정"
                         })
-                    # 🤝 수주 / 대형 공급계약 체결
-                    elif any(kw in title for kw in ["단일판매", "공급계약"]):
+
+                    # 3. 🤝 수주 / 대형 공급계약 체결 (종목당 최근 최대 3건으로 엄선하여 도배 방지)
+                    elif any(kw in title for kw in ["단일판매", "공급계약"]) and contract_count < 3:
+                        is_amend = "[기재정정]" in title
+                        clean_title = "대규모 수주·공급계약 체결 (정정)" if is_amend else "대규모 수주 및 공급계약 체결"
+                        contract_count += 1
                         sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "contract",
                             "date": date_str,
-                            "detail": f"🤝 {title[:35]} (DART)",
+                            "detail": f"🤝 {clean_title}",
+                            "desc": "매출액 대비 일정 비율 이상의 주요 단일 공급 계약",
                             "source": "DART",
                             "link": dart_link,
                             "badge": "수주·계약"
                         })
-                    # 🎤 기업설명회 (IR) 및 실적 컨퍼런스콜
+
+                    # 4. 🔄 자사주 취득/처분 (주주환원 정책)
+                    elif any(kw in title for kw in ["자기주식"]):
+                        action_name = "자사주 매입/처분 결정"
+                        if "취득" in title: action_name = "주주가치 제고를 위한 자사주 취득 결정"
+                        elif "처분" in title: action_name = "자기주식 처분 공시"
+                        sym_events.append({
+                            "symbol": original_sym,
+                            "name": corp_name,
+                            "type": "buyback",
+                            "date": date_str,
+                            "detail": f"🔄 {action_name}",
+                            "desc": "주주가치 제고 및 유통주식수 조절 공시",
+                            "source": "DART",
+                            "link": dart_link,
+                            "badge": "자사주"
+                        })
+
+                    # 5. 🎤 주요 기업설명회 (IR)
                     elif any(kw in title for kw in ["기업설명회", "IR"]):
                         sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "ir",
                             "date": date_str,
-                            "detail": f"🎤 {title[:35]} (DART)",
+                            "detail": f"🎤 기업설명회(IR) 및 실적 컨퍼런스콜",
+                            "desc": "기관 및 주주 대상 경영 현황 및 실적 브리핑",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "IR·설명회"
+                            "badge": "IR설명회"
                         })
-                    # 🔄 자사주 취득/처분
-                    elif any(kw in title for kw in ["자기주식"]):
-                        sym_events.append({
-                            "symbol": original_sym,
-                            "name": corp_name,
-                            "type": "buyback",
-                            "date": date_str,
-                            "detail": f"🔄 {title[:35]} (DART)",
-                            "source": "DART",
-                            "link": dart_link,
-                            "badge": "자사주"
-                        })
-                    # 👤 대주주 / 임원 지분변동
-                    elif any(kw in title for kw in ["주식등의대량보유", "임원ㆍ주요주주특정증권"]):
-                        sym_events.append({
-                            "symbol": original_sym,
-                            "name": corp_name,
-                            "type": "holder",
-                            "date": date_str,
-                            "detail": f"👤 {title[:35]} (DART)",
-                            "source": "DART",
-                            "link": dart_link,
-                            "badge": "지분변동"
-                        })
+                    # ※ 단순 임원/주요주주 지분변동(소유상황보고서)은 알림센터의 영역이므로
+                    # 실적·배당 캘린더에서는 완전히 제외하여 스팸 도배를 방지함.
                 return sym_events
             except Exception as e:
                 print(f"[DART Fetch Error {stock_code}]: {e}")
@@ -895,8 +928,10 @@ def get_watchlist_events(symbols: str = ""):
                 "type": "earnings",
                 "date": est_earnings_date,
                 "detail": f"📈 {season} 정기 공시 예정",
+                "desc": "K-IFRS 분기 결산보고서 법정 제출 기한 기준",
                 "source": "KRX",
-                "badge": "실적예정"
+                "badge": "실적예정",
+                "is_upcoming": True
             })
 
         # 결산 배당기준일 예정 (12월 결산 법인)
@@ -907,9 +942,11 @@ def get_watchlist_events(symbols: str = ""):
                 "name": corp_name,
                 "type": "dividend",
                 "date": est_dividend_date,
-                "detail": f"💰 {y}년 연말 결산 배당기준일 예정 (12월 결산법인)",
+                "detail": f"💰 {y}년 연말 결산 배당기준일 예정",
+                "desc": "12월 결산 상장사 정기 주주 배당 기준일",
                 "source": "KRX",
-                "badge": "배당예정"
+                "badge": "배당예정",
+                "is_upcoming": True
             })
 
     # =============================================
@@ -933,14 +970,17 @@ def get_watchlist_events(symbols: str = ""):
                 # 실적 발표일
                 for ed in (cal.get("Earnings Date") or [])[:2]:
                     if hasattr(ed, "strftime"):
+                        ed_str = ed.strftime("%Y-%m-%d")
                         results.append({
                             "symbol": raw_sym,
                             "name": name,
                             "type": "earnings",
-                            "date": ed.strftime("%Y-%m-%d"),
+                            "date": ed_str,
                             "detail": f"📈 실적 발표 예정 (컨센서스)",
+                            "desc": "월가 애널리스트 추정 분기 실적 발표일",
                             "source": "yfinance",
-                            "badge": "실적"
+                            "badge": "실적예정",
+                            "is_upcoming": ed_str >= today_str
                         })
 
                 # 배당락일
@@ -948,19 +988,23 @@ def get_watchlist_events(symbols: str = ""):
                 if div_date and hasattr(div_date, "strftime"):
                     div_rate = cal.get("Dividend Rate")
                     div_yield = cal.get("Dividend Yield")
-                    detail = "💰 배당락일"
+                    detail = "💰 배당락일 (Ex-Dividend Date)"
+                    desc = ""
                     if div_rate:
-                        detail += f" | 주당 ${div_rate:.2f}"
+                        desc += f"주당 ${div_rate:.2f} "
                     if div_yield:
-                        detail += f" | 수익률 {div_yield*100:.2f}%"
+                        desc += f"(배당수익률 {div_yield*100:.2f}%)"
+                    div_str = div_date.strftime("%Y-%m-%d")
                     results.append({
                         "symbol": raw_sym,
                         "name": name,
                         "type": "dividend",
-                        "date": div_date.strftime("%Y-%m-%d"),
+                        "date": div_str,
                         "detail": detail,
+                        "desc": desc.strip() or "주주 배당 권리 발생 기준일",
                         "source": "yfinance",
-                        "badge": "배당"
+                        "badge": "배당락일",
+                        "is_upcoming": div_str >= today_str
                     })
 
                 if results:
@@ -984,18 +1028,23 @@ def get_watchlist_events(symbols: str = ""):
     past_cutoff = (today - datetime.timedelta(days=90)).strftime("%Y-%m-%d")
     visible = [ev for ev in events if ev.get("date", "") >= past_cutoff]
 
-    # 미래 일정과 과거 공시 분리하여 정렬
-    future_events = [ev for ev in visible if ev.get("date", "") >= today_str]
-    past_events = [ev for ev in visible if ev.get("date", "") < today_str]
+    # 각 항목에 is_upcoming 필드 보장
+    for ev in visible:
+        if "is_upcoming" not in ev:
+            ev["is_upcoming"] = ev.get("date", "") >= today_str
 
-    # 미래: 날짜 오름차순 (오늘과 가까운 D-Day 순서)
+    # 미래 일정과 과거 공시 분리하여 정렬
+    future_events = [ev for ev in visible if ev.get("is_upcoming")]
+    past_events = [ev for ev in visible if not ev.get("is_upcoming")]
+
+    # 미래: 날짜 오름차순 (오늘과 가장 가까운 D-Day 순서)
     future_events.sort(key=lambda x: x.get("date", ""))
-    # 과거: 날짜 내림차순 (가장 최근 공시가 위로)
+    # 과거: 날짜 내림차순 (가장 최근 확정 공시가 위로)
     past_events.sort(key=lambda x: x.get("date", ""), reverse=True)
 
     sorted_events = future_events + past_events
 
-    # 중복 제거 (symbol + type + date)
+    # 중복 제거 (symbol + type + date + detail 앞 15글자)
     seen = set()
     final_events = []
     for ev in sorted_events:
@@ -1007,6 +1056,8 @@ def get_watchlist_events(symbols: str = ""):
     return {
         "status": "success",
         "data": final_events,
+        "upcoming_count": len(future_events),
+        "recent_count": len(past_events),
         "fetched": len(symbol_list),
         "total_count": len(final_events)
     }
