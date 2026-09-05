@@ -709,12 +709,19 @@ def get_calendar_events():
 @router.get("/calendar/watchlist")
 def get_watchlist_events(symbols: str = ""):
     """
-    [관심종목 전용 v2] DART 공시(한국) + yfinance(미국) 병합으로
-    실적/배당/자사주/대주주변동 일정을 실시간 수집합니다.
-    symbols: 쉼표로 구분된 종목코드 (예: 005930,000660,AAPL)
+    [관심종목 전용 v3] DART 공시(한국) + 정기 실적/배당 캘린더 엔진 + yfinance(미국) 병합으로
+    실적/배당/수주계약/IR/자사주 일정을 완벽 수집합니다.
+    symbols: 쉼표로 구분된 종목코드 (예: 005930,000660,010140.KS,AAPL)
     """
     import datetime, os, requests, yfinance as yf
     from concurrent.futures import ThreadPoolExecutor, as_completed
+    from dart_api_client import dart_api_client
+
+    try:
+        from stock_names import STOCK_MAP
+        code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str)}
+    except:
+        code_to_name = {}
 
     if not symbols:
         return {"status": "success", "data": []}
@@ -737,154 +744,203 @@ def get_watchlist_events(symbols: str = ""):
         else:
             us_symbols.append(s)
 
-    # =============================================
-    # [1] DART API — 한국 종목 전용 (실제 공시 기반)
-    # =============================================
-    dart_api_key = os.getenv("DART_API_KEY", "").strip()  # [Security] 하드코딩 제거, 환경변수 전용
-    if dart_api_key and kr_symbols:
+    dart_api_key = os.getenv("DART_API_KEY", "").strip()
+    if not dart_api_key:
         try:
-            # 검색 범위: 60일 전 ~ 60일 후 (과거 발표 + 미래 예고 모두 포착)
-            bgn_de = (today - datetime.timedelta(days=60)).strftime("%Y%m%d")
-            end_de = (today + datetime.timedelta(days=60)).strftime("%Y%m%d")
+            from dotenv import load_dotenv
+            load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+            dart_api_key = os.getenv("DART_API_KEY", "").strip()
+        except: pass
+    
+    # =============================================
+    # [1] DART API — 한국 종목 개별 corp_code 기반 정밀 조회
+    # =============================================
+    if dart_api_key and kr_symbols:
+        bgn_de = (today - datetime.timedelta(days=90)).strftime("%Y%m%d")
+        end_de = today.strftime("%Y%m%d")  # DART는 미래 일자 입력 시 status 100 에러 반환하므로 today 고정
 
-            # 실제 DART에서 쓰이는 정확한 공시 키워드
-            EARNINGS_KEYWORDS = [
-                "영업(잠정)실적",      # ✅ 삼성전자 실제 사용
-                "잠정실적",
-                "연결재무제표기준영업",
-                "결산실적공시",
-                "분기보고서",
-                "사업보고서",
-            ]
-            DIVIDEND_KEYWORDS = [
-                "현금ㆍ현물배당결정",  # ✅ 삼성전자 실제 사용
-                "현금배당결정",
-                "배당금지급",
-            ]
-            BUYBACK_KEYWORDS = [
-                "자기주식취득결과보고서",
-                "자기주식취득결정",
-            ]
-            HOLDER_KEYWORDS = [
-                "주식등의대량보유상황보고서",
-                "임원ㆍ주요주주특정증권등소유상황보고서",
-            ]
+        def fetch_dart_for_symbol(stock_code):
+            corp_code = dart_api_client._load_corp_code(stock_code)
+            if not corp_code:
+                return []
+            try:
+                url = f"https://opendart.fss.or.kr/api/list.json?crtfc_key={dart_api_key}&corp_code={corp_code}&bgn_de={bgn_de}&end_de={end_de}&page_count=50"
+                resp = requests.get(url, timeout=7)
+                res = resp.json()
+                if res.get("status") != "000" or "list" not in res:
+                    return []
+                
+                sym_events = []
+                original_sym = kr_base_map.get(stock_code, stock_code)
+                corp_name_fallback = code_to_name.get(stock_code, stock_code)
 
-            dart_url = (
-                f"https://opendart.fss.or.kr/api/list.json"
-                f"?crtfc_key={dart_api_key}"
-                f"&bgn_de={bgn_de}&end_de={end_de}"
-                f"&page_count=100"
-            )
-            resp = requests.get(dart_url, timeout=10)
-            dart_data = resp.json()
-
-            if dart_data.get("status") == "000" and "list" in dart_data:
-                for item in dart_data["list"]:
-                    stock_code = item.get("stock_code", "")
-                    if not stock_code or stock_code not in kr_symbols:
-                        continue
-
-                    title = item.get("report_nm", "")
-                    corp_name = item.get("corp_name", stock_code)
+                for item in res["list"]:
+                    title = item.get("report_nm", "").strip()
+                    corp_name = item.get("corp_name", "").strip() or corp_name_fallback
                     rcept_dt = item.get("rcept_dt", "")
-                    if len(rcept_dt) == 8:
-                        date_str = f"{rcept_dt[:4]}-{rcept_dt[4:6]}-{rcept_dt[6:]}"
-                    else:
-                        date_str = today_str
-
+                    date_str = f"{rcept_dt[:4]}-{rcept_dt[4:6]}-{rcept_dt[6:]}" if len(rcept_dt) == 8 else today_str
                     dart_link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={item.get('rcept_no', '')}"
-                    original_sym = kr_base_map.get(stock_code, stock_code)
 
-                    # 📈 실적 공시
-                    if any(kw in title for kw in EARNINGS_KEYWORDS):
-                        events.append({
+                    # 📈 실적 관련 정기/잠정 공시
+                    if any(kw in title for kw in ["영업(잠정)실적", "잠정실적", "연결재무제표기준영업", "결산실적", "분기보고서", "반기보고서", "사업보고서"]):
+                        sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "earnings",
                             "date": date_str,
-                            "detail": f"📋 실적 공시: {title[:30]} (DART 확정✅)",
+                            "detail": f"📋 {title[:35]} (DART 확정)",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "실적",
+                            "badge": "실적공시"
                         })
-
-                    # 💰 배당 공시
-                    elif any(kw in title for kw in DIVIDEND_KEYWORDS):
-                        events.append({
+                    # 💰 배당 관련 공시
+                    elif any(kw in title for kw in ["현금ㆍ현물배당", "배당결정", "배당금지급"]):
+                        sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "dividend",
                             "date": date_str,
-                            "detail": f"💰 배당 결정: {title[:30]} (DART 확정✅)",
+                            "detail": f"💰 {title[:35]} (DART 확정)",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "배당",
+                            "badge": "배당공시"
                         })
-
-                    # 🔄 자사주 매입
-                    elif any(kw in title for kw in BUYBACK_KEYWORDS):
-                        events.append({
+                    # 🤝 수주 / 대형 공급계약 체결
+                    elif any(kw in title for kw in ["단일판매", "공급계약"]):
+                        sym_events.append({
+                            "symbol": original_sym,
+                            "name": corp_name,
+                            "type": "contract",
+                            "date": date_str,
+                            "detail": f"🤝 {title[:35]} (DART)",
+                            "source": "DART",
+                            "link": dart_link,
+                            "badge": "수주·계약"
+                        })
+                    # 🎤 기업설명회 (IR) 및 실적 컨퍼런스콜
+                    elif any(kw in title for kw in ["기업설명회", "IR"]):
+                        sym_events.append({
+                            "symbol": original_sym,
+                            "name": corp_name,
+                            "type": "ir",
+                            "date": date_str,
+                            "detail": f"🎤 {title[:35]} (DART)",
+                            "source": "DART",
+                            "link": dart_link,
+                            "badge": "IR·설명회"
+                        })
+                    # 🔄 자사주 취득/처분
+                    elif any(kw in title for kw in ["자기주식"]):
+                        sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "buyback",
                             "date": date_str,
-                            "detail": f"🔄 자사주: {title[:30]} (DART)",
+                            "detail": f"🔄 {title[:35]} (DART)",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "자사주",
+                            "badge": "자사주"
                         })
-
-                    # 👤 대주주 변동
-                    elif any(kw in title for kw in HOLDER_KEYWORDS):
-                        events.append({
+                    # 👤 대주주 / 임원 지분변동
+                    elif any(kw in title for kw in ["주식등의대량보유", "임원ㆍ주요주주특정증권"]):
+                        sym_events.append({
                             "symbol": original_sym,
                             "name": corp_name,
                             "type": "holder",
                             "date": date_str,
-                            "detail": f"👤 지분변동: {title[:30]} (DART)",
+                            "detail": f"👤 {title[:35]} (DART)",
                             "source": "DART",
                             "link": dart_link,
-                            "badge": "지분변동",
+                            "badge": "지분변동"
                         })
+                return sym_events
+            except Exception as e:
+                print(f"[DART Fetch Error {stock_code}]: {e}")
+                return []
 
-        except Exception as e:
-            print(f"[DART Watchlist] Error: {e}")
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            futs = [ex.submit(fetch_dart_for_symbol, s) for s in kr_symbols]
+            for f in as_completed(futs, timeout=12):
+                try:
+                    events.extend(f.result())
+                except: pass
 
     # =============================================
-    # [2] yfinance — 미국 종목 + 한국 yfinance 보완
+    # [2] 한국 종목 차기 분기 실적 및 배당 예상 일정 생성 엔진
+    # =============================================
+    for s in kr_symbols:
+        orig = kr_base_map.get(s, s)
+        corp_name = code_to_name.get(s, s)
+        m = today.month
+        y = today.year
+        
+        # 다가오는 실적 시즌 자동 산출 (K-IFRS 분기보고서 법정 제출 기한 기준)
+        if m in [1, 2, 3]:
+            season = f"{y-1}년 4분기 및 연간 실적발표"
+            est_earnings_date = f"{y}-03-15"
+        elif m in [4, 5]:
+            season = f"{y}년 1분기 실적발표"
+            est_earnings_date = f"{y}-05-15"
+        elif m in [6, 7, 8]:
+            season = f"{y}년 2분기(반기) 실적발표"
+            est_earnings_date = f"{y}-08-14"
+        else:
+            season = f"{y}년 3분기 실적발표"
+            est_earnings_date = f"{y}-11-14"
+
+        if est_earnings_date >= today_str:
+            events.append({
+                "symbol": orig,
+                "name": corp_name,
+                "type": "earnings",
+                "date": est_earnings_date,
+                "detail": f"📈 {season} 정기 공시 예정",
+                "source": "KRX",
+                "badge": "실적예정"
+            })
+
+        # 결산 배당기준일 예정 (12월 결산 법인)
+        est_dividend_date = f"{y}-12-29"
+        if est_dividend_date >= today_str:
+            events.append({
+                "symbol": orig,
+                "name": corp_name,
+                "type": "dividend",
+                "date": est_dividend_date,
+                "detail": f"💰 {y}년 연말 결산 배당기준일 예정 (12월 결산법인)",
+                "source": "KRX",
+                "badge": "배당예정"
+            })
+
+    # =============================================
+    # [3] yfinance — 미국 종목 실적/배당 & 글로벌 데이터
     # =============================================
     def fetch_yf(raw_sym: str):
         results = []
-        yfSym = f"{raw_sym}.KS" if (raw_sym.isdigit() and len(raw_sym) == 6) else raw_sym.upper()
+        is_kr = raw_sym.isdigit() and len(raw_sym) == 6
+        yfSym = f"{raw_sym}.KS" if is_kr else raw_sym.upper()
 
         for attempt_sym in ([yfSym, yfSym.replace(".KS", ".KQ")] if ".KS" in yfSym else [yfSym]):
             try:
                 ticker = yf.Ticker(attempt_sym)
                 cal = getattr(ticker, "calendar", None) or {}
+                name = raw_sym
                 try:
                     name = ticker.info.get("shortName") or ticker.info.get("longName") or raw_sym
                 except:
-                    name = raw_sym
+                    pass
 
                 # 실적 발표일
                 for ed in (cal.get("Earnings Date") or [])[:2]:
                     if hasattr(ed, "strftime"):
-                        div_info = ""
-                        div_rate = cal.get("Dividend Rate")
-                        div_yield = cal.get("Dividend Yield")
-                        if div_rate:
-                            div_info += f" | 주당 ${div_rate}"
-                        if div_yield:
-                            div_info += f" | 수익률 {div_yield*100:.2f}%"
                         results.append({
                             "symbol": raw_sym,
                             "name": name,
                             "type": "earnings",
                             "date": ed.strftime("%Y-%m-%d"),
-                            "detail": f"📈 실적 발표 예정{div_info}",
+                            "detail": f"📈 실적 발표 예정 (컨센서스)",
                             "source": "yfinance",
-                            "badge": "실적",
+                            "badge": "실적"
                         })
 
                 # 배당락일
@@ -904,44 +960,55 @@ def get_watchlist_events(symbols: str = ""):
                         "date": div_date.strftime("%Y-%m-%d"),
                         "detail": detail,
                         "source": "yfinance",
-                        "badge": "배당",
+                        "badge": "배당"
                     })
 
                 if results:
-                    break  # 첫 번째 시도에서 데이터 나오면 KQ fallback 불필요
+                    break
             except Exception as e:
-                print(f"[fetch_yf Error for {attempt_sym}]: {e}")
                 continue
         return results
 
-    # 미국 종목은 yfinance로 항상 수집 / 한국 종목도 yfinance 보완 수집
-    yf_targets = us_symbols + kr_symbols  # 둘 다
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(fetch_yf, sym): sym for sym in yf_targets}
-        for future in as_completed(futures, timeout=20):
-            try:
-                res = future.result()
-                print(f"fetch_yf result: {res}")
-                # DART에서 이미 수집된 한국 종목의 실적/배당은 yfinance로 중복 추가 안 함
-                dart_keys = {(e["symbol"], e["type"]) for e in events if e.get("source") == "DART"}
-                for r in res:
-                    if (r["symbol"], r["type"]) not in dart_keys:
-                        events.append(r)
-            except Exception as e:
-                print(f"Executor Error: {e}")
-                pass
+    if us_symbols:
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(fetch_yf, sym): sym for sym in us_symbols}
+            for future in as_completed(futures, timeout=12):
+                try:
+                    res = future.result()
+                    events.extend(res)
+                except: pass
 
-    # 날짜순 정렬 (과거 포함, 최근 60일 이후부터 표시)
-    past_cutoff = (today - datetime.timedelta(days=7)).strftime("%Y-%m-%d")  # 1주일 전까지 포함
+    # =============================================
+    # [4] 스마트 정렬: 미래 일정 우선(D-Day 순) -> 최근 공시(최신순)
+    # =============================================
+    past_cutoff = (today - datetime.timedelta(days=90)).strftime("%Y-%m-%d")
     visible = [ev for ev in events if ev.get("date", "") >= past_cutoff]
-    visible.sort(key=lambda x: x.get("date", ""))
+
+    # 미래 일정과 과거 공시 분리하여 정렬
+    future_events = [ev for ev in visible if ev.get("date", "") >= today_str]
+    past_events = [ev for ev in visible if ev.get("date", "") < today_str]
+
+    # 미래: 날짜 오름차순 (오늘과 가까운 D-Day 순서)
+    future_events.sort(key=lambda x: x.get("date", ""))
+    # 과거: 날짜 내림차순 (가장 최근 공시가 위로)
+    past_events.sort(key=lambda x: x.get("date", ""), reverse=True)
+
+    sorted_events = future_events + past_events
+
+    # 중복 제거 (symbol + type + date)
+    seen = set()
+    final_events = []
+    for ev in sorted_events:
+        key = (ev["symbol"], ev["type"], ev["date"], ev.get("detail", "")[:15])
+        if key not in seen:
+            seen.add(key)
+            final_events.append(ev)
 
     return {
         "status": "success",
-        "data": visible,
+        "data": final_events,
         "fetched": len(symbol_list),
-        "dart_count": len([e for e in visible if e.get("source") == "DART"]),
-        "yf_count": len([e for e in visible if e.get("source") == "yfinance"]),
+        "total_count": len(final_events)
     }
 
 

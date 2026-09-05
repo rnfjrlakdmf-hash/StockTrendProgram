@@ -369,37 +369,15 @@ export default function WatchlistPage() {
         };
         fetchProInsights();
 
-        // [투자금액 및 총 평가손익 실시간 계산]
-    let totalInvested = 0;
-    let totalValuation = 0;
-    let hasInvestmentData = false;
-
-    watchlist.forEach(item => {
-        const q = quotes[item.symbol];
-        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
-        
-        if (item.purchases && item.purchases.length > 0) {
-            item.purchases.forEach((p: any) => {
-                if (p.buy_price > 0 && p.quantity > 0) {
-                    totalInvested += p.buy_price * p.quantity;
-                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
-                    hasInvestmentData = true;
-                }
-            });
-        } else if (item.added_price && item.quantity) {
-            totalInvested += item.added_price * item.quantity;
-            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
-            hasInvestmentData = true;
-        }
-    });
-
-    const totalProfit = totalValuation - totalInvested;
-    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-    const isProfitPos = totalProfit > 0;
-    const isProfitNeg = totalProfit < 0;
-
-    return () => clearInterval(quotesTimer);
+        return () => clearInterval(quotesTimer);
     }, [watchlist]);
+
+    useEffect(() => {
+        if (activeTab === "schedules" && watchlist.length > 0) {
+            const syms = watchlist.map(i => i.symbol).join(",");
+            fetchEventSchedules(syms);
+        }
+    }, [activeTab]);
 
     const handleRemoveItem = async (symbol: string) => {
         if (!user) return;
@@ -739,18 +717,44 @@ export default function WatchlistPage() {
                 {/* 2. Schedules Tab */}
                 {activeTab === "schedules" && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-3xl">
-                            <h3 className="text-xl font-black text-emerald-400 flex items-center gap-2 mb-2">
-                                <RefreshCw className={`w-5 h-5 ${eventsLoading ? 'animate-spin' : ''}`} />
-                                최신 일정 리포트
-                            </h3>
-                            <p className="text-sm text-emerald-400/60 font-medium">관심종목의 배당락일, 실적발표, 주요 공시를 신속하게 스캔합니다.</p>
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-3xl flex items-center justify-between">
+                            <div>
+                                <h3 className="text-xl font-black text-emerald-400 flex items-center gap-2 mb-2">
+                                    <button 
+                                        onClick={() => {
+                                            const syms = watchlist.map(i => i.symbol).join(",");
+                                            fetchEventSchedules(syms);
+                                        }}
+                                        className="p-1 hover:bg-emerald-500/20 rounded-lg transition-colors cursor-pointer"
+                                        title="일정 새로고침"
+                                    >
+                                        <RefreshCw className={`w-5 h-5 ${eventsLoading ? 'animate-spin' : ''}`} />
+                                    </button>
+                                    최신 일정 리포트
+                                </h3>
+                                <p className="text-sm text-emerald-400/60 font-medium">관심종목의 배당락일, 실적발표, 주요 공시를 신속하게 스캔합니다.</p>
+                            </div>
+                            {eventEvents.length > 0 && (
+                                <span className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-black">
+                                    총 {eventEvents.length}개 일정
+                                </span>
+                            )}
                         </div>
 
                         {eventEvents.length === 0 ? (
                             <div className="py-20 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
                                 <Zap className="w-10 h-10 text-gray-700 mx-auto mb-4" />
-                                <p className="text-gray-500 font-medium">현재 예정된 일정이 없습니다.</p>
+                                <p className="text-gray-400 font-bold mb-2">현재 예정된 일정이 없습니다.</p>
+                                <p className="text-xs text-gray-600 mb-4">관심종목을 추가하시면 실적 공시와 배당 일정이 자동으로 분석됩니다.</p>
+                                <button
+                                    onClick={() => {
+                                        const syms = watchlist.map(i => i.symbol).join(",");
+                                        fetchEventSchedules(syms);
+                                    }}
+                                    className="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all"
+                                >
+                                    다시 스캔하기
+                                </button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -760,68 +764,50 @@ export default function WatchlistPage() {
                                     if (isNaN(eventDate.getTime())) return null;
                                     const isDart = ev.source === "DART";
                                     const dDay = Math.ceil((eventDate.getTime() - Date.now()) / 86400000);
-                                    const typeConfig: any = {
-                                        earnings: { color: "blue", label: "실적발표", icon: "📈" },
-                                        dividend: { color: "emerald", label: "배당일정", icon: "💰" },
-                                        buyback:  { color: "orange", label: "자사주", icon: "🔄" },
-                                        holder:   { color: "purple", label: "지분변동", icon: "👤" }
+                                    
+                                    const typeConfig: Record<string, { bg: string; text: string; border: string; label: string; icon: string }> = {
+                                        earnings: { bg: "bg-blue-500/15", text: "text-blue-400", border: "border-blue-500/30", label: "실적일정", icon: "📈" },
+                                        dividend: { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30", label: "배당일정", icon: "💰" },
+                                        contract: { bg: "bg-cyan-500/15", text: "text-cyan-400", border: "border-cyan-500/30", label: "수주·계약", icon: "🤝" },
+                                        ir: { bg: "bg-purple-500/15", text: "text-purple-400", border: "border-purple-500/30", label: "IR·설명회", icon: "🎤" },
+                                        buyback: { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30", label: "자사주", icon: "🔄" },
+                                        holder: { bg: "bg-violet-500/15", text: "text-violet-400", border: "border-violet-500/30", label: "지분변동", icon: "👤" },
+                                        disclosure: { bg: "bg-amber-500/15", text: "text-amber-400", border: "border-amber-500/30", label: "주요공시", icon: "📋" }
                                     };
-                                    const conf = typeConfig[ev.type] || { color: "gray", label: "공시", icon: "📄" };
+                                    const conf = typeConfig[ev.type] || { bg: "bg-gray-500/15", text: "text-gray-400", border: "border-gray-500/30", label: "공시", icon: "📄" };
 
-                                    // [투자금액 및 총 평가손익 실시간 계산]
-    let totalInvested = 0;
-    let totalValuation = 0;
-    let hasInvestmentData = false;
-
-    watchlist.forEach(item => {
-        const q = quotes[item.symbol];
-        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
-        
-        if (item.purchases && item.purchases.length > 0) {
-            item.purchases.forEach((p: any) => {
-                if (p.buy_price > 0 && p.quantity > 0) {
-                    totalInvested += p.buy_price * p.quantity;
-                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
-                    hasInvestmentData = true;
-                }
-            });
-        } else if (item.added_price && item.quantity) {
-            totalInvested += item.added_price * item.quantity;
-            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
-            hasInvestmentData = true;
-        }
-    });
-
-    const totalProfit = totalValuation - totalInvested;
-    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-    const isProfitPos = totalProfit > 0;
-    const isProfitNeg = totalProfit < 0;
-
-    return (
-                                        <div key={i} className={`p-5 rounded-2xl border bg-black/40 hover:bg-black/60 transition-all border-${conf.color}-500/20 group relative overflow-hidden`}>
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-2xl">{conf.icon}</span>
-                                                    <div className="min-w-0">
-                                                        <h5 className="font-black text-white text-sm truncate" translate="no">{ev.name}</h5>
-                                                        <p className="text-[10px] text-gray-500 font-bold" translate="no">{ev.symbol}</p>
+                                    return (
+                                        <div key={i} className={`p-5 rounded-2xl border bg-black/40 hover:bg-black/60 transition-all ${conf.border} group relative overflow-hidden flex flex-col justify-between shadow-lg`}>
+                                            <div>
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-2xl">{conf.icon}</span>
+                                                        <div className="min-w-0">
+                                                            <h5 className="font-black text-white text-sm truncate" translate="no">{ev.name || ev.symbol}</h5>
+                                                            <p className="text-[10px] text-gray-500 font-bold" translate="no">{ev.symbol}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${conf.bg} ${conf.text} border ${conf.border}`}>
+                                                        {dDay > 0 ? `D-${dDay}` : dDay === 0 ? "D-Day" : `${Math.abs(dDay)}일 전`}
                                                     </div>
                                                 </div>
-                                                <div className={`px-2 py-1 rounded-lg text-[10px] font-black bg-${conf.color}-500/20 text-${conf.color}-400 border border-${conf.color}-500/30`}>
-                                                    D-{dDay < 0 ? `+${Math.abs(dDay)}` : dDay === 0 ? "Day" : dDay}
-                                                </div>
+                                                <p className="text-xs text-gray-300 font-bold leading-relaxed mb-4 line-clamp-2">
+                                                    {ev.detail}
+                                                </p>
                                             </div>
-                                            <p className="text-xs text-gray-300 font-bold line-clamp-2 leading-relaxed mb-4 h-10">
-                                                {ev.detail}
-                                            </p>
-                                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                                                <span className="text-[10px] text-gray-500 font-mono font-bold">{ev.date}</span>
+                                            <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${conf.bg} ${conf.text}`}>
+                                                        {ev.badge || conf.label}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-500 font-mono font-bold">{ev.date}</span>
+                                                </div>
                                                 {isDart && ev.link ? (
                                                     <a href={ev.link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-black">
                                                         <ExternalLink className="w-3.5 h-3.5" /> DART 원문
                                                     </a>
                                                 ) : (
-                                                    <span className="text-[10px] text-gray-600 italic">Global Data</span>
+                                                    <span className="text-[10px] text-gray-600 font-medium">{ev.source || "Global Data"}</span>
                                                 )}
                                             </div>
                                         </div>
