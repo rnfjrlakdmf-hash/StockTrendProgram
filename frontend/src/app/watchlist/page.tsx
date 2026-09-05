@@ -168,11 +168,14 @@ export default function WatchlistPage() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/market/calendar/watchlist?symbols=${symbols}`);
             const json = await res.json();
-            if (json.status === "success") {
-                setEventEvents(json.data || []);
+            if (json && json.status === "success" && Array.isArray(json.data)) {
+                setEventEvents(json.data);
+            } else {
+                setEventEvents([]);
             }
         } catch (err) {
             console.error(err);
+            setEventEvents([]);
         } finally {
             setEventsLoading(false);
         }
@@ -291,36 +294,8 @@ export default function WatchlistPage() {
             }, 10000);
             // CB 알림은 5분마다 (API 부하 제한)
             const cbInterval = setInterval(fetchCbAlerts, 300000);
-            // [투자금액 및 총 평가손익 실시간 계산]
-    let totalInvested = 0;
-    let totalValuation = 0;
-    let hasInvestmentData = false;
 
-    watchlist.forEach(item => {
-        const q = quotes[item.symbol];
-        const curPrice = q ? parseFloat(String(q.price || '0').replace(/[^0-9.]/g, '')) : 0;
-        
-        if (item.purchases && item.purchases.length > 0) {
-            item.purchases.forEach((p: any) => {
-                if (p.buy_price > 0 && p.quantity > 0) {
-                    totalInvested += p.buy_price * p.quantity;
-                    totalValuation += (curPrice > 0 ? curPrice : p.buy_price) * p.quantity;
-                    hasInvestmentData = true;
-                }
-            });
-        } else if (item.added_price && item.quantity) {
-            totalInvested += item.added_price * item.quantity;
-            totalValuation += (curPrice > 0 ? curPrice : item.added_price) * item.quantity;
-            hasInvestmentData = true;
-        }
-    });
-
-    const totalProfit = totalValuation - totalInvested;
-    const totalReturnRate = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-    const isProfitPos = totalProfit > 0;
-    const isProfitNeg = totalProfit < 0;
-
-    return () => { clearInterval(interval); clearInterval(cbInterval); };
+            return () => { clearInterval(interval); clearInterval(cbInterval); };
         } else {
             // 캐시가 없고 비회원인 경우에만 로딩을 끕니다.
             setLoading(false);
@@ -754,88 +729,60 @@ export default function WatchlistPage() {
                         </div>
 
                         {/* 카테고리 필터 칩 */}
-                        {eventEvents.length > 0 && (
-                            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-                                <button
-                                    onClick={() => setScheduleFilter("all")}
-                                    className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
-                                        scheduleFilter === "all"
-                                            ? "bg-white text-black font-black shadow-lg"
-                                            : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5"
-                                    }`}
-                                >
-                                    전체보기 ({eventEvents.length})
-                                </button>
-                                <button
-                                    onClick={() => setScheduleFilter("upcoming")}
-                                    className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                        scheduleFilter === "upcoming"
-                                            ? "bg-emerald-500 text-black font-black shadow-lg"
-                                            : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
-                                    }`}
-                                >
-                                    <span>📅</span> 다가오는 D-Day ({eventEvents.filter(e => e.is_upcoming).length})
-                                </button>
-                                <button
-                                    onClick={() => setScheduleFilter("earnings")}
-                                    className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                        scheduleFilter === "earnings"
-                                            ? "bg-blue-500 text-white font-black shadow-lg"
-                                            : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20"
-                                    }`}
-                                >
-                                    <span>📈</span> 실적 발표·보고서 ({eventEvents.filter(e => e.type === "earnings").length})
-                                </button>
-                                <button
-                                    onClick={() => setScheduleFilter("dividend")}
-                                    className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                        scheduleFilter === "dividend"
-                                            ? "bg-amber-500 text-black font-black shadow-lg"
-                                            : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20"
-                                    }`}
-                                >
-                                    <span>💰</span> 배당 일정 ({eventEvents.filter(e => e.type === "dividend").length})
-                                </button>
-                                <button
-                                    onClick={() => setScheduleFilter("contract")}
-                                    className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                        scheduleFilter === "contract"
-                                            ? "bg-cyan-500 text-black font-black shadow-lg"
-                                            : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"
-                                    }`}
-                                >
-                                    <span>🤝</span> 대형 수주·계약 ({eventEvents.filter(e => e.type === "contract").length})
-                                </button>
-                            </div>
-                        )}
+                        {(() => {
+                            const validEvents = (Array.isArray(eventEvents) ? eventEvents : []).filter((e: any) => e && typeof e === 'object' && e.date);
+                            const upcomingList = validEvents.filter((e: any) => Boolean(e.is_upcoming));
+                            const earningsList = validEvents.filter((e: any) => e.type === "earnings");
+                            const dividendList = validEvents.filter((e: any) => e.type === "dividend");
+                            const contractList = validEvents.filter((e: any) => e.type === "contract");
 
-                        {eventEvents.length === 0 ? (
-                            <div className="py-20 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
-                                <Zap className="w-10 h-10 text-gray-700 mx-auto mb-4" />
-                                <p className="text-gray-400 font-bold mb-2">현재 예정된 일정이 없습니다.</p>
-                                <p className="text-xs text-gray-600 mb-4">관심종목을 추가하시면 실적 공시와 배당 일정이 자동으로 분석됩니다.</p>
-                                <button
-                                    onClick={() => {
-                                        const syms = watchlist.map(i => i.symbol).join(",");
-                                        fetchEventSchedules(syms);
-                                    }}
-                                    className="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all"
-                                >
-                                    다시 스캔하기
-                                </button>
-                            </div>
-                        ) : (() => {
+                            const getEventDDay = (dateStr: string) => {
+                                try {
+                                    if (!dateStr) return { diff: 0, label: '-' };
+                                    const parts = dateStr.split('-');
+                                    if (parts.length !== 3) return { diff: 0, label: '-' };
+                                    const target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                    const now = new Date();
+                                    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                    const diff = Math.round((target.getTime() - todayMidnight.getTime()) / 86400000);
+                                    if (diff > 0) return { diff, label: `D-${diff}` };
+                                    if (diff === 0) return { diff: 0, label: 'D-Day (오늘)' };
+                                    return { diff, label: `${Math.abs(diff)}일 전` };
+                                } catch {
+                                    return { diff: 0, label: '-' };
+                                }
+                            };
+
+                            if (validEvents.length === 0) {
+                                return (
+                                    <div className="py-20 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
+                                        <Zap className="w-10 h-10 text-gray-700 mx-auto mb-4" />
+                                        <p className="text-gray-400 font-bold mb-2">현재 예정된 일정이 없습니다.</p>
+                                        <p className="text-xs text-gray-600 mb-4">관심종목을 추가하시면 실적 공시와 배당 일정이 자동으로 분석됩니다.</p>
+                                        <button
+                                            onClick={() => {
+                                                const syms = watchlist.map(i => i.symbol).join(",");
+                                                fetchEventSchedules(syms);
+                                            }}
+                                            className="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all"
+                                        >
+                                            다시 스캔하기
+                                        </button>
+                                    </div>
+                                );
+                            }
+
                             // 필터 적용
-                            const filteredEvents = eventEvents.filter(ev => {
+                            const filteredEvents = validEvents.filter(ev => {
                                 if (scheduleFilter === "all") return true;
-                                if (scheduleFilter === "upcoming") return ev.is_upcoming;
+                                if (scheduleFilter === "upcoming") return Boolean(ev.is_upcoming);
                                 if (scheduleFilter === "earnings") return ev.type === "earnings";
                                 if (scheduleFilter === "dividend") return ev.type === "dividend";
                                 if (scheduleFilter === "contract") return ev.type === "contract";
                                 return true;
                             });
 
-                            const upcomings = filteredEvents.filter(ev => ev.is_upcoming);
+                            const upcomings = filteredEvents.filter(ev => Boolean(ev.is_upcoming));
                             const recents = filteredEvents.filter(ev => !ev.is_upcoming);
 
                             const typeBadgeMap: Record<string, { bg: string; text: string; border: string; icon: string }> = {
@@ -846,172 +793,224 @@ export default function WatchlistPage() {
                                 buyback: { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30", icon: "🔄" },
                             };
 
-                            if (filteredEvents.length === 0) {
-                                return (
-                                    <div className="py-16 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
-                                        <p className="text-zinc-400 font-bold text-sm">선택한 카테고리에 해당하는 일정이 없습니다.</p>
+                            return (
+                                <div className="space-y-6">
+                                    {/* 카테고리 필터 칩 */}
+                                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
                                         <button
                                             onClick={() => setScheduleFilter("all")}
-                                            className="mt-3 px-3.5 py-1.5 rounded-xl bg-white/5 text-zinc-300 hover:bg-white/10 text-xs font-bold transition-all"
+                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
+                                                scheduleFilter === "all"
+                                                    ? "bg-white text-black font-black shadow-lg"
+                                                    : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5"
+                                            }`}
                                         >
-                                            전체 일정 보기
+                                            전체보기 ({validEvents.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setScheduleFilter("upcoming")}
+                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                                scheduleFilter === "upcoming"
+                                                    ? "bg-emerald-500 text-black font-black shadow-lg"
+                                                    : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
+                                            }`}
+                                        >
+                                            <span>📅</span> 다가오는 D-Day ({upcomingList.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setScheduleFilter("earnings")}
+                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                                scheduleFilter === "earnings"
+                                                    ? "bg-blue-500 text-white font-black shadow-lg"
+                                                    : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20"
+                                            }`}
+                                        >
+                                            <span>📈</span> 실적 발표·보고서 ({earningsList.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setScheduleFilter("dividend")}
+                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                                scheduleFilter === "dividend"
+                                                    ? "bg-amber-500 text-black font-black shadow-lg"
+                                                    : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20"
+                                            }`}
+                                        >
+                                            <span>💰</span> 배당 일정 ({dividendList.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setScheduleFilter("contract")}
+                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                                scheduleFilter === "contract"
+                                                    ? "bg-cyan-500 text-black font-black shadow-lg"
+                                                    : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"
+                                            }`}
+                                        >
+                                            <span>🤝</span> 대형 수주·계약 ({contractList.length})
                                         </button>
                                     </div>
-                                );
-                            }
 
-                            return (
-                                <div className="space-y-8">
-                                    {/* 1단: 📅 다가오는 핵심 일정 (Upcoming Radar) */}
-                                    {upcomings.length > 0 && (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                                <h4 className="text-sm font-black text-emerald-400 uppercase tracking-wider">
-                                                    📅 다가오는 핵심 일정 (Upcoming Radar)
-                                                </h4>
-                                                <span className="text-[11px] text-zinc-500 font-medium">({upcomings.length}건 예정)</span>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {upcomings.map((ev, i) => {
-                                                    const eventDate = new Date(ev.date);
-                                                    const dDay = Math.ceil((eventDate.getTime() - Date.now()) / 86400000);
-                                                    const conf = typeBadgeMap[ev.type] || { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30", icon: "📅" };
-
-                                                    return (
-                                                        <div 
-                                                            key={i} 
-                                                            className="p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-black/40 to-zinc-950/50 hover:border-emerald-500/50 transition-all shadow-lg flex flex-col justify-between group"
-                                                        >
-                                                            <div>
-                                                                <div className="flex items-start justify-between mb-3">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <span className="text-2xl">{conf.icon}</span>
-                                                                        <div>
-                                                                            <h5 className="font-black text-white text-base leading-snug" translate="no">
-                                                                                {ev.name || ev.symbol}
-                                                                            </h5>
-                                                                            <p className="text-[11px] text-zinc-500 font-mono font-bold" translate="no">
-                                                                                {ev.symbol}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className={`px-3 py-1 rounded-xl text-xs font-black shadow-md ${
-                                                                        dDay <= 7 
-                                                                            ? "bg-red-500 text-white animate-pulse" 
-                                                                            : dDay <= 30 
-                                                                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" 
-                                                                                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                                                    }`}>
-                                                                        {dDay > 0 ? `D-${dDay}` : dDay === 0 ? "D-Day (오늘)" : `${Math.abs(dDay)}일 지남`}
-                                                                    </div>
-                                                                </div>
-
-                                                                <p className="text-sm font-black text-zinc-100 leading-snug mb-1">
-                                                                    {ev.detail}
-                                                                </p>
-                                                                {ev.desc && (
-                                                                    <p className="text-xs text-zinc-400 font-medium leading-relaxed mb-3">
-                                                                        {ev.desc}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${conf.bg} ${conf.text} border ${conf.border}`}>
-                                                                        {ev.badge || "일정예정"}
-                                                                    </span>
-                                                                    <span className="text-xs text-emerald-400 font-mono font-bold">
-                                                                        {ev.date}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[10px] text-zinc-500 font-medium">
-                                                                    {ev.source === "KRX" ? "KRX 정기공시 규정" : ev.source || "글로벌 데이터"}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                    {filteredEvents.length === 0 ? (
+                                        <div className="py-16 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-3xl">
+                                            <p className="text-zinc-400 font-bold text-sm">선택한 카테고리에 해당하는 일정이 없습니다.</p>
+                                            <button
+                                                onClick={() => setScheduleFilter("all")}
+                                                className="mt-3 px-3.5 py-1.5 rounded-xl bg-white/5 text-zinc-300 hover:bg-white/10 text-xs font-bold transition-all"
+                                            >
+                                                전체 일정 보기
+                                            </button>
                                         </div>
-                                    )}
+                                    ) : (
+                                        <div className="space-y-8">
+                                            {/* 1단: 📅 다가오는 핵심 일정 (Upcoming Radar) */}
+                                            {upcomings.length > 0 && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 px-1">
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                        <h4 className="text-sm font-black text-emerald-400 uppercase tracking-wider">
+                                                            📅 다가오는 핵심 일정 (Upcoming Radar)
+                                                        </h4>
+                                                        <span className="text-[11px] text-zinc-500 font-medium">({upcomings.length}건 예정)</span>
+                                                    </div>
 
-                                    {/* 2단: 📊 최근 확정 실적 & 배당 성적표 (Recent Milestones) */}
-                                    {recents.length > 0 && (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <span className="w-2 h-2 rounded-full bg-blue-400"></span>
-                                                <h4 className="text-sm font-black text-blue-400 uppercase tracking-wider">
-                                                    📊 최근 확정 실적 &amp; 주요 성적표 (Recent Milestones)
-                                                </h4>
-                                                <span className="text-[11px] text-zinc-500 font-medium">({recents.length}건 발표됨)</span>
-                                            </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {upcomings.map((ev, i) => {
+                                                            const dInfo = getEventDDay(ev.date);
+                                                            const conf = typeBadgeMap[ev.type] || { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30", icon: "📅" };
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {recents.map((ev, i) => {
-                                                    const eventDate = new Date(ev.date);
-                                                    const dDay = Math.ceil((eventDate.getTime() - Date.now()) / 86400000);
-                                                    const conf = typeBadgeMap[ev.type] || { bg: "bg-zinc-500/15", text: "text-zinc-400", border: "border-zinc-500/30", icon: "📋" };
-
-                                                    return (
-                                                        <div 
-                                                            key={i} 
-                                                            className={`p-4 rounded-2xl border bg-black/40 hover:bg-black/60 transition-all ${conf.border} flex flex-col justify-between shadow-md`}
-                                                        >
-                                                            <div>
-                                                                <div className="flex items-start justify-between mb-2">
-                                                                    <div className="flex items-center gap-2.5">
-                                                                        <span className="text-xl">{conf.icon}</span>
-                                                                        <div className="min-w-0">
-                                                                            <h5 className="font-black text-white text-sm truncate" translate="no">
-                                                                                {ev.name || ev.symbol}
-                                                                            </h5>
-                                                                            <p className="text-[10px] text-zinc-500 font-mono font-bold" translate="no">
-                                                                                {ev.symbol}
-                                                                            </p>
+                                                            return (
+                                                                <div 
+                                                                    key={i} 
+                                                                    className="p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-black/40 to-zinc-950/50 hover:border-emerald-500/50 transition-all shadow-lg flex flex-col justify-between group"
+                                                                >
+                                                                    <div>
+                                                                        <div className="flex items-start justify-between mb-3">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <span className="text-2xl">{conf.icon}</span>
+                                                                                <div>
+                                                                                    <h5 className="font-black text-white text-base leading-snug" translate="no">
+                                                                                        {ev.name || ev.symbol}
+                                                                                    </h5>
+                                                                                    <p className="text-[11px] text-zinc-500 font-mono font-bold" translate="no">
+                                                                                        {ev.symbol}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`px-3 py-1 rounded-xl text-xs font-black shadow-md ${
+                                                                                dInfo.diff <= 7 
+                                                                                    ? "bg-red-500 text-white animate-pulse" 
+                                                                                    : dInfo.diff <= 30 
+                                                                                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" 
+                                                                                        : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                                                            }`}>
+                                                                                {dInfo.label}
+                                                                            </div>
                                                                         </div>
+
+                                                                        <p className="text-sm font-black text-zinc-100 leading-snug mb-1">
+                                                                            {ev.detail}
+                                                                        </p>
+                                                                        {ev.desc && (
+                                                                            <p className="text-xs text-zinc-400 font-medium leading-relaxed mb-3">
+                                                                                {ev.desc}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
-                                                                    <span className="text-[11px] text-zinc-400 font-bold px-2 py-0.5 rounded bg-white/5">
-                                                                        {Math.abs(dDay)}일 전
-                                                                    </span>
-                                                                </div>
 
-                                                                <p className="text-xs font-bold text-zinc-200 leading-snug mb-1">
-                                                                    {ev.detail}
-                                                                </p>
-                                                                {ev.desc && (
-                                                                    <p className="text-[11px] text-zinc-400 font-normal leading-relaxed mb-3">
-                                                                        {ev.desc}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between pt-2.5 border-t border-white/5 mt-auto">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${conf.bg} ${conf.text}`}>
-                                                                        {ev.badge || "공시"}
-                                                                    </span>
-                                                                    <span className="text-[10px] text-zinc-500 font-mono font-bold">{ev.date}</span>
+                                                                    <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-auto">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${conf.bg} ${conf.text} border ${conf.border}`}>
+                                                                                {ev.badge || "일정예정"}
+                                                                            </span>
+                                                                            <span className="text-xs text-emerald-400 font-mono font-bold">
+                                                                                {ev.date}
+                                                                            </span>
+                                                                        </div>
+                                                                        <span className="text-[10px] text-zinc-500 font-medium">
+                                                                            {ev.source === "KRX" ? "KRX 정기공시 규정" : ev.source || "글로벌 데이터"}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
-                                                                {ev.link ? (
-                                                                    <a 
-                                                                        href={ev.link} 
-                                                                        target="_blank" 
-                                                                        rel="noopener noreferrer" 
-                                                                        className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-black transition-colors"
-                                                                    >
-                                                                        <ExternalLink className="w-3.5 h-3.5" /> DART 원문 보기
-                                                                    </a>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-zinc-600 font-medium">{ev.source || "Global Data"}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* 2단: 📊 최근 확정 실적 & 배당 성적표 (Recent Milestones) */}
+                                            {recents.length > 0 && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2 px-1">
+                                                        <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                                                        <h4 className="text-sm font-black text-blue-400 uppercase tracking-wider">
+                                                            📊 최근 확정 실적 &amp; 주요 성적표 (Recent Milestones)
+                                                        </h4>
+                                                        <span className="text-[11px] text-zinc-500 font-medium">({recents.length}건 발표됨)</span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        {recents.map((ev, i) => {
+                                                            const dInfo = getEventDDay(ev.date);
+                                                            const conf = typeBadgeMap[ev.type] || { bg: "bg-zinc-500/15", text: "text-zinc-400", border: "border-zinc-500/30", icon: "📋" };
+
+                                                            return (
+                                                                <div 
+                                                                    key={i} 
+                                                                    className={`p-4 rounded-2xl border bg-black/40 hover:bg-black/60 transition-all ${conf.border} flex flex-col justify-between shadow-md`}
+                                                                >
+                                                                    <div>
+                                                                        <div className="flex items-start justify-between mb-2">
+                                                                            <div className="flex items-center gap-2.5">
+                                                                                <span className="text-xl">{conf.icon}</span>
+                                                                                <div className="min-w-0">
+                                                                                    <h5 className="font-black text-white text-sm truncate" translate="no">
+                                                                                        {ev.name || ev.symbol}
+                                                                                    </h5>
+                                                                                    <p className="text-[10px] text-zinc-500 font-mono font-bold" translate="no">
+                                                                                        {ev.symbol}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <span className="text-[11px] text-zinc-400 font-bold px-2 py-0.5 rounded bg-white/5">
+                                                                                {dInfo.label}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <p className="text-xs font-bold text-zinc-200 leading-snug mb-1">
+                                                                            {ev.detail}
+                                                                        </p>
+                                                                        {ev.desc && (
+                                                                            <p className="text-[11px] text-zinc-400 font-normal leading-relaxed mb-3">
+                                                                                {ev.desc}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <div className="flex items-center justify-between pt-2.5 border-t border-white/5 mt-auto">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${conf.bg} ${conf.text}`}>
+                                                                                {ev.badge || "공시"}
+                                                                            </span>
+                                                                            <span className="text-[10px] text-zinc-500 font-mono font-bold">{ev.date}</span>
+                                                                        </div>
+                                                                        {ev.link ? (
+                                                                            <a 
+                                                                                href={ev.link} 
+                                                                                target="_blank" 
+                                                                                rel="noopener noreferrer" 
+                                                                                className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 font-black transition-colors"
+                                                                            >
+                                                                                <ExternalLink className="w-3.5 h-3.5" /> DART 원문 보기
+                                                                            </a>
+                                                                        ) : (
+                                                                            <span className="text-[10px] text-zinc-600 font-medium">{ev.source || "Global Data"}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
