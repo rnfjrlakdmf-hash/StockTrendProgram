@@ -260,26 +260,30 @@ function formatUsdToKrwInText(text: string): string {
         let marketInterpretation = "";
         let disclaimerText = "";
         const mainLines: string[] = [];
-        const followUpLines: string[] = [];
 
         const lines = text.split('\n');
         for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed) continue;
 
+            // [사용자 요청] 확인안내 문구 완전 제거 (👉 터치하여..., 🔍 알림을 누르면... 등)
+            if (trimmed.startsWith("🔍") || trimmed.startsWith("👉") || trimmed.includes("터치하여") || trimmed.includes("알림을 누르면") || trimmed.includes("클릭하여")) {
+                continue;
+            }
+
             if (trimmed.startsWith("💡 [시장해석]") || trimmed.startsWith("💡 [시장 해석]")) {
-                marketInterpretation = trimmed.replace(/^💡\s*\[시장\s*해석\]\s*/, '');
+                marketInterpretation = trimmed
+                    .replace(/^💡\s*\[시장\s*해석\]\s*/, '')
+                    .replace(/[👉🔍※].*$/, '')
+                    .trim();
             } else if (trimmed.startsWith("※") || (trimmed.startsWith("(") && (trimmed.includes("투자 권유가 아닙니다") || trimmed.includes("투자권유")))) {
                 disclaimerText = trimmed;
-            } else if (trimmed.startsWith("🔍") || trimmed.startsWith("👉")) {
-                followUpLines.push(trimmed);
             } else {
                 mainLines.push(trimmed);
             }
         }
 
         const mainText = mainLines.join('\n').trim();
-        const followUpText = followUpLines.join('\n').trim();
 
         const urlRegex = /(https?:\/\/[^\s]+)/g;
 
@@ -340,11 +344,6 @@ function formatUsdToKrwInText(text: string): string {
                         <p className="text-xs md:text-sm text-amber-200 leading-relaxed font-semibold">
                             {marketInterpretation}
                         </p>
-                    </div>
-                )}
-                {followUpText && (
-                    <div className="text-xs text-zinc-400 leading-relaxed font-normal">
-                        {formatSegment(followUpText)}
                     </div>
                 )}
                 {disclaimerText && (
@@ -700,7 +699,7 @@ function formatUsdToKrwInText(text: string): string {
 
                 {/* Title */}
                 <h3 className="text-base md:text-lg font-black text-white group-hover:text-amber-200 transition-colors leading-snug mb-2.5">
-                    {alert.title}
+                    {(alert.title || '').replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])/, '$2')}
                 </h3>
 
                 {/* Body Content */}
