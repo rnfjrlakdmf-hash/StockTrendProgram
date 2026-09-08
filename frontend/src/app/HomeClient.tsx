@@ -7,9 +7,7 @@ import GaugeChart from "@/components/GaugeChart";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import NaverTopWidget from "@/components/NaverTopWidget";
 import DashboardMarketClock from "@/components/DashboardMarketClock";
-import LiveRankingBox from "@/components/LiveRankingBox";
-import PopularSearchWidget from "@/components/PopularSearchWidget";
-import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
+import LiveMarketHub from "@/components/LiveMarketHub";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import MarketIndicators from "@/components/MarketIndicators";
 import SeoContentBlock from "@/components/SeoContentBlock";
@@ -74,21 +72,15 @@ export default function HomeClient() {
         {/* Default Dashboard Content */}
         <div className="space-y-10 animate-in fade-in duration-1000">
 
-            {/* 1. 최상단 퀀트 대시보드: 좌측(한국 증시 공포·탐욕 3D 속도계) / 우측(실시간 랭킹 박스) */}
+            {/* 최상단 퀀트 대시보드: 좌측(한국 증시 공포·탐욕 3D 속도계) / 우측(실시간 시세 & 랭킹 올인원 허브) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
               <FearGreedSpeedometer />
-              <LiveRankingBox />
+              <LiveMarketHub />
             </div>
 
-            {/* 2. 인기 검색어 & 글로벌 가상자산 핫트렌드 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-              <PopularSearchWidget />
-              <WeekendCryptoDashboard />
-              
-              {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 */}
-              <div className="flex lg:hidden justify-center my-2 lg:col-span-2">
-                <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-              </div>
+            {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 */}
+            <div className="flex lg:hidden justify-center my-2">
+              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
             </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
