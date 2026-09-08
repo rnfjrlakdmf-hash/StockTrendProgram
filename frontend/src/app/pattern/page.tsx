@@ -964,7 +964,6 @@ export default function PatternPage() {
                         {/* Kakao AdFit In-Feed Banner */}
                         <KakaoRevenueAd type="feed" />
 
-                        <AIDisclaimer className="mt-8" />
                         {/* Viral Watermark (Included in capture) */}
                         <div className="pt-4 mt-8 border-t border-white/10 flex justify-between items-center text-gray-500 text-xs font-medium px-4">
                             <span>AI 주식 비서 - 내 종목 차트 분석하러 가기 👉</span>

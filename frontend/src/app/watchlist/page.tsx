@@ -1152,9 +1152,6 @@ export default function WatchlistPage() {
                 )}
             </div>
 
-            {/* 유사투자자문업 법적 면책 안내 & 컴플라이언스 표준 고지 */}
-            <AIDisclaimer pageName="MY 관심종목" />
-
             {/* 하단 세로 배너 광고 (320x480) */}
             <div className="mt-8 flex justify-center">
                 <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />

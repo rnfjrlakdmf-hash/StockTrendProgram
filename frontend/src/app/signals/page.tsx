@@ -16,7 +16,6 @@ import {
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import CleanStockList from "@/components/CleanStockList";
-import AIDisclaimer from "@/components/AIDisclaimer";
 import RankingWidget from "@/components/RankingWidget";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 
@@ -105,8 +104,6 @@ function SignalsPageContent() {
 
                 {/* Bottom In-Feed Ad Banner */}
                 <KakaoRevenueAd type="bottom" />
-
-                <AIDisclaimer className="mt-8 opacity-80" />
             </div>
         </div>
     );

@@ -156,7 +156,6 @@ export default function RiskPage() {
                                 <span className="text-green-400">포트폴리오가 매우 안정적입니다.</span>
                             )}
                         </div>
-                        <AIDisclaimer isCompact={true} className="mt-8" />
                     </div>
                 </div>
 
