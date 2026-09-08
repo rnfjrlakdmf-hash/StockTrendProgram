@@ -107,7 +107,7 @@ export default function FloatingQuickMenu() {
 
     return (
         <>
-        <div ref={menuRef} className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-40 flex flex-col items-end">
+        <div ref={menuRef} className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-[70] flex flex-col items-end">
             {/* Mini Watchlist Panel */}
             <div 
                 className={`absolute bottom-16 right-16 w-72 mb-4 bg-black/80 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl shadow-[0_8px_32px_rgba(6,182,212,0.2)] overflow-hidden transition-all duration-300 transform origin-bottom-right ${
@@ -290,6 +290,8 @@ export default function FloatingQuickMenu() {
                         setIsSearchOpen(false);
                     }
                 }}
+                title="스마트 리모컨"
+                aria-label="스마트 리모컨"
                 className={`relative flex items-center justify-center w-11 h-11 sm:w-13 sm:h-13 rounded-full transition-all duration-500 border shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] ${
                     isOpen 
                         ? "bg-cyan-600 border-cyan-400 rotate-45" 
