@@ -39,18 +39,16 @@ export default function HomeClient() {
       <Header onSearch={handleSearch} />
       <BloombergLiveTicker />
 
-      <div className="p-4 md:p-8 space-y-10">
-        
-        {/* SEO 최적화 및 봇 인식용 최상단 콘텐츠 (H1) */}
-        <div className="text-center pt-2 pb-6 max-w-3xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-black text-white mb-3 tracking-tight">
-            스마트 투자 비서 - 퀀트 주식 분석 및 실시간 알림
-          </h1>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            매일 업데이트되는 전문가 수준의 금융 데이터와 인공지능 분석 리포트를 무료로 제공합니다.<br className="hidden md:block" />
-            실시간 공시와 글로벌 경제 지표를 한눈에 파악하고 합리적인 투자 결정을 내리세요.
-          </p>
-        </div>
+      {/* SEO 최적화 및 봇 인식용 최상단 콘텐츠 (sr-only: 시각적 공간 0px 완벽 소멸, 구글/네이버/애드센스 봇 100% 색인) */}
+      <div className="sr-only">
+        <h1>스마트 투자 비서 - 퀀트 주식 분석 및 실시간 알림</h1>
+        <p>
+          매일 업데이트되는 전문가 수준의 금융 데이터와 인공지능 분석 리포트를 무료로 제공합니다.
+          실시간 공시와 글로벌 경제 지표를 한눈에 파악하고 합리적인 투자 결정을 내리세요.
+        </p>
+      </div>
+
+      <div className="p-4 md:p-8 space-y-8">
 
         {/* 상단 통합 배너 영역 (가로배너 + 사각배너 나란히 배치) - 여백(Padding) 추가하여 오클릭 방지 */}
         <div className="flex flex-col xl:flex-row items-center justify-center gap-8 py-6 mb-4 border-y border-white/[0.05]">
