@@ -1,7 +1,7 @@
 "use client";
 // [Deployment Trigger] v3.7.13-FINAL-FIX-2026-05-04
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/Header";
@@ -384,6 +384,16 @@ function SignalsFeedTab({ router }: { router: any }) {
     const [riskLoading, setRiskLoading] = useState(false);
     const [disclosureCategory, setDisclosureCategory] = useState<"all" | "insider" | "contract" | "risk">("all");
 
+    // [PAGINATION] 페이지네이션 및 페이지당 개수 설정
+    const [signalPage, setSignalPage] = useState(1);
+    const [signalPageSize, setSignalPageSize] = useState(10);
+    const signalsFeedRef = useRef<HTMLDivElement>(null);
+
+    // 필터, 검색어, 페이지당 개수 변경 시 1페이지로 리셋
+    useEffect(() => {
+        setSignalPage(1);
+    }, [searchQuery, signalFilter, signalPageSize]);
+
     // [v6.6.0] 숨긴 시그널(삭제) 상태를 브라우저에 저장하여 영구 삭제된 것처럼 작동하게 함
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -595,6 +605,18 @@ function SignalsFeedTab({ router }: { router: any }) {
         const matchSearch = !searchQuery || String(sig.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || String(sig.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
         return matchSearch && !watchlistSymbols.includes(sig.symbol) && !hiddenSignals.includes(sig.id) && isMatchFilter(sig);
     });
+
+    // 페이지네이션 연산
+    const totalSignalPages = Math.max(1, Math.ceil(otherSignals.length / signalPageSize));
+    const currentSignalPage = Math.min(signalPage, totalSignalPages);
+    const paginatedOtherSignals = otherSignals.slice((currentSignalPage - 1) * signalPageSize, currentSignalPage * signalPageSize);
+
+    const handleSignalPageChange = (newPage: number) => {
+        setSignalPage(newPage);
+        if (signalsFeedRef.current) {
+            signalsFeedRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
 
     // 필터별 개수 카운트
     const totalCount = (Array.isArray(signals) ? signals : []).filter(s => !hiddenSignals.includes(s.id)).length;
@@ -921,45 +943,143 @@ function SignalsFeedTab({ router }: { router: any }) {
                     </div>
                 )}
 
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold flex items-center gap-2 text-blue-400">
-                            <Globe className="w-5 h-5" />
-                            전체 시장 시그널
-                        </h3>
-                        {otherSignals.length > 0 && (
-                            <button 
-                                onClick={() => {
-                                    if (!window.confirm("전체 시장 시그널 내역을 모두 삭제하시겠습니까?")) return;
-                                    const idsToHide = otherSignals.map(sig => sig.id);
-                                    setHiddenSignals(prev => {
-                                        const next = [...prev, ...idsToHide];
-                                        localStorage.setItem("hidden_signals", JSON.stringify(next));
-                                        return next;
-                                    });
-                                }}
-                                className="text-xs text-gray-500 hover:text-red-400 px-2 py-1 bg-white/5 hover:bg-red-500/10 rounded-lg border border-white/10 hover:border-red-500/20 transition-colors flex items-center gap-1"
-                                title="전체 시장 시그널 내역 지우기"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" /> 모두 지우기
-                            </button>
-                        )}
+                <div ref={signalsFeedRef} className="space-y-4 pt-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
+                        <div className="flex items-center gap-2.5">
+                            <h3 className="text-lg font-bold flex items-center gap-2 text-blue-400">
+                                <Globe className="w-5 h-5" />
+                                전체 시장 시그널
+                            </h3>
+                            {otherSignals.length > 0 && (
+                                <span className="text-xs text-gray-400 font-mono bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+                                    총 {otherSignals.length}건
+                                </span>
+                            )}
+                        </div>
+
+                        {/* 우측 도구: 페이지당 개수 선택 & 전체 지우기 */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {otherSignals.length > 0 && (
+                                <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-0.5 text-xs font-bold text-gray-400">
+                                    {[10, 20, 50].map(sz => (
+                                        <button
+                                            key={sz}
+                                            onClick={() => setSignalPageSize(sz)}
+                                            className={`px-2.5 py-1 rounded-lg transition-all ${
+                                                signalPageSize === sz 
+                                                    ? "bg-orange-600 text-white shadow-sm font-black" 
+                                                    : "hover:text-white hover:bg-white/5"
+                                            }`}
+                                        >
+                                            {sz}개씩
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {otherSignals.length > 0 && (
+                                <button 
+                                    onClick={() => {
+                                        if (!window.confirm("전체 시장 시그널 내역을 모두 삭제하시겠습니까?")) return;
+                                        const idsToHide = otherSignals.map(sig => sig.id);
+                                        setHiddenSignals(prev => {
+                                            const next = [...prev, ...idsToHide];
+                                            localStorage.setItem("hidden_signals", JSON.stringify(next));
+                                            return next;
+                                        });
+                                    }}
+                                    className="text-xs text-gray-400 hover:text-red-400 px-2.5 py-1.5 bg-white/5 hover:bg-red-500/10 rounded-xl border border-white/10 hover:border-red-500/20 transition-colors flex items-center gap-1 font-bold"
+                                    title="전체 시장 시그널 내역 지우기"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" /> 모두 지우기
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    {loading ? <div className="text-center py-12 text-gray-500"><RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3" />로딩 중...</div>
-                        : otherSignals.length === 0 ? (
-                            <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                                <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-                                <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다.'}</p>
-                                {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 transition-colors rounded-xl text-sm font-bold">지금 첫 스캔 실행</button>}
-                            </div>
-                        ) : (
+
+                    {loading ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-orange-500" />
+                            로딩 중...
+                        </div>
+                    ) : otherSignals.length === 0 ? (
+                        <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                            <AlertTriangle className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+                            <p className="text-gray-500 mb-4">{searchQuery ? `'${searchQuery}'에 대한 시그널 검색 결과가 없습니다` : '아직 감지된 시그널이 없습니다.'}</p>
+                            {!searchQuery && <button onClick={() => scanSignals('all')} className="px-6 py-2 bg-orange-600 hover:bg-orange-500 transition-colors rounded-xl text-sm font-bold">지금 첫 스캔 실행</button>}
+                        </div>
+                    ) : (
+                        <>
                             <div className="space-y-3">
-                                {otherSignals.map(sig => renderSignal(sig, (e) => {
+                                {paginatedOtherSignals.map(sig => renderSignal(sig, (e) => {
                                     e.stopPropagation();
                                     hideSignal(sig.id);
                                 }))}
                             </div>
-                        )}
+
+                            {/* [PAGINATION CONTROLS] 깔끔한 페이지 내비게이션 바 */}
+                            {totalSignalPages > 1 && (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 pb-2 border-t border-white/10 mt-4">
+                                    <div className="text-xs text-gray-400">
+                                        총 <strong className="text-white font-mono">{otherSignals.length}</strong>개 시그널 중{" "}
+                                        <strong className="text-orange-400 font-mono">
+                                            {(currentSignalPage - 1) * signalPageSize + 1}-{Math.min(currentSignalPage * signalPageSize, otherSignals.length)}
+                                        </strong>
+                                        번째 표시 ({currentSignalPage} / {totalSignalPages} 페이지)
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                                        <button
+                                            onClick={() => handleSignalPageChange(currentSignalPage - 1)}
+                                            disabled={currentSignalPage === 1}
+                                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                                        >
+                                            <ChevronLeft className="w-3.5 h-3.5" /> 이전
+                                        </button>
+
+                                        <div className="flex items-center gap-1">
+                                            {Array.from({ length: totalSignalPages }, (_, i) => i + 1)
+                                                .filter(p => p === 1 || p === totalSignalPages || Math.abs(p - currentSignalPage) <= 2)
+                                                .reduce((acc: (number | string)[], p, idx, arr) => {
+                                                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) {
+                                                        acc.push("...");
+                                                    }
+                                                    acc.push(p);
+                                                    return acc;
+                                                }, [])
+                                                .map((item, idx) => {
+                                                    if (typeof item === "string") {
+                                                        return <span key={`ellipsis-${idx}`} className="px-1 text-gray-600 text-xs font-mono">...</span>;
+                                                    }
+                                                    const isCurrent = item === currentSignalPage;
+                                                    return (
+                                                        <button
+                                                            key={item}
+                                                            onClick={() => handleSignalPageChange(item)}
+                                                            className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${
+                                                                isCurrent
+                                                                    ? "bg-orange-600 text-white shadow-lg shadow-orange-600/30"
+                                                                    : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5"
+                                                            }`}
+                                                        >
+                                                            {item}
+                                                        </button>
+                                                    );
+                                                })}
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleSignalPageChange(currentSignalPage + 1)}
+                                            disabled={currentSignalPage === totalSignalPages}
+                                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                                        >
+                                            다음 <ChevronRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
 
