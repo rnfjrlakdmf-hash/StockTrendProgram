@@ -2,8 +2,7 @@ import { Metadata } from 'next';
 import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { 
-  ChevronRight, TrendingUp, Bell, Shield, BarChart3, 
-  Sparkles, Trophy, Calculator, Zap
+  Trophy, Calculator, Zap, Shield
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -99,42 +98,7 @@ export default async function Home() {
 
       {/* 2. 하단 서비스 가이드 & 신뢰성 섹션 (고품격 에디토리얼 레이아웃) */}
       <div className="bg-gradient-to-b from-[#09090b] via-[#06070a] to-[#040406] border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 space-y-16">
-
-          {/* 서비스 4대 핵심 역량 */}
-          <section>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-8">
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-blue-400" /> 스마트 투자 비서 4대 핵심 엔진
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  국내외 증시 실시간 수급과 공시 팩트를 정량적으로 분석합니다.
-                </p>
-              </div>
-              <Link 
-                href="/about" 
-                className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1 shrink-0"
-              >
-                서비스 소개 자세히 보기 <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { icon: Bell, color: 'text-blue-400', bg: 'border-blue-500/20 bg-blue-500/5', title: '실시간 수급·공시 레이더', desc: '외인·기관 순매수 집중주 및 DART 공급계약·내부자 지분 변동 공시 실시간 포착' },
-                { icon: BarChart3, color: 'text-purple-400', bg: 'border-purple-500/20 bg-purple-500/5', title: 'AI 퀀트 종합 밸류에이션', desc: 'PER, PBR, ROE, RSI, MACD 등 20개 이상의 핵심 지표를 종합한 정량 분석 점수' },
-                { icon: TrendingUp, color: 'text-emerald-400', bg: 'border-emerald-500/20 bg-emerald-500/5', title: '실시간 주도 테마 맵', desc: '인공지능, 2차전지, 바이오, 로봇 등 시장을 주도하는 테마와 대장주 실시간 추적' },
-                { icon: Shield, color: 'text-amber-400', bg: 'border-amber-500/20 bg-amber-500/5', title: '리스크 사전 감지 시스템', desc: '대차잔고, 신용융자 잔고율, 공매도 비중을 분석하여 급락 위험성을 사전에 경고' },
-              ].map(({ icon: Icon, color, bg, title, desc }) => (
-                <div key={title} className={`p-6 rounded-2xl border ${bg} transition-all hover:bg-white/[0.04] space-y-2`}>
-                  <Icon className={`w-6 h-6 ${color} mb-3`} />
-                  <h3 className="text-white font-bold text-sm md:text-base">{title}</h3>
-                  <p className="text-gray-400 text-xs md:text-sm leading-relaxed">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
 
           {/* 실시간 인기 스마트 금융 도구 4선 */}
           <section className="bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-blue-950/20 border border-purple-500/20 rounded-3xl p-6 sm:p-8 space-y-6">
@@ -208,8 +172,32 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* E-E-A-T 데이터 수집 기준 & 플랫폼 소개 & 투자 가이드 & FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
+          {/* E-E-A-T 데이터 수집 기준 & 플랫폼 소개 & 4대 엔진 & 투자 가이드 & FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
           <div className="sr-only">
+            <section>
+              <h2>스마트 투자 비서 4대 핵심 엔진</h2>
+              <p>국내외 증시 실시간 수급과 공시 팩트를 정량적으로 분석합니다.</p>
+              <Link href="/about">서비스 소개 자세히 보기</Link>
+              <div>
+                <div>
+                  <h3>실시간 수급·공시 레이더</h3>
+                  <p>외인·기관 순매수 집중주 및 DART 공급계약·내부자 지분 변동 공시 실시간 포착</p>
+                </div>
+                <div>
+                  <h3>AI 퀀트 종합 밸류에이션</h3>
+                  <p>PER, PBR, ROE, RSI, MACD 등 20개 이상의 핵심 지표를 종합한 정량 분석 점수</p>
+                </div>
+                <div>
+                  <h3>실시간 주도 테마 맵</h3>
+                  <p>인공지능, 2차전지, 바이오, 로봇 등 시장을 주도하는 테마와 대장주 실시간 추적</p>
+                </div>
+                <div>
+                  <h3>리스크 사전 감지 시스템</h3>
+                  <p>대차잔고, 신용융자 잔고율, 공매도 비중을 분석하여 급락 위험성을 사전에 경고</p>
+                </div>
+              </div>
+            </section>
+
             <section>
               <h2>주식 투자 실전 가이드 - 필수 금융 지식 46선</h2>
               <p>성공적인 자산 관리를 위해 반드시 알아야 할 46대 필수 금융 지식을 정리했습니다.</p>
