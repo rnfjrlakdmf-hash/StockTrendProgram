@@ -8,9 +8,39 @@ export default function KakaoStickyBottomAd() {
   const [closed, setClosed] = useState(false);
   const [isPC, setIsPC] = useState<boolean | null>(null);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [shouldDisplay, setShouldDisplay] = useState<boolean>(false);
   const pathname = usePathname();
 
   const isHiddenPage = pathname?.startsWith('/admin') || pathname?.startsWith('/login') || pathname?.startsWith('/widget');
+
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
+      setShouldDisplay(false);
+      return;
+    }
+
+    const ua = (navigator.userAgent || "").toLowerCase();
+    const isBot = ua.includes("googlebot") || 
+                  ua.includes("mediapartners-google") || 
+                  ua.includes("adsbot-google") || 
+                  ua.includes("feedfetcher-google") ||
+                  ua.includes("lighthouse") || 
+                  ua.includes("headless") ||
+                  ua.includes("crawler");
+
+    if (isBot) {
+      setShouldDisplay(false);
+      return;
+    }
+
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
+      setShouldDisplay(isKorea);
+    } catch {
+      setShouldDisplay(true);
+    }
+  }, []);
 
   useEffect(() => {
     const checkIsPC = () => window.innerWidth >= 768;
@@ -23,7 +53,7 @@ export default function KakaoStickyBottomAd() {
 
   // 35초마다 스마트 자동 새로고침 (인뷰율 99% 영역)
   useEffect(() => {
-    if (closed || isHiddenPage) return;
+    if (closed || isHiddenPage || !shouldDisplay) return;
 
     const intervalId = setInterval(() => {
       if (typeof document !== "undefined" && !document.hidden) {
@@ -32,9 +62,9 @@ export default function KakaoStickyBottomAd() {
     }, 35000);
 
     return () => clearInterval(intervalId);
-  }, [closed, isHiddenPage]);
+  }, [closed, isHiddenPage, shouldDisplay]);
 
-  if (closed || isHiddenPage || isPC === null) return null;
+  if (!shouldDisplay || closed || isHiddenPage || isPC === null) return null;
 
   // 모바일: 320x50 (DAN-b9cY6ogHFZTTD0Sl) / PC: 728x90 (DAN-eeR4RhnpmQaeIlYm)
   const unit = isPC ? "DAN-eeR4RhnpmQaeIlYm" : "DAN-b9cY6ogHFZTTD0Sl";
@@ -48,6 +78,7 @@ export default function KakaoStickyBottomAd() {
     <html style="margin:0;padding:0;overflow:hidden;">
       <head>
         <meta charset="utf-8">
+        <base target="_top">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -59,7 +90,7 @@ export default function KakaoStickyBottomAd() {
           data-ad-unit="${unit}"
           data-ad-width="${width}"
           data-ad-height="${height}"></ins>
-        <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+        <script type="text/javascript" src="https://t1.daumcdn.net/kas/static/ba.min.js" async></script>
       </body>
     </html>
   `;

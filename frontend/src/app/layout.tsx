@@ -230,8 +230,8 @@ export default function RootLayout({
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />
             
-            {/* Mobile Bottom Tab Bar */}
-            {/* <KakaoStickyBottomAd /> */}
+            {/* Mobile & PC Sticky Bottom Revenue Ad (35s Auto Refresh) */}
+            <KakaoStickyBottomAd />
             <BottomTabBar />
 
             {/* Smart Floating Quick Menu */}
