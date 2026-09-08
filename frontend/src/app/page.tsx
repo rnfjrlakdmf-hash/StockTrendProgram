@@ -2,9 +2,8 @@ import { Metadata } from 'next';
 import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { 
-  BookOpen, Newspaper, ChevronRight, TrendingUp, Bell, Shield, BarChart3, 
-  HelpCircle, Sparkles, ArrowUpRight, Layers, CheckCircle2, Award, 
-  Lock, Globe, Database, Scale, Trophy, Calculator, Compass, Zap
+  ChevronRight, TrendingUp, Bell, Shield, BarChart3, 
+  Sparkles, Trophy, Calculator, Zap
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -209,44 +208,22 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* 12대 추천 주식 투자 가이드 */}
-          <section>
-            <div className="flex items-center justify-between gap-2 mb-6">
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-emerald-400" /> 주식 투자 실전 가이드
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  성공적인 자산 관리를 위해 반드시 알아야 할 46대 필수 금융 지식을 정리했습니다.
-                </p>
-              </div>
-              <Link 
-                href="/guide" 
-                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 shrink-0"
-              >
-                전체 46개 가이드 보기 <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {INVESTMENT_GUIDES.map(({ href, title, desc }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all flex items-center justify-between group"
-                >
-                  <div>
-                    <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">{title}</h3>
-                    <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-gray-600 group-hover:text-emerald-400 transition-colors shrink-0 ml-2" />
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {/* E-E-A-T 데이터 수집 기준 & 플랫폼 소개 & FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
+          {/* E-E-A-T 데이터 수집 기준 & 플랫폼 소개 & 투자 가이드 & FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
           <div className="sr-only">
+            <section>
+              <h2>주식 투자 실전 가이드 - 필수 금융 지식 46선</h2>
+              <p>성공적인 자산 관리를 위해 반드시 알아야 할 46대 필수 금융 지식을 정리했습니다.</p>
+              <Link href="/guide">전체 46개 가이드 보기</Link>
+              <div>
+                {INVESTMENT_GUIDES.map(({ href, title, desc }) => (
+                  <div key={href}>
+                    <Link href={href}>{title}</Link>
+                    <p>{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section>
               <h2>DATA-DRIVEN FINANCIAL INTELLIGENCE - 개인 투자자를 위한 차세대 AI 퀀트 금융 정보 플랫폼</h2>
               <p>
