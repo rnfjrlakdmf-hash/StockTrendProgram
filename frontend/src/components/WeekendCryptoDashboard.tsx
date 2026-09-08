@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, Coins, Activity, Flame } from "lucide-react";
+import { TrendingUp, TrendingDown, Coins, Activity, Flame, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 interface CoinData {
@@ -12,14 +12,14 @@ interface CoinData {
   acc_trade_price_24h: number;
 }
 
-const COIN_MAP: Record<string, string> = {
-  "KRW-BTC": "비트코인",
-  "KRW-ETH": "이더리움",
-  "KRW-XRP": "리플",
-  "KRW-DOGE": "도지코인",
-  "KRW-SOL": "솔라나",
-  "KRW-SHIB": "시바이누",
-};
+const COIN_ORDER = [
+  { code: "KRW-BTC", name: "비트코인", symbol: "BTC" },
+  { code: "KRW-ETH", name: "이더리움", symbol: "ETH" },
+  { code: "KRW-SOL", name: "솔라나", symbol: "SOL" },
+  { code: "KRW-XRP", name: "리플", symbol: "XRP" },
+  { code: "KRW-DOGE", name: "도지코인", symbol: "DOGE" },
+  { code: "KRW-SHIB", name: "시바이누", symbol: "SHIB" },
+];
 
 export default function WeekendCryptoDashboard() {
   const [coins, setCoins] = useState<CoinData[]>([]);
@@ -28,21 +28,25 @@ export default function WeekendCryptoDashboard() {
   useEffect(() => {
     const fetchCoins = async () => {
       try {
-        const markets = Object.keys(COIN_MAP).join(",");
+        const markets = COIN_ORDER.map(c => c.code).join(",");
         const res = await fetch(`https://api.upbit.com/v1/ticker?markets=${markets}`);
         if (!res.ok) return;
         const data = await res.json();
         
-        const formattedData: CoinData[] = data.map((item: any) => ({
-          market: item.market,
-          korean_name: COIN_MAP[item.market],
-          trade_price: item.trade_price,
-          signed_change_rate: item.signed_change_rate,
-          acc_trade_price_24h: item.acc_trade_price_24h
-        }));
+        const map: Record<string, any> = {};
+        data.forEach((d: any) => { map[d.market] = d; });
+
+        const formattedData: CoinData[] = COIN_ORDER.map(item => {
+          const raw = map[item.code] || {};
+          return {
+            market: item.code,
+            korean_name: item.name,
+            trade_price: raw.trade_price || 0,
+            signed_change_rate: raw.signed_change_rate || 0,
+            acc_trade_price_24h: raw.acc_trade_price_24h || 0
+          };
+        });
         
-        // 거래대금 순 정렬
-        formattedData.sort((a, b) => b.acc_trade_price_24h - a.acc_trade_price_24h);
         setCoins(formattedData);
       } catch (e) {
         console.error("Failed to fetch crypto data", e);
@@ -52,74 +56,104 @@ export default function WeekendCryptoDashboard() {
     };
 
     fetchCoins();
-    const interval = setInterval(fetchCoins, 3000); // 3초마다 갱신 (실시간 느낌)
+    const interval = setInterval(fetchCoins, 4000); // 4초마다 실시간 갱신
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) {
+  if (loading && coins.length === 0) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-black/40 p-6 flex justify-center items-center h-32">
-        <Activity className="h-6 w-6 text-yellow-400 animate-spin" />
+      <div className="w-full bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 flex justify-center items-center h-[350px]">
+        <Activity className="h-6 w-6 text-amber-400 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-950/30 via-zinc-900/90 to-zinc-950 p-6 md:p-7 shadow-2xl backdrop-blur-md">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-            </span>
-            <span className="text-rose-400 font-black text-xs tracking-wider uppercase">WEEKEND LIVE 24/7</span>
+    <div className="w-full bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col justify-between h-full group hover:border-white/20 transition-all duration-300">
+      
+      {/* 1. Header matching PopularSearchWidget */}
+      <div className="bg-zinc-950/80 border-b border-white/10 px-5 py-4 flex justify-between items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl relative">
+            <Coins className="w-4 h-4 text-amber-400" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full"></span>
           </div>
-          <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2.5 tracking-tight">
-            <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-              <Coins className="h-5 w-5 text-amber-400" />
-            </div>
-            <span>주말 가상자산 핫트렌드</span>
-          </h2>
-          <p className="text-gray-400 text-xs mt-1">주식 정규장이 닫힌 주말에도 실시간으로 움직이는 글로벌 가상자산 시세</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-black text-white text-sm tracking-tight">글로벌 가상자산 핫트렌드</h2>
+            <span className="text-[10px] font-black text-amber-400 border border-amber-500/40 px-1.5 py-0.2 rounded-md bg-amber-500/10 tracking-wider">
+              24/7 LIVE
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-amber-400 bg-amber-500/10 px-3.5 py-1.5 rounded-full border border-amber-500/20 self-start sm:self-center shadow-sm">
-          <Flame className="h-3.5 w-3.5 text-amber-400" /> 
-          <span>업비트(Upbit) 실시간 연동</span>
+
+        <div className="text-[11px] text-gray-400 font-bold flex items-center gap-1.5 bg-zinc-900 px-2.5 py-1 rounded-lg border border-white/5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="text-gray-300">업비트 실시간 연동</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* 2. Spacious 3x2 Grid Layout (No Text Clipping!) */}
+      <div className="p-3 md:p-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5 flex-1 items-stretch">
         {coins.map((coin) => {
           const isUp = coin.signed_change_rate > 0;
           const isDown = coin.signed_change_rate < 0;
           const changePercent = (coin.signed_change_rate * 100).toFixed(2);
+          const symbol = coin.market.replace("KRW-", "");
           
           return (
-            <div key={coin.market} className="bg-zinc-950/80 border border-white/10 rounded-2xl p-4 hover:border-amber-500/40 hover:bg-zinc-900 transition-all duration-300 shadow-md flex flex-col justify-between group">
-              <div>
-                <div className="text-xs font-black text-white mb-1.5 flex justify-between items-center">
-                  <span className="group-hover:text-amber-300 transition-colors truncate">{coin.korean_name}</span>
-                  <span className="text-[10px] text-gray-500 font-mono font-bold bg-white/5 border border-white/10 px-1.5 py-0.2 rounded">{coin.market.replace("KRW-", "")}</span>
-                </div>
-                <div className="text-base sm:text-lg font-black text-white font-mono tracking-tight my-1 truncate">
-                  {coin.trade_price >= 1000 ? coin.trade_price.toLocaleString() : coin.trade_price}<span className="text-xs font-bold text-gray-400 ml-0.5">원</span>
+            <div 
+              key={coin.market} 
+              className="bg-zinc-950/70 border border-white/5 hover:border-amber-500/30 hover:bg-zinc-800/80 rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between group cursor-default"
+            >
+              {/* Coin Title & Symbol */}
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-bold text-xs sm:text-sm text-white group-hover:text-amber-300 transition-colors truncate">
+                  {coin.korean_name}
+                </span>
+                <span className="text-[10px] text-gray-400 font-mono font-bold bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
+                  {symbol}
+                </span>
+              </div>
+
+              {/* Price (Full display with no cutoffs) */}
+              <div className="my-1.5">
+                <div className="text-sm sm:text-base font-black text-white font-mono tracking-tight tabular-nums truncate">
+                  {coin.trade_price >= 1000 ? coin.trade_price.toLocaleString() : coin.trade_price}
+                  <span className="text-[11px] font-bold text-gray-400 ml-0.5">원</span>
                 </div>
               </div>
-              <div className={`mt-2 text-xs font-black flex items-center justify-between px-2 py-1 rounded-lg border font-mono ${
-                isUp 
-                  ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
-                  : isDown 
-                  ? 'text-sky-400 bg-sky-500/10 border-sky-500/20' 
-                  : 'text-gray-400 bg-white/5 border-white/10'
-              }`}>
-                <span className="text-[10px]">{isUp ? '▲' : isDown ? '▼' : '-'}</span>
-                <span>{isUp ? '+' : ''}{changePercent}%</span>
+
+              {/* Change Rate Pill */}
+              <div className="mt-1 flex items-center justify-between">
+                <div className={`px-2 py-0.5 rounded-md text-[11px] font-black font-mono border flex items-center gap-1 ${
+                  isUp 
+                    ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' 
+                    : isDown 
+                    ? 'text-sky-400 bg-sky-500/10 border-sky-500/20' 
+                    : 'text-gray-400 bg-white/5 border-white/10'
+                }`}>
+                  <span className="text-[9px]">{isUp ? '▲' : isDown ? '▼' : '-'}</span>
+                  <span>{isUp ? '+' : ''}{changePercent}%</span>
+                </div>
+
+                <span className="text-[10px] text-gray-500 font-mono hidden sm:inline">
+                  {coin.acc_trade_price_24h > 100000000000 
+                    ? `${(coin.acc_trade_price_24h / 100000000).toFixed(0)}억`
+                    : "실시간"}
+                </span>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* 3. Subtitle / Notice at bottom */}
+      <div className="px-5 pb-4 pt-1 flex items-center justify-between text-[11px] text-gray-500">
+        <span>정규 증시 마감 후에도 24시간 실시간 시세 제공</span>
+        <span className="text-amber-400 font-semibold">글로벌 유동성 지표</span>
+      </div>
+
     </div>
   );
 }

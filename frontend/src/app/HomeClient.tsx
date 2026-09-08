@@ -75,13 +75,13 @@ export default function HomeClient() {
         <div className="space-y-10 animate-in fade-in duration-1000">
 
             {/* 1. 최상단 퀀트 대시보드: 좌측(한국 증시 공포·탐욕 3D 속도계) / 우측(실시간 랭킹 박스) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
               <FearGreedSpeedometer />
               <LiveRankingBox />
             </div>
 
-            {/* 2. 인기 검색어 & 코인 핫트렌드 대시보드 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
+            {/* 2. 인기 검색어 & 글로벌 가상자산 핫트렌드 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
               <PopularSearchWidget />
               <WeekendCryptoDashboard />
               

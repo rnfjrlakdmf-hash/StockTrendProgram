@@ -1,13 +1,13 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Activity, RefreshCw } from "lucide-react";
+import { Activity, RefreshCw } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import { RankingBoxSkeleton } from "./SkeletonCard";
 
 function AnimatedNumber({ value, isPrice = false, prefix = "" }: { value: number | string, isPrice?: boolean, prefix?: string }) {
-    // If it's a string (like "+1.23%"), just animate opacity. If number, we can do flip.
-    // For simplicity, we just do a vertical slide animation on the entire value
     return (
         <span className="relative inline-block overflow-hidden h-[1.2em] leading-tight align-bottom">
             <AnimatePresence mode="popLayout">
@@ -52,7 +52,7 @@ export default function LiveRankingBox() {
     useEffect(() => {
         setLoading(true);
         fetchRankings(market, category);
-        const interval = setInterval(() => fetchRankings(market, category), 5000); // 5초마다 갱신
+        const interval = setInterval(() => fetchRankings(market, category), 5000);
         return () => clearInterval(interval);
     }, [market, category]);
 
@@ -61,7 +61,7 @@ export default function LiveRankingBox() {
     }
 
     return (
-        <div className="w-full bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col h-full">
+        <div className="w-full bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col justify-between h-full group hover:border-white/20 transition-all duration-300">
             {/* Header with Tabs */}
             <div className="bg-zinc-950/80 border-b border-white/10 px-5 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="flex items-center gap-2.5">
@@ -77,26 +77,26 @@ export default function LiveRankingBox() {
                     <div className="flex bg-zinc-900 rounded-xl p-1 border border-white/5">
                         <button 
                             onClick={() => { setMarket("KR"); setCategory("amount"); }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "KR" && category === "amount" ? "bg-indigo-600 text-white shadow-md" : "text-gray-400 hover:text-white"}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "KR" && category === "amount" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" : "text-gray-400 hover:text-white"}`}
                         >
                             국내 거래대금
                         </button>
                         <button 
                             onClick={() => { setMarket("KR"); setCategory("volume"); }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "KR" && category === "volume" ? "bg-indigo-600 text-white shadow-md" : "text-gray-400 hover:text-white"}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "KR" && category === "volume" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" : "text-gray-400 hover:text-white"}`}
                         >
                             국내 인기
                         </button>
                         <div className="w-px bg-white/10 mx-0.5 my-1"></div>
                         <button 
                             onClick={() => { setMarket("US"); setCategory("amount"); }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "US" && category === "amount" ? "bg-indigo-600 text-white shadow-md" : "text-gray-400 hover:text-white"}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "US" && category === "amount" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" : "text-gray-400 hover:text-white"}`}
                         >
                             미국 대금
                         </button>
                         <button 
                             onClick={() => { setMarket("US"); setCategory("volume"); }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "US" && category === "volume" ? "bg-indigo-600 text-white shadow-md" : "text-gray-400 hover:text-white"}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${market === "US" && category === "volume" ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" : "text-gray-400 hover:text-white"}`}
                         >
                             미국 인기
                         </button>
@@ -104,7 +104,7 @@ export default function LiveRankingBox() {
 
                     {lastUpdated && (
                         <div className="text-[10px] text-gray-400 font-mono flex items-center gap-1 bg-zinc-900 px-2.5 py-1 rounded-lg border border-white/5">
-                            <RefreshCw className="w-2.5 h-2.5 text-gray-500 animate-spin-slow" />
+                            <RefreshCw className="w-2.5 h-2.5 text-indigo-400 animate-spin-slow" />
                             {lastUpdated.toLocaleTimeString('ko-KR', { hour12: false })}
                         </div>
                     )}
@@ -116,7 +116,6 @@ export default function LiveRankingBox() {
                 {rankings.slice(0, 10).map((item, idx) => {
                     const isUp = item.change_val > 0 || String(item.change_percent).includes('+');
                     const isDown = item.change_val < 0 || String(item.change_percent).includes('-');
-                    const colorClass = isUp ? "text-rose-400" : isDown ? "text-sky-400" : "text-gray-400";
                     const bgClass = isUp ? "bg-rose-500/10 border-rose-500/20 text-rose-300" : isDown ? "bg-sky-500/10 border-sky-500/20 text-sky-300" : "bg-white/5 border-white/10 text-gray-400";
                     
                     return (
@@ -127,7 +126,7 @@ export default function LiveRankingBox() {
                                     <div className={`w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg font-black text-xs ${
                                         idx === 0 ? "bg-gradient-to-br from-amber-400 to-amber-600 text-black shadow-md shadow-amber-500/20" :
                                         idx === 1 ? "bg-gradient-to-br from-slate-200 to-slate-400 text-black shadow-md" :
-                                        idx === 2 ? "bg-gradient-to-br from-amber-700 to-amber-900 text-amber-200 shadow-md" :
+                                        idx === 2 ? "bg-gradient-to-br from-amber-700 to-amber-900 text-amber-100 shadow-md" :
                                         "bg-zinc-800 text-gray-400 font-bold"
                                     }`}>
                                         {item.rank}
@@ -159,6 +158,12 @@ export default function LiveRankingBox() {
                         </Link>
                     );
                 })}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 pb-3.5 pt-0.5 flex items-center justify-between text-[11px] text-gray-500">
+                <span>실시간 시장 거래대금 및 시세 데이터 연동</span>
+                <span className="text-indigo-400 font-semibold">5초 자동 갱신</span>
             </div>
         </div>
     );
