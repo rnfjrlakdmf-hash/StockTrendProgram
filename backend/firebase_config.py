@@ -358,14 +358,25 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     # 6. 뉴스 알림
     elif alert_type in ['news_alert', 'news_naver', 'news_google'] or "뉴스" in clean_title or "속보" in clean_title:
         new_title = apply_news_sentiment(clean_title, clean_body)
-        new_body = f"{clean_body}\n👉 터치하여 AI 핵심 요약 및 관련주를 확인하세요.\n{DISCLAIMER_TEXT}"
+        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        interp = existing_interp or "주요 언론 보도 및 시장 관심 테마 이슈 포착"
+        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n👉 터치하여 AI 핵심 요약 및 관련주를 확인하세요.\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
-    # 7. 기본 정돈 및 면책 문구 보장
+    # 7. 장시작 / 장마감 / 브리핑 및 기타 모든 알림
     else:
-        if DISCLAIMER_TEXT not in clean_body and len(clean_body) < 120:
-            clean_body = f"{clean_body}\n{DISCLAIMER_TEXT}"
-        return sanitize_notification_text(clean_title, clean_body)
+        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        if "장시작" in clean_title:
+            interp = existing_interp or "오늘 정규장 개장 · 주요 지수 및 개장 시초가 주목"
+        elif "장마감" in clean_title:
+            interp = existing_interp or "오늘 정규장 마감 · 일일 수급 및 종가 동향 정리"
+        elif existing_interp:
+            interp = existing_interp
+        else:
+            interp = "시장 핵심 데이터 변동 감지 · 세부 분석 확인"
+
+        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n👉 터치하여 상세 정보를 확인하세요.\n{DISCLAIMER_TEXT}"
+        return sanitize_notification_text(clean_title, new_body)
 
 
 def sanitize_notification_text(title: str, body: str):
