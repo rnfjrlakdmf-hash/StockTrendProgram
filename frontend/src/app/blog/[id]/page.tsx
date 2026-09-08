@@ -65,7 +65,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const post = await getBlogPost(resolvedParams.id);
     
     if (!post) {
-        return { title: "리포트를 찾을 수 없습니다" };
+        const fallbackTitle = decodeURIComponent(resolvedParams.id).replace(/[-_]/g, ' ');
+        return {
+            title: `${fallbackTitle} | 마켓 리포트 - 스마트 투자 비서`,
+            description: `${fallbackTitle}에 대한 인공지능 주식 시장 시황 분석 및 최신 투자 리포트입니다.`,
+            alternates: {
+                canonical: `/blog/${resolvedParams.id}`,
+            },
+        };
     }
 
     return {

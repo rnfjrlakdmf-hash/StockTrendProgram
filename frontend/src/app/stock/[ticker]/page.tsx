@@ -41,7 +41,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     
     if (!data || data.status === 'error') {
         return {
-            title: '종목 분석 - StockTrendProgram',
+            title: `[종목 분석] ${decodedTicker} 주가 시세 및 AI 투자 진단 (${decodedTicker}) | 스마트 투자 비서`,
+            description: `실시간 ${decodedTicker} 주가 시세와 기술적 차트 지표, 외국인·기관 수급 동향 및 AI 매매 시그널 정보를 무료로 확인하세요.`,
+            alternates: {
+                canonical: `/stock/${decodedTicker}`,
+            },
         };
     }
     

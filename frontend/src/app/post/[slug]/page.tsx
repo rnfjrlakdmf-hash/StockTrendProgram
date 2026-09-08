@@ -53,7 +53,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const post = await getTheoryPost(resolvedParams.slug);
     
     if (!post) {
-        return { title: "리포트를 찾을 수 없습니다" };
+        const fallbackTitle = decodeURIComponent(resolvedParams.slug).replace(/[-_]/g, ' ');
+        return {
+            title: `${fallbackTitle} | 핫이슈 종목 분석 - 스마트 투자 비서`,
+            description: `${fallbackTitle}에 대한 실시간 주가 분석, 모멘텀 및 수급 진단 정보를 확인하세요.`,
+            alternates: {
+                canonical: `/post/${resolvedParams.slug}`,
+            },
+        };
     }
 
     const desc = (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";

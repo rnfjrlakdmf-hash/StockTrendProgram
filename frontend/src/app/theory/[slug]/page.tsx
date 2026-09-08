@@ -53,7 +53,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const post = await getTheoryPost(resolvedParams.slug);
     
     if (!post) {
-        return { title: "강의를 찾을 수 없습니다" };
+        const fallbackTitle = decodeURIComponent(resolvedParams.slug).replace(/[-_]/g, ' ');
+        return {
+            title: `${fallbackTitle} | 실전 차트 스터디 - 스마트 투자 비서`,
+            description: `${fallbackTitle}에 대한 차트 패턴, 보조지표 매매법 및 실전 투자 전략 강의입니다.`,
+            alternates: {
+                canonical: `/theory/${resolvedParams.slug}`,
+            },
+        };
     }
 
     const desc = (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";

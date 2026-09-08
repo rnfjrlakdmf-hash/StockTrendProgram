@@ -54,9 +54,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     } catch (e) {
         console.error("Metadata fetch error", e);
     }
+    const fallbackName = decodeURIComponent(resolvedParams?.slug || '인기 테마').replace(/[-_]/g, ' ');
     return {
-        title: "테마주 분석 - StockTrend",
-        description: "주식 테마 분석"
+        title: `[테마주] ${fallbackName} 관련주 및 수혜주 AI 분석 | 스마트 투자 비서`,
+        description: `${fallbackName} 테마의 핵심 관련주, 대장주 및 최신 수급 모멘텀 분석 정보를 확인하세요.`,
+        alternates: {
+            canonical: `/theme/${resolvedParams?.slug}`,
+        },
     };
 }
 
