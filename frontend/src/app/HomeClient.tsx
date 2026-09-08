@@ -139,28 +139,22 @@ export default function HomeClient() {
             {/* Recent Theory Posts Widget (AdSense SEO) */}
             <RecentTheoryWidget />
 
-            {/* SEO Text Rich Links (AdSense Approval Priority) */}
-            <div className="mt-8 space-y-6">
-
-
+            {/* SEO Text Rich Links (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
+            <div className="sr-only">
+              <h2>투자 전략 가이드</h2>
               <div>
-                <h2 className="text-lg font-bold text-gray-400 mb-4 ml-2 flex items-center gap-2 tracking-tight">
-                  <Layers className="w-5 h-5 text-cyan-400" /> 투자 전략 가이드
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Link href="/guide/ai-investing" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
-                    <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">초보자를 위한 실전 주식 가이드</h3>
-                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">데이터 기반의 올바른 투자 습관과 마인드셋을 기르는 첫 걸음</p>
-                  </Link>
-                  <Link href="/guide/supply-chain-analysis" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
-                    <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">공급망 지도 분석 방법론</h3>
-                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">산업의 밸류체인을 이해하고 숨은 수혜주를 발굴하는 비법</p>
-                  </Link>
-                  <Link href="/guide/risk-management" className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 transition-colors group block">
-                    <h3 className="text-gray-300 font-semibold group-hover:text-cyan-300 text-sm">포트폴리오 변동성 관리</h3>
-                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">하락장에서도 계좌를 지키는 리스크 관리 및 자산 배분 전략</p>
-                  </Link>
-                </div>
+                <Link href="/guide/ai-investing">
+                  <h3>초보자를 위한 실전 주식 가이드</h3>
+                  <p>데이터 기반의 올바른 투자 습관과 마인드셋을 기르는 첫 걸음</p>
+                </Link>
+                <Link href="/guide/supply-chain-analysis">
+                  <h3>공급망 지도 분석 방법론</h3>
+                  <p>산업의 밸류체인을 이해하고 숨은 수혜주를 발굴하는 비법</p>
+                </Link>
+                <Link href="/guide/risk-management">
+                  <h3>포트폴리오 변동성 관리</h3>
+                  <p>하락장에서도 계좌를 지키는 리스크 관리 및 자산 배분 전략</p>
+                </Link>
               </div>
             </div>
 
