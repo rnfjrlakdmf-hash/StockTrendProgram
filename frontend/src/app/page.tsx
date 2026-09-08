@@ -3,7 +3,7 @@ import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { 
   BookOpen, Newspaper, ChevronRight, TrendingUp, Bell, Shield, BarChart3, 
-  HelpCircle, Sparkles, ArrowUpRight, Cpu, Layers, CheckCircle2, Award, 
+  HelpCircle, Sparkles, ArrowUpRight, Layers, CheckCircle2, Award, 
   Lock, Globe, Database, Scale, Trophy, Calculator, Compass, Zap
 } from 'lucide-react';
 
@@ -100,22 +100,7 @@ export default async function Home() {
 
       {/* 2. 하단 서비스 가이드 & 신뢰성 섹션 (고품격 에디토리얼 레이아웃) */}
       <div className="bg-gradient-to-b from-[#09090b] via-[#06070a] to-[#040406] border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 space-y-20">
-
-          {/* 에디토리얼 인트로: 플랫폼 비전 */}
-          <section className="bg-gradient-to-br from-blue-900/15 via-zinc-900/40 to-transparent border border-blue-500/20 rounded-3xl p-8 md:p-12 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-bold">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>DATA-DRIVEN FINANCIAL INTELLIGENCE</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
-              개인 투자자를 위한 차세대 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">AI 퀀트 금융 정보 플랫폼</span>
-            </h2>
-            <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-4xl">
-              스마트 투자 비서는 금융감독원 전자공시시스템(DART), 한국거래소(KRX), 미국 증권거래위원회(SEC EDGAR) 등 
-              공신력 있는 공공 데이터에 최첨단 퀀트 알고리즘을 결합하여, 기관 투자자와 개인 투자자 간의 정보 비대칭성을 해소하는 완전 무료 주식 정보 인프라입니다.
-            </p>
-          </section>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 space-y-16">
 
           {/* 서비스 4대 핵심 역량 */}
           <section>
@@ -260,8 +245,16 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* E-E-A-T 데이터 수집 기준 & 자주 묻는 질문 FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
+          {/* E-E-A-T 데이터 수집 기준 & 플랫폼 소개 & FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
           <div className="sr-only">
+            <section>
+              <h2>DATA-DRIVEN FINANCIAL INTELLIGENCE - 개인 투자자를 위한 차세대 AI 퀀트 금융 정보 플랫폼</h2>
+              <p>
+                스마트 투자 비서는 금융감독원 전자공시시스템(DART), 한국거래소(KRX), 미국 증권거래위원회(SEC EDGAR) 등 
+                공신력 있는 공공 데이터에 최첨단 퀀트 알고리즘을 결합하여, 기관 투자자와 개인 투자자 간의 정보 비대칭성을 해소하는 완전 무료 주식 정보 인프라입니다.
+              </p>
+            </section>
+
             <section>
               <h2>공공 데이터 수집 기준 및 신뢰성 정책</h2>
               <div>
