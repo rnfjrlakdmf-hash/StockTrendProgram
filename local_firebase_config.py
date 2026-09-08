@@ -103,6 +103,39 @@ def apply_news_sentiment(title: str, body: str) -> str:
         return title
 
 
+def format_korean_shares_and_amounts(text: str) -> str:
+    """
+    8,000,000주 -> 800만 주, 50,000,000,000원 -> 500억 원 등
+    0이 많은 수량과 금액을 한국인이 가장 직관적으로 읽을 수 있는 억/만 단위로 자동 변환합니다.
+    """
+    if not text:
+        return ""
+    import re
+    def replace_num(match):
+        raw_num = match.group(1).replace(',', '')
+        suffix = match.group(2)
+        try:
+            val = int(raw_num)
+            if val >= 100_000_000:
+                eok = val // 100_000_000
+                man = (val % 100_000_000) // 10_000
+                if man > 0:
+                    return f"{eok}억 {man:,}만 {suffix}"
+                return f"{eok}억 {suffix}"
+            elif val >= 10_000:
+                man = val // 10_000
+                rem = val % 10_000
+                if rem == 0:
+                    return f"{man:,}만 {suffix}"
+                return f"{man:,}만 {rem:,}{suffix}"
+            else:
+                return f"{val:,}{suffix}"
+        except:
+            return match.group(0)
+
+    return re.sub(r'([\d,]{4,})\s*(주|원)', replace_num, text)
+
+
 def beautify_notification(title: str, body: str, data: Optional[Dict] = None) -> tuple:
     """
     모든 알림(공시, 시세 변동, 공모주, 수급, 뉴스, 시황 브리핑 등)을
@@ -149,7 +182,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         if any(k in report_title for k in ["단일판매", "공급계약"]):
             new_title = f"💰 [공급계약 공시] {company}" if company else "💰 [대규모 공급계약 공시]"
-            interp = existing_interp or "대형 수주 확보로 향후 매출 및 실적 성장 기대"
+            interp = existing_interp or "대규모 수주 계약 체결 · 매출 및 실적 퀀텀점프 기대"
             new_body = (
                 f"📌 타법인과 대규모 제품/용역 공급계약 체결 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -159,7 +192,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["전환사채", "전환사채권", "CB"]):
             new_title = f"⚠️ [전환사채(CB) 발행] {company}" if company else "⚠️ [전환사채(CB) 발행 공시]"
-            interp = existing_interp or "자금 조달 목적 확인 필요 · 향후 주식 희석 가능성 주의"
+            interp = existing_interp or "시설 자금 조달 목적 · 향후 주식 희석(물량 부담) 체크"
             new_body = (
                 f"📌 자금 조달을 위한 전환사채(CB) 발행 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -169,7 +202,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["신주인수권부사채", "BW"]):
             new_title = f"⚠️ [신주인수권부사채(BW) 발행] {company}" if company else "⚠️ [신주인수권부사채(BW) 공시]"
-            interp = existing_interp or "자금 조달 목적 확인 필요 · 향후 주식 희석 가능성 주의"
+            interp = existing_interp or "자금 조달 목적 · 향후 신주 인수(물량 부담) 체크"
             new_body = (
                 f"📌 자금 조달을 위한 신주인수권부사채(BW) 발행 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -179,7 +212,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["유상증자"]):
             new_title = f"⚠️ [유상증자 공시] {company}" if company else "⚠️ [유상증자 결정 공시]"
-            interp = existing_interp or "자금 조달 목적 확인 필요 · 단기 신주 발행 희석 가능성 주의"
+            interp = existing_interp or "자본 확충 신주 발행 · 자금 조달 목적 및 주식 가치 희석 체크"
             new_body = (
                 f"📌 자본 확충을 위한 유상증자(신주 발행) 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -189,7 +222,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["무상증자"]):
             new_title = f"🎉 [무상증자 발표] {company}" if company else "🎉 [무상증자 결정 공시]"
-            interp = existing_interp or "대표적 주주친화 정책 · 유통 주식수 확대 호재"
+            interp = existing_interp or "신주 무상 배정 결정 · 유통 주식수 확대 및 대표적 주주친화 호재"
             new_body = (
                 f"📌 기존 주주에게 신주 무상 배정 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -201,11 +234,11 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
             new_title = f"👤 {t_core}" if t_core else (f"👤 [임원/주요주주 지분변동] {company}" if company else "👤 [지분 변동 공시]")
             if "매수" in report_title or "취득" in report_title or "매수" in clean_title:
-                interp = existing_interp or "대표/경영진의 자사주 매수 · 실적 자신감 및 책임 경영 신호"
+                interp = existing_interp or "대표/경영진 자사주 매입 포착 · 책임 경영 및 주가 방어 신호"
             elif "매도" in report_title or "처분" in report_title or "매도" in clean_title:
-                interp = existing_interp or "임원 지분 매도 · 차익실현 물량 여부 확인 필요"
+                interp = existing_interp or "대주주 차익실현 매물 출회 · 단기 변동성 주의"
             else:
-                interp = existing_interp or "경영진/큰손 지분 구조 변화 · 세부 내역 확인 필요"
+                interp = existing_interp or "경영진 지분 변동 발생 · 지배구조 개편 및 방향성 체크"
             
             raw_lines = [l.strip() for l in clean_no_interp.split('\n') if l.strip() and not any(l.strip().startswith(x) for x in ['💡', '※', '👉', '🔍'])]
             fact_line = " · ".join(raw_lines)
@@ -221,7 +254,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["자기주식취득", "자사주취득"]):
             new_title = f"🔥 [자사주 취득 결정] {company}" if company else "🔥 [자사주 취득 공시]"
-            interp = existing_interp or "주가 방어 및 주주가치 제고를 위한 긍정적 신호"
+            interp = existing_interp or "자사주 직접 매입 결정 · 주가 방어 및 주주환원 긍정 신호"
             new_body = (
                 f"📌 회사가 자기 주식 직접 매수 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -231,7 +264,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["자기주식소각", "자사주소각"]):
             new_title = f"🔥 [자사주 소각 발표] {company}" if company else "🔥 [자사주 소각 공시]"
-            interp = existing_interp or "발행 주식수 영구 감축 · 주당 가치 상승의 강력한 주주환원 호재"
+            interp = existing_interp or "자사주 영구 소각 결정 · 주당 가치 상승을 이끄는 강력한 호재"
             new_body = (
                 f"📌 발행 주식수 영구 감축(소각) 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -241,7 +274,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["영업실적", "잠정실적", "분기보고서", "반기보고서", "사업보고서", "매출액또는손익구조"]):
             new_title = f"📊 [실적 발표 공시] {company}" if company else "📊 [경영 실적 발표 공시]"
-            interp = existing_interp or "최근 경영 성적표 발표 · 시장 전망치(컨센서스) 부합 여부 확인"
+            interp = existing_interp or "경영 실적(매출·영업이익) 발표 · 시장 전망치 부합 여부 체크"
             new_body = (
                 f"📌 회사의 최근 경영 실적(매출/영업이익) 공시 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -251,7 +284,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["배당", "현금ㆍ현물배당"]):
             new_title = f"💸 [배당 결정 발표] {company}" if company else "💸 [배당 공시]"
-            interp = existing_interp or "주주 배당금 확정 · 안정적 배당 수익률 및 현금 흐름 신호"
+            interp = existing_interp or "주주 배당금 지급 확정 · 안정적 배당 수익률 및 현금 흐름 신호"
             new_body = (
                 f"📌 주주 배당금 지급 결정 공시 발표\n"
                 f"💡 [시장해석] {interp}\n"
@@ -261,7 +294,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["소송", "고발", "횡령", "배임", "감자", "관리종목", "상장폐지", "불성실", "영업정지", "부도"]):
             new_title = f"⚠️ [투자 유의 공시] {company}" if company else "⚠️ [투자 유의 공시]"
-            interp = existing_interp or "기업 신뢰도 및 경영 불확실성 발생 · 리스크 대응 주의"
+            interp = existing_interp or "경영 불확실성 및 감자·소송 공시 · 최고 수준 리스크 대응 필요"
             new_body = (
                 f"📌 {report_title[:50]} 관련 중요 공시 접수\n"
                 f"💡 [시장해석] {interp}\n"
@@ -301,27 +334,32 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
     # 2. 가격 급등 / 급락 / 52주 신고가 알림
     elif alert_type in ['auto_price_alert', 'price_alert'] or any(k in clean_title for k in ["급등", "급락", "신고가"]):
-        company = ""
-        m = re.search(r'\(([^)]+)\)', clean_title)
-        if m:
-            company = m.group(1).strip()
+        company = (data or {}).get("corp") or (data or {}).get("company") or (data or {}).get("stock_name") or ""
+        if not company:
+            m_comp = re.search(r'\]\s*([가-힣A-Za-z0-9]+)', clean_title)
+            if m_comp and m_comp.group(1).strip():
+                company = m_comp.group(1).strip()
+            else:
+                m = re.search(r'\(([^)]+)\)', clean_title)
+                if m:
+                    company = m.group(1).strip()
 
         # 기존 본문에서 [시장해석] 추출 또는 분리
         body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
 
         if "신고가" in clean_title:
             new_title = f"🏆 [52주 신고가 도달] {company}" if company else "🏆 [52주 신고가 도달]"
-            interp = existing_interp or "최근 1년 최고가 돌파 · 강력한 상승 추세 지속 신호"
+            interp = existing_interp or "최근 1년 최고가 돌파 · 강력한 매수세 및 신고가 랠리 지속"
             new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
             return sanitize_notification_text(new_title, new_body)
         elif "급락" in clean_title:
             new_title = f"📉 [단기 급락세 포착] {company}" if company else "📉 [단기 변동성 확대]"
-            interp = existing_interp or "단기 매도세 확대로 지지선 점검 및 변동성 주의 필요"
+            interp = existing_interp or "단기 매도세 확대 · 지지선 점검 및 가격 변동성 주의"
             new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
             return sanitize_notification_text(new_title, new_body)
         else:
             new_title = f"📈 [거래량·주가 급등] {company}" if company else "📈 [거래량·주가 급등 포착]"
-            interp = existing_interp or "강한 매수세와 거래량 급증으로 단기 시장 관심 집중"
+            interp = existing_interp or "대량 거래 동반 주가 급등 · 단기 모멘텀 및 스마트머니 유입"
             new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
             return sanitize_notification_text(new_title, new_body)
 
@@ -333,7 +371,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             company = match.group(1).strip()
         body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
         new_title = f"🌙 [시간외 급등 마감] {company}" if company else clean_title
-        interp = existing_interp or "장 마감 후 시간외 매수세 집중 유입 · 익일 시초가 주목"
+        interp = existing_interp or "정규장 마감 후 시간외 매수세 집중 · 익일 정규장 시초가 주목"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
@@ -344,7 +382,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         else:
             new_title = f"🚀 {clean_title.replace('🚀', '').strip()}"
         body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
-        interp = existing_interp or "신규 공모주 상장 일정 · 공모가 및 주관사 확인"
+        interp = existing_interp or "신규 공모주 상장 임박 · 공모가 및 청약 경쟁률 체크"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
@@ -353,7 +391,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
         new_title = f"🐳 {t_core}" if t_core else clean_title
         body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
-        interp = existing_interp or "오늘 장중 외국인/기관 스마트머니 집중 유입 포착"
+        interp = existing_interp or "외인·기관 스마트머니 집중 매집 · 수급 주도 메이저 종목"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
@@ -381,7 +419,6 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         return sanitize_notification_text(clean_title, new_body)
 
 
-
 def sanitize_notification_text(title: str, body: str):
     """
     모바일 및 스마트워치(애플워치/갤럭시워치) 화면에서 글씨가 잘리지 않고 
@@ -391,6 +428,7 @@ def sanitize_notification_text(title: str, body: str):
     """
     clean_title = title.strip() if title else "알림"
     clean_body = body.strip() if body else ""
+    clean_body = format_korean_shares_and_amounts(clean_body)
     
     # 1. 스마트워치 및 모바일 공통 타이틀 슬림화
     if "장시작" in clean_title:
