@@ -22,9 +22,21 @@ async function getBlogPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
         
-        // 백엔드 API를 통해 블로그 포스트 상세 데이터를 가져옴 (서버사이드 Firestore 연결 문제 방지)
+        // 1. 정적 포스트에서 먼저 검색 (0ms 즉시 반환 및 Cloudflare 403 차단 방지)
+        const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug || p.id === decodedSlug);
+        if (staticPost) {
+            return {
+                ...staticPost,
+                createdAt: staticPost.createdAt ? new Date(staticPost.createdAt) : new Date()
+            };
+        }
+        
+        // 2. 백엔드 API를 통해 동적 블로그 포스트 상세 데이터를 가져옴
         const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts/${encodeURIComponent(decodedSlug)}`;
-        const res = await fetch(apiUrl, { next: { revalidate: 60 } });
+        const res = await fetch(apiUrl, { 
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) StockTrendSSR/1.0' },
+            next: { revalidate: 60 } 
+        });
         
         if (!res.ok) {
             console.error(`API error: ${res.status}`);
@@ -34,19 +46,9 @@ async function getBlogPost(slug: string) {
         const data = await res.json();
         
         if (data.status === "ok" && data.post) {
-            // 날짜 문자열을 Date 객체로 변환
             const post = data.post;
             post.createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
             return post;
-        }
-        
-        // API에서 못 찾으면 정적 포스트에서 다시 검색
-        const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug);
-        if (staticPost) {
-            return {
-                ...staticPost,
-                createdAt: staticPost.createdAt ? new Date(staticPost.createdAt) : new Date()
-            };
         }
         
         return null;

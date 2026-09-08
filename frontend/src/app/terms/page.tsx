@@ -1,6 +1,9 @@
 export const metadata = {
   title: '이용약관 | 스마트 투자 비서',
   description: '스마트 투자 비서의 서비스 이용약관 및 법적 규정 안내입니다.',
+  alternates: {
+    canonical: '/terms',
+  },
 };
 
 export default function TermsPage() {

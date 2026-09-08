@@ -332,6 +332,38 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     </div>
                 </div>
 
+                {/* Desktop Knowledge & Report Quick Nav (E-E-A-T & AdSense Navigation Boost) */}
+                <nav className="hidden lg:flex items-center gap-1.5 ml-2 mr-auto" aria-label="메인 지식 네비게이션">
+                    <Link 
+                        href="/guide" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>📚</span>
+                        <span>투자 가이드</span>
+                    </Link>
+                    <Link 
+                        href="/blog" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/blog') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>📊</span>
+                        <span>마켓 리포트</span>
+                    </Link>
+                    <Link 
+                        href="/theory" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/theory') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>📈</span>
+                        <span>차트 스터디</span>
+                    </Link>
+                    <Link 
+                        href="/about" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname === '/about' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>ℹ️</span>
+                        <span>서비스 소개</span>
+                    </Link>
+                </nav>
+
                 <div className="flex items-center gap-2 md:gap-3 justify-end shrink-0 ml-auto z-20">
                 {/* Global Search Bar */}
                 <div className="flex relative w-full flex-1 max-w-[130px] sm:max-w-[160px] md:max-w-[180px] group transition-all duration-500 ease-out hover:max-w-[200px] sm:hover:max-w-[240px] md:hover:max-w-[340px] focus-within:flex-1 focus-within:max-w-[200px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[340px] pl-10 sm:pl-0">

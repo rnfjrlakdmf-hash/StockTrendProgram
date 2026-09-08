@@ -1,6 +1,9 @@
 export const metadata = {
   title: '개인정보처리방침 | 스마트 투자 비서 (Google AdSense 쿠키 정책 포함)',
   description: '스마트 투자 비서의 개인정보처리방침입니다. Google AdSense 광고 쿠키 사용 안내, 개인정보 수집 항목 및 보유 기간, 이용자 권리 등을 안내합니다.',
+  alternates: {
+    canonical: '/privacy-policy',
+  },
 };
 
 export default function PrivacyPolicyPage() {

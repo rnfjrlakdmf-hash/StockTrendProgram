@@ -5,6 +5,9 @@ import { BookOpen, AlertCircle, BarChart, Info, ChevronRight, Shield } from 'luc
 export const metadata: Metadata = {
   title: 'PER (주가수익비율) 완벽 가이드 | 주식 투자 용어 사전 - 스마트 투자 비서',
   description: '주가를 주당순이익(EPS)으로 나눈 값으로 기업의 수익 대비 주가 수준을 평가하는 지표인 PER의 원리와 활용 방법을 배울 수 있는 완벽 가이드입니다.',
+  alternates: {
+    canonical: '/guide/per',
+  },
 };
 
 export default function GuidePerPage() {

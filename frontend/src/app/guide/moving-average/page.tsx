@@ -5,6 +5,9 @@ import { BookOpen, AlertCircle, TrendingUp, Info, ChevronRight, Shield } from 'l
 export const metadata: Metadata = {
   title: '이동평균선 (Moving Average) 실전 가이드 | 주식 투자 용어 사전 - 스마트 투자 비서',
   description: '주식 차트 분석의 기초인 이동평균선의 원리, 종류(5일, 20일, 60일, 120일), 그리고 지지와 저항 등 실전 차트 분석에서 어떻게 활용되는지 자세히 알아봅니다.',
+  alternates: {
+    canonical: '/guide/moving-average',
+  },
 };
 
 export default function GuideMovingAveragePage() {

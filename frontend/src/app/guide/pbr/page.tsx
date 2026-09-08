@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'PBR (주가순자산비율) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '주가를 주당순자산으로 나눈 값으로 기업 자산 대비 주가 수준을 나타내는 지표. 주식 초보자도 쉽게 이해할 수 있는 PBR (주가순자산비율) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/pbr',
+  },
 };
 
 export default function GuidePbrPage() {

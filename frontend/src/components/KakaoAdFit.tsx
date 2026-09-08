@@ -14,10 +14,16 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
+      setShouldDisplay(false);
+      return;
+    }
+
     const ua = (navigator.userAgent || "").toLowerCase();
     const isBot = ua.includes("googlebot") || 
                   ua.includes("mediapartners-google") || 
                   ua.includes("adsbot") || 
+                  ua.includes("google") ||
                   ua.includes("lighthouse") || 
                   ua.includes("headless") ||
                   ua.includes("crawler");

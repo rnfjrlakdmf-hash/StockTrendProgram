@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '금리 (Interest Rate) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '자금 차입에 대한 비용으로 모든 자산 가격에 영향을 미치는 핵심 경제 변수. 주식 초보자도 쉽게 이해할 수 있는 금리 (Interest Rate) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/interest-rate',
+  },
 };
 
 export default function GuideInterestRatePage() {

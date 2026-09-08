@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '볼린저 밴드 (Bollinger Bands) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '이동평균선 중심으로 상하에 표준편차 밴드를 그려 변동성을 분석하는 지표. 주식 초보자도 쉽게 이해할 수 있는 볼린저 밴드 (Bollinger Bands) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/bollinger-band',
+  },
 };
 
 export default function GuideBollingerBandPage() {

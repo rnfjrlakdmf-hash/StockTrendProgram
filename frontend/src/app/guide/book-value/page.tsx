@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '장부가치 (Book Value) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '총자산에서 총부채를 뺀 기업의 순자산 가치. 주식 초보자도 쉽게 이해할 수 있는 장부가치 (Book Value) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/book-value',
+  },
 };
 
 export default function GuideBookValuePage() {

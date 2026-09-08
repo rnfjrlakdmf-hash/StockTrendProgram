@@ -4,6 +4,9 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
     title: "면책 조항 (Legal Disclaimer) | 스마트 투자 비서",
     description: "스마트 투자 비서의 투자 정보 및 데이터 사용에 관한 법적 면책 조항 안내입니다.",
+    alternates: {
+        canonical: '/disclaimer',
+    },
 };
 
 export default function DisclaimerPage() {

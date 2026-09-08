@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '기본적 분석 (Fundamental Analysis) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '재무제표와 경기 분석으로 적정 주가를 산출하는 투자 분석 방법론. 주식 초보자도 쉽게 이해할 수 있는 기본적 분석 (Fundamental Analysis) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/fundamental-analysis',
+  },
 };
 
 export default function GuideFundamentalAnalysisPage() {

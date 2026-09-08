@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '성장주 투자 (Growth Investing) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '빠르게 성장하는 기업에 투자하여 주가 상승 차익을 추구하는 투자 전략. 주식 초보자도 쉽게 이해할 수 있는 성장주 투자 (Growth Investing) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/growth-investing',
+  },
 };
 
 export default function GuideGrowthInvestingPage() {

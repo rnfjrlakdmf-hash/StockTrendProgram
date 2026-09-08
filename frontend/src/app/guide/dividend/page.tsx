@@ -5,6 +5,9 @@ import { BookOpen, AlertCircle, Coins, Info, ChevronRight, Shield } from 'lucide
 export const metadata: Metadata = {
   title: '배당주 투자 핵심 가이드 | 주식 투자 용어 사전 - 스마트 투자 비서',
   description: '주식 투자의 또 다른 매력인 배당금의 개념, 배당수익률 계산법, 배당락일의 주의점, 그리고 안정적인 배당 포트폴리오 구축 방법에 대해 알아봅니다.',
+  alternates: {
+    canonical: '/guide/dividend',
+  },
 };
 
 export default function GuideDividendPage() {

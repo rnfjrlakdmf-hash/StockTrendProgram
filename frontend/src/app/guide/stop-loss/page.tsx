@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '손절매 (Stop Loss) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '일정 손실 수준에서 추가 손실을 막기 위해 매도하는 위험관리 전략. 주식 초보자도 쉽게 이해할 수 있는 손절매 (Stop Loss) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/stop-loss',
+  },
 };
 
 export default function GuideStopLossPage() {

@@ -1,5 +1,6 @@
-import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 "use client";
+
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';

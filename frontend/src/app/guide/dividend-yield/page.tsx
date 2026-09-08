@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '배당수익률 (Dividend Yield) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '주가 대비 연간 배당금의 비율로 배당 투자의 수익성을 측정하는 지표. 주식 초보자도 쉽게 이해할 수 있는 배당수익률 (Dividend Yield) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/dividend-yield',
+  },
 };
 
 export default function GuideDividendYieldPage() {

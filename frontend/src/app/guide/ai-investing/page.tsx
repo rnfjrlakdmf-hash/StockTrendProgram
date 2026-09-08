@@ -4,6 +4,9 @@ import Header from "@/components/Header";
 export const metadata: Metadata = {
     title: '초보자를 위한 AI 주식 투자 가이드 | StockTrend AI',
     description: '인공지능(AI)을 활용하여 주식 시장에서 승리하는 방법. 감정을 배제하고 데이터 기반의 포트폴리오를 구성하는 전략을 소개합니다.',
+  alternates: {
+    canonical: '/guide/ai-investing',
+  },
 };
 
 export default function AIInvestingGuide() {

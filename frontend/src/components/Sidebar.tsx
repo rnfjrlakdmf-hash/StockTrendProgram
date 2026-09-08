@@ -68,10 +68,10 @@ export default function Sidebar() {
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         "홈 & 대시보드": true,
-        "프리미엄 & 인사이트": true,
-        "발굴 & 분석": false,
-        "마이 트레이딩": false,
-        "스터디 & 설정": false
+        "프리미엄 & 리포트": true,
+        "종목 발굴 & 분석": false,
+        "내 투자 & 자산 관리": false,
+        "스터디 & 설정": true
     });
 
     const toggleGroup = (groupName: string) => {

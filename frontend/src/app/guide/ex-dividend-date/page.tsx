@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '배당락일 (Ex-Dividend Date) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '이 날 이후 매수하면 배당권을 받을 수 없는 기준 날짜. 주식 초보자도 쉽게 이해할 수 있는 배당락일 (Ex-Dividend Date) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/ex-dividend-date',
+  },
 };
 
 export default function GuideExDividendDatePage() {

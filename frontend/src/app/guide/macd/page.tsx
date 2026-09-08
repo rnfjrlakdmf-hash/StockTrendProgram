@@ -5,6 +5,9 @@ import { BookOpen, AlertCircle, Activity, Info, ChevronRight, Shield } from 'luc
 export const metadata: Metadata = {
   title: 'MACD (이동평균수렴확산지수) 실전 가이드 | 주식 투자 용어 사전 - 스마트 투자 비서',
   description: '단기 이동평균선과 장기 이동평균선의 차이를 이용해 주가의 추세와 모멘텀을 파악하는 MACD 지표의 원리와 실전 활용법을 배웁니다.',
+  alternates: {
+    canonical: '/guide/macd',
+  },
 };
 
 export default function GuideMacdPage() {

@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '물타기 (Averaging Down) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '주가 하락 시 추가 매수하여 평균 단가를 낮추는 전략. 주식 초보자도 쉽게 이해할 수 있는 물타기 (Averaging Down) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/averaging-down',
+  },
 };
 
 export default function GuideAveragingDownPage() {

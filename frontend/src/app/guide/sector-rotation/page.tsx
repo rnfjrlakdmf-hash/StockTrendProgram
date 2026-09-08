@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '섹터 로테이션 (Sector Rotation) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '경기 사이클에 따라 강세 업종이 바뀌는 현상을 이용하는 투자 전략. 주식 초보자도 쉽게 이해할 수 있는 섹터 로테이션 (Sector Rotation) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/sector-rotation',
+  },
 };
 
 export default function GuideSectorRotationPage() {

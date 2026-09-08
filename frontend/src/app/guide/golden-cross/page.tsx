@@ -5,6 +5,9 @@ import { BookOpen, AlertCircle, ArrowUpRight, ArrowDownRight, Info, ChevronRight
 export const metadata: Metadata = {
   title: '골든크로스와 데드크로스 실전 가이드 | 주식 투자 용어 사전 - 스마트 투자 비서',
   description: '이동평균선의 교차점인 골든크로스와 데드크로스의 기본 개념, 차트 상의 의미, 그리고 속임수 패턴을 구별하는 방법에 대해 자세히 알아봅니다.',
+  alternates: {
+    canonical: '/guide/golden-cross',
+  },
 };
 
 export default function GuideGoldenCrossPage() {

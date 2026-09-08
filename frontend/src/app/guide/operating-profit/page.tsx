@@ -4,6 +4,9 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: '영업이익 (Operating Profit) 완벽 가이드 | 주식 투자 용어 사전 - StockTrend',
   description: '매출액에서 영업 관련 비용을 제외한 본업의 수익성 지표. 주식 초보자도 쉽게 이해할 수 있는 영업이익 (Operating Profit) 완벽 가이드.',
+  alternates: {
+    canonical: '/guide/operating-profit',
+  },
 };
 
 export default function GuideOperatingProfitPage() {

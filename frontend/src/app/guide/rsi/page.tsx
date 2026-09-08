@@ -5,6 +5,9 @@ import { BookOpen, AlertCircle, BarChart2, Info, ChevronRight, Shield } from 'lu
 export const metadata: Metadata = {
   title: 'RSI (상대강도지수) 실전 가이드 | 주식 투자 용어 사전 - 스마트 투자 비서',
   description: '주가의 과매수 및 과매도 상태를 수치화하여 보여주는 대표적인 모멘텀 지표인 RSI의 기본 개념, 다이버전스, 실전 해석 방법을 배웁니다.',
+  alternates: {
+    canonical: '/guide/rsi',
+  },
 };
 
 export default function GuideRsiPage() {

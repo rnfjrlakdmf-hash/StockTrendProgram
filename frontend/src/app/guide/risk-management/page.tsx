@@ -4,6 +4,9 @@ import Header from "@/components/Header";
 export const metadata: Metadata = {
     title: '포트폴리오 변동성 관리와 헷징 전략 | StockTrend AI',
     description: '주식 투자의 가장 중요한 원칙은 돈을 잃지 않는 것입니다. 마코위츠의 현대 포트폴리오 이론(MPT)을 기반으로 리스크를 통제하는 최적의 분산 투자 방법을 안내합니다.',
+  alternates: {
+    canonical: '/guide/risk-management',
+  },
 };
 
 export default function RiskManagementGuide() {

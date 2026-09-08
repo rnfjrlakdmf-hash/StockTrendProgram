@@ -4,6 +4,9 @@ import Header from "@/components/Header";
 export const metadata: Metadata = {
     title: '글로벌 공급망 지도 분석 가이드 | StockTrend AI',
     description: '기업 간의 역학 관계와 숨겨진 나비효과를 파악하는 공급망 분석법. 핵심 부품 공급사와 고객사의 움직임이 주가에 미치는 영향을 알아봅니다.',
+  alternates: {
+    canonical: '/guide/supply-chain-analysis',
+  },
 };
 
 export default function SupplyChainGuide() {
