@@ -260,57 +260,44 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* E-E-A-T 데이터 수집 및 투명성 안내 */}
-          <section className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 md:p-10 space-y-6">
-            <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2.5">
-              <Database className="w-5 h-5 text-blue-400" /> 공공 데이터 수집 기준 및 신뢰성 정책
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs md:text-sm text-gray-300">
-              <div className="space-y-2 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                <div className="font-bold text-white flex items-center gap-1.5 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" /> 100% 공공 공식 API 연동
-                </div>
-                <p className="text-gray-400 leading-relaxed text-xs">
-                  금융감독원 Open DART, 한국거래소(KRX) 정보데이터시스템, 미국 SEC EDGAR 등 공식 인가된 공공 API 파이프라인을 통해 왜곡 없는 순수 원천 데이터만을 수집합니다.
-                </p>
-              </div>
-              <div className="space-y-2 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                <div className="font-bold text-white flex items-center gap-1.5 text-sm">
-                  <Scale className="w-4 h-4 text-green-400" /> 객관적 정량 분석 지향
-                </div>
-                <p className="text-gray-400 leading-relaxed text-xs">
-                  주관적 루머나 미확인 찌라시를 배제하고, 재무제표 팩트, 공시 사실관계, 실시간 수급 통계에 기반한 객관적인 지표만을 산출하여 제공합니다.
-                </p>
-              </div>
-              <div className="space-y-2 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
-                <div className="font-bold text-white flex items-center gap-1.5 text-sm">
-                  <Lock className="w-4 h-4 text-green-400" /> 완전 무료 & 안전한 정보
-                </div>
-                <p className="text-gray-400 leading-relaxed text-xs">
-                  불법 리딩방 가입 권유나 유료 결제 유도 없이, 건전한 금융 생태계 조성을 위해 모든 핵심 인텔리전스를 개인 투자자에게 평생 무료로 개방합니다.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* 자주 묻는 질문 (FAQ) */}
-          <section>
-            <h2 className="text-xl md:text-2xl font-black text-white mb-6 flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-amber-400" /> 자주 묻는 질문 (FAQ)
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {FAQS.map(({ q, a }) => (
-                <div key={q} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
-                  <h3 className="text-white font-bold text-sm md:text-base flex items-start gap-2">
-                    <span className="text-amber-400 font-mono font-black">Q.</span> {q}
-                  </h3>
-                  <p className="text-gray-400 text-xs md:text-sm leading-relaxed pl-5 font-normal">
-                    {a}
+          {/* E-E-A-T 데이터 수집 기준 & 자주 묻는 질문 FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
+          <div className="sr-only">
+            <section>
+              <h2>공공 데이터 수집 기준 및 신뢰성 정책</h2>
+              <div>
+                <div>
+                  <div>100% 공공 공식 API 연동</div>
+                  <p>
+                    금융감독원 Open DART, 한국거래소(KRX) 정보데이터시스템, 미국 SEC EDGAR 등 공식 인가된 공공 API 파이프라인을 통해 왜곡 없는 순수 원천 데이터만을 수집합니다.
                   </p>
                 </div>
-              ))}
-            </div>
-          </section>
+                <div>
+                  <div>객관적 정량 분석 지향</div>
+                  <p>
+                    주관적 루머나 미확인 찌라시를 배제하고, 재무제표 팩트, 공시 사실관계, 실시간 수급 통계에 기반한 객관적인 지표만을 산출하여 제공합니다.
+                  </p>
+                </div>
+                <div>
+                  <div>완전 무료 & 안전한 정보</div>
+                  <p>
+                    불법 리딩방 가입 권유나 유료 결제 유도 없이, 건전한 금융 생태계 조성을 위해 모든 핵심 인텔리전스를 개인 투자자에게 평생 무료로 개방합니다.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2>자주 묻는 질문 (FAQ)</h2>
+              <div>
+                {FAQS.map(({ q, a }) => (
+                  <div key={q}>
+                    <h3>Q. {q}</h3>
+                    <p>{a}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
 
           {/* 투자 면책 조항 & 공식 링크 푸터 */}
           <footer className="border-t border-white/10 pt-10 space-y-6 text-center sm:text-left">
