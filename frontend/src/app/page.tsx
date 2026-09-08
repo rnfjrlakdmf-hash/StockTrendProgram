@@ -299,40 +299,7 @@ export default async function Home() {
             </section>
           </div>
 
-          {/* 투자 면책 조항 & 공식 링크 푸터 */}
-          <footer className="border-t border-white/10 pt-10 space-y-6 text-center sm:text-left">
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
-              <h3 className="text-white font-bold text-xs md:text-sm flex items-center justify-center sm:justify-start gap-1.5">
-                <Shield className="w-4 h-4 text-amber-400" /> 투자 유의사항 및 법적 면책 공지
-              </h3>
-              <p className="text-gray-400 text-xs leading-relaxed">
-                스마트 투자 비서(StockTrend)에서 제공하는 모든 분석 지표, 주식 시황, 공시 알림 및 퀀트 점수는 투자자의 합리적인 판단을 돕기 위한 <strong>단순 참고용 금융 정보</strong>입니다. 
-                본 서비스는 자본시장과 금융투자업에 관한 법률상 유사투자자문 또는 투자일임 서비스가 아니며, 특정 증권의 매수·매도를 권유하지 않습니다. 
-                제공되는 데이터의 완전성이나 수익을 보장하지 않으며, 모든 투자 결정과 그에 따른 손익의 최종 책임은 전적으로 투자자 본인에게 있습니다.
-              </p>
-            </div>
 
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs md:text-sm text-gray-400 pt-2 font-medium">
-              <Link href="/about" className="hover:text-white transition-colors">서비스 소개</Link>
-              <span className="text-gray-700">|</span>
-              <Link href="/guide" className="hover:text-white transition-colors text-blue-400 font-bold">투자 가이드</Link>
-              <span className="text-gray-700">|</span>
-              <Link href="/blog" className="hover:text-white transition-colors">마켓 리포트</Link>
-              <span className="text-gray-700">|</span>
-              <Link href="/privacy-policy" className="hover:text-white transition-colors">개인정보처리방침</Link>
-              <span className="text-gray-700">|</span>
-              <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
-              <span className="text-gray-700">|</span>
-              <Link href="/disclaimer" className="hover:text-white transition-colors">면책조항</Link>
-              <span className="text-gray-700">|</span>
-              <Link href="/contact" className="hover:text-white transition-colors">문의하기</Link>
-            </div>
-
-            <div className="text-center text-gray-600 text-xs space-y-1">
-              <p>서비스명: 스마트 투자 비서 (StockTrend) | 데이터 출처: 한국거래소(KRX), 금융감독원 DART, 미국 증권거래위원회(SEC)</p>
-              <p>© 2026 StockTrend Research Team. All rights reserved.</p>
-            </div>
-          </footer>
 
         </div>
       </div>
