@@ -57,6 +57,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .setSmallIcon(android.R.drawable.ic_dialog_info) // Using a default icon for now
             .setContentTitle(title)
             .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body)) // [New] 본문 전체 펼쳐보기 지원 (잘림 방지)
             .setPriority(NotificationCompat.PRIORITY_MAX) // Max priority for Heads-Up
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setAutoCancel(true)
