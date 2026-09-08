@@ -256,15 +256,30 @@ function formatUsdToKrwInText(text: string): string {
         text = formatUsdToKrwInText(text);
         if (!text) return null;
 
-        // Separate market interpretation block if present
-        let mainText = text;
+        // Separate market interpretation block, cta, and disclaimer if present
         let marketInterpretation = "";
+        let disclaimerText = "";
+        const mainLines: string[] = [];
+        const followUpLines: string[] = [];
 
-        if (text.includes("💡 [시장해석]") || text.includes("💡 [시장 해석]")) {
-            const splitIdx = text.indexOf("💡 [시장");
-            mainText = text.substring(0, splitIdx).trim();
-            marketInterpretation = text.substring(splitIdx).trim();
+        const lines = text.split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+
+            if (trimmed.startsWith("💡 [시장해석]") || trimmed.startsWith("💡 [시장 해석]")) {
+                marketInterpretation = trimmed.replace(/^💡\s*\[시장\s*해석\]\s*/, '');
+            } else if (trimmed.startsWith("※") || (trimmed.startsWith("(") && (trimmed.includes("투자 권유가 아닙니다") || trimmed.includes("투자권유")))) {
+                disclaimerText = trimmed;
+            } else if (trimmed.startsWith("🔍") || trimmed.startsWith("👉")) {
+                followUpLines.push(trimmed);
+            } else {
+                mainLines.push(trimmed);
+            }
         }
+
+        const mainText = mainLines.join('\n').trim();
+        const followUpText = followUpLines.join('\n').trim();
 
         const urlRegex = /(https?:\/\/[^\s]+)/g;
 
@@ -312,17 +327,29 @@ function formatUsdToKrwInText(text: string): string {
 
         return (
             <div className="space-y-2.5">
-                <div className="text-xs md:text-sm text-zinc-200 leading-relaxed font-medium">
-                    {formatSegment(mainText)}
-                </div>
+                {mainText && (
+                    <div className="text-xs md:text-sm text-zinc-200 leading-relaxed font-medium">
+                        {formatSegment(mainText)}
+                    </div>
+                )}
                 {marketInterpretation && (
                     <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3.5 mt-2 flex items-start gap-2.5 shadow-sm">
                         <div className="p-1 bg-amber-500/20 rounded-lg text-amber-400 shrink-0 mt-0.5">
                             <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <p className="text-xs md:text-sm text-amber-200 leading-relaxed font-semibold">
-                            {marketInterpretation.replace(/^💡\s*\[시장해석\]\s*/, '')}
+                            {marketInterpretation}
                         </p>
+                    </div>
+                )}
+                {followUpText && (
+                    <div className="text-xs text-zinc-400 leading-relaxed font-normal">
+                        {formatSegment(followUpText)}
+                    </div>
+                )}
+                {disclaimerText && (
+                    <div className="text-[11px] text-zinc-500 font-normal mt-1 border-t border-white/5 pt-1.5">
+                        {disclaimerText}
                     </div>
                 )}
             </div>

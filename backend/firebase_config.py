@@ -129,12 +129,19 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     if m_interp:
         existing_interp = m_interp.group(1).strip()
 
-    # 1. DART 전자공시 속보 알림
-    if alert_type in ['disclosure_alert', 'dart_disclosure'] or "공시" in clean_title:
-        company = ""
-        match = re.search(r'(?:[^\w\s]|\s)*([가-힣A-Za-z0-9]+)\s*(?:공시|SEC|속보)', clean_title)
-        if match:
-            company = match.group(1).strip()
+    # 1. DART 전자공시 속보 알림 및 임원/대주주 지분 변동
+    if alert_type in ['disclosure_alert', 'dart_disclosure', 'insider_trading', 'large_holding'] or any(k in clean_title for k in ["공시", "내부자", "지분", "대량보유", "임원"]):
+        company = (data or {}).get("corp") or (data or {}).get("company") or ""
+        if not company:
+            match = re.search(r'(?:[^\w\s]|\s)*([가-힣A-Za-z0-9]+)\s*(?:공시|SEC|속보)', clean_title)
+            if match:
+                company = match.group(1).strip()
+            else:
+                temp = re.sub(r'\[[^\]]+\]', ' ', clean_title)
+                temp = re.sub(r'[🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨👥🐋]', ' ', temp).strip()
+                m_comp = re.search(r'([가-힣A-Za-z0-9]{2,20})$', temp)
+                if m_comp:
+                    company = m_comp.group(1).strip()
 
         # 공시 보고서명 추출
         clean_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL)
@@ -195,16 +202,21 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             )
             return sanitize_notification_text(new_title, new_body)
 
-        elif any(k in report_title for k in ["최대주주", "임원ㆍ주요주주", "소유주식변동", "임원"]):
-            new_title = f"👤 [임원/최대주주 지분변동] {company}" if company else "👤 [지분 변동 공시]"
-            if "매수" in report_title or "취득" in report_title:
+        elif any(k in report_title for k in ["최대주주", "임원ㆍ주요주주", "소유주식변동", "임원", "지분", "보유"]) or any(k in clean_title for k in ["내부자", "지분", "주요주주", "대량보유"]):
+            new_title = f"👤 [임원/주요주주 지분변동] {company}" if company else "👤 [지분 변동 공시]"
+            if "매수" in report_title or "취득" in report_title or "매수" in clean_title:
                 interp = existing_interp or "대표/경영진의 자사주 매수 · 실적 자신감 및 책임 경영 신호"
-            elif "매도" in report_title or "처분" in report_title:
+            elif "매도" in report_title or "처분" in report_title or "매도" in clean_title:
                 interp = existing_interp or "임원 지분 매도 · 차익실현 물량 여부 확인 필요"
             else:
                 interp = existing_interp or "경영진/큰손 지분 구조 변화 · 세부 내역 확인 필요"
+            
+            fact_line = clean_no_interp.split('\n')[0].strip()
+            if not fact_line or len(fact_line) < 5:
+                fact_line = f"{company} 임원 또는 주요주주의 주식 보유상황 변동 접수" if company else "회사 임원 또는 주요주주의 주식 보유상황 변동 접수"
+                
             new_body = (
-                f"📌 회사 임원 또는 주요주주의 주식 보유상황 변동 접수\n"
+                f"📌 {fact_line}\n"
                 f"💡 [시장해석] {interp}\n"
                 f"🔍 알림을 누르면 상세 지분 변동 내역을 바로 확인하실 수 있습니다.\n"
                 f"{DISCLAIMER_TEXT}"
