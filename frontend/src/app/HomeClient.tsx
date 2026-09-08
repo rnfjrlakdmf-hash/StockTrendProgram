@@ -13,6 +13,8 @@ import WeekendCryptoDashboard from "@/components/WeekendCryptoDashboard";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import MarketIndicators from "@/components/MarketIndicators";
 import SeoContentBlock from "@/components/SeoContentBlock";
+import BloombergLiveTicker from "@/components/BloombergLiveTicker";
+import FearGreedSpeedometer from "@/components/FearGreedSpeedometer";
 
 import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users, BookOpen, Clock, Search } from "lucide-react";
 
@@ -37,6 +39,7 @@ export default function HomeClient() {
   return (
     <div className="min-h-screen pb-12">
       <Header onSearch={handleSearch} />
+      <BloombergLiveTicker />
 
       <div className="p-4 md:p-8 space-y-10">
         
@@ -68,19 +71,19 @@ export default function HomeClient() {
           </div>
         </div>
         
-
-
         {/* Default Dashboard Content */}
         <div className="space-y-10 animate-in fade-in duration-1000">
 
-
-            {/* 코인 핫트렌드 대시보드 (상시 노출) */}
-            <WeekendCryptoDashboard />
-
-            {/* 메인 대시보드 레이아웃: 좌측/우측 2단 구성 (사이드바 없음) */}
+            {/* 1. 최상단 퀀트 대시보드: 좌측(한국 증시 공포·탐욕 3D 속도계) / 우측(실시간 랭킹 박스) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
+              <FearGreedSpeedometer />
               <LiveRankingBox />
+            </div>
+
+            {/* 2. 인기 검색어 & 코인 핫트렌드 대시보드 */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative">
               <PopularSearchWidget />
+              <WeekendCryptoDashboard />
               
               {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 */}
               <div className="flex lg:hidden justify-center my-2 lg:col-span-2">
