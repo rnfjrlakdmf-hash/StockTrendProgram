@@ -347,6 +347,20 @@ def get_premium_report(user_id: str):
                     premium_data = saved_data
         except Exception as e:
             print(f"Failed to read premium report: {e}")
+
+    # 평일 15:45 이후인데 저장된 리포트가 오늘 날짜가 아니면 즉시 자동 온디맨드 생성 (2중 안전장치)
+    if day_of_week < 5 and (now.hour > 15 or (now.hour == 15 and now.minute >= 45)):
+        if premium_data.get("report_date") != today_str:
+            try:
+                from daily_premium_generator import generate_objective_report
+                generate_objective_report()
+                if os.path.exists(report_path):
+                    with open(report_path, "r", encoding="utf-8-sig") as f:
+                        saved_data = json.load(f)
+                        if saved_data and saved_data.get("content") and len(saved_data.get("content", "")) > 100:
+                            premium_data = saved_data
+            except Exception as e:
+                print(f"[AuthRoute] On-demand premium report gen error: {e}")
     
     try:
         from db_manager import check_report_unlocked, get_user
