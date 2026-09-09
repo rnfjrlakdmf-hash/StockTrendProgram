@@ -310,6 +310,11 @@ function formatUsdToKrwInText(text: string): string {
             }
         }
 
+        // 사용자 요청: 자사주 매입 해석을 직관적인 문구로 통일 적용
+        if (marketInterpretation.includes("대표/경영진 자사주 매입 포착") || marketInterpretation.includes("책임 경영 및 주가 방어 신호")) {
+            marketInterpretation = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명";
+        }
+
         const mainText = mainLines.join('\n').trim();
 
         const urlRegex = /(https?:\/\/[^\s]+)/g;

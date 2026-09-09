@@ -288,9 +288,9 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             # 윈도우 등 일부 폰트에서 👤가 깨지는 현상 방지 위해 호환성 높은 🚨 사용
             new_title = f"🚨 {t_core}" if t_core else (f"🚨 [임원/주요주주 지분변동] {company}" if company else "🚨 [지분 변동 공시]")
             if "매수" in report_title or "취득" in report_title or "매수" in clean_title:
-                interp = "대표/경영진 자사주 매입 포착 · 책임 경영 및 주가 방어 신호"
+                interp = existing_interp or "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             elif "매도" in report_title or "처분" in report_title or "매도" in clean_title:
-                interp = "대주주 차익실현 매물 출회 · 단기 변동성 주의"
+                interp = existing_interp or "임원 지분 매도로 차익실현 매물 출회 · 단기 변동성 주의"
             else:
                 interp = existing_interp or "경영진 지분 변동 발생 · 지배구조 개편 및 방향성 체크"
             
