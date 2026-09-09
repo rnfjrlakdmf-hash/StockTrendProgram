@@ -287,12 +287,10 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
             # 윈도우 등 일부 폰트에서 👤가 깨지는 현상 방지 위해 호환성 높은 🚨 사용
             new_title = f"🚨 {t_core}" if t_core else (f"🚨 [임원/주요주주 지분변동] {company}" if company else "🚨 [지분 변동 공시]")
-            if "매수" in report_title or "취득" in report_title or "매수" in clean_title:
-                interp = existing_interp or "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
-            elif "매도" in report_title or "처분" in report_title or "매도" in clean_title:
-                interp = existing_interp or "임원 지분 매도로 차익실현 매물 출회 · 단기 변동성 주의"
+            if any(k in report_title or k in clean_title or k in clean_body for k in ["매도", "처분"]):
+                interp = "임원 지분 매도로 차익실현 매물 출회 · 단기 변동성 주의"
             else:
-                interp = existing_interp or "경영진 지분 변동 발생 · 지배구조 개편 및 방향성 체크"
+                interp = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             
             raw_lines = [l.strip() for l in clean_no_interp.split('\n') if l.strip()]
             fact_line = " · ".join(raw_lines)
@@ -306,9 +304,9 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             )
             return sanitize_notification_text(new_title, new_body)
 
-        elif any(k in report_title for k in ["자기주식취득", "자사주취득"]):
+        elif any(k in report_title for k in ["자기주식취득", "자사주취득", "자사주매입", "자기주식매입"]):
             new_title = f"🔥 [자사주 취득 결정] {company}" if company else "🔥 [자사주 취득 공시]"
-            interp = existing_interp or "자사주 직접 매입 결정 · 주가 방어 및 주주환원 긍정 신호"
+            interp = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             new_body = (
                 f"📌 회사가 자기 주식 직접 매수 결정 발표\n"
                 f"💡 [시장해석] {interp}\n"

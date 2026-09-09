@@ -186,9 +186,9 @@ async def check_and_notify_disclosures():
 
                     elif is_insider:
                         prefix_title = "🚨 [내부자 거래 포착]"
-                        fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다.\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
+                        fact_str = "회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동이 발생했습니다.\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                         if flr_nm:
-                            fact_str = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
+                            fact_str = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                         
                         # ✅ [업그레이드] DART API를 통해 상세 추출 (잔여 보유량 + 보유비율 추가)
                         corp_code = item.get("corp_code")
@@ -212,7 +212,7 @@ async def check_and_notify_disclosures():
 
                                     # 시장 해석 추가
                                     if t_type == "매수":
-                                        fact_str += "\n💡 [시장해석] 대표/경영진의 자사주 매수 · 실적 자신감 신호"
+                                        fact_str += "\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                                     else:
                                         fact_str += "\n💡 [시장해석] 임원 지분 매도 · 차익실현 또는 유동성 확보"
                             except Exception as ins_e:
@@ -227,7 +227,7 @@ async def check_and_notify_disclosures():
                         elif "무상증자" in clean:
                             fact_str = f"무상증자 결정 공시! 기존 주주에게 신주 무상 배정\n💡 [시장해석] 대표적 주주친화 정책 · 유통 주식수 확대 호재"
                         elif "자기주식취득" in clean:
-                            fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식 직접 매수\n💡 [시장해석] 주가 방어 및 주주가치 제고 신호"
+                            fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식 직접 매수\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                         elif "자기주식소각" in clean:
                             fact_str = f"자사주 소각 결정 공시! 발행 주식수 영구 감축\n💡 [시장해석] 주당 가치 상승을 이끄는 가장 강력한 주주환원 호재"
                         elif "공개매수" in clean:

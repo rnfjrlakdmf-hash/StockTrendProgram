@@ -310,8 +310,20 @@ function formatUsdToKrwInText(text: string): string {
             }
         }
 
-        // 사용자 요청: 자사주 매입 해석을 직관적인 문구로 통일 적용
-        if (marketInterpretation.includes("대표/경영진 자사주 매입 포착") || marketInterpretation.includes("책임 경영 및 주가 방어 신호")) {
+        // 사용자 요청: 내부자/경영진 매수 및 자사주 매입 해석을 직관적인 문구로 전면 통일 적용
+        const isSell = (alert?.title && (alert.title.includes("매도") || alert.title.includes("처분"))) || text.includes("매도") || text.includes("처분") || marketInterpretation.includes("매도");
+        const isInsiderOrBuy = marketInterpretation.includes("경영진 지분 매매") ||
+                               marketInterpretation.includes("방향성 확인 필요") ||
+                               marketInterpretation.includes("방향성 점검 권장") ||
+                               marketInterpretation.includes("대표/경영진") ||
+                               marketInterpretation.includes("실적 자신감 신호") ||
+                               marketInterpretation.includes("책임 경영 및 주가 방어") ||
+                               marketInterpretation.includes("주가 방어 및 주주가치") ||
+                               marketInterpretation.includes("펀더멘털 평가의 핵심 지표") ||
+                               marketInterpretation.includes("지배구조 개편 및 방향성") ||
+                               ((alert?.title && (alert.title.includes("내부자") || alert.title.includes("자사주 매입") || alert.title.includes("자사주 취득") || alert.title.includes("지분변동"))) && !isSell);
+
+        if (isInsiderOrBuy && !isSell) {
             marketInterpretation = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명";
         }
 

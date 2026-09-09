@@ -405,14 +405,14 @@ def check_insider_trading_alerts():
                         body_text += f" ({rate}%)"
 
                 if t_type == "매수":
-                    body_text += "\n💡 [시장해석] 대표/경영진의 자사주 매수 · 실적 자신감 신호"
+                    body_text += "\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                 else:
-                    body_text += "\n💡 [시장해석] 임원 지분 매도 · 차익실현 또는 유동성 확보"
+                    body_text += "\n💡 [시장해석] 임원 지분 매도로 차익실현 매물 출회 · 단기 변동성 주의"
             else:
                 title = f"🚨 [내부자 거래 포착] {corp_name}"
-                body_text = f"회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동 발생\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
+                body_text = f"회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동 발생\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                 if flr_nm:
-                    body_text = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n💡 [시장해석] 경영진 지분 매매 · 방향성 확인 필요"
+                    body_text = f"{flr_nm} (임원/주요주주) | 자사주 보유 변동\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
 
             body = body_text
             link = filing.get("link", f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}")

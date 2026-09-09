@@ -295,18 +295,18 @@ def check_sec_form4_alerts():
             p1 = f"▪️ 📊 수급: {owner_short} | {parsed['trans_type']} {parsed['total_shares']:,}주{val_str}"
             
             if "매수" in parsed["trans_type"]:
-                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적 및 기업 가치에 대한 강한 자신감 표명"
+                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             elif "매도" in parsed["trans_type"]:
                 p2 = "▪️ 💡 해석: 임원 지분 매도에 따른 차익실현 · 단기 주가 고점 부담 점검 권장"
             else:
-                p2 = "▪️ 💡 해석: 미국 경영진의 자사주 지분 변동 포착 · 방향성 점검 권장"
+                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                 
             body = f"{p1}\n{p2}"
         else:
             title = f"🚨 [SEC 내부자 거래] {market_tag} {short_display}"
             body = (
                 f"▪️ 📊 수급: {short_display} 핵심 임원의 자사주 지분 변동 보고서(Form 4) 접수\n"
-                f"▪️ 💡 해석: 미국 경영진 지분 매매는 기업 내부 펀더멘털 평가의 핵심 지표"
+                f"▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             )
 
         print(f"[SEC Whale Form4] New filing: {title}")

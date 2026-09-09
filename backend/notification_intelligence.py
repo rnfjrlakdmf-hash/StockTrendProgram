@@ -61,7 +61,7 @@ def format_dart_intelligence(market_tag: str, corp: str, report_title: str, flr_
             p1 = f"▪️ 📊 수급: {reporter} | 자사주 {t_type} {qty:,}주{rate_str}"
             
             if t_type == "매수":
-                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적 및 기업 가치에 대한 강한 자신감 표명"
+                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             else:
                 p2 = "▪️ 💡 해석: 임원 지분 매도에 따른 차익실현 · 단기 고점 부담 점검 권장"
                 
@@ -72,7 +72,7 @@ def format_dart_intelligence(market_tag: str, corp: str, report_title: str, flr_
             title = f"{prefix_title} {market_tag} {corp}"
             body = (
                 f"▪️ 📊 수급: {flr_nm or '회사 임원'} 자사주 지분 변동 공시 접수\n"
-                f"▪️ 💡 해석: 내부 경영진 지분 매매는 기업 펀더멘털 평가의 핵심 지표"
+                f"▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             )
             return title, body, prefix_title, True
 
