@@ -894,8 +894,13 @@ async def weekend_report_scheduler_loop():
             now = datetime.now(kst)
             current_week = now.isocalendar()[1]
             
-            # 1. 리포트 생성 (토요일 오전 9시 30분 ~ 9시 59분 사이 1회)
-            if now.weekday() == 5 and now.hour == 9 and now.minute >= 30 and last_run_week_gen != current_week:
+            # 1. 리포트 생성 (금요일 19시 이후, 토요일, 일요일 중 이번 주차 미생성 시 1회 실행)
+            should_gen = False
+            if (now.weekday() == 4 and now.hour >= 19) or (now.weekday() == 5 and now.hour >= 9) or (now.weekday() == 6):
+                if last_run_week_gen != current_week:
+                    should_gen = True
+                    
+            if should_gen:
                 logger.info(f"[WeekendReport] Generating report for week {current_week}...")
                 from utils.weekend_report import generate_weekend_report
                 await generate_weekend_report()

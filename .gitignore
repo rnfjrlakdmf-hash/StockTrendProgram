@@ -179,3 +179,4 @@ backend/get_telegram_id.py
 backend/stock_app.db
 backend/google-seo-key.json
 backend/google_sheets_key.json
+backend/data/*.json

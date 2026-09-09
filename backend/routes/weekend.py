@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from datetime import datetime, timedelta
+import asyncio
 import pytz
 from utils.weekend_report import get_latest_weekend_report
 from utils.whale_weekend_report import get_latest_whale_report
@@ -23,6 +24,11 @@ def get_next_open_time(now: datetime) -> datetime:
     next_saturday = now + timedelta(days=days_ahead)
     return next_saturday.replace(hour=10, minute=0, second=0, microsecond=0)
 
+import re
+
+# 동시 생성 방지 락
+_report_gen_lock = asyncio.Lock()
+
 @router.get("/api/weekend-report")
 async def get_weekend_report():
     kst = pytz.timezone('Asia/Seoul')
@@ -30,25 +36,55 @@ async def get_weekend_report():
     
     report = get_latest_weekend_report()
     
-    # 주말인데 리포트가 없거나 지난주 데이터(4일 이상 경과)인 경우 실시간 자동 생성
+    # 리포트 유효성 및 최신성 정밀 검사 (Stale Check)
     is_stale = False
-    if report and "generated_at" in report:
+    if not report:
+        is_stale = True
+    elif "generated_at" in report:
         try:
             gen_dt = datetime.fromisoformat(report["generated_at"])
-            if (now - gen_dt).total_seconds() > 4 * 86400 and now.weekday() in [5, 6]:
+            # 1. 생성된 지 6일 이상 경과한 경우
+            if (now - gen_dt).total_seconds() > 6 * 86400:
                 is_stale = True
-        except Exception:
+            
+            # 2. 리포트 내의 경제 일정이 이미 모두 지난 과거 날짜인 경우
+            # (예: 오늘이 9월 7일 또는 9월 9일인데 9월 1일~4일 일정이 적혀있는 경우)
+            calendar_section = next((s for s in report.get("sections", []) if any(k in s.get("title", "") for k in ["경제 일정", "캘린더", "일정"])), None)
+            if calendar_section:
+                content = calendar_section.get("content", "")
+                date_matches = re.findall(r'(\d{1,2})월\s*(\d{1,2})일', content)
+                if date_matches:
+                    has_future_event = False
+                    for m_str, d_str in date_matches:
+                        try:
+                            m_val, d_val = int(m_str), int(d_str)
+                            event_date = datetime(now.year, m_val, d_val, 23, 59, 59, tzinfo=kst)
+                            if event_date >= now:
+                                has_future_event = True
+                                break
+                        except Exception:
+                            pass
+                    if not has_future_event:
+                        is_stale = True
+                        print(f"[WeekendRoute] Stale detected: All calendar dates in report are in the past!")
+        except Exception as e:
+            print(f"[WeekendRoute] Stale check error: {e}")
             is_stale = True
             
-    if not report or is_stale:
-        if now.weekday() in [5, 6] or (now.weekday() == 4 and now.hour >= 18):
-            try:
-                from utils.weekend_report import generate_weekend_report
-                new_rep = await generate_weekend_report()
-                if new_rep:
-                    report = new_rep
-            except Exception as e:
-                print(f"[WeekendRoute] On-demand generation error: {e}")
+    # 리포트가 없거나 이전 주 과거 데이터(stale)인 경우 요일과 무관하게 최신 주차 데이터로 즉시 자동 재생성
+    if is_stale:
+        async with _report_gen_lock:
+            # 락 획득 후 다시 최신 파일 확인 (다른 요청에 의해 이미 생성되었을 수 있음)
+            report = get_latest_weekend_report()
+            if not report or is_stale:
+                try:
+                    from utils.weekend_report import generate_weekend_report
+                    print(f"[WeekendRoute] Triggering automatic on-demand report generation at {now}...")
+                    new_rep = await generate_weekend_report()
+                    if new_rep:
+                        report = new_rep
+                except Exception as e:
+                    print(f"[WeekendRoute] On-demand generation error: {e}")
                 
     next_open = get_next_open_time(now)
     

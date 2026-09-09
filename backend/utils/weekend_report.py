@@ -12,16 +12,28 @@ REPORT_FILE = os.path.join(DATA_DIR, "weekend_report.json")
 
 def get_real_next_week_calendar():
     """
-    네이버 경제 캘린더 API를 통해 차주(월~금)의 실제 예정된 주요 경제 일정(중요도 2 이상)을 수집합니다.
+    네이버 경제 캘린더 API를 통해 다가오는 실제 예정된 주요 경제 일정(중요도 2 이상)을 수집합니다.
+    - 금요일(18시 이후), 토요일, 일요일: 바로 다음 주(월~금)의 경제 일정
+    - 월요일: 이번 주(월~금)의 경제 일정
+    - 화요일~금요일(18시 이전): 다가오는 차주(월~금)의 경제 일정
     """
     import requests
     kst = pytz.timezone('Asia/Seoul')
     today = datetime.now(kst)
     
-    # 다음 주 월요일 계산
-    days_ahead = (0 - today.weekday()) % 7
-    if days_ahead == 0: days_ahead = 7
-    next_monday = today + timedelta(days=(2 if today.weekday() == 5 else (1 if today.weekday() == 6 else days_ahead)))
+    weekday = today.weekday() # 0:월, 1:화, ..., 4:금, 5:토, 6:일
+    
+    if weekday == 5: # 토요일 -> 2일 뒤 월요일
+        target_monday = today + timedelta(days=2)
+    elif weekday == 6: # 일요일 -> 1일 뒤 월요일
+        target_monday = today + timedelta(days=1)
+    elif weekday == 4 and today.hour >= 18: # 금요일 저녁 -> 3일 뒤 월요일
+        target_monday = today + timedelta(days=3)
+    elif weekday == 0: # 월요일 -> 이번 주 월요일(오늘)
+        target_monday = today
+    else: # 화, 수, 목, 금(낮) -> 다가오는 차주 월요일
+        days_ahead = (7 - weekday)
+        target_monday = today + timedelta(days=days_ahead)
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -30,7 +42,7 @@ def get_real_next_week_calendar():
     
     events = []
     for i in range(5):
-        d = next_monday + timedelta(days=i)
+        d = target_monday + timedelta(days=i)
         d_str = d.strftime("%Y%m%d")
         weekday_kr = ["월", "화", "수", "목", "금", "토", "일"][d.weekday()]
         
@@ -56,7 +68,7 @@ def get_real_next_week_calendar():
         except Exception as e:
             print(f"[WeekendReport] Calendar fetch error for {d_str}: {e}")
             
-    return events, next_monday
+    return events, target_monday
 
 def _generate_sync_impl():
     from ai_analysis import generate_with_retry, API_KEY
