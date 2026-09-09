@@ -427,15 +427,17 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
-    # 4. 공모주(IPO) 알림
-    elif alert_type == 'ipo_alert' or "공모주" in clean_title or "IPO" in clean_title:
+    # 4. 공모주(IPO) 알림 (일정 및 주관사 안내 팩트 알림이므로 불필요한 동어반복 시장해석 박스 제외)
+    elif alert_type == 'ipo_alert' or any(k in clean_title for k in ["공모주", "IPO", "공모 일정", "공모"]):
         if "확정" in clean_title:
             new_title = clean_title.replace("🚀", "✅")
         else:
             new_title = f"🚀 {clean_title.replace('🚀', '').strip()}"
         body_no_interp = clean_no_interp
-        interp = existing_interp or "신규 공모주 상장 임박 · 공모가 및 청약 경쟁률 체크"
-        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+        formatted_body = body_no_interp
+        if "🏢" in formatted_body and "\n🏢" not in formatted_body:
+            formatted_body = formatted_body.replace("🏢", "\n🏢")
+        new_body = f"{formatted_body}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
     # 5. 수급 / 세력 고래 알림 (제목/본문 자체로 수급 팩트가 직관적이므로 동어반복 시장해석 박스 제외)

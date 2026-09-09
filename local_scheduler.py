@@ -584,7 +584,7 @@ async def check_and_notify_ipos():
                     underwriter = ipo.get('detail', '')
 
                     noti_title = f"🚀 {name} 신규 공모주 청약"
-                    noti_body = f"💰 희망가 {band}원 📅 청약일 {schedule} 🏢 주관사 {underwriter}"
+                    noti_body = f"💰 희망가: {band}원\n📅 청약일: {schedule}\n🏢 주관사: {underwriter}"
                     data_payload = {
                         "type": "IPO_ALERT",
                         "url": "/signals?tab=ipo"
@@ -601,7 +601,7 @@ async def check_and_notify_ipos():
                     underwriter = ipo.get('detail', '')
 
                     noti_title = f"✅ {name} 공모 일정 확정!"
-                    noti_body = f"💰 확정/희망가: {band}원 📅 청약일: {schedule} 🏢 주관사 {underwriter}"
+                    noti_body = f"💰 확정/희망가: {band}원\n📅 청약일: {schedule}\n🏢 주관사: {underwriter}"
                     data_payload = {
                         "type": "IPO_ALERT",
                         "url": "/signals?tab=ipo"
