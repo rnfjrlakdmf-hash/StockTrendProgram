@@ -13,27 +13,26 @@ REPORT_FILE = os.path.join(DATA_DIR, "weekend_report.json")
 def get_real_next_week_calendar():
     """
     네이버 경제 캘린더 API를 통해 다가오는 실제 예정된 주요 경제 일정(중요도 2 이상)을 수집합니다.
-    - 금요일(18시 이후), 토요일, 일요일: 바로 다음 주(월~금)의 경제 일정
-    - 월요일: 이번 주(월~금)의 경제 일정
-    - 화요일~금요일(18시 이전): 다가오는 차주(월~금)의 경제 일정
+    - 주말 모드 (금요일 18시 이후, 토요일, 일요일): 다가오는 차주(월~금)의 경제 일정 예습
+    - 주중 모드 (월요일 ~ 금요일 18시 이전): 이번 주(월~금)의 핵심 경제 지표 일정
     """
     import requests
     kst = pytz.timezone('Asia/Seoul')
     today = datetime.now(kst)
     
     weekday = today.weekday() # 0:월, 1:화, ..., 4:금, 5:토, 6:일
+    is_weekend_mode = (weekday == 4 and today.hour >= 18) or weekday in [5, 6]
     
-    if weekday == 5: # 토요일 -> 2일 뒤 월요일
-        target_monday = today + timedelta(days=2)
-    elif weekday == 6: # 일요일 -> 1일 뒤 월요일
-        target_monday = today + timedelta(days=1)
-    elif weekday == 4 and today.hour >= 18: # 금요일 저녁 -> 3일 뒤 월요일
-        target_monday = today + timedelta(days=3)
-    elif weekday == 0: # 월요일 -> 이번 주 월요일(오늘)
-        target_monday = today
-    else: # 화, 수, 목, 금(낮) -> 다가오는 차주 월요일
-        days_ahead = (7 - weekday)
-        target_monday = today + timedelta(days=days_ahead)
+    if is_weekend_mode:
+        # 주말 모드: 다음 주(차주 월~금)의 경제 일정 예습
+        if weekday == 5: target_monday = today + timedelta(days=2)
+        elif weekday == 6: target_monday = today + timedelta(days=1)
+        else: target_monday = today + timedelta(days=3) # 금요일 저녁
+        period_label = "다음 주"
+    else:
+        # 주중 모드 (월~금 낮): 이번 주(월~금)의 경제 일정 체크
+        target_monday = today - timedelta(days=weekday)
+        period_label = "이번 주"
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -68,7 +67,7 @@ def get_real_next_week_calendar():
         except Exception as e:
             print(f"[WeekendReport] Calendar fetch error for {d_str}: {e}")
             
-    return events, target_monday
+    return events, target_monday, period_label
 
 def _generate_sync_impl():
     from ai_analysis import generate_with_retry, API_KEY
@@ -76,7 +75,8 @@ def _generate_sync_impl():
 
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
-    today_str = now.strftime('%Y년 %m월 %d일')
+    weekday_kr = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
+    today_str = f"{now.strftime('%Y년 %m월 %d일')}({weekday_kr})"
     
     print(f"[WeekendReport] Generating report at {now.strftime('%Y-%m-%d %H:%M:%S')} KST")
     
@@ -95,55 +95,56 @@ def _generate_sync_impl():
         
         news_titles = [n.get('title', '') for n in m_news if n.get('title')]
         
-        calendar_events, next_monday = get_real_next_week_calendar()
-        calendar_summary = "\n".join(calendar_events) if calendar_events else "• 차주 주요 경제 지표 발표 일정 대기 중"
-        next_week_range = f"{next_monday.strftime('%m월 %d일')} ~ {(next_monday + timedelta(days=4)).strftime('%m월 %d일')}"
+        calendar_events, target_monday, period_label = get_real_next_week_calendar()
+        calendar_summary = "\n".join(calendar_events) if calendar_events else f"• {period_label} 주요 경제 지표 발표 일정 대기 중"
+        week_range = f"{target_monday.strftime('%m월 %d일')} ~ {(target_monday + timedelta(days=4)).strftime('%m월 %d일')}"
             
     except Exception as e:
         print(f"[WeekendReport] Data fetch error: {e}")
         index_summary = "데이터 수집 불가"
         news_titles = []
         calendar_summary = "데이터 수집 불가"
-        next_week_range = "다음 주"
+        period_label = "주요"
+        week_range = "주요 일정"
         
     if not API_KEY:
         print("[WeekendReport] No API Key")
         return None
         
     prompt = f"""당신은 주식 초보자에게 시장 상황을 아주 쉽고 친절하게 설명해주는 최고의 금융 멘토입니다.
-주말에만 열람 가능한 프리미엄 마켓 인사이트를 작성해야 합니다.
+주말 및 주간 프리미엄 마켓 인사이트를 작성해야 합니다.
 절대 '주도 섹터 예측', '급등 예상 종목', '매수 추천' 같은 미래 예측이나 유사투자자문성 단어를 사용하지 마세요.
-오직 '지난주 시장 데이터 요약'과 '다음 주({next_week_range}) 주요 경제 일정'이라는 사실 기반으로만 작성하되,
+오직 '최근 시장 데이터 요약'과 '{period_label}({week_range}) 주요 경제 일정'이라는 사실 기반으로만 작성하되,
 **반드시 어려운 경제 용어, 전문 용어(예: 매크로, 펀더멘털 등)를 최대한 배제하고, 중학생도 이해할 수 있는 아주 쉽고 친절한 설명문 형식**으로 풀어 써주세요.
 
-[작성 기준일 (오늘)] {today_str} (토요일)
-[다음 주 대상 기간] {next_week_range} (월요일 ~ 금요일)
+[작성 기준일 (오늘)] {today_str}
+[{period_label} 대상 기간] {week_range} (월요일 ~ 금요일)
 
-[금주 마감 시장 지표]
+[최근 마감 시장 지표]
 {index_summary}
 
-[금주 주요 경제 뉴스]
+[최근 주요 경제 뉴스]
 {chr(10).join(news_titles[:10])}
 
-[다음 주({next_week_range}) 실제 예정된 주요 경제 일정 데이터]
+[{period_label}({week_range}) 실제 예정된 주요 경제 일정 데이터]
 {calendar_summary}
 
 [⚠️ 매우 중요한 일정 작성 규칙]
-- sections[1] '다음 주 놓치면 안 될 경제 일정'에는 **반드시 위에 제공된 실제 다음 주({next_week_range}) 일정 데이터에서 2~3개를 선택**하여 작성하세요.
-- **절대 오늘({today_str}) 이전의 과거 날짜를 작성하지 마세요.**
+- sections[1] '{period_label} 놓치면 안 될 경제 일정'에는 **반드시 위에 제공된 실제 {period_label}({week_range}) 일정 데이터에서 2~3개를 선택**하여 작성하세요.
+- 만약 오늘({today_str}) 이후(오늘 포함) 남은 일정이 있다면, 지나간 일정보다는 **앞으로 발표될 중요 일정(예: CPI, PPI, 고용, 금리 등)**을 우선적으로 선택하세요.
 - 형식: '• M월 D일(요일): 일정명 (초보자를 위한 쉬운 체크포인트 설명)' (줄바꿈 포함)
 
 [작성 지침]
 1. 가독성 최우선: 줄글로 길게 늘어놓지 말고, 핵심 포인트별로 줄바꿈과 글머리기호(•)를 사용하여 한눈에 쏙 들어오게 작성하세요.
-2. 초등학생/중학생도 읽기 쉬운 정돈된 문체: 불필요한 은어나 유치한 말투(예: ~했답니다, 어른들이 등)를 배제하고, 깔끔하고 명확한 표준어로 브리핑하세요.
+2. 초등학생/중학생도 읽기 쉬운 정돈된 문체: 불필요한 은어나 유치한 말투를 배제하고, 깔끔하고 명확한 표준어로 브리핑하세요.
 3. week_summary_bullets: 시장 핵심 요약 3개를 각각 1줄 완성형 문장으로 간결하게 작성하세요.
 4. sections[0] (테마 복기): 자금이 몰린 핵심 테마 2~3개를 '• 테마명: 핵심 이유 요약' 형식의 불릿 텍스트로 작성하세요 (줄바꿈 포함).
-5. sections[1] (경제 일정): 다음 주 실제 일정 2~3개를 친절한 해설과 함께 작성하세요 (줄바꿈 포함).
+5. sections[1] (경제 일정): {period_label} 실제 핵심 일정 2~3개를 친절한 해설과 함께 작성하세요 (줄바꿈 포함).
 
 [출력 형식 JSON]
 {{
-  "title": "주말 마켓 인사이트: 지난주 시장 데이터와 다음 주 경제 일정",
-  "subtitle": "이번 주 시장 핵심 팩트 요약과 다음 주 주요 경제 캘린더",
+  "title": "주말 마켓 인사이트: 최근 시장 데이터와 {period_label} 경제 일정",
+  "subtitle": "시장 핵심 팩트 요약과 {period_label}({week_range}) 주요 경제 캘린더",
   "week_summary_bullets": [
     "국내 증시는 반도체 및 대형 기술주 중심의 외국인 수급에 힘입어 견조한 흐름을 유지했습니다.",
     "글로벌 주요국들의 경제 지표 발표를 앞두고 시장 참여자들의 관망세와 업종별 순환매가 전개되었습니다.",
@@ -152,12 +153,12 @@ def _generate_sync_impl():
   "sections": [
     {{
       "emoji": "🔥",
-      "title": "지난주 자금 쏠림 테마 복기",
+      "title": "최근 자금 쏠림 테마 복기",
       "content": "• 반도체 & AI: 글로벌 빅테크 수요 지속 기대감으로 대형 반도체주 중심 매수세 유입\n• 금융 & 배당: 안정적인 이익을 바탕으로 주주환원 기대감이 높은 금융주로 방어적 자금 유입\n• 바이오 & 헬스케어: 신약 파이프라인 및 실적 개선 모멘텀이 부각된 기업 중심 선별적 순환매"
     }},
     {{
       "emoji": "📅",
-      "title": "다음 주 놓치면 안 될 경제 일정",
+      "title": "{period_label} 놓치면 안 될 경제 일정",
       "content": "• M월 D일(요일): 일정명 (초보자를 위한 쉬운 체크포인트 설명)\n• M월 D일(요일): 일정명 (초보자를 위한 쉬운 체크포인트 설명)\n• M월 D일(요일): 일정명 (초보자를 위한 쉬운 체크포인트 설명)"
     }}
   ],
