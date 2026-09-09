@@ -123,25 +123,46 @@ export default function WeekendReportPage() {
         }
     };
 
-    // Helper to parse section content into spacious, breathing, open editorial list (No cramped boxes)
-    const renderParsedContent = (content: string, isCalendar = false) => {
-        const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
-        
+    // Helper to parse section content into spacious, breathing, open editorial list
+    const renderParsedContent = (content: string) => {
+        if (!content) return null;
+        const lines = content.split('\n').filter(l => l.trim().length > 0);
+
         return (
             <div className="space-y-4">
                 {lines.map((line, idx) => {
-                    const cleanLine = line.replace(/^[•\-\*]\s*/, '').trim();
-                    const colonIdx = cleanLine.indexOf(':');
+                    const cleanLine = line.replace(/^[•\-\*·]\s*/, '').trim();
                     
-                    if (colonIdx > 0 && colonIdx < 35) {
-                        const tag = cleanLine.substring(0, colonIdx).trim();
-                        const desc = cleanLine.substring(colonIdx + 1).trim();
-                        const isDate = tag.includes('월') && tag.includes('일');
+                    // 1. 날짜 패턴 우선 검사 (예: 9월 10일(목) 또는 9월 10일 (목): ...)
+                    const dateMatch = cleanLine.match(/^(\d{1,2}월\s*\d{1,2}일(?:\s*\([월화수목금토일]\))?)[:\s-]*(.*)$/);
+                    
+                    let tag = "";
+                    let desc = "";
+                    let isDate = false;
+
+                    if (dateMatch && dateMatch[1]) {
+                        tag = dateMatch[1].trim();
+                        desc = dateMatch[2].trim();
+                        isDate = true;
+                    } else {
+                        const colonIdx = cleanLine.indexOf(':');
+                        if (colonIdx > 0 && colonIdx < 35) {
+                            tag = cleanLine.substring(0, colonIdx).trim();
+                            desc = cleanLine.substring(colonIdx + 1).trim();
+                            isDate = tag.includes('월') && tag.includes('일');
+                        }
+                    }
+
+                    if (tag && desc) {
+                        // desc 내부에 괄호 해설이 있는 경우 (예: "일정명 (초보자를 위한 쉬운 해설)") 분리
+                        const parenMatch = isDate ? desc.match(/^(.*?)\s*\((.*?)\)$/) : null;
+                        const eventTitle = parenMatch ? parenMatch[1].trim() : desc;
+                        const eventNote = parenMatch ? parenMatch[2].trim() : null;
 
                         return (
                             <div 
                                 key={idx} 
-                                className={`relative p-5 sm:p-6 rounded-2xl transition-all border-l-4 ${
+                                className={`relative p-5 sm:p-6 rounded-2xl transition-all border-l-4 shadow-md ${
                                     isDate 
                                         ? 'bg-gradient-to-r from-blue-950/30 via-zinc-900/40 to-transparent border-blue-400 hover:from-blue-950/50' 
                                         : 'bg-gradient-to-r from-amber-950/30 via-zinc-900/40 to-transparent border-amber-400 hover:from-amber-950/50'
@@ -156,13 +177,27 @@ export default function WeekendReportPage() {
                                         {isDate ? <Calendar className="w-3.5 h-3.5 text-blue-400" /> : <Zap className="w-3.5 h-3.5 text-amber-400" />}
                                         {tag}
                                     </span>
-                                    <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
-                                        {isDate ? "KEY EVENT" : "SECTOR ROTATION"}
+                                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                        isDate ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                    }`}>
+                                        {isDate ? "KEY EVENT" : "HOT SECTOR"}
                                     </span>
                                 </div>
-                                <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pl-0.5">
-                                    <HighlightText text={desc} />
-                                </p>
+                                {isDate && eventNote ? (
+                                    <div className="space-y-2 pl-0.5">
+                                        <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                                            <HighlightText text={eventTitle} />
+                                        </h4>
+                                        <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal bg-blue-950/30 border border-blue-500/20 rounded-xl p-3 flex items-start gap-2">
+                                            <span className="text-blue-400 font-bold shrink-0">💡 체크포인트:</span>
+                                            <span>{eventNote}</span>
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pl-0.5">
+                                        <HighlightText text={desc} />
+                                    </p>
+                                )}
                             </div>
                         );
                     }
@@ -275,10 +310,10 @@ export default function WeekendReportPage() {
                             <div className="flex items-center gap-2 mb-1.5">
                                 <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/40">
                                     <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-spin" style={{ animationDuration: '4s' }} />
-                                    VVIP WEEKEND BRIEFING
+                                    {(data as any)?.is_current_weekend ? "VVIP WEEKEND BRIEFING" : "VVIP MARKET BRIEFING"}
                                 </span>
                                 <span className="text-xs font-mono font-bold text-gray-300">
-                                    WEEKEND EDITION
+                                    {(data as any)?.is_current_weekend ? "WEEKEND EDITION" : "WEEKLY EDITION"}
                                 </span>
                             </div>
                             <h1 className="text-2xl md:text-3xl lg:text-[28px] font-black text-white tracking-tight leading-snug">
