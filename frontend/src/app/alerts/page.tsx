@@ -315,13 +315,21 @@ function formatUsdToKrwInText(text: string): string {
             marketInterpretation = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명";
         }
 
-        // [사용자 요청] 뉴스, 수급 특보, 스터디/교육/공지 알림은 불필요한 시장해석 황금 박스 제거
+        // [사용자 요청] 뉴스, 순수 수급 특보, 스터디/교육/공지 알림은 불필요한 시장해석 황금 박스 제거
+        // 단, 유상증자/공급계약 등 진짜 공시는 초보자를 위해 시장해석 황금 박스를 유지해야 함!
+        const hasDisclosureKey = Boolean(
+            (alert?.title && (alert.title.includes("공시") || alert.title.includes("증자") || alert.title.includes("공급계약") || alert.title.includes("전환사채") || alert.title.includes("자사주") || alert.title.includes("실적") || alert.title.includes("배당"))) || 
+            alert?.dart_url || 
+            (alert?.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
+        );
+
         const isNewsAlert = alert && (
             ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ||
             (alert.title && (alert.title.includes("뉴스") || alert.title.includes("속보")))
         );
-        const isSupplyAlert = alert && (
-            ['whale_alert', 'whale_accumulation', 'surge'].includes(alert.type) ||
+        const isSupplyAlert = !hasDisclosureKey && alert && (
+            ['whale_accumulation', 'surge'].includes(alert.type) ||
+            (alert.type === 'whale_alert' && !hasDisclosureKey) ||
             (alert.title && (alert.title.includes("수급") || alert.title.includes("세력") || alert.title.includes("폭풍 매수") || alert.title.includes("고래") || alert.title.includes("외국인") || alert.title.includes("기관")))
         );
         const isStudyOrNotice = alert && (
@@ -329,15 +337,17 @@ function formatUsdToKrwInText(text: string): string {
             (alert.title && (alert.title.includes("스터디") || alert.title.includes("1타 강사") || alert.title.includes("이론") || alert.title.includes("가이드") || alert.title.includes("공지") || alert.title.includes("안내")))
         );
 
-        // 형식적인 깡통 문구 및 수급 동어반복 문구 필터링 (기존 DB 소급 적용)
-        const isGenericInterp = marketInterpretation.includes("주요 언론 보도") || 
-                               marketInterpretation.includes("시장 관심 테마") || 
-                               marketInterpretation.includes("시장 핵심 데이터 변동 감지") ||
-                               marketInterpretation.includes("스마트머니 집중 유입") ||
-                               marketInterpretation.includes("스마트머니 집중 매집") ||
-                               marketInterpretation.includes("세부 분석 확인") ||
-                               marketInterpretation.includes("정규장 개장") ||
-                               marketInterpretation.includes("정규장 마감");
+        // 형식적인 깡통 문구 및 수급 동어반복 문구 필터링 (공시 유의미 해석은 안전하게 보존)
+        const isGenericInterp = !hasDisclosureKey && (
+            marketInterpretation.includes("주요 언론 보도") || 
+            marketInterpretation.includes("시장 관심 테마") || 
+            marketInterpretation.includes("시장 핵심 데이터 변동 감지") ||
+            marketInterpretation.includes("스마트머니 집중 유입") ||
+            marketInterpretation.includes("스마트머니 집중 매집") ||
+            marketInterpretation.includes("세부 분석 확인") ||
+            marketInterpretation.includes("정규장 개장") ||
+            marketInterpretation.includes("정규장 마감")
+        );
 
         if (isNewsAlert || isSupplyAlert || isStudyOrNotice || isGenericInterp) {
             marketInterpretation = "";
@@ -586,8 +596,19 @@ function formatUsdToKrwInText(text: string): string {
 
     const renderAlertCard = (alert: any) => {
         const titleText = (alert.title || '').trim();
-        const isWhale = ['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수");
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type) && !isWhale;
+        const hasDisclosureKey = Boolean(
+            titleText.includes("공시") || 
+            titleText.includes("증자") || 
+            titleText.includes("공급계약") || 
+            titleText.includes("전환사채") || 
+            titleText.includes("자사주") || 
+            titleText.includes("실적") || 
+            titleText.includes("배당") || 
+            (alert as any).dart_url || 
+            (alert.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
+        );
+        const isWhale = !hasDisclosureKey && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
+        const isDisclosure = hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type);
         const rawSymbol = alert.symbol || alert.code || '';
         const cleanSymbol = rawSymbol ? (rawSymbol.split('.')[0] || rawSymbol) : '';
         const marketBadge = getMarketBadge(alert);
@@ -650,7 +671,7 @@ function formatUsdToKrwInText(text: string): string {
             defaultCta = { href: "/admin", label: "관리자 시스템 대시보드 바로가기", icon: Crown, style: "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/40" };
         }
         // [1순위: DART 공시 / 내부자 거래 / 지분 공시] -> 명확하게 공시 뱃지 우선 부여
-        else if (titleText.includes("공시 팩트 알림") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
+        else if (hasDisclosureKey || titleText.includes("공시") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
             typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
             typeBadgeLabel = "🇰🇷 DART 공시 팩트 속보";
             cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
@@ -686,7 +707,7 @@ function formatUsdToKrwInText(text: string): string {
             defaultCta = { href: "/blog", label: "마켓 심층 브리핑 전문 읽기", icon: Globe, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
         } 
         // [3순위: 세력 및 외국인·기관 수급 특보]
-        else if (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수")) {
+        else if (isWhale) {
             typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]";
             typeBadgeLabel = "🐳 외인·기관 수급 특보";
             cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";

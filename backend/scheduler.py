@@ -295,7 +295,7 @@ async def check_and_notify_disclosures():
                                         w_title = f"{prefix_title} {market_tag} {corp}".strip()
                                         w_body = f"{fact_str}" if fact_str else f"{report_title}"
                                         w_data = {
-                                            "type": "whale_alert",
+                                            "type": "disclosure_alert",
                                             "url": f"/stock/{raw_code}",
                                             "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                                             "symbol": raw_code
