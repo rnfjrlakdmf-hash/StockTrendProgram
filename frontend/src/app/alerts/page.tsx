@@ -321,7 +321,7 @@ function formatUsdToKrwInText(text: string): string {
                                marketInterpretation.includes("주가 방어 및 주주가치") ||
                                marketInterpretation.includes("펀더멘털 평가의 핵심 지표") ||
                                marketInterpretation.includes("지배구조 개편 및 방향성") ||
-                               ((alert?.title && (alert.title.includes("내부자") || alert.title.includes("자사주 매입") || alert.title.includes("자사주 취득") || alert.title.includes("지분변동"))) && !isSell);
+                               (((alert?.title && (alert.title.includes("내부자") || alert.title.includes("자사주 매입") || alert.title.includes("자사주 취득") || alert.title.includes("지분변동"))) || text.includes("자사주 매입") || text.includes("자기주식 직접 매수") || text.includes("자사주 취득")) && !isSell);
 
         if (isInsiderOrBuy && !isSell) {
             marketInterpretation = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명";
@@ -330,14 +330,15 @@ function formatUsdToKrwInText(text: string): string {
         // [사용자 요청] 뉴스, 순수 수급 특보, 스터디/교육/공지 알림은 불필요한 시장해석 황금 박스 제거
         // 단, 유상증자/공급계약 등 진짜 공시는 초보자를 위해 시장해석 황금 박스를 유지해야 함!
         const hasDisclosureKey = Boolean(
-            (alert?.title && (alert.title.includes("공시") || alert.title.includes("증자") || alert.title.includes("공급계약") || alert.title.includes("전환사채") || alert.title.includes("자사주") || alert.title.includes("실적") || alert.title.includes("배당"))) || 
+            (alert?.title && (alert.title.includes("공시") || alert.title.includes("증자") || alert.title.includes("공급계약") || alert.title.includes("전환사채") || alert.title.includes("자사주") || alert.title.includes("자기주식") || alert.title.includes("실적") || alert.title.includes("배당") || alert.title.includes("내부자") || alert.title.includes("지분"))) || 
             alert?.dart_url || 
-            (alert?.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
+            (alert?.url && (alert.url.includes('dart') || alert.url.includes('disclosure'))) ||
+            ['disclosure_alert', 'dart_disclosure', 'insider_trading', 'large_holding', 'sec_insider_trading', 'sec_disclosure'].includes(alert?.type || '')
         );
 
-        const isNewsAlert = alert && (
+        const isNewsAlert = !hasDisclosureKey && alert && (
             ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ||
-            (alert.title && (alert.title.includes("뉴스") || alert.title.includes("속보")))
+            (alert.title && (alert.title.includes("뉴스") || (alert.title.includes("속보") && !alert.title.includes("공시"))))
         );
         const isSupplyAlert = !hasDisclosureKey && alert && (
             ['whale_accumulation', 'surge'].includes(alert.type) ||
