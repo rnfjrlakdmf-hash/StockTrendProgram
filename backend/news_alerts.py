@@ -205,6 +205,10 @@ class NewsAlertMonitor:
                 """뉴스 제목이 해당 종목과 관련있는지 확인"""
                 title_lower = title.lower()
 
+                # 단순 시세 로봇 봇 기사 (보합 마감, 가격 변동 없이 마감 등) 필터링
+                if any(k in title for k in ["가격 변동 없이 마감", "변동 없이 마감", "가격변동없이", "보합 마감", "변동 없어"]):
+                    return False
+
                 # 직접 등록된 DART 공시는 관련성 100% 신뢰
                 if item_source == 'disclosure':
                     return True

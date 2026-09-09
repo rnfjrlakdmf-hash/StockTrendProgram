@@ -727,7 +727,15 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-cyan-400";
             defaultCta = { href: "/ranking", label: "실시간 외국인·기관 수급 순위 보기", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
         } 
-        // [4순위: 주도 테마 레이더]
+        // [4순위: 뉴스 알림 속보 - 주도 테마 레이더보다 먼저 판정하여 오분류 방지]
+        else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) || (alert.title && (alert.title.includes("뉴스") || alert.title.includes("헤드라인") || alert.title.includes("속보")))) {
+            typeBadgeStyle = "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-[0_0_15px_rgba(14,165,233,0.2)]";
+            typeBadgeLabel = "📰 실시간 뉴스 속보";
+            cardBorderHover = "hover:border-sky-500/40 hover:shadow-[0_0_25px_rgba(14,165,233,0.15)]";
+            accentBorder = "border-l-4 border-l-sky-400";
+            defaultCta = { href: alert.url || `/discovery?q=${symbol}`, label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
+        }
+        // [5순위: 주도 테마 레이더]
         else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운 테마") || combinedText.includes("대장주") || combinedText.includes("급등주")) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
             typeBadgeLabel = "⚡ 실시간 주도 테마 레이더";
@@ -735,7 +743,7 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-amber-400";
             defaultCta = { href: "/theme", label: "주도 테마 맵 & 대장주 확인", icon: Zap, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         } 
-        // [5순위: 기타 마켓 뉴스 및 시그널]
+        // [6순위: 기타 마켓 코인, 공모주, 시그널]
         else if (alert.type === 'crypto_bull' || combinedText.includes("코인") || combinedText.includes("비트코인")) {
             typeBadgeStyle = "bg-rose-500/20 text-rose-300 border-rose-500/40";
             typeBadgeLabel = "🔥 코인 불장 시그널";
@@ -746,11 +754,6 @@ function formatUsdToKrwInText(text: string): string {
             typeBadgeLabel = "🎯 공모주 레이더";
             cardBorderHover = "hover:border-pink-500/40";
             accentBorder = "border-l-4 border-l-pink-400";
-        } else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type)) {
-            typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40";
-            typeBadgeLabel = "📰 마켓 헤드라인";
-            cardBorderHover = "hover:border-cyan-500/40";
-            accentBorder = "border-l-4 border-l-cyan-400";
         } else if (combinedText.includes("시그널") || combinedText.includes("내일 장") || combinedText.includes("미국장")) {
             typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
             typeBadgeLabel = "🚦 글로벌 마켓 시그널";
