@@ -70,7 +70,7 @@ def get_real_next_week_calendar():
     return events, target_monday, period_label
 
 def _generate_sync_impl():
-    from ai_analysis import generate_with_retry, API_KEY
+    from ai_analysis import generate_with_retry, API_KEY, safe_json_loads
     from stock_data import get_market_data, get_market_news
 
     kst = pytz.timezone('Asia/Seoul')
@@ -171,13 +171,9 @@ def _generate_sync_impl():
         response = generate_with_retry(prompt, json_mode=True)
         text = response.text.strip()
         
-        for prefix in ["```json", "```"]:
-            if text.startswith(prefix):
-                text = text[len(prefix):].strip()
-        if text.endswith("```"):
-            text = text[:-3].strip()
-            
-        report_data = json.loads(text)
+        report_data = safe_json_loads(text)
+        if not report_data or not isinstance(report_data, dict):
+            raise ValueError(f"Invalid JSON returned: {text[:100]}...")
         report_data["generated_at"] = now.isoformat()
         
         with open(REPORT_FILE, "w", encoding="utf-8") as f:

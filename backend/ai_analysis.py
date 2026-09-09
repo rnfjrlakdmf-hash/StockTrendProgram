@@ -27,7 +27,7 @@ def safe_json_loads(text: str):
     
     # 1. Direct standard parse
     try:
-        return json.loads(text)
+        return json.loads(text, strict=False)
     except Exception:
         pass
 
@@ -37,7 +37,7 @@ def safe_json_loads(text: str):
     cleaned = re.sub(r',\s*([\]}])', r'\1', cleaned)
     cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', ' ', cleaned)
     try:
-        return json.loads(cleaned)
+        return json.loads(cleaned, strict=False)
     except Exception:
         pass
 
