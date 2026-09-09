@@ -50,23 +50,34 @@ interface Section4Data {
 function HighlightText({ text, className = "" }: { text: string; className?: string }) {
     if (!text) return null;
     
-    const parts = text.split(/('[\w가-힣\s·,]{1,12}'|\([\w가-힣\s·,]{1,10}\))/g);
+    // Split by single quotes '...', share counts (123,456주), or parentheses (...)
+    const parts = text.split(/('[\w가-힣\s·,]{1,16}'|\([\d,]+주\)|\([A-Za-z가-힣\s·,]{1,14}\))/g);
     
     return (
         <span className={className}>
             {parts.map((part, index) => {
                 if (!part) return null;
-                if (part.startsWith("'") && part.endsWith("'") && part.length <= 14) {
+                // Single quotes highlight: '테마명' or '키워드'
+                if (part.startsWith("'") && part.endsWith("'") && part.length <= 18) {
                     return (
-                        <span key={index} className="text-amber-300 font-bold px-1.5 py-0.5 rounded-md bg-amber-400/10 mx-0.5 border border-amber-500/20">
+                        <span key={index} className="text-amber-200 font-bold px-2 py-0.5 rounded-md bg-amber-500/20 mx-0.5 border border-amber-500/40">
                             {part.slice(1, -1)}
                         </span>
                     );
                 }
-                if (part.startsWith("(") && part.endsWith(")") && part.length <= 12) {
+                // Share count highlight: (1,354,549주)
+                if (part.startsWith("(") && part.endsWith("주)")) {
                     return (
-                        <span key={index} className="text-sky-300 font-bold px-1.5 py-0.5 rounded-md bg-sky-400/10 mx-0.5 border border-sky-500/20">
-                            {part}
+                        <span key={index} className="text-cyan-200 font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-950/80 mx-1 border border-cyan-500/40 shadow-sm inline-block">
+                            {part.slice(1, -1)}
+                        </span>
+                    );
+                }
+                // Parentheses term: (SC), (Hybrozyme), (Tech)
+                if (part.startsWith("(") && part.endsWith(")") && part.length <= 16) {
+                    return (
+                        <span key={index} className="text-indigo-200 font-semibold px-2 py-0.5 rounded-md bg-indigo-950/70 mx-0.5 border border-indigo-500/40">
+                            {part.slice(1, -1)}
                         </span>
                     );
                 }
@@ -517,7 +528,7 @@ export default function PremiumPage() {
                                 </div>
 
                                 {section1Data.lead && (
-                                    <div className="bg-amber-500/15 border-l-4 border-amber-400 p-4 rounded-r-2xl">
+                                    <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border-l-4 border-amber-400 p-5 rounded-2xl shadow-sm">
                                         <p className="text-base sm:text-lg font-bold text-amber-100 leading-relaxed">
                                             <HighlightText text={section1Data.lead} />
                                         </p>
@@ -526,21 +537,21 @@ export default function PremiumPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {section1Data.foreign && (
-                                        <div className="bg-zinc-900/90 border border-cyan-500/30 rounded-2xl p-5 space-y-2.5">
-                                            <div className="text-xs md:text-sm font-bold text-cyan-300 flex items-center gap-1.5 pb-2 border-b border-white/10">
+                                        <div className="bg-zinc-900/90 border border-cyan-500/40 border-l-4 border-l-cyan-400 rounded-2xl p-5 space-y-3 shadow-md">
+                                            <div className="text-xs md:text-sm font-bold text-cyan-300 flex items-center gap-2 pb-2 border-b border-white/10">
                                                 <Globe className="w-4 h-4 text-cyan-400" /> 외국인 자금 흐름
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium">
                                                 <HighlightText text={section1Data.foreign} />
                                             </p>
                                         </div>
                                     )}
                                     {section1Data.inst && (
-                                        <div className="bg-zinc-900/90 border border-purple-500/30 rounded-2xl p-5 space-y-2.5">
-                                            <div className="text-xs md:text-sm font-bold text-purple-300 flex items-center gap-1.5 pb-2 border-b border-white/10">
+                                        <div className="bg-zinc-900/90 border border-purple-500/40 border-l-4 border-l-purple-400 rounded-2xl p-5 space-y-3 shadow-md">
+                                            <div className="text-xs md:text-sm font-bold text-purple-300 flex items-center gap-2 pb-2 border-b border-white/10">
                                                 <Building2 className="w-4 h-4 text-purple-400" /> 기관 자금 흐름
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <p className="text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium">
                                                 <HighlightText text={section1Data.inst} />
                                             </p>
                                         </div>
@@ -548,11 +559,11 @@ export default function PremiumPage() {
                                 </div>
 
                                 {section1Data.summary && (
-                                    <div className="bg-zinc-950/90 border border-amber-500/20 rounded-2xl p-4.5 space-y-2">
-                                        <div className="text-xs md:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+                                    <div className="bg-zinc-900/90 border border-amber-500/30 border-l-4 border-l-amber-400 rounded-2xl p-5 space-y-2.5 shadow-md">
+                                        <div className="text-xs md:text-sm font-bold text-amber-300 flex items-center gap-2">
                                             <Target className="w-4 h-4 text-amber-400" /> 스마트머니 종합 결론
                                         </div>
-                                        <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                        <p className="text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium">
                                             <HighlightText text={section1Data.summary} />
                                         </p>
                                     </div>
@@ -636,7 +647,7 @@ export default function PremiumPage() {
 
                                     {/* 1. Lead Highlight Banner */}
                                     {section1Data.lead && (
-                                        <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/5 to-transparent border-l-4 border-amber-400 p-4.5 rounded-r-2xl">
+                                        <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border-l-4 border-amber-400 p-5 rounded-2xl shadow-sm">
                                             <p className="text-base sm:text-lg font-bold text-amber-100 leading-relaxed">
                                                 <HighlightText text={section1Data.lead} />
                                             </p>
@@ -646,40 +657,40 @@ export default function PremiumPage() {
                                     {/* 2. Spacious Open Rows */}
                                     <div className="space-y-4">
                                         {/* Foreign Flow */}
-                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-cyan-400 transition-all">
-                                            <div className="shrink-0 sm:w-40 flex items-center justify-between sm:justify-start gap-2">
-                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-xl border border-cyan-500/20">
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-5 p-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-cyan-400 shadow-md transition-all">
+                                            <div className="shrink-0 sm:w-36 flex items-center justify-between sm:justify-start gap-2">
+                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-cyan-200 bg-cyan-950/70 px-3.5 py-1.5 rounded-xl border border-cyan-500/40 shadow-sm">
                                                     <Globe className="w-3.5 h-3.5 text-cyan-400" />
                                                     외국인 자금
                                                 </span>
                                             </div>
-                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                            <p className="flex-1 text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                 <HighlightText text={section1Data.foreign || "외국인 주도 섹터 집중 매수 확인"} />
                                             </p>
                                         </div>
 
                                         {/* Institution Flow */}
-                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-purple-400 transition-all">
-                                            <div className="shrink-0 sm:w-40 flex items-center justify-between sm:justify-start gap-2">
-                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-300 bg-purple-500/10 px-3 py-1 rounded-xl border border-purple-500/20">
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-5 p-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-purple-400 shadow-md transition-all">
+                                            <div className="shrink-0 sm:w-36 flex items-center justify-between sm:justify-start gap-2">
+                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-200 bg-purple-950/70 px-3.5 py-1.5 rounded-xl border border-purple-500/40 shadow-sm">
                                                     <Building2 className="w-3.5 h-3.5 text-purple-400" />
                                                     기관 자금
                                                 </span>
                                             </div>
-                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                            <p className="flex-1 text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                 <HighlightText text={section1Data.inst || "기관 밸류에이션 가치주 매집 확인"} />
                                             </p>
                                         </div>
 
                                         {/* Strategy Summary */}
-                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-amber-400 transition-all">
-                                            <div className="shrink-0 sm:w-40 flex items-center justify-between sm:justify-start gap-2">
-                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-5 p-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-amber-400 shadow-md transition-all">
+                                            <div className="shrink-0 sm:w-36 flex items-center justify-between sm:justify-start gap-2">
+                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-200 bg-amber-950/70 px-3.5 py-1.5 rounded-xl border border-amber-500/40 shadow-sm">
                                                     <Target className="w-3.5 h-3.5 text-amber-400" />
                                                     스마트머니 총평
                                                 </span>
                                             </div>
-                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                            <p className="flex-1 text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                 <HighlightText text={section1Data.summary || "대형주 및 주도주 압축 대응 전략"} />
                                             </p>
                                         </div>
@@ -746,40 +757,40 @@ export default function PremiumPage() {
                                                     {/* Spacious Open 3-Row Analysis (No cramped square boxes) */}
                                                     <div className="space-y-3.5">
                                                         {/* 1. 수급 팩트 */}
-                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-cyan-400 transition-all">
-                                                            <div className="shrink-0 sm:w-40">
-                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-xl border border-cyan-500/20">
-                                                                    <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-cyan-400 transition-all shadow-md">
+                                                            <div className="shrink-0 sm:w-44">
+                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-cyan-200 bg-cyan-950/80 px-3.5 py-1.5 rounded-xl border border-cyan-500/40">
+                                                                    <BarChart3 className="w-4 h-4 text-cyan-400" />
                                                                     수급 팩트 (Supply)
                                                                 </span>
                                                             </div>
-                                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                                            <p className="flex-1 text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                                 <HighlightText text={stock.fact || "수급 집중 유입 확인"} />
                                                             </p>
                                                         </div>
 
                                                         {/* 2. 기술적 지표 */}
-                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-purple-400 transition-all">
-                                                            <div className="shrink-0 sm:w-40">
-                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-300 bg-purple-500/10 px-3 py-1 rounded-xl border border-purple-500/20">
-                                                                    <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-purple-400 transition-all shadow-md">
+                                                            <div className="shrink-0 sm:w-44">
+                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-200 bg-purple-950/80 px-3.5 py-1.5 rounded-xl border border-purple-500/40">
+                                                                    <TrendingUp className="w-4 h-4 text-purple-400" />
                                                                     기술적 위치 (Tech)
                                                                 </span>
                                                             </div>
-                                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                                            <p className="flex-1 text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                                 <HighlightText text={stock.tech || "안정적 지지선 확보"} />
                                                             </p>
                                                         </div>
 
                                                         {/* 3. 증권사 컨센서스 */}
-                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-emerald-400 transition-all">
-                                                            <div className="shrink-0 sm:w-40">
-                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-300 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
-                                                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                                        <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 sm:gap-5 p-4.5 sm:p-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-emerald-400 transition-all shadow-md">
+                                                            <div className="shrink-0 sm:w-44">
+                                                                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-200 bg-emerald-950/80 px-3.5 py-1.5 rounded-xl border border-emerald-500/40">
+                                                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
                                                                     컨센서스 (Target)
                                                                 </span>
                                                             </div>
-                                                            <p className="flex-1 text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                                            <p className="flex-1 text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                                 <HighlightText text={stock.consensus || "증권사 긍정적 평가"} />
                                                             </p>
                                                         </div>
@@ -819,8 +830,8 @@ export default function PremiumPage() {
 
                                     {/* 1. Lead Highlight Banner */}
                                     {section3Data.lead && (
-                                        <div className="bg-gradient-to-r from-purple-500/20 via-purple-500/5 to-transparent border-l-4 border-purple-400 p-4.5 rounded-r-2xl">
-                                            <p className="text-sm md:text-base font-bold text-purple-100 leading-relaxed">
+                                        <div className="bg-purple-950/40 border border-purple-500/30 border-l-4 border-l-purple-400 p-5 rounded-2xl shadow-md">
+                                            <p className="text-[15px] sm:text-base font-bold text-purple-100 leading-[1.75]">
                                                 <HighlightText text={section3Data.lead} />
                                             </p>
                                         </div>
@@ -829,21 +840,21 @@ export default function PremiumPage() {
                                     {/* 2. Theme Focus Wide Rows (Spacious & Cleanly Aligned) */}
                                     <div className="space-y-4">
                                         {section3Data.items.map((theme, i) => (
-                                            <div key={i} className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-purple-400 transition-all space-y-3">
-                                                <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/5">
+                                            <div key={i} className="p-5 sm:p-6 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-purple-400 transition-all shadow-md space-y-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
                                                     <h4 className="text-base sm:text-lg font-black text-white flex items-center gap-2.5">
                                                         <span className="text-xl">{theme.icon}</span>
                                                         {theme.title}
                                                     </h4>
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {theme.badge.split('·').map((tag, tIdx) => (
-                                                            <span key={tIdx} className="text-xs font-medium text-purple-200 bg-purple-500/15 border border-purple-500/25 px-2.5 py-0.5 rounded-lg">
+                                                            <span key={tIdx} className="text-xs font-semibold text-purple-200 bg-purple-950/80 border border-purple-500/40 px-3 py-1 rounded-lg shadow-sm">
                                                                 {tag.trim()}
                                                             </span>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                                <p className="text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                     <HighlightText text={theme.desc} />
                                                 </p>
                                             </div>
@@ -875,33 +886,33 @@ export default function PremiumPage() {
                                     {/* 2 Shield Defense Wide Rows (Spacious & Cleanly Aligned) */}
                                     <div className="space-y-4">
                                         {/* 1. Hedge Position */}
-                                        <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-amber-400 transition-all space-y-3">
-                                            <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/5">
-                                                <h4 className="text-base sm:text-lg font-black text-amber-300 flex items-center gap-2">
+                                        <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-amber-400 transition-all shadow-md space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+                                                <h4 className="text-base sm:text-lg font-black text-amber-200 flex items-center gap-2">
                                                     <AlertTriangle className="w-5 h-5 text-amber-400" />
                                                     기관 헷지(Hedge) 포지션 포착
                                                 </h4>
-                                                <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-xl">
+                                                <span className="text-xs font-mono font-bold text-amber-200 bg-amber-950/80 border border-amber-500/40 px-3.5 py-1.5 rounded-xl shadow-sm">
                                                     WARNING SIGN
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                            <p className="text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                 <HighlightText text={section4Data.hedge || "선제적 헷지 포지션 구축 동향 분석"} />
                                             </p>
                                         </div>
 
                                         {/* 2. Risk Strategy */}
-                                        <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border-l-4 border-emerald-400 transition-all space-y-3">
-                                            <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-white/5">
-                                                <h4 className="text-base sm:text-lg font-black text-emerald-300 flex items-center gap-2">
+                                        <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/80 hover:bg-zinc-900/95 border border-white/10 border-l-4 border-l-emerald-400 transition-all shadow-md space-y-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+                                                <h4 className="text-base sm:text-lg font-black text-emerald-200 flex items-center gap-2">
                                                     <ShieldCheck className="w-5 h-5 text-emerald-400" />
                                                     VVIP 리스크 관리 대응 전략
                                                 </h4>
-                                                <span className="text-xs font-mono font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-xl">
+                                                <span className="text-xs font-mono font-bold text-emerald-200 bg-emerald-950/80 border border-emerald-500/40 px-3.5 py-1.5 rounded-xl shadow-sm">
                                                     DEFENSE ACTION
                                                 </span>
                                             </div>
-                                            <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pt-0.5">
+                                            <p className="text-[15px] sm:text-base text-zinc-50 leading-[1.75] font-medium pt-0.5">
                                                 <HighlightText text={section4Data.risk || "보수적 분할 배분 및 지지선 확인 전략"} />
                                             </p>
                                         </div>
