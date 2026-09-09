@@ -575,43 +575,43 @@ export default function WatchlistPage() {
             </div>
 
             {/* Segmented Tab Navigation - Premium Pill Style */}
-            <div className="flex p-1.5 bg-zinc-950/90 border border-white/10 rounded-2xl w-full sm:w-fit shadow-xl backdrop-blur-md gap-1">
+            <div className="flex p-1.5 bg-zinc-950/90 border border-white/10 rounded-2xl w-full sm:w-fit shadow-xl backdrop-blur-md gap-1 overflow-x-auto no-scrollbar scrollbar-none">
                 <button
                     onClick={() => setActiveTab("quotes")}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === "quotes" 
                             ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]" 
                             : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Star className="w-4 h-4 text-amber-400" />
+                    <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                     <span>실시간 시세</span>
-                    <span className="text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
+                    <span className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
                         {watchlist.length}
                     </span>
                 </button>
                 <button
                     onClick={() => setActiveTab("schedules")}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === "schedules" 
                             ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]" 
                             : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
                     <span>실적·배당 캘린더</span>
                 </button>
                 <button
                     onClick={() => setActiveTab("alerts")}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === "alerts" 
                             ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25 scale-[1.02]" 
                             : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Bell className="w-4 h-4 text-purple-400" />
+                    <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
                     <span>알림·공시</span>
-                    <span className="text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
+                    <span className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
                         {alerts.length}
                     </span>
                 </button>
@@ -795,58 +795,60 @@ export default function WatchlistPage() {
 
                             return (
                                 <div className="space-y-6">
-                                    {/* 카테고리 필터 칩 */}
-                                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-                                        <button
-                                            onClick={() => setScheduleFilter("all")}
-                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap ${
-                                                scheduleFilter === "all"
-                                                    ? "bg-white text-black font-black shadow-lg"
-                                                    : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5"
-                                            }`}
-                                        >
-                                            전체보기 ({validEvents.length})
-                                        </button>
-                                        <button
-                                            onClick={() => setScheduleFilter("upcoming")}
-                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                                scheduleFilter === "upcoming"
-                                                    ? "bg-emerald-500 text-black font-black shadow-lg"
-                                                    : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
-                                            }`}
-                                        >
-                                            <span>📅</span> 다가오는 D-Day ({upcomingList.length})
-                                        </button>
-                                        <button
-                                            onClick={() => setScheduleFilter("earnings")}
-                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                                scheduleFilter === "earnings"
-                                                    ? "bg-blue-500 text-white font-black shadow-lg"
-                                                    : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20"
-                                            }`}
-                                        >
-                                            <span>📈</span> 실적 발표·보고서 ({earningsList.length})
-                                        </button>
-                                        <button
-                                            onClick={() => setScheduleFilter("dividend")}
-                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                                scheduleFilter === "dividend"
-                                                    ? "bg-amber-500 text-black font-black shadow-lg"
-                                                    : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20"
-                                            }`}
-                                        >
-                                            <span>💰</span> 배당 일정 ({dividendList.length})
-                                        </button>
-                                        <button
-                                            onClick={() => setScheduleFilter("contract")}
-                                            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                                                scheduleFilter === "contract"
-                                                    ? "bg-cyan-500 text-black font-black shadow-lg"
-                                                    : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"
-                                            }`}
-                                        >
-                                            <span>🤝</span> 대형 수주·계약 ({contractList.length})
-                                        </button>
+                                    {/* 카테고리 필터 칩 - 모바일 글자 겹침 완벽 방지 및 매끄러운 가로 스크롤 지원 */}
+                                    <div className="w-full overflow-x-auto no-scrollbar scrollbar-none pb-2 pt-1 -mx-1 px-1 touch-pan-x">
+                                        <div className="flex items-center gap-2 w-max min-w-full text-xs font-bold">
+                                            <button
+                                                onClick={() => setScheduleFilter("all")}
+                                                className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                    scheduleFilter === "all"
+                                                        ? "bg-white text-black font-black shadow-lg"
+                                                        : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/5"
+                                                }`}
+                                            >
+                                                전체보기 ({validEvents.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setScheduleFilter("upcoming")}
+                                                className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                    scheduleFilter === "upcoming"
+                                                        ? "bg-emerald-500 text-black font-black shadow-lg"
+                                                        : "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
+                                                }`}
+                                            >
+                                                <span>📅</span> 다가오는 D-Day ({upcomingList.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setScheduleFilter("earnings")}
+                                                className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                    scheduleFilter === "earnings"
+                                                        ? "bg-blue-500 text-white font-black shadow-lg"
+                                                        : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20"
+                                                }`}
+                                            >
+                                                <span>📈</span> 실적 발표·보고서 ({earningsList.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setScheduleFilter("dividend")}
+                                                className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                    scheduleFilter === "dividend"
+                                                        ? "bg-amber-500 text-black font-black shadow-lg"
+                                                        : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20"
+                                                }`}
+                                            >
+                                                <span>💰</span> 배당 일정 ({dividendList.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setScheduleFilter("contract")}
+                                                className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                                    scheduleFilter === "contract"
+                                                        ? "bg-cyan-500 text-black font-black shadow-lg"
+                                                        : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/20"
+                                                }`}
+                                            >
+                                                <span>🤝</span> 대형 수주·계약 ({contractList.length})
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {filteredEvents.length === 0 ? (
