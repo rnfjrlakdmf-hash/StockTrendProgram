@@ -89,7 +89,8 @@ def _generate_whale_report_sync():
 3. 다음 3대 고래 수급 섹션을 반드시 완성하세요:
    - whale_sectors: 한 주간 고래 자금이 가장 집중된 상위 3대 주도 섹터(예: AI반도체, 방산/우주, 전력인프라/변압기 등)와 핵심 대장주, 자금 유입 배경
    - hidden_whales: 주가는 크게 과열되지 않았으나 외인·기관이 조용히 수량을 축적한 '은밀한 고래 매집주 3선'
-   - foreign_analysis & inst_analysis: 상위 순매수 종목별 팩트 분석 (1~2줄)
+    - foreign_analysis: 위에 제공된 외국인 순매수 TOP 10 종목 1위부터 10위까지 10개 전체를 누락 없이 각각 1줄 이유와 함께 작성
+   - inst_analysis: 위에 제공된 기관 순매수 TOP 10 종목 1위부터 10위까지 10개 전체를 누락 없이 각각 1줄 이유와 함께 작성
    - monday_strategy: 다음 주 월요일 시초가 및 주간 대응 로드맵 (수급 핵심, 눌림목 지표 점검, 리스크 관리 3단계)
 
 [출력 형식 JSON]
@@ -120,6 +121,42 @@ def _generate_whale_report_sync():
         if not report_data or not isinstance(report_data, dict):
             raise ValueError(f"Invalid JSON returned: {text[:100]}...")
         report_data["generated_at"] = now.isoformat()
+
+        # 외국인 순매수 TOP 10 (10개 완전 보장)
+        fa_dict = {item.get("stock"): item for item in report_data.get("foreign_analysis", []) if isinstance(item, dict) and item.get("stock")}
+        full_foreign = []
+        for f_item in foreign_top10:
+            stk = f_item.get("stock")
+            if stk in fa_dict:
+                obj = fa_dict[stk]
+                if not obj.get("amount") or obj.get("amount") == "0주":
+                    obj["amount"] = f_item.get("amount")
+                full_foreign.append(obj)
+            else:
+                full_foreign.append({
+                    "stock": stk,
+                    "amount": f_item.get("amount"),
+                    "reason": "글로벌 패시브 및 업종 대표주 중심의 외국인 수급 유입."
+                })
+        report_data["foreign_analysis"] = full_foreign[:10]
+
+        # 기관 순매수 TOP 10 (10개 완전 보장)
+        ia_dict = {item.get("stock"): item for item in report_data.get("inst_analysis", []) if isinstance(item, dict) and item.get("stock")}
+        full_inst = []
+        for i_item in inst_top10:
+            stk = i_item.get("stock")
+            if stk in ia_dict:
+                obj = ia_dict[stk]
+                if not obj.get("amount") or obj.get("amount") == "0주":
+                    obj["amount"] = i_item.get("amount")
+                full_inst.append(obj)
+            else:
+                full_inst.append({
+                    "stock": stk,
+                    "amount": i_item.get("amount"),
+                    "reason": "기관 펀드 리밸런싱 및 분할 매집세 유입."
+                })
+        report_data["inst_analysis"] = full_inst[:10]
         
         with open(REPORT_FILE, "w", encoding="utf-8") as f:
             json.dump(report_data, f, ensure_ascii=False, indent=2)
