@@ -449,12 +449,11 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
-    # 6. 뉴스 알림
-    elif alert_type in ['news_alert', 'news_naver', 'news_google'] or "뉴스" in clean_title or "속보" in clean_title:
+    # 6. 뉴스 알림 (뉴스 본문 자체가 핵심 정보이므로 시장해석 박스 없이 본문만 깔끔하게 발송)
+    elif alert_type in ['news_alert', 'news_naver', 'news_google', 'news'] or "뉴스" in clean_title or "속보" in clean_title:
         new_title = apply_news_sentiment(clean_title, clean_body)
         body_no_interp = clean_no_interp
-        interp = existing_interp or "주요 언론 보도 및 시장 관심 테마 이슈 포착"
-        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
     # 7. 장시작 / 장마감 / 브리핑 및 기타 모든 알림

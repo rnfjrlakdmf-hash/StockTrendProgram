@@ -252,7 +252,7 @@ function formatUsdToKrwInText(text: string): string {
     });
 }
 
-    const renderFormattedBody = (text: string) => {
+    const renderFormattedBody = (text: string, alert?: any) => {
         text = formatUsdToKrwInText(text);
         if (!text) return null;
 
@@ -313,6 +313,15 @@ function formatUsdToKrwInText(text: string): string {
         // 사용자 요청: 자사주 매입 해석을 직관적인 문구로 통일 적용
         if (marketInterpretation.includes("대표/경영진 자사주 매입 포착") || marketInterpretation.includes("책임 경영 및 주가 방어 신호")) {
             marketInterpretation = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명";
+        }
+
+        // [사용자 요청] 뉴스 알림은 본문 자체가 핵심이므로 불필요한 시장해석 황금 박스 제거
+        const isNewsAlert = alert && (
+            ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ||
+            (alert.title && (alert.title.includes("뉴스") || alert.title.includes("속보")))
+        );
+        if (isNewsAlert || marketInterpretation.includes("주요 언론 보도") || marketInterpretation.includes("시장 관심 테마 이슈") || marketInterpretation.includes("언론 보도")) {
+            marketInterpretation = "";
         }
 
         const mainText = mainLines.join('\n').trim();
@@ -751,7 +760,7 @@ function formatUsdToKrwInText(text: string): string {
                     renderPortfolioCardContent(alert)
                 ) : (
                     <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed font-normal">
-                        {renderFormattedBody(alert.body)}
+                        {renderFormattedBody(alert.body, alert)}
                     </div>
                 )}
 
