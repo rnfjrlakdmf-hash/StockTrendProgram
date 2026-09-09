@@ -959,8 +959,6 @@ export default function PatternPage() {
                             </div>
                         </div>
 
-                        )}
-
                         {/* Kakao AdFit In-Feed Banner */}
                         <KakaoRevenueAd type="feed" />
 

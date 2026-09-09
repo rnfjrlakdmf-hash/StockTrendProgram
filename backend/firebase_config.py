@@ -136,6 +136,62 @@ def format_korean_shares_and_amounts(text: str) -> str:
     return re.sub(r'([\d,]{4,})\s*(주|원)', replace_num, text)
 
 
+def extract_and_strip_interpretations(body: str) -> tuple:
+    """
+    본문에서 💡 해석, 💡 [시장해석], ▪️ 💡 해석: 등 모든 형태의 해석 및 불필요한 사족 문구를 분리/제거합니다.
+    Returns: (cleaned_body_without_interpretations, extracted_interpretation)
+    """
+    if not body:
+        return "", ""
+    import re
+    
+    extracted = ""
+    
+    # 1. 💡 [시장해석] 또는 💡 해석: 또는 [시장해석] 패턴 추출
+    interp_patterns = [
+        r'(?:▪️|▪|[·\s])*💡\s*(?:\[시장\s*해석\]|해석:?)\s*([^\n]+)',
+        r'(?:▪️|▪|[·\s])*\[시장\s*해석\]\s*([^\n]+)',
+    ]
+    for pat in interp_patterns:
+        m = re.search(pat, body)
+        if m:
+            cand = m.group(1).strip()
+            cand = re.sub(r'[※👉🔍].*$', '', cand).strip()
+            if cand and not extracted:
+                extracted = cand
+                break
+                
+    # 2. 본문에서 해석 라인 및 문구 완전 제거
+    lines = body.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        l = line.strip()
+        if not l:
+            continue
+            
+        # 줄 중간/끝에 붙은 해석 문구 제거 (예: 수급정보 · ▪️ 💡 해석: ...)
+        if any(marker in l for marker in ["💡", "[시장해석]", "[시장 해석]", "해석:"]):
+            l = re.sub(r'(?:[·\s]*▪️?|\s)*💡\s*(?:\[시장\s*해석\]|해석:?).*$', '', l).strip()
+            l = re.sub(r'(?:[·\s]*▪️?|\s)*\[시장\s*해석\].*$', '', l).strip()
+            if not l:
+                continue
+                
+        # 면책 문구 또는 확인안내 사족 스킵
+        if any(l.startswith(x) for x in ['※', '👉', '🔍']) or '투자 권유가 아닙니다' in l or '알림을 누르면' in l or '터치하여' in l:
+            continue
+            
+        # 앞머리 지저분한 특수문자 및 접두사 정리 (📌 ▪️ 📊 수급: 등)
+        l = re.sub(r'^(?:📌|▪️|▪|📊|📋|\s)+', '', l).strip()
+        l = re.sub(r'^수급:\s*', '', l).strip()
+        l = re.sub(r'^공시:\s*', '', l).strip()
+        
+        if l:
+            cleaned_lines.append(l)
+            
+    clean_body = "\n".join(cleaned_lines)
+    return clean_body, extracted
+
+
 def beautify_notification(title: str, body: str, data: Optional[Dict] = None) -> tuple:
     """
     모든 알림(공시, 시세 변동, 공모주, 수급, 뉴스, 시황 브리핑 등)을
@@ -155,15 +211,13 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     # 자본시장법 준수 법적 면책 문구
     DISCLAIMER_TEXT = "※ 객관적 공시·시세 팩트 전달이며 투자 권유가 아닙니다."
 
-    # 기존 본문에 [시장해석]이 이미 들어있는 경우 추출
+    # 기존 본문에 들어있던 💡 해석 등 모든 형태의 해석 및 사족 문구를 분리/제거
     import re
-    existing_interp = ""
-    m_interp = re.search(r'💡\s*\[시장\s*해석\]\s*([^\n]+)', clean_body)
-    if m_interp:
-        existing_interp = m_interp.group(1).strip()
+    clean_no_interp, extracted_interp = extract_and_strip_interpretations(clean_body)
+    existing_interp = extracted_interp
 
     # 1. DART 전자공시 속보 알림 및 임원/대주주 지분 변동
-    if alert_type in ['disclosure_alert', 'dart_disclosure', 'insider_trading', 'large_holding'] or any(k in clean_title for k in ["공시", "내부자", "지분", "대량보유", "임원"]):
+    if alert_type in ['disclosure_alert', 'dart_disclosure', 'insider_trading', 'large_holding', 'sec_insider_trading'] or any(k in clean_title for k in ["공시", "내부자", "지분", "대량보유", "임원"]):
         company = (data or {}).get("corp") or (data or {}).get("company") or ""
         if not company:
             match = re.search(r'(?:[^\w\s]|\s)*([가-힣A-Za-z0-9]+)\s*(?:공시|SEC|속보)', clean_title)
@@ -177,7 +231,6 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
                     company = m_comp.group(1).strip()
 
         # 공시 보고서명 추출
-        clean_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL)
         report_title = clean_no_interp.replace("📋", "").split("📅")[0].strip()
 
         if any(k in report_title for k in ["단일판매", "공급계약"]):
@@ -232,15 +285,16 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
         elif any(k in report_title for k in ["최대주주", "임원ㆍ주요주주", "소유주식변동", "임원", "지분", "보유"]) or any(k in clean_title for k in ["내부자", "지분", "주요주주", "대량보유"]):
             t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
-            new_title = f"👤 {t_core}" if t_core else (f"👤 [임원/주요주주 지분변동] {company}" if company else "👤 [지분 변동 공시]")
+            # 윈도우 등 일부 폰트에서 👤가 깨지는 현상 방지 위해 호환성 높은 🚨 사용
+            new_title = f"🚨 {t_core}" if t_core else (f"🚨 [임원/주요주주 지분변동] {company}" if company else "🚨 [지분 변동 공시]")
             if "매수" in report_title or "취득" in report_title or "매수" in clean_title:
-                interp = existing_interp or "대표/경영진 자사주 매입 포착 · 책임 경영 및 주가 방어 신호"
+                interp = "대표/경영진 자사주 매입 포착 · 책임 경영 및 주가 방어 신호"
             elif "매도" in report_title or "처분" in report_title or "매도" in clean_title:
-                interp = existing_interp or "대주주 차익실현 매물 출회 · 단기 변동성 주의"
+                interp = "대주주 차익실현 매물 출회 · 단기 변동성 주의"
             else:
                 interp = existing_interp or "경영진 지분 변동 발생 · 지배구조 개편 및 방향성 체크"
             
-            raw_lines = [l.strip() for l in clean_no_interp.split('\n') if l.strip() and not any(l.strip().startswith(x) for x in ['💡', '※', '👉', '🔍'])]
+            raw_lines = [l.strip() for l in clean_no_interp.split('\n') if l.strip()]
             fact_line = " · ".join(raw_lines)
             if not fact_line or len(fact_line) < 3:
                 fact_line = f"{company} 임원 또는 주요주주의 주식 보유상황 변동 접수" if company else "회사 임원 또는 주요주주의 주식 보유상황 변동 접수"
@@ -345,7 +399,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
                     company = m.group(1).strip()
 
         # 기존 본문에서 [시장해석] 추출 또는 분리
-        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        body_no_interp = clean_no_interp
 
         if "신고가" in clean_title:
             new_title = f"🏆 [52주 신고가 도달] {company}" if company else "🏆 [52주 신고가 도달]"
@@ -369,7 +423,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         match = re.search(r'(?:상한가|급등|포착|마감)*\s*([가-힣A-Za-z0-9]+)$', clean_title)
         if match:
             company = match.group(1).strip()
-        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        body_no_interp = clean_no_interp
         new_title = f"🌙 [시간외 급등 마감] {company}" if company else clean_title
         interp = existing_interp or "정규장 마감 후 시간외 매수세 집중 · 익일 정규장 시초가 주목"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
@@ -381,7 +435,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             new_title = clean_title.replace("🚀", "✅")
         else:
             new_title = f"🚀 {clean_title.replace('🚀', '').strip()}"
-        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        body_no_interp = clean_no_interp
         interp = existing_interp or "신규 공모주 상장 임박 · 공모가 및 청약 경쟁률 체크"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
@@ -390,7 +444,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     elif alert_type in ['whale_alert', 'surge'] or "수급" in clean_title or "고래" in clean_title:
         t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
         new_title = f"🐳 {t_core}" if t_core else clean_title
-        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        body_no_interp = clean_no_interp
         interp = existing_interp or "외인·기관 스마트머니 집중 매집 · 수급 주도 메이저 종목"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
@@ -398,14 +452,14 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     # 6. 뉴스 알림
     elif alert_type in ['news_alert', 'news_naver', 'news_google'] or "뉴스" in clean_title or "속보" in clean_title:
         new_title = apply_news_sentiment(clean_title, clean_body)
-        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        body_no_interp = clean_no_interp
         interp = existing_interp or "주요 언론 보도 및 시장 관심 테마 이슈 포착"
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
     # 7. 장시작 / 장마감 / 브리핑 및 기타 모든 알림
     else:
-        body_no_interp = re.sub(r'💡\s*\[시장\s*해석\].*$', '', clean_body, flags=re.DOTALL).strip()
+        body_no_interp = clean_no_interp
         if "장시작" in clean_title:
             interp = existing_interp or "오늘 정규장 개장 · 주요 지수 및 개장 시초가 주목"
         elif "장마감" in clean_title:

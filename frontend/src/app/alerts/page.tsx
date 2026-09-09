@@ -97,7 +97,7 @@ export default function AlertCenterPage() {
     const { user } = useAuth();
     const isAdmin = Boolean(
         user && (
-            user.role === 'admin' || 
+            (user as any).role === 'admin' || 
             user.email?.toLowerCase() === 'rnfjr@gmail.com' || 
             user.email?.toLowerCase() === 'rnfjrlakdmf@gmail.com' || 
             (user as any).is_admin ||
@@ -263,7 +263,7 @@ function formatUsdToKrwInText(text: string): string {
 
         const lines = text.split('\n');
         for (const line of lines) {
-            const trimmed = line.trim();
+            let trimmed = line.trim();
             if (!trimmed) continue;
 
             // [사용자 요청] 확인안내 문구 완전 제거 (👉 터치하여..., 🔍 알림을 누르면... 등)
@@ -271,15 +271,42 @@ function formatUsdToKrwInText(text: string): string {
                 continue;
             }
 
-            if (trimmed.startsWith("💡 [시장해석]") || trimmed.startsWith("💡 [시장 해석]")) {
-                marketInterpretation = trimmed
-                    .replace(/^💡\s*\[시장\s*해석\]\s*/, '')
+            // 법적 면책 문구 분리
+            if (trimmed.startsWith("※") || (trimmed.startsWith("(") && (trimmed.includes("투자 권유가 아닙니다") || trimmed.includes("투자권유")))) {
+                disclaimerText = trimmed;
+                continue;
+            }
+
+            // 별도 라인 형태의 [시장해석] 추출
+            if (trimmed.startsWith("💡 [시장해석]") || trimmed.startsWith("💡 [시장 해석]") || trimmed.startsWith("💡 해석:") || trimmed.startsWith("[시장해석]")) {
+                const interp = trimmed
+                    .replace(/^(?:▪️|▪|[·\s])*💡\s*(?:\[시장\s*해석\]|해석:?)\s*/, '')
+                    .replace(/^[\[\(]?시장\s*해석[\]\)]?\s*/, '')
                     .replace(/[👉🔍※].*$/, '')
                     .trim();
-            } else if (trimmed.startsWith("※") || (trimmed.startsWith("(") && (trimmed.includes("투자 권유가 아닙니다") || trimmed.includes("투자권유")))) {
-                disclaimerText = trimmed;
-            } else {
-                mainLines.push(trimmed);
+                if (interp && !marketInterpretation) {
+                    marketInterpretation = interp;
+                }
+                continue;
+            }
+
+            // 본문 라인 내부에 포함된 💡 해석 문구 분리/제거 (예: 수급정보 · ▪️ 💡 해석: ...)
+            const embeddedMatch = trimmed.match(/(?:[·\s]*▪️?|\s)*💡\s*(?:\[시장\s*해석\]|해석:?)\s*(.+)$/);
+            if (embeddedMatch) {
+                if (!marketInterpretation) {
+                    marketInterpretation = embeddedMatch[1].replace(/[👉🔍※].*$/, '').trim();
+                }
+                // 본문 팩트 줄에서는 해석 내용을 완전히 제거
+                trimmed = trimmed.replace(/(?:[·\s]*▪️?|\s)*💡\s*(?:\[시장\s*해석\]|해석:?).*$/, '').trim();
+            }
+
+            // 앞머리 중복 불릿 및 불필요한 접두사 정리 (📌 ▪️ 📊 수급: -> 📌)
+            trimmed = trimmed.replace(/^(?:📌|▪️|▪|📊|📋|\s)+/, '').trim();
+            trimmed = trimmed.replace(/^수급:\s*/, '').trim();
+            trimmed = trimmed.replace(/^공시:\s*/, '').trim();
+
+            if (trimmed) {
+                mainLines.push(trimmed.startsWith("📌") ? trimmed : `📌 ${trimmed}`);
             }
         }
 
@@ -699,7 +726,19 @@ function formatUsdToKrwInText(text: string): string {
 
                 {/* Title */}
                 <h3 className="text-base md:text-lg font-black text-white group-hover:text-amber-200 transition-colors leading-snug mb-2.5">
-                    {(alert.title || '').replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])/, '$2')}
+                    {(() => {
+                        let t = (alert.title || '')
+                            .replace(/[\uFFFD\uFFFE\uFFFF]/g, '') // 깨진 물음표 기호 제거
+                            .replace(/^👤\s*/, '🚨 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 👤를 🚨로 안전 대체
+                            .trim();
+                        // 앞머리 이모지 중복 정리
+                        t = t.replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])/, '$2');
+                        // 이모지가 없거나 제거된 경우 깔끔한 기본 이모지 부여
+                        if (t.startsWith('[')) {
+                            t = `🚨 ${t}`;
+                        }
+                        return t;
+                    })()}
                 </h3>
 
                 {/* Body Content */}
