@@ -53,7 +53,7 @@ def fetch_whale_top10():
     return foreign_top10, inst_top10
 
 def _generate_whale_report_sync():
-    from ai_analysis import generate_with_retry, API_KEY
+    from ai_analysis import generate_with_retry, API_KEY, safe_json_loads
     
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
@@ -116,13 +116,9 @@ def _generate_whale_report_sync():
         response = generate_with_retry(prompt, json_mode=True)
         text = response.text.strip()
         
-        for prefix in ["```json", "```"]:
-            if text.startswith(prefix):
-                text = text[len(prefix):].strip()
-        if text.endswith("```"):
-            text = text[:-3].strip()
-            
-        report_data = json.loads(text)
+        report_data = safe_json_loads(text)
+        if not report_data or not isinstance(report_data, dict):
+            raise ValueError(f"Invalid JSON returned: {text[:100]}...")
         report_data["generated_at"] = now.isoformat()
         
         with open(REPORT_FILE, "w", encoding="utf-8") as f:

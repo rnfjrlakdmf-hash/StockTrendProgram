@@ -116,6 +116,31 @@ async def get_weekend_whale_report():
     next_open = next_friday.replace(hour=18, minute=0, second=0, microsecond=0)
     
     report = get_latest_whale_report()
+    is_stale = False
+    if not report:
+        is_stale = True
+    elif "generated_at" in report:
+        try:
+            gen_dt = datetime.fromisoformat(report["generated_at"])
+            # 5일 이상 지난 오래된 리포트인 경우 최신 데이터로 자동 갱신
+            if (now - gen_dt).total_seconds() > 5 * 24 * 3600:
+                is_stale = True
+        except Exception:
+            is_stale = True
+            
+    if is_stale:
+        async with _report_gen_lock:
+            report = get_latest_whale_report()
+            if not report or is_stale:
+                try:
+                    from utils.whale_weekend_report import generate_whale_weekend_report
+                    print(f"[WhaleWeekendRoute] Refreshing stale whale report at {now}...")
+                    new_rep = await generate_whale_weekend_report()
+                    if new_rep:
+                        report = new_rep
+                except Exception as e:
+                    print(f"[WhaleWeekendRoute] On-demand generation error: {e}")
+
     if report:
         return {
             "is_open": True,

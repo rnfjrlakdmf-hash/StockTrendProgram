@@ -1137,9 +1137,11 @@ async def weekend_report_scheduler_loop():
                 target_tag = f"{current_week}_weekday"
                 
             if target_tag and last_run_gen_tag != target_tag:
-                logger.info(f"[WeekendReport] Generating report for {target_tag}...")
+                logger.info(f"[WeekendReport] Generating reports for {target_tag}...")
                 from utils.weekend_report import generate_weekend_report
+                from utils.whale_weekend_report import generate_whale_weekend_report
                 await generate_weekend_report()
+                await generate_whale_weekend_report()
                 last_run_gen_tag = target_tag
                 
             # 2. 푸시 발송 (토요일 오전 10시 00분 ~ 10시 29분 사이 1회)
