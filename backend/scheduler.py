@@ -1116,7 +1116,7 @@ async def weekly_blog_bot_scheduler_loop():
 async def weekend_report_scheduler_loop():
     """매주 토요일 오전 9시 30분 주말 리포트 생성, 10시에 푸시 알림"""
     logger.info("[WeekendReport] Weekend Report Scheduler Active.")
-    last_run_week_gen = -1
+    last_run_gen_tag = ""
     last_run_week_push = -1
     
     import pytz
@@ -1127,17 +1127,20 @@ async def weekend_report_scheduler_loop():
             now = datetime.now(kst)
             current_week = now.isocalendar()[1]
             
-            # 1. 리포트 생성 (금요일 19시 이후, 토요일, 일요일 중 이번 주차 미생성 시 1회 실행)
-            should_gen = False
+            # 1. 리포트 자동 생성:
+            # - 주말 모드: 금요일 19시~일요일 중 1회 자동 실행 (차주 경제 일정 예습)
+            # - 주중 모드: 월요일 오전 8시 이후 1회 자동 실행 (이번 주 경제 일정 브리핑)
+            target_tag = None
             if (now.weekday() == 4 and now.hour >= 19) or (now.weekday() == 5 and now.hour >= 9) or (now.weekday() == 6):
-                if last_run_week_gen != current_week:
-                    should_gen = True
-                    
-            if should_gen:
-                logger.info(f"[WeekendReport] Generating report for week {current_week}...")
+                target_tag = f"{current_week}_weekend"
+            elif now.weekday() == 0 and now.hour >= 8:
+                target_tag = f"{current_week}_weekday"
+                
+            if target_tag and last_run_gen_tag != target_tag:
+                logger.info(f"[WeekendReport] Generating report for {target_tag}...")
                 from utils.weekend_report import generate_weekend_report
                 await generate_weekend_report()
-                last_run_week_gen = current_week
+                last_run_gen_tag = target_tag
                 
             # 2. 푸시 발송 (토요일 오전 10시 00분 ~ 10시 29분 사이 1회)
             if now.weekday() == 5 and now.hour == 10 and now.minute < 30 and last_run_week_push != current_week:
