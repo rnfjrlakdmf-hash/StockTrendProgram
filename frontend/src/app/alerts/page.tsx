@@ -441,6 +441,7 @@ function formatUsdToKrwInText(text: string): string {
     // Render Luxury Alert Card
     
     // Render Dedicated Portfolio Summary Micro-Bento with MVP & Smart Money Supply
+    // Render Dedicated Portfolio Summary Micro-Bento with MVP & Smart Money Supply
     const renderPortfolioCardContent = (alert: any) => {
         const text = alert.body || '';
         const lines = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
@@ -450,80 +451,140 @@ function formatUsdToKrwInText(text: string): string {
         let mvpText = "";
         let worstText = "";
         let supplyText = "";
-        let stockItems: { name: string; detail: string; changePct: number; isUp: boolean }[] = [];
-        let subDetails: string[] = [];
         let disclaimer = "";
 
+        interface PortfolioStockItem {
+            name: string;
+            qty: string;
+            price: string;
+            dayChangeStr: string;
+            dayChangePct: number;
+            isDayUp: boolean;
+            profitStr: string;
+            profitPctStr: string;
+            isProfitUp: boolean;
+            subPurchases: string[];
+        }
+
+        const stockItems: PortfolioStockItem[] = [];
+        let currentItem: PortfolioStockItem | null = null;
+
         lines.forEach((line: string) => {
-            if (line.includes('총 누적 수익률') || line.includes('총 수익률')) {
-                totalReturn = line.replace(/^.*?수익률[:\s]*/, '').trim();
-            } else if (line.includes('총 누적 수익') || line.includes('총 수익:')) {
-                totalProfit = line.replace(/^.*?총\s*누적\s*수익[:\s]*/, '').replace(/^.*?총\s*수익[:\s]*/, '').trim();
-            } else if (line.includes('오늘의 MVP') || line.includes('🏆')) {
-                mvpText = line.replace(/^.*?MVP[:\s]*/, '').trim();
-            } else if (line.includes('약세 종목') || line.includes('⚠️')) {
-                worstText = line.replace(/^.*?약세\s*종목[:\s]*/, '').trim();
-            } else if (line.includes('수급 합산') || line.includes('🌊')) {
-                supplyText = line.replace(/^.*?수급\s*합산[:\s]*/, '').trim();
-            } else if (line.startsWith('(') && line.endsWith(')')) {
-                disclaimer = line;
-            } else if (line.startsWith('↳') || line.startsWith('->') || line.includes('차]')) {
-                subDetails.push(line);
-            } else if (line.startsWith('•') || line.includes(':')) {
-                const match = line.match(/([▲▼\-]?\s*[\d\.]+%)/);
-                let pct = 0;
-                let isUp = false;
-                if (match) {
-                    const cleanPct = match[1].replace('▲', '+').replace('▼', '-').replace('%', '').trim();
-                    pct = parseFloat(cleanPct) || 0;
-                    isUp = pct >= 0;
+            const cleanLine = line.trim();
+
+            if (cleanLine.startsWith('총 누적 수익률') || cleanLine.startsWith('총 수익률') || (cleanLine.includes('수익률:') && !cleanLine.startsWith('•') && !cleanLine.startsWith('↳'))) {
+                totalReturn = cleanLine.replace(/^.*?수익률[:\s]*/, '').trim();
+            } else if ((cleanLine.startsWith('💰 총 누적 수익') || cleanLine.startsWith('총 누적 수익') || cleanLine.startsWith('💰 총 수익:') || cleanLine.startsWith('총 수익:')) && !cleanLine.startsWith('↳') && !cleanLine.includes('주)')) {
+                totalProfit = cleanLine.replace(/^.*?(?:총\s*누적\s*수익|총\s*수익)[:\s]*/, '').replace(/\(.*?\)/, '').trim();
+            } else if (cleanLine.includes('오늘의 MVP') || (cleanLine.includes('🏆') && cleanLine.includes('MVP'))) {
+                mvpText = cleanLine.replace(/^.*?MVP[:\s]*/, '').trim();
+            } else if (cleanLine.includes('약세 종목') || (cleanLine.includes('⚠️') && cleanLine.includes('약세'))) {
+                worstText = cleanLine.replace(/^.*?약세\s*종목[:\s]*/, '').trim();
+            } else if (cleanLine.includes('수급 합산') || (cleanLine.includes('🌊') && cleanLine.includes('수급'))) {
+                supplyText = cleanLine.replace(/^.*?수급\s*합산[:\s]*/, '').trim();
+            } else if (cleanLine.startsWith('(') && cleanLine.endsWith(')')) {
+                disclaimer = cleanLine;
+            } else if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('[') && !cleanLine.includes('수익률') && !cleanLine.includes('수익:'))) {
+                // 새로운 종목 행 파싱 (예: • 삼성중공업(7주): 21,300원 (▼101원 / ▼0.5%))
+                const parts = cleanLine.split(':');
+                const nameWithQty = parts[0].replace('•', '').trim();
+                let stockName = nameWithQty;
+                let stockQty = "";
+                const qtyMatch = nameWithQty.match(/\(([\d\.]+주)\)/);
+                if (qtyMatch) {
+                    stockQty = qtyMatch[1];
+                    stockName = nameWithQty.replace(/\([\d\.]+주\)/, '').trim();
                 }
-                stockItems.push({
-                    name: line.split(':')[0].replace('•', '').trim(),
-                    detail: line.includes(':') ? line.substring(line.indexOf(':') + 1).trim() : line,
-                    changePct: pct,
-                    isUp: isUp
-                });
+
+                const detailPart = parts.slice(1).join(':').trim();
+                const priceMatch = detailPart.match(/^([\d,]+원?|\$[\d,\.]+)/);
+                const priceStr = priceMatch ? priceMatch[1] : detailPart.split('(')[0].trim();
+
+                const chgMatch = detailPart.match(/\((.*?)\)/);
+                const dayChangeStr = chgMatch ? chgMatch[1] : "";
+                
+                let dayChangePct = 0;
+                let isDayUp = false;
+                const pctMatch = dayChangeStr.match(/([▲▼\-+]?[\d\.]+)%/);
+                if (pctMatch) {
+                    const clean = pctMatch[1].replace('▲', '+').replace('▼', '-').replace('+', '');
+                    dayChangePct = parseFloat(clean) || 0;
+                    isDayUp = dayChangePct >= 0;
+                }
+
+                currentItem = {
+                    name: stockName,
+                    qty: stockQty,
+                    price: priceStr,
+                    dayChangeStr: dayChangeStr,
+                    dayChangePct: dayChangePct,
+                    isDayUp: isDayUp,
+                    profitStr: "",
+                    profitPctStr: "",
+                    isProfitUp: false,
+                    subPurchases: []
+                };
+                stockItems.push(currentItem);
+            } else if (cleanLine.startsWith('↳') || cleanLine.includes('총 수익:')) {
+                if (currentItem) {
+                    // 예: ↳ 💰총 수익: -50,750원 (-25.4%)
+                    const pClean = cleanLine.replace(/^.*?총\s*수익[:\s]*/, '').trim();
+                    const pctMatch = pClean.match(/\((.*?)\)/);
+                    if (pctMatch) {
+                        currentItem.profitPctStr = pctMatch[1];
+                        currentItem.profitStr = pClean.replace(/\(.*?\)/, '').trim();
+                        currentItem.isProfitUp = !currentItem.profitPctStr.includes('-') && !currentItem.profitStr.includes('-');
+                    } else {
+                        currentItem.profitStr = pClean;
+                        currentItem.isProfitUp = !currentItem.profitStr.includes('-');
+                    }
+                }
+            } else if (cleanLine.includes('차]') || cleanLine.startsWith('[')) {
+                if (currentItem) {
+                    currentItem.subPurchases.push(cleanLine);
+                }
             }
         });
 
         if (!mvpText && stockItems.length > 0) {
-            const sorted = [...stockItems].sort((a, b) => b.changePct - a.changePct);
-            if (sorted[0] && sorted[0].changePct > 0) {
-                mvpText = `${sorted[0].name} (${sorted[0].changePct > 0 ? '+' : ''}${sorted[0].changePct}%)`;
+            const sorted = [...stockItems].sort((a, b) => b.dayChangePct - a.dayChangePct);
+            if (sorted[0] && sorted[0].dayChangePct > 0) {
+                mvpText = `${sorted[0].name} (${sorted[0].dayChangePct > 0 ? '+' : ''}${sorted[0].dayChangePct}%)`;
             }
-            if (sorted[sorted.length - 1] && sorted[sorted.length - 1].changePct < 0 && sorted[sorted.length - 1] !== sorted[0]) {
-                worstText = `${sorted[sorted.length - 1].name} (${sorted[sorted.length - 1].changePct}%)`;
+            if (sorted[sorted.length - 1] && sorted[sorted.length - 1].dayChangePct < 0 && sorted[sorted.length - 1] !== sorted[0]) {
+                worstText = `${sorted[sorted.length - 1].name} (${sorted[sorted.length - 1].dayChangePct}%)`;
             }
         }
 
         const isNegative = totalReturn.includes('-') || totalProfit.includes('-');
 
         return (
-            <div className="space-y-3.5">
-                {/* Top KPI Metrics Bento */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5 bg-zinc-950/80 border border-white/10 rounded-2xl">
-                    <div className="flex items-center justify-between p-3 bg-zinc-900/90 rounded-xl border border-white/5">
-                        <span className="text-xs text-gray-400 font-medium">총 누적 수익률</span>
-                        <span className={`text-sm md:text-base font-black font-mono px-2.5 py-0.5 rounded-lg border ${
-                            isNegative 
-                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' 
-                                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                        }`}>
-                            {totalReturn || '0.00%'}
-                        </span>
+            <div className="space-y-4">
+                {/* 1. 상단 종합 KPI 요약 벤토 카드 */}
+                <div className="grid grid-cols-2 gap-3 p-4 bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-2xl shadow-inner">
+                    <div className="flex flex-col justify-between p-3.5 bg-zinc-900/90 border border-white/5 rounded-xl">
+                        <span className="text-[11px] text-gray-400 font-semibold mb-1">총 누적 수익률</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className={`text-base md:text-xl font-black font-mono tracking-tight ${
+                                isNegative ? 'text-rose-400' : 'text-emerald-400'
+                            }`}>
+                                {totalReturn || '0.00%'}
+                            </span>
+                        </div>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-zinc-900/90 rounded-xl border border-white/5">
-                        <span className="text-xs text-gray-400 font-medium">누적 평가 손익</span>
-                        <span className={`text-sm md:text-base font-black font-mono ${
-                            isNegative ? 'text-rose-300' : 'text-emerald-300'
-                        }`}>
-                            {totalProfit || '0원'}
-                        </span>
+                    <div className="flex flex-col justify-between p-3.5 bg-zinc-900/90 border border-white/5 rounded-xl">
+                        <span className="text-[11px] text-gray-400 font-semibold mb-1">누적 평가 손익</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className={`text-base md:text-xl font-black font-mono tracking-tight ${
+                                isNegative ? 'text-rose-400' : 'text-emerald-400'
+                            }`}>
+                                {totalProfit || '0원'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Content Feature 1: MVP & Worst Performer Chip */}
+                {/* 2. MVP & 약세 종목 칩 (있을 경우) */}
                 {(mvpText || worstText) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {mvpText && (
@@ -551,7 +612,7 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 )}
 
-                {/* Content Feature 2: Foreign & Inst Supply Summary Chip */}
+                {/* 3. 외인·기관 수급 합산 (있을 경우) */}
                 {supplyText && (
                     <div className="flex items-center gap-2.5 p-3 bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-transparent border border-cyan-500/25 rounded-2xl">
                         <div className="p-1.5 bg-cyan-500/20 rounded-xl text-cyan-300 shrink-0 font-bold text-xs">
@@ -564,35 +625,96 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 )}
 
-                {/* Individual Holdings Micro-List */}
+                {/* 4. 종목별 마감 현황 (디테일 럭셔리 카드 리스트) */}
                 {stockItems.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1">종목별 마감 현황</p>
-                        <div className="space-y-2">
+                    <div className="space-y-2.5">
+                        <div className="flex items-center justify-between px-1">
+                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">종목별 마감 현황</p>
+                            <span className="text-[11px] text-zinc-500 font-mono">총 {stockItems.length}개 종목</span>
+                        </div>
+                        
+                        <div className="space-y-3">
                             {stockItems.map((item, idx) => (
                                 <div 
                                     key={idx} 
-                                    className="p-3 bg-zinc-900/80 border border-white/10 hover:border-amber-500/30 rounded-2xl transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                                    className="p-4 bg-zinc-900/90 hover:bg-zinc-900 border border-white/10 hover:border-amber-500/30 rounded-2xl transition-all space-y-3 shadow-md"
                                 >
-                                    <span className="text-xs md:text-sm font-black text-white">{item.name}</span>
-                                    <span className="text-xs font-mono font-bold text-zinc-300">{item.detail}</span>
-                                </div>
-                            ))}
-                            {subDetails.map((sub, sIdx) => (
-                                <div key={`sub-${sIdx}`} className="ml-3 p-2 bg-zinc-950/60 border border-white/5 rounded-xl text-xs font-mono text-gray-400">
-                                    {sub}
+                                    {/* 상단: 종목명 + 보유 수량 뱃지 + 당일 마감 종가 */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-sm md:text-base font-black text-white">{item.name}</span>
+                                            {item.qty && (
+                                                <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                    {item.qty} 보유
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <span className="text-sm md:text-base font-black font-mono text-zinc-100">{item.price}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* 중간: 당일 등락 요약 바 */}
+                                    {item.dayChangeStr && (
+                                        <div className="flex items-center justify-between text-xs py-1.5 px-3 bg-zinc-950/70 rounded-xl border border-white/5 font-mono">
+                                            <span className="text-gray-400 font-sans text-[11px]">당일 마감 등락</span>
+                                            <span className={`font-bold flex items-center gap-1 ${item.isDayUp ? 'text-red-400' : 'text-blue-400'}`}>
+                                                {item.dayChangeStr}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* 하단: 내 실제 보유 평가 손익 및 수익률 하이라이트 박스 */}
+                                    {(item.profitStr || item.profitPctStr) && (
+                                        <div className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
+                                            item.isProfitUp 
+                                                ? 'bg-red-500/10 border-red-500/25 text-red-300' 
+                                                : 'bg-blue-500/10 border-blue-500/25 text-blue-300'
+                                        }`}>
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-medium mb-0.5">내 누적 평가손익</p>
+                                                <p className="text-sm md:text-base font-black font-mono tracking-tight">
+                                                    {item.profitStr}
+                                                </p>
+                                            </div>
+                                            {item.profitPctStr && (
+                                                <div className="text-right">
+                                                    <p className="text-[10px] text-gray-400 font-medium mb-0.5">수익률</p>
+                                                    <span className={`text-xs md:text-sm font-black font-mono px-2.5 py-0.5 rounded-lg border inline-block ${
+                                                        item.isProfitUp 
+                                                            ? 'bg-red-500/20 text-red-300 border-red-500/40' 
+                                                            : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                                    }`}>
+                                                        {item.profitPctStr}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* 다차수 매수 분할 내역 (있을 경우) */}
+                                    {item.subPurchases.length > 0 && (
+                                        <div className="pt-2 border-t border-white/5 space-y-1">
+                                            <p className="text-[10px] text-gray-400 font-bold">차수별 매수 손익</p>
+                                            {item.subPurchases.map((sub, sIdx) => (
+                                                <div key={sIdx} className="p-2 bg-black/40 rounded-lg text-xs font-mono text-zinc-300 border border-white/5 flex items-center justify-between">
+                                                    <span>{sub}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* Footer Disclaimer */}
+                {/* 5. 법적 고지 안내 */}
                 <p className="text-[11px] text-gray-500 font-medium px-1">
                     {disclaimer || '(한국거래소 당일 정규장 종가 기준 단순 집계 통계 자료이며 투자 권유가 아닙니다)'}
                 </p>
 
-                {/* Action CTA Buttons */}
+                {/* 6. 관심종목 포트폴리오 바로가기 액션 버튼 */}
                 <div className="flex flex-wrap gap-2.5 pt-2 border-t border-white/10">
                     <Link 
                         href="/watchlist" 
