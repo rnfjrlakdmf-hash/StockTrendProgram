@@ -165,340 +165,343 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                         key={item.symbol}
                         className="relative group hover:bg-white/[0.02] transition-all"
                     >
-                        {/* Main Content Area */}
-                        <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-3 md:gap-6 py-4 md:py-5 px-4 md:px-6">
-                            {/* 1. Stock Info (Left) */}
-                            <div 
-                                className="flex flex-col gap-1 min-w-[160px] flex-1 cursor-pointer active:opacity-60"
-                                onClick={() => onItemClick && onItemClick(item.symbol)}
-                            >
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-base md:text-lg font-black text-white tracking-tight group-hover:text-blue-400 transition-colors leading-tight" translate="no">
-                                        {item.name}
-                                    </span>
-                                    {/* 세션 배지 */}
-                                    {item.sessionBadge && (
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${item.sessionBadge.color}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${item.sessionBadge.dot}`} />
-                                            {item.sessionBadge.label}
+                        {/* Main Content Area - 3 Spacious Rows */}
+                        <div className="flex flex-col gap-3 py-4 md:py-5 px-4 md:px-6">
+                            {/* [Row 1] Stock Name & Symbol (Left) vs Current Price & Daily Change (Right) */}
+                            <div className="flex items-start justify-between gap-3">
+                                {/* Left: Stock Name, Session Badge, Quant Grade, Symbol */}
+                                <div 
+                                    className="flex flex-col gap-1 min-w-0 flex-1 cursor-pointer active:opacity-60"
+                                    onClick={() => onItemClick && onItemClick(item.symbol)}
+                                >
+                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                        <span className="text-base sm:text-lg font-black text-white tracking-tight group-hover:text-blue-400 transition-colors leading-tight" translate="no">
+                                            {item.name}
+                                        </span>
+                                        {/* 세션 배지 */}
+                                        {item.sessionBadge && (
+                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${item.sessionBadge.color}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${item.sessionBadge.dot}`} />
+                                                {item.sessionBadge.label}
+                                            </span>
+                                        )}
+                                        {item.badge && (
+                                            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${item.badge.color}`}>
+                                                <span>{item.badge.icon}</span>
+                                                <span>{item.badge.label}</span>
+                                            </div>
+                                        )}
+                                        {/* Quant Grade Badge */}
+                                        {item.quantGrade && (
+                                            <BadgeTooltip
+                                                title="퀀트 밸런스 등급"
+                                                desc="재무 건전성, 거래량 모멘텀, 수급 및 성장성을 종합 평가한 점수 등급입니다. (S/A등급: 최우수, B등급: 우수, C/D등급: 주의)"
+                                                badgeClass={`flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-lg text-[10px] md:text-xs font-black shadow-md shrink-0
+                                                    ${item.quantGrade === 'S' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white border border-purple-400/40' : 
+                                                      item.quantGrade === 'A' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border border-blue-400/40' : 
+                                                      item.quantGrade === 'B' ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border border-emerald-400/40' : 
+                                                      item.quantGrade === 'C' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border border-amber-400/40' : 
+                                                      'bg-gradient-to-br from-rose-500 to-red-600 text-white border border-rose-400/40'}`}
+                                            >
+                                                {item.quantGrade}
+                                            </BadgeTooltip>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
+                                        <span className="bg-zinc-800/80 border border-white/10 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] text-gray-300 font-bold tracking-wider shrink-0" translate="no">
+                                            {item.symbol}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Right: Realtime Price & Daily Change */}
+                                <div 
+                                    className="flex flex-col items-end gap-1 shrink-0 cursor-pointer text-right"
+                                    onClick={() => onItemClick && onItemClick(item.symbol)}
+                                >
+                                    <BlinkingPrice
+                                        price={item.price}
+                                        className="text-lg sm:text-xl md:text-2xl font-black font-mono tabular-nums tracking-tight leading-none text-white"
+                                        prefix={item.currency && item.currency !== 'KRW' ? '$' : ''}
+                                    />
+
+                                    {/* 해외주식 원화 환산가 */}
+                                    {item.currency && item.currency !== 'KRW' && item.price_krw && (
+                                        <span className="text-[10px] sm:text-[11px] text-gray-400 font-mono tabular-nums">
+                                            ≈ ₩{item.price_krw}
                                         </span>
                                     )}
-                                    {item.badge && (
-                                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${item.badge.color}`}>
-                                            <span>{item.badge.icon}</span>
-                                            <span>{item.badge.label}</span>
+
+                                    {/* 프리/에프터 및 국내 시간외 가격 */}
+                                    {item.extendedPrice && (
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
+                                            <span className="text-[9px] text-indigo-300 font-black flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                                                {item.currency === 'KRW' ? '시간외' : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
+                                            </span>
+                                            <span className={`text-[11px] font-black font-mono ${
+                                                parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) > 0 ? 'text-rose-400' : 
+                                                parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) < 0 ? 'text-sky-400' : 'text-zinc-300'
+                                            }`}>
+                                                {item.currency === 'KRW' ? `${item.extendedPrice}원` : `$${item.extendedPrice}`}
+                                                {item.extendedChange && (
+                                                    <span className="ml-1 text-[10px] font-bold">
+                                                        {item.extendedChange.includes('(') ? item.extendedChange : `(${item.extendedChange})`}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </div>
                                     )}
-                                    {/* Quant Grade Badge */}
-                                    {item.quantGrade && (
-                                        <BadgeTooltip
-                                            title="퀀트 밸런스 등급"
-                                            desc="재무 건전성, 거래량 모멘텀, 수급 및 성장성을 종합 평가한 점수 등급입니다. (S/A등급: 최우수, B등급: 우수, C/D등급: 주의)"
-                                            badgeClass={`flex items-center justify-center w-5 h-5 md:w-6 md:h-6 rounded-lg text-[10px] md:text-xs font-black shadow-md shrink-0
-                                                ${item.quantGrade === 'S' ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white border border-purple-400/40' : 
-                                                  item.quantGrade === 'A' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border border-blue-400/40' : 
-                                                  item.quantGrade === 'B' ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white border border-emerald-400/40' : 
-                                                  item.quantGrade === 'C' ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border border-amber-400/40' : 
-                                                  'bg-gradient-to-br from-rose-500 to-red-600 text-white border border-rose-400/40'}`}
+
+                                    {/* 등락률 뱃지 */}
+                                    <div className={`flex items-center gap-1 text-[11px] sm:text-xs md:text-sm font-black font-mono px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border shadow-sm ${
+                                        isPositive 
+                                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
+                                            : isNegative 
+                                            ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
+                                            : 'bg-zinc-800 text-gray-300 border-white/10'
+                                    }`}>
+                                        <span translate="no" className="whitespace-nowrap">
+                                            {(() => {
+                                                const rawChange = String(item.change || '');
+                                                const rawPct = String(item.change_percent || '');
+                                                
+                                                const amountMatch = rawChange.match(/[0-9,.]+/);
+                                                const pctMatch = rawPct.match(/[0-9,.]+/);
+                                                
+                                                let amountStr = amountMatch ? amountMatch[0] : '';
+                                                let pctStr = pctMatch ? pctMatch[0] : '';
+                                                
+                                                if (!pctStr && rawChange.includes('%')) {
+                                                    pctStr = amountStr;
+                                                }
+                                                
+                                                if (amountStr === pctStr && pctStr) {
+                                                    const curP_main = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                                    const isUSD_main = item.currency && item.currency !== 'KRW';
+                                                    
+                                                    if (!isNaN(curP_main)) {
+                                                        const pctVal = parseFloat(pctStr) / 100;
+                                                        const prevP = isPositive ? (curP_main / (1 + pctVal)) : (curP_main / (1 - pctVal));
+                                                        let calcAmount = Math.abs(curP_main - prevP);
+                                                        
+                                                        if (isUSD_main) {
+                                                            amountStr = calcAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                        } else {
+                                                            amountStr = Math.round(calcAmount).toLocaleString();
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                if (amountStr && pctStr) {
+                                                    return `${hideLabels ? '' : label}${isPositive ? '▲ +' : isNegative ? '▼ -' : ''}${amountStr} (${pctStr}%)`;
+                                                }
+                                                
+                                                return `${hideLabels ? '' : label}${isPositive ? '▲ +' : isNegative ? '▼ -' : ''}${pctStr || amountStr}%`;
+                                            })()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* [Row 2] Hashtags & Pro Insights Badges (Full Width, No Cramping) */}
+                            {((item.badge?.reason) || (item.proInsights && (item.proInsights.is_double_buy || item.proInsights.foreign_streak || item.proInsights.organ_streak || item.proInsights.target_price || (item.proInsights.per && item.proInsights.per !== 'N/A')))) && (
+                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    {/* Hashtags */}
+                                    {item.badge?.reason && getHashtags(item.badge.reason).map((tag, idx) => (
+                                        <span 
+                                            key={idx} 
+                                            className="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded-md font-bold hover:bg-blue-500/20 transition-all cursor-default whitespace-nowrap"
+                                            translate="no"
                                         >
-                                            {item.quantGrade}
+                                            {tag}
+                                        </span>
+                                    ))}
+
+                                    {/* Pro Insights */}
+                                    {item.proInsights?.is_double_buy && (
+                                        <BadgeTooltip
+                                            title="외인·기관 쌍끌이 순매수"
+                                            desc="외국인과 기관계 자금이 동시에 순매수(동반 매집) 중인 종목입니다. 주가 상승 탄력이 강해질 가능성이 높습니다."
+                                            badgeClass="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm whitespace-nowrap"
+                                        >
+                                            🔥 외인·기관 쌍끌이
+                                        </BadgeTooltip>
+                                    )}
+                                    {!item.proInsights?.is_double_buy && (item.proInsights?.foreign_streak || 0) >= 2 && (
+                                        <BadgeTooltip
+                                            title="외국인 연속 순매수"
+                                            desc={`외국인 투자자가 최근 ${item.proInsights?.foreign_streak}일 동안 지속적으로 순매수하고 있는 종목으로, 글로벌 수급 유입세가 지속되고 있습니다.`}
+                                            badgeClass="text-[10px] bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm whitespace-nowrap"
+                                        >
+                                            🌐 외인 {item.proInsights?.foreign_streak}일 연속매수
+                                        </BadgeTooltip>
+                                    )}
+                                    {!item.proInsights?.is_double_buy && (item.proInsights?.organ_streak || 0) >= 2 && (
+                                        <BadgeTooltip
+                                            title="기관 연속 순매수"
+                                            desc={`기관계(투신, 연기금, 사모펀드 등)가 최근 ${item.proInsights?.organ_streak}일 동안 연속으로 매집 중인 종목입니다.`}
+                                            badgeClass="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm whitespace-nowrap"
+                                        >
+                                            🏢 기관 {item.proInsights?.organ_streak}일 연속매수
+                                        </BadgeTooltip>
+                                    )}
+                                    {item.proInsights?.target_price && (
+                                        <BadgeTooltip
+                                            title="증권사 리서치 평균 목표주가"
+                                            desc={`국내 증권사 리서치센터 애널리스트들의 최근 3개월 평균 목표주가(컨센서스) 집계치입니다. (공개 통계 자료)`}
+                                            badgeClass="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                                        >
+                                            <span className="whitespace-nowrap">🎯 증권사 목표가 {item.proInsights.target_price}원</span>
+                                            {upsidePct !== null && (
+                                                <span className={`font-mono text-[10px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${
+                                                    upsidePct > 0 ? 'bg-purple-500/30 text-purple-200' : 'bg-zinc-800 text-zinc-400'
+                                                }`}>
+                                                    {upsidePct > 0 ? `+${upsidePct.toFixed(1)}%` : `${upsidePct.toFixed(1)}%`}
+                                                </span>
+                                            )}
+                                        </BadgeTooltip>
+                                    )}
+                                    {item.proInsights?.per && item.proInsights.per !== 'N/A' && (
+                                        <BadgeTooltip
+                                            title="PER (주가수익비율)"
+                                            desc={`주가가 1주당 순이익(EPS)의 몇 배인지 나타내는 가치평가 지표입니다. 수치가 낮을수록 실적 대비 저평가 상태입니다.`}
+                                            badgeClass="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm whitespace-nowrap"
+                                        >
+                                            📊 PER {item.proInsights.per}
                                         </BadgeTooltip>
                                     )}
                                 </div>
-                                
-                                <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
-                                    <span className="bg-zinc-800/80 border border-white/10 px-2 py-0.5 rounded-md text-[11px] text-gray-300 font-bold tracking-wider" translate="no">
-                                        {item.symbol}
-                                    </span>
-                                </div>
-                                
-                                {item.badge?.reason && (
-                                    <div className="flex flex-col gap-1 mt-1.5">
-                                        <div className="flex flex-wrap gap-1 max-w-[90%]">
-                                            {getHashtags(item.badge.reason).map((tag, idx) => (
-                                                <span 
-                                                    key={idx} 
-                                                    className="text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded-md font-bold hover:bg-blue-500/20 transition-all cursor-default"
-                                                    translate="no"
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* [PRO] 외인/기관 수급 & 증권사 리서치 컨센서스 목표가 (터치/호버 설명 탑재) */}
-                                {item.proInsights && (
-                                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                                        {item.proInsights.is_double_buy && (
-                                            <BadgeTooltip
-                                                title="외인·기관 쌍끌이 순매수"
-                                                desc="외국인과 기관계 자금이 동시에 순매수(동반 매집) 중인 종목입니다. 주가 상승 탄력이 강해질 가능성이 높습니다."
-                                                badgeClass="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
-                                            >
-                                                🔥 외인·기관 쌍끌이
-                                            </BadgeTooltip>
-                                        )}
-                                        {!item.proInsights.is_double_buy && (item.proInsights.foreign_streak || 0) >= 2 && (
-                                            <BadgeTooltip
-                                                title="외국인 연속 순매수"
-                                                desc={`외국인 투자자가 최근 ${item.proInsights.foreign_streak}일 동안 지속적으로 순매수하고 있는 종목으로, 글로벌 수급 유입세가 지속되고 있습니다.`}
-                                                badgeClass="text-[10px] bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
-                                            >
-                                                🌐 외인 {item.proInsights.foreign_streak}일 연속매수
-                                            </BadgeTooltip>
-                                        )}
-                                        {!item.proInsights.is_double_buy && (item.proInsights.organ_streak || 0) >= 2 && (
-                                            <BadgeTooltip
-                                                title="기관 연속 순매수"
-                                                desc={`기관계(투신, 연기금, 사모펀드 등)가 최근 ${item.proInsights.organ_streak}일 동안 연속으로 매집 중인 종목입니다.`}
-                                                badgeClass="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
-                                            >
-                                                🏢 기관 {item.proInsights.organ_streak}일 연속매수
-                                            </BadgeTooltip>
-                                        )}
-                                        {item.proInsights.target_price && (
-                                            <BadgeTooltip
-                                                title="증권사 리서치 평균 목표주가"
-                                                desc={`국내 증권사 리서치센터 애널리스트들의 최근 3개월 평균 목표주가(컨센서스) 집계치입니다. (공개 통계 자료)`}
-                                                badgeClass="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 shadow-sm"
-                                            >
-                                                <span>🎯 증권사 목표가 {item.proInsights.target_price}원</span>
-                                                {upsidePct !== null && (
-                                                    <span className={`font-mono text-[10px] font-black px-1.5 py-0.5 rounded ${
-                                                        upsidePct > 0 ? 'bg-purple-500/30 text-purple-200' : 'bg-zinc-800 text-zinc-400'
-                                                    }`}>
-                                                        {upsidePct > 0 ? `+${upsidePct.toFixed(1)}%` : `${upsidePct.toFixed(1)}%`}
-                                                    </span>
-                                                )}
-                                            </BadgeTooltip>
-                                        )}
-                                        {item.proInsights.per && item.proInsights.per !== 'N/A' && (
-                                            <BadgeTooltip
-                                                title="PER (주가수익비율)"
-                                                desc={`주가가 1주당 순이익(EPS)의 몇 배인지 나타내는 가치평가 지표입니다. 수치가 낮을수록 실적 대비 저평가 상태입니다.`}
-                                                badgeClass="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm"
-                                            >
-                                                📊 PER {item.proInsights.per}
-                                            </BadgeTooltip>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 2. Purchase / Average Price Box (Center) */}
-                            {((item.purchases && item.purchases.length > 0) || (item.added_price ? true : false)) && (
-                                <div className="order-last md:order-none w-full md:w-auto flex md:flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide px-0 md:px-2 min-w-0 md:max-w-[42vw]">
-                                    {(item.purchases && item.purchases.length > 0 ? item.purchases : [{ id: 0, buy_price: item.added_price || 0, quantity: item.quantity || 0, purchase_date: '' }]).map((p, idx) => {
-                                        const isUSD = item.currency && item.currency !== 'KRW';
-                                        const currencySign = isUSD ? '$' : '';
-                                        const currencyUnit = isUSD ? '' : '원';
-                                        
-                                        const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                        const pct = p.buy_price > 0 ? ((curP - p.buy_price) / p.buy_price) * 100 : 0;
-                                        const isPos = pct > 0;
-                                        const isNeg = pct < 0;
-                                        const badgeColor = isPos 
-                                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                                            : isNeg 
-                                            ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' 
-                                            : 'bg-zinc-800 border-white/10 text-gray-400';
-
-                                        return (
-                                            <div 
-                                                key={p.id || idx} 
-                                                className="flex items-center gap-3 px-3.5 py-2 rounded-2xl border border-white/10 hover:border-blue-500/40 cursor-pointer bg-zinc-950/80 hover:bg-zinc-900/90 shadow-md transition-all group/chip"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (onEditAddedPrice) onEditAddedPrice(item.symbol, p.buy_price, p.quantity);
-                                                }}
-                                                title="클릭하여 매수 단가 및 수량 수정"
-                                            >
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-1 text-[10px] text-zinc-400 font-bold">
-                                                        <span>{item.purchases && item.purchases.length > 1 ? `${idx+1}차 매수` : '내 매수단가'}</span>
-                                                        {p.quantity > 0 && (
-                                                            <span className="text-zinc-300 font-mono">({p.quantity.toLocaleString()}주)</span>
-                                                        )}
-                                                        <Pencil className="w-2.5 h-2.5 text-zinc-500 group-hover/chip:text-blue-400 transition-colors ml-0.5" />
-                                                    </div>
-                                                    <span className="text-xs md:text-sm font-black font-mono text-white">
-                                                        {currencySign}
-                                                        {isUSD ? p.buy_price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : p.buy_price.toLocaleString()}
-                                                        {currencyUnit}
-                                                    </span>
-                                                </div>
-
-                                                <div className={`px-2.5 py-1 rounded-xl text-xs font-black font-mono border ${badgeColor} flex flex-col items-end`}>
-                                                    <span>{!isNaN(curP) && p.buy_price > 0 ? `${isPos ? '+' : ''}${pct.toFixed(2)}%` : '0.00%'}</span>
-                                                    {p.buy_price > 0 && !isNaN(curP) && (
-                                                        <span className="text-[9px] opacity-80 font-normal mt-0.5">
-                                                            {isPos ? '+' : isNeg ? '-' : ''}
-                                                            {currencySign}
-                                                            {Math.abs(p.quantity > 0 ? (curP - p.buy_price) * p.quantity : (curP - p.buy_price)).toLocaleString(undefined, { minimumFractionDigits: isUSD ? 2 : 0, maximumFractionDigits: isUSD ? 2 : 0 })}
-                                                            {currencyUnit}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {isPos && (
-                                                    <div 
-                                                        onClick={(e) => e.stopPropagation()} 
-                                                        title="수익 자랑하기"
-                                                        className="ml-0.5"
-                                                    >
-                                                        <KakaoShareButton 
-                                                            title={`🔥 ${item.name} 수익 인증!`}
-                                                            description={`내가 산 ${item.name}, 지금 +${pct.toFixed(2)}% 수익 중이에요! 부럽지? 😎`}
-                                                            url={`https://stock-trend-program.co.kr/discovery?q=${item.symbol}`}
-                                                            buttonText=""
-                                                            className="flex items-center justify-center w-5 h-5 rounded-full bg-[#FEE500] text-[#191919] hover:bg-[#FEE500]/80 transition-colors shadow-sm p-0.5"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
                             )}
 
-                            {/* 3. Current Price & Change Badge (Right) */}
-                            <div 
-                                className="flex flex-col items-end gap-1.5 shrink-0 cursor-pointer min-w-[130px]"
-                                onClick={() => onItemClick && onItemClick(item.symbol)}
-                            >
-                                <BlinkingPrice
-                                    price={item.price}
-                                    className={`text-xl md:text-2xl font-black font-mono tabular-nums tracking-tight leading-none text-white`}
-                                    prefix={item.currency && item.currency !== 'KRW' ? '$' : ''}
-                                />
+                            {/* [Row 3] Bottom Row: Purchases / Average Price & Action Buttons */}
+                            <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/5 flex-wrap sm:flex-nowrap">
+                                {/* Left: Purchase / Average Price Box */}
+                                {((item.purchases && item.purchases.length > 0) || (item.added_price ? true : false)) ? (
+                                    <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap no-scrollbar scrollbar-none min-w-0 max-w-full sm:max-w-[65vw]">
+                                        {(item.purchases && item.purchases.length > 0 ? item.purchases : [{ id: 0, buy_price: item.added_price || 0, quantity: item.quantity || 0, purchase_date: '' }]).map((p, idx) => {
+                                            const isUSD = item.currency && item.currency !== 'KRW';
+                                            const currencySign = isUSD ? '$' : '';
+                                            const currencyUnit = isUSD ? '' : '원';
+                                            
+                                            const curP = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
+                                            const pct = p.buy_price > 0 ? ((curP - p.buy_price) / p.buy_price) * 100 : 0;
+                                            const isPos = pct > 0;
+                                            const isNeg = pct < 0;
+                                            const badgeColor = isPos 
+                                                ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
+                                                : isNeg 
+                                                ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' 
+                                                : 'bg-zinc-800 border-white/10 text-gray-400';
 
-                                {/* 해외주식 원화 환산가 */}
-                                {item.currency && item.currency !== 'KRW' && item.price_krw && (
-                                    <span className="text-[11px] text-gray-400 font-mono tabular-nums">
-                                        ≈ ₩{item.price_krw}
-                                    </span>
-                                )}
+                                            return (
+                                                <div 
+                                                    key={p.id || idx} 
+                                                    className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-white/10 hover:border-blue-500/40 cursor-pointer bg-zinc-950/80 hover:bg-zinc-900/90 shadow-md transition-all group/chip shrink-0"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onEditAddedPrice) onEditAddedPrice(item.symbol, p.buy_price, p.quantity);
+                                                    }}
+                                                    title="클릭하여 매수 단가 및 수량 수정"
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-1 text-[10px] text-zinc-400 font-bold">
+                                                            <span>{item.purchases && item.purchases.length > 1 ? `${idx+1}차 매수` : '내 매수단가'}</span>
+                                                            {p.quantity > 0 && (
+                                                                <span className="text-zinc-300 font-mono">({p.quantity.toLocaleString()}주)</span>
+                                                            )}
+                                                            <Pencil className="w-2.5 h-2.5 text-zinc-500 group-hover/chip:text-blue-400 transition-colors ml-0.5" />
+                                                        </div>
+                                                        <span className="text-xs sm:text-sm font-black font-mono text-white">
+                                                            {currencySign}
+                                                            {isUSD ? p.buy_price.toLocaleString(undefined, { minimumFractionDigits: 2 }) : p.buy_price.toLocaleString()}
+                                                            {currencyUnit}
+                                                        </span>
+                                                    </div>
 
-                                {/* 프리/에프터 및 국내 시간외 가격 */}
-                                {item.extendedPrice && (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
-                                        <span className="text-[9px] text-indigo-300 font-black flex items-center gap-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                            {item.currency === 'KRW' ? '시간외' : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
-                                        </span>
-                                        <span className={`text-[11px] font-black font-mono ${
-                                            parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) > 0 ? 'text-rose-400' : 
-                                            parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) < 0 ? 'text-sky-400' : 'text-zinc-300'
-                                        }`}>
-                                            {item.currency === 'KRW' ? `${item.extendedPrice}원` : `$${item.extendedPrice}`}
-                                            {item.extendedChange && (
-                                                <span className="ml-1 text-[10px] font-bold">
-                                                    {item.extendedChange.includes('(') ? item.extendedChange : `(${item.extendedChange})`}
-                                                </span>
-                                            )}
-                                        </span>
+                                                    <div className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black font-mono border ${badgeColor} flex flex-col items-end`}>
+                                                        <span>{!isNaN(curP) && p.buy_price > 0 ? `${isPos ? '+' : ''}${pct.toFixed(2)}%` : '0.00%'}</span>
+                                                        {p.buy_price > 0 && !isNaN(curP) && (
+                                                            <span className="text-[9px] opacity-80 font-normal mt-0.5">
+                                                                {isPos ? '+' : isNeg ? '-' : ''}
+                                                                {currencySign}
+                                                                {Math.abs(p.quantity > 0 ? (curP - p.buy_price) * p.quantity : (curP - p.buy_price)).toLocaleString(undefined, { minimumFractionDigits: isUSD ? 2 : 0, maximumFractionDigits: isUSD ? 2 : 0 })}
+                                                                {currencyUnit}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {isPos && (
+                                                        <div 
+                                                            onClick={(e) => e.stopPropagation()} 
+                                                            title="수익 자랑하기"
+                                                            className="ml-0.5"
+                                                        >
+                                                            <KakaoShareButton 
+                                                                title={`🔥 ${item.name} 수익 인증!`}
+                                                                description={`내가 산 ${item.name}, 지금 +${pct.toFixed(2)}% 수익 중이에요! 부럽지? 😎`}
+                                                                url={`https://stock-trend-program.co.kr/discovery?q=${item.symbol}`}
+                                                                buttonText=""
+                                                                className="flex items-center justify-center w-5 h-5 rounded-full bg-[#FEE500] text-[#191919] hover:bg-[#FEE500]/80 transition-colors shadow-sm p-0.5"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+                                ) : (
+                                    <div className="flex-1" />
                                 )}
 
-                                {/* 등락률 뱃지 */}
-                                <div className={`flex items-center gap-1 text-xs md:text-sm font-black font-mono px-2.5 py-1 rounded-xl border shadow-sm ${
-                                    isPositive 
-                                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
-                                        : isNegative 
-                                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
-                                        : 'bg-zinc-800 text-gray-300 border-white/10'
-                                }`}>
-                                    <span translate="no">
-                                        {(() => {
-                                            const rawChange = String(item.change || '');
-                                            const rawPct = String(item.change_percent || '');
-                                            
-                                            const amountMatch = rawChange.match(/[0-9,.]+/);
-                                            const pctMatch = rawPct.match(/[0-9,.]+/);
-                                            
-                                            let amountStr = amountMatch ? amountMatch[0] : '';
-                                            let pctStr = pctMatch ? pctMatch[0] : '';
-                                            
-                                            if (!pctStr && rawChange.includes('%')) {
-                                                pctStr = amountStr;
-                                            }
-                                            
-                                            if (amountStr === pctStr && pctStr) {
-                                                const curP_main = parseFloat(String(item.price).replace(/[^0-9.]/g, ''));
-                                                const isUSD_main = item.currency && item.currency !== 'KRW';
-                                                
-                                                if (!isNaN(curP_main)) {
-                                                    const pctVal = parseFloat(pctStr) / 100;
-                                                    const prevP = isPositive ? (curP_main / (1 + pctVal)) : (curP_main / (1 - pctVal));
-                                                    let calcAmount = Math.abs(curP_main - prevP);
-                                                    
-                                                    if (isUSD_main) {
-                                                        amountStr = calcAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                                                    } else {
-                                                        amountStr = Math.round(calcAmount).toLocaleString();
-                                                    }
-                                                }
-                                            }
-                                            
-                                            if (amountStr && pctStr) {
-                                                return `${hideLabels ? '' : label}${isPositive ? '▲ +' : isNegative ? '▼ -' : ''}${amountStr} (${pctStr}%)`;
-                                            }
-                                            
-                                            return `${hideLabels ? '' : label}${isPositive ? '▲ +' : isNegative ? '▼ -' : ''}${pctStr || amountStr}%`;
-                                        })()}
-                                    </span>
+                                {/* Right: Action Buttons (Rightmost) */}
+                                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                                    {/* AI 정밀 분석 직행 버튼 */}
+                                    <button
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const cleanSym = item.symbol ? (item.symbol.split('.')[0] || item.symbol) : item.symbol;
+                                            window.location.href = `/discovery?q=${cleanSym}`;
+                                        }}
+                                        className="flex items-center gap-1 px-2.5 sm:px-3 py-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                        title="종목 정밀 진단 & 차트 분석"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                                        <span className="text-[11px] sm:text-xs">정밀 분석</span>
+                                    </button>
+                                    {onAlertClick && (
+                                        <button 
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
+                                                onAlertClick(item.symbol, parseFloat(rawPrice), item.added_price);
+                                            }}
+                                            className="p-2 sm:p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 rounded-xl transition-all active:scale-90 shadow-sm cursor-pointer"
+                                            title="가격 알림 및 안전 방어선 설정"
+                                        >
+                                            <Shield className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    {onDelete && (
+                                        <button 
+                                            onPointerDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onDelete(item.symbol);
+                                            }}
+                                            className="p-2 sm:p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 rounded-xl transition-all active:scale-90 shadow-sm cursor-pointer"
+                                            title="관심종목 삭제"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
-                            </div>
-
-                            {/* 4. Action Buttons (Rightmost) */}
-                            <div className="flex items-center gap-1.5 shrink-0 pl-1 md:pl-2">
-                                {/* AI 정밀 분석 직행 버튼 */}
-                                <button
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        const cleanSym = item.symbol ? (item.symbol.split('.')[0] || item.symbol) : item.symbol;
-                                        window.location.href = `/discovery?q=${cleanSym}`;
-                                    }}
-                                    className="hidden sm:flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-2xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
-                                    title="종목 정밀 진단 & 차트 분석"
-                                >
-                                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                                    <span>정밀 분석</span>
-                                </button>
-                                {onAlertClick && (
-                                    <button 
-                                        onPointerDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            const rawPrice = String(item.price || "0").replace(/[^0-9.]/g, '');
-                                            onAlertClick(item.symbol, parseFloat(rawPrice), item.added_price);
-                                        }}
-                                        className="p-2.5 md:p-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 rounded-2xl transition-all active:scale-90 shadow-sm"
-                                        title="가격 알림 및 안전 방어선 설정"
-                                    >
-                                        <Shield className="w-4 h-4 md:w-5 md:h-5" />
-                                    </button>
-                                )}
-                                
-                                {onDelete && (
-                                    <button 
-                                        onPointerDown={(e) => e.stopPropagation()}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            onDelete(item.symbol);
-                                        }}
-                                        className="p-2.5 md:p-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl transition-all active:scale-90 shadow-sm"
-                                        title="관심종목 삭제"
-                                    >
-                                        <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
-                                    </button>
-                                )}
                             </div>
                         </div>
                     </div>

@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing, Star, Briefcase, ChevronRight, LogOut, LogIn, Coins, ShieldCheck, CheckCircle2, Flame, ExternalLink } from "lucide-react";
+import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing, Star, Briefcase, ChevronRight, LogOut, LogIn, Coins, ShieldCheck, CheckCircle2, Flame, ExternalLink, Menu } from "lucide-react";
 import { useEffect, useRef, useState } from 'react';
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
@@ -320,6 +320,13 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
             {/* Top Navigation Row */}
             <div className="flex flex-row items-center justify-between px-4 py-2.5 md:px-6 md:py-3 gap-2">
                 <div className="flex items-center gap-2 flex-shrink-0 min-w-max mr-2 z-20">
+                    <button
+                        onClick={() => window.dispatchEvent(new Event('open-mobile-sidebar'))}
+                        className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-orange-400 active:scale-95 transition-all cursor-pointer border border-white/10"
+                        aria-label="메뉴 열기"
+                    >
+                        <Menu className="h-5 w-5" />
+                    </button>
                     <div className="flex flex-col min-w-0">
                         <h2 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
                             {title}

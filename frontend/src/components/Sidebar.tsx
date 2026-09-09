@@ -396,14 +396,7 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Mobile Toggle Button */}
-            <button
-                onClick={() => setIsMobileOpen(true)}
-                className="md:hidden fixed top-3 left-4 z-[110] p-2.5 rounded-2xl bg-zinc-900/90 text-white border border-white/15 hover:bg-zinc-800 backdrop-blur-xl shadow-2xl active:scale-95 transition-all"
-                aria-label="메뉴 열기"
-            >
-                <Menu className="h-5 w-5 text-orange-400" />
-            </button>
+            {/* Mobile Toggle Button - Replaced with inline header buttons & BottomTabBar to prevent content overlapping */}
 
             {/* Mobile Overlay */}
             {isMobileOpen && (

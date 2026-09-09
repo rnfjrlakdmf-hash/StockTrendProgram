@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar } from "lucide-react";
+import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
@@ -425,27 +425,34 @@ export default function WatchlistPage() {
     const isProfitNeg = totalProfit < 0;
 
     return (
-        <div className="p-4 md:p-8 pt-24 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-6">
+        <div className="p-4 md:p-8 pt-4 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-6">
             {/* 상단 스마트 반응형 광고 */}
             <KakaoRevenueAd type="feed" />
 
             {/* Header & Quick Summary - Executive Portfolio Master */}
-            <div className="bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl relative overflow-hidden">
+            <div className="bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl relative overflow-hidden">
                 {/* 상단 앰비언트 글로우 라인 */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-blue-500 to-indigo-500"></div>
 
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-6 border-b border-white/10">
                     <div>
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl shadow-lg shadow-amber-500/10">
+                            <button
+                                onClick={() => window.dispatchEvent(new Event('open-mobile-sidebar'))}
+                                className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-orange-400 active:scale-95 transition-all cursor-pointer border border-white/10 shrink-0"
+                                aria-label="메뉴 열기"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+                            <div className="p-2.5 bg-amber-500/15 border border-amber-500/30 rounded-2xl shadow-lg shadow-amber-500/10 hidden sm:flex">
                                 <Star className="w-7 h-7 text-amber-400 fill-amber-400" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
                                         MY 관심종목
                                     </h1>
-                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                         실시간 포트폴리오 레이더
                                     </span>
                                 </div>
@@ -575,43 +582,44 @@ export default function WatchlistPage() {
             </div>
 
             {/* Segmented Tab Navigation - Premium Pill Style */}
-            <div className="flex p-1.5 bg-zinc-950/90 border border-white/10 rounded-2xl w-full sm:w-fit shadow-xl backdrop-blur-md gap-1 overflow-x-auto no-scrollbar scrollbar-none">
+            <div className="flex p-1 sm:p-1.5 bg-zinc-950/90 border border-white/10 rounded-2xl w-full sm:w-fit shadow-xl backdrop-blur-md gap-1 overflow-x-auto no-scrollbar scrollbar-none">
                 <button
                     onClick={() => setActiveTab("quotes")}
-                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === "quotes" 
                             ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]" 
                             : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                    <span>실시간 시세</span>
-                    <span className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
+                    <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+                    <span className="whitespace-nowrap">실시간 시세</span>
+                    <span className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white shrink-0">
                         {watchlist.length}
                     </span>
                 </button>
                 <button
                     onClick={() => setActiveTab("schedules")}
-                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === "schedules" 
                             ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]" 
                             : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-                    <span>실적·배당 캘린더</span>
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                    <span className="whitespace-nowrap sm:hidden">실적·배당</span>
+                    <span className="whitespace-nowrap hidden sm:inline">실적·배당 캘린더</span>
                 </button>
                 <button
                     onClick={() => setActiveTab("alerts")}
-                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-[11px] sm:text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex-1 sm:flex-initial shrink-0 flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                         activeTab === "alerts" 
                             ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25 scale-[1.02]" 
                             : "text-zinc-400 hover:text-white hover:bg-white/5"
                     }`}
                 >
-                    <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
-                    <span>알림·공시</span>
-                    <span className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white">
+                    <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
+                    <span className="whitespace-nowrap">알림·공시</span>
+                    <span className="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.2 rounded-full bg-white/15 text-white shrink-0">
                         {alerts.length}
                     </span>
                 </button>
