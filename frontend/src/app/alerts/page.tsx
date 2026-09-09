@@ -315,12 +315,31 @@ function formatUsdToKrwInText(text: string): string {
             marketInterpretation = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명";
         }
 
-        // [사용자 요청] 뉴스 알림은 본문 자체가 핵심이므로 불필요한 시장해석 황금 박스 제거
+        // [사용자 요청] 뉴스, 수급 특보, 스터디/교육/공지 알림은 불필요한 시장해석 황금 박스 제거
         const isNewsAlert = alert && (
             ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) ||
             (alert.title && (alert.title.includes("뉴스") || alert.title.includes("속보")))
         );
-        if (isNewsAlert || marketInterpretation.includes("주요 언론 보도") || marketInterpretation.includes("시장 관심 테마 이슈") || marketInterpretation.includes("언론 보도")) {
+        const isSupplyAlert = alert && (
+            ['whale_alert', 'whale_accumulation', 'surge'].includes(alert.type) ||
+            (alert.title && (alert.title.includes("수급") || alert.title.includes("세력") || alert.title.includes("폭풍 매수") || alert.title.includes("고래") || alert.title.includes("외국인") || alert.title.includes("기관")))
+        );
+        const isStudyOrNotice = alert && (
+            ['study', 'theory', 'guide', 'notice', 'system'].includes(alert.type) ||
+            (alert.title && (alert.title.includes("스터디") || alert.title.includes("1타 강사") || alert.title.includes("이론") || alert.title.includes("가이드") || alert.title.includes("공지") || alert.title.includes("안내")))
+        );
+
+        // 형식적인 깡통 문구 및 수급 동어반복 문구 필터링 (기존 DB 소급 적용)
+        const isGenericInterp = marketInterpretation.includes("주요 언론 보도") || 
+                               marketInterpretation.includes("시장 관심 테마") || 
+                               marketInterpretation.includes("시장 핵심 데이터 변동 감지") ||
+                               marketInterpretation.includes("스마트머니 집중 유입") ||
+                               marketInterpretation.includes("스마트머니 집중 매집") ||
+                               marketInterpretation.includes("세부 분석 확인") ||
+                               marketInterpretation.includes("정규장 개장") ||
+                               marketInterpretation.includes("정규장 마감");
+
+        if (isNewsAlert || isSupplyAlert || isStudyOrNotice || isGenericInterp) {
             marketInterpretation = "";
         }
 
@@ -566,7 +585,9 @@ function formatUsdToKrwInText(text: string): string {
     };
 
     const renderAlertCard = (alert: any) => {
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
+        const titleText = (alert.title || '').trim();
+        const isWhale = ['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수");
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type) && !isWhale;
         const rawSymbol = alert.symbol || alert.code || '';
         const cleanSymbol = rawSymbol ? (rawSymbol.split('.')[0] || rawSymbol) : '';
         const marketBadge = getMarketBadge(alert);
@@ -606,7 +627,6 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         // Title and Body text analysis for smart categorization
-        const titleText = (alert.title || '').trim();
         const combinedText = `${titleText} ${alert.body || ''}`.toLowerCase();
 
         const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
@@ -778,9 +798,9 @@ function formatUsdToKrwInText(text: string): string {
                                 <ChevronRight className="w-4 h-4" />
                             </Link>
                         )}
-                        {(dartUrl || targetUrl) && (
+                        {(dartUrl || (alert.url && (alert.url.includes('dart') || alert.url.includes('sec')))) && (
                             <Link 
-                                href={targetUrl || dartUrl} 
+                                href={dartUrl || alert.url} 
                                 onClick={(e) => e.stopPropagation()}
                                 className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                             >
@@ -788,6 +808,28 @@ function formatUsdToKrwInText(text: string): string {
                                 공시 원문 보기
                             </Link>
                         )}
+                    </div>
+                ) : isWhale ? (
+                    <div className="flex flex-wrap gap-2.5 mt-5 pt-4 border-t border-white/10">
+                        {cleanSymbol && (
+                            <Link 
+                                href={`/discovery?q=${cleanSymbol}`} 
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-1 min-w-[130px] bg-gradient-to-r from-cyan-600/20 to-blue-600/20 hover:from-cyan-600/30 hover:to-blue-600/30 text-cyan-300 border border-cyan-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                            >
+                                <Sparkles className="w-4 h-4 text-cyan-400" />
+                                종목 정밀 심층 분석
+                                <ChevronRight className="w-4 h-4" />
+                            </Link>
+                        )}
+                        <Link 
+                            href="/ranking" 
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                        >
+                            <TrendingUp className="w-4 h-4 text-cyan-400" />
+                            실시간 수급 순위 보기
+                        </Link>
                     </div>
                 ) : !isPortfolio && (
                     <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between">

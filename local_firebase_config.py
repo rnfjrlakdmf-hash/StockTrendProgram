@@ -440,13 +440,12 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
-    # 5. 수급 / 세력 고래 알림
-    elif alert_type in ['whale_alert', 'surge'] or "수급" in clean_title or "고래" in clean_title:
+    # 5. 수급 / 세력 고래 알림 (제목/본문 자체로 수급 팩트가 직관적이므로 동어반복 시장해석 박스 제외)
+    elif alert_type in ['whale_alert', 'whale_accumulation', 'surge'] or "수급" in clean_title or "고래" in clean_title or "세력" in clean_title:
         t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
         new_title = f"🐳 {t_core}" if t_core else clean_title
         body_no_interp = clean_no_interp
-        interp = existing_interp or "외인·기관 스마트머니 집중 매집 · 수급 주도 메이저 종목"
-        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
     # 6. 뉴스 알림 (뉴스 본문 자체가 핵심 정보이므로 시장해석 박스 없이 본문만 깔끔하게 발송)
@@ -456,19 +455,10 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
-    # 7. 장시작 / 장마감 / 브리핑 및 기타 모든 알림
+    # 7. 장시작 / 장마감 / 스터디 / 콘텐츠 / 브리핑 및 기타 모든 알림 (형식적 기계적 해석 없이 본문만 깔끔하게 전달)
     else:
         body_no_interp = clean_no_interp
-        if "장시작" in clean_title:
-            interp = existing_interp or "오늘 정규장 개장 · 주요 지수 및 개장 시초가 주목"
-        elif "장마감" in clean_title:
-            interp = existing_interp or "오늘 정규장 마감 · 일일 수급 및 종가 동향 정리"
-        elif existing_interp:
-            interp = existing_interp
-        else:
-            interp = "시장 핵심 데이터 변동 감지 · 세부 분석 확인"
-
-        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(clean_title, new_body)
 
 
