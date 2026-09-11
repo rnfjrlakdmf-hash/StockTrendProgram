@@ -35,6 +35,16 @@ interface ScannerItem {
     highestPrice: number;
     volRatio: number;
     majorBuyer: string;
+    cvd?: {
+        strength: number;
+        label: string;
+        isBullish: boolean;
+    };
+    obv?: {
+        trend: string;
+        label: string;
+        isBullish: boolean;
+    };
 }
 
 interface ScannerResponse {
@@ -204,6 +214,7 @@ export default function ClosingQuantScanner() {
                         <thead>
                             <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                 <th className="p-3.5 sm:p-4">종목코드 / 종목명</th>
+                                <th className="p-3.5 sm:p-4 text-center hidden md:table-cell">CVD / OBV 수급 델타</th>
                                 <th className="p-3.5 sm:p-4 text-right">포착 기준가</th>
                                 <th className="p-3.5 sm:p-4 text-right">현재 시세</th>
                                 <th className="p-3.5 sm:p-4 text-right">기준 대비 변동률</th>
@@ -225,9 +236,59 @@ export default function ClosingQuantScanner() {
                                                         <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded font-mono">{item.market}</span>
                                                     </div>
                                                     <span className="text-[11px] text-slate-400 font-mono">{item.code}</span>
+                                                    
+                                                    {/* 모바일 전용 CVD/OBV 뱃지 */}
+                                                    <div className="flex md:hidden flex-wrap items-center gap-1 mt-1 font-mono">
+                                                        {item.cvd && (
+                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                                item.cvd.isBullish 
+                                                                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
+                                                                    : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                            }`}>
+                                                                <span>💎</span>
+                                                                <span>{item.cvd.label}</span>
+                                                            </span>
+                                                        )}
+                                                        {item.obv && (
+                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                                item.obv.isBullish 
+                                                                    ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
+                                                                    : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                            }`}>
+                                                                <span>📈</span>
+                                                                <span>{item.obv.label}</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 ml-auto transition-colors" />
                                             </Link>
+                                        </td>
+
+                                        {/* PC 전용 CVD / OBV 퀀트 뱃지 열 */}
+                                        <td className="p-3.5 sm:p-4 text-center hidden md:table-cell font-sans">
+                                            <div className="flex flex-col items-center gap-1">
+                                                {item.cvd && (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                                        item.cvd.isBullish 
+                                                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10' 
+                                                            : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                    }`}>
+                                                        <span>💎</span>
+                                                        <span>{item.cvd.label}</span>
+                                                    </span>
+                                                )}
+                                                {item.obv && (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                                        item.obv.isBullish 
+                                                            ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
+                                                            : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                    }`}>
+                                                        <span>📈</span>
+                                                        <span>{item.obv.label}</span>
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
 
                                         {/* 포착 기준가 */}

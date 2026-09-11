@@ -14,7 +14,7 @@ import SeoContentBlock from "@/components/SeoContentBlock";
 import BloombergLiveTicker from "@/components/BloombergLiveTicker";
 import FearGreedSpeedometer from "@/components/FearGreedSpeedometer";
 
-import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users, BookOpen, Clock, Search } from "lucide-react";
+import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplets, Layers, AlertTriangle, MessageSquare, Activity, CalendarClock, ChevronRight, Lock, Newspaper, Send, Bell, Users, BookOpen, Clock, Search, Flame } from "lucide-react";
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
@@ -75,6 +75,43 @@ export default function HomeClient() {
               <FearGreedSpeedometer />
               <LiveMarketHub />
             </div>
+
+            {/* [New] 장마감 수급 퀀트 스캐너 메인 하이라이트 배너 */}
+            <Link 
+              href="/signals?tab=scanner" 
+              className="block relative overflow-hidden group rounded-3xl border border-blue-500/30 bg-gradient-to-r from-blue-950/80 via-indigo-950/70 to-purple-950/80 p-5 sm:p-6 shadow-[0_15px_35px_rgba(0,0,0,0.6),0_0_30px_rgba(59,130,246,0.18)] hover:border-blue-400/60 transition-all hover:scale-[1.003]"
+            >
+              <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
+              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-300 border border-orange-500/30">
+                      <Flame className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+                      오늘 장마감 퀀트 집중주
+                    </span>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono">
+                      CVD · OBV 수급 델타 탑재
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium hidden md:inline">
+                      1차 저항선(+10%) 실시간 성과 추적
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                    <span>장마감 수급 퀀트 스캐너 & 일자별 익절 트래킹</span>
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    정규장 종가 기준 거래량 급증 및 외인·기관 메이저 수급 유입 종목을 기계적 알고리즘으로 자동 추출하고 저항선 도달을 추적합니다.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                  <div className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-colors border border-white/15 shadow-sm">
+                    <span>스캐너 바로보기</span>
+                    <ChevronRight className="w-4 h-4 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </div>
+            </Link>
 
             {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 */}
             <div className="flex lg:hidden justify-center my-2">

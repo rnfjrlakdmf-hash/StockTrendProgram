@@ -176,6 +176,44 @@ def fetch_5step_report_data(ticker: str):
     mid_risk = "글로벌 거시경제 변동성 및 업황 사이클 둔화 시 밸류에이션 멀티플 제한"
     counter_arg = "업종 내 독보적 기술력과 시장 점유율을 바탕으로 한 실적 턴어라운드 및 밸류에이션 리레이팅 잠재력"
 
+    # Calculate CVD & OBV
+    cvd_strength = 100.0
+    if len(prices) > 0:
+        p0 = prices[0]
+        h0 = int(p0.get('highPrice', '0').replace(',', ''))
+        l0 = int(p0.get('lowPrice', '0').replace(',', ''))
+        c0 = current_price
+        clv = ((c0 - l0) - (h0 - c0)) / (h0 - l0) if h0 > l0 else 0.0
+        cvd_strength = round(max(65.0, min(220.0, 100.0 + (clv * 35.0) + (max(-20.0, min(60.0, vol_ratio)) * 0.2))), 1)
+
+    cvd_is_bullish = cvd_strength >= 100.0
+    cvd_label = f"CVD {cvd_strength}% (매수 우위)" if cvd_is_bullish else f"CVD {cvd_strength}% (매도 우위)"
+
+    obv_history = []
+    acc_obv = 0
+    if len(prices) >= 5:
+        rev_prices = list(reversed(prices[:15]))
+        for idx_p in range(1, len(rev_prices)):
+            p_prev = int(rev_prices[idx_p-1]['closePrice'].replace(',', ''))
+            p_curr = int(rev_prices[idx_p]['closePrice'].replace(',', ''))
+            v_amt = int(rev_prices[idx_p].get('accumulatedTradingVolume', 0))
+            if p_curr > p_prev: acc_obv += v_amt
+            elif p_curr < p_prev: acc_obv -= v_amt
+            obv_history.append(acc_obv)
+
+    if obv_history and obv_history[-1] >= obv_history[0]:
+        obv_trend = "우상향 지속"
+        obv_label = "OBV 우상향 (누적 매집)"
+        obv_is_bullish = True
+    elif obv_history and len(obv_history) >= 3 and obv_history[-1] > obv_history[-3]:
+        obv_trend = "지지 반등"
+        obv_label = "OBV 지지선 반등"
+        obv_is_bullish = True
+    else:
+        obv_trend = "수급 숨고르기"
+        obv_label = "OBV 중립 횡보"
+        obv_is_bullish = False
+
     return {
         'status': 'success',
         'ticker': ticker,
@@ -207,7 +245,17 @@ def fetch_5step_report_data(ticker: str):
             'retailSum20d': retail_sum_20d,
             'foreignRate': foreign_rate,
             'verdict': verdict,
-            'insight': step4_insight
+            'insight': step4_insight,
+            'cvd': {
+                'strength': cvd_strength,
+                'label': cvd_label,
+                'isBullish': cvd_is_bullish
+            },
+            'obv': {
+                'trend': obv_trend,
+                'label': obv_label,
+                'isBullish': obv_is_bullish
+            }
         },
         'step5': {
             'high52': high52,

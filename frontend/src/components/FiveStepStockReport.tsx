@@ -65,6 +65,16 @@ interface StepReportData {
         foreignRate: string;
         verdict: string;
         insight: string;
+        cvd?: {
+            strength: number;
+            label: string;
+            isBullish: boolean;
+        };
+        obv?: {
+            trend: string;
+            label: string;
+            isBullish: boolean;
+        };
     };
     step5: {
         high52: number;
@@ -376,6 +386,33 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
                             </span>
                         </div>
                     </div>
+
+                    {/* CVD / OBV 퀀트 수급 지표 칩 2종 */}
+                    {(data.step4.cvd || data.step4.obv) && (
+                        <div className="flex flex-wrap items-center gap-2 mb-4 p-2.5 rounded-xl bg-purple-500/5 border border-purple-500/15">
+                            <span className="text-[11px] font-bold text-slate-400">퀀트 수급 델타:</span>
+                            {data.step4.cvd && (
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                    data.step4.cvd.isBullish 
+                                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10' 
+                                        : 'bg-slate-800 text-slate-400 border border-white/10'
+                                }`}>
+                                    <span>💎</span>
+                                    <span>{data.step4.cvd.label}</span>
+                                </span>
+                            )}
+                            {data.step4.obv && (
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                    data.step4.obv.isBullish 
+                                        ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-sm shadow-indigo-500/10' 
+                                        : 'bg-slate-800 text-slate-400 border border-white/10'
+                                }`}>
+                                    <span>📈</span>
+                                    <span>{data.step4.obv.label}</span>
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     {/* 한 줄 해석 박스 */}
                     <div className="p-3.5 rounded-xl bg-[#141b2d] border border-purple-500/20 flex items-start gap-2.5">

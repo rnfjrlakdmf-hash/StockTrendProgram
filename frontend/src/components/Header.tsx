@@ -342,6 +342,13 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 {/* Desktop Knowledge & Report Quick Nav (E-E-A-T & AdSense Navigation Boost) */}
                 <nav className="hidden lg:flex items-center gap-1.5 ml-2 mr-auto" aria-label="메인 지식 네비게이션">
                     <Link 
+                        href="/signals?tab=scanner" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>🔥</span>
+                        <span>장마감 스캐너</span>
+                    </Link>
+                    <Link 
                         href="/guide" 
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
