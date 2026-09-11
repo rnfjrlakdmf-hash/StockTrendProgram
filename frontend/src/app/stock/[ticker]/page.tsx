@@ -12,6 +12,8 @@ import PremiumContent from "@/components/PremiumContent";
 import RiskGaugeWidget from "@/components/RiskGaugeWidget";
 import MtsOrderButton from "@/components/MtsOrderButton";
 import EasyFinancialReader from "@/components/EasyFinancialReader";
+import FiveStepStockReport from "@/components/FiveStepStockReport";
+
 
 const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
@@ -189,7 +191,12 @@ export default async function StockSeoPage({ params }: Props) {
             <main className="max-w-4xl mx-auto px-4 py-12">
                 <RiskGaugeWidget symbol={decodedTicker} />
                 <div className="my-4"><KakaoRevenueAd type="banner" /></div>
+                
+                {/* 5단계 AI 퀀트 정밀 진단 리포트 */}
+                <FiveStepStockReport ticker={decodedTicker} stockName={name} initialPrice={data.price} />
+
                 <div id="ai-report-capture" className="bg-slate-900 border border-slate-800 rounded-2xl p-8 mb-8 shadow-2xl relative">
+
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="mb-2 w-full">
                             <span className="text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md mb-3 inline-block border border-blue-500/20">AI 주가 전망 리포트</span>
