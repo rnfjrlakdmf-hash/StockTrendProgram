@@ -164,9 +164,7 @@ class MorningBriefingService:
         if has_facts:
             body_parts.append("\n".join([f"▪️ {f.replace('[', '').replace(']', '')}" for f in facts_list]))
             
-        if ai_summary:
-            body_parts.append(f"🤖 {ai_summary.replace('[', '').replace(']', '')}")
-
+        # 사용자의 요청에 따라 단순 동어반복 AI 요약 라인은 알림 본문에서 제외하고 팩트와 수급 중심으로 구성
         if investor_summary:
             clean_investor = investor_summary.replace("|", "").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
             body_parts.append(clean_investor)
@@ -250,17 +248,16 @@ class MorningBriefingService:
         STRICT LEGAL & COMPLIANCE RULES (CRITICAL):
         1. NEVER classify news as "good" (호재) or "bad" (악재).
         2. NEVER recommend buying, selling, or holding. Avoid directive/subjective words: "추천", "주의", "매수", "매도", "목표", "긍정적", "부정적".
-        3. Keep all descriptions strictly neutral, factual, and objective. Only state the WHAT and WHY (e.g. "사측과의 임단협 이견으로 노조 상경투쟁 진행 중, 단기 조업 영향 점검", "LNG선 대규모 수주 계약 체결 발표").
+        3. Keep all descriptions strictly neutral, factual, and objective. Only state the WHAT and WHY.
         4. Explain in plain Korean (쉬운 우리말) for beginners.
-        5. Each fact SHOULD be rich with informative context (Length: 50~80 characters), clearly explaining the specific event, cause, or figures rather than vague phrases.
-        6. Neutral summary (ai_summary): Length 60~90 characters. Provide a rich, informative morning market fact summary outlining key points for the day.
+        5. Each fact MUST include informative context and background (Length: 50~100 characters). Do NOT just write brief headlines (e.g. avoid '주가 변동 발생' or '노조 상경투쟁'). Instead, clearly specify WHY and WHAT occurred (e.g. '사측과의 임단협 난항 속 기본급 인상과 격려금을 요구하며 노조 상경투쟁 돌입, 단기 조업 영향 점검', '외국인 대량 순매수 유입과 기관 매도세가 맞서며 거래량과 주가 변동성 확대').
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "market_facts": ["Detailed factual point 1", "Detailed factual point 2", "Detailed factual point 3"],
+            "market_facts": ["Detailed factual point 1 with cause/context", "Detailed factual point 2 with cause/context"],
             "ai_summary": "Informative neutral morning summary"
         }}
         """

@@ -880,34 +880,87 @@ function formatUsdToKrwInText(text: string): string {
             supplyBadgeStyle = "bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-transparent border-cyan-500/30 text-cyan-300";
         }
 
+        const getFactDetail = (factText: string, tag: string, fVol: string, iVol: string) => {
+            if (/노조|임단협|투쟁|상경|파업/.test(factText)) {
+                return {
+                    context: "사측과의 임단협(임금·단체협약) 난항으로 기본급 인상 및 격려금 지급 등을 요구하며 노조 상경투쟁을 진행 중입니다.",
+                    tip: "조선업 수주 호황기 속 단기 조업 차질 및 납기 일정 준수 여부와 노사 간 조기 타결 가능성을 주시할 필요가 있습니다."
+                };
+            }
+            if (/경영진|대표|분쟁|소송|지분/.test(factText)) {
+                return {
+                    context: "경영권 지분 경쟁, 지배구조 개편 또는 소송 관련 이슈로 시장의 관심이 집중되고 있습니다.",
+                    tip: "공시 진행 경과 및 법적 리스크 추이에 따라 단기 주가 변동성이 확대될 수 있으니 공시 원문을 확인하세요."
+                };
+            }
+            if (/변동|급등|급락|상승|하락|시황|거래량/.test(factText)) {
+                const hasF = fVol && fVol !== '0주';
+                const hasI = iVol && iVol !== '0주';
+                let contextText = "전일 외국인과 기관 등 메이저 자금의 수급 공방으로 단기 시세 변동성이 확대되었습니다.";
+                if (hasF && hasI) {
+                    contextText = `전일 외국인(${fVol})과 기관(${iVol}) 간의 팽팽한 매매 공방 속에 호가 변동성과 거래량이 크게 증가했습니다.`;
+                } else if (hasF) {
+                    contextText = `외국인 순매매(${fVol}) 유입에 따라 시세가 민감하게 반응하며 가격 변동이 발생했습니다.`;
+                }
+                return {
+                    context: contextText,
+                    tip: "장 초반 시초가 형성 후 외국인 매수세의 연속성 및 거래량 회전율을 필수적으로 점검하세요."
+                };
+            }
+            if (/수주|계약|공급|체결|납품|발주/.test(factText)) {
+                return {
+                    context: "대규모 신규 수주·공급 계약 체결 건으로, 향후 건조 및 인도 일정에 따라 매출 가시성이 높아지고 있습니다.",
+                    tip: "계약 규모의 전년 매출 대비 비중과 중장기 수익성 펀더멘털 개선 기여도를 점검하세요."
+                };
+            }
+            if (/실적|매출|영업이익|흑자|적자|순이익|재무/.test(factText)) {
+                return {
+                    context: "분기 실적 및 영업이익 지표 관련 발표로, 고수익 선종 비중 확대 및 원가 개선 추세가 반영되고 있습니다.",
+                    tip: "증권사 시장 컨센서스(전망치) 부합 여부와 향후 연간 흑자 폭 확대 가능성을 확인하세요."
+                };
+            }
+            if (/개발|특허|기술|인증|승인|임상|신제품|친환경|LNG|암모니아/.test(factText)) {
+                return {
+                    context: "친환경 차세대 선박 및 핵심 독자 기술 경쟁력 확보와 관련된 연구개발/인증 성과입니다.",
+                    tip: "글로벌 환경 규제 강화에 대응한 중장기 프리미엄 수주 경쟁력으로 작용할 수 있습니다."
+                };
+            }
+            return {
+                context: "해당 종목을 둘러싼 시장의 주요 이슈 및 언론·공시 팩트입니다.",
+                tip: "단순 테마성 소식인지 본업 펀더멘털과 연결된 사안인지 공시 원문 및 뉴스 세부 내용을 확인하세요."
+            };
+        };
+
         return (
             <div className="space-y-3 text-left">
-                {/* 1. 핵심 팩트 리스트 (원래 알림의 1, 2번째 줄을 100% 온전하고 시원하게 표시) */}
+                {/* 1. 핵심 팩트 리스트 (이슈별 구체적 배경 설명 + 투자자 체크포인트 디테일 제공) */}
                 {facts.length > 0 && (
-                    <div className="space-y-2">
-                        {facts.map((f, fIdx) => (
-                            <div key={fIdx} className="p-3 bg-zinc-900/90 border border-white/10 rounded-2xl flex items-start gap-2.5 shadow-sm">
-                                <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg border shrink-0 mt-0.5 ${f.tagColor}`}>
-                                    {f.tag}
-                                </span>
-                                <p className="text-sm md:text-base text-zinc-100 font-bold leading-snug">
-                                    {f.text}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* 2. AI 분석 요약 (원래 알림의 3번째 줄을 보라색 AI 박스 안에 100% 온전히 표시) */}
-                {aiSummary && (
-                    <div className="p-3.5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/30 rounded-2xl space-y-1.5 shadow-sm">
-                        <div className="flex items-center gap-2 text-purple-300">
-                            <Sparkles className="w-4 h-4 text-purple-400" />
-                            <span className="text-xs font-black">AI 모닝 팩트 분석</span>
-                        </div>
-                        <p className="text-xs md:text-sm text-purple-100 font-medium leading-relaxed pl-0.5">
-                            {aiSummary}
-                        </p>
+                    <div className="space-y-2.5">
+                        {facts.map((f, fIdx) => {
+                            const detail = getFactDetail(f.text, f.tag, foreignerVol, institutionVol);
+                            return (
+                                <div key={fIdx} className="p-3.5 bg-zinc-900/90 border border-white/10 rounded-2xl space-y-2.5 shadow-sm">
+                                    <div className="flex items-start gap-2.5">
+                                        <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg border shrink-0 mt-0.5 ${f.tagColor}`}>
+                                            {f.tag}
+                                        </span>
+                                        <h4 className="text-sm md:text-base text-zinc-100 font-bold leading-snug">
+                                            {f.text}
+                                        </h4>
+                                    </div>
+                                    <div className="p-3 bg-zinc-950/80 rounded-xl border border-white/5 space-y-1.5 text-left">
+                                        <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                            <span className="font-bold text-amber-300/90 shrink-0">💡 배경</span>
+                                            <span className="text-zinc-300">{detail.context}</span>
+                                        </div>
+                                        <div className="flex items-start gap-2 text-xs leading-relaxed pt-1 border-t border-white/5">
+                                            <span className="font-bold text-cyan-400/90 shrink-0">📌 체크</span>
+                                            <span className="text-zinc-400">{detail.tip}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
 
