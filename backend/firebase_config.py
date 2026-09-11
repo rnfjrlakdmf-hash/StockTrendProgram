@@ -410,6 +410,11 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
             return sanitize_notification_text(new_title, new_body)
         else:
+            # 시가 알림이나 단순 장시작 안내인 경우 불필요한 급등 시장해석 제외
+            if "시가" in clean_no_interp or "시가" in clean_title or "시초가" in clean_no_interp or "장시작" in clean_title:
+                new_title = clean_title
+                new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+                return sanitize_notification_text(new_title, new_body)
             new_title = f"📈 [거래량·주가 급등] {company}" if company else "📈 [거래량·주가 급등 포착]"
             interp = existing_interp or "대량 거래 동반 주가 급등 · 단기 모멘텀 및 스마트머니 유입"
             new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"

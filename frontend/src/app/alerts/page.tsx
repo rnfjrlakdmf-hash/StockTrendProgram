@@ -357,9 +357,16 @@ function formatUsdToKrwInText(text: string): string {
             marketInterpretation.includes("시장 핵심 데이터 변동 감지") ||
             marketInterpretation.includes("스마트머니 집중 유입") ||
             marketInterpretation.includes("스마트머니 집중 매집") ||
+            marketInterpretation.includes("스마트머니 유입") ||
+            marketInterpretation.includes("단기 모멘텀") ||
+            marketInterpretation.includes("대량 거래 동반") ||
+            marketInterpretation.includes("급등 포착") ||
             marketInterpretation.includes("세부 분석 확인") ||
             marketInterpretation.includes("정규장 개장") ||
-            marketInterpretation.includes("정규장 마감")
+            marketInterpretation.includes("정규장 마감") ||
+            text.includes("시가입니다") ||
+            text.includes("관심종목 시가") ||
+            (alert.title && (alert.title.includes("시가") || alert.title.includes("시초가") || alert.title.includes("급등 포착")))
         );
 
         if (isNewsAlert || isSupplyAlert || isStudyOrNotice || isGenericInterp) {
