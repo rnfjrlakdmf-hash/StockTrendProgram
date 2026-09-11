@@ -1408,26 +1408,27 @@ export default function WatchlistPage() {
                             </div>
                         </div>
 
-                        {/* 4. [CORE 3] 📋 관심종목 최근 실시간 공시 타임라인 피드 (디테일한 정보량 & DART 원문 바로가기) */}
+                        {/* 4. [CORE 3] 🚨 큰손 지분 변동 & 거버넌스 특이 공시 레이더 (교통정리 완료: 캘린더와 중복 0%) */}
                         <div className="space-y-4">
                             <div className="bg-zinc-900/80 border border-white/10 p-6 md:p-7 rounded-3xl shadow-xl space-y-5">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[11px] font-mono font-bold text-cyan-400 tracking-wider uppercase">
-                                                DART REALTIME TIMELINE
+                                            <span className="text-[11px] font-mono font-bold text-amber-400 tracking-wider uppercase">
+                                                WHALE & GOVERNANCE RADAR
                                             </span>
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                                                공식 전자공시 연동
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                큰손 지분 추적
                                             </span>
                                         </div>
                                         <h3 className="text-lg sm:text-xl font-black text-white mt-1">
-                                            관심종목 최근 실시간 공시 피드
+                                            큰손 지분 변동 & 주가 변동성 특이 공시
                                         </h3>
                                     </div>
-                                    <span className="text-xs text-zinc-400">
-                                        최근 90일간 발생한 모든 공시 기록
-                                    </span>
+                                    <p className="text-xs text-zinc-400 max-w-md">
+                                        💡 <strong>교통정리 안내:</strong> 실적발표 D-Day, 배당일정, 대형 수주는 <strong>[실적·배당 캘린더]</strong> 탭에서 전담하며, 
+                                        이곳에서는 <strong>임원/슈퍼개미 지분 변동과 특이 공시</strong>만 엄선하여 제공합니다.
+                                    </p>
                                 </div>
 
                                 {healthData?.recent_disclosures && healthData.recent_disclosures.length > 0 ? (
@@ -1436,8 +1437,7 @@ export default function WatchlistPage() {
                                             const badgeColor = 
                                                 d.badge_type === "positive" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" :
                                                 d.badge_type === "warning" ? "bg-red-500/20 text-red-300 border-red-500/30" :
-                                                d.badge_type === "info" ? "bg-blue-500/15 text-blue-300 border-blue-500/30" :
-                                                "bg-zinc-800 text-zinc-300 border-zinc-700";
+                                                "bg-blue-500/15 text-blue-300 border-blue-500/30";
 
                                             return (
                                                 <div 
@@ -1474,8 +1474,16 @@ export default function WatchlistPage() {
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="py-12 text-center bg-black/20 rounded-2xl border border-dashed border-white/5 text-zinc-400 text-xs">
-                                        최근 90일간 관심종목에 등록된 신규 전자공시 내역이 없습니다.
+                                    <div className="p-8 text-center bg-black/30 rounded-2xl border border-dashed border-white/10 space-y-2">
+                                        <div className="inline-flex p-3 rounded-full bg-emerald-500/10 text-emerald-400 mb-1">
+                                            <CheckCircle2 className="w-6 h-6" />
+                                        </div>
+                                        <h4 className="text-sm sm:text-base font-black text-white">
+                                            큰손 이탈 및 지분 매도 특이사항 없음 (Clean)
+                                        </h4>
+                                        <p className="text-xs text-zinc-400 max-w-lg mx-auto leading-relaxed">
+                                            최근 90일간 내 관심종목에서 최대주주/임원 대량 매도나 슈퍼개미 이탈 등 주가 급변동을 일으키는 특이 공시가 발생하지 않았습니다.
+                                        </p>
                                     </div>
                                 )}
                             </div>

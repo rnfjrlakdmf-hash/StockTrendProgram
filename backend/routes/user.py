@@ -359,21 +359,30 @@ def get_watchlist_health_check(x_user_id: str = Header(None)):
                 link = d.get('link', '')
                 flr = d.get('flr_nm', name)
                 
+                # [교통정리] 단순 실적/수주/정기보고서 공시는 '실적·배당 캘린더' 탭의 전담 영역이므로 여기서는 제외하여 중복 방지
+                is_earnings_or_contract = any(k in title for k in [
+                    "단일판매", "공급계약", "분기보고서", "반기보고서", "사업보고서", 
+                    "영업(잠정)실적", "잠정실적", "기업설명회", "IR"
+                ])
+
                 is_cb = any(k in title for k in ["전환사채", "신주인수권부사채", "교환사채", "CB", "BW"])
                 is_cap = any(k in title for k in ["유상증자", "감자결정", "무상감자"])
                 is_risk = any(k in title for k in ["관리종목", "투자주의환기종목", "상장폐지", "감사의견", "횡령", "배임", "회생절차", "영업정지"])
-                is_dump = any(k in title for k in ["임원ㆍ주요주주특정증권", "주식등의대량보유"]) and any(w in title for w in ["처분", "매도", "감소"])
+                is_insider = any(k in title for k in ["임원ㆍ주요주주", "주식등의대량보유", "최대주주변경"])
                 is_unf = "불성실공시" in title
-                is_pos = any(k in title for k in ["단일판매", "공급계약", "자기주식취득", "자기주식소각", "무상증자", "잠정실적"])
+                is_buyback = "자기주식" in title
                 
                 if is_cb: cb_bw.append(d)
                 if is_cap: capital_change.append(d)
                 if is_risk: listing_risk.append(d)
-                if is_dump: insider_dump.append(d)
+                if is_insider and any(w in title for w in ["처분", "매도", "감소"]): insider_dump.append(d)
                 if is_unf: unfaithful.append(d)
-                if is_pos: positive_list.append(d)
                 
-                badge = "일반공시"
+                # 캘린더 전담 공시(수주, 정기보고서 등)는 건전성 체크에만 반영하고, 알림 피드 리스트에서는 제외
+                if is_earnings_or_contract and not (is_cb or is_cap or is_risk or is_insider or is_unf or is_buyback):
+                    continue
+
+                badge = "특이공시"
                 badge_type = "neutral"
                 display_title = title
                 
@@ -383,21 +392,13 @@ def get_watchlist_health_check(x_user_id: str = Header(None)):
                     elif is_cap: badge = "유상증자/감자"
                     elif is_risk: badge = "상장위험"
                     elif is_unf: badge = "공시위반"
-                elif is_pos:
+                elif is_insider:
+                    badge = "지분변동 (큰손)"
+                    badge_type = "info"
+                    display_title = f"큰손/임원 지분 보유상황 변동: {flr}"
+                elif is_buyback:
+                    badge = "자사주 (주주환원)"
                     badge_type = "positive"
-                    if "단일판매" in title or "공급계약" in title: 
-                        badge = "수주·계약"
-                        display_title = "대규모 수주 및 공급계약 체결" if "[기재정정]" not in title else "대규모 수주·공급계약 체결 (정정)"
-                    elif "자기주식" in title: 
-                        badge = "자사주"
-                    elif "잠정실적" in title: 
-                        badge = "잠정실적"
-                elif "분기보고서" in title or "반기보고서" in title or "사업보고서" in title:
-                    badge = "정기보고서"
-                    badge_type = "info"
-                elif "설명회" in title or "IR" in title:
-                    badge = "IR·설명회"
-                    badge_type = "info"
                     
                 clean_disclosures.append({
                     "symbol": sym,
