@@ -882,25 +882,36 @@ function formatUsdToKrwInText(text: string): string {
 
         return (
             <div className="space-y-4">
-                {/* 1. 상단: 종목명 및 전일 종가 바 */}
+                {/* 1. 상단: 종목명 및 전일 종가 바 (우측 공백 완벽 보강) */}
                 <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-2xl shadow-inner">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-base md:text-lg font-black text-white">{stockName || "관심종목"}</span>
+                        {cleanSymbol && (
+                            <span className="text-xs font-mono text-zinc-400 font-bold">
+                                {cleanSymbol}
+                            </span>
+                        )}
                         <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            장전 브리핑
+                            장전 모닝 브리핑
                         </span>
                     </div>
-                    {closePriceStr && (
-                        <div className="text-right">
-                            <span className="text-xs text-gray-400 font-medium mr-1.5">전일 종가</span>
-                            <span className="text-sm md:text-base font-black font-mono text-zinc-100">{closePriceStr}</span>
-                            {changePctStr && (
-                                <span className={`ml-1.5 text-xs font-bold font-mono ${isPriceUp ? 'text-red-400' : 'text-blue-400'}`}>
-                                    {changePctStr}
-                                </span>
-                            )}
-                        </div>
-                    )}
+                    <div className="text-right shrink-0">
+                        {closePriceStr ? (
+                            <div>
+                                <span className="text-xs text-gray-400 font-medium mr-1.5">전일 종가</span>
+                                <span className="text-sm md:text-base font-black font-mono text-zinc-100">{closePriceStr}</span>
+                                {changePctStr && (
+                                    <span className={`ml-1.5 text-xs font-bold font-mono ${isPriceUp ? 'text-red-400' : 'text-blue-400'}`}>
+                                        {changePctStr}
+                                    </span>
+                                )}
+                            </div>
+                        ) : (
+                            <span className="px-2.5 py-1 text-[11px] font-bold rounded-xl bg-zinc-800 text-zinc-300 border border-white/10">
+                                08:00 장전 팩트체크
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* 2. 전일 메이저 수급 3분할 칩 */}
@@ -943,48 +954,119 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 )}
 
-                {/* 3. 장전 핵심 체크 이슈 피드 */}
+                {/* 3. 장전 핵심 체크 이슈 피드 (디테일 정보량 + 기사 원문 바로가기 탑재) */}
                 {facts.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                         <div className="flex items-center justify-between px-1">
                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <FileText className="w-3.5 h-3.5 text-amber-400" />
-                                장 시작 전 핵심 이슈
+                                장 시작 전 핵심 이슈 & 팩트
                             </span>
-                            <span className="text-[10px] text-zinc-500 font-mono">{facts.length}개 이슈</span>
+                            {cleanSymbol && (
+                                <a
+                                    href={`https://m.stock.naver.com/item/news/${cleanSymbol}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[11px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 transition-colors"
+                                >
+                                    <span>관련 기사 전체보기</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
+                            )}
                         </div>
                         <div className="space-y-2">
                             {facts.map((f, fIdx) => (
-                                <div key={fIdx} className="p-3 bg-zinc-900/70 border border-white/5 rounded-xl flex items-start gap-2.5">
-                                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0 mt-0.5 ${f.tagColor}`}>
-                                        {f.tag}
-                                    </span>
-                                    <p className="text-xs md:text-sm text-zinc-200 font-medium leading-relaxed">
-                                        {f.text}
-                                    </p>
+                                <div key={fIdx} className="p-3.5 bg-zinc-900/80 hover:bg-zinc-900 border border-white/5 hover:border-white/15 rounded-xl space-y-2 transition-all shadow-sm">
+                                    <div className="flex items-start gap-2.5">
+                                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0 mt-0.5 ${f.tagColor}`}>
+                                            {f.tag}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs md:text-sm text-zinc-100 font-bold leading-snug">
+                                                {f.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {/* 이슈별 장전 체크 팁 안내 */}
+                                    <div className="flex items-center justify-between pt-1 text-[11px] text-zinc-400 border-t border-white/5 pl-1">
+                                        <span className="flex items-center gap-1 text-zinc-400">
+                                            💡 {f.tag === '노사·경영' ? '노사 협상 추이 및 단기 조업 영향 점검' : f.tag === '수주·계약' ? '매출 반영 및 수주 모멘텀 호재' : f.tag === '실적·재무' ? '펀더멘털 및 시장 컨센서스 부합 여부 확인' : '장초반 단기 수급 흐름 및 변동성 점검'}
+                                        </span>
+                                        {cleanSymbol && (
+                                            <a
+                                                href={`https://m.stock.naver.com/item/news/${cleanSymbol}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-[10px] text-sky-400 hover:underline shrink-0 ml-2 font-semibold flex items-center gap-0.5"
+                                            >
+                                                원문 검색 <ExternalLink className="w-2.5 h-2.5" />
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* 4. AI 장전 브리핑 코멘트 */}
-                {aiSummary && (
-                    <div className="bg-gradient-to-r from-purple-900/20 via-indigo-900/20 to-zinc-900 border border-purple-500/25 rounded-2xl p-3.5 space-y-2 shadow-sm">
+                {/* 4. AI 장전 브리핑 코멘트 & 3대 장전 관전 포인트 */}
+                <div className="bg-gradient-to-br from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/30 rounded-2xl p-4 space-y-3 shadow-md">
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-purple-300">
                             <Sparkles className="w-4 h-4 text-purple-400" />
-                            <span className="text-xs font-black">AI 모닝 투자 팩트 브리핑</span>
+                            <span className="text-xs md:text-sm font-black">AI 모닝 투자 팩트 브리핑</span>
                         </div>
-                        <p className="text-xs md:text-sm text-purple-100 font-medium leading-relaxed pl-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold font-mono">
+                            AI ANALYSIS
+                        </span>
+                    </div>
+
+                    {aiSummary && (
+                        <p className="text-xs md:text-sm text-purple-100 font-semibold leading-relaxed bg-black/30 p-2.5 rounded-xl border border-purple-500/20">
                             {aiSummary}
                         </p>
-                        <p className="text-[10px] text-zinc-500 pt-1 border-t border-white/5">
-                            💡 장초반 수급 연속성과 호가 흐름을 확인하며 유연하게 대응하세요.
-                        </p>
-                    </div>
-                )}
+                    )}
 
-                {/* 5. 원터치 퀵 액션 버튼 바 */}
+                    {/* 실전 장전 3대 체크포인트 */}
+                    <div className="space-y-1.5 pt-1 text-xs text-zinc-300">
+                        <div className="flex items-start gap-2">
+                            <span className="text-amber-400 font-bold shrink-0">🎯 수급 포인트:</span>
+                            <span className="text-zinc-300">
+                                {foreignerVol ? `외국인 ${foreignerVol} 순매수 vs 기관 ${institutionVol || '0주'} 공방 속 장초반 외인 매수세 지속 여부 체크` : '장전 메이저 스마트머니 수급 유입 방향성 점검'}
+                            </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-cyan-400 font-bold shrink-0">🔍 이슈 체크:</span>
+                            <span className="text-zinc-300">
+                                {facts.length > 0 ? `${facts.map(f => f.text).join(' 및 ')}에 따른 단기 주가 반응 확인` : '장 시작 전 주요 공시 및 뉴스 이슈 확인'}
+                            </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <span className="text-emerald-400 font-bold shrink-0">💡 대응 가이드:</span>
+                            <span className="text-zinc-400">
+                                시초가 갭 형성 직후 무리한 추격보다는 장 개시 10분간 호가 잔량 안정화 후 분할 대응을 권장합니다.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. 기존 알림 원문 전체 대조하기 토글 (사용자 안심 보증) */}
+                <details className="group p-3 bg-zinc-950/60 border border-white/5 rounded-xl text-xs text-zinc-400 cursor-pointer">
+                    <summary className="font-bold flex items-center justify-between text-zinc-400 hover:text-zinc-200 transition-colors select-none">
+                        <span className="flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5 text-zinc-500" />
+                            <span>기존 수신 알림 원문 전문 대조하기 (터치하여 펼치기)</span>
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 group-open:rotate-90 transition-transform text-zinc-500" />
+                    </summary>
+                    <div className="mt-2.5 pt-2.5 border-t border-white/5 font-mono text-[11px] text-zinc-400 whitespace-pre-wrap leading-relaxed bg-black/40 p-2 rounded-lg">
+                        {text}
+                    </div>
+                </details>
+
+                {/* 6. 원터치 퀵 액션 버튼 바 */}
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
                     <Link
                         href={cleanSymbol ? `/discovery?q=${cleanSymbol}` : `/discovery`}

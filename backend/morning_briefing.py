@@ -253,18 +253,18 @@ class MorningBriefingService:
         STRICT LEGAL & COMPLIANCE RULES (CRITICAL):
         1. NEVER classify news as "good" (호재) or "bad" (악재).
         2. NEVER recommend buying, selling, or holding. Avoid directive/subjective words: "추천", "주의", "매수", "매도", "목표", "긍정적", "부정적".
-        3. Keep all descriptions strictly neutral, factual, and objective. Only state the WHAT (e.g. "수주 계약 체결", "매출 감소 발표").
+        3. Keep all descriptions strictly neutral, factual, and objective. Only state the WHAT and WHY (e.g. "사측과의 임단협 이견으로 노조 상경투쟁 진행 중, 단기 조업 영향 점검", "LNG선 대규모 수주 계약 체결 발표").
         4. Explain in plain Korean (쉬운 우리말) for beginners.
-        5. Each fact MUST be extremely concise (Max 35 characters) to fit in a mobile push notification.
-        6. Neutral summary (ai_summary): Max 35 characters. Simply summarize the overall theme neutrally.
+        5. Each fact SHOULD be rich with informative context (Length: 50~80 characters), clearly explaining the specific event, cause, or figures rather than vague phrases.
+        6. Neutral summary (ai_summary): Length 60~90 characters. Provide a rich, informative morning market fact summary outlining key points for the day.
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "market_facts": ["Factual bullet point 1", "Factual bullet point 2", "Factual bullet point 3"],
-            "ai_summary": "Extremely concise neutral summary"
+            "market_facts": ["Detailed factual point 1", "Detailed factual point 2", "Detailed factual point 3"],
+            "ai_summary": "Informative neutral morning summary"
         }}
         """
         
