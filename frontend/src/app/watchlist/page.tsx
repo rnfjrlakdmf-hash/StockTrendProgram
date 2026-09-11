@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu, ShieldCheck, ShieldAlert, CheckCircle2, ChevronRight } from "lucide-react";
+import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu, ShieldCheck, ShieldAlert, CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
@@ -60,6 +60,7 @@ export default function WatchlistPage() {
         recent_disclosures?: any[];
     } | null>(null);
     const [healthLoading, setHealthLoading] = useState(false);
+    const [showAllDisclosures, setShowAllDisclosures] = useState(false);
 
     // [NEW] 실적/배당 일정 State & 필터
     const [eventEvents, setEventEvents] = useState<any[]>([]);
@@ -1408,11 +1409,11 @@ export default function WatchlistPage() {
                             </div>
                         </div>
 
-                        {/* 4. [CORE 3] 🚨 큰손 지분 변동 & 거버넌스 특이 공시 레이더 (교통정리 완료: 캘린더와 중복 0%) */}
+                        {/* 4. [CORE 3] 🚨 큰손 지분 변동 & 거버넌스 특이 공시 레이더 */}
                         <div className="space-y-4">
-                            <div className="bg-zinc-900/80 border border-white/10 p-6 md:p-7 rounded-3xl shadow-xl space-y-5">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
-                                    <div>
+                            <div className="bg-zinc-900/80 border border-white/10 p-5 sm:p-7 rounded-3xl shadow-xl space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/10">
+                                    <div className="space-y-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-mono font-bold text-amber-400 tracking-wider uppercase">
                                                 WHALE & GOVERNANCE RADAR
@@ -1421,57 +1422,85 @@ export default function WatchlistPage() {
                                                 큰손 지분 추적
                                             </span>
                                         </div>
-                                        <h3 className="text-lg sm:text-xl font-black text-white mt-1">
-                                            큰손 지분 변동 & 주가 변동성 특이 공시
-                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-base sm:text-lg font-black text-white">
+                                                큰손 지분 변동 & 특이 공시
+                                            </h3>
+                                            {healthData?.recent_disclosures && healthData.recent_disclosures.length > 0 && (
+                                                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-white/10">
+                                                    총 {healthData.recent_disclosures.length}건
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-zinc-400 max-w-md">
-                                        💡 <strong>교통정리 안내:</strong> 실적발표 D-Day, 배당일정, 대형 수주는 <strong>[실적·배당 캘린더]</strong> 탭에서 전담하며, 
-                                        이곳에서는 <strong>임원/슈퍼개미 지분 변동과 특이 공시</strong>만 엄선하여 제공합니다.
+                                    <p className="text-xs text-zinc-400 max-w-md leading-relaxed">
+                                        💡 실적·배당은 <span className="text-zinc-300 font-semibold">[실적·배당 캘린더]</span>에서 전담하며, 이곳에서는 <strong>임원/큰손 지분 변동과 리스크 공시</strong>만 엄선하여 안내합니다.
                                     </p>
                                 </div>
 
                                 {healthData?.recent_disclosures && healthData.recent_disclosures.length > 0 ? (
-                                    <div className="grid gap-3">
-                                        {healthData.recent_disclosures.map((d: any, idx: number) => {
-                                            const badgeColor = 
-                                                d.badge_type === "positive" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" :
-                                                d.badge_type === "warning" ? "bg-red-500/20 text-red-300 border-red-500/30" :
-                                                "bg-blue-500/15 text-blue-300 border-blue-500/30";
+                                    <div className="space-y-3">
+                                        <div className="grid gap-2.5">
+                                            {(showAllDisclosures ? healthData.recent_disclosures : healthData.recent_disclosures.slice(0, 3)).map((d: any, idx: number) => {
+                                                const badgeColor = 
+                                                    d.badge_type === "positive" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" :
+                                                    d.badge_type === "warning" ? "bg-red-500/20 text-red-300 border-red-500/30" :
+                                                    "bg-amber-500/15 text-amber-300 border-amber-500/30";
 
-                                            return (
-                                                <div 
-                                                    key={idx}
-                                                    className="p-4 sm:p-5 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                                                >
-                                                    <div className="space-y-1.5 min-w-0">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="text-sm font-black text-white" translate="no">{d.name}</span>
-                                                            <span className="text-xs font-mono font-bold text-zinc-500" translate="no">{d.symbol}</span>
-                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${badgeColor}`}>
-                                                                {d.badge}
-                                                            </span>
-                                                            <span className="text-xs font-mono text-zinc-400 font-medium">{d.date}</span>
+                                                return (
+                                                    <div 
+                                                        key={idx}
+                                                        className="p-3.5 sm:p-4 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                                                    >
+                                                        <div className="space-y-1 min-w-0">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="text-sm font-black text-white" translate="no">{d.name}</span>
+                                                                <span className="text-xs font-mono font-bold text-zinc-500" translate="no">{d.symbol}</span>
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeColor}`}>
+                                                                    {d.badge}
+                                                                </span>
+                                                                <span className="text-xs font-mono text-zinc-400 font-medium">{d.date}</span>
+                                                            </div>
+                                                            <p className="text-sm text-zinc-200 font-medium leading-snug truncate">
+                                                                {d.display_title || d.title}
+                                                            </p>
                                                         </div>
-                                                        <p className="text-sm text-zinc-200 font-medium leading-snug truncate">
-                                                            {d.display_title || d.title}
-                                                        </p>
-                                                    </div>
 
-                                                    {d.link && (
-                                                        <a
-                                                            href={d.link}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="shrink-0 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-cyan-200 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                                                        >
-                                                            <span>DART 원문</span>
-                                                            <ExternalLink className="w-3.5 h-3.5" />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                                        {d.link && (
+                                                            <a
+                                                                href={d.link}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-cyan-200 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                                            >
+                                                                <span>DART 원문</span>
+                                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* 3건 초과 시 더보기 / 접기 버튼 */}
+                                        {healthData.recent_disclosures.length > 3 && (
+                                            <button
+                                                onClick={() => setShowAllDisclosures(!showAllDisclosures)}
+                                                className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-xs font-bold text-zinc-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                                            >
+                                                {showAllDisclosures ? (
+                                                    <>
+                                                        <span>공시 접기 (최신 3건만 보기)</span>
+                                                        <ChevronUp className="w-3.5 h-3.5" />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>전체 공시 더보기 ({healthData.recent_disclosures.length}건 전체 확인)</span>
+                                                        <ChevronDown className="w-3.5 h-3.5" />
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="p-8 text-center bg-black/30 rounded-2xl border border-dashed border-white/10 space-y-2">

@@ -359,16 +359,17 @@ def get_watchlist_health_check(x_user_id: str = Header(None)):
                 link = d.get('link', '')
                 flr = d.get('flr_nm', name)
                 
-                # [교통정리] 단순 실적/수주/정기보고서 공시는 '실적·배당 캘린더' 탭의 전담 영역이므로 여기서는 제외하여 중복 방지
-                is_earnings_or_contract = any(k in title for k in [
-                    "단일판매", "공급계약", "분기보고서", "반기보고서", "사업보고서", 
-                    "영업(잠정)실적", "잠정실적", "기업설명회", "IR"
+                # [엄격한 필터링] 행정 서식 공시(지급수단별, 대규모기업집단 등) 및 캘린더 공시(실적, 수주) 완전 제외
+                is_admin_noise = any(k in title for k in [
+                    "지급수단", "기업집단", "공정거래", "하도급", "분쟁조정", "동일인", "채무보증", 
+                    "특수관계인", "기타경영사항", "단일판매", "공급계약", "분기보고서", "반기보고서", 
+                    "사업보고서", "영업(잠정)실적", "잠정실적", "기업설명회", "IR"
                 ])
 
                 is_cb = any(k in title for k in ["전환사채", "신주인수권부사채", "교환사채", "CB", "BW"])
                 is_cap = any(k in title for k in ["유상증자", "감자결정", "무상감자"])
                 is_risk = any(k in title for k in ["관리종목", "투자주의환기종목", "상장폐지", "감사의견", "횡령", "배임", "회생절차", "영업정지"])
-                is_insider = any(k in title for k in ["임원ㆍ주요주주", "주식등의대량보유", "최대주주변경"])
+                is_insider = any(k in title for k in ["임원ㆍ주요주주", "주식등의대량보유", "최대주주등소유주식변동", "최대주주변경"])
                 is_unf = "불성실공시" in title
                 is_buyback = "자기주식" in title
                 
@@ -378,8 +379,8 @@ def get_watchlist_health_check(x_user_id: str = Header(None)):
                 if is_insider and any(w in title for w in ["처분", "매도", "감소"]): insider_dump.append(d)
                 if is_unf: unfaithful.append(d)
                 
-                # 캘린더 전담 공시(수주, 정기보고서 등)는 건전성 체크에만 반영하고, 알림 피드 리스트에서는 제외
-                if is_earnings_or_contract and not (is_cb or is_cap or is_risk or is_insider or is_unf or is_buyback):
+                # 주가 및 거버넌스 핵심 6대 공시에 해당하지 않거나, 행정 잡무 공시면 알림 피드에서 제외
+                if is_admin_noise or not (is_cb or is_cap or is_risk or is_insider or is_unf or is_buyback):
                     continue
 
                 badge = "특이공시"
@@ -393,12 +394,22 @@ def get_watchlist_health_check(x_user_id: str = Header(None)):
                     elif is_risk: badge = "상장위험"
                     elif is_unf: badge = "공시위반"
                 elif is_insider:
-                    badge = "지분변동 (큰손)"
-                    badge_type = "info"
-                    display_title = f"큰손/임원 지분 보유상황 변동: {flr}"
+                    if "최대주주" in title:
+                        badge = "최대주주 지분"
+                        badge_type = "info"
+                        display_title = f"👑 최대주주 소유주식 변동 신고 ({flr})"
+                    elif "대량보유" in title:
+                        badge = "슈퍼개미 (5%↑)"
+                        badge_type = "info"
+                        display_title = f"🚨 5% 이상 대량보유 지분 변동: {flr}"
+                    else:
+                        badge = "임원 지분보고"
+                        badge_type = "info"
+                        display_title = f"💼 임원/주요주주 특정증권 소유상황 보고 ({flr})"
                 elif is_buyback:
                     badge = "자사주 (주주환원)"
                     badge_type = "positive"
+                    display_title = f"🔄 주주가치 제고를 위한 자기주식 취득/처분 결정"
                     
                 clean_disclosures.append({
                     "symbol": sym,
