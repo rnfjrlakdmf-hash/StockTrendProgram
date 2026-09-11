@@ -289,6 +289,114 @@ def send_opening_notification(market: str):
                 except Exception as e:
                     print(f"[Scheduler-Error] Failed to save open alert to DB: {e}")
 
+def get_market_major_investor_trend():
+    """
+    네이버 금융 실시간 모바일 API를 통해 코스피/코스닥의 당일 외국인, 기관, 개인 순매수 데이터를 안전하게 수집합니다.
+    단위: 억 원
+    """
+    import urllib.request
+    import json
+    
+    flow_data = {
+        "kospi": {"foreign": 0, "institution": 0, "personal": 0},
+        "kosdaq": {"foreign": 0, "institution": 0, "personal": 0}
+    }
+    
+    def _parse_val(v_str):
+        if not v_str: return 0
+        try:
+            return int(str(v_str).replace(',', '').replace('+', ''))
+        except:
+            return 0
+            
+    for m_key, m_code in [("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")]:
+        try:
+            req = urllib.request.Request(
+                f"https://m.stock.naver.com/api/index/{m_code}/trend",
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+            )
+            with urllib.request.urlopen(req, timeout=3) as res:
+                if res.status == 200:
+                    d = json.loads(res.read().decode('utf-8'))
+                    flow_data[m_key] = {
+                        "foreign": _parse_val(d.get("foreignValue")),
+                        "institution": _parse_val(d.get("institutionalValue")),
+                        "personal": _parse_val(d.get("personalValue"))
+                    }
+        except Exception as e:
+            print(f"[Scheduler-Trend] Failed to fetch {m_code} trend: {e}")
+            
+    return flow_data
+
+def format_krw_amount_korean(amt_eok):
+    """억 원 단위 숫자를 +1.9조원, -2.3조원, +5,120억원 등 가독성 높은 우리말 표기로 변환"""
+    sign = "+" if amt_eok > 0 else "-" if amt_eok < 0 else ""
+    abs_v = abs(amt_eok)
+    if abs_v >= 10000:
+        jo = abs_v / 10000.0
+        return f"{sign}{jo:.1f}조원"
+    elif abs_v > 0:
+        return f"{sign}{abs_v:,.0f}억원"
+    else:
+        return "0원"
+
+def generate_market_closing_diagnosis(market, kospi_info, kosdaq_info, flow_data, fx_rate):
+    """
+    지수 등락률, 외국인/기관 수급 방향, 환율 변동을 종합 분석하여
+    전문 애널리스트 데스크 브리핑 수준의 품격 있는 시장 해석을 자동 생성합니다.
+    """
+    if market == "KR":
+        k_pct_str = kospi_info.get("percent", "0.00%").replace("%", "").replace("+", "")
+        try:
+            k_pct = float(k_pct_str)
+        except:
+            k_pct = 0.0
+            
+        k_flow = flow_data.get("kospi", {})
+        frgn = k_flow.get("foreign", 0)
+        inst = k_flow.get("institution", 0)
+        
+        # 1. 외인 & 기관 동반 순매도 (쌍끌이 매도)
+        if frgn < -1000 and inst < -1000:
+            if k_pct < -1.0:
+                diagnosis = "메이저 양매도 출회로 지수 하방 압력 심화 · 단기 리스크 관리 및 방어적 관망세 권장"
+                sentiment = "risk_off"
+            else:
+                diagnosis = "외인·기관 동반 차익 매물 출회 속 지수 숨고르기 · 대형주 중심 차별화 장세"
+                sentiment = "neutral"
+        # 2. 외인 & 기관 동반 순매수 (쌍끌이 매수)
+        elif frgn > 1000 and inst > 1000:
+            diagnosis = "외인·기관 쌍끌이 대규모 순매수 유입 · 실적주 및 주도 섹터 중심 강한 반등 모멘텀"
+            sentiment = "risk_on"
+        # 3. 외국인 단독 순매수 주도
+        elif frgn > 1000:
+            diagnosis = "외국인 스마트머니 집중 유입 지속 · 반도체/대형 기술주 중심 순환매 주도"
+            sentiment = "risk_on"
+        # 4. 기관 단독 순매수
+        elif inst > 1000:
+            diagnosis = "기관계 프로그램 저가 매수세 유입 · 코스피 하방 지지력 테스트 국면"
+            sentiment = "neutral"
+        # 5. 개인만 대규모 순매수
+        elif frgn < -2000:
+            diagnosis = "외인 대량 차익실현 매물을 개인이 흡수 · 변동성 확대 주의 및 지지선 확인 필요"
+            sentiment = "cautious"
+        else:
+            if k_pct > 0.5:
+                diagnosis = "투자심리 개선 속 견조한 상승 마감 · 주요 업종별 순환매 흐름 지속"
+                sentiment = "risk_on"
+            elif k_pct < -0.5:
+                diagnosis = "거시 환경 변동성 속 지수 조정 마감 · 실적 우량주 위주 선별적 대응 유효"
+                sentiment = "cautious"
+            else:
+                diagnosis = "뚜렷한 모멘텀 부재 속 보합권 혼조세 · 실적 발표 및 글로벌 매크로 이벤트 대기"
+                sentiment = "neutral"
+                
+        return diagnosis, sentiment
+    else:
+        # 미국장 진단
+        return "글로벌 금리 및 경기 지표 추이에 따른 기술주/가치주 섹터별 로테이션 장세", "neutral"
+
+
 def send_closing_notification(market: str):
     """시장 마감 리포트 발송 로직 (기본 지수 + 맞춤형 지수 하이브리드)"""
     initialize_firebase()
@@ -392,6 +500,10 @@ def send_closing_notification(market: str):
         "FX": get_alpha_vantage_fx(),
         "TSLA": get_safe_quote("TSLA")
     }
+
+    # 당일 시장 전체 외국인/기관/개인 수급 및 전문 진단 산출
+    flow_data = get_market_major_investor_trend() if market == "KR" else {}
+    diagnosis, sentiment = generate_market_closing_diagnosis(market, kospi_info, kosdaq_info, flow_data, common['FX'].get('price', '1350'))
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -515,8 +627,39 @@ def send_closing_notification(market: str):
                             line += f"\n      [{p['idx']}차] {p['qty']:g}주: {p_diff_str}{unit} ({p_perf:+.1f}%)"
                             
                 price_list.append(line)
+            # 전문 마켓 시황 본문 구성 (지수 + 매크로 + 메이저 수급 + 마켓 진단)
+            if market == "KR":
+                base_market_str = f"📊 {common['KOSPI']}\n📊 {common['KOSDAQ']}"
+                fx_val = common['FX'].get('price', '1,350')
+                fx_str = f"💵 환율: {fx_val}원"
                 
-            body_market = (market_summary + "(단순 시황 요약 · 투자 참고용)").strip()
+                k_flow = flow_data.get("kospi", {})
+                frgn_str = format_krw_amount_korean(k_flow.get("foreign", 0))
+                inst_str = format_krw_amount_korean(k_flow.get("institution", 0))
+                retail_str = format_krw_amount_korean(k_flow.get("personal", 0))
+                supply_market_line = f"🌊 메이저 수급: 외인 {frgn_str} · 기관 {inst_str} (개인 {retail_str})"
+            else:
+                base_market_str = f"🇺🇸 {common['NASDAQ']}\n🇺🇸 {common['SP500']}"
+                fx_str = ""
+                supply_market_line = ""
+
+            macro_items = []
+            if fx_str: macro_items.append(fx_str)
+            macro_items.append(f"🛢️ 유가: {common['OIL'].get('change')}")
+            if any(s in ['005930', '000660', 'NVDA', 'AMD', 'TSM'] for s in symbols) and common['SOX'] and common['SOX'] != "반도체지수: -":
+                macro_items.append(f"💻 반도체: {common['SOX']}")
+            if any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL'] for s in symbols) or market == "US":
+                macro_items.append(f"📈 금리: {common['TNX'].get('price')}%")
+
+            macro_market_line = " | ".join(macro_items[:3])
+            diag_market_line = f"💡 [마켓 진단] {diagnosis}"
+
+            lines_market = [base_market_str]
+            if macro_market_line: lines_market.append(macro_market_line)
+            if supply_market_line: lines_market.append(supply_market_line)
+            lines_market.append(diag_market_line)
+            lines_market.append("(한국거래소 정규장 종가 기준 · 단순 시황 통계)")
+            body_market = "\n".join(lines_market)
             title_market = f"🌕 {market_name} 장마감 시황"
             
             # 1. MVP (최고 효자 종목) & 약세 종목 산출
@@ -552,8 +695,35 @@ def send_closing_notification(market: str):
             if tokens_data:
                 tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
                 if tokens:
-                    # 1. 시장 지수 요약 알림
-                    send_multicast_notification(tokens, title_market, body_market, {"url": "/discovery", "type": "market_summary"}, target_users=[user_id])
+                    # 1. 시장 지수 요약 알림 (구조화된 프리미엄 메타데이터 포함)
+                    k_flow = flow_data.get("kospi", {})
+                    kq_flow = flow_data.get("kosdaq", {})
+                    market_payload = {
+                        "url": "/discovery",
+                        "type": "market_summary",
+                        "market": market,
+                        "sentiment": sentiment,
+                        "diagnosis": diagnosis,
+                        "kospi_val": str(kospi_info.get("value", "")),
+                        "kospi_chg": str(kospi_info.get("change", "")),
+                        "kospi_pct": str(kospi_info.get("percent", "")),
+                        "kospi_dir": str(kospi_info.get("direction", "")),
+                        "kosdaq_val": str(kosdaq_info.get("value", "")),
+                        "kosdaq_chg": str(kosdaq_info.get("change", "")),
+                        "kosdaq_pct": str(kosdaq_info.get("percent", "")),
+                        "kosdaq_dir": str(kosdaq_info.get("direction", "")),
+                        "usd_krw": str(common['FX'].get('price', '')),
+                        "wti_oil": str(common['OIL'].get('change', '')),
+                        "sox": str(common['SOX']),
+                        "tnx": str(common['TNX'].get('price', '')),
+                        "frgn_kospi": format_krw_amount_korean(k_flow.get("foreign", 0)),
+                        "inst_kospi": format_krw_amount_korean(k_flow.get("institution", 0)),
+                        "retail_kospi": format_krw_amount_korean(k_flow.get("personal", 0)),
+                        "frgn_kosdaq": format_krw_amount_korean(kq_flow.get("foreign", 0)),
+                        "inst_kosdaq": format_krw_amount_korean(kq_flow.get("institution", 0)),
+                        "retail_kosdaq": format_krw_amount_korean(kq_flow.get("personal", 0)),
+                    }
+                    send_multicast_notification(tokens, title_market, body_market, market_payload, target_users=[user_id])
                     
                     try:
                         conn = get_db_connection()
