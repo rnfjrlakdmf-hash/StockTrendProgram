@@ -834,6 +834,14 @@ function formatUsdToKrwInText(text: string): string {
             cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(168,185,129,0.15)]";
             accentBorder = "border-l-4 border-l-emerald-400";
         } 
+        // [1-2순위: 장시작 시가 알림]
+        else if ((alert.body || '').includes('관심종목 시가입니다') || (alert.body || '').includes('시가입니다') || titleText.includes('시가 알림') || titleText.includes('장시작')) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "☀️ 장시작 시가 알림";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+            defaultCta = { href: "/watchlist", label: "내 관심종목 실시간 시세 보기", icon: TrendingUp, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
+        }
         // [2순위: 리포트 및 결산]
         else if (isPortfolio) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
@@ -931,6 +939,12 @@ function formatUsdToKrwInText(text: string): string {
                             .replace(/[\uFFFD\uFFFE\uFFFF]/g, '') // 깨진 물음표 기호 제거
                             .replace(/^👤\s*/, '🚨 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 👤를 🚨로 안전 대체
                             .trim();
+
+                        // [보정] 본문이 시가 알림인데 급등 제목으로 잘못 붙은 경우 올바르게 교정
+                        const bodyText = alert.body || '';
+                        if (bodyText.includes('관심종목 시가입니다') || bodyText.includes('시가입니다') || t.includes('시가 알림')) {
+                            return '☀️ [국내 장시작] 관심종목 시가 알림';
+                        }
                         // 앞머리 이모지 중복 정리
                         t = t.replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])/, '$2');
                         // 이모지가 없거나 제거된 경우 깔끔한 기본 이모지 부여

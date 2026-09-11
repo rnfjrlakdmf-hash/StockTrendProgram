@@ -384,6 +384,13 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             )
             return sanitize_notification_text(new_title, new_body)
 
+    # 1-2. [NEW] 장시작 관심종목 시가 알림 (급등 알림으로 오염 방지)
+    elif alert_type in ['market_open', 'open_alert'] or any(k in clean_title for k in ["장시작", "시가 알림"]) or "관심종목 시가입니다" in clean_no_interp:
+        new_title = clean_title if clean_title else "☀️ [국내 장시작] 관심종목 시가 알림"
+        body_no_interp = clean_no_interp
+        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+        return sanitize_notification_text(new_title, new_body)
+
     # 2. 가격 급등 / 급락 / 52주 신고가 알림
     elif alert_type in ['auto_price_alert', 'price_alert'] or any(k in clean_title for k in ["급등", "급락", "신고가"]):
         company = (data or {}).get("corp") or (data or {}).get("company") or (data or {}).get("stock_name") or ""

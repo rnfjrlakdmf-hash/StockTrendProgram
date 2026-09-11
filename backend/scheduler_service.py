@@ -276,7 +276,7 @@ def send_opening_notification(market: str):
             # 장시작 알림은 pref_price(가격알림) 권한으로 필터 (pref_closing 아님!)
             tokens = [t['token'] for t in tokens_data if t.get('pref_price', True)]
             if tokens:
-                send_multicast_notification(tokens, title, body, {"type": "price_alert", "url": "/watchlist"}, target_users=[user_id])
+                send_multicast_notification(tokens, title, body, {"type": "market_open", "url": "/watchlist"}, target_users=[user_id])
                 try:
                     conn = get_db_connection()
                     cursor = conn.cursor()
