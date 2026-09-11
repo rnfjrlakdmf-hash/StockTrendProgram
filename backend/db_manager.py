@@ -391,8 +391,23 @@ def init_db():
     except: pass
     try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_insider_alert BOOLEAN DEFAULT 1")
     except: pass
+    try: cursor.execute("ALTER TABLE fcm_tokens ADD COLUMN pref_calendar_alert BOOLEAN DEFAULT 1")
+    except: pass
     
-    print("[DB] FCM tokens table created")
+    # [NEW] 실적·배당 캘린더 개별 카드 알림 예약/해제 테이블
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS calendar_alert_prefs (
+            user_id TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            is_enabled BOOLEAN DEFAULT 1,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, symbol, event_type, event_date)
+        )
+    """)
+    
+    print("[DB] FCM tokens table and calendar alert prefs table ready")
 
     # [NEW] User Portfolio Table (Manual Entry)
     cursor.execute('''
@@ -1809,6 +1824,7 @@ def get_fcm_preferences(token: str):
             "pref_whale_alert": bool(row_dict.get("pref_whale_alert", True)),
             "pref_insider_alert": bool(row_dict.get("pref_insider_alert", True)),
             "pref_watchlist_live": bool(row_dict.get("pref_watchlist_live", True)),
+            "pref_calendar_alert": bool(row_dict.get("pref_calendar_alert", True)),
             "user_id": row_dict.get("user_id", "guest")
         }
     conn.close()
@@ -1820,7 +1836,7 @@ def update_fcm_preferences(token: str, prefs: dict):
     try:
         cursor.execute("""
             UPDATE fcm_tokens 
-            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_ipo = ?, pref_dividend = ?, pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?
+            SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?, pref_watch_compact = ?, pref_ipo = ?, pref_dividend = ?, pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?, pref_calendar_alert = ?
             WHERE token = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
@@ -1833,6 +1849,7 @@ def update_fcm_preferences(token: str, prefs: dict):
             1 if prefs.get('pref_whale_alert', True) else 0,
             1 if prefs.get('pref_insider_alert', True) else 0,
             1 if prefs.get('pref_watchlist_live', True) else 0,
+            1 if prefs.get('pref_calendar_alert', True) else 0,
             token
         ))
         conn.commit()
@@ -1853,7 +1870,7 @@ def get_user_fcm_preferences_by_user_id(user_id: str):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT pref_morning, pref_closing, pref_price, pref_news, pref_watch_compact,
-               pref_ipo, pref_dividend, pref_whale_alert, pref_insider_alert, pref_watchlist_live
+               pref_ipo, pref_dividend, pref_whale_alert, pref_insider_alert, pref_watchlist_live, pref_calendar_alert
         FROM fcm_tokens
         WHERE user_id = ?
         ORDER BY last_used DESC
@@ -1874,8 +1891,87 @@ def get_user_fcm_preferences_by_user_id(user_id: str):
         "pref_whale_alert": bool(row[7]),
         "pref_insider_alert": bool(row[8]),
         "pref_watchlist_live": bool(row[9]),
+        "pref_calendar_alert": bool(row[10]) if len(row) > 10 and row[10] is not None else True,
         "user_id": user_id
     }
+
+
+# ==============================================================================
+# [NEW] 실적·배당 캘린더 개별 카드 알림 예약/해제 헬퍼 함수들
+# ==============================================================================
+def get_user_calendar_alert_prefs(user_id: str) -> dict:
+    """사용자가 캘린더의 특정 일정에 대해 설정한 ON/OFF 상태를 딕셔너리로 반환"""
+    if not user_id:
+        return {}
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS calendar_alert_prefs (
+                user_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                event_date TEXT NOT NULL,
+                is_enabled BOOLEAN DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, symbol, event_type, event_date)
+            )
+        """)
+        cursor.execute("""
+            SELECT symbol, event_type, event_date, is_enabled
+            FROM calendar_alert_prefs
+            WHERE user_id = ?
+        """, (str(user_id),))
+        rows = cursor.fetchall()
+        # 키 형식: f"{symbol}_{event_type}_{event_date}" -> bool
+        return {f"{r[0]}_{r[1]}_{r[2]}": bool(r[3]) for r in rows}
+    except Exception as e:
+        print(f"[DB] get_user_calendar_alert_prefs error: {e}")
+        return {}
+    finally:
+        conn.close()
+
+def toggle_calendar_alert_pref(user_id: str, symbol: str, event_type: str, event_date: str, is_enabled: bool = None) -> bool:
+    """사용자가 특정 캘린더 카드의 알림을 켜거나 끔 (is_enabled 미지정 시 반전)"""
+    if not user_id or not symbol or not event_date:
+        return False
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS calendar_alert_prefs (
+                user_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                event_date TEXT NOT NULL,
+                is_enabled BOOLEAN DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, symbol, event_type, event_date)
+            )
+        """)
+        cursor.execute("""
+            SELECT is_enabled FROM calendar_alert_prefs
+            WHERE user_id = ? AND symbol = ? AND event_type = ? AND event_date = ?
+        """, (str(user_id), symbol, event_type, event_date))
+        row = cursor.fetchone()
+        
+        if is_enabled is None:
+            # 기존 레코드가 없으면 기본이 ON(1)이었으므로 끄기(0)로 토글, 있으면 반전
+            new_state = 0 if (row is None or row[0] == 1) else 1
+        else:
+            new_state = 1 if is_enabled else 0
+            
+        cursor.execute("""
+            INSERT OR REPLACE INTO calendar_alert_prefs (user_id, symbol, event_type, event_date, is_enabled, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """, (str(user_id), symbol, event_type, event_date, new_state))
+        conn.commit()
+        return bool(new_state)
+    except Exception as e:
+        print(f"[DB] toggle_calendar_alert_pref error: {e}")
+        return True
+    finally:
+        conn.close()
 
 
 def update_all_user_fcm_preferences(user_id: str, prefs: dict):
@@ -1890,7 +1986,7 @@ def update_all_user_fcm_preferences(user_id: str, prefs: dict):
             UPDATE fcm_tokens
             SET pref_morning = ?, pref_closing = ?, pref_price = ?, pref_news = ?,
                 pref_watch_compact = ?, pref_ipo = ?, pref_dividend = ?,
-                pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?
+                pref_whale_alert = ?, pref_insider_alert = ?, pref_watchlist_live = ?, pref_calendar_alert = ?
             WHERE user_id = ?
         """, (
             1 if prefs.get('pref_morning', True) else 0,
@@ -1903,6 +1999,7 @@ def update_all_user_fcm_preferences(user_id: str, prefs: dict):
             1 if prefs.get('pref_whale_alert', True) else 0,
             1 if prefs.get('pref_insider_alert', True) else 0,
             1 if prefs.get('pref_watchlist_live', True) else 0,
+            1 if prefs.get('pref_calendar_alert', True) else 0,
             user_id
         ))
         conn.commit()

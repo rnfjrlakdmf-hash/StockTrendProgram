@@ -707,7 +707,7 @@ def get_calendar_events():
         return {"status": "error", "message": str(e)}
 
 @router.get("/calendar/watchlist")
-def get_watchlist_events(symbols: str = ""):
+def get_watchlist_events(symbols: str = "", x_user_id: str = Header(None)):
     """
     [관심종목 전용 v3] DART 공시(한국) + 정기 실적/배당 캘린더 엔진 + yfinance(미국) 병합으로
     실적/배당/수주계약/IR/자사주 일정을 완벽 수집합니다.
@@ -1053,6 +1053,20 @@ def get_watchlist_events(symbols: str = ""):
             seen.add(key)
             final_events.append(ev)
 
+    # [NEW] 사용자별 개별 알림 커스텀 설정 매핑
+    user_alert_prefs = {}
+    if x_user_id:
+        try:
+            from db_manager import get_user_calendar_alert_prefs
+            user_alert_prefs = get_user_calendar_alert_prefs(x_user_id)
+        except Exception as e:
+            print(f"[Calendar] Failed to load user alert prefs: {e}")
+
+    for ev in final_events:
+        pref_key = f"{ev.get('symbol')}_{ev.get('type')}_{ev.get('date')}"
+        # 사용자가 명시적으로 끈 적이 없으면 기본 True(알림 켜짐)
+        ev["alert_enabled"] = user_alert_prefs.get(pref_key, True)
+
     return {
         "status": "success",
         "data": final_events,
@@ -1061,6 +1075,33 @@ def get_watchlist_events(symbols: str = ""):
         "fetched": len(symbol_list),
         "total_count": len(final_events)
     }
+
+
+from pydantic import BaseModel
+
+class CalendarAlertToggleRequest(BaseModel):
+    symbol: str
+    event_type: str
+    event_date: str
+    is_enabled: Optional[bool] = None
+
+@router.post("/calendar/alert-toggle")
+def toggle_watchlist_calendar_alert(req: CalendarAlertToggleRequest, x_user_id: str = Header(None)):
+    """관심종목 캘린더 개별 카드 알림 켜기/끄기 토글"""
+    if not x_user_id:
+        return {"status": "error", "message": "로그인이 필요합니다."}
+    try:
+        from db_manager import toggle_calendar_alert_pref
+        new_state = toggle_calendar_alert_pref(x_user_id, req.symbol, req.event_type, req.event_date, req.is_enabled)
+        return {
+            "status": "success",
+            "symbol": req.symbol,
+            "event_type": req.event_type,
+            "event_date": req.event_date,
+            "alert_enabled": new_state
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 

@@ -77,6 +77,7 @@ export default function SettingsPage() {
         pref_whale_alert: true,
         pref_insider_alert: true,
         pref_watchlist_live: true,
+        pref_calendar_alert: true,
         pref_watch_compact: false,
     });
 
@@ -566,6 +567,7 @@ export default function SettingsPage() {
                                         { key: 'pref_price', icon: '🚨', title: '가격 변동 알림', desc: '손절/익절 목표가 도달 즉시', activeColor: 'bg-green-500' },
                                         { key: 'pref_news', icon: '⚡', title: '관심종목 속보', desc: '중요 뉴스 및 공시 알림', activeColor: 'bg-green-500' },
                                         { key: 'pref_dividend', icon: '💰', title: '배당락일 알림', desc: '배당락일 전날 잊지 않게 미리', activeColor: 'bg-green-500' },
+                                        { key: 'pref_calendar_alert', icon: '📅', title: '실적·배당 캘린더 D-Day 알림', desc: '실적발표 및 배당기준일 D-7, D-1, 당일 아침 자동 알림', activeColor: 'bg-emerald-500', isHighlight: true },
                                         { key: 'pref_ipo', icon: '🚀', title: '모든 공모주 전체 일정', desc: '공모주 청약/상장일 (개별종목은 해제)', activeColor: 'bg-green-500' },
                                         { key: 'pref_whale_alert', icon: '🐋', title: '세력/대주주 매집', desc: '단일판매, 증자, 5% 이상 대량 매집 포착', activeColor: 'bg-rose-500', isHighlight: true },
                                         { key: 'pref_insider_alert', icon: '🕵️', title: '내부자 거래 포착', desc: '임원/CEO 등 내부자 주식 매수/매도 실시간 포착', activeColor: 'bg-rose-500', isHighlight: true },

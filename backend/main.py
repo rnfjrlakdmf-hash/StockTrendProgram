@@ -319,7 +319,7 @@ async def startup_event():
 
         # 5. 공시 및 시간별 브리핑 스케줄러 시작
         try:
-            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop, seo_blog_scheduler_loop, google_indexer_scheduler_loop, dividend_alerts_scheduler_loop, weekly_blog_bot_scheduler_loop, weekend_report_scheduler_loop, cleanup_alerts_scheduler_loop, cleanup_system_logs_scheduler_loop, fomo_alert_scheduler_loop, dormant_user_scheduler_loop, whale_alert_scheduler_loop, dart_whale_scheduler_loop, sec_whale_scheduler_loop, premium_report_scheduler_loop
+            from scheduler import disclosure_scheduler_loop, hourly_briefing_scheduler_loop, auto_blog_scheduler_loop, watchdog_scheduler_loop, seo_blog_scheduler_loop, google_indexer_scheduler_loop, dividend_alerts_scheduler_loop, weekly_blog_bot_scheduler_loop, weekend_report_scheduler_loop, cleanup_alerts_scheduler_loop, cleanup_system_logs_scheduler_loop, fomo_alert_scheduler_loop, dormant_user_scheduler_loop, whale_alert_scheduler_loop, dart_whale_scheduler_loop, sec_whale_scheduler_loop, premium_report_scheduler_loop, calendar_alerts_scheduler_loop
             from ranking_calculator import ranking_calculator_loop
             
             asyncio.create_task(disclosure_scheduler_loop())
@@ -340,6 +340,7 @@ async def startup_event():
             # asyncio.create_task(dart_whale_scheduler_loop())        # 🇰🇷 DART 대량보유/임원거래 (5분) - 중복 발송 버그로 인해 비활성화 (scheduler.py의 disclosure_bot이 통합 처리함)
             asyncio.create_task(sec_whale_scheduler_loop())         # 🇺🇸 SEC Form4/13F (5분)
             asyncio.create_task(premium_report_scheduler_loop())    # 💎 VIP 프리미엄 리포트 (15:45)
+            asyncio.create_task(calendar_alerts_scheduler_loop())   # 📅 실적·배당 캘린더 D-Day 다가옴 자동 알림 (08:30)
         except Exception as e:
             print(f"Error starting schedulers: {e}")
 

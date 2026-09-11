@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu, ShieldCheck, ShieldAlert, CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, BellOff, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu, ShieldCheck, ShieldAlert, CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
@@ -200,7 +200,10 @@ export default function WatchlistPage() {
         if (!symbols) return;
         setEventsLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/calendar/watchlist?symbols=${symbols}`);
+            const uid = user?.id || (user as any)?.uid;
+            const res = await fetch(`${API_BASE_URL}/api/market/calendar/watchlist?symbols=${symbols}`, {
+                headers: uid ? { "X-User-ID": uid } : {}
+            });
             const json = await res.json();
             if (json && json.status === "success" && Array.isArray(json.data)) {
                 setEventEvents(json.data);
@@ -212,6 +215,43 @@ export default function WatchlistPage() {
             setEventEvents([]);
         } finally {
             setEventsLoading(false);
+        }
+    };
+
+    const handleToggleCalendarAlert = async (ev: any) => {
+        const uid = user?.id || (user as any)?.uid;
+        if (!uid) {
+            alert("로그인 후 알림을 설정할 수 있습니다.");
+            return;
+        }
+
+        const currentState = ev.alert_enabled !== false; // 기본값 True
+        const nextState = !currentState;
+
+        // 낙관적 UI 업데이트
+        setEventEvents(prev => prev.map(item => {
+            if (item.symbol === ev.symbol && item.type === ev.type && item.date === ev.date) {
+                return { ...item, alert_enabled: nextState };
+            }
+            return item;
+        }));
+
+        try {
+            await fetch(`${API_BASE_URL}/api/market/calendar/alert-toggle`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-User-ID": uid
+                },
+                body: JSON.stringify({
+                    symbol: ev.symbol,
+                    event_type: ev.type,
+                    event_date: ev.date,
+                    is_enabled: nextState
+                })
+            });
+        } catch (e) {
+            console.error("Failed to toggle calendar alert:", e);
         }
     };
 
@@ -762,6 +802,12 @@ export default function WatchlistPage() {
                                         💡 <strong className="text-zinc-200">알림센터(전체 공시)와 다른 점:</strong> 임원 지분변동 등 자잘한 일상 공시는 제외하고, 
                                         투자자가 꼭 챙겨야 할 <strong className="text-emerald-400">실적발표 D-Day</strong>, <strong className="text-emerald-400">배당기준일</strong>, <strong className="text-emerald-400">분기별 확정 재무제표</strong>만 엄선하여 제공합니다.
                                     </p>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 p-2.5 px-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 leading-snug">
+                                        <BellRing className="w-4 h-4 shrink-0 text-emerald-400" />
+                                        <span>
+                                            <strong>D-Day 스마트 자동 알림:</strong> 관심종목에 등록된 종목은 실적발표와 배당기준일이 <strong>D-7, D-1, 당일</strong>로 다가오면 푸시 알림을 자동 전송합니다. (카드별 <strong>[🔔 알림]</strong> 버튼으로 개별 끄기/켜기 가능)
+                                        </span>
+                                    </div>
                                 </div>
                                 {eventEvents.length > 0 && (
                                     <span className="self-start sm:self-center px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-black shrink-0">
@@ -940,14 +986,41 @@ export default function WatchlistPage() {
                                                                                     </p>
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`px-3 py-1 rounded-xl text-xs font-black shadow-md ${
-                                                                                dInfo.diff <= 7 
-                                                                                    ? "bg-red-500 text-white animate-pulse" 
-                                                                                    : dInfo.diff <= 30 
-                                                                                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" 
-                                                                                        : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                                                            }`}>
-                                                                                {dInfo.label}
+                                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                                <div className={`px-2.5 py-1 rounded-xl text-xs font-black shadow-md ${
+                                                                                    dInfo.diff <= 7 
+                                                                                        ? "bg-red-500 text-white animate-pulse" 
+                                                                                        : dInfo.diff <= 30 
+                                                                                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" 
+                                                                                            : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                                                                }`}>
+                                                                                    {dInfo.label}
+                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleToggleCalendarAlert(ev);
+                                                                                    }}
+                                                                                    className={`px-2 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 cursor-pointer active:scale-95 ${
+                                                                                        ev.alert_enabled !== false
+                                                                                            ? "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40"
+                                                                                            : "bg-zinc-800/80 hover:bg-zinc-800 text-zinc-400 border-white/10"
+                                                                                    }`}
+                                                                                    title={ev.alert_enabled !== false ? "D-7, D-1 푸시 알림 예약됨 (클릭하여 끄기)" : "알림 꺼짐 (클릭하여 켜기)"}
+                                                                                >
+                                                                                    {ev.alert_enabled !== false ? (
+                                                                                        <>
+                                                                                            <BellRing className="w-3 h-3 text-emerald-400" />
+                                                                                            <span>알림</span>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <BellOff className="w-3 h-3 text-zinc-500" />
+                                                                                            <span>꺼짐</span>
+                                                                                        </>
+                                                                                    )}
+                                                                                </button>
                                                                             </div>
                                                                         </div>
 

@@ -1399,3 +1399,66 @@ async def premium_report_scheduler_loop():
         except Exception as e:
             logger.error(f"[Premium Report] Loop error: {e}")
             await asyncio.sleep(60)
+
+
+async def calendar_alerts_scheduler_loop():
+    """
+    📅 실적·배당 캘린더 D-Day(D-7, D-1, 당일 아침) 다가옴 자동 알림 스케줄러
+    평일 매일 08:30 KST (정규장 개장 30분 전) 1회 자동 실행
+    """
+    import pytz
+    import os
+    import json
+    from datetime import datetime
+
+    kst = pytz.timezone('Asia/Seoul')
+    logger.info("[Calendar D-Day Alert] Scheduler Active. Runs daily at 08:30 KST.")
+
+    state_file = os.path.join(os.path.dirname(__file__), "calendar_scheduler_state.json")
+
+    def load_state():
+        if os.path.exists(state_file):
+            try:
+                with open(state_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                pass
+        return {}
+
+    def save_state(state):
+        try:
+            with open(state_file, 'w', encoding='utf-8') as f:
+                json.dump(state, f)
+        except:
+            pass
+
+    while True:
+        try:
+            now = datetime.now(kst)
+            weekday = now.weekday()
+            current_date = now.strftime("%Y-%m-%d")
+
+            # 평일 08:30 이후 실행 (주말 제외)
+            if weekday < 5 and (now.hour > 8 or (now.hour == 8 and now.minute >= 30)):
+                state = load_state()
+                last_run = state.get("last_run_date", "")
+
+                if last_run != current_date:
+                    logger.info("[Calendar D-Day Alert] Triggering daily D-Day schedule scan...")
+                    try:
+                        import asyncio
+                        from calendar_alerts import check_and_send_calendar_dday_alerts
+                        await asyncio.to_thread(check_and_send_calendar_dday_alerts)
+
+                        state["last_run_date"] = current_date
+                        save_state(state)
+                    except Exception as e:
+                        logger.error(f"[Calendar D-Day Alert] Execution error: {e}")
+
+            # 1분 단위 체크
+            await asyncio.sleep(60)
+
+        except Exception as e:
+            logger.error(f"[Calendar D-Day Alert] Loop error: {e}")
+            await asyncio.sleep(60)
+
