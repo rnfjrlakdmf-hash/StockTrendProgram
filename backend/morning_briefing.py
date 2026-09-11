@@ -99,9 +99,18 @@ class MorningBriefingService:
         if is_kr:
             try:
                 from korea_data import get_naver_investor_data
-                inv_res = get_naver_investor_data(symbol, trader_day=1)
+                inv_res = get_naver_investor_data(symbol, trader_day=5)
                 if inv_res.get("status") == "success" and inv_res.get("data", {}).get("trend"):
-                    trend_data = inv_res["data"]["trend"][0]
+                    trend_list = inv_res["data"]["trend"]
+                    # 장전(오전 9시 전)이거나 거래량이 0인 당일 임시 placeholder 대신, 실제 거래가 마감되어 개인 수급까지 확정된 전일 데이터 선택
+                    trend_data = None
+                    for t in trend_list:
+                        if t.get("volume", 0) > 0 or t.get("retail", 0) != 0:
+                            trend_data = t
+                            break
+                    if not trend_data and trend_list:
+                        trend_data = trend_list[0]
+
                     retail = trend_data.get("retail", 0)
                     foreigner = trend_data.get("foreigner", 0)
                     institution = trend_data.get("institution", 0)
