@@ -10,7 +10,7 @@ import {
     ChevronRight, AlertCircle, Clock, CheckCircle2, XCircle, TrendingUp, 
     TrendingDown, Eye, Calendar, Building2, Tag, Info, Database, BellRing,
     Sparkles, Compass, Zap, ShieldCheck, Flame, Layers, ExternalLink,
-    Search, Filter, Globe, Crown, ShieldAlert, Lock
+    Search, Filter, Globe, Crown, ShieldAlert, Lock, FileText
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import KakaoAdFit from "@/components/KakaoAdFit";
@@ -736,6 +736,286 @@ function formatUsdToKrwInText(text: string): string {
         );
     };
 
+    // Render Dedicated Morning Briefing Micro-Bento
+    const renderMorningBriefingCardContent = (alert: any) => {
+        const text = alert.body || '';
+        const lines = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
+        const title = (alert.title || '').trim();
+
+        // 1. 종목명 추출 (제목: "📰 삼성중공업 간추린 모닝 팩트" 또는 alert.symbol)
+        let stockName = alert.symbol || alert.code || '';
+        const titleMatch = title.match(/^(?:📰\s*)?([가-힣a-zA-Z0-9]+)\s*간추린\s*모닝/);
+        if (titleMatch) {
+            stockName = titleMatch[1];
+        } else if (!stockName && title.includes('모닝 팩트')) {
+            const m = title.replace('📰', '').replace('간추린', '').replace('모닝 팩트', '').replace(/[\[\]]/g, '').trim();
+            if (m) stockName = m;
+        }
+
+        // 종목 코드(symbol) 정제 및 관심종목 매핑 보정
+        const rawSymbol = alert.symbol || alert.code || '';
+        let cleanSymbol = rawSymbol ? (rawSymbol.split('.')[0] || rawSymbol) : '';
+        if (!cleanSymbol || !/^\d{6}$/.test(cleanSymbol)) {
+            const foundIdx = watchlistNames.findIndex(n => n === stockName);
+            if (foundIdx !== -1 && watchlistSymbols[foundIdx]) {
+                cleanSymbol = watchlistSymbols[foundIdx].split('.')[0];
+            }
+        }
+
+        // 2. 전일 종가 및 등락률 파싱
+        let closePriceStr = "";
+        let priceDiffStr = "";
+        let changePctStr = "";
+        let isPriceUp = false;
+
+        // 3. 수급 데이터 파싱 (개인, 외인, 기관)
+        let retailVol = "";
+        let foreignerVol = "";
+        let institutionVol = "";
+
+        // 4. AI 요약 코멘트
+        let aiSummary = "";
+
+        // 5. 뉴스/팩트 리스트
+        interface FactItem {
+            tag: string;
+            tagColor: string;
+            text: string;
+        }
+        const facts: FactItem[] = [];
+
+        lines.forEach((line: string) => {
+            const clean = line.trim();
+
+            // 종가 라인 파싱 (예: 📈 [전일 종가] 21,300원 (▼100원 / -0.47%) 또는 전일 종가: ...)
+            if (clean.includes('전일 종가') || clean.includes('전일종가')) {
+                const priceMatch = clean.match(/([\d,]+원?)/);
+                if (priceMatch) closePriceStr = priceMatch[1];
+
+                const diffMatch = clean.match(/\((.*?)\)/);
+                if (diffMatch) {
+                    const inner = diffMatch[1];
+                    const parts = inner.split('/');
+                    if (parts.length >= 2) {
+                        priceDiffStr = parts[0].trim();
+                        changePctStr = parts[1].trim();
+                    } else {
+                        changePctStr = inner.trim();
+                    }
+                    isPriceUp = !inner.includes('▼') && !inner.includes('-');
+                }
+            }
+            // 수급 라인 파싱 (예: 📊 [전날 수급] 개인: 0주 | 외인: +98.3만주 | 기관: -90.5만주 또는 📌 전날 수급 개인: 0주 외인: +98.3만주 ...)
+            else if (clean.includes('전날 수급') || clean.includes('전일 수급') || (clean.includes('개인:') && clean.includes('외인:'))) {
+                const rMatch = clean.match(/개인[:\s]*([▲▼\-+]?[\d\.]+[만천]?주?)/);
+                if (rMatch) retailVol = rMatch[1];
+
+                const fMatch = clean.match(/외인[:\s]*([▲▼\-+]?[\d\.]+[만천]?주?)/);
+                if (fMatch) foreignerVol = fMatch[1];
+
+                const iMatch = clean.match(/기관[:\s]*([▲▼\-+]?[\d\.]+[만천]?주?)/);
+                if (iMatch) institutionVol = iMatch[1];
+            }
+            // AI 요약 라인 파싱 (예: 🤖 삼성중공업 관련 주가 변동 및 노동조합 활동 소식 또는 📌 🤖 ...)
+            else if (clean.includes('🤖')) {
+                aiSummary = clean.replace(/^(?:📌|▪️|▪|\s)*🤖\s*/, '').trim();
+            }
+            // 그 외 일반 팩트/뉴스 라인
+            else {
+                let factText = clean.replace(/^(?:📌|▪️|▪|\s)+/, '').trim();
+                if (factText && !factText.startsWith('※') && !factText.startsWith('(')) {
+                    let tag = "핵심 이슈";
+                    let tagColor = "bg-zinc-800 text-zinc-300 border-zinc-700";
+
+                    if (/노조|임단협|투쟁|파업|경영진|대표|분쟁|소송/.test(factText)) {
+                        tag = "노사·경영";
+                        tagColor = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                    } else if (/수주|계약|공급|체결|납품|발주/.test(factText)) {
+                        tag = "수주·계약";
+                        tagColor = "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+                    } else if (/실적|매출|영업이익|흑자|적자|순이익|재무/.test(factText)) {
+                        tag = "실적·재무";
+                        tagColor = "bg-blue-500/15 text-blue-300 border-blue-500/30";
+                    } else if (/변동|급등|급락|상승|하락|시황|거래량/.test(factText)) {
+                        tag = "시황·변동";
+                        tagColor = "bg-purple-500/15 text-purple-300 border-purple-500/30";
+                    } else if (/개발|특허|기술|인증|승인|임상|신제품/.test(factText)) {
+                        tag = "기술·혁신";
+                        tagColor = "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
+                    }
+
+                    facts.push({ tag, tagColor, text: factText });
+                }
+            }
+        });
+
+        // alert 객체로부터 주가 정보 보정
+        if (!closePriceStr && alert.current_price && alert.current_price > 0) {
+            closePriceStr = `${alert.current_price.toLocaleString()}원`;
+        }
+
+        // 수급 밸런스 상태 분석
+        const isFPlus = foreignerVol.includes('+') || (!foreignerVol.includes('-') && foreignerVol !== '0주' && foreignerVol !== '');
+        const isFMinus = foreignerVol.includes('-');
+        const isIPlus = institutionVol.includes('+') || (!institutionVol.includes('-') && institutionVol !== '0주' && institutionVol !== '');
+        const isIMinus = institutionVol.includes('-');
+
+        let supplyInsight = "전일 메이저 스마트머니 수급 현황";
+        let supplyBadgeStyle = "bg-zinc-800/80 border-white/10 text-zinc-300";
+
+        if (isFPlus && isIMinus) {
+            supplyInsight = "⚡ 외국인 대량 순매수 유입 vs 기관 매도 공방";
+            supplyBadgeStyle = "bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-500/30 text-amber-300";
+        } else if (isFPlus && isIPlus) {
+            supplyInsight = "🔥 외인·기관 쌍끌이 순매수 유입 (스마트머니 집중 매집)";
+            supplyBadgeStyle = "bg-gradient-to-r from-red-500/15 via-emerald-500/10 to-transparent border-red-500/30 text-red-300";
+        } else if (isFMinus && isIMinus) {
+            supplyInsight = "⚠️ 외인·기관 동반 순매도 (단기 수급 이탈 주의)";
+            supplyBadgeStyle = "bg-gradient-to-r from-blue-500/15 via-indigo-500/10 to-transparent border-blue-500/30 text-blue-300";
+        } else if (isFMinus && isIPlus) {
+            supplyInsight = "🏛️ 기관 순매수 방어 vs 외국인 차익 실현";
+            supplyBadgeStyle = "bg-gradient-to-r from-indigo-500/15 via-cyan-500/10 to-transparent border-indigo-500/30 text-indigo-300";
+        } else if (foreignerVol || institutionVol) {
+            supplyInsight = "📊 메이저 스마트머니 수급 변동성 포착";
+            supplyBadgeStyle = "bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-transparent border-cyan-500/30 text-cyan-300";
+        }
+
+        return (
+            <div className="space-y-4">
+                {/* 1. 상단: 종목명 및 전일 종가 바 */}
+                <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-2xl shadow-inner">
+                    <div className="flex items-center gap-2">
+                        <span className="text-base md:text-lg font-black text-white">{stockName || "관심종목"}</span>
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            장전 브리핑
+                        </span>
+                    </div>
+                    {closePriceStr && (
+                        <div className="text-right">
+                            <span className="text-xs text-gray-400 font-medium mr-1.5">전일 종가</span>
+                            <span className="text-sm md:text-base font-black font-mono text-zinc-100">{closePriceStr}</span>
+                            {changePctStr && (
+                                <span className={`ml-1.5 text-xs font-bold font-mono ${isPriceUp ? 'text-red-400' : 'text-blue-400'}`}>
+                                    {changePctStr}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* 2. 전일 메이저 수급 3분할 칩 */}
+                {(retailVol || foreignerVol || institutionVol) && (
+                    <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                            {/* 외국인 */}
+                            <div className="p-3 bg-zinc-900/90 border border-white/5 rounded-xl flex flex-col justify-between">
+                                <span className="text-[10px] text-gray-400 font-semibold mb-1">외국인 수급</span>
+                                <span className={`text-xs md:text-sm font-black font-mono tracking-tight ${
+                                    isFPlus ? 'text-red-400' : isFMinus ? 'text-blue-400' : 'text-zinc-300'
+                                }`}>
+                                    {foreignerVol || '0주'}
+                                </span>
+                            </div>
+                            {/* 기관 */}
+                            <div className="p-3 bg-zinc-900/90 border border-white/5 rounded-xl flex flex-col justify-between">
+                                <span className="text-[10px] text-gray-400 font-semibold mb-1">기관 수급</span>
+                                <span className={`text-xs md:text-sm font-black font-mono tracking-tight ${
+                                    isIPlus ? 'text-red-400' : isIMinus ? 'text-blue-400' : 'text-zinc-300'
+                                }`}>
+                                    {institutionVol || '0주'}
+                                </span>
+                            </div>
+                            {/* 개인 */}
+                            <div className="p-3 bg-zinc-900/90 border border-white/5 rounded-xl flex flex-col justify-between">
+                                <span className="text-[10px] text-gray-400 font-semibold mb-1">개인 수급</span>
+                                <span className={`text-xs md:text-sm font-black font-mono tracking-tight ${
+                                    retailVol.includes('+') ? 'text-red-400' : retailVol.includes('-') ? 'text-blue-400' : 'text-zinc-300'
+                                }`}>
+                                    {retailVol || '0주'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 수급 밸런스 인사이트 칩 */}
+                        <div className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold ${supplyBadgeStyle}`}>
+                            <span className="truncate">{supplyInsight}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. 장전 핵심 체크 이슈 피드 */}
+                {facts.length > 0 && (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between px-1">
+                            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                                장 시작 전 핵심 이슈
+                            </span>
+                            <span className="text-[10px] text-zinc-500 font-mono">{facts.length}개 이슈</span>
+                        </div>
+                        <div className="space-y-2">
+                            {facts.map((f, fIdx) => (
+                                <div key={fIdx} className="p-3 bg-zinc-900/70 border border-white/5 rounded-xl flex items-start gap-2.5">
+                                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border shrink-0 mt-0.5 ${f.tagColor}`}>
+                                        {f.tag}
+                                    </span>
+                                    <p className="text-xs md:text-sm text-zinc-200 font-medium leading-relaxed">
+                                        {f.text}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. AI 장전 브리핑 코멘트 */}
+                {aiSummary && (
+                    <div className="bg-gradient-to-r from-purple-900/20 via-indigo-900/20 to-zinc-900 border border-purple-500/25 rounded-2xl p-3.5 space-y-2 shadow-sm">
+                        <div className="flex items-center gap-2 text-purple-300">
+                            <Sparkles className="w-4 h-4 text-purple-400" />
+                            <span className="text-xs font-black">AI 모닝 투자 팩트 브리핑</span>
+                        </div>
+                        <p className="text-xs md:text-sm text-purple-100 font-medium leading-relaxed pl-1">
+                            {aiSummary}
+                        </p>
+                        <p className="text-[10px] text-zinc-500 pt-1 border-t border-white/5">
+                            💡 장초반 수급 연속성과 호가 흐름을 확인하며 유연하게 대응하세요.
+                        </p>
+                    </div>
+                )}
+
+                {/* 5. 원터치 퀵 액션 버튼 바 */}
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+                    <Link
+                        href={cleanSymbol ? `/discovery?q=${cleanSymbol}` : `/discovery`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 min-w-[130px] bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:from-amber-600/30 hover:to-orange-600/30 text-amber-300 border border-amber-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                    >
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        종목 정밀 심층 분석
+                        <ChevronRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                        href="/watchlist"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 min-w-[110px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                    >
+                        <TrendingUp className="w-4 h-4 text-cyan-400" />
+                        실시간 시세 보기
+                    </Link>
+                    <Link
+                        href="/ranking"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2.5 bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                        title="수급 순위"
+                    >
+                        <Zap className="w-4 h-4 text-amber-400" />
+                    </Link>
+                </div>
+            </div>
+        );
+    };
+
     const renderAlertCard = (alert: any) => {
         const titleText = (alert.title || '').trim();
         const hasDisclosureKey = Boolean(
@@ -803,6 +1083,12 @@ function formatUsdToKrwInText(text: string): string {
 
         const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산');
         const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황');
+        const isMorningBriefing = Boolean(
+            alert.type === 'morning_briefing' ||
+            titleText.includes('모닝 팩트') ||
+            titleText.includes('간추린 모닝') ||
+            ((alert.body || '').includes('전날 수급') && (alert.body || '').includes('🤖'))
+        );
 
         // [0순위: 관리자 운영 및 시스템 보고서]
         if (isAdminAlert) {
@@ -811,6 +1097,14 @@ function formatUsdToKrwInText(text: string): string {
             cardBorderHover = "hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]";
             accentBorder = "border-l-4 border-l-purple-500";
             defaultCta = { href: "/admin", label: "관리자 시스템 대시보드 바로가기", icon: Crown, style: "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/40" };
+        }
+        // [0-1순위: 장전 모닝 팩트 브리핑]
+        else if (isMorningBriefing) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "🌅 장전 모닝 팩트 브리핑";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+            defaultCta = { href: cleanSymbol ? `/discovery?q=${cleanSymbol}` : "/watchlist", label: "장전 관심종목 정밀 분석", icon: Sparkles, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         }
         // [1순위: DART 공시 / 내부자 거래 / 지분 공시] -> 명확하게 공시 뱃지 우선 부여
         else if (hasDisclosureKey || titleText.includes("공시") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
@@ -958,6 +1252,8 @@ function formatUsdToKrwInText(text: string): string {
                 {/* Body Content */}
                 {isPortfolio ? (
                     renderPortfolioCardContent(alert)
+                ) : isMorningBriefing ? (
+                    renderMorningBriefingCardContent(alert)
                 ) : (
                     <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed font-normal">
                         {renderFormattedBody(alert.body, alert)}
@@ -1011,7 +1307,7 @@ function formatUsdToKrwInText(text: string): string {
                             실시간 수급 순위 보기
                         </Link>
                     </div>
-                ) : !isPortfolio && (
+                ) : !isPortfolio && !isMorningBriefing && (
                     <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between">
                         {targetUrl ? (
                             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors">

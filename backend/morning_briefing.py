@@ -1,4 +1,4 @@
-﻿"""
+"""
 Morning Briefing Service (AI 마켓 밸런스 브리핑)
 장 시작 전 관심종목에 대한 호재 3개, 악재 3개를 요약하여 푸시 알림을 발송합니다.
 """
@@ -85,8 +85,15 @@ class MorningBriefingService:
         if not analysis:
             return
 
-        # 1. 수급 정보 요약 생성 (국내 주식 한정)
+        # 1. 수급 및 전일 종가 정보 요약 생성 (국내 주식 한정)
         investor_summary = ""
+        price_summary = ""
+        close_price = 0
+        price_diff = 0
+        change_pct = 0.0
+        retail = 0
+        foreigner = 0
+        institution = 0
         clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
         is_kr = clean_sym.isdigit() and len(clean_sym) == 6
         if is_kr:
@@ -98,7 +105,15 @@ class MorningBriefingService:
                     retail = trend_data.get("retail", 0)
                     foreigner = trend_data.get("foreigner", 0)
                     institution = trend_data.get("institution", 0)
+                    close_price = trend_data.get("close", 0)
+                    price_diff = trend_data.get("diff", 0)
+                    change_pct = trend_data.get("change", 0.0)
                     
+                    if close_price > 0:
+                        sign = "+" if price_diff > 0 else ""
+                        icon = "▲" if price_diff > 0 else ("▼" if price_diff < 0 else "-")
+                        price_summary = f"📈 [전일 종가] {close_price:,}원 ({icon}{abs(price_diff):,}원 / {sign}{change_pct:.2f}%)"
+
                     def format_volume(vol):
                         if vol == 0:
                             return "0주"
@@ -111,7 +126,7 @@ class MorningBriefingService:
                         else:
                             return f"{sign}{vol}주"
                             
-                    investor_summary = f"\n📊 [전날 수급] 개인: {format_volume(retail)} | 외인: {format_volume(foreigner)} | 기관: {format_volume(institution)}"
+                    investor_summary = f"📊 [전날 수급] 개인: {format_volume(retail)} | 외인: {format_volume(foreigner)} | 기관: {format_volume(institution)}"
             except Exception as ie:
                 print(f"[MorningBriefing] Failed to fetch investor data for {stock_name}: {ie}")
 
@@ -124,16 +139,16 @@ class MorningBriefingService:
                 # 필터링할 키워드
                 if any(x in text for x in ["없음", "정보 없", "알 수 없", "해당 뉴스", "확인 불가", "None", "해당 사항"]):
                     continue
-                # 모바일 푸시에서 잘리지 않게 방어
-                if len(text) > 35:
-                    text = text[:32] + "..."
+                # 모바일 푸시에서 잘리지 않게 방어 (최대 50자)
+                if len(text) > 50:
+                    text = text[:47] + "..."
                 res.append(text)
             return res[:3]
 
         facts_list = filter_items(analysis.get('market_facts', []))
         
         raw_ai_summary = str(analysis.get('ai_summary', '')).strip()
-        ai_summary = raw_ai_summary[:35] + "..." if len(raw_ai_summary) > 35 else raw_ai_summary
+        ai_summary = raw_ai_summary[:50] + "..." if len(raw_ai_summary) > 50 else raw_ai_summary
 
         has_facts = len(facts_list) > 0
 
@@ -146,15 +161,18 @@ class MorningBriefingService:
         title = f"📰 {stock_name} 간추린 모닝 팩트"
         body_parts = []
         
+        if price_summary:
+            body_parts.append(price_summary)
+
+        if investor_summary:
+            clean_investor = investor_summary.replace("|", "").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
+            body_parts.append(clean_investor)
+
         if has_facts:
             body_parts.append("\n".join([f"▪️ {f.replace('[', '').replace(']', '')}" for f in facts_list]))
             
         if ai_summary:
             body_parts.append(f"🤖 {ai_summary.replace('[', '').replace(']', '')}")
-        
-        if investor_summary:
-            clean_investor = investor_summary.replace("|", "").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
-            body_parts.append(f"\n{clean_investor}")
             
         body = "\n".join(body_parts)
 
@@ -165,6 +183,12 @@ class MorningBriefingService:
             data={
                 "type": "morning_briefing",
                 "symbol": clean_sym,
+                "stock_name": stock_name,
+                "close_price": str(close_price),
+                "change_pct": str(change_pct),
+                "foreigner": str(foreigner),
+                "institution": str(institution),
+                "retail": str(retail),
                 "url": f"/discovery?q={clean_sym}"
             },
             target_users=[user_id]
@@ -175,8 +199,12 @@ class MorningBriefingService:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
-                VALUES (?, ?, 'market', ?, 0, 0, 0)
-            """, (user_id, stock_name, f"{title}\n{body}"))
+                VALUES (?, ?, 'morning_briefing', ?, ?, 0, 0)
+            """, (user_id, stock_name, f"{title}\n{body}", close_price))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[MorningBriefing] Failed to save alert to DB: {e}")
             conn.commit()
             conn.close()
         except Exception as e:
