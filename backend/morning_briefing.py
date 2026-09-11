@@ -157,23 +157,19 @@ class MorningBriefingService:
             print(f"[MorningBriefing] No valid facts for {stock_name}, skipping push.")
             return
 
-        # === 스마트워치 & 모바일 알림 최적화 3줄 요약 본문 ===
+        # === 모닝 팩트 알림 발송 (모든 팩트와 수급 온전히 보존) ===
         title = f"📰 {stock_name} 간추린 모닝 팩트"
         body_parts = []
         
-        # 1줄: 전일 수급 요약 (외인 · 기관 · 개인)
-        if investor_summary:
-            clean_investor = investor_summary.replace("|", "·").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
-            body_parts.append(clean_investor)
-
-        # 2줄: 핵심 팩트 요약
         if has_facts:
-            compact_facts = " / ".join([f.replace('[', '').replace(']', '') for f in facts_list[:2]])
-            body_parts.append(f"▪️ {compact_facts}")
+            body_parts.append("\n".join([f"▪️ {f.replace('[', '').replace(']', '')}" for f in facts_list]))
             
-        # 3줄: AI 핵심 코멘트
         if ai_summary:
-            body_parts.append(f"🤖 {ai_summary.replace('[', '').replace(']', '')[:40]}")
+            body_parts.append(f"🤖 {ai_summary.replace('[', '').replace(']', '')}")
+
+        if investor_summary:
+            clean_investor = investor_summary.replace("|", "").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
+            body_parts.append(clean_investor)
             
         body = "\n".join(body_parts)
 

@@ -881,122 +881,94 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         return (
-            <div className="space-y-2.5 text-left">
-                {/* 1. 상단: 종목명 + 시세 + 뱃지 슬림 통합 바 */}
-                <div className="p-3 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-2xl flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-base font-black text-white">{stockName || "관심종목"}</span>
-                        {cleanSymbol && (
-                            <span className="text-[11px] font-mono text-zinc-400 font-semibold">
-                                {cleanSymbol}
-                            </span>
-                        )}
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                            장전 모닝 팩트
-                        </span>
-                    </div>
-                    {closePriceStr && (
-                        <div className="text-right shrink-0">
-                            <span className="text-xs font-black font-mono text-zinc-100">{closePriceStr}</span>
-                            {changePctStr && (
-                                <span className={`ml-1 text-[11px] font-bold font-mono ${isPriceUp ? 'text-red-400' : 'text-blue-400'}`}>
-                                    {changePctStr}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* 2. 전일 메이저 수급 콤팩트 바 (슬림 1줄 통합) */}
-                {(retailVol || foreignerVol || institutionVol) && (
-                    <div className="p-2.5 bg-zinc-900/80 border border-white/5 rounded-xl flex items-center justify-between gap-2 text-xs flex-wrap">
-                        <div className="flex items-center gap-2.5 font-mono font-bold text-[11px] md:text-xs">
-                            <span className="text-zinc-400 font-sans font-semibold">수급</span>
-                            <span className={isFPlus ? 'text-red-400 font-bold' : isFMinus ? 'text-blue-400 font-bold' : 'text-zinc-300'}>
-                                외인 {foreignerVol || '0주'}
-                            </span>
-                            <span className="text-zinc-600">·</span>
-                            <span className={isIPlus ? 'text-red-400 font-bold' : isIMinus ? 'text-blue-400 font-bold' : 'text-zinc-300'}>
-                                기관 {institutionVol || '0주'}
-                            </span>
-                            <span className="text-zinc-600">·</span>
-                            <span className={retailVol.includes('+') ? 'text-red-400' : retailVol.includes('-') ? 'text-blue-400' : 'text-zinc-400'}>
-                                개인 {retailVol || '0주'}
-                            </span>
-                        </div>
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 truncate max-w-[200px]">
-                            {supplyInsight}
-                        </span>
-                    </div>
-                )}
-
-                {/* 3. 장전 핵심 이슈 콤팩트 리스트 (슬림 불릿) */}
+            <div className="space-y-3 text-left">
+                {/* 1. 핵심 팩트 리스트 (원래 알림의 1, 2번째 줄을 100% 온전하고 시원하게 표시) */}
                 {facts.length > 0 && (
-                    <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-xl space-y-1.5">
-                        <div className="flex items-center justify-between pb-1 border-b border-white/5">
-                            <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5">
-                                <FileText className="w-3 h-3 text-amber-400" />
-                                핵심 이슈 요약
-                            </span>
-                            {cleanSymbol && (
-                                <a
-                                    href={`https://m.stock.naver.com/item/news/${cleanSymbol}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-0.5"
-                                >
-                                    뉴스 전체보기 <ExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                            )}
+                    <div className="space-y-2">
+                        {facts.map((f, fIdx) => (
+                            <div key={fIdx} className="p-3 bg-zinc-900/90 border border-white/10 rounded-2xl flex items-start gap-2.5 shadow-sm">
+                                <span className={`px-2 py-0.5 text-[11px] font-bold rounded-lg border shrink-0 mt-0.5 ${f.tagColor}`}>
+                                    {f.tag}
+                                </span>
+                                <p className="text-sm md:text-base text-zinc-100 font-bold leading-snug">
+                                    {f.text}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* 2. AI 분석 요약 (원래 알림의 3번째 줄을 보라색 AI 박스 안에 100% 온전히 표시) */}
+                {aiSummary && (
+                    <div className="p-3.5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/30 rounded-2xl space-y-1.5 shadow-sm">
+                        <div className="flex items-center gap-2 text-purple-300">
+                            <Sparkles className="w-4 h-4 text-purple-400" />
+                            <span className="text-xs font-black">AI 모닝 팩트 분석</span>
                         </div>
-                        <div className="space-y-1 pt-0.5">
-                            {facts.map((f, fIdx) => (
-                                <div key={fIdx} className="flex items-center gap-2 text-xs py-0.5">
-                                    <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded border shrink-0 ${f.tagColor}`}>
-                                        {f.tag}
-                                    </span>
-                                    <span className="text-zinc-200 font-medium truncate flex-1">
-                                        {f.text}
-                                    </span>
-                                </div>
-                            ))}
+                        <p className="text-xs md:text-sm text-purple-100 font-medium leading-relaxed pl-0.5">
+                            {aiSummary}
+                        </p>
+                    </div>
+                )}
+
+                {/* 3. 전날 수급 현황 (원래 알림의 4번째 줄: 외인, 기관, 개인 수급을 시원한 3분할 칩으로 표시) */}
+                {(retailVol || foreignerVol || institutionVol) && (
+                    <div className="p-3.5 bg-zinc-900/90 border border-white/10 rounded-2xl space-y-2 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                                전날 메이저 수급 현황
+                            </span>
+                            <span className="text-[11px] font-bold text-amber-300">
+                                {supplyInsight}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 pt-0.5">
+                            <div className="p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-center">
+                                <p className="text-[10px] text-gray-400 font-medium">외국인</p>
+                                <p className={`text-xs md:text-sm font-black font-mono mt-0.5 ${isFPlus ? 'text-red-400' : isFMinus ? 'text-blue-400' : 'text-zinc-300'}`}>
+                                    {foreignerVol || '0주'}
+                                </p>
+                            </div>
+                            <div className="p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-center">
+                                <p className="text-[10px] text-gray-400 font-medium">기관계</p>
+                                <p className={`text-xs md:text-sm font-black font-mono mt-0.5 ${isIPlus ? 'text-red-400' : isIMinus ? 'text-blue-400' : 'text-zinc-300'}`}>
+                                    {institutionVol || '0주'}
+                                </p>
+                            </div>
+                            <div className="p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-center">
+                                <p className="text-[10px] text-gray-400 font-medium">개인</p>
+                                <p className={`text-xs md:text-sm font-black font-mono mt-0.5 ${retailVol.includes('+') ? 'text-red-400' : retailVol.includes('-') ? 'text-blue-400' : 'text-zinc-300'}`}>
+                                    {retailVol || '0주'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* 4. AI 브리핑 핵심 요약 (깔끔한 2줄 콤팩트 카드) */}
-                <div className="p-3 bg-gradient-to-r from-purple-950/30 via-indigo-950/20 to-zinc-900 border border-purple-500/20 rounded-xl space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-purple-300 text-xs font-black">
-                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                        <span>AI 모닝 장전 브리핑</span>
-                    </div>
-                    <p className="text-xs text-purple-100 font-medium leading-relaxed">
-                        {aiSummary || "장초반 외국인 매수세 지속 여부와 주요 뉴스 이슈에 따른 호가 흐름을 확인하세요."}
-                    </p>
-                    <p className="text-[10px] text-zinc-500 pt-1 border-t border-white/5">
-                        💡 팁: {foreignerVol ? `외국인 ${foreignerVol} 순매수 vs 기관 ${institutionVol || '0주'} 공방. ` : ''}장 개시 직후 갭 형성 시 무리한 추격 자제
-                    </p>
-                </div>
+                {/* 4. 법적 고지 문구 (원래 알림 하단 면책 문구) */}
+                <p className="text-[11px] text-gray-500 font-normal px-1">
+                    ※ 객관적 공시·시세 팩트 전달이며 투자 권유가 아닙니다.
+                </p>
 
-                {/* 5. 원터치 퀵 액션 버튼 바 (슬림 높이) */}
+                {/* 5. 프리미엄 액션 버튼 바 */}
                 <div className="flex items-center gap-2 pt-1 border-t border-white/10">
                     <Link
                         href={cleanSymbol ? `/discovery?q=${cleanSymbol}` : `/discovery`}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:from-amber-600/30 text-amber-300 border border-amber-500/30 text-center py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                        className="flex-1 bg-gradient-to-r from-amber-600/20 to-orange-600/20 hover:from-amber-600/30 text-amber-300 border border-amber-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                     >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <Sparkles className="w-4 h-4 text-amber-400" />
                         종목 정밀 심층 분석
-                        <ChevronRight className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-4 h-4" />
                     </Link>
                     <Link
                         href="/watchlist"
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                        className="flex-1 bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                     >
-                        <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                        실시간 시세
+                        <TrendingUp className="w-4 h-4 text-cyan-400" />
+                        실시간 시세 보기
                     </Link>
                     {cleanSymbol && (
                         <a
@@ -1004,24 +976,13 @@ function formatUsdToKrwInText(text: string): string {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="p-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-300 border border-white/10 rounded-xl text-xs font-bold transition-all flex items-center justify-center shadow-sm active:scale-95 cursor-pointer"
-                            title="네이버 증권 뉴스"
+                            className="p-2.5 bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-300 border border-white/10 rounded-2xl text-xs font-bold transition-all flex items-center justify-center shadow-sm active:scale-95 cursor-pointer"
+                            title="네이버 증권 관련 뉴스"
                         >
-                            <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                            <ExternalLink className="w-4 h-4 text-zinc-400" />
                         </a>
                     )}
                 </div>
-
-                {/* 6. 필요 시만 볼 수 있는 원문 전문 아코디언 */}
-                <details className="group pt-0.5 text-[10px] text-zinc-500 cursor-pointer">
-                    <summary className="hover:text-zinc-300 transition-colors list-none flex items-center justify-end gap-1">
-                        <span>원문 텍스트 대조</span>
-                        <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" />
-                    </summary>
-                    <div className="mt-1.5 p-2 bg-black/40 rounded-lg border border-white/5 font-mono text-[10px] text-zinc-400 whitespace-pre-wrap leading-relaxed">
-                        {text}
-                    </div>
-                </details>
             </div>
         );
     };
