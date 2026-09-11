@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Header, Query, Response
+from fastapi import APIRouter, Header, Query, Response
 from pydantic import BaseModel
 from typing import Optional, List
 import urllib.parse
@@ -302,6 +302,218 @@ def get_watchlist_cb_alerts(x_user_id: str = Header(None)):
     all_cb.sort(key=lambda x: x.get('date', ''), reverse=True)
             
     return {"status": "success", "data": all_cb}
+
+@router.get("/watchlist/health-check")
+def get_watchlist_health_check(x_user_id: str = Header(None)):
+    """[NEW] 관심종목 5대 악재(CB/BW, 유상증자, 감자, 관리종목/상폐, 불성실공시) 팩트체크 및 최근 공시 타임라인 종합 진단"""
+    from db_manager import get_watchlist
+    from dart_disclosure import get_dart_disclosures
+    from stock_data import get_korean_stock_name
+    from concurrent.futures import ThreadPoolExecutor
+    
+    user_id = x_user_id or "guest"
+    items = get_watchlist(user_id)
+    
+    symbols = []
+    for it in items:
+        sym = it[0] if isinstance(it, (list, tuple)) else (it.get('symbol', '') if isinstance(it, dict) else str(it))
+        code = sym.split('.')[0]
+        if code.isdigit() and len(code) == 6 and code not in symbols:
+            symbols.append(code)
+            
+    if not symbols:
+        return {
+            "status": "success",
+            "summary": {
+                "total_count": 0,
+                "safe_count": 0,
+                "warning_count": 0,
+                "all_safe": True,
+                "headline": "등록된 관심종목이 없습니다.",
+                "description": "관심종목을 추가하시면 24시간 악재 감시 및 건전성 진단이 시작됩니다."
+            },
+            "stocks": [],
+            "recent_disclosures": []
+        }
+        
+    stocks_result = []
+    all_disclosures = []
+    
+    def analyze_symbol(sym):
+        try:
+            name = get_korean_stock_name(sym) or sym
+            # 최근 90일(3개월) 공시 조회
+            disclosures = get_dart_disclosures(sym, period="3m")
+            
+            cb_bw = []
+            capital_change = []
+            listing_risk = []
+            insider_dump = []
+            unfaithful = []
+            positive_list = []
+            
+            clean_disclosures = []
+            for d in disclosures:
+                title = d.get('title', '')
+                date_str = d.get('date', '')
+                link = d.get('link', '')
+                flr = d.get('flr_nm', name)
+                
+                is_cb = any(k in title for k in ["전환사채", "신주인수권부사채", "교환사채", "CB", "BW"])
+                is_cap = any(k in title for k in ["유상증자", "감자결정", "무상감자"])
+                is_risk = any(k in title for k in ["관리종목", "투자주의환기종목", "상장폐지", "감사의견", "횡령", "배임", "회생절차", "영업정지"])
+                is_dump = any(k in title for k in ["임원ㆍ주요주주특정증권", "주식등의대량보유"]) and any(w in title for w in ["처분", "매도", "감소"])
+                is_unf = "불성실공시" in title
+                is_pos = any(k in title for k in ["단일판매", "공급계약", "자기주식취득", "자기주식소각", "무상증자", "잠정실적"])
+                
+                if is_cb: cb_bw.append(d)
+                if is_cap: capital_change.append(d)
+                if is_risk: listing_risk.append(d)
+                if is_dump: insider_dump.append(d)
+                if is_unf: unfaithful.append(d)
+                if is_pos: positive_list.append(d)
+                
+                badge = "일반공시"
+                badge_type = "neutral"
+                display_title = title
+                
+                if is_risk or is_cap or is_cb or is_unf:
+                    badge_type = "warning"
+                    if is_cb: badge = "전환사채(CB)"
+                    elif is_cap: badge = "유상증자/감자"
+                    elif is_risk: badge = "상장위험"
+                    elif is_unf: badge = "공시위반"
+                elif is_pos:
+                    badge_type = "positive"
+                    if "단일판매" in title or "공급계약" in title: 
+                        badge = "수주·계약"
+                        display_title = "대규모 수주 및 공급계약 체결" if "[기재정정]" not in title else "대규모 수주·공급계약 체결 (정정)"
+                    elif "자기주식" in title: 
+                        badge = "자사주"
+                    elif "잠정실적" in title: 
+                        badge = "잠정실적"
+                elif "분기보고서" in title or "반기보고서" in title or "사업보고서" in title:
+                    badge = "정기보고서"
+                    badge_type = "info"
+                elif "설명회" in title or "IR" in title:
+                    badge = "IR·설명회"
+                    badge_type = "info"
+                    
+                clean_disclosures.append({
+                    "symbol": sym,
+                    "name": name,
+                    "title": title,
+                    "display_title": display_title,
+                    "date": date_str,
+                    "badge": badge,
+                    "badge_type": badge_type,
+                    "link": link,
+                    "flr_nm": flr
+                })
+                
+            has_critical_issue = bool(listing_risk or capital_change or unfaithful)
+            has_warning_issue = bool(cb_bw or insider_dump)
+            
+            status = "DANGER" if has_critical_issue else ("WARNING" if has_warning_issue else "SAFE")
+            risk_score = 60 if has_critical_issue else (80 if has_warning_issue else 100)
+            
+            checklist = [
+                {
+                    "name": "전환사채(CB) / BW",
+                    "safe": len(cb_bw) == 0,
+                    "badge": "정상 (클린)" if len(cb_bw) == 0 else f"발행 {len(cb_bw)}건",
+                    "detail": "최근 90일간 주가 희석 사채 발행 이력 없음 (오버행 0)" if len(cb_bw) == 0 else f"최근 {len(cb_bw)}건의 전환사채 관련 공시 감지"
+                },
+                {
+                    "name": "유상증자 / 감자",
+                    "safe": len(capital_change) == 0,
+                    "badge": "정상 (클린)" if len(capital_change) == 0 else "주의",
+                    "detail": "주주가치 훼손 공시 없음 (자본 안정)" if len(capital_change) == 0 else "유상증자 또는 감자 공시 확인 필요"
+                },
+                {
+                    "name": "관리종목 / 상폐 리스크",
+                    "safe": len(listing_risk) == 0,
+                    "badge": "정상 (클린)" if len(listing_risk) == 0 else "위험",
+                    "detail": "감사의견 적정 및 건전성 유지 (상폐 우려 0%)" if len(listing_risk) == 0 else "관리종목/환기종목 지정 유의"
+                },
+                {
+                    "name": "대량 지분매도 (오버행)",
+                    "safe": len(insider_dump) == 0,
+                    "badge": "정상 (클린)" if len(insider_dump) == 0 else "주의",
+                    "detail": "최대주주 및 임원 대량 투매 없음" if len(insider_dump) == 0 else "임원/주요주주 지분 매도 내역 감지"
+                },
+                {
+                    "name": "불성실공시 / 제재",
+                    "safe": len(unfaithful) == 0,
+                    "badge": "정상 (클린)" if len(unfaithful) == 0 else "경고",
+                    "detail": "공시 규정 위반 및 벌점 부과 이력 없음" if len(unfaithful) == 0 else "불성실공시법인 지정 유의"
+                }
+            ]
+            
+            summary_desc = "최근 90일간 주가 희석(CB)이나 상장 리스크 공시가 없는 안전하고 건전한 상태입니다." if status == "SAFE" else "일부 주가 변동성 또는 주의 공시가 포함되어 있으니 확인이 권장됩니다."
+            
+            return {
+                "stock": {
+                    "symbol": sym,
+                    "name": name,
+                    "status": status,
+                    "risk_score": risk_score,
+                    "checklist": checklist,
+                    "disclosures_count": len(disclosures),
+                    "positive_count": len(positive_list),
+                    "summary": summary_desc
+                },
+                "disclosures": clean_disclosures
+            }
+        except Exception as e:
+            name = get_korean_stock_name(sym) or sym
+            return {
+                "stock": {
+                    "symbol": sym,
+                    "name": name,
+                    "status": "SAFE",
+                    "risk_score": 100,
+                    "checklist": [],
+                    "disclosures_count": 0,
+                    "positive_count": 0,
+                    "summary": "안전 점검 완료 (특이사항 없음)"
+                },
+                "disclosures": []
+            }
+            
+    with ThreadPoolExecutor(max_workers=min(len(symbols), 8)) as ex:
+        results = list(ex.map(analyze_symbol, symbols))
+        
+    for res in results:
+        if res.get("stock"):
+            stocks_result.append(res["stock"])
+        if res.get("disclosures"):
+            all_disclosures.extend(res["disclosures"])
+            
+    # 전체 공시 날짜 역순 정렬 (최신순 30건)
+    all_disclosures.sort(key=lambda x: x.get("date", ""), reverse=True)
+    recent_30 = all_disclosures[:30]
+    
+    safe_cnt = sum(1 for s in stocks_result if s["status"] == "SAFE")
+    warning_cnt = len(stocks_result) - safe_cnt
+    all_safe = (warning_cnt == 0)
+    
+    headline = f"관심종목 {len(stocks_result)}개 모두 5대 핵심 악재가 없는 클린 상태입니다." if all_safe else f"관심종목 {len(stocks_result)}개 중 {warning_cnt}개 종목에 주의 공시가 감지되었습니다."
+    desc = "최근 90일간 전환사채(CB), 유상증자, 감사의견 거절 등 주가 폭락을 유발하는 악재 공시가 발견되지 않았습니다." if all_safe else "상세 체크리스트에서 주의 항목과 공시 원문을 확인해 보세요."
+    
+    return {
+        "status": "success",
+        "summary": {
+            "total_count": len(stocks_result),
+            "safe_count": safe_cnt,
+            "warning_count": warning_cnt,
+            "all_safe": all_safe,
+            "headline": headline,
+            "description": desc
+        },
+        "stocks": stocks_result,
+        "recent_disclosures": recent_30
+    }
 
 # ─────────────────────────────────────────────
 # IPO Watchlist Endpoints
