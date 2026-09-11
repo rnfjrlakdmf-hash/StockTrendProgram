@@ -1656,7 +1656,8 @@ function formatUsdToKrwInText(text: string): string {
         }
         
         if (activeTab === "portfolio") {
-            const isPortfolioAlert = ['portfolio_summary', 'dividend_alert', 'morning_briefing'].includes(alert.type);
+            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'market_summary', 'market', 'dividend_alert', 'morning_briefing'].includes(alert.type) ||
+                titleText.includes('관심종목 결산') || titleText.includes('장마감 시황') || titleText.includes('마켓 장마감');
             return isPortfolioAlert || ((isNews || isDisclosure || isPrice) && symbolMatch);
         }
         

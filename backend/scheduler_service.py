@@ -539,7 +539,13 @@ def send_closing_notification(market: str):
                     return f"{s}{v/10000:,.1f}만주" if abs(v) >= 10000 else f"{s}{v:,}주"
                 supply_str = f"🌊 수급 합산: 외인 {_fmt_vol(tot_frgn)} · 기관 {_fmt_vol(tot_inst)}\n"
 
-            body_portfolio = f"{return_label}: {display_return:+.2f}%\n" + profit_str + mvp_str + supply_str + "\n".join(price_list) + "\n\n(단순 집계 통계 결과이며 투자 권유가 아닙니다)"
+            # 0. 당일 시장 지수 요약 헤더 (국내: 코스피/코스닥, 미국: 나스닥/S&P500)
+            if market == "KR":
+                market_indices_str = f"📊 {common['KOSPI']} · {common['KOSDAQ']}\n"
+            else:
+                market_indices_str = f"🇺🇸 {common['NASDAQ']} · {common['SP500']}\n"
+
+            body_portfolio = market_indices_str + f"{return_label}: {display_return:+.2f}%\n" + profit_str + mvp_str + supply_str + "\n".join(price_list) + "\n\n(단순 집계 통계 결과이며 투자 권유가 아닙니다)"
             title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
             
             tokens_data = get_user_fcm_tokens(user_id)

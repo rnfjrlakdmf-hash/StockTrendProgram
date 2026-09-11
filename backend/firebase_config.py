@@ -613,7 +613,12 @@ def send_push_notification(
         
         # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
         click_url = resolve_click_url(title, data)
-        fcm_tag = 'stock-trend-live-alert'
+        
+        # [Fix] 알림 덮어쓰기(Collapse) 방지: 타입별/심볼별 고유 태그 부여
+        import time as _time_mod
+        alert_type_tag = str((data or {}).get("type", "alert")).strip()
+        symbol_tag = str((data or {}).get("symbol", "")).strip()
+        fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_time_mod.time())}"
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
@@ -726,7 +731,8 @@ def send_multicast_notification(
     # 공백 정규화 후 디듀프 키 생성
     import re
     _norm_body = re.sub(r'\s+', ' ', str(body).strip())[:50]
-    _dedupe_key = f"{str(title).strip()}::{_norm_body}"
+    _target_str = ",".join(sorted(target_users)) if target_users else "global"
+    _dedupe_key = f"{str(title).strip()}::{_norm_body}::{_target_str}"
     if _now - send_multicast_notification._recent_saved_cache.get(_dedupe_key, 0) < 180:
         should_skip = True
         print(f"[Firebase-Dedupe] Suppressed duplicate Firestore save within 3m: {title}")
@@ -804,7 +810,11 @@ def send_multicast_notification(
         
         # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
         click_url = resolve_click_url(title, data)
-        fcm_tag = 'stock-trend-live-alert'
+        
+        # [Fix] 알림 덮어쓰기(Collapse) 방지: 타입별/심볼별 고유 태그 부여
+        alert_type_tag = str((data or {}).get("type", "alert")).strip()
+        symbol_tag = str((data or {}).get("symbol", "")).strip()
+        fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_now)}"
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
