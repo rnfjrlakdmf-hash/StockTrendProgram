@@ -11,13 +11,16 @@ import {
     RefreshCw, ChevronRight, Bot, ThumbsUp, ThumbsDown, BarChart3,
     Activity, AlertTriangle, Search, Calendar, ChevronLeft, ExternalLink, PieChart,
     Star, Globe, Trash2, X, Bell, BellRing, HelpCircle, LayoutGrid, Table, Award, Sparkles,
-    DollarSign, Clock
+    DollarSign, Clock, Flame
 } from "lucide-react";
+
 import MarketIndicators from "@/components/MarketIndicators";
 import MarketScannerDashboard from "@/components/MarketScannerDashboard";
 import CleanStockList from "@/components/CleanStockList";
 import RankingWidget from "@/components/RankingWidget";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
+import ClosingQuantScanner from "@/components/ClosingQuantScanner";
+
 
 // ============ Shared Types ============
 interface Signal { id: number; symbol: string; signal_type: string; title: string; summary: string; data: any; created_at: string; }
@@ -36,11 +39,11 @@ function SignalsPageContent() {
     const forceDynamic = searchParams.get('refresh');
     const tabParam = searchParams.get('tab');
 
-    const [activeTab, setActiveTab] = useState<"signals" | "heatmap" | "supply" | "calendar">("signals");
+    const [activeTab, setActiveTab] = useState<"signals" | "scanner" | "heatmap" | "supply" | "calendar">("signals");
 
     useEffect(() => {
-        if (tabParam === "calendar" || tabParam === "heatmap" || tabParam === "supply" || tabParam === "signals") {
-            setActiveTab(tabParam);
+        if (tabParam === "calendar" || tabParam === "heatmap" || tabParam === "supply" || tabParam === "signals" || tabParam === "scanner") {
+            setActiveTab(tabParam as any);
         } else if (tabParam === "ipo") {
             setActiveTab("calendar");
         }
@@ -66,7 +69,8 @@ function SignalsPageContent() {
     };
 
     const tabs = [
-        { id: "signals" as const, label: "시그널", icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
+        { id: "signals" as const, label: "실시간 시그널", icon: <Zap className="w-4 h-4" />, gradient: "from-orange-600 to-red-600" },
+        { id: "scanner" as const, label: "장마감 수급 스캐너", icon: <Flame className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
         { id: "heatmap" as const, label: "히트맵", icon: <BarChart3 className="w-4 h-4" />, gradient: "from-red-600 to-pink-600" },
         { id: "supply" as const, label: "시장 주도주", icon: <Users className="w-4 h-4" />, gradient: "from-green-600 to-emerald-600" },
         { id: "calendar" as const, label: "캘린더/주요 경제지표", icon: <Calendar className="w-4 h-4" />, gradient: "from-blue-600 to-indigo-600" },
@@ -92,6 +96,9 @@ function SignalsPageContent() {
                 <div className={activeTab === "signals" ? "block animate-in fade-in duration-200" : "hidden"}>
                     <SignalsFeedTab router={router} />
                 </div>
+                <div className={activeTab === "scanner" ? "block animate-in fade-in duration-200" : "hidden"}>
+                    <ClosingQuantScanner />
+                </div>
                 <div className={activeTab === "heatmap" ? "block animate-in fade-in duration-200" : "hidden"}>
                     <HeatmapTab router={router} />
                 </div>
@@ -101,6 +108,7 @@ function SignalsPageContent() {
                 <div className={activeTab === "calendar" ? "block animate-in fade-in duration-200" : "hidden"}>
                     <CalendarTab router={router} />
                 </div>
+
 
                 {/* Bottom In-Feed Ad Banner */}
                 <KakaoRevenueAd type="bottom" />
