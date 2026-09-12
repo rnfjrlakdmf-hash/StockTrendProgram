@@ -13,6 +13,7 @@ import RiskGaugeWidget from "@/components/RiskGaugeWidget";
 import MtsOrderButton from "@/components/MtsOrderButton";
 import EasyFinancialReader from "@/components/EasyFinancialReader";
 import FiveStepStockReport from "@/components/FiveStepStockReport";
+import ViralCopyButton from "@/components/ViralCopyButton";
 
 
 const getApiBaseUrl = () => {
@@ -207,6 +208,14 @@ export default async function StockSeoPage({ params }: Props) {
                         </div>
                         <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
                             <MtsOrderButton stockName={name} symbol={decodedTicker} className="w-full" />
+                            <ViralCopyButton
+                                stockName={name}
+                                ticker={decodedTicker}
+                                price={price}
+                                per={per}
+                                pbr={pbr}
+                                url={`https://stock-trend-program.co.kr/stock/${resolvedParams.ticker}`}
+                            />
                             <KakaoShareButton 
                                 title={`[종목 분석] ${name} (${decodedTicker})`}
                                 description={`AI가 분석한 ${name} 주식의 핵심 비즈니스 요약, 실시간 가격, PER/PBR 현황을 확인해보세요!`}
