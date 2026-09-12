@@ -220,11 +220,13 @@ export default function ClosingQuantScanner() {
                                     <div className="inline-flex items-center justify-center gap-1.5">
                                         <span>CVD / OBV 수급 델타</span>
                                         <QuantTooltip
-                                            title="CVD / OBV 수급 델타란?"
-                                            description="단순 주가가 아닌 '진짜 거래 자금'의 흐름을 추적하는 퀀트 지표입니다. CVD는 장중 실시간 체결 강도를, OBV는 최근 20거래일간의 세력 누적 매집 여부를 판별합니다."
-                                            subText="각 뱃지를 터치하거나 마우스를 올리면 개별 분석 상세를 볼 수 있습니다."
-                                            statusText="수급 퀀트"
+                                            title="📊 수급 퀀트 엔진"
+                                            statusText="수급 델타"
                                             statusColor="blue"
+                                            headline="차트 뒤에 숨은 '진짜 자금의 흐름'을 추적합니다"
+                                            description="CVD는 당일 장중 '시장가 매수 vs 매도'의 실시간 힘겨루기를, OBV는 최근 20거래일 동안 세력이 물량을 모았는지 털었는지를 밝혀내는 퀀트 수급 지표입니다."
+                                            tip="개별 종목의 CVD / OBV 뱃지에 마우스를 올리거나 터치하시면 상세 수급을 바로 확인할 수 있습니다."
+                                            forcePosition="bottom"
                                         >
                                             <span className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center" title="지표 설명 보기">
                                                 <HelpCircle className="w-3.5 h-3.5" />
@@ -242,6 +244,9 @@ export default function ClosingQuantScanner() {
                         <tbody className="divide-y divide-white/5 font-mono">
                             {data.data.map((item, idx) => {
                                 const isUp = item.returnRate > 0;
+                                const isNearBottom = idx >= data.data.length - 2;
+                                const tooltipPos = isNearBottom ? "top" : "bottom";
+
                                 return (
                                     <tr key={idx} className="hover:bg-white/[0.04] transition-colors group">
                                         {/* 종목명 및 코드 */}
@@ -258,15 +263,25 @@ export default function ClosingQuantScanner() {
                                                     <div className="flex md:hidden flex-wrap items-center gap-1 mt-1 font-mono">
                                                         {item.cvd && (
                                                             <QuantTooltip
-                                                                title="CVD (누적 체결 델타)"
+                                                                title="💎 CVD (누적 체결 델타)"
                                                                 statusText={item.cvd.label}
-                                                                statusColor={item.cvd.isBullish ? "emerald" : "rose"}
+                                                                statusColor={item.cvd.isBullish ? "emerald" : "slate"}
+                                                                headline={
+                                                                    item.cvd.isBullish 
+                                                                        ? "🔥 시장가 매수세가 매도 물량을 압도하고 있습니다" 
+                                                                        : "⏳ 매수보다 관망 및 매도 물량이 많은 숨고르기 구간"
+                                                                }
                                                                 description={
                                                                     item.cvd.isBullish 
-                                                                        ? "매수와 매도의 실시간 체결 강도 지표입니다. 100%를 초과하여 매도 물량보다 시장가로 적극 사들이는 매수세가 더 강력함을 뜻합니다." 
-                                                                        : "체결 강도 지표입니다. 100% 미만으로 매수세보다 단기 차익 실현이나 매도 물량이 더 우세한 관망 상태입니다."
+                                                                        ? "호가창에 쌓인 매도 물량을 더 높은 가격을 주고라도 앞다투어 사들이는 공격적인 시장가 매수세의 힘을 측정한 지표입니다." 
+                                                                        : "호가를 올려 사기보다는 아래에서 받아먹거나, 단기 차익 실현 물량이 나오며 수급이 쉬어가는 관망 상태입니다."
                                                                 }
-                                                                subText="100% 초과: 시장가 매수 우위 / 100% 미만: 매도 우위"
+                                                                tip={
+                                                                    item.cvd.isBullish 
+                                                                        ? "100%를 초과할수록 세력과 기관이 주가를 적극적으로 끌어올리려는 매수 의지가 강력함을 뜻합니다." 
+                                                                        : "100% 미만일 때는 무리한 추격 매수를 피하고, 매수세가 다시 100% 위로 올라서는지 확인하는 것이 좋습니다."
+                                                                }
+                                                                forcePosition={tooltipPos}
                                                             >
                                                                 <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
                                                                     item.cvd.isBullish 
@@ -280,15 +295,25 @@ export default function ClosingQuantScanner() {
                                                         )}
                                                         {item.obv && (
                                                             <QuantTooltip
-                                                                title="OBV (누적 거래량 추세)"
+                                                                title="📈 OBV (세력 누적 매집 지표)"
                                                                 statusText={item.obv.label}
                                                                 statusColor={item.obv.isBullish ? "indigo" : "slate"}
+                                                                headline={
+                                                                    item.obv.isBullish 
+                                                                        ? "🕵️‍♂️ 큰손(외인·기관)이 몰래 물량을 모아가는 중" 
+                                                                        : "⚖️ 큰 자금 유출입 없이 수급이 팽팽한 횡보 상태"
+                                                                }
                                                                 description={
                                                                     item.obv.isBullish 
-                                                                        ? "주가 상승일과 하락일의 거래량을 누적 합산한 수급 지표입니다. OBV가 우상향하면 큰손(외인·기관)의 조용한 매집이 진행 중임을 시사합니다." 
-                                                                        : "거래량 누적 지표입니다. 대량 매집이나 이탈 없이 수급이 균형을 이루며 관망세를 유지하고 있습니다."
+                                                                        ? "‘주가는 속여도 거래량은 못 속입니다.’ 주가가 오를 때 실린 진짜 거래량을 누적 합산하여 큰손들의 물량 매집 여부를 추적한 지표입니다." 
+                                                                        : "매수 자금과 매도 자금이 균형을 이루며 방향성을 탐색하고 있는 거래량 숨고르기 구간입니다."
                                                                 }
-                                                                subText="우상향: 세력 매집 지속 / 횡보: 거래량 숨고르기"
+                                                                tip={
+                                                                    item.obv.isBullish 
+                                                                        ? "주가가 횡보하거나 조정을 받는데도 OBV가 먼저 우상향하면 조만간 주가가 분출할 가능성이 높은 전형적인 매집 신호입니다." 
+                                                                        : "거래량이 실리면서 OBV 지표가 위쪽으로 고개를 들기 시작할 때가 좋은 진입 타이밍이 됩니다."
+                                                                }
+                                                                forcePosition={tooltipPos}
                                                             >
                                                                 <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
                                                                     item.obv.isBullish 
@@ -311,15 +336,25 @@ export default function ClosingQuantScanner() {
                                             <div className="flex flex-col items-center gap-1.5">
                                                 {item.cvd && (
                                                     <QuantTooltip
-                                                        title="CVD (누적 체결 델타)"
+                                                        title="💎 CVD (누적 체결 델타)"
                                                         statusText={item.cvd.label}
-                                                        statusColor={item.cvd.isBullish ? "emerald" : "rose"}
+                                                        statusColor={item.cvd.isBullish ? "emerald" : "slate"}
+                                                        headline={
+                                                            item.cvd.isBullish 
+                                                                ? "🔥 시장가 매수세가 매도 물량을 압도하고 있습니다" 
+                                                                : "⏳ 매수보다 관망 및 매도 물량이 많은 숨고르기 구간"
+                                                        }
                                                         description={
                                                             item.cvd.isBullish 
-                                                                ? "매수와 매도의 실시간 체결 강도 지표입니다. 100%를 초과하여 매도 물량보다 시장가로 적극 사들이는 매수세가 더 강력함을 뜻합니다." 
-                                                                : "체결 강도 지표입니다. 100% 미만으로 매수세보다 단기 차익 실현이나 매도 물량이 더 우세한 관망 상태입니다."
+                                                                ? "호가창에 쌓인 매도 물량을 더 높은 가격을 주고라도 앞다투어 사들이는 공격적인 시장가 매수세의 힘을 측정한 지표입니다." 
+                                                                : "호가를 올려 사기보다는 아래에서 받아먹거나, 단기 차익 실현 물량이 나오며 수급이 쉬어가는 관망 상태입니다."
                                                         }
-                                                        subText="100% 초과: 시장가 매수 우위 / 100% 미만: 매도 우위"
+                                                        tip={
+                                                            item.cvd.isBullish 
+                                                                ? "100%를 초과할수록 세력과 기관이 주가를 적극적으로 끌어올리려는 매수 의지가 강력함을 뜻합니다." 
+                                                                : "100% 미만일 때는 무리한 추격 매수를 피하고, 매수세가 다시 100% 위로 올라서는지 확인하는 것이 좋습니다."
+                                                        }
+                                                        forcePosition={tooltipPos}
                                                     >
                                                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 cursor-pointer ${
                                                             item.cvd.isBullish 
@@ -333,15 +368,25 @@ export default function ClosingQuantScanner() {
                                                 )}
                                                 {item.obv && (
                                                     <QuantTooltip
-                                                        title="OBV (누적 거래량 추세)"
+                                                        title="📈 OBV (세력 누적 매집 지표)"
                                                         statusText={item.obv.label}
                                                         statusColor={item.obv.isBullish ? "indigo" : "slate"}
+                                                        headline={
+                                                            item.obv.isBullish 
+                                                                ? "🕵️‍♂️ 큰손(외인·기관)이 몰래 물량을 모아가는 중" 
+                                                                : "⚖️ 큰 자금 유출입 없이 수급이 팽팽한 횡보 상태"
+                                                        }
                                                         description={
                                                             item.obv.isBullish 
-                                                                ? "주가 상승일과 하락일의 거래량을 누적 합산한 수급 지표입니다. OBV가 우상향하면 큰손(외인·기관)의 조용한 매집이 진행 중임을 시사합니다." 
-                                                                : "거래량 누적 지표입니다. 대량 매집이나 이탈 없이 수급이 균형을 이루며 관망세를 유지하고 있습니다."
+                                                                ? "‘주가는 속여도 거래량은 못 속입니다.’ 주가가 오를 때 실린 진짜 거래량을 누적 합산하여 큰손들의 물량 매집 여부를 추적한 지표입니다." 
+                                                                : "매수 자금과 매도 자금이 균형을 이루며 방향성을 탐색하고 있는 거래량 숨고르기 구간입니다."
                                                         }
-                                                        subText="우상향: 세력 매집 지속 / 횡보: 거래량 숨고르기"
+                                                        tip={
+                                                            item.obv.isBullish 
+                                                                ? "주가가 횡보하거나 조정을 받는데도 OBV가 먼저 우상향하면 조만간 주가가 분출할 가능성이 높은 전형적인 매집 신호입니다." 
+                                                                : "거래량이 실리면서 OBV 지표가 위쪽으로 고개를 들기 시작할 때가 좋은 진입 타이밍이 됩니다."
+                                                        }
+                                                        forcePosition={tooltipPos}
                                                     >
                                                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 cursor-pointer ${
                                                             item.obv.isBullish 
