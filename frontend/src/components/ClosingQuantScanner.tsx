@@ -18,7 +18,8 @@ import {
     Coins, 
     BarChart3, 
     ArrowUpRight,
-    ExternalLink
+    ExternalLink,
+    Target
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -105,49 +106,100 @@ export default function ClosingQuantScanner() {
             <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
             <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16"></div>
 
+            {/* 상단 럭셔리 네온 액센트 라인 */}
+            <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-blue-500/80 via-emerald-400/80 to-transparent pointer-events-none"></div>
+
             {/* 헤더 섹션 */}
-            <div className="relative border-b border-white/10 pb-5 mb-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 border border-blue-500/30">
-                                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                                퀀트 알고리즘 팩트 스캐너
+            <div className="relative border-b border-white/10 pb-6 mb-6">
+                {/* 상단 인텔리전스 라이브 상태 바 */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 shadow-sm shadow-emerald-500/10">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            <span className="text-[11px] font-mono text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
-                                {data?.targetDate ? `${data.targetDate.slice(0,4)}.${data.targetDate.slice(4,6)}.${data.targetDate.slice(6,8)} 기준` : "실시간 갱신"}
+                            KRX 15:30 종가 수급 연동
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 border border-blue-500/30">
+                            <Sparkles className="w-3 h-3 text-blue-400" />
+                            AI 퀀트 알고리즘 V4.2
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                        <span className="text-xs font-mono text-slate-300 bg-white/[0.05] px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            {data?.targetDate ? `${data.targetDate.slice(0,4)}.${data.targetDate.slice(4,6)}.${data.targetDate.slice(6,8)} 기준` : "실시간 갱신"}
+                        </span>
+                        <button 
+                            onClick={() => fetchScannerData(daysAgo)} 
+                            disabled={isRefreshing}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-xs font-bold text-blue-200 hover:text-white border border-blue-500/30 transition-all active:scale-95 disabled:opacity-50 shadow-sm shadow-blue-500/10"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-400' : 'text-blue-300'}`} />
+                            <span>새로고침</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* 메인 타이틀 영역 */}
+                <div className="flex items-start gap-3.5 mb-5">
+                    <div className="p-3 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-rose-500/20 to-indigo-500/20 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.25)] shrink-0 hidden sm:block">
+                        <Flame className="w-7 h-7 text-amber-400 animate-pulse" />
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300">
+                                장마감 수급 퀀트 스캐너
+                            </h2>
+                            <span className="text-[11px] font-extrabold tracking-wider bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent border border-blue-500/30 px-2.5 py-0.5 rounded-full bg-blue-500/10 uppercase">
+                                PRO QUANT
                             </span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                            <span>장마감 수급 퀀트 스캐너</span>
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                        <p className="text-xs sm:text-sm text-slate-300/90 mt-1.5 leading-relaxed">
                             정규장 장마감 시점 거래량 급증 및 메이저 수급 집중 종목을 객관적 알고리즘으로 추출하고, 기술적 벤치마크선 도달 여부를 통계적으로 추적합니다.
                         </p>
                     </div>
-
-                    <button 
-                        onClick={() => fetchScannerData(daysAgo)} 
-                        disabled={isRefreshing}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-300 hover:text-white border border-white/10 transition-all self-start sm:self-auto disabled:opacity-50"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        <span>새로고침</span>
-                    </button>
                 </div>
 
-                {/* 퀀트 필터링 수식 3종 칩 배너 */}
-                <div className="flex items-center gap-2 mt-4 flex-wrap text-[11px]">
-                    <span className="text-slate-400 font-bold">수급 스캔 퀀트 수식:</span>
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-medium">
-                        ① 5일 평균 대비 거래량 급증
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-medium">
-                        ② 외국인·기관 메이저 순유입
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-medium">
-                        ③ 기술적 벤치마크선(+10%) 도달 추적
-                    </span>
+                {/* 3대 핵심 퀀트 필터 벤토 그리드 (프리미엄 미니 카드 3종) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-4 border-t border-white/5">
+                    <div className="rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 p-3 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="p-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <BarChart3 className="w-3.5 h-3.5" />
+                            </span>
+                            <span className="text-xs font-bold text-white">거래량 폭발 필터</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-snug">
+                            5일 평균 대비 거래량이 최소 150%~300% 이상 폭증한 종목 자동 스캔
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 p-3 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <Coins className="w-3.5 h-3.5" />
+                            </span>
+                            <span className="text-xs font-bold text-white">메이저 수급 집중</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-snug">
+                            외인·기관 순매수 및 장중 누적 체결 델타(CVD) 집중 종목 정밀 판별
+                        </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 p-3 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                <Target className="w-3.5 h-3.5" />
+                            </span>
+                            <span className="text-xs font-bold text-white">10% 벤치마크 추적</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-snug">
+                            스캔 시점 대비 단기 +10% 벤치마크선 도달 여부를 객관적 통계로 매일 트래킹
+                        </p>
+                    </div>
                 </div>
             </div>
 
