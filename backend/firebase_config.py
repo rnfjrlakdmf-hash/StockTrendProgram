@@ -655,6 +655,7 @@ def send_push_notification(
         safe_data['url'] = click_url
 
         message = messaging.Message(
+            notification=notification,
             data=safe_data,
             token=token,
             android=android_config,
@@ -865,6 +866,7 @@ def send_multicast_notification(
                 safe_data['url'] = click_url
 
                 msg = messaging.Message(
+                    notification=notification,
                     data=safe_data,
                     token=token,
                     android=android_config,
