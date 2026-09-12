@@ -93,14 +93,14 @@ export default function HomeClient() {
                       CVD · OBV 수급 델타 탑재
                     </span>
                     <span className="text-[11px] text-slate-400 font-medium hidden md:inline">
-                      1차 저항선(+10%) 실시간 성과 추적
+                      기술적 벤치마크선(+10%) 실시간 도달 추적
                     </span>
                   </div>
                   <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                    <span>장마감 수급 퀀트 스캐너 & 일자별 익절 트래킹</span>
+                    <span>장마감 수급 퀀트 스캐너 & 일자별 시세 트래킹</span>
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-300">
-                    정규장 종가 기준 거래량 급증 및 외인·기관 메이저 수급 유입 종목을 기계적 알고리즘으로 자동 추출하고 저항선 도달을 추적합니다.
+                    정규장 종가 기준 거래량 급증 및 외인·기관 메이저 수급 유입 종목을 기계적 알고리즘으로 자동 추출하고 기술적 벤치마크선 도달 여부를 추적합니다.
                   </p>
                 </div>
 

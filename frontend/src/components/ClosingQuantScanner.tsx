@@ -120,7 +120,7 @@ export default function ClosingQuantScanner() {
                             <span>장마감 수급 퀀트 스캐너</span>
                         </h2>
                         <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                            정규장 장마감 시점 거래량 급증 및 메이저 수급 집중 종목을 객관적 알고리즘으로 추출하고, 기술적 저항선 도달을 추적합니다.
+                            정규장 장마감 시점 거래량 급증 및 메이저 수급 집중 종목을 객관적 알고리즘으로 추출하고, 기술적 벤치마크선 도달 여부를 통계적으로 추적합니다.
                         </p>
                     </div>
 
@@ -136,7 +136,7 @@ export default function ClosingQuantScanner() {
 
                 {/* 퀀트 필터링 수식 3종 칩 배너 */}
                 <div className="flex items-center gap-2 mt-4 flex-wrap text-[11px]">
-                    <span className="text-slate-400 font-bold">포착 퀀트 수식:</span>
+                    <span className="text-slate-400 font-bold">수급 스캔 퀀트 수식:</span>
                     <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-medium">
                         ① 5일 평균 대비 거래량 급증
                     </span>
@@ -144,7 +144,7 @@ export default function ClosingQuantScanner() {
                         ② 외국인·기관 메이저 순유입
                     </span>
                     <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300 font-medium">
-                        ③ 기술적 1차 저항선(+10%) 도달 추적
+                        ③ 기술적 벤치마크선(+10%) 도달 추적
                     </span>
                 </div>
             </div>
@@ -172,20 +172,20 @@ export default function ClosingQuantScanner() {
             {/* 벤토 서머리 스탯 카드 4분할 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
                 <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                    <span className="text-xs text-slate-400 block mb-1">포착 종목 수</span>
+                    <span className="text-xs text-slate-400 block mb-1">스캔 종목 수</span>
                     <div className="text-lg sm:text-xl font-black text-white font-mono">
                         {data?.totalCount || 0}개
                     </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                    <span className="text-xs text-slate-400 block mb-1">1차 저항선 도달 종목</span>
+                    <span className="text-xs text-slate-400 block mb-1">벤치마크 도달 종목</span>
                     <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono flex items-center gap-1">
                         <span>{data?.reachedCount || 0}개</span>
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 inline" />
                     </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                    <span className="text-xs text-slate-400 block mb-1">1차 저항선 도달률</span>
+                    <span className="text-xs text-slate-400 block mb-1">기준선 도달률</span>
                     <div className="text-lg sm:text-xl font-black text-amber-400 font-mono">
                         {data?.successRate || 0}%
                     </div>
@@ -215,11 +215,11 @@ export default function ClosingQuantScanner() {
                             <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                 <th className="p-3.5 sm:p-4">종목코드 / 종목명</th>
                                 <th className="p-3.5 sm:p-4 text-center hidden md:table-cell">CVD / OBV 수급 델타</th>
-                                <th className="p-3.5 sm:p-4 text-right">포착 기준가</th>
+                                <th className="p-3.5 sm:p-4 text-right">스캔 시점 시세</th>
                                 <th className="p-3.5 sm:p-4 text-right">현재 시세</th>
                                 <th className="p-3.5 sm:p-4 text-right">기준 대비 변동률</th>
-                                <th className="p-3.5 sm:p-4 text-right">1차 저항선 (+10%)</th>
-                                <th className="p-3.5 sm:p-4 text-center">저항선 도달</th>
+                                <th className="p-3.5 sm:p-4 text-right">기술적 벤치마크 (+10%)</th>
+                                <th className="p-3.5 sm:p-4 text-center">시세 도달 확인</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 font-mono">
@@ -291,7 +291,7 @@ export default function ClosingQuantScanner() {
                                             </div>
                                         </td>
 
-                                        {/* 포착 기준가 */}
+                                        {/* 스캔 시점 시세 */}
                                         <td className="p-3.5 sm:p-4 text-right text-slate-300">
                                             {item.entryPrice.toLocaleString()}원
                                         </td>
@@ -310,23 +310,23 @@ export default function ClosingQuantScanner() {
                                             </span>
                                         </td>
 
-                                        {/* 1차 기술적 저항선 */}
+                                        {/* 기술적 벤치마크 (+10%) */}
                                         <td className="p-3.5 sm:p-4 text-right text-slate-300">
                                             <span>{item.resistancePrice.toLocaleString()}원</span>
                                             <span className="text-[10px] text-slate-500 block font-sans">(+10.0%)</span>
                                         </td>
 
-                                        {/* 저항선 도달 여부 */}
+                                        {/* 시세 도달 확인 여부 */}
                                         <td className="p-3.5 sm:p-4 text-center">
                                             {item.reachedResistance ? (
                                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10">
                                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                                    <span>도달 완료</span>
+                                                    <span>도달 확인</span>
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-slate-400 bg-white/5 border border-white/5">
                                                     <Clock className="w-3 h-3 text-slate-500" />
-                                                    <span>추적 중</span>
+                                                    <span>관측 중</span>
                                                 </span>
                                             )}
                                         </td>
@@ -343,7 +343,7 @@ export default function ClosingQuantScanner() {
                 <ShieldCheck className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
                     <strong className="text-slate-400 block mb-0.5">자본시장법 준수 퀀트 시뮬레이션 안내:</strong>
-                    본 화면은 사전에 정의된 기술적 알고리즘(거래량 급증 및 수급 유입)에 의해 기계적으로 추출된 객관적 통계 결과이며, 개별 종목에 대한 매수/매도 권유나 투자 자문이 아닙니다. 1차 저항선은 퀀트 백테스팅을 위한 기술적 벤치마크 수준일 뿐 수익을 보장하지 않으며, 모든 투자의 최종 판단과 손익의 책임은 투자자 본인에게 있습니다.
+                    본 화면은 사전에 정의된 기술적 알고리즘(거래량 급증 및 수급 유입)에 의해 기계적으로 추출된 객관적 통계 결과이며, 개별 종목에 대한 매수/매도 권유나 투자 자문이 아닙니다. 기술적 벤치마크선은 퀀트 백테스팅 및 통계 관측을 위한 참고 수준일 뿐 특정 수익률이나 목표가를 보장하는 것이 아니며, 모든 투자의 최종 판단과 손익의 책임은 투자자 본인에게 있습니다.
                 </div>
             </div>
         </div>
