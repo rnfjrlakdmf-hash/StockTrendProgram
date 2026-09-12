@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { requestFCMToken, onForegroundMessage, onNotificationClick, getNotificationPermission, showNotification } from "@/lib/firebase";
 import { API_BASE_URL } from "@/lib/config";
-import { Bell, BellOff, Check, Zap, Loader2 } from "lucide-react";
+import { Bell, BellOff, Check, Zap, Loader2, Calendar, Sparkles, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
@@ -18,6 +18,7 @@ export default function FCMTokenManager() {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [registered, setRegistered] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showDelayedCard, setShowDelayedCard] = useState(false);
     const { user } = useAuth();
 
     const [isVisible, setIsVisible] = useState(true);
@@ -35,9 +36,8 @@ export default function FCMTokenManager() {
                     PushNotifications.addListener('registration', async (tokenData) => {
                         const token = tokenData.value;
                         setCurrentToken(token); // Fix: Set token state so toggles work
-                        const userId = localStorage.getItem('stock_user') ? JSON.parse(localStorage.getItem('stock_user')!).id : 'guest';
-                        if (userId === 'guest') return;
-                        console.log('[FCM Native] Auto-registering android token:', token.substring(0, 20) + '...');
+                        const userId = getReliableUserId();
+                        console.log('[FCM Native] Auto-registering android token for user:', userId, token.substring(0, 20) + '...');
                         await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-User-Id': userId },
@@ -54,6 +54,23 @@ export default function FCMTokenManager() {
             autoRegisterNative();
         }
     }, [user]);
+
+    // [Smart Funnel] 3.5초 후 스르륵 등장 (24시간 동안 닫지 않은 경우에만)
+    useEffect(() => {
+        try {
+            const dismissedUntil = localStorage.getItem('fcm_dismissed_until');
+            if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
+                setShowDelayedCard(false);
+                return;
+            }
+        } catch {}
+
+        const timer = setTimeout(() => {
+            setShowDelayedCard(true);
+        }, 3500);
+
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         // [Critical] Explicit Service Worker Registration (Web only)
@@ -430,103 +447,144 @@ export default function FCMTokenManager() {
         return () => window.removeEventListener('OPEN_FCM_REQUEST', handleOpenRequest);
     }, []);
 
-    // [Enhancement] Premium UI Design for Notification Status
+    const handleDismissToday = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setIsVisible(false);
+        setShowDelayedCard(false);
+        try {
+            localStorage.setItem('fcm_dismissed_until', String(Date.now() + 24 * 60 * 60 * 1000));
+        } catch {}
+    };
 
-    // Connected State: 이미 알림 권한이 승인된 경우 우측 하단의 상시 플로팅 종 아이콘은 숨김
-    // (메인 스마트 리모컨 FloatingQuickMenu을 가리지 않도록 처리)
+    // Connected State: 이미 알림 권한이 승인된 경우 플로팅 카드는 숨김
     if (permission === 'granted') {
         return null;
     }
 
-
-    if (!isVisible) return null;
+    if (!isVisible || !showDelayedCard) return null;
 
     // Denied State (Subtle Toast)
     if (permission === 'denied') {
         return (
-            <div className="fixed bottom-6 right-6 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-500" suppressHydrationWarning>
-                <div className="bg-[#111]/90 backdrop-blur-md border border-red-500/30 rounded-2xl p-4 shadow-2xl flex items-center gap-3 pr-10 relative max-w-sm">
+            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] animate-in slide-in-from-bottom-5 fade-in duration-500" suppressHydrationWarning>
+                <div className="bg-zinc-950/95 backdrop-blur-xl border border-red-500/30 rounded-2xl p-4 shadow-2xl flex items-center gap-3 pr-10 relative max-w-sm">
                     <button
-                        onClick={() => setIsVisible(false)}
-                        className="absolute top-2 right-2 text-white/20 hover:text-white/80 p-1"
+                        onClick={handleDismissToday}
+                        className="absolute top-2.5 right-2.5 text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                        title="닫기"
                     >
-                        ✕
+                        <X className="w-4 h-4" />
                     </button>
-                    <div className="bg-red-500/10 p-2 rounded-full shrink-0">
-                        <BellOff className="w-5 h-5 text-red-500" />
+                    <div className="bg-red-500/15 p-2 rounded-xl shrink-0">
+                        <BellOff className="w-5 h-5 text-red-400" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-white">알림이 차단됨</p>
-                        <p className="text-xs text-gray-400 mt-0.5">브라우저 주소창의 🔒자물쇠를 눌러 허용해주세요.</p>
+                        <p className="text-sm font-bold text-white">알림이 차단되어 있습니다</p>
+                        <p className="text-xs text-zinc-400 mt-0.5">브라우저 주소창 🔒 자물쇠를 눌러 알림을 [허용]해 주세요.</p>
                     </div>
                 </div>
             </div>
         );
     }
 
-    // 비로그인 상태에서는 알림 카드 표시 안 함 (guest 토큰 방지)
-    if (getReliableUserId() === 'guest') return null;
-
-    // Default Request State (Premium Card)
+    // Default Request State: 비로그인(게스트) & 로그인 사용자 모두에게 매력적인 다크 프리미엄 알림 카드 제공
     return (
         <div suppressHydrationWarning>
-            <div className="fixed bottom-6 right-6 z-[9999] max-w-[340px] w-full animate-in slide-in-from-right-5 fade-in duration-700">
-                <div className="bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-2xl relative overflow-hidden group hover:border-blue-500/30 transition-colors duration-500">
+            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] max-w-[380px] w-[calc(100%-2rem)] animate-in slide-in-from-bottom-6 sm:slide-in-from-right-6 fade-in duration-500">
+                <div className="bg-zinc-950/95 backdrop-blur-2xl border border-blue-500/35 rounded-3xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(59,130,246,0.25)] relative overflow-hidden group hover:border-blue-400/60 transition-all duration-300">
 
-                    {/* Atmospheric Glow */}
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-[50px] pointer-events-none group-hover:bg-blue-500/30 transition-colors duration-500"></div>
-                    <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-[50px] pointer-events-none"></div>
+                    {/* 상단 앰비언트 글로우 라인 */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
+                    {/* 배경 글로우 */}
+                    <div className="absolute -top-12 -right-12 w-44 h-44 bg-blue-500/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-500/30 transition-colors duration-500"></div>
+                    <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                    {/* 닫기 버튼 */}
                     <button
-                        onClick={() => setIsVisible(false)}
-                        className="absolute top-3 right-3 text-white/20 hover:text-white transition-colors p-1 z-10"
+                        onClick={handleDismissToday}
+                        className="absolute top-3.5 right-3.5 text-zinc-400 hover:text-white p-1 rounded-xl hover:bg-white/10 transition-colors z-10"
+                        title="닫기"
                     >
-                        ✕
+                        <X className="w-4 h-4" />
                     </button>
 
-                    <div className="relative z-10">
-                        {/* Header */}
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
-                                <Bell className="w-5 h-5 text-white" />
+                    <div className="relative z-10 space-y-3.5">
+                        {/* 뱃지 태그 */}
+                        <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                                <Sparkles className="w-3 h-3 text-blue-400 animate-pulse" />
+                                <span>100% 무료 AI 투자 알림</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                                가입비 0원
+                            </span>
+                        </div>
+
+                        {/* 메인 타이틀 & 서브 카피 */}
+                        <div>
+                            <h4 className="text-base sm:text-lg font-black text-white leading-snug tracking-tight flex items-center gap-2">
+                                내 종목 실적 D-Day & 급등 공시 알림 🔔
+                            </h4>
+                            <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                                바쁜 일상 속 놓치기 쉬운 증시 핵심 일정을 스마트폰으로 1초 만에 챙겨드립니다.
+                            </p>
+                        </div>
+
+                        {/* 3대 핵심 혜택 리스트 */}
+                        <div className="space-y-2 py-1 bg-white/[0.03] p-3 rounded-2xl border border-white/5 text-xs text-zinc-300">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1 rounded-md bg-blue-500/20 text-blue-400 shrink-0">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                </div>
+                                <span><strong>실적발표 D-7 & 배당기준일</strong> 아침 자동 알림</span>
                             </div>
-                            <div>
-                                <h4 className="font-bold text-white text-[15px] leading-tight flex items-center gap-2">
-                                    가격 변동 알림
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                                </h4>
-                                <p className="text-[11px] text-blue-300 font-medium">관심 종목 가격 변동 시 즉시 발송</p>
+                            <div className="flex items-center gap-2">
+                                <div className="p-1 rounded-md bg-purple-500/20 text-purple-400 shrink-0">
+                                    <Zap className="w-3.5 h-3.5" />
+                                </div>
+                                <span><strong>대규모 수주·공급계약</strong> DART 공시 1초 포착</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="p-1 rounded-md bg-emerald-500/20 text-emerald-400 shrink-0">
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                </div>
+                                <span><strong>불법 리딩방 유도 NO</strong> · 스팸 없는 클린 알림</span>
                             </div>
                         </div>
 
-                        {/* Content */}
-                        <p className="text-sm text-gray-400 leading-relaxed mb-4 font-medium">
-                            시장 변동 알림을 <br />
-                            자동으로 받아보세요.
-                        </p>
-
-                        {/* Action Button */}
+                        {/* CTA 버튼 */}
                         <button
                             onClick={handleEnableNotifications}
                             disabled={loading}
-                            className="w-full bg-white text-black hover:bg-gray-100 disabled:opacity-50 py-3 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 group/btn"
+                            className="w-full py-3 px-4 rounded-xl text-sm font-black text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group/btn cursor-pointer"
                         >
                             {loading ? (
                                 <>
-                                    <div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                                    <span>연결 중...</span>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>스마트폰과 연결 중...</span>
                                 </>
                             ) : (
                                 <>
-                                    <span>알림 켜기</span>
-                                    <span className="text-xs font-normal text-gray-500 group-hover/btn:text-black transition-colors">(무료)</span>
+                                    <Bell className="w-4 h-4 group-hover/btn:animate-bounce" />
+                                    <span>1초 만에 무료 알림 켜기</span>
                                 </>
                             )}
                         </button>
+
+                        {/* 하단 오늘 하루 보지 않기 */}
+                        <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-0.5 px-1">
+                            <span>* 상단 종 아이콘에서 언제든 해제 가능</span>
+                            <button
+                                onClick={handleDismissToday}
+                                className="hover:text-zinc-300 underline underline-offset-2 transition-colors cursor-pointer"
+                            >
+                                오늘 하루 보지 않기
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }
