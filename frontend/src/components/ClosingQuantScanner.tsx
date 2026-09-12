@@ -12,6 +12,7 @@ import {
     RefreshCw, 
     ShieldCheck, 
     Info, 
+    HelpCircle,
     ChevronRight, 
     Flame, 
     Coins, 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
+import QuantTooltip from '@/components/QuantTooltip';
 
 interface ScannerItem {
     code: string;
@@ -214,7 +216,22 @@ export default function ClosingQuantScanner() {
                         <thead>
                             <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                 <th className="p-3.5 sm:p-4">종목코드 / 종목명</th>
-                                <th className="p-3.5 sm:p-4 text-center hidden md:table-cell">CVD / OBV 수급 델타</th>
+                                <th className="p-3.5 sm:p-4 text-center hidden md:table-cell">
+                                    <div className="inline-flex items-center justify-center gap-1.5">
+                                        <span>CVD / OBV 수급 델타</span>
+                                        <QuantTooltip
+                                            title="CVD / OBV 수급 델타란?"
+                                            description="단순 주가가 아닌 '진짜 거래 자금'의 흐름을 추적하는 퀀트 지표입니다. CVD는 장중 실시간 체결 강도를, OBV는 최근 20거래일간의 세력 누적 매집 여부를 판별합니다."
+                                            subText="각 뱃지를 터치하거나 마우스를 올리면 개별 분석 상세를 볼 수 있습니다."
+                                            statusText="수급 퀀트"
+                                            statusColor="blue"
+                                        >
+                                            <span className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center" title="지표 설명 보기">
+                                                <HelpCircle className="w-3.5 h-3.5" />
+                                            </span>
+                                        </QuantTooltip>
+                                    </div>
+                                </th>
                                 <th className="p-3.5 sm:p-4 text-right">스캔 시점 시세</th>
                                 <th className="p-3.5 sm:p-4 text-right">현재 시세</th>
                                 <th className="p-3.5 sm:p-4 text-right">기준 대비 변동률</th>
@@ -240,24 +257,48 @@ export default function ClosingQuantScanner() {
                                                     {/* 모바일 전용 CVD/OBV 뱃지 */}
                                                     <div className="flex md:hidden flex-wrap items-center gap-1 mt-1 font-mono">
                                                         {item.cvd && (
-                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                                                                item.cvd.isBullish 
-                                                                    ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
-                                                                    : 'bg-slate-800 text-slate-400 border border-white/10'
-                                                            }`}>
-                                                                <span>💎</span>
-                                                                <span>{item.cvd.label}</span>
-                                                            </span>
+                                                            <QuantTooltip
+                                                                title="CVD (누적 체결 델타)"
+                                                                statusText={item.cvd.label}
+                                                                statusColor={item.cvd.isBullish ? "emerald" : "rose"}
+                                                                description={
+                                                                    item.cvd.isBullish 
+                                                                        ? "매수와 매도의 실시간 체결 강도 지표입니다. 100%를 초과하여 매도 물량보다 시장가로 적극 사들이는 매수세가 더 강력함을 뜻합니다." 
+                                                                        : "체결 강도 지표입니다. 100% 미만으로 매수세보다 단기 차익 실현이나 매도 물량이 더 우세한 관망 상태입니다."
+                                                                }
+                                                                subText="100% 초과: 시장가 매수 우위 / 100% 미만: 매도 우위"
+                                                            >
+                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                                    item.cvd.isBullish 
+                                                                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
+                                                                        : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                                }`}>
+                                                                    <span>💎</span>
+                                                                    <span>{item.cvd.label}</span>
+                                                                </span>
+                                                            </QuantTooltip>
                                                         )}
                                                         {item.obv && (
-                                                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                                                                item.obv.isBullish 
-                                                                    ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
-                                                                    : 'bg-slate-800 text-slate-400 border border-white/10'
-                                                            }`}>
-                                                                <span>📈</span>
-                                                                <span>{item.obv.label}</span>
-                                                            </span>
+                                                            <QuantTooltip
+                                                                title="OBV (누적 거래량 추세)"
+                                                                statusText={item.obv.label}
+                                                                statusColor={item.obv.isBullish ? "indigo" : "slate"}
+                                                                description={
+                                                                    item.obv.isBullish 
+                                                                        ? "주가 상승일과 하락일의 거래량을 누적 합산한 수급 지표입니다. OBV가 우상향하면 큰손(외인·기관)의 조용한 매집이 진행 중임을 시사합니다." 
+                                                                        : "거래량 누적 지표입니다. 대량 매집이나 이탈 없이 수급이 균형을 이루며 관망세를 유지하고 있습니다."
+                                                                }
+                                                                subText="우상향: 세력 매집 지속 / 횡보: 거래량 숨고르기"
+                                                            >
+                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                                    item.obv.isBullish 
+                                                                        ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
+                                                                        : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                                }`}>
+                                                                    <span>📈</span>
+                                                                    <span>{item.obv.label}</span>
+                                                                </span>
+                                                            </QuantTooltip>
                                                         )}
                                                     </div>
                                                 </div>
@@ -267,26 +308,50 @@ export default function ClosingQuantScanner() {
 
                                         {/* PC 전용 CVD / OBV 퀀트 뱃지 열 */}
                                         <td className="p-3.5 sm:p-4 text-center hidden md:table-cell font-sans">
-                                            <div className="flex flex-col items-center gap-1">
+                                            <div className="flex flex-col items-center gap-1.5">
                                                 {item.cvd && (
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                                                        item.cvd.isBullish 
-                                                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10' 
-                                                            : 'bg-slate-800 text-slate-400 border border-white/10'
-                                                    }`}>
-                                                        <span>💎</span>
-                                                        <span>{item.cvd.label}</span>
-                                                    </span>
+                                                    <QuantTooltip
+                                                        title="CVD (누적 체결 델타)"
+                                                        statusText={item.cvd.label}
+                                                        statusColor={item.cvd.isBullish ? "emerald" : "rose"}
+                                                        description={
+                                                            item.cvd.isBullish 
+                                                                ? "매수와 매도의 실시간 체결 강도 지표입니다. 100%를 초과하여 매도 물량보다 시장가로 적극 사들이는 매수세가 더 강력함을 뜻합니다." 
+                                                                : "체결 강도 지표입니다. 100% 미만으로 매수세보다 단기 차익 실현이나 매도 물량이 더 우세한 관망 상태입니다."
+                                                        }
+                                                        subText="100% 초과: 시장가 매수 우위 / 100% 미만: 매도 우위"
+                                                    >
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 cursor-pointer ${
+                                                            item.cvd.isBullish 
+                                                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10 hover:border-emerald-400' 
+                                                                : 'bg-slate-800 text-slate-400 border border-white/10 hover:border-slate-500'
+                                                        }`}>
+                                                            <span>💎</span>
+                                                            <span>{item.cvd.label}</span>
+                                                        </span>
+                                                    </QuantTooltip>
                                                 )}
                                                 {item.obv && (
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                                                        item.obv.isBullish 
-                                                            ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
-                                                            : 'bg-slate-800 text-slate-400 border border-white/10'
-                                                    }`}>
-                                                        <span>📈</span>
-                                                        <span>{item.obv.label}</span>
-                                                    </span>
+                                                    <QuantTooltip
+                                                        title="OBV (누적 거래량 추세)"
+                                                        statusText={item.obv.label}
+                                                        statusColor={item.obv.isBullish ? "indigo" : "slate"}
+                                                        description={
+                                                            item.obv.isBullish 
+                                                                ? "주가 상승일과 하락일의 거래량을 누적 합산한 수급 지표입니다. OBV가 우상향하면 큰손(외인·기관)의 조용한 매집이 진행 중임을 시사합니다." 
+                                                                : "거래량 누적 지표입니다. 대량 매집이나 이탈 없이 수급이 균형을 이루며 관망세를 유지하고 있습니다."
+                                                        }
+                                                        subText="우상향: 세력 매집 지속 / 횡보: 거래량 숨고르기"
+                                                    >
+                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 cursor-pointer ${
+                                                            item.obv.isBullish 
+                                                                ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400' 
+                                                                : 'bg-slate-800 text-slate-400 border border-white/10 hover:border-slate-500'
+                                                        }`}>
+                                                            <span>📈</span>
+                                                            <span>{item.obv.label}</span>
+                                                        </span>
+                                                    </QuantTooltip>
                                                 )}
                                             </div>
                                         </td>
