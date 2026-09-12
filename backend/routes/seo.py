@@ -167,47 +167,124 @@ def get_cached_stock_info(ticker: str):
             }
             
         else:
-            # Handle Korean Stock via Naver
-            url = f"https://finance.naver.com/item/main.naver?code={ticker}"
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            res = requests.get(url, headers=headers, timeout=5)
-            soup = BeautifulSoup(res.text, 'lxml')
+            # Handle Korean Stock via modern Naver Mobile JSON API
+            m_headers = {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+                'Referer': 'https://m.stock.naver.com/'
+            }
             
-            name_el = soup.select_one('.wrap_company h2 a')
-            name = name_el.text.strip() if name_el else f"종목 {ticker}"
+            name = f"종목 {ticker}"
+            price = 0
+            prev = 0
+            per = 0.0
+            pbr = 0.0
+            div = 0.0
+            cap = 0
+            financials = None
             
-            price_el = soup.select_one('.no_today .blind')
-            price = int(price_el.text.replace(',', '')) if price_el else 0
+            # 1. Integration API (시세, PER, PBR, 배당률, 시가총액, 종목명 등)
+            try:
+                url_int = f"https://m.stock.naver.com/api/stock/{ticker}/integration"
+                res_int = requests.get(url_int, headers=m_headers, timeout=5)
+                if res_int.status_code == 200:
+                    int_data = res_int.json()
+                    name = int_data.get('stockName') or name
+                    total_infos = {item.get('code'): item.get('value') for item in int_data.get('totalInfos', [])}
+                    
+                    def parse_int_val(val):
+                        if not val: return 0
+                        cleaned = re.sub(r'[^0-9-]', '', str(val))
+                        try: return int(cleaned)
+                        except: return 0
+
+                    def parse_float_val(val):
+                        if not val: return 0.0
+                        cleaned = re.sub(r'[^0-9.-]', '', str(val))
+                        try: return float(cleaned)
+                        except: return 0.0
+
+                    price = parse_int_val(total_infos.get('lastClosePrice') or total_infos.get('closePrice'))
+                    per = parse_float_val(total_infos.get('per'))
+                    pbr = parse_float_val(total_infos.get('pbr'))
+                    div = parse_float_val(total_infos.get('dividendYieldRatio')) / 100.0 if total_infos.get('dividendYieldRatio') else 0.0
+                    
+                    market_val_str = total_infos.get('marketValue') or ''
+                    if market_val_str:
+                        jo_match = re.search(r'([0-9,]+)조', market_val_str)
+                        eok_match = re.search(r'([0-9,]+)억', market_val_str)
+                        jo = int(jo_match.group(1).replace(',', '')) if jo_match else 0
+                        eok = int(eok_match.group(1).replace(',', '')) if eok_match else 0
+                        cap = (jo * 10000 + eok) * 100000000
+            except Exception as e:
+                logger.error(f"Error fetching naver integration for {ticker}: {e}")
+
+            # 2. 전일가 및 최근가 보정 (/price API)
+            prev = price
+            try:
+                url_price = f"https://m.stock.naver.com/api/stock/{ticker}/price?pageSize=5"
+                res_price = requests.get(url_price, headers=m_headers, timeout=4)
+                if res_price.status_code == 200:
+                    price_list = res_price.json()
+                    if isinstance(price_list, list) and len(price_list) >= 2:
+                        prev = int(re.sub(r'[^0-9-]', '', str(price_list[1].get('closePrice') or price)))
+                    if isinstance(price_list, list) and len(price_list) >= 1 and price == 0:
+                        price = int(re.sub(r'[^0-9-]', '', str(price_list[0].get('closePrice') or 0)))
+            except Exception as e:
+                logger.debug(f"Price fallback error for {ticker}: {e}")
+
+            # 3. 재무제표 API (/finance/annual)
+            try:
+                url_fin = f"https://m.stock.naver.com/api/stock/{ticker}/finance/annual"
+                res_fin = requests.get(url_fin, headers=m_headers, timeout=5)
+                if res_fin.status_code == 200:
+                    fin_json = res_fin.json()
+                    fin_info = fin_json.get('financeInfo', {})
+                    tr_list = fin_info.get('trTitleList', [])
+                    years = [t.get('title') for t in tr_list]
+                    year_keys = [t.get('key') for t in tr_list]
+                    
+                    row_map = {}
+                    for row in fin_info.get('rowList', []):
+                        t_name = row.get('title')
+                        cols = row.get('columns', {})
+                        vals = []
+                        for yk in year_keys:
+                            raw_v = cols.get(yk, {}).get('value')
+                            if not raw_v or raw_v == '-' or raw_v == 'N/A':
+                                vals.append(None)
+                            else:
+                                try:
+                                    vals.append(float(raw_v.replace(',', '')))
+                                except:
+                                    vals.append(None)
+                        if t_name:
+                            row_map[t_name] = vals
+                    
+                    if years and row_map:
+                        financials = {
+                            "years": years,
+                            "revenue": row_map.get('매출액', []),
+                            "operating_income": row_map.get('영업이익', []),
+                            "net_income": row_map.get('당기순이익', []),
+                            "operating_margin": row_map.get('영업이익률', []),
+                            "net_margin": row_map.get('순이익률', []),
+                            "roe": row_map.get('ROE', []),
+                            "debt_ratio": row_map.get('부채비율', []),
+                            "quick_ratio": row_map.get('당좌비율', []),
+                            "reserve_ratio": row_map.get('유보율', []),
+                            "eps": row_map.get('EPS', []),
+                            "per": row_map.get('PER', []),
+                            "bps": row_map.get('BPS', []),
+                            "pbr": row_map.get('PBR', []),
+                            "dps": row_map.get('주당배당금', []),
+                            "dividend_yield": [div * 100 if div else None] * len(years),
+                            "payout_ratio": []
+                        }
+            except Exception as e:
+                logger.error(f"Error fetching naver finance annual for {ticker}: {e}")
+
+            summary = f"{name} 기업의 핵심 비즈니스 요약 및 주요 실적 현황입니다. 인공지능 기반 분석을 통해 실시간 주가 동향과 객관적 가치 평가 정보를 제공하고 있습니다."
             
-            prev_el = soup.select_one('td.first .blind')
-            prev = int(prev_el.text.replace(',', '')) if prev_el else 0
-            
-            per_el = soup.select_one('#_per')
-            pbr_el = soup.select_one('#_pbr')
-            div_el = soup.select_one('#_dvr')
-            
-            def parse_float(el):
-                if not el or not el.text.strip(): return 0.0
-                try: return float(el.text.replace(',', ''))
-                except: return 0.0
-                
-            per = parse_float(per_el)
-            pbr = parse_float(pbr_el)
-            div = parse_float(div_el) / 100.0 if div_el else 0.0
-            
-            summary_el = soup.select_one('.summary_info p')
-            summary = summary_el.text.strip() if summary_el else "해당 종목에 대한 기초 데이터가 준비 중입니다. 인공지능 기반 실시간 분석을 통해 객관적인 기업 현황 및 주가 동향을 제공합니다."
-            
-            financials = parse_naver_cop_table(soup)
-            
-            cap_el = soup.select_one('#_market_sum')
-            if cap_el:
-                import re
-                cap_str = re.sub(r'[^0-9]', '', cap_el.text)
-                cap = int(cap_str) * 100000000 if cap_str else 0
-            else:
-                cap = 0
-                
             ex_div_str = None
             pay_str = None
             
