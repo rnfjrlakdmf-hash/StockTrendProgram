@@ -31,6 +31,7 @@ from routes.seo import router as seo_router
 from routes.weekend import router as weekend_router
 from routes.step_report import router as step_report_router
 from routes.closing_scanner import router as closing_scanner_router
+from routes.stock_health import router as stock_health_router
 
 
 
@@ -95,6 +96,7 @@ app.include_router(ranking_router, prefix="/api/ranking", tags=["Ranking"])
 app.include_router(weekend_router, tags=["Weekend"])
 app.include_router(step_report_router, prefix="/api", tags=["StepReport"])
 app.include_router(closing_scanner_router, prefix="/api", tags=["ClosingScanner"])
+app.include_router(stock_health_router, prefix="/api", tags=["StockHealth"])
 
 
 

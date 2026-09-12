@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator } from "lucide-react";
+import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, ShieldCheck, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
@@ -36,6 +36,7 @@ const navigationGroups = [
     {
         groupName: "종목 발굴 & 분석",
         items: [
+            { name: "5대 안전벨트 진단기", href: "/safety", icon: ShieldCheck, desc: "초보자를 위한 종목 5대 팩트 체크(실적/가치/수급/과열/부채) 100점 만점 자가진단기입니다.", badge: "NEW" },
             { name: "종목 발굴 & 분석", href: "/discovery", icon: Compass, desc: "시장의 세력들이 돈을 쏟아붓는 주식과 기관들이 집중 매수하는 유망 종목을 자동으로 골라냅니다." },
             { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사의 실적, 부채, 밸류에이션 등 재무 건전성을 체계적으로 검사합니다." },
             { name: "기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스, 지지선/저항선, 캔들 차트 패턴을 정밀 분석합니다." },
