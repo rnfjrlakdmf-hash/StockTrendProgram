@@ -1399,164 +1399,243 @@ function DiscoveryContent() {
                                             </div>
 
                                             {/* 1층: 정규장 실시간 가격 카드 (단정하고 시원한 가로형 시세 바) */}
-                                            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                <div className="flex flex-wrap items-center gap-3">
-                                                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
-                                                        {extendedHours?.regular?.is_active ? 'LIVE MARKET 실시간 현재가' :
-                                                         stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' : 
-                                                         stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
-                                                         'REGULAR MARKET 정규장 종가'}
-                                                    </span>
-
-                                                    <div className="flex items-baseline gap-2.5">
-                                                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline font-mono">
-                                                            <span className="text-lg sm:text-xl mr-1 text-zinc-400 font-bold">
-                                                                {stock.currency === 'KRW' ? '₩' : '$'}
-                                                            </span>
-                                                            <BlinkingPrice
-                                                                price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
-                                                                    (stock.currency === 'KRW'
-                                                                    ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
-                                                                    : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
-                                                                className="text-white bg-transparent"
-                                                            />
-                                                        </span>
-
-                                                        {(() => {
-                                                            const currentPriceNum = extendedHours?.regular?.price 
-                                                                ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
-                                                            const prevCloseNum = Number(String(stock.details?.prev_close || (stock as any).prev_close || (stock as any).previousClose || '0').replace(/,/g, ''));
-
-                                                            let changeVal = extendedHours?.regular?.change;
-                                                            if (changeVal === undefined || isNaN(changeVal)) {
-                                                                if (stock.regular_change_val !== undefined && Number(stock.regular_change_val) !== 0) {
-                                                                    changeVal = Number(stock.regular_change_val);
-                                                                } else if (stock.change_val !== undefined && Number(String(stock.change_val).replace(/,/g, '')) !== 0) {
-                                                                    changeVal = Number(String(stock.change_val).replace(/,/g, ''));
-                                                                } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
-                                                                    changeVal = currentPriceNum - prevCloseNum;
-                                                                } else if (stock.change_percent || stock.change) {
-                                                                    const raw = String(stock.change_percent || stock.change || '0');
-                                                                    const parsedPct = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                    if (!isNaN(parsedPct) && prevCloseNum > 0) {
-                                                                        changeVal = Math.round(prevCloseNum * (parsedPct / 100));
-                                                                    } else {
-                                                                        changeVal = 0;
-                                                                    }
-                                                                } else {
-                                                                    changeVal = 0;
-                                                                }
-                                                            }
-
-                                                            let changePct = extendedHours?.regular?.change_pct;
-                                                            if (changePct !== undefined && !isNaN(changePct) && Math.abs(changePct) > 100) {
-                                                                changePct = changePct / 100;
-                                                            }
-                                                            if (changePct === undefined || isNaN(changePct)) {
-                                                                if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
-                                                                    changePct = ((currentPriceNum - prevCloseNum) / prevCloseNum) * 100;
-                                                                } else if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
-                                                                    changePct = Number(stock.regular_change_pct);
-                                                                } else if (stock.change_percent || stock.change) {
-                                                                    const raw = String(stock.change_percent || stock.change || '0');
-                                                                    const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                    changePct = isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
-                                                                } else {
-                                                                    changePct = 0;
-                                                                }
-                                                            }
-
-                                                            const isUp = changeVal > 0 || (changeVal === 0 && changePct > 0);
-                                                            const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
-
-                                                            return (
-                                                                <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-xl font-black text-xs sm:text-sm border shadow-sm ${
-                                                                    isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
-                                                                    isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
-                                                                    'bg-zinc-800 border-white/10 text-zinc-400'
-                                                                }`}>
-                                                                    <span>{isUp ? '▲' : isDown ? '▼' : ''} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
-                                                                    <span className="opacity-90 font-mono">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
-                                                                </div>
-                                                            );
-                                                        })()}
-                                                    </div>
-
-                                                    {/* 해외(미국) 주식 원화 환산 가격 표시 */}
-                                                    {stock.currency !== 'KRW' && (() => {
-                                                        const currentPriceNum = extendedHours?.regular?.price 
-                                                            ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
-                                                        const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
-                                                        const krwPrice = Math.round(currentPriceNum * rate);
-                                                        
-                                                        return (
-                                                            <div className="flex items-center gap-2 text-xs font-mono">
-                                                                <span className="text-[11px] font-sans font-semibold text-zinc-400">원화 환산</span>
-                                                                <span className="font-black text-amber-300">≈ {krwPrice.toLocaleString()}원</span>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-
-                                                <div className="flex items-center gap-2 self-end sm:self-center">
-                                                    {/* 시간외 거래 정보 (장마감 후 또는 실제 시간외/야간 세션일 때 일체형으로 표출) */}
-                                                    {(!stock.market_status?.includes('장중') || stock.is_extended_hours) &&
-                                                    (stock.after_market_data || stock.nxt_data || stock.is_extended_hours || extendedHours?.extended) && (() => {
-                                                        const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
-                                                            Number(String(
-                                                            stock.is_extended_hours && stock.extended_price ? stock.extended_price :
-                                                            (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
-                                                                : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
-                                                        ).replace(/,/g, ''));
-
-                                                        let val = extendedHours?.extended?.change;
-                                                        let pct = extendedHours?.extended?.change_pct;
-                                                        if (val === undefined || val === 0) {
-                                                            const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                            val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
-                                                            pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                            
-                                                            if (!val || val === 0) {
-                                                                const prevClose = Number(stock.details?.prev_close || stock.regular_close || 0);
-                                                                if (extP > 0 && prevClose > 0) {
-                                                                    val = extP - prevClose;
-                                                                } else if (prevClose > 0 && pct) {
-                                                                    val = Math.round(prevClose * (pct / 100));
-                                                                }
-                                                            }
+                                            {(() => {
+                                                const isKrStock = stock.currency === 'KRW' || stock.symbol?.includes('.KS') || stock.symbol?.includes('.KQ') || /^\d{6}$/.test(stock.symbol || '');
+                                                const isOvertimeSession = (() => {
+                                                    if (stock.market_status?.includes('시간외') || stock.market_status === 'AFTER_MARKET' || stock.is_extended_hours) return true;
+                                                    if (stock.after_market_data?.is_active) return true;
+                                                    if (extendedHours?.extended?.session === 'AFTER') return true;
+                                                    // 한국 주식 평일 16:00~18:00 KST 시간 기준 판별 (클라이언트 안전망)
+                                                    if (isKrStock) {
+                                                        const now = new Date();
+                                                        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+                                                        const kstDate = new Date(utc + (9 * 3600000));
+                                                        const day = kstDate.getDay();
+                                                        const timeNum = kstDate.getHours() * 100 + kstDate.getMinutes();
+                                                        if (day >= 1 && day <= 5 && timeNum >= 1600 && timeNum < 1800) {
+                                                            return true;
                                                         }
-                                                        const isUp = (val || 0) > 0;
-                                                        const isDown = (val || 0) < 0;
+                                                    }
+                                                    return false;
+                                                })();
 
-                                                        return (
-                                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-[11px] font-mono">
-                                                                <span className="text-[10px] font-bold text-indigo-300">
-                                                                    시간외
+                                                return (
+                                                    <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                                                                extendedHours?.regular?.is_active || stock.market_status === '장중' 
+                                                                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' 
+                                                                    : isOvertimeSession
+                                                                    ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
+                                                                    : stock.market_status?.includes('동시호가')
+                                                                    ? 'text-purple-400 bg-purple-500/10 border-purple-500/30'
+                                                                    : 'text-zinc-400 bg-white/5 border-white/10'
+                                                            }`}>
+                                                                {extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
+                                                                 isOvertimeSession ? 'AFTER-MARKET 시간외 단일가' :
+                                                                 stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
+                                                                 'REGULAR MARKET 정규장 종가'}
+                                                            </span>
+
+                                                            <div className="flex items-baseline gap-2.5">
+                                                                <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline font-mono">
+                                                                    <span className="text-lg sm:text-xl mr-1 text-zinc-400 font-bold">
+                                                                        {stock.currency === 'KRW' ? '₩' : '$'}
+                                                                    </span>
+                                                                    <BlinkingPrice
+                                                                        price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
+                                                                            (stock.currency === 'KRW'
+                                                                            ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
+                                                                            : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
+                                                                        className="text-white bg-transparent"
+                                                                    />
                                                                 </span>
-                                                                <span className="font-bold text-zinc-200">
-                                                                    {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                                </span>
-                                                                <span className={`text-[10px] font-black ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
-                                                                    {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
-                                                                </span>
+
+                                                                {(() => {
+                                                                    const currentPriceNum = extendedHours?.regular?.price 
+                                                                        ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                                    const prevCloseNum = Number(String(stock.details?.prev_close || (stock as any).prev_close || (stock as any).previousClose || '0').replace(/,/g, ''));
+
+                                                                    let changeVal = extendedHours?.regular?.change;
+                                                                    if (changeVal === undefined || isNaN(changeVal)) {
+                                                                        if (stock.regular_change_val !== undefined && Number(stock.regular_change_val) !== 0) {
+                                                                            changeVal = Number(stock.regular_change_val);
+                                                                        } else if (stock.change_val !== undefined && Number(String(stock.change_val).replace(/,/g, '')) !== 0) {
+                                                                            changeVal = Number(String(stock.change_val).replace(/,/g, ''));
+                                                                        } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                            changeVal = currentPriceNum - prevCloseNum;
+                                                                        } else if (stock.change_percent || stock.change) {
+                                                                            const raw = String(stock.change_percent || stock.change || '0');
+                                                                            const parsedPct = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                            if (!isNaN(parsedPct) && prevCloseNum > 0) {
+                                                                                changeVal = Math.round(prevCloseNum * (parsedPct / 100));
+                                                                            } else {
+                                                                                changeVal = 0;
+                                                                            }
+                                                                        } else {
+                                                                            changeVal = 0;
+                                                                        }
+                                                                    }
+
+                                                                    let changePct = extendedHours?.regular?.change_pct;
+                                                                    if (changePct !== undefined && !isNaN(changePct) && Math.abs(changePct) > 100) {
+                                                                        changePct = changePct / 100;
+                                                                    }
+                                                                    if (changePct === undefined || isNaN(changePct)) {
+                                                                        if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                            changePct = ((currentPriceNum - prevCloseNum) / prevCloseNum) * 100;
+                                                                        } else if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
+                                                                            changePct = Number(stock.regular_change_pct);
+                                                                        } else if (stock.change_percent || stock.change) {
+                                                                            const raw = String(stock.change_percent || stock.change || '0');
+                                                                            const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                            changePct = isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
+                                                                        } else {
+                                                                            changePct = 0;
+                                                                        }
+                                                                    }
+
+                                                                    const isUp = changeVal > 0 || (changeVal === 0 && changePct > 0);
+                                                                    const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
+
+                                                                    return (
+                                                                        <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-xl font-black text-xs sm:text-sm border shadow-sm ${
+                                                                            isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
+                                                                            isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
+                                                                            'bg-zinc-800 border-white/10 text-zinc-400'
+                                                                        }`}>
+                                                                            <span>{isUp ? '▲' : isDown ? '▼' : ''} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                            <span className="opacity-90 font-mono">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                             </div>
-                                                        );
-                                                    })()}
 
-                                                    {/* 장중/장마감 뱃지 */}
-                                                    <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black ${
-                                                        extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 
-                                                        'bg-zinc-800 text-zinc-400 border-zinc-700'
-                                                    }`}>
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${
-                                                            extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 
-                                                            'bg-zinc-500'
-                                                        }`} />
-                                                        <span>{extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}</span>
+                                                            {/* 해외(미국) 주식 원화 환산 가격 표시 */}
+                                                            {stock.currency !== 'KRW' && (() => {
+                                                                const currentPriceNum = extendedHours?.regular?.price 
+                                                                    ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                                const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
+                                                                const krwPrice = Math.round(currentPriceNum * rate);
+                                                                
+                                                                return (
+                                                                    <div className="flex items-center gap-2 text-xs font-mono">
+                                                                        <span className="text-[11px] font-sans font-semibold text-zinc-400">원화 환산</span>
+                                                                        <span className="font-black text-amber-300">≈ {krwPrice.toLocaleString()}원</span>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 self-end sm:self-center">
+                                                            {/* 시간외 거래 정보 (시간외 단일가 거래 중이거나 장마감 후 시간외 체결 데이터가 있을 때 항상 표출) */}
+                                                            {(() => {
+                                                                const afterData = stock.after_market_data || stock.nxt_data;
+                                                                const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
+                                                                    Number(String(
+                                                                    stock.is_extended_hours && stock.extended_price ? stock.extended_price :
+                                                                    (afterData?.price || 0)
+                                                                ).replace(/,/g, ''));
+
+                                                                if (!extP || extP <= 0) return null;
+
+                                                                let val = extendedHours?.extended?.change;
+                                                                let pct = extendedHours?.extended?.change_pct;
+                                                                if (val === undefined || val === null || val === 0) {
+                                                                    val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (afterData?.change_val !== undefined ? Number(afterData.change_val) : 0);
+                                                                    pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : (afterData?.change_pct !== undefined ? Number(afterData.change_pct) : 0);
+                                                                    
+                                                                    if (!val || val === 0) {
+                                                                        const prevClose = Number(stock.details?.prev_close || stock.regular_close || 0);
+                                                                        if (extP > 0 && prevClose > 0 && extP !== prevClose) {
+                                                                            val = extP - prevClose;
+                                                                            if (!pct || pct === 0) {
+                                                                                pct = (val / prevClose) * 100;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                                const isUp = (val || 0) > 0 || (val === 0 && (pct || 0) > 0);
+                                                                const isDown = (val || 0) < 0 || (val === 0 && (pct || 0) < 0);
+
+                                                                return (
+                                                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-mono shadow-sm transition-all ${
+                                                                        isOvertimeSession
+                                                                            ? 'bg-amber-500/15 border-amber-500/35 text-amber-200'
+                                                                            : 'bg-indigo-500/10 border-indigo-500/30 text-zinc-200'
+                                                                    }`}>
+                                                                        <span className={`text-[10px] font-bold flex items-center gap-1 ${isOvertimeSession ? 'text-amber-300' : 'text-indigo-300'}`}>
+                                                                            {isOvertimeSession && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+                                                                            {isOvertimeSession ? '시간외단일가' : '시간외 종가'}
+                                                                        </span>
+                                                                        <span className="font-bold text-zinc-100">
+                                                                            {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                                        </span>
+                                                                        <span className={`text-[10px] font-black ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                                                            {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })()}
+
+                                                            {/* 장중 / 시간외 단일가 / 프리마켓 / 동시호가 / 장마감 뱃지 */}
+                                                            {(() => {
+                                                                const isRegular = extendedHours?.regular?.is_active || stock.market_status === '장중';
+                                                                const isPreMarket = stock.market_status?.includes('프리') || extendedHours?.extended?.session === 'PRE';
+                                                                const isCallAuction = stock.market_status?.includes('동시호가');
+                                                                const isWeekend = stock.market_status?.includes('휴장');
+
+                                                                if (isRegular) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_10px_rgba(52,211,153,0.3)]">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                                                                            <span>장중</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                if (isOvertimeSession) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.9)]" />
+                                                                            <span>시간외 단일가</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                if (isPreMarket) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                                                            <span>프리마켓</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                if (isCallAuction) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-purple-500/20 text-purple-300 border-purple-500/40">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                                                                            <span>동시호가</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                if (isWeekend) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-zinc-800 text-zinc-500 border-zinc-700">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                                                                            <span>휴장</span>
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-zinc-800 text-zinc-400 border-zinc-700">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                                                                        <span>장마감</span>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
+                                                );
+                                            })()}
 
                                             {/* 2층: 초보자 2대 핵심 진단 카드 (5대 안전벨트 & 기술적 타이밍 신호등이 좌우 50:50 대칭으로 깔끔 정렬) */}
                                             {(() => {

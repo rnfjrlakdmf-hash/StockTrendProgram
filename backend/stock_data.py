@@ -526,6 +526,10 @@ def get_stock_info(symbol: str, skip_ai: bool = False):
                     "market_status": naver_info.get('market_status', '장마감'),
                     "nxt_data": naver_info.get('nxt_data'),
                     "after_market_data": naver_info.get('after_market_data'),
+                    "is_extended_hours": naver_info.get('is_extended_hours', False),
+                    "extended_price": naver_info.get('extended_price'),
+                    "extended_change": naver_info.get('extended_change'),
+                    "extended_change_percent": naver_info.get('extended_change_percent'),
                     "regular_close": naver_info.get('regular_close'),
                     # [Fix] 정규장 변동 금액/퍼센트 - 화면에 0이 나오는 버그 수정
                     "regular_change_val": naver_info.get('regular_change_val') or naver_info.get('change_val', 0),

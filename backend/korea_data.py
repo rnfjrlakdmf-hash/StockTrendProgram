@@ -415,11 +415,17 @@ def gather_naver_stock_data(symbol: str):
 
         if is_weekend:
             market_status = "휴장 (주말)"
-        elif 800 <= current_time_num < 850:
-            market_status = "프리마켓"
-        elif 900 <= current_time_num <= 1520:
+        elif 800 <= current_time_num < 830:
+            market_status = "장개시전"
+        elif 830 <= current_time_num < 900:
+            market_status = "장전 시간외"
+        elif 900 <= current_time_num < 1530:
             market_status = "장중"
-        elif 1540 <= current_time_num < 2000:
+        elif 1530 <= current_time_num < 1540:
+            market_status = "동시호가"
+        elif 1540 <= current_time_num < 1600:
+            market_status = "장후 시간외"
+        elif 1600 <= current_time_num < 1800:
             market_status = "시간외단일가"
         else:
             market_status = "장마감"
@@ -533,8 +539,43 @@ def gather_naver_stock_data(symbol: str):
                                     }
                             except Exception:
                                 pass
+
+                    # [Daum Finance Fallback] 네이버에 시간외 데이터가 없거나 보강이 필요한 경우 Daum 금융 실시간 애프터마켓 시세 연동
+                    if not nxt_data or market_status in ("시간외단일가", "장후 시간외"):
+                        try:
+                            clean_c = re.sub(r'[^0-9]', '', str(code))
+                            daum_url = f"https://finance.daum.net/api/quotes/A{clean_c}"
+                            daum_headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.daum.net/"}
+                            daum_res = requests.get(daum_url, headers=daum_headers, timeout=2)
+                            if daum_res.status_code == 200:
+                                daum_d = daum_res.json()
+                                d_ms = daum_d.get('marketStatus')
+                                d_trade_p = daum_d.get('tradePrice')
+                                d_am_price = daum_d.get('afterMarketChangePrice')
+                                d_am_rate = daum_d.get('afterMarketChangeRate')
+                                d_reg_p = daum_d.get('regularTradePrice')
+
+                                # 시간외 세션이거나 시간외 변동 데이터가 있는 경우
+                                if d_ms == 'AFTER_MARKET' or d_am_price is not None:
+                                    am_pct = round(d_am_rate * 100, 2) if d_am_rate is not None else 0.0
+                                    nxt_data = {
+                                        "price": f"{float(d_trade_p):,.0f}" if d_trade_p else str(price),
+                                        "change_pct": am_pct,
+                                        "change_val": d_am_price if d_am_price is not None else 0,
+                                        "regular_price": f"{float(d_reg_p):,.0f}" if d_reg_p else str(price),
+                                        "is_active": (d_ms == 'AFTER_MARKET')
+                                    }
+                                    if d_ms == 'AFTER_MARKET':
+                                        market_status = "시간외단일가"
+                        except Exception as e:
+                            print(f"[Daum Overtime Fallback] Error for {code}: {e}")
         except Exception as e:
             print(f"[gather_naver_stock_data] Failed to fetch real-time JSON patch: {e}")
+
+        is_ext = (market_status == "시간외단일가") or bool(nxt_data and nxt_data.get("is_active"))
+        ext_p = nxt_data.get("price") if nxt_data else None
+        ext_val = nxt_data.get("change_val") if nxt_data else None
+        ext_pct = nxt_data.get("change_pct") if nxt_data else None
 
         res_data = {
             "name": name,
@@ -568,7 +609,11 @@ def gather_naver_stock_data(symbol: str):
             "regular_change_val": change_val,
             "shares_outstanding": info.get('sharesOutstanding'),
             "nxt_data": nxt_data,
-            "after_market_data": nxt_data
+            "after_market_data": nxt_data,
+            "is_extended_hours": is_ext,
+            "extended_price": ext_p,
+            "extended_change": ext_val,
+            "extended_change_percent": ext_pct
         }
         return res_data
     except Exception as e:
