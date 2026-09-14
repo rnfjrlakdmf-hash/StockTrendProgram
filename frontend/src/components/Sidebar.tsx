@@ -287,7 +287,7 @@ export default function Sidebar() {
         };
 
         updateTimer();
-    }, [user, showAdRewardModal]);
+    }, [user]);
 
     // [New] Watchlist Synchronizer
     useEffect(() => {

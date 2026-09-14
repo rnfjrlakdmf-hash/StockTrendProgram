@@ -1,4 +1,4 @@
-Update Trigger: 5-Factor Stock Safety Checklist & Health Checker
-Triggered at: 2026-09-13T08:30:00Z
-Status: Deploy /safety route and signals safety tab with force-dynamic and Suspense wrapper.
+Update Trigger: Fix ReferenceError showAdRewardModal in Sidebar.tsx
+Triggered at: 2026-09-14T00:26:00Z
+Status: Removed undefined showAdRewardModal from useEffect dependency array.
 
