@@ -12,6 +12,7 @@ interface QuantTooltipProps {
     statusText?: string;
     statusColor?: "emerald" | "rose" | "blue" | "indigo" | "slate";
     forcePosition?: "top" | "bottom";
+    className?: string;
 }
 
 export default function QuantTooltip({
@@ -22,7 +23,8 @@ export default function QuantTooltip({
     tip,
     statusText,
     statusColor = "emerald",
-    forcePosition
+    forcePosition,
+    className
 }: QuantTooltipProps) {
     const [isOpen, setIsOpen] = useState(false);
     // 기본값을 bottom(아래쪽)으로 두어 테이블 상단 잘림 원천 방지
@@ -131,14 +133,14 @@ export default function QuantTooltip({
     return (
         <div 
             ref={containerRef} 
-            className="relative inline-block"
+            className={`relative ${className || "inline-block"}`}
             onMouseEnter={() => setIsOpen(true)}
             onMouseLeave={() => setIsOpen(false)}
         >
-            {/* 트리거 버튼 (뱃지) */}
+            {/* 트리거 버튼 (뱃지 또는 카드) */}
             <div 
                 onClick={handleToggle} 
-                className="cursor-pointer transition-transform active:scale-95"
+                className="cursor-pointer transition-transform active:scale-95 h-full w-full"
             >
                 {children}
             </div>
