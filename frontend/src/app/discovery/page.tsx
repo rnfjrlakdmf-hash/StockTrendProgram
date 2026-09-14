@@ -36,6 +36,7 @@ import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import KakaoShareButton from "@/components/KakaoShareButton";
 import CalendarSyncButton from "@/components/CalendarSyncButton";
 import StockSafetyBadgeCard from "@/components/StockSafetyBadgeCard";
+import StockTimingBadgeCard from "@/components/StockTimingBadgeCard";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
@@ -1519,6 +1520,28 @@ function DiscoveryContent() {
                                                     symbol={stock.symbol}
                                                     stockName={stock.name}
                                                     currency={stock.currency}
+                                                />
+
+                                                {/* 🚦 신호등 기술적 매매 타이밍 진단 미니 카드 (초보자 과열 방지 보조지표) */}
+                                                <StockTimingBadgeCard
+                                                    symbol={stock.symbol}
+                                                    stockName={stock.name}
+                                                    currency={stock.currency}
+                                                    currentPrice={
+                                                        extendedHours?.regular?.price ?? 
+                                                        Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''))
+                                                    }
+                                                    changePercent={(() => {
+                                                        const p = extendedHours?.regular?.change_pct;
+                                                        if (p !== undefined && !isNaN(p)) return Math.abs(p) > 100 ? p / 100 : p;
+                                                        if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) return Number(stock.regular_change_pct);
+                                                        const raw = String(stock.change_percent || stock.change || '0');
+                                                        const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                        return isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
+                                                    })()}
+                                                    dayHigh={stock.details?.day_high}
+                                                    dayLow={stock.details?.day_low}
+                                                    prevClose={Number(String(stock.details?.prev_close || (stock as any).prev_close || '0').replace(/,/g, ''))}
                                                 />
 
                                                 {/* 시간외 거래 가격 카드: 정규장(장중)에는 실시간 현재가에 집중하고, 장마감 후 또는 실제 시간외/야간 세션일 때만 표출 */}

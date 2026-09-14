@@ -1,4 +1,4 @@
-Update Trigger: Remove 5대 안전벨트 진단기 from sidebar navigation
-Triggered at: 2026-09-14T03:37:00Z
-Status: Removed from sidebar menu as requested. Feature is cleanly integrated directly in Discovery search results.
+Update Trigger: Add StockTimingBadgeCard (traffic light timing indicator) in Discovery page
+Triggered at: 2026-09-14T05:08:00Z
+Status: Legally compliant technical timing indicator added next to StockSafetyBadgeCard with full disclaimer and modal.
 
