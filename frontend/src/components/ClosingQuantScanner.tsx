@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     Sparkles, 
     Calendar, 
@@ -19,10 +19,13 @@ import {
     BarChart3, 
     ArrowUpRight,
     ExternalLink,
-    Target
+    Target,
+    Star,
+    Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
+import { useAuth } from '@/context/AuthContext';
 import QuantTooltip from '@/components/QuantTooltip';
 
 interface ScannerItem {
@@ -69,6 +72,172 @@ export default function ClosingQuantScanner() {
     const [data, setData] = useState<ScannerResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+    // 관심종목 연동 상태
+    const { user } = useAuth();
+    const [watchlistSet, setWatchlistSet] = useState<Set<string>>(new Set());
+    const [togglingCode, setTogglingCode] = useState<string | null>(null);
+    const [isBatchAdding, setIsBatchAdding] = useState<boolean>(false);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const showToast = useCallback((msg: string) => {
+        setToastMessage(msg);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => {
+            setToastMessage(null);
+        }, 2500);
+    }, []);
+
+    // 관심종목 목록 로드 및 실시간 동기화
+    const fetchWatchlistSet = useCallback(async () => {
+        try {
+            const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                headers: { "X-User-ID": currentUserId }
+            });
+            const json = await res.json();
+            if (json.status === 'success' && Array.isArray(json.data)) {
+                const set = new Set<string>();
+                json.data.forEach((item: any) => {
+                    const sym = typeof item === 'string' ? item : item.symbol;
+                    if (sym) {
+                        set.add(sym);
+                        if (sym.includes('.')) {
+                            set.add(sym.split('.')[0]);
+                        }
+                    }
+                });
+                setWatchlistSet(set);
+            }
+        } catch (err) {
+            console.error("Watchlist fetch error in scanner:", err);
+        }
+    }, [user?.id]);
+
+    useEffect(() => {
+        fetchWatchlistSet();
+        const handleWatchlistChanged = () => fetchWatchlistSet();
+        window.addEventListener('watchlistChanged', handleWatchlistChanged);
+        return () => {
+            window.removeEventListener('watchlistChanged', handleWatchlistChanged);
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        };
+    }, [fetchWatchlistSet]);
+
+    // 단일 종목 관심종목 등록 / 해제 토글
+    const toggleWatchlist = async (item: ScannerItem) => {
+        const isSaved = watchlistSet.has(item.code) || Array.from(watchlistSet).some(s => s === item.code || s.startsWith(item.code));
+        const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+        
+        setTogglingCode(item.code);
+        try {
+            if (isSaved) {
+                // 관심종목 해제 (DELETE)
+                const targetSymbol = Array.from(watchlistSet).find(s => s === item.code || s.startsWith(item.code)) || item.code;
+                const res = await fetch(`${API_BASE_URL}/api/watchlist/${encodeURIComponent(targetSymbol)}`, {
+                    method: 'DELETE',
+                    headers: { "X-User-ID": currentUserId }
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setWatchlistSet(prev => {
+                        const next = new Set(prev);
+                        next.delete(targetSymbol);
+                        next.delete(item.code);
+                        return next;
+                    });
+                    showToast(`⭐️ [${item.name}] 관심종목에서 해제되었습니다.`);
+                    window.dispatchEvent(new CustomEvent('watchlistChanged'));
+                }
+            } else {
+                // 관심종목 추가 (POST)
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-ID': currentUserId
+                    },
+                    body: JSON.stringify({
+                        symbol: item.code,
+                        price: item.currentPrice
+                    })
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setWatchlistSet(prev => new Set(prev).add(item.code));
+                    showToast(`🌟 [${item.name}] 관심종목에 추가되었습니다!`);
+                    window.dispatchEvent(new CustomEvent('watchlistChanged'));
+                }
+            }
+        } catch (err) {
+            console.error("Watchlist toggle failed:", err);
+            showToast("⚠️ 관심종목 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        } finally {
+            setTogglingCode(null);
+        }
+    };
+
+    // 당일 포착 종목 전체 일괄 관심종목 등록
+    const addAllToWatchlist = async () => {
+        if (!data?.data || data.data.length === 0 || isBatchAdding) return;
+
+        const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+        
+        // 아직 관심종목에 없는 종목 추출
+        const unaddedItems = data.data.filter(item => {
+            const isSaved = watchlistSet.has(item.code) || Array.from(watchlistSet).some(s => s === item.code || s.startsWith(item.code));
+            return !isSaved;
+        });
+
+        if (unaddedItems.length === 0) {
+            showToast("✨ 포착된 모든 종목이 이미 관심종목에 등록되어 있습니다.");
+            return;
+        }
+
+        setIsBatchAdding(true);
+        let successCount = 0;
+        try {
+            await Promise.all(
+                unaddedItems.map(async (item) => {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': currentUserId
+                            },
+                            body: JSON.stringify({
+                                symbol: item.code,
+                                price: item.currentPrice
+                            })
+                        });
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            successCount++;
+                        }
+                    } catch (e) {
+                        console.error(`Failed to add ${item.code}`, e);
+                    }
+                })
+            );
+
+            if (successCount > 0) {
+                setWatchlistSet(prev => {
+                    const next = new Set(prev);
+                    unaddedItems.forEach(i => next.add(i.code));
+                    return next;
+                });
+                showToast(`🎉 당일 포착 ${successCount}개 종목이 관심종목에 일괄 등록되었습니다!`);
+                window.dispatchEvent(new CustomEvent('watchlistChanged'));
+            }
+        } catch (err) {
+            console.error("Batch add failed:", err);
+            showToast("⚠️ 일괄 등록 중 일부 오류가 발생했습니다.");
+        } finally {
+            setIsBatchAdding(false);
+        }
+    };
 
     const tabs = [
         { days: 0, label: "오늘 포착" },
@@ -132,6 +301,19 @@ export default function ClosingQuantScanner() {
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             {data?.targetDate ? `${data.targetDate.slice(0,4)}.${data.targetDate.slice(4,6)}.${data.targetDate.slice(6,8)} 기준` : "실시간 갱신"}
                         </span>
+                        <button 
+                            onClick={addAllToWatchlist} 
+                            disabled={isBatchAdding || !data?.data?.length}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-xs font-bold text-amber-300 hover:text-amber-200 border border-amber-500/30 transition-all active:scale-95 disabled:opacity-50 shadow-sm shadow-amber-500/10"
+                            title="현재 화면의 모든 포착 종목을 관심종목에 일괄 등록합니다"
+                        >
+                            {isBatchAdding ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                            ) : (
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            )}
+                            <span>전체 관심등록</span>
+                        </button>
                         <button 
                             onClick={() => fetchScannerData(daysAgo)} 
                             disabled={isRefreshing}
@@ -336,15 +518,16 @@ export default function ClosingQuantScanner() {
                             <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                 <th className="p-3.5 sm:p-4">
                                     <QuantTooltip
-                                        title="🏢 종목코드 / 종목명"
-                                        headline="수급 퀀트 필터를 통과한 대상 종목"
-                                        description="정규장 마감 시점 거래량 급증과 메이저 수급 조건을 모두 충족하여 포착된 종목입니다."
-                                        tip="종목명을 클릭하시면 '5대 안전벨트 진단'과 실시간 호가/차트를 바로 열람하실 수 있습니다."
-                                        statusText="종목 상세"
-                                        statusColor="blue"
+                                        title="⭐ 관심종목 & 종목 정보"
+                                        headline="별(★) 클릭으로 관심종목 즉시 등록"
+                                        description="별(★) 아이콘을 클릭하면 내 관심종목에 즉시 저장되어 사이드바와 알림 기능으로 실시간 추적할 수 있습니다. 종목명을 클릭하면 '5대 안전벨트 진단'과 차트를 열람할 수 있습니다."
+                                        tip="상단의 [전체 관심등록] 버튼을 누르면 오늘 포착된 모든 유망 종목을 한 번에 등록할 수 있어 매우 편리합니다."
+                                        statusText="원클릭 연동"
+                                        statusColor="amber"
                                         forcePosition="bottom"
                                     >
-                                        <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
+                                        <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
+                                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                                             <span>종목코드 / 종목명</span>
                                             <HelpCircle className="w-3 h-3 text-slate-500" />
                                         </span>
@@ -458,15 +641,52 @@ export default function ClosingQuantScanner() {
 
                                 return (
                                     <tr key={idx} className="hover:bg-white/[0.04] transition-colors group">
-                                        {/* 종목명 및 코드 */}
+                                        {/* 종목명 및 코드 + 원클릭 관심종목 등록/해제 버튼 */}
                                         <td className="p-3.5 sm:p-4">
-                                            <Link href={`/stock/${item.code}`} className="flex items-center gap-2 group-hover:text-blue-400 transition-colors">
-                                                <div className="flex flex-col font-sans">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="font-bold text-white group-hover:text-blue-400 text-xs sm:text-sm">{item.name}</span>
-                                                        <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded font-mono">{item.market}</span>
-                                                    </div>
-                                                    <span className="text-[11px] text-slate-400 font-mono">{item.code}</span>
+                                            <div className="flex items-center gap-2">
+                                                {/* 원클릭 관심종목 별 버튼 */}
+                                                {(() => {
+                                                    const isSaved = watchlistSet.has(item.code) || Array.from(watchlistSet).some(s => s === item.code || s.startsWith(item.code));
+                                                    const isToggling = togglingCode === item.code;
+
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                toggleWatchlist(item);
+                                                            }}
+                                                            disabled={isToggling}
+                                                            title={isSaved ? "관심종목에서 해제" : "관심종목에 등록"}
+                                                            className={`p-1.5 rounded-xl transition-all active:scale-90 shrink-0 ${
+                                                                isSaved 
+                                                                    ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 shadow-sm shadow-amber-400/20" 
+                                                                    : "text-slate-500 hover:text-amber-300 hover:bg-white/10"
+                                                            }`}
+                                                        >
+                                                            {isToggling ? (
+                                                                <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                                                            ) : (
+                                                                <Star 
+                                                                    className={`w-4 h-4 transition-transform ${
+                                                                        isSaved 
+                                                                            ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] scale-110" 
+                                                                            : "text-slate-500 hover:scale-110"
+                                                                    }`} 
+                                                                />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })()}
+
+                                                <Link href={`/stock/${item.code}`} className="flex items-center gap-2 group-hover:text-blue-400 transition-colors flex-1 min-w-0">
+                                                    <div className="flex flex-col font-sans min-w-0">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="font-bold text-white group-hover:text-blue-400 text-xs sm:text-sm truncate">{item.name}</span>
+                                                            <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded font-mono shrink-0">{item.market}</span>
+                                                        </div>
+                                                        <span className="text-[11px] text-slate-400 font-mono">{item.code}</span>
                                                     
                                                     {/* 모바일 전용 CVD/OBV 뱃지 */}
                                                     <div className="flex md:hidden flex-wrap items-center gap-1 mt-1 font-mono">
@@ -726,6 +946,14 @@ export default function ClosingQuantScanner() {
                     본 화면은 사전에 정의된 기술적 알고리즘(거래량 급증 및 수급 유입)에 의해 기계적으로 추출된 객관적 통계 결과이며, 개별 종목에 대한 매수/매도 권유나 투자 자문이 아닙니다. 기술적 벤치마크선은 퀀트 백테스팅 및 통계 관측을 위한 참고 수준일 뿐 특정 수익률이나 목표가를 보장하는 것이 아니며, 모든 투자의 최종 판단과 손익의 책임은 투자자 본인에게 있습니다.
                 </div>
             </div>
+
+            {/* 관심종목 변경 실시간 플로팅 토스트 알림 */}
+            {toastMessage && (
+                <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#121829]/95 border border-amber-500/50 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_25px_rgba(245,158,11,0.25)] backdrop-blur-xl text-xs sm:text-sm font-semibold transition-all animate-in fade-in slide-in-from-bottom-5 duration-300">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0 animate-pulse" />
+                    <span>{toastMessage}</span>
+                </div>
+            )}
         </div>
     );
 }
