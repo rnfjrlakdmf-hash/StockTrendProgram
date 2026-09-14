@@ -22,11 +22,18 @@ export const metadata: Metadata = {
   }
 };
 
-export default function StockSafetyPage() {
+export default async function StockSafetyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ticker?: string }>;
+}) {
+  const params = await searchParams;
+  const initialTicker = params?.ticker || "005930";
+
   return (
     <div className="min-h-screen pt-20 pb-20 px-4 md:px-8 max-w-6xl mx-auto animate-in fade-in duration-500">
       <Suspense fallback={<div className="py-20 text-center text-slate-500 text-sm">진단기 로딩 중...</div>}>
-        <StockHealthChecker initialTicker="005930" />
+        <StockHealthChecker initialTicker={initialTicker} />
       </Suspense>
     </div>
   );

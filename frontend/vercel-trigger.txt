@@ -1,4 +1,4 @@
-Update Trigger: Fix ReferenceError showAdRewardModal in Sidebar.tsx
-Triggered at: 2026-09-14T00:26:00Z
-Status: Removed undefined showAdRewardModal from useEffect dependency array.
+Update Trigger: Embed 5-factor safety checker in Discovery search results with modal breakdown
+Triggered at: 2026-09-14T03:30:00Z
+Status: Direct in-place stock safety badge card beside price with interactive modal and clean signals tabs.
 

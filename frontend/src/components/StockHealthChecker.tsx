@@ -63,7 +63,13 @@ const PRESET_STOCKS = [
     { name: "LG에너지솔루션", ticker: "373220" },
 ];
 
-export default function StockHealthChecker({ initialTicker = "005930" }: { initialTicker?: string }) {
+export default function StockHealthChecker({ 
+    initialTicker = "005930",
+    hideSearchBar = false 
+}: { 
+    initialTicker?: string;
+    hideSearchBar?: boolean;
+}) {
     const [searchQuery, setSearchQuery] = useState(initialTicker);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -96,6 +102,7 @@ export default function StockHealthChecker({ initialTicker = "005930" }: { initi
 
     useEffect(() => {
         fetchHealthCheck(initialTicker);
+        setSearchQuery(initialTicker);
     }, [initialTicker]);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -105,8 +112,9 @@ export default function StockHealthChecker({ initialTicker = "005930" }: { initi
 
     const handleShare = () => {
         if (!healthData) return;
-        const text = `[5대 안전벨트 종목 자가진단] ${healthData.stockName} (${healthData.ticker})\n총점: ${healthData.totalScore}/100점 (${healthData.grade.label})\n👉 나만의 종목 안전벨트 점검하기: ${window.location.href}`;
-        if (navigator.clipboard) {
+        const currentUrl = typeof window !== 'undefined' ? `${window.location.origin}/safety?ticker=${healthData.ticker}` : '';
+        const text = `[5대 안전벨트 종목 자가진단] ${healthData.stockName} (${healthData.ticker})\n총점: ${healthData.totalScore}/100점 (${healthData.grade.label})\n👉 나만의 종목 안전벨트 점검하기: ${currentUrl}`;
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
             navigator.clipboard.writeText(text);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -217,44 +225,46 @@ export default function StockHealthChecker({ initialTicker = "005930" }: { initi
                         </p>
                     </div>
 
-                    {/* 빠른 종목 검색창 */}
-                    <div className="w-full md:w-80 flex-shrink-0">
-                        <form onSubmit={handleSearch} className="relative">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="종목명 또는 6자리 코드 입력..."
-                                className="w-full pl-10 pr-24 py-3 bg-slate-950/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-inner"
-                            />
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="absolute right-1.5 top-1.5 bottom-1.5 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs flex items-center gap-1 shadow transition-all disabled:opacity-50"
-                            >
-                                {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "진단하기"}
-                            </button>
-                        </form>
-
-                        {/* 프리셋 추천 버튼 */}
-                        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[11px] text-slate-400 font-medium">인기:</span>
-                            {PRESET_STOCKS.map((stock) => (
+                    {/* 빠른 종목 검색창 (hideSearchBar가 아닐 때만 노출) */}
+                    {!hideSearchBar && (
+                        <div className="w-full md:w-80 flex-shrink-0">
+                            <form onSubmit={handleSearch} className="relative">
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="종목명 또는 6자리 코드 입력..."
+                                    className="w-full pl-10 pr-24 py-3 bg-slate-950/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-inner"
+                                />
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                                 <button
-                                    key={stock.ticker}
-                                    type="button"
-                                    onClick={() => {
-                                        setSearchQuery(stock.name);
-                                        fetchHealthCheck(stock.ticker);
-                                    }}
-                                    className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors"
+                                    type="submit"
+                                    disabled={loading}
+                                    className="absolute right-1.5 top-1.5 bottom-1.5 px-4 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs flex items-center gap-1 shadow transition-all disabled:opacity-50"
                                 >
-                                    {stock.name}
+                                    {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "진단하기"}
                                 </button>
-                            ))}
+                            </form>
+
+                            {/* 프리셋 추천 버튼 */}
+                            <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] text-slate-400 font-medium">인기:</span>
+                                {PRESET_STOCKS.map((stock) => (
+                                    <button
+                                        key={stock.ticker}
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery(stock.name);
+                                            fetchHealthCheck(stock.ticker);
+                                        }}
+                                        className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors"
+                                    >
+                                        {stock.name}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 

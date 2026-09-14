@@ -35,6 +35,7 @@ import KoreanCompanyOverview from "@/components/KoreanCompanyOverview";
 import TurboQuantIndicators from "@/components/TurboQuantIndicators";
 import KakaoShareButton from "@/components/KakaoShareButton";
 import CalendarSyncButton from "@/components/CalendarSyncButton";
+import StockSafetyBadgeCard from "@/components/StockSafetyBadgeCard";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
@@ -1512,6 +1513,13 @@ function DiscoveryContent() {
                                                         );
                                                     })()}
                                                 </div>
+
+                                                {/* 5대 안전벨트 종목 건전성 자가진단 미니 카드 (사용자 화살표 지정 위치) */}
+                                                <StockSafetyBadgeCard
+                                                    symbol={stock.symbol}
+                                                    stockName={stock.name}
+                                                    currency={stock.currency}
+                                                />
 
                                                 {/* 시간외 거래 가격 카드: 정규장(장중)에는 실시간 현재가에 집중하고, 장마감 후 또는 실제 시간외/야간 세션일 때만 표출 */}
                                                 {(!stock.market_status?.includes('장중') || stock.is_extended_hours) &&
