@@ -1386,16 +1386,6 @@ function DiscoveryContent() {
                                                         </span>
                                                     </div>
                                                 </div>
-
-                                                <div className="flex items-center gap-2">
-                                                    <KakaoShareButton 
-                                                        title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
-                                                        description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
-                                                        url={`https://stock-trend-program.co.kr/discovery?q=${stock.symbol}`}
-                                                        className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#FEE500]/15 cursor-pointer"
-                                                        buttonText="카톡 공유"
-                                                    />
-                                                </div>
                                             </div>
 
                                             {/* 1층: 정규장 실시간 가격 카드 (단정하고 시원한 가로형 시세 바) */}
@@ -1558,21 +1548,24 @@ function DiscoveryContent() {
                                                                 const isUp = (val || 0) > 0 || (val === 0 && (pct || 0) > 0);
                                                                 const isDown = (val || 0) < 0 || (val === 0 && (pct || 0) < 0);
 
-                                                                return (
-                                                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-mono shadow-sm transition-all ${
+                                                                 return (
+                                                                    <div className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border font-mono shadow-md transition-all whitespace-nowrap ${
                                                                         isOvertimeSession
-                                                                            ? 'bg-amber-500/15 border-amber-500/35 text-amber-200'
-                                                                            : 'bg-indigo-500/10 border-indigo-500/30 text-zinc-200'
+                                                                            ? 'bg-amber-500/15 border-amber-500/40 text-amber-100'
+                                                                            : 'bg-zinc-950/80 border-indigo-500/30 text-zinc-100'
                                                                     }`}>
-                                                                        <span className={`text-[10px] font-bold flex items-center gap-1 ${isOvertimeSession ? 'text-amber-300' : 'text-indigo-300'}`}>
+                                                                        <span className={`text-[11px] sm:text-xs font-black flex items-center gap-1 px-1.5 py-0.5 rounded ${
+                                                                            isOvertimeSession ? 'bg-amber-500/25 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
+                                                                        }`}>
                                                                             {isOvertimeSession && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-                                                                            {isOvertimeSession ? '시간외단일가' : '시간외 종가'}
+                                                                            {isOvertimeSession ? '시간외 단일가' : '시간외 종가'}
                                                                         </span>
-                                                                        <span className="font-bold text-zinc-100">
+                                                                        <span className="font-black text-sm sm:text-base text-white tracking-tight">
                                                                             {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
                                                                         </span>
-                                                                        <span className={`text-[10px] font-black ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
-                                                                            {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
+                                                                        <span className={`text-xs sm:text-sm font-black flex items-center gap-0.5 ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                                                            <span>{isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                            <span className="opacity-90 font-mono">({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})</span>
                                                                         </span>
                                                                     </div>
                                                                 );
@@ -1587,46 +1580,46 @@ function DiscoveryContent() {
 
                                                                 if (isRegular) {
                                                                     return (
-                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_10px_rgba(52,211,153,0.3)]">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_10px_rgba(52,211,153,0.3)] whitespace-nowrap">
+                                                                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
                                                                             <span>장중</span>
                                                                         </div>
                                                                     );
                                                                 }
                                                                 if (isOvertimeSession) {
                                                                     return (
-                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.9)]" />
+                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)] whitespace-nowrap">
+                                                                            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.9)]" />
                                                                             <span>시간외 단일가</span>
                                                                         </div>
                                                                     );
                                                                 }
                                                                 if (isPreMarket) {
                                                                     return (
-                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)] whitespace-nowrap">
+                                                                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                                                                             <span>프리마켓</span>
                                                                         </div>
                                                                     );
                                                                 }
                                                                 if (isCallAuction) {
                                                                     return (
-                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-purple-500/20 text-purple-300 border-purple-500/40">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-purple-500/20 text-purple-300 border-purple-500/40 whitespace-nowrap">
+                                                                            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
                                                                             <span>동시호가</span>
                                                                         </div>
                                                                     );
                                                                 }
                                                                 if (isWeekend) {
                                                                     return (
-                                                                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-zinc-800 text-zinc-500 border-zinc-700">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-zinc-800 text-zinc-500 border-zinc-700 whitespace-nowrap">
+                                                                            <div className="w-2 h-2 rounded-full bg-zinc-600" />
                                                                             <span>휴장</span>
                                                                         </div>
                                                                     );
                                                                 }
                                                                 return (
-                                                                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black bg-zinc-800 text-zinc-400 border-zinc-700">
+                                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-zinc-800 text-zinc-300 border-zinc-700 whitespace-nowrap">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
                                                                         <span>장마감</span>
                                                                     </div>
@@ -1692,20 +1685,28 @@ function DiscoveryContent() {
                                                 </div>
                                             </div>
 
-                                            {/* 관심등록 & 종목 토론방 액션 버튼 */}
-                                            <div className="flex items-center gap-2">
+                                            {/* 관심등록 & 종목 토론방 & 카톡 공유 액션 버튼 그룹 */}
+                                            <div className="flex items-center gap-2 flex-wrap justify-end">
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <WatchlistButton symbol={stock.symbol} />
                                                 )}
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <a
                                                         href={`/community?stock=${encodeURIComponent(stock.symbol)}`}
-                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:text-blue-100 border border-blue-500/30 transition-all shadow-md"
+                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:text-blue-100 border border-blue-500/30 transition-all shadow-md whitespace-nowrap"
                                                     >
                                                         <MessageSquare className="w-4 h-4" />
                                                         <span>종목 토론방</span>
                                                     </a>
                                                 )}
+                                                <KakaoShareButton 
+                                                    title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
+                                                    description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
+                                                    url={`https://stock-trend-program.co.kr/discovery?q=${encodeURIComponent(stock.symbol || '')}`}
+                                                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#FEE500] hover:bg-[#FEE500]/90 text-black border border-[#FEE500]/40 transition-all shadow-md shadow-[#FEE500]/15 cursor-pointer whitespace-nowrap"
+                                                    buttonText="AI 분석 리포트 보기"
+                                                    showTextAlways={true}
+                                                />
                                             </div>
 
                                             {/* 관련 섹터 종목 퀵 위젯 (사용자 화살표 지정 위치 - 기존 모양 그대로 유지) */}
