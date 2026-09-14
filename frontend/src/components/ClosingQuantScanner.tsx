@@ -481,13 +481,14 @@ export default function ClosingQuantScanner() {
 
                 <QuantTooltip
                     title="📈 평균 변동률 (수익률)"
-                    headline="포착 시점 대비 현재까지의 평균 주가 등락률"
-                    description="알고리즘이 종목을 처음 포착했던 기준 가격 대비, 현재 시점까지 모든 포착 종목들의 평균 주가 수익률입니다."
-                    tip="빨간색 플러스(+) 수익률이면 전체 포착 종목들이 평균적으로 우상향 상승 탄력을 유지하고 있음을 뜻합니다."
-                    statusText="실시간 성과"
+                    headline="포착 종목들의 현재 평균 성적표"
+                    description="스캔 당시 가격과 현재가를 비교하여, 포착된 종목들이 평균 몇 % 상승하거나 하락했는지를 투명하게 집계한 퀀트 성적표입니다."
+                    tip="시장 지수(코스피·코스닥) 대비 우리 알고리즘 종목들이 얼마나 초과 수익을 내고 있는지 객관적으로 비교해보세요."
+                    statusText="통계 검증"
                     statusColor="rose"
                     className="w-full h-full block"
                     forcePosition="bottom"
+                    align="right"
                 >
                     <div className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-rose-500/30 transition-all h-full group">
                         <div className="flex items-center justify-between mb-1">
@@ -592,6 +593,7 @@ export default function ClosingQuantScanner() {
                                         statusText="수익률"
                                         statusColor="rose"
                                         forcePosition="bottom"
+                                        align="right"
                                     >
                                         <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
                                             <span>기준 대비 변동률</span>
@@ -608,6 +610,7 @@ export default function ClosingQuantScanner() {
                                         statusText="1차 목표선"
                                         statusColor="indigo"
                                         forcePosition="bottom"
+                                        align="right"
                                     >
                                         <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
                                             <span>기술적 벤치마크 (+10%)</span>
@@ -624,6 +627,7 @@ export default function ClosingQuantScanner() {
                                         statusText="목표 도달 검증"
                                         statusColor="emerald"
                                         forcePosition="bottom"
+                                        align="right"
                                     >
                                         <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
                                             <span>시세 도달 확인</span>
@@ -870,6 +874,7 @@ export default function ClosingQuantScanner() {
                                                 tip={isUp ? "목표선(+10%)에 가까워질수록 분할 매도로 수익을 실현하는 것이 안전합니다." : "손실 폭이 -3%~-5%를 넘어가면 손절 기준을 준수하는 것이 안전합니다."}
                                                 statusColor={isUp ? "rose" : item.returnRate < 0 ? "blue" : "slate"}
                                                 forcePosition={tooltipPos}
+                                                align="right"
                                             >
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-md cursor-pointer hover:scale-105 transition-transform ${
                                                     isUp ? 'text-rose-400 bg-rose-500/10' : item.returnRate < 0 ? 'text-sky-400 bg-sky-500/10' : 'text-slate-400'
@@ -889,6 +894,7 @@ export default function ClosingQuantScanner() {
                                                 statusText="목표선"
                                                 statusColor="indigo"
                                                 forcePosition={tooltipPos}
+                                                align="right"
                                             >
                                                 <div className="cursor-pointer">
                                                     <span className="border-b border-dotted border-slate-600 hover:border-white transition-colors">{item.resistancePrice.toLocaleString()}원</span>
@@ -908,6 +914,7 @@ export default function ClosingQuantScanner() {
                                                     statusText="목표 달성"
                                                     statusColor="emerald"
                                                     forcePosition={tooltipPos}
+                                                    align="right"
                                                 >
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10 cursor-pointer hover:scale-105 transition-transform">
                                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -923,6 +930,7 @@ export default function ClosingQuantScanner() {
                                                     statusText="추적 관측"
                                                     statusColor="slate"
                                                     forcePosition={tooltipPos}
+                                                    align="right"
                                                 >
                                                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-slate-400 bg-white/5 border border-white/5 cursor-pointer hover:scale-105 transition-transform">
                                                         <Clock className="w-3 h-3 text-slate-500" />

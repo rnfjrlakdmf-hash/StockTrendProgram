@@ -10,8 +10,9 @@ interface QuantTooltipProps {
     description: string; // 쉬운 설명
     tip?: string; // 실전 투자 꿀팁
     statusText?: string;
-    statusColor?: "emerald" | "rose" | "blue" | "indigo" | "slate";
+    statusColor?: "emerald" | "rose" | "blue" | "indigo" | "slate" | "amber";
     forcePosition?: "top" | "bottom";
+    align?: "left" | "center" | "right" | "auto"; // 수평 정렬
     className?: string;
 }
 
@@ -24,29 +25,56 @@ export default function QuantTooltip({
     statusText,
     statusColor = "emerald",
     forcePosition,
+    align = "auto",
     className
 }: QuantTooltipProps) {
     const [isOpen, setIsOpen] = useState(false);
     // 기본값을 bottom(아래쪽)으로 두어 테이블 상단 잘림 원천 방지
     const [position, setPosition] = useState<"top" | "bottom">(forcePosition || "bottom");
+    const [horizontalAlign, setHorizontalAlign] = useState<"left" | "center" | "right">(
+        align !== "auto" ? align : "center"
+    );
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (forcePosition) {
             setPosition(forcePosition);
-            return;
         }
+        if (align && align !== "auto") {
+            setHorizontalAlign(align);
+        }
+
         if (isOpen && containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
-            // 화면 아래 공간이 260px 미만이고 위쪽 공간이 충분할 때만 위쪽으로
-            if (viewportHeight - rect.bottom < 260 && rect.top > 260) {
-                setPosition("top");
-            } else {
-                setPosition("bottom");
+            const viewportWidth = window.innerWidth;
+
+            // 1. 수직 위치 자동 보정 (아래 공간 부족 시 위쪽으로)
+            if (!forcePosition) {
+                if (viewportHeight - rect.bottom < 260 && rect.top > 260) {
+                    setPosition("top");
+                } else {
+                    setPosition("bottom");
+                }
+            }
+
+            // 2. 수평 위치 자동 보정 (오른쪽/왼쪽 잘림 방지)
+            if (align === "auto") {
+                const rightSpace = viewportWidth - rect.right;
+                const leftSpace = rect.left;
+
+                if (rightSpace < 160) {
+                    // 화면 우측 끝에 가까우면 우측 정렬 (왼쪽으로 말풍선 펼침)
+                    setHorizontalAlign("right");
+                } else if (leftSpace < 160) {
+                    // 화면 좌측 끝에 가까우면 좌측 정렬 (오른쪽으로 말풍선 펼침)
+                    setHorizontalAlign("left");
+                } else {
+                    setHorizontalAlign("center");
+                }
             }
         }
-    }, [isOpen, forcePosition]);
+    }, [isOpen, forcePosition, align]);
 
     // 바깥 터치 시 닫기 (모바일 대응)
     useEffect(() => {
@@ -127,8 +155,31 @@ export default function QuantTooltip({
             tipIcon: "text-slate-400",
             arrowBorderTop: "border-r border-b border-slate-700",
             arrowBorderBottom: "border-l border-t border-slate-700",
+        },
+        amber: {
+            border: "border-amber-500/40 shadow-[0_12px_40px_rgba(245,158,11,0.28)]",
+            accentBar: "bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500",
+            badge: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+            dot: "bg-amber-400",
+            headlineText: "text-amber-300",
+            tipBorder: "border-amber-500/20 bg-amber-500/5",
+            tipIcon: "text-amber-400",
+            arrowBorderTop: "border-r border-b border-amber-500/40",
+            arrowBorderBottom: "border-l border-t border-amber-500/40",
         }
     }[statusColor];
+
+    const alignClass = {
+        left: "left-0 right-auto translate-x-0",
+        center: "left-1/2 -translate-x-1/2",
+        right: "right-0 left-auto translate-x-0"
+    }[horizontalAlign];
+
+    const arrowAlignClass = {
+        left: "left-6 -translate-x-0",
+        center: "left-1/2 -translate-x-1/2",
+        right: "right-6 -translate-x-0"
+    }[horizontalAlign];
 
     return (
         <div 
@@ -149,7 +200,7 @@ export default function QuantTooltip({
             {isOpen && (
                 <div 
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    className={`absolute z-50 left-1/2 -translate-x-1/2 w-[290px] sm:w-[320px] rounded-2xl bg-[#0a0f1d]/98 backdrop-blur-2xl border ${themeStyles.border} p-4 text-left pointer-events-auto transition-all animate-in fade-in zoom-in-95 duration-150 ${
+                    className={`absolute z-50 ${alignClass} w-[280px] sm:w-[320px] max-w-[calc(100vw-32px)] rounded-2xl bg-[#0a0f1d]/98 backdrop-blur-2xl border ${themeStyles.border} p-4 text-left pointer-events-auto transition-all animate-in fade-in zoom-in-95 duration-150 ${
                         position === "top" 
                             ? "bottom-full mb-3" 
                             : "top-full mt-3"
@@ -197,9 +248,9 @@ export default function QuantTooltip({
 
                     {/* 말풍선 다이아몬드 꼬리표 */}
                     {position === "top" ? (
-                        <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[5px] w-2.5 h-2.5 bg-[#0a0f1d] ${themeStyles.arrowBorderTop} rotate-45`}></div>
+                        <div className={`absolute top-full ${arrowAlignClass} -mt-[5px] w-2.5 h-2.5 bg-[#0a0f1d] ${themeStyles.arrowBorderTop} rotate-45`}></div>
                     ) : (
-                        <div className={`absolute bottom-full left-1/2 -translate-x-1/2 -mb-[5px] w-2.5 h-2.5 bg-[#0a0f1d] ${themeStyles.arrowBorderBottom} rotate-45`}></div>
+                        <div className={`absolute bottom-full ${arrowAlignClass} -mb-[5px] w-2.5 h-2.5 bg-[#0a0f1d] ${themeStyles.arrowBorderBottom} rotate-45`}></div>
                     )}
                 </div>
             )}
