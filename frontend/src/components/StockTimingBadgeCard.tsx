@@ -15,7 +15,10 @@ import {
     Flame,
     Layers,
     ShieldCheck,
-    Compass
+    Compass,
+    ExternalLink,
+    BarChart2,
+    LineChart as LineChartIcon
 } from "lucide-react";
 
 interface StockTimingBadgeCardProps {
@@ -74,6 +77,21 @@ export default function StockTimingBadgeCard({
             ? symbol.split(".")[0]
             : symbol
         : "";
+
+    // 실시간 캔들 차트 URL 생성 (국내 네이버증권 / 해외 트레이딩뷰 스마트 연동)
+    const chartUrl = useMemo(() => {
+        if (!cleanTicker) return "";
+        if (/^\d{6}$/.test(cleanTicker)) {
+            return `https://m.stock.naver.com/domestic/stock/${cleanTicker}/chart`;
+        }
+        return `https://www.tradingview.com/chart/?symbol=${cleanTicker}`;
+    }, [cleanTicker]);
+
+    const handleOpenChart = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!chartUrl) return;
+        window.open(chartUrl, "_blank", "noopener,noreferrer");
+    };
 
     // 숫자 파싱
     const priceNum = typeof currentPrice === "number" 
@@ -574,6 +592,28 @@ export default function StockTimingBadgeCard({
                                                     <strong className="text-white">초보자 체크 포인트:</strong> {signal.advice}
                                                 </span>
                                             </div>
+
+                                            {/* 📈 차트에서 지지선 확인 퀵 배너 */}
+                                            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-950/50 via-indigo-950/30 to-purple-950/30 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-inner">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-1.5 text-xs font-black text-blue-300">
+                                                        <LineChartIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                                                        <span>차트에서 바닥 지지선 직접 확인하기</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-zinc-300 leading-relaxed break-keep">
+                                                        차트를 열어 <strong className="text-rose-400">빨간선(5일선)</strong>이나 <strong className="text-amber-300">노란선(20일선)</strong> 바닥판 아래로 주가가 더 안 떨어지고 멈추는지(지지선) 확인해 보세요!
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={handleOpenChart}
+                                                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shrink-0 shadow-md shadow-blue-600/30 transition-all active:scale-95"
+                                                    title="실시간 캔들 차트 새 창으로 열기"
+                                                >
+                                                    <BarChart2 className="w-3.5 h-3.5" />
+                                                    <span>실시간 차트 열기</span>
+                                                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
@@ -745,14 +785,21 @@ export default function StockTimingBadgeCard({
                         </div>
 
                         {/* 모달 푸터 */}
-                        <div className="px-6 py-4 border-t border-zinc-800/80 bg-zinc-900/80 backdrop-blur-md flex items-center justify-between">
-                            <div className="text-[11px] text-zinc-500 hidden sm:flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" />
-                                실시간 시세 반영 중
+                        <div className="px-5 sm:px-7 py-4 border-t border-zinc-800/80 bg-zinc-900/80 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <button
+                                    onClick={handleOpenChart}
+                                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-black transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                                    title="실시간 캔들 차트 새 창으로 열기"
+                                >
+                                    <LineChartIcon className="w-4 h-4" />
+                                    <span>실시간 캔들 차트 바로보기</span>
+                                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                                </button>
                             </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/25 active:scale-95"
+                                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all active:scale-95 text-center"
                             >
                                 확인 완료
                             </button>
