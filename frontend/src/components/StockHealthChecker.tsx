@@ -382,7 +382,7 @@ export default function StockHealthChecker({
                     {/* 상단 스코어 요약 카드 (Bento Style) */}
                     {(() => {
                         const styles = getGradeBadgeStyles(healthData.grade.level);
-                        const passedCount = healthData.checklist.filter(c => c.status === "pass").length;
+                        const passedCount = (healthData.checklist || []).filter(c => c.status === "pass").length;
                         return (
                             <div className={`p-6 md:p-8 rounded-2xl border ${styles.ring} bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-950 relative overflow-hidden shadow-2xl`}>
                                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -425,7 +425,7 @@ export default function StockHealthChecker({
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-[11px] text-slate-400 font-medium">안전벨트 상태:</span>
                                                 <div className="flex items-center gap-1">
-                                                    {healthData.checklist.map((c) => (
+                                                    {(healthData.checklist || []).map((c) => (
                                                         <div
                                                             key={c.id}
                                                             title={`${c.category}: ${c.badge}`}
@@ -476,7 +476,7 @@ export default function StockHealthChecker({
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
-                            {healthData.checklist.map((item) => {
+                            {(healthData.checklist || []).map((item) => {
                                 const currentTab = activeTabMap[item.id] || "analogy";
                                 const isPass = item.status === "pass";
                                 const isWarn = item.status === "warn";
@@ -694,7 +694,7 @@ export default function StockHealthChecker({
 
                             <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1">
                                 <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                                    🏃‍♂️ 4. 상투 회피
+                                    🏃 4. 상투 회피
                                 </div>
                                 <p className="text-[11px] text-slate-300 leading-snug">
                                     오늘 이미 10% 이상 <strong>폭등한 꼭대기</strong>가 아닌가? (숨찬 자리 쫓아가지 말고 눌림목 대기)
