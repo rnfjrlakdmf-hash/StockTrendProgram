@@ -758,6 +758,7 @@ export default function ClosingQuantScanner() {
                                                 </div>
                                                 <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 ml-auto transition-colors" />
                                             </Link>
+                                            </div>
                                         </td>
 
                                         {/* PC 전용 CVD / OBV 퀀트 뱃지 열 */}
