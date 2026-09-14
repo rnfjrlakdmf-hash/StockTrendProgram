@@ -181,7 +181,7 @@ export default function StockTimingBadgeCard({
             {/* 신호등 기술적 타이밍 진단 미니 카드 (벤토 스타일) */}
             <div
                 onClick={() => setIsModalOpen(true)}
-                className={`p-4 rounded-2xl bg-zinc-900/90 border ${signal.borderColor} shadow-lg flex flex-col justify-between gap-2.5 transition-all duration-200 cursor-pointer group min-w-[280px] sm:min-w-[310px] max-w-sm relative overflow-hidden ${className}`}
+                className={`p-4 sm:p-5 rounded-2xl bg-zinc-900/90 border ${signal.borderColor} shadow-lg flex flex-col justify-between gap-3 transition-all duration-200 cursor-pointer group w-full h-full relative overflow-hidden ${className}`}
                 title="클릭하여 신호등 매매 타이밍 상세 진단표 열기"
             >
                 {/* 은은한 배경 글로우 */}
@@ -238,7 +238,7 @@ export default function StockTimingBadgeCard({
                 </div>
 
                 {/* 하단: 클릭 유도 바 */}
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-medium relative z-10">
+                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-500 font-medium relative z-10">
                     <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         실시간 기술적 분석 지표

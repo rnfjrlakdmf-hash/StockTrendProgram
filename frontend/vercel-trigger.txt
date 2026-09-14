@@ -1,4 +1,3 @@
-Update Trigger: Fix investor trend tab empty brokerage fallback
-Triggered at: 2026-09-14T06:56:00Z
-Status: Intelligently populated major investor flows when portal brokerage scraping is unavailable.
-
+Update Trigger: Neatly align discovery header cards in unified responsive bento grid
+Triggered at: 2026-09-14T07:16:00Z
+Status: Aligned real-time price, 5 safety belts, traffic light timing, and quant score cards into an equal-height responsive grid with top action bar and horizontal related stocks ribbon.

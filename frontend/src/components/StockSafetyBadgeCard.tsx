@@ -141,10 +141,10 @@ export default function StockSafetyBadgeCard({
 
     return (
         <>
-            {/* 빨간색 박스 지정 영역: 5대 안전벨트 진단 미니 카드 */}
+            {/* 5대 안전벨트 진단 미니 카드 (벤토 그리드 정렬 호환) */}
             <div
                 onClick={() => setIsModalOpen(true)}
-                className={`p-4 rounded-2xl bg-zinc-900/90 border border-emerald-500/30 hover:border-emerald-400/70 shadow-lg hover:shadow-emerald-500/15 flex flex-col justify-between gap-2.5 transition-all duration-200 cursor-pointer group min-w-[280px] sm:min-w-[320px] max-w-sm relative overflow-hidden ${className}`}
+                className={`p-4 sm:p-5 rounded-2xl bg-zinc-900/90 border border-emerald-500/30 hover:border-emerald-400/70 shadow-lg hover:shadow-emerald-500/15 flex flex-col justify-between gap-3 transition-all duration-200 cursor-pointer group w-full h-full relative overflow-hidden ${className}`}
                 title="클릭하여 5대 안전벨트 상세 진단표 열기"
             >
                 {/* 은은한 배경 에메랄드 글로우 효과 */}
