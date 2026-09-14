@@ -8,7 +8,7 @@ import GaugeChart from "@/components/GaugeChart";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import SeoContentBlock from "@/components/SeoContentBlock";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, MessageSquare, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin } from "lucide-react";
+import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
@@ -1410,7 +1410,7 @@ function DiscoveryContent() {
                                                 })();
 
                                                 return (
-                                                    <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                    <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
                                                         <div className="flex flex-wrap items-center gap-3">
                                                             <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                                                                 extendedHours?.regular?.is_active || stock.market_status === '장중' 
@@ -1517,7 +1517,7 @@ function DiscoveryContent() {
                                                             })()}
                                                         </div>
 
-                                                        <div className="flex items-center gap-2 self-end sm:self-center">
+                                                        <div className="flex items-center gap-2.5 self-end md:self-center flex-wrap sm:flex-nowrap shrink-0">
                                                             {/* 시간외 거래 정보 (시간외 단일가 거래 중이거나 장마감 후 시간외 체결 데이터가 있을 때 항상 표출) */}
                                                             {(() => {
                                                                 const afterData = stock.after_market_data || stock.nxt_data;
@@ -1548,24 +1548,24 @@ function DiscoveryContent() {
                                                                 const isUp = (val || 0) > 0 || (val === 0 && (pct || 0) > 0);
                                                                 const isDown = (val || 0) < 0 || (val === 0 && (pct || 0) < 0);
 
-                                                                 return (
-                                                                    <div className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border font-mono shadow-md transition-all whitespace-nowrap ${
+                                                                return (
+                                                                    <div className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border shadow-md transition-all shrink-0 whitespace-nowrap ${
                                                                         isOvertimeSession
                                                                             ? 'bg-amber-500/15 border-amber-500/40 text-amber-100'
-                                                                            : 'bg-zinc-950/80 border-indigo-500/30 text-zinc-100'
+                                                                            : 'bg-zinc-950/90 border-indigo-500/30 text-zinc-100'
                                                                     }`}>
-                                                                        <span className={`text-[11px] sm:text-xs font-black flex items-center gap-1 px-1.5 py-0.5 rounded ${
+                                                                        <span className={`text-[11px] sm:text-xs font-black flex items-center gap-1 px-2 py-0.5 rounded-lg shrink-0 ${
                                                                             isOvertimeSession ? 'bg-amber-500/25 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
                                                                         }`}>
                                                                             {isOvertimeSession && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                                                                             {isOvertimeSession ? '시간외 단일가' : '시간외 종가'}
                                                                         </span>
-                                                                        <span className="font-black text-sm sm:text-base text-white tracking-tight">
+                                                                        <span className="font-mono font-black text-sm sm:text-base text-white tracking-normal shrink-0">
                                                                             {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
                                                                         </span>
-                                                                        <span className={`text-xs sm:text-sm font-black flex items-center gap-0.5 ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                                                        <span className={`font-mono text-xs sm:text-sm font-black flex items-center gap-1 shrink-0 ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
                                                                             <span>{isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
-                                                                            <span className="opacity-90 font-mono">({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})</span>
+                                                                            <span className="opacity-90">({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})</span>
                                                                         </span>
                                                                     </div>
                                                                 );
@@ -1685,19 +1685,10 @@ function DiscoveryContent() {
                                                 </div>
                                             </div>
 
-                                            {/* 관심등록 & 종목 토론방 & 카톡 공유 액션 버튼 그룹 */}
+                                            {/* 관심등록 & 카톡 공유 액션 버튼 그룹 */}
                                             <div className="flex items-center gap-2 flex-wrap justify-end">
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <WatchlistButton symbol={stock.symbol} />
-                                                )}
-                                                {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
-                                                    <a
-                                                        href={`/community?stock=${encodeURIComponent(stock.symbol)}`}
-                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:text-blue-100 border border-blue-500/30 transition-all shadow-md whitespace-nowrap"
-                                                    >
-                                                        <MessageSquare className="w-4 h-4" />
-                                                        <span>종목 토론방</span>
-                                                    </a>
                                                 )}
                                                 <KakaoShareButton 
                                                     title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
