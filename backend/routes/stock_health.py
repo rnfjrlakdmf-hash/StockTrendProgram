@@ -229,7 +229,16 @@ def get_stock_health_check(ticker: str):
                     "headline": op_headline,
                     "description": op_desc,
                     "badge": op_badge,
-                    "icon": "Coins"
+                    "icon": "Coins",
+                    "analogy": "🍗 치킨집 비유: 매달 닭 튀겨서 월세 내고 사장님 순이익이 남는 '알짜 맛집'인가, 아니면 매달 적자라 집 보증금 까먹으며 빚으로 버티는 가게인가?",
+                    "dangerScenario": "적자가 계속 쌓이는 기업은 통장 잔고가 바닥나면 주주에게 돈을 내놓으라는 '유상증자'나 빚문서인 '전환사채(CB)' 폭탄, 감자 등 주가 폭락 악재를 던집니다.",
+                    "facts": {
+                        "indicator": "최근 영업이익",
+                        "value": f"{recent_op:,.0f}억원" if recent_op is not None else "데이터 공시 참조",
+                        "statusText": "흑자 영업활동 지속" if recent_op and recent_op > 0 else "영업적자 주의" if recent_op and recent_op <= 0 else "공시 확인 필요",
+                        "safeLine": "0원 초과 (흑자 유지 필수)",
+                        "dangerLine": "적자 지속 시 유상증자 위험"
+                    }
                 },
                 {
                     "id": "valuation",
@@ -241,7 +250,16 @@ def get_stock_health_check(ticker: str):
                     "headline": val_headline,
                     "description": val_desc,
                     "badge": val_badge,
-                    "icon": "Tag"
+                    "icon": "Tag",
+                    "analogy": "🏢 아파트 매매가 비유: 1년에 1억 버는 가게 권리금을 15억(PER 15배, 합리적)에 사는지, 아니면 100억(PER 100배, 심각한 바가지)에 사는지 따져보는 잣대입니다.",
+                    "dangerScenario": "미래 기대감만으로 실적 대비 수십 배 부풀려진 종목은, 작은 시장 악재나 실적 미달에도 하루아침에 -30%~-50% 거품이 꺼질 수 있습니다.",
+                    "facts": {
+                        "indicator": "PER / PBR",
+                        "value": f"PER {per:.1f}배 / PBR {pbr:.1f}배" if per > 0 else f"PER 산출불가(적자) / PBR {pbr:.1f}배",
+                        "statusText": "합리적 가치권" if val_score >= 15 else "고평가 주의" if val_score == 10 else "적자 밸류 산출불가",
+                        "safeLine": "PER 35배 이하 · PBR 3.5배 이하",
+                        "dangerLine": "PER 50배 초과 또는 당기순손실"
+                    }
                 },
                 {
                     "id": "supply",
@@ -253,7 +271,16 @@ def get_stock_health_check(ticker: str):
                     "headline": major_headline,
                     "description": major_desc,
                     "badge": major_badge,
-                    "icon": "Building2"
+                    "icon": "Building2",
+                    "analogy": "🚢 선박 체급 비유: 10만 톤 대형 크루즈선(시총 1조 이상) vs 작은 나룻배(소형주)! 나룻배는 세력의 파도 질에 쉽게 뒤집히지만, 대형선은 외국인·기관이 함께 타 안전합니다.",
+                    "dangerScenario": "시가총액이 수백억 원대에 불과한 초소형 잡주는 텔레그램이나 카톡 리딩방 작전 세력의 '설거지(개미에게 물량 떠넘기기)' 먹잇감이 되기 쉽습니다.",
+                    "facts": {
+                        "indicator": "시가총액 규모",
+                        "value": f"{cap // 100000000:,.0f}억원" if cap > 0 else "실시간 집계 중",
+                        "statusText": "메이저 대형주 (1조원 이상)" if cap >= 1000000000000 else "중견 우량주 (3천억 이상)" if cap >= 300000000000 else "소형주 (변동성 주의)",
+                        "safeLine": "최소 3,000억원 이상 권장",
+                        "dangerLine": "1,000억원 미만 (작전 세력 주의)"
+                    }
                 },
                 {
                     "id": "overheat",
@@ -265,7 +292,16 @@ def get_stock_health_check(ticker: str):
                     "headline": tech_headline,
                     "description": tech_desc,
                     "badge": tech_badge,
-                    "icon": "TrendingUp"
+                    "icon": "TrendingUp",
+                    "analogy": "🏃‍♂️ 마라톤 전력질주 비유: 100m를 전력 질주해 숨이 턱 끝까지 찬 자리인가, 아니면 벤치에서 편안하게 숨을 고르고 있는 자리인가? 숨찬 자리가 바로 '상투'입니다.",
+                    "dangerScenario": "호재 뉴스를 보고 당일 10~20% 폭등한 종목을 쫓아가면, 먼저 산 큰손들이 팔고 나가는 차익 실현 물량을 최고가에 받아주고 물리는 '상투'가 됩니다.",
+                    "facts": {
+                        "indicator": "단기 가격 변동률",
+                        "value": f"{change_rate:+.1f}%",
+                        "statusText": "안정적 추세권" if tech_score == 20 else "단기 급등 과열(상투 주의)" if change_rate >= 12 else "단기 급락 지지선 대기",
+                        "safeLine": "당일 변동폭 ±10% 이내 안정 추세",
+                        "dangerLine": "당일 +12% 이상 급등 추격매수"
+                    }
                 },
                 {
                     "id": "debt",
@@ -277,7 +313,16 @@ def get_stock_health_check(ticker: str):
                     "headline": debt_headline,
                     "description": debt_desc,
                     "badge": debt_badge,
-                    "icon": "ShieldCheck"
+                    "icon": "ShieldCheck",
+                    "analogy": "💳 빚더미 비유: 내 전 재산 대비 대출 빚의 크기! 빚이 27%라는 것은 1억짜리 가게에 빚이 2,700만원뿐이라, 금리가 아무리 올라도 이자 걱정 없이 든든하다는 뜻입니다.",
+                    "dangerScenario": "부채비율 200% 초과 기업은 금리가 오르면 번 돈을 몽땅 은행 이자로 뺏깁니다. 빚을 못 갚으면 자본잠식, 횡령, 거래정지 및 상장폐지로 이어집니다.",
+                    "facts": {
+                        "indicator": "부채비율 (Debt Ratio)",
+                        "value": f"{recent_debt:.1f}%" if recent_debt is not None else "일반 표준 범위",
+                        "statusText": "초우량 무차입 수준 (120% 이하)" if recent_debt and recent_debt <= 120 else "적정 통제 수준 (200% 이하)" if recent_debt and recent_debt <= 200 else "과다 부채 주의",
+                        "safeLine": "120% 이하 (안전 기준선)",
+                        "dangerLine": "200% 초과 (고금리 이자 부담)"
+                    }
                 }
             ],
             "disclaimer": "본 진단 결과는 금융감독원 전자공시(DART) 및 한국거래소(KRX)의 공개 팩트 데이터를 기계적으로 집계한 '투자자 자가 점검 및 금융 교육용 셀프 스캐너'입니다. 특정 종목의 매수·매도를 권유하거나 1:1 투자 자문을 제공하지 않으며, 모든 투자의 최종 판단과 손익 책임은 투자자 본인에게 있습니다."
