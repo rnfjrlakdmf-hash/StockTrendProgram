@@ -1,3 +1,3 @@
-Update Trigger: Neatly align discovery header cards in unified responsive bento grid
-Triggered at: 2026-09-14T07:16:00Z
-Status: Aligned real-time price, 5 safety belts, traffic light timing, and quant score cards into an equal-height responsive grid with top action bar and horizontal related stocks ribbon.
+Update Trigger: Retain exact original compact right-side widget (quant score, actions, related stocks) and neatly align left cards in 2-tier 50:50 layout
+Triggered at: 2026-09-14T07:51:00Z
+Status: Kept right-side score & related stocks in exact compact form as requested; aligned left cards symmetrically.

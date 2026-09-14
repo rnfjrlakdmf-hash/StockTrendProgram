@@ -1362,365 +1362,307 @@ function DiscoveryContent() {
                                     <div className="absolute top-0 right-1/4 w-96 h-32 bg-indigo-500/10 blur-3xl pointer-events-none rounded-full" />
                                     <div className="absolute top-0 left-1/4 w-96 h-32 bg-blue-500/10 blur-3xl pointer-events-none rounded-full" />
 
-                                    {/* 1. 상단 종목 헤더 및 핵심 진단 4대 벤토 그리드 */}
-                                    <div className="mb-6 md:mb-8 relative z-10 space-y-4">
-                                        {/* 상단: 종목명, 심볼, 거래소 정보 및 통합 액션 버튼군 */}
-                                        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight flex items-center gap-2">
-                                                    <span>{stock.name}</span>
-                                                </h3>
-                                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                                    <span className="text-sm sm:text-base md:text-xl text-zinc-400 font-mono font-bold">
-                                                        {getExchangeLabel(stock.symbol).code}
-                                                    </span>
-                                                    {getExchangeLabel(stock.symbol).exchange && (
-                                                        <span className={`text-[10px] sm:text-xs font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-white/10 border border-white/15 ${getExchangeLabel(stock.symbol).color}`}>
-                                                            {getExchangeLabel(stock.symbol).exchange}
+                                    {/* 1. 상단 종목 헤더 영역 */}
+                                    <div className="flex flex-col lg:flex-row items-start justify-between mb-6 md:mb-8 gap-5 sm:gap-6 relative z-10">
+                                        {/* 좌측 영역 (종목명, 카톡공유, 실시간 시세, 5대 안전벨트 & 기술적 타이밍 2개 카드) */}
+                                        <div className="flex-1 min-w-0 w-full flex flex-col gap-3.5">
+                                            {/* 종목명 & 거래소 & 카톡 공유 버튼 */}
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                    <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight flex items-center gap-2">
+                                                        <span>{stock.name}</span>
+                                                    </h3>
+                                                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                                        <span className="text-sm sm:text-base md:text-xl text-zinc-400 font-mono font-bold">
+                                                            {getExchangeLabel(stock.symbol).code}
                                                         </span>
-                                                    )}
-                                                    <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                                                        {stock.currency === 'KRW' ? 'KRX 대형주' : 'GLOBAL TECH'}
-                                                    </span>
+                                                        {getExchangeLabel(stock.symbol).exchange && (
+                                                            <span className={`text-[10px] sm:text-xs font-black px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-white/10 border border-white/15 ${getExchangeLabel(stock.symbol).color}`}>
+                                                                {getExchangeLabel(stock.symbol).exchange}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                            {stock.currency === 'KRW' ? 'KRX 대형주' : 'GLOBAL TECH'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <KakaoShareButton 
+                                                        title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
+                                                        description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
+                                                        url={`https://stock-trend-program.co.kr/discovery?q=${stock.symbol}`}
+                                                        className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#FEE500]/15 cursor-pointer"
+                                                        buttonText="카톡 공유"
+                                                    />
                                                 </div>
                                             </div>
 
-                                            {/* 상단 우측 액션 버튼들 (관심등록 + 종목토론방 + 카톡공유) */}
-                                            <div className="flex flex-wrap items-center gap-2">
+                                            {/* 1층: 정규장 실시간 가격 카드 (단정하고 시원한 가로형 시세 바) */}
+                                            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                                                        {extendedHours?.regular?.is_active ? 'LIVE MARKET 실시간 현재가' :
+                                                         stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' : 
+                                                         stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
+                                                         'REGULAR MARKET 정규장 종가'}
+                                                    </span>
+
+                                                    <div className="flex items-baseline gap-2.5">
+                                                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline font-mono">
+                                                            <span className="text-lg sm:text-xl mr-1 text-zinc-400 font-bold">
+                                                                {stock.currency === 'KRW' ? '₩' : '$'}
+                                                            </span>
+                                                            <BlinkingPrice
+                                                                price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
+                                                                    (stock.currency === 'KRW'
+                                                                    ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
+                                                                    : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
+                                                                className="text-white bg-transparent"
+                                                            />
+                                                        </span>
+
+                                                        {(() => {
+                                                            const currentPriceNum = extendedHours?.regular?.price 
+                                                                ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                            const prevCloseNum = Number(String(stock.details?.prev_close || (stock as any).prev_close || (stock as any).previousClose || '0').replace(/,/g, ''));
+
+                                                            let changeVal = extendedHours?.regular?.change;
+                                                            if (changeVal === undefined || isNaN(changeVal)) {
+                                                                if (stock.regular_change_val !== undefined && Number(stock.regular_change_val) !== 0) {
+                                                                    changeVal = Number(stock.regular_change_val);
+                                                                } else if (stock.change_val !== undefined && Number(String(stock.change_val).replace(/,/g, '')) !== 0) {
+                                                                    changeVal = Number(String(stock.change_val).replace(/,/g, ''));
+                                                                } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                    changeVal = currentPriceNum - prevCloseNum;
+                                                                } else if (stock.change_percent || stock.change) {
+                                                                    const raw = String(stock.change_percent || stock.change || '0');
+                                                                    const parsedPct = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                    if (!isNaN(parsedPct) && prevCloseNum > 0) {
+                                                                        changeVal = Math.round(prevCloseNum * (parsedPct / 100));
+                                                                    } else {
+                                                                        changeVal = 0;
+                                                                    }
+                                                                } else {
+                                                                    changeVal = 0;
+                                                                }
+                                                            }
+
+                                                            let changePct = extendedHours?.regular?.change_pct;
+                                                            if (changePct !== undefined && !isNaN(changePct) && Math.abs(changePct) > 100) {
+                                                                changePct = changePct / 100;
+                                                            }
+                                                            if (changePct === undefined || isNaN(changePct)) {
+                                                                if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
+                                                                    changePct = ((currentPriceNum - prevCloseNum) / prevCloseNum) * 100;
+                                                                } else if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
+                                                                    changePct = Number(stock.regular_change_pct);
+                                                                } else if (stock.change_percent || stock.change) {
+                                                                    const raw = String(stock.change_percent || stock.change || '0');
+                                                                    const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                    changePct = isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
+                                                                } else {
+                                                                    changePct = 0;
+                                                                }
+                                                            }
+
+                                                            const isUp = changeVal > 0 || (changeVal === 0 && changePct > 0);
+                                                            const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
+
+                                                            return (
+                                                                <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-xl font-black text-xs sm:text-sm border shadow-sm ${
+                                                                    isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
+                                                                    isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
+                                                                    'bg-zinc-800 border-white/10 text-zinc-400'
+                                                                }`}>
+                                                                    <span>{isUp ? '▲' : isDown ? '▼' : ''} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                    <span className="opacity-90 font-mono">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+
+                                                    {/* 해외(미국) 주식 원화 환산 가격 표시 */}
+                                                    {stock.currency !== 'KRW' && (() => {
+                                                        const currentPriceNum = extendedHours?.regular?.price 
+                                                            ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                        const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
+                                                        const krwPrice = Math.round(currentPriceNum * rate);
+                                                        
+                                                        return (
+                                                            <div className="flex items-center gap-2 text-xs font-mono">
+                                                                <span className="text-[11px] font-sans font-semibold text-zinc-400">원화 환산</span>
+                                                                <span className="font-black text-amber-300">≈ {krwPrice.toLocaleString()}원</span>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+
+                                                <div className="flex items-center gap-2 self-end sm:self-center">
+                                                    {/* 시간외 거래 정보 (장마감 후 또는 실제 시간외/야간 세션일 때 일체형으로 표출) */}
+                                                    {(!stock.market_status?.includes('장중') || stock.is_extended_hours) &&
+                                                    (stock.after_market_data || stock.nxt_data || stock.is_extended_hours || extendedHours?.extended) && (() => {
+                                                        const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
+                                                            Number(String(
+                                                            stock.is_extended_hours && stock.extended_price ? stock.extended_price :
+                                                            (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
+                                                                ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
+                                                                : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
+                                                        ).replace(/,/g, ''));
+
+                                                        let val = extendedHours?.extended?.change;
+                                                        let pct = extendedHours?.extended?.change_pct;
+                                                        if (val === undefined || val === 0) {
+                                                            const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
+                                                            val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
+                                                            pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
+                                                            
+                                                            if (!val || val === 0) {
+                                                                const prevClose = Number(stock.details?.prev_close || stock.regular_close || 0);
+                                                                if (extP > 0 && prevClose > 0) {
+                                                                    val = extP - prevClose;
+                                                                } else if (prevClose > 0 && pct) {
+                                                                    val = Math.round(prevClose * (pct / 100));
+                                                                }
+                                                            }
+                                                        }
+                                                        const isUp = (val || 0) > 0;
+                                                        const isDown = (val || 0) < 0;
+
+                                                        return (
+                                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-[11px] font-mono">
+                                                                <span className="text-[10px] font-bold text-indigo-300">
+                                                                    시간외
+                                                                </span>
+                                                                <span className="font-bold text-zinc-200">
+                                                                    {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                                </span>
+                                                                <span className={`text-[10px] font-black ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                                                    {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* 장중/장마감 뱃지 */}
+                                                    <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black ${
+                                                        extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 
+                                                        'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${
+                                                            extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 
+                                                            'bg-zinc-500'
+                                                        }`} />
+                                                        <span>{extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 2층: 초보자 2대 핵심 진단 카드 (5대 안전벨트 & 기술적 타이밍 신호등이 좌우 50:50 대칭으로 깔끔 정렬) */}
+                                            {(() => {
+                                                const cleanTicker = stock.symbol ? (stock.symbol.includes('.') ? stock.symbol.split('.')[0] : stock.symbol) : '';
+                                                const isKoreanStock = stock.currency === 'KRW' || stock.symbol?.includes('.KS') || stock.symbol?.includes('.KQ') || /^\d{6}$/.test(cleanTicker);
+
+                                                return (
+                                                    <div className={`grid grid-cols-1 ${isKoreanStock ? 'sm:grid-cols-2' : ''} gap-3 sm:gap-3.5 items-stretch`}>
+                                                        {/* 5대 안전벨트 종목 건전성 자가진단 미니 카드 (국내 주식 전용) */}
+                                                        <StockSafetyBadgeCard
+                                                            symbol={stock.symbol}
+                                                            stockName={stock.name}
+                                                            currency={stock.currency}
+                                                        />
+
+                                                        {/* 🚦 신호등 기술적 매매 타이밍 진단 미니 카드 (초보자 과열 방지 보조지표) */}
+                                                        <StockTimingBadgeCard
+                                                            symbol={stock.symbol}
+                                                            stockName={stock.name}
+                                                            currency={stock.currency}
+                                                            currentPrice={
+                                                                extendedHours?.regular?.price ?? 
+                                                                Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''))
+                                                            }
+                                                            changePercent={(() => {
+                                                                const p = extendedHours?.regular?.change_pct;
+                                                                if (p !== undefined && !isNaN(p)) return Math.abs(p) > 100 ? p / 100 : p;
+                                                                if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) return Number(stock.regular_change_pct);
+                                                                const raw = String(stock.change_percent || stock.change || '0');
+                                                                const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
+                                                                return isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
+                                                            })()}
+                                                            dayHigh={stock.details?.day_high}
+                                                            dayLow={stock.details?.day_low}
+                                                            prevClose={Number(String(stock.details?.prev_close || (stock as any).prev_close || '0').replace(/,/g, ''))}
+                                                        />
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        {/* 우측 영역: AI 종합 점수 & 액션 버튼 & 관련 섹터 종목 퀵 카드 (사용자가 지정한 컴팩트 형태 100% 동일 유지) */}
+                                        <div className="w-full lg:w-auto flex flex-col items-end gap-3.5 border-t lg:border-t-0 border-white/10 pt-4 lg:pt-0">
+                                            {/* AI 종합 점수 카드 */}
+                                            <div className="flex items-center gap-4 bg-zinc-950/90 border border-indigo-500/30 p-3.5 px-5 rounded-2xl shadow-xl">
+                                                <div className="text-right">
+                                                    <div className="text-xs font-extrabold text-zinc-400 uppercase tracking-wider">퀀트 종합 진단 스코어</div>
+                                                    <div className="text-[11px] font-bold text-indigo-300 mt-0.5">
+                                                        {(stock.score || 0) >= 75 ? '🏆 시장 주도주 / 퀀트 우수' : (stock.score || 0) >= 50 ? '⚖️ 지표 보통 / 중립 추세' : '⚠️ 변동성 확대 / 지표 주의'}
+                                                    </div>
+                                                </div>
+                                                <div className={`text-4xl md:text-5xl font-black ${(stock.score || 0) >= 70 ? 'text-emerald-400' : 'text-amber-400'} drop-shadow-[0_0_12px_rgba(52,211,153,0.3)] font-mono`}>
+                                                    {stock.score || '-'}
+                                                </div>
+                                            </div>
+
+                                            {/* 관심등록 & 종목 토론방 액션 버튼 */}
+                                            <div className="flex items-center gap-2">
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <WatchlistButton symbol={stock.symbol} />
                                                 )}
                                                 {stock.symbol && (!stock.symbol.toUpperCase || !stock.symbol.toUpperCase().includes("MARKET")) && (
                                                     <a
                                                         href={`/community?stock=${encodeURIComponent(stock.symbol)}`}
-                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:text-blue-100 border border-blue-500/30 transition-all shadow-md"
+                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 hover:text-blue-100 border border-blue-500/30 transition-all shadow-md"
                                                     >
                                                         <MessageSquare className="w-4 h-4" />
                                                         <span>종목 토론방</span>
                                                     </a>
                                                 )}
-                                                <KakaoShareButton 
-                                                    title={`${stock.name} (${stock.symbol}) 종목 분석 보고서`} 
-                                                    description={stock.summary || "AI가 분석한 이 종목의 향후 전망과 실시간 분석 결과를 확인해보세요."}
-                                                    url={`https://stock-trend-program.co.kr/discovery?q=${stock.symbol}`}
-                                                    className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#FEE500]/15 cursor-pointer"
-                                                    buttonText="카톡 공유"
-                                                />
                                             </div>
+
+                                            {/* 관련 섹터 종목 퀵 위젯 (사용자 화살표 지정 위치 - 기존 모양 그대로 유지) */}
+                                            {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
+                                                <div className="w-full p-3 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl flex flex-col min-w-[280px] max-w-sm">
+                                                    <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
+                                                        <span className="flex items-center gap-1.5 text-blue-400">
+                                                            <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
+                                                            <span className="font-extrabold text-white">관련 섹터 종목</span>
+                                                        </span>
+                                                        <span className="text-[10px] text-zinc-400 font-medium">클릭 시 이동</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-1.5">
+                                                        {stock.related_stocks.slice(0, 3).map((item, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => handleSearch(item.symbol)}
+                                                                className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
+                                                            >
+                                                                <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
+                                                                    {item.name}
+                                                                </div>
+                                                                <div className="flex flex-col mt-0.5 font-mono">
+                                                                    <span className="text-zinc-300 font-bold text-[11px] truncate">{item.price || item.symbol}</span>
+                                                                    {item.change && (
+                                                                        <span className={`text-[9px] font-black mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
+                                                                            {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-
-                                        {/* 핵심 진단 4대 벤토 그리드 (실시간 시세 + 5대 안전벨트 + 기술적 타이밍 + 퀀트 AI 스코어) */}
-                                        {(() => {
-                                            const cleanTicker = stock.symbol ? (stock.symbol.includes('.') ? stock.symbol.split('.')[0] : stock.symbol) : '';
-                                            const isKoreanStock = stock.currency === 'KRW' || stock.symbol?.includes('.KS') || stock.symbol?.includes('.KQ') || /^\d{6}$/.test(cleanTicker);
-
-                                            return (
-                                                <div className={`grid grid-cols-1 sm:grid-cols-2 ${isKoreanStock ? 'xl:grid-cols-4' : 'lg:grid-cols-3'} gap-3.5 sm:gap-4 items-stretch`}>
-                                                    {/* 1. 실시간 시세 (정규장 현재가 / 종가 및 등락폭, 원화환산, 시간외 시세 일체형) */}
-                                                    <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col justify-between gap-3 w-full h-full relative overflow-hidden group">
-                                                        <div className="absolute top-0 right-0 -mr-6 -mt-6 w-24 h-24 bg-white/5 rounded-full blur-2xl pointer-events-none group-hover:bg-white/10 transition-all" />
-
-                                                        {/* 상단: 장 상태 및 라벨 */}
-                                                        <div className="flex items-center justify-between gap-2 relative z-10">
-                                                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
-                                                                {extendedHours?.regular?.is_active ? 'LIVE MARKET 실시간 현재가' :
-                                                                 stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' : 
-                                                                 stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
-                                                                 'REGULAR MARKET 정규장 종가'}
-                                                            </span>
-                                                            <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-black ${
-                                                                extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 
-                                                                'bg-zinc-800 text-zinc-400 border-zinc-700'
-                                                            }`}>
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${
-                                                                    extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]' : 
-                                                                    'bg-zinc-500'
-                                                                }`} />
-                                                                <span>{extendedHours?.regular?.is_active || stock.market_status === '장중' ? '장중' : '장마감'}</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 중간: 현재가 및 등락폭 */}
-                                                        <div className="relative z-10 space-y-1.5">
-                                                            <div className="flex flex-wrap items-baseline gap-2.5">
-                                                                <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline font-mono">
-                                                                    <span className="text-lg sm:text-xl mr-1 text-zinc-400 font-bold">
-                                                                        {stock.currency === 'KRW' ? '₩' : '$'}
-                                                                    </span>
-                                                                    <BlinkingPrice
-                                                                        price={extendedHours?.regular?.price ? extendedHours.regular.price.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2}) : 
-                                                                            (stock.currency === 'KRW'
-                                                                            ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
-                                                                            : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
-                                                                        className="text-white bg-transparent"
-                                                                    />
-                                                                </span>
-
-                                                                {(() => {
-                                                                    const currentPriceNum = extendedHours?.regular?.price 
-                                                                        ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
-                                                                    const prevCloseNum = Number(String(stock.details?.prev_close || (stock as any).prev_close || (stock as any).previousClose || '0').replace(/,/g, ''));
-
-                                                                    let changeVal = extendedHours?.regular?.change;
-                                                                    if (changeVal === undefined || isNaN(changeVal)) {
-                                                                        if (stock.regular_change_val !== undefined && Number(stock.regular_change_val) !== 0) {
-                                                                            changeVal = Number(stock.regular_change_val);
-                                                                        } else if (stock.change_val !== undefined && Number(String(stock.change_val).replace(/,/g, '')) !== 0) {
-                                                                            changeVal = Number(String(stock.change_val).replace(/,/g, ''));
-                                                                        } else if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
-                                                                            changeVal = currentPriceNum - prevCloseNum;
-                                                                        } else if (stock.change_percent || stock.change) {
-                                                                            const raw = String(stock.change_percent || stock.change || '0');
-                                                                            const parsedPct = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                            if (!isNaN(parsedPct) && prevCloseNum > 0) {
-                                                                                changeVal = Math.round(prevCloseNum * (parsedPct / 100));
-                                                                            } else {
-                                                                                changeVal = 0;
-                                                                            }
-                                                                        } else {
-                                                                            changeVal = 0;
-                                                                        }
-                                                                    }
-
-                                                                    let changePct = extendedHours?.regular?.change_pct;
-                                                                    if (changePct !== undefined && !isNaN(changePct) && Math.abs(changePct) > 100) {
-                                                                        changePct = changePct / 100;
-                                                                    }
-                                                                    if (changePct === undefined || isNaN(changePct)) {
-                                                                        if (currentPriceNum > 0 && prevCloseNum > 0 && currentPriceNum !== prevCloseNum) {
-                                                                            changePct = ((currentPriceNum - prevCloseNum) / prevCloseNum) * 100;
-                                                                        } else if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) {
-                                                                            changePct = Number(stock.regular_change_pct);
-                                                                        } else if (stock.change_percent || stock.change) {
-                                                                            const raw = String(stock.change_percent || stock.change || '0');
-                                                                            const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                                            changePct = isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
-                                                                        } else {
-                                                                            changePct = 0;
-                                                                        }
-                                                                    }
-
-                                                                    const isUp = changeVal > 0 || (changeVal === 0 && changePct > 0);
-                                                                    const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
-
-                                                                    return (
-                                                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm border shadow-sm ${
-                                                                            isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
-                                                                            isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
-                                                                            'bg-zinc-800 border-white/10 text-zinc-400'
-                                                                        }`}>
-                                                                            <span>{isUp ? '▲' : isDown ? '▼' : ''} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
-                                                                            <span className="opacity-90 font-mono">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-
-                                                            {/* 해외(미국) 주식 원화 환산 가격 표시 */}
-                                                            {stock.currency !== 'KRW' && (() => {
-                                                                const currentPriceNum = extendedHours?.regular?.price 
-                                                                    ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
-                                                                const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
-                                                                const krwPrice = Math.round(currentPriceNum * rate);
-                                                                
-                                                                return (
-                                                                    <div className="flex items-center gap-2 pt-0.5 text-xs font-mono">
-                                                                        <span className="text-[11px] font-sans font-semibold text-zinc-400">원화 환산</span>
-                                                                        <span className="font-black text-amber-300">≈ {krwPrice.toLocaleString()}원</span>
-                                                                        <span className="text-[10px] text-zinc-500 font-mono">({Math.round(rate).toLocaleString()}원/$)</span>
-                                                                    </div>
-                                                                );
-                                                            })()}
-
-                                                            {/* 시간외 거래 가격 카드 (장마감 후 또는 실제 시간외/야간 세션일 때 일체형으로 표출) */}
-                                                            {(!stock.market_status?.includes('장중') || stock.is_extended_hours) &&
-                                                            (stock.after_market_data || stock.nxt_data || stock.is_extended_hours || extendedHours?.extended) && (() => {
-                                                                const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
-                                                                    Number(String(
-                                                                    stock.is_extended_hours && stock.extended_price ? stock.extended_price :
-                                                                    (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) 
-                                                                        ? (stock.nxt_data?.price || stock.after_market_data?.price || 0)
-                                                                        : (stock.after_market_data?.price || stock.nxt_data?.price || 0)
-                                                                ).replace(/,/g, ''));
-
-                                                                let val = extendedHours?.extended?.change;
-                                                                let pct = extendedHours?.extended?.change_pct;
-                                                                if (val === undefined || val === 0) {
-                                                                    const nxt = (stock.market_status?.includes('야간') || stock.market_status?.includes('NXT')) ? stock.nxt_data : stock.after_market_data;
-                                                                    val = stock.is_extended_hours && stock.extended_change !== undefined ? Number(stock.extended_change) : (nxt?.change_val || 0);
-                                                                    pct = stock.is_extended_hours && stock.extended_change_percent !== undefined ? Number(stock.extended_change_percent) : Number(nxt?.change_pct || 0);
-                                                                    
-                                                                    if (!val || val === 0) {
-                                                                        const prevClose = Number(stock.details?.prev_close || stock.regular_close || 0);
-                                                                        if (extP > 0 && prevClose > 0) {
-                                                                            val = extP - prevClose;
-                                                                        } else if (prevClose > 0 && pct) {
-                                                                            val = Math.round(prevClose * (pct / 100));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                const isUp = (val || 0) > 0;
-                                                                const isDown = (val || 0) < 0;
-
-                                                                return (
-                                                                    <div className="flex items-center justify-between pt-1 text-[11px] font-mono border-t border-white/5">
-                                                                        <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-1.5 py-0.2 rounded border border-indigo-500/30">
-                                                                            시간외 {stock.market_status?.includes('시간외') || stock.market_status?.includes('NXT') ? '거래중' : '마감'}
-                                                                        </span>
-                                                                        <div className="flex items-center gap-1.5">
-                                                                            <span className="font-bold text-zinc-200">
-                                                                                {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                                            </span>
-                                                                            <span className={`text-[10px] font-black ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
-                                                                                {isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})} ({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                        </div>
-
-                                                        {/* 하단: 실시간 시세 상태 및 종목코드 */}
-                                                        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[10px] text-zinc-500 font-medium relative z-10">
-                                                            <span className="flex items-center gap-1">
-                                                                <Activity className="w-3 h-3 text-zinc-400" />
-                                                                <span>실시간 호가 시세 반영</span>
-                                                            </span>
-                                                            <span className="font-mono text-zinc-400 font-bold">
-                                                                {stock.symbol}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 2. 5대 안전벨트 종목 건전성 자가진단 미니 카드 (국내 주식 전용) */}
-                                                    <StockSafetyBadgeCard
-                                                        symbol={stock.symbol}
-                                                        stockName={stock.name}
-                                                        currency={stock.currency}
-                                                    />
-
-                                                    {/* 3. 🚦 신호등 기술적 매매 타이밍 진단 미니 카드 (초보자 과열 방지 보조지표) */}
-                                                    <StockTimingBadgeCard
-                                                        symbol={stock.symbol}
-                                                        stockName={stock.name}
-                                                        currency={stock.currency}
-                                                        currentPrice={
-                                                            extendedHours?.regular?.price ?? 
-                                                            Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''))
-                                                        }
-                                                        changePercent={(() => {
-                                                            const p = extendedHours?.regular?.change_pct;
-                                                            if (p !== undefined && !isNaN(p)) return Math.abs(p) > 100 ? p / 100 : p;
-                                                            if (stock.regular_change_pct !== undefined && Number(stock.regular_change_pct) !== 0) return Number(stock.regular_change_pct);
-                                                            const raw = String(stock.change_percent || stock.change || '0');
-                                                            const parsed = parseFloat(raw.replace(/[^\d.-]/g, ''));
-                                                            return isNaN(parsed) ? 0 : (Math.abs(parsed) > 100 ? parsed / 100 : parsed);
-                                                        })()}
-                                                        dayHigh={stock.details?.day_high}
-                                                        dayLow={stock.details?.day_low}
-                                                        prevClose={Number(String(stock.details?.prev_close || (stock as any).prev_close || '0').replace(/,/g, ''))}
-                                                    />
-
-                                                    {/* 4. AI 퀀트 종합 진단 스코어 카드 */}
-                                                    <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/90 border border-indigo-500/30 shadow-lg flex flex-col justify-between gap-3 w-full h-full relative overflow-hidden group">
-                                                        <div className="absolute top-0 right-0 -mr-6 -mt-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/20 transition-all" />
-
-                                                        {/* 상단: 타이틀 및 시장 상태 평가 뱃지 */}
-                                                        <div className="flex items-center justify-between gap-2 relative z-10">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 group-hover:scale-105 transition-transform">
-                                                                    <TrendingUp className="w-4 h-4" />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider">
-                                                                            퀀트 종합 진단
-                                                                        </span>
-                                                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                                                                            AI 스코어
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="text-xs font-bold text-white group-hover:text-indigo-300 transition-colors">
-                                                                        종합 투자 매력도
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                                                                (stock.score || 0) >= 75 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                                                                (stock.score || 0) >= 50 ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' :
-                                                                'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                                            }`}>
-                                                                {(stock.score || 0) >= 75 ? '🏆 시장 주도주' : (stock.score || 0) >= 50 ? '⚖️ 지표 보통' : '⚠️ 주의 요망'}
-                                                            </span>
-                                                        </div>
-
-                                                        {/* 중간: 대형 스코어 및 상태 해설 */}
-                                                        <div className="relative z-10 space-y-1">
-                                                            <div className="flex items-baseline justify-between gap-2">
-                                                                <div className="flex items-baseline gap-1.5">
-                                                                    <span className={`text-2xl sm:text-3xl md:text-4xl font-black font-mono tracking-tight ${
-                                                                        (stock.score || 0) >= 70 ? 'text-emerald-400' : 'text-amber-400'
-                                                                    } drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]`}>
-                                                                        {stock.score || '-'}
-                                                                    </span>
-                                                                    <span className="text-xs text-zinc-400 font-bold">/ 100점</span>
-                                                                </div>
-                                                                <span className="text-xs font-extrabold text-indigo-300 truncate">
-                                                                    {(stock.score || 0) >= 75 ? '퀀트 우수 종목' : (stock.score || 0) >= 50 ? '중립 추세' : '변동성 확대'}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-[11px] text-zinc-400 line-clamp-1">
-                                                                수급 · 모멘텀 · 밸류에이션 퀀트 연산 결과
-                                                            </p>
-                                                        </div>
-
-                                                        {/* 하단: AI 퀀트 알고리즘 안내 */}
-                                                        <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[10px] text-zinc-500 font-medium relative z-10">
-                                                            <span className="flex items-center gap-1">
-                                                                <Cpu className="w-3 h-3 text-indigo-400" />
-                                                                <span>AI 퀀트 알고리즘 연산</span>
-                                                            </span>
-                                                            <span className="text-indigo-400 font-bold">
-                                                                진단 완료
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* 관련 섹터 종목 퀵 카드 (하단 가로형 네비게이션 바로 깔끔 정렬) */}
-                                        {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
-                                            <div className="p-3 sm:px-4 rounded-2xl bg-zinc-950/80 border border-indigo-500/20 shadow-lg flex flex-wrap items-center justify-between gap-2.5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-3.5 bg-blue-500 rounded-full" />
-                                                    <span className="text-xs font-extrabold text-white">관련 섹터 종목</span>
-                                                    <span className="text-[11px] text-zinc-400 hidden sm:inline">· 클릭 시 해당 종목으로 바로 이동</span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    {stock.related_stocks.slice(0, 4).map((item, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => handleSearch(item.symbol)}
-                                                            className="group cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm text-xs"
-                                                        >
-                                                            <span className="font-bold text-white group-hover:text-blue-300 transition-colors truncate max-w-[120px]">
-                                                                {item.name}
-                                                            </span>
-                                                            <span className="font-mono text-zinc-400 text-[11px]">
-                                                                {item.price || item.symbol}
-                                                            </span>
-                                                            {item.change && (
-                                                                <span className={`text-[10px] font-black font-mono ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
-                                                                    {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
-                                                                </span>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {/* 2. AI 3대 인텔리전스 게이지 차트 (초보자용 1초 쉬운 해설 박스 탑재) */}
