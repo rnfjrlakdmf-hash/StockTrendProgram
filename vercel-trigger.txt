@@ -1,4 +1,4 @@
-Update Trigger: Embed 5-factor safety checker in Discovery search results with modal breakdown
-Triggered at: 2026-09-14T03:30:00Z
-Status: Direct in-place stock safety badge card beside price with interactive modal and clean signals tabs.
+Update Trigger: Remove 5대 안전벨트 진단기 from sidebar navigation
+Triggered at: 2026-09-14T03:37:00Z
+Status: Removed from sidebar menu as requested. Feature is cleanly integrated directly in Discovery search results.
 
