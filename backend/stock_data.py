@@ -1141,7 +1141,9 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                             market_status = "장중"
                         elif "1520" <= hm < "1540":
                             market_status = "동시호가"
-                        elif "1540" <= hm < "2000":
+                        elif "1540" <= hm < "1600":
+                            market_status = "장후 시간외"
+                        elif "1600" <= hm < "1800":
                             market_status = "시간외단일가"
                         else:
                             market_status = "장마감"
