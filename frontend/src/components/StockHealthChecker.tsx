@@ -16,11 +16,7 @@ import {
     Share2,
     Check,
     Sparkles,
-    RefreshCw,
-    Award,
-    Zap,
-    BookOpen,
-    Flame
+    RefreshCw
 } from "lucide-react";
 
 interface ChecklistItem {
@@ -202,7 +198,6 @@ export default function StockHealthChecker({
         const circumference = 2 * Math.PI * radius;
         const strokeDashoffset = circumference - (Math.min(score, 100) / 100) * circumference;
         const strokeColor = level === "S" ? "#10b981" : level === "A" ? "#3b82f6" : level === "B" ? "#f59e0b" : "#f43f5e";
-        const glowColor = level === "S" ? "rgba(16,185,129,0.4)" : level === "A" ? "rgba(59,130,246,0.4)" : level === "B" ? "rgba(245,158,11,0.4)" : "rgba(244,63,94,0.4)";
 
         return (
             <div className="relative flex items-center justify-center">
@@ -221,14 +216,10 @@ export default function StockHealthChecker({
                         r={radius}
                         stroke={strokeColor}
                         strokeWidth="7"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
+                        strokeDasharray={`${circumference}`}
+                        strokeDashoffset={`${strokeDashoffset}`}
                         strokeLinecap="round"
                         fill="transparent"
-                        style={{
-                            filter: `drop-shadow(0 0 8px ${glowColor})`,
-                            transition: "stroke-dashoffset 0.8s ease-in-out"
-                        }}
                     />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center text-center">
@@ -524,87 +515,87 @@ export default function StockHealthChecker({
                                         </div>
 
                                         {/* 핵심 팩트 3단 매트릭스 박스 (디테일 정보량) */}
-                                        {item.facts && (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/90 text-xs">
-                                                <div className="space-y-1">
-                                                    <div className="text-slate-400 flex items-center gap-1 font-medium">
-                                                        <Zap className="w-3.5 h-3.5 text-blue-400" />
-                                                        {item.facts.indicator}
-                                                    </div>
-                                                    <div className="font-bold text-white text-sm font-mono">
-                                                        {item.facts.value}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-400 font-medium">
-                                                        {item.facts.statusText}
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-800/80 pt-2 sm:pt-0 sm:pl-3">
-                                                    <div className="text-emerald-400 flex items-center gap-1 font-semibold">
-                                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                                        안전 기준선
-                                                    </div>
-                                                    <div className="text-slate-200 leading-tight">
-                                                        {item.facts.safeLine}
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-800/80 pt-2 sm:pt-0 sm:pl-3">
-                                                    <div className="text-rose-400 flex items-center gap-1 font-semibold">
-                                                        <AlertTriangle className="w-3.5 h-3.5" />
-                                                        위험 경고선
-                                                    </div>
-                                                    <div className="text-slate-300 leading-tight">
-                                                        {item.facts.dangerLine}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                                         {item.facts && (
+                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/90 text-xs">
+                                                 <div className="space-y-1">
+                                                     <div className="text-slate-400 flex items-center gap-1 font-medium">
+                                                         <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                                                         {item.facts.indicator}
+                                                     </div>
+                                                     <div className="font-bold text-white text-sm font-mono">
+                                                         {item.facts.value}
+                                                     </div>
+                                                     <div className="text-[11px] text-slate-400 font-medium">
+                                                         {item.facts.statusText}
+                                                     </div>
+                                                 </div>
+                                                 <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-800/80 pt-2 sm:pt-0 sm:pl-3">
+                                                     <div className="text-emerald-400 flex items-center gap-1 font-semibold">
+                                                         <CheckCircle2 className="w-3.5 h-3.5" />
+                                                         안전 기준선
+                                                     </div>
+                                                     <div className="text-slate-200 leading-tight">
+                                                         {item.facts.safeLine}
+                                                     </div>
+                                                 </div>
+                                                 <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-800/80 pt-2 sm:pt-0 sm:pl-3">
+                                                     <div className="text-rose-400 flex items-center gap-1 font-semibold">
+                                                         <AlertTriangle className="w-3.5 h-3.5" />
+                                                         위험 경고선
+                                                     </div>
+                                                     <div className="text-slate-300 leading-tight">
+                                                         {item.facts.dangerLine}
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
 
-                                        {/* 시각적 레인지 게이지 바 */}
-                                        {renderVisualRangeBar(item)}
+                                         {/* 시각적 레인지 게이지 바 */}
+                                         {renderVisualRangeBar(item)}
 
-                                        {/* 초보자 인터랙티브 3대 탭 (1초 비유 / 위험 시나리오 / 상세 해설) */}
-                                        <div className="pt-2 border-t border-slate-800/70 space-y-2.5">
-                                            {/* 탭 버튼들 */}
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveTabMap(prev => ({ ...prev, [item.id]: "analogy" }))}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                                                        currentTab === "analogy"
-                                                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
-                                                            : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent"
-                                                    }`}
-                                                >
-                                                    <Sparkles className="w-3 h-3 text-emerald-400" />
-                                                    💡 1초 핵심 비유
-                                                </button>
+                                         {/* 초보자 인터랙티브 3대 탭 (1초 비유 / 위험 시나리오 / 상세 해설) */}
+                                         <div className="pt-2 border-t border-slate-800/70 space-y-2.5">
+                                             {/* 탭 버튼들 */}
+                                             <div className="flex items-center gap-1.5 flex-wrap">
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setActiveTabMap(prev => ({ ...prev, [item.id]: "analogy" }))}
+                                                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                                                         currentTab === "analogy"
+                                                             ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm"
+                                                             : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent"
+                                                     }`}
+                                                 >
+                                                     <Sparkles className="w-3 h-3 text-emerald-400" />
+                                                     💡 1초 핵심 비유
+                                                 </button>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveTabMap(prev => ({ ...prev, [item.id]: "danger" }))}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                                                        currentTab === "danger"
-                                                            ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm"
-                                                            : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent"
-                                                    }`}
-                                                >
-                                                    <Flame className="w-3 h-3 text-rose-400" />
-                                                    ⚠️ 어기면 생기는 위험
-                                                </button>
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setActiveTabMap(prev => ({ ...prev, [item.id]: "danger" }))}
+                                                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                                                         currentTab === "danger"
+                                                             ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm"
+                                                             : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent"
+                                                     }`}
+                                                 >
+                                                     <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                                     ⚠️ 어기면 생기는 위험
+                                                 </button>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveTabMap(prev => ({ ...prev, [item.id]: "facts" }))}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                                                        currentTab === "facts"
-                                                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm"
-                                                            : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent"
-                                                    }`}
-                                                >
-                                                    <BookOpen className="w-3 h-3 text-blue-400" />
-                                                    📖 팩트 분석 해설
-                                                </button>
-                                            </div>
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setActiveTabMap(prev => ({ ...prev, [item.id]: "facts" }))}
+                                                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                                                         currentTab === "facts"
+                                                             ? "bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm"
+                                                             : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-transparent"
+                                                     }`}
+                                                 >
+                                                     <Info className="w-3 h-3 text-blue-400" />
+                                                     📖 팩트 분석 해설
+                                                 </button>
+                                             </div>
 
                                             {/* 탭 내용 표시 영역 */}
                                             <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs leading-relaxed transition-all">
@@ -652,7 +643,7 @@ export default function StockHealthChecker({
                     <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-emerald-500/30 shadow-2xl space-y-4">
                         <div className="flex items-center gap-2.5">
                             <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                                <Award className="w-5 h-5" />
+                                <ShieldCheck className="w-5 h-5" />
                             </div>
                             <div>
                                 <h4 className="text-base font-black text-white flex items-center gap-1.5">
