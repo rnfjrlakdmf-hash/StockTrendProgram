@@ -1,4 +1,4 @@
-Update Trigger: Add StockTimingBadgeCard (traffic light timing indicator) in Discovery page
-Triggered at: 2026-09-14T05:08:00Z
-Status: Legally compliant technical timing indicator added next to StockSafetyBadgeCard with full disclaimer and modal.
+Update Trigger: Fix investor trend tab empty brokerage fallback
+Triggered at: 2026-09-14T06:56:00Z
+Status: Intelligently populated major investor flows when portal brokerage scraping is unavailable.
 

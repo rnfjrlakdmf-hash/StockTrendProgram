@@ -2843,6 +2843,39 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
         except Exception as merge_err:
             print(f"Investor Merge Error: {merge_err}")
 
+        # [Fallback] If brokerage tables are empty (due to Naver portal redesign or market closed),
+        # fallback to major confirmed investor flow positions
+        if not brokerage.get("sell") and not brokerage.get("buy") and trend:
+            # Find latest day with non-zero investor flows
+            latest = None
+            for d in trend:
+                if d.get("foreigner", 0) != 0 or d.get("institution", 0) != 0 or d.get("retail", 0) != 0:
+                    latest = d
+                    break
+            if not latest:
+                latest = trend[0]
+
+            frgn = latest.get("foreigner", 0)
+            inst = latest.get("institution", 0)
+            ret = latest.get("retail", 0)
+            if ret == 0 and (frgn != 0 or inst != 0):
+                ret = -(frgn + inst)
+            if frgn < 0:
+                brokerage["sell"].append({"name": "외국인 투자자 (FOREIGN)", "volume": abs(frgn), "is_foreign": True})
+            if inst < 0:
+                brokerage["sell"].append({"name": "국내 기관 (INSTITUTION)", "volume": abs(inst), "is_foreign": False})
+            if ret < 0:
+                brokerage["sell"].append({"name": "개인 투자자 (RETAIL)", "volume": abs(ret), "is_foreign": False})
+            if frgn > 0:
+                brokerage["buy"].append({"name": "외국인 투자자 (FOREIGN)", "volume": abs(frgn), "is_foreign": True})
+            if inst > 0:
+                brokerage["buy"].append({"name": "국내 기관 (INSTITUTION)", "volume": abs(inst), "is_foreign": False})
+            if ret > 0:
+                brokerage["buy"].append({"name": "개인 투자자 (RETAIL)", "volume": abs(ret), "is_foreign": False})
+            brokerage["sell"].sort(key=lambda x: x["volume"], reverse=True)
+            brokerage["buy"].sort(key=lambda x: x["volume"], reverse=True)
+            brokerage["is_fallback"] = True
+
         return {
             "status": "success",
             "data": {
