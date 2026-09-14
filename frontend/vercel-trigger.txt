@@ -1,5 +1,4 @@
-Update Trigger: v5.2.7-ULTIMATE-RESTORATION
-The user reports that v3.7.25 is still live despite multiple pushes.
-This trigger file change is intended to force Vercel to rebuild and redeploy.
-Triggered at: 2026-05-08T20:34:00Z - Forced Restoration of Discovery Dashboard.
-Confirming deployment of PURPLE banner and corrected financials logic.
+Update Trigger: 5-Factor Stock Safety Checklist & Health Checker
+Triggered at: 2026-09-13T08:30:00Z
+Status: Deploy /safety route and signals safety tab with force-dynamic and Suspense wrapper.
+

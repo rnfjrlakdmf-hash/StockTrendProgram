@@ -209,7 +209,6 @@ export default function Sidebar() {
         return () => window.removeEventListener('open-mobile-sidebar', handleOpenMobileSidebar);
     }, []);
     const [showProModal, setShowProModal] = useState(false);
-    const [showAdRewardModal, setShowAdRewardModal] = useState(false); // [New] Modal State
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default fallback
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [mounted, setMounted] = useState(false);

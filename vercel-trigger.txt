@@ -1,3 +1,4 @@
-Force redeploy v5.0.1 - Labels Fix.
-Timestamp: 2026-05-07 21:19:00
-Status: Critical Labeling Duplication Fix
+Update Trigger: 5-Factor Stock Safety Checklist & Health Checker
+Triggered at: 2026-09-13T08:30:00Z
+Status: Deploy /safety route and signals safety tab with force-dynamic and Suspense wrapper.
+

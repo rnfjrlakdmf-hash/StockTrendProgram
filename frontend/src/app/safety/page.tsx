@@ -1,5 +1,8 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import StockHealthChecker from "@/components/StockHealthChecker";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "5대 안전벨트 종목 건전성 자가진단기 | 초보자 주식 안목 진단",
@@ -22,7 +25,9 @@ export const metadata: Metadata = {
 export default function StockSafetyPage() {
   return (
     <div className="min-h-screen pt-20 pb-20 px-4 md:px-8 max-w-6xl mx-auto animate-in fade-in duration-500">
-      <StockHealthChecker initialTicker="005930" />
+      <Suspense fallback={<div className="py-20 text-center text-slate-500 text-sm">진단기 로딩 중...</div>}>
+        <StockHealthChecker initialTicker="005930" />
+      </Suspense>
     </div>
   );
 }
