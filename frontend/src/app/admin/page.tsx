@@ -1096,7 +1096,7 @@ export default function AdminPage() {
 
                     <p className="text-[11px] text-gray-500 pt-2 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                         <span>💡 종목을 클릭하시면 해당 종목의 심층 AI 분석 및 수급 현황 페이지로 즉시 이동합니다.</span>
-                        <span className="font-mono text-gray-400">{searchAnalytics?.last_updated ? `마지막 갱신: ${searchAnalytics.last_updated}` : ''}</span>
+                        <span className="font-mono text-zinc-400 font-medium">{searchAnalytics?.last_updated ? `마지막 갱신: ${searchAnalytics.last_updated} (한국시간)` : ''}</span>
                     </p>
                 </div>
 

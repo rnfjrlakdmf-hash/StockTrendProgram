@@ -2934,8 +2934,9 @@ def get_search_keyword_stats():
         """)
         rows = cursor.fetchall()
         
-        from datetime import datetime
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        from datetime import datetime, timezone, timedelta
+        kst = timezone(timedelta(hours=9))
+        now_str = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         
         top_searches = []
         for i, r in enumerate(rows, 1):
