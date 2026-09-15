@@ -42,6 +42,13 @@ app = FastAPI(
     description="최적의 안정성과 속도를 위해 모든 군더더기를 제거한 원상 복구 버전"
 )
 
+# Initialize Firebase Admin SDK
+try:
+    from firebase_config import initialize_firebase
+    initialize_firebase()
+except Exception as _fb_err:
+    print(f"[Warning] Firebase init on startup failed: {_fb_err}")
+
 # [Strict CORS Policy for Security]
 app.add_middleware(
     CORSMiddleware,

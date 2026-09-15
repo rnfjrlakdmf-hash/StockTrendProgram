@@ -30,6 +30,8 @@ class FCMTokenPayload(BaseModel):
 @router.post("/fcm-token")
 def register_fcm_token(payload: FCMTokenPayload):
     try:
+        from firebase_config import initialize_firebase
+        initialize_firebase()
         from firebase_admin import firestore
         db = firestore.client()
         db.collection("users").document(payload.user_id).set({
@@ -661,6 +663,8 @@ def get_gemini_cost(x_admin_key: Optional[str] = Header(None), days: int = 30):
     """
     check_admin_auth(x_admin_key=x_admin_key)
     try:
+        from firebase_config import initialize_firebase
+        initialize_firebase()
         from firebase_admin import firestore
         from datetime import datetime, timedelta
         import pytz
