@@ -38,6 +38,9 @@ interface ScannerItem {
     highestReturnRate: number;
     resistancePrice: number;
     reachedResistance: boolean;
+    reachedDate?: string;
+    reachedDisplayDate?: string;
+    reachedDaysTook?: string;
     highestPrice: number;
     volRatio: number;
     majorBuyer: string;
@@ -909,17 +912,24 @@ export default function ClosingQuantScanner() {
                                                 <QuantTooltip
                                                     title="🏆 10% 벤치마크 도달 완료"
                                                     headline={`목표선(${item.resistancePrice.toLocaleString()}원) 터치 성공!`}
-                                                    description={`${item.name} 종목이 스캔 이후 장중 최고가 기준으로 +10% 벤치마크 목표선에 도달하여 검증을 완료했습니다.`}
+                                                    description={`${item.name} 종목이 ${item.reachedDaysTook ? `포착 후 ${item.reachedDaysTook}(${item.reachedDisplayDate})에 ` : ""}장중 최고가(${item.highestPrice.toLocaleString()}원, +${item.highestReturnRate}%)를 기록하며 +10% 벤치마크 목표선에 도달하여 검증을 완료했습니다.`}
                                                     tip="1차 목표가를 달성했으므로 무리한 추격 매수보다는 분할 익절이나 눌림목 지지 여부를 확인하세요."
-                                                    statusText="목표 달성"
+                                                    statusText={item.reachedDaysTook ? `${item.reachedDaysTook} 달성` : "목표 달성"}
                                                     statusColor="emerald"
                                                     forcePosition={tooltipPos}
                                                     align="right"
                                                 >
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10 cursor-pointer hover:scale-105 transition-transform">
-                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                                        <span>도달 확인</span>
-                                                    </span>
+                                                    <div className="inline-flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition-transform">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10">
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span>도달 확인</span>
+                                                        </span>
+                                                        {item.reachedDisplayDate && (
+                                                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 whitespace-nowrap">
+                                                                {item.reachedDaysTook} ({item.reachedDisplayDate})
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </QuantTooltip>
                                             ) : (
                                                 <QuantTooltip

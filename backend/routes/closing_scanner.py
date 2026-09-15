@@ -108,14 +108,29 @@ def generate_closing_scanner_data():
                 else:
                     resistance_level = round(resistance_level / 10) * 10
 
-                # 포착 이후 발생한 최고가 확인
+                # 포착 이후 발생한 최고가 및 최초 도달 일자 확인
                 highest_price = entry_price
+                reached_resistance = False
+                reached_date = None
+                reached_display_date = None
+                reached_days_took = None
+
                 for i in range(days_ago, -1, -1):
                     p_high = int(prices[i]['highPrice'].replace(',', ''))
+                    trade_date = prices[i].get('localTradedAt', '')
                     if p_high > highest_price:
                         highest_price = p_high
 
-                reached_resistance = highest_price >= resistance_level
+                    if p_high >= resistance_level and not reached_resistance:
+                        reached_resistance = True
+                        reached_date = trade_date
+                        days_diff = days_ago - i
+                        reached_days_took = f"D+{days_diff}일차" if days_diff > 0 else "당일"
+                        if trade_date and len(trade_date) >= 10:
+                            reached_display_date = f"{trade_date[5:7]}.{trade_date[8:10]}"
+                        elif trade_date:
+                            reached_display_date = trade_date
+
                 return_rate = round(((current_price - entry_price) / entry_price * 100), 1)
                 highest_return_rate = round(((highest_price - entry_price) / entry_price * 100), 1)
 
@@ -182,6 +197,9 @@ def generate_closing_scanner_data():
                     "highestReturnRate": highest_return_rate,
                     "resistancePrice": resistance_level,
                     "reachedResistance": reached_resistance,
+                    "reachedDate": reached_date,
+                    "reachedDisplayDate": reached_display_date,
+                    "reachedDaysTook": reached_days_took,
                     "highestPrice": highest_price,
                     "volRatio": vol_ratio,
                     "majorBuyer": "외인·기관 쌍끌이" if code in ["000500", "042700", "267250"] else ("외국인 순매수" if code in ["105840", "196170"] else "기관 순매수"),
