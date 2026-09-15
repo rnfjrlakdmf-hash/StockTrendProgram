@@ -861,6 +861,19 @@ function DiscoveryContent() {
         }
     }, [searchParams]);
 
+    // [New] Direct Search Event Listener (사이드바 등에서 같은 페이지 내 클릭 시 즉시 반응)
+    useEffect(() => {
+        const handleDirectSearch = (e: any) => {
+            const query = e.detail;
+            if (query) {
+                setSearchInput(query);
+                handleSearch(query);
+            }
+        };
+        window.addEventListener('discovery-search', handleDirectSearch);
+        return () => window.removeEventListener('discovery-search', handleDirectSearch);
+    }, []);
+
     const handleSearch = async (term?: string) => {
         let query = (term || searchInput || "").trim();
         console.log("[Search] handleSearch initiated. term:", term, "searchInput:", searchInput, "final query:", query);

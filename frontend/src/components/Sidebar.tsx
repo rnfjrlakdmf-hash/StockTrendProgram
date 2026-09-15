@@ -658,20 +658,35 @@ export default function Sidebar() {
                                 <span className="bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full text-[9px] font-bold font-mono">{watchlistPreview.length}</span>
                             </h4>
                             <div className="space-y-1.5 pt-1">
-                                {watchlistPreview.map((stock, idx) => (
-                                    <Link
-                                        key={stock.code || idx}
-                                        href={`/discovery?q=${(stock.code || '').split('.')[0]}`}
-                                        onClick={() => setIsMobileOpen(false)}
-                                        className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5"
-                                    >
-                                        <div className="flex items-center gap-2 overflow-hidden">
-                                            <Star className="w-3 h-3 text-amber-400 fill-amber-400/20 group-hover:fill-amber-400 transition-all" />
-                                            <span className="truncate">{stock.name}</span>
-                                        </div>
-                                        <span className="text-[10px] font-mono text-zinc-500 group-hover:text-amber-300 transition-colors uppercase">{stock.code}</span>
-                                    </Link>
-                                ))}
+                                {watchlistPreview.map((stock, idx) => {
+                                    const stockSymbol = stock.symbol || stock.code || '';
+                                    const cleanTicker = stockSymbol.split('.')[0] || stock.name || '';
+                                    const displayCode = stockSymbol.split('.')[0] || '';
+
+                                    return (
+                                        <Link
+                                            key={stockSymbol || idx}
+                                            href={`/discovery?q=${encodeURIComponent(cleanTicker)}`}
+                                            onClick={() => {
+                                                setIsMobileOpen(false);
+                                                if (typeof window !== 'undefined' && window.location.pathname === '/discovery') {
+                                                    window.dispatchEvent(new CustomEvent('discovery-search', { detail: cleanTicker }));
+                                                }
+                                            }}
+                                            className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 hover:bg-white/5 hover:text-white transition-all group border border-transparent hover:border-white/5 cursor-pointer active:scale-98"
+                                        >
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <Star className="w-3 h-3 text-amber-400 fill-amber-400/20 group-hover:fill-amber-400 transition-all" />
+                                                <span className="truncate">{stock.name}</span>
+                                            </div>
+                                            {displayCode && (
+                                                <span className="text-[10px] font-mono text-zinc-500 group-hover:text-amber-300 transition-colors uppercase">
+                                                    {displayCode}
+                                                </span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
                                 <Link
                                     href="/watchlist"
                                     onClick={() => setIsMobileOpen(false)}
