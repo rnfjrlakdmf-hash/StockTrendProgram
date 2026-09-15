@@ -61,8 +61,40 @@ export default function WatchlistPage() {
     } | null>(null);
     const [healthLoading, setHealthLoading] = useState(false);
     const [showAllDisclosures, setShowAllDisclosures] = useState(false);
+    const [selectedDisclosureSymbol, setSelectedDisclosureSymbol] = useState<string>("ALL");
 
-    // [NEW] 실적/배당 일정 State & 필터
+    // [NEW] 공시가 존재하는 고유 종목 목록 추출 (태그 칩용)
+    const uniqueDisclosureStocks = React.useMemo(() => {
+        if (!healthData?.recent_disclosures) return [];
+        const stockMap = new Map<string, { name: string; symbol: string; count: number }>();
+        
+        healthData.recent_disclosures.forEach((d: any) => {
+            const key = d.symbol || d.name;
+            if (!key) return;
+            if (stockMap.has(key)) {
+                stockMap.get(key)!.count += 1;
+            } else {
+                stockMap.set(key, {
+                    name: d.name || d.symbol,
+                    symbol: d.symbol || d.name,
+                    count: 1
+                });
+            }
+        });
+
+        return Array.from(stockMap.values());
+    }, [healthData?.recent_disclosures]);
+
+    // [NEW] 선택된 관심종목 태그에 따른 공시 필터링
+    const filteredDisclosures = React.useMemo(() => {
+        if (!healthData?.recent_disclosures) return [];
+        if (selectedDisclosureSymbol === "ALL") {
+            return healthData.recent_disclosures;
+        }
+        return healthData.recent_disclosures.filter((d: any) => 
+            d.symbol === selectedDisclosureSymbol || d.name === selectedDisclosureSymbol
+        );
+    }, [healthData?.recent_disclosures, selectedDisclosureSymbol]);
     const [eventEvents, setEventEvents] = useState<any[]>([]);
     const [eventsLoading, setEventsLoading] = useState(false);
     const [scheduleFilter, setScheduleFilter] = useState<"all" | "upcoming" | "earnings" | "dividend" | "contract">("all");
@@ -1511,52 +1543,108 @@ export default function WatchlistPage() {
                                     </p>
                                 </div>
 
+                                {/* [NEW] 관심종목별 분할 필터 태그 칩스 (삼성중공업, 우진 등 선택하여 모아보기) */}
+                                {healthData?.recent_disclosures && healthData.recent_disclosures.length > 0 && uniqueDisclosureStocks.length > 0 && (
+                                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                                        <button
+                                            onClick={() => {
+                                                setSelectedDisclosureSymbol("ALL");
+                                                setShowAllDisclosures(false);
+                                            }}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                                                selectedDisclosureSymbol === "ALL"
+                                                    ? "bg-amber-500 text-black font-black shadow-md shadow-amber-500/20 border border-amber-400"
+                                                    : "bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-white/5 hover:border-white/10"
+                                            }`}
+                                        >
+                                            <span>전체 종목</span>
+                                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                                                selectedDisclosureSymbol === "ALL" ? "bg-black/20 text-black" : "bg-black/40 text-zinc-400"
+                                            }`}>
+                                                {healthData.recent_disclosures.length}
+                                            </span>
+                                        </button>
+
+                                        {uniqueDisclosureStocks.map((st) => {
+                                            const isSelected = selectedDisclosureSymbol === st.symbol || selectedDisclosureSymbol === st.name;
+                                            return (
+                                                <button
+                                                    key={st.symbol}
+                                                    onClick={() => {
+                                                        setSelectedDisclosureSymbol(st.symbol);
+                                                        setShowAllDisclosures(false);
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                                                        isSelected
+                                                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-md shadow-blue-500/25 border border-blue-400/40"
+                                                            : "bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-white/5 hover:border-white/10"
+                                                    }`}
+                                                >
+                                                    <span translate="no">{st.name}</span>
+                                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                                                        isSelected ? "bg-white/20 text-white" : "bg-black/40 text-zinc-400"
+                                                    }`}>
+                                                        {st.count}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
                                 {healthData?.recent_disclosures && healthData.recent_disclosures.length > 0 ? (
                                     <div className="space-y-3">
-                                        <div className="grid gap-2.5">
-                                            {(showAllDisclosures ? healthData.recent_disclosures : healthData.recent_disclosures.slice(0, 3)).map((d: any, idx: number) => {
-                                                const badgeColor = 
-                                                    d.badge_type === "positive" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" :
-                                                    d.badge_type === "warning" ? "bg-red-500/20 text-red-300 border-red-500/30" :
-                                                    "bg-amber-500/15 text-amber-300 border-amber-500/30";
+                                        {filteredDisclosures.length > 0 ? (
+                                            <div className="grid gap-2.5">
+                                                {(showAllDisclosures ? filteredDisclosures : filteredDisclosures.slice(0, 3)).map((d: any, idx: number) => {
+                                                    const badgeColor = 
+                                                        d.badge_type === "positive" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" :
+                                                        d.badge_type === "warning" ? "bg-red-500/20 text-red-300 border-red-500/30" :
+                                                        "bg-amber-500/15 text-amber-300 border-amber-500/30";
 
-                                                return (
-                                                    <div 
-                                                        key={idx}
-                                                        className="p-3.5 sm:p-4 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                                                    >
-                                                        <div className="space-y-1 min-w-0">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className="text-sm font-black text-white" translate="no">{d.name}</span>
-                                                                <span className="text-xs font-mono font-bold text-zinc-500" translate="no">{d.symbol}</span>
-                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeColor}`}>
-                                                                    {d.badge}
-                                                                </span>
-                                                                <span className="text-xs font-mono text-zinc-400 font-medium">{d.date}</span>
+                                                    return (
+                                                        <div 
+                                                            key={idx}
+                                                            className="p-3.5 sm:p-4 rounded-2xl bg-black/40 hover:bg-black/60 border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                                                        >
+                                                            <div className="space-y-1 min-w-0">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <span className="text-sm font-black text-white" translate="no">{d.name}</span>
+                                                                    <span className="text-xs font-mono font-bold text-zinc-500" translate="no">{d.symbol}</span>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeColor}`}>
+                                                                        {d.badge}
+                                                                    </span>
+                                                                    <span className="text-xs font-mono text-zinc-400 font-medium">{d.date}</span>
+                                                                </div>
+                                                                <p className="text-sm text-zinc-200 font-medium leading-snug truncate">
+                                                                    {d.display_title || d.title}
+                                                                </p>
                                                             </div>
-                                                            <p className="text-sm text-zinc-200 font-medium leading-snug truncate">
-                                                                {d.display_title || d.title}
-                                                            </p>
-                                                        </div>
 
-                                                        {d.link && (
-                                                            <a
-                                                                href={d.link}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-cyan-200 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                                                            >
-                                                                <span>DART 원문</span>
-                                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                                            {d.link && (
+                                                                <a
+                                                                    href={d.link}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-cyan-200 border border-white/10 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                                                >
+                                                                    <span>DART 원문</span>
+                                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="p-8 text-center bg-black/30 rounded-2xl border border-dashed border-white/10 space-y-1.5">
+                                                <p className="text-sm font-bold text-zinc-300">선택한 종목의 특이 공시가 없습니다.</p>
+                                                <p className="text-xs text-zinc-500">&apos;전체 종목&apos; 태그를 누르면 모든 공시를 다시 확인하실 수 있습니다.</p>
+                                            </div>
+                                        )}
 
                                         {/* 3건 초과 시 더보기 / 접기 버튼 */}
-                                        {healthData.recent_disclosures.length > 3 && (
+                                        {filteredDisclosures.length > 3 && (
                                             <button
                                                 onClick={() => setShowAllDisclosures(!showAllDisclosures)}
                                                 className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-xs font-bold text-zinc-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
@@ -1568,7 +1656,11 @@ export default function WatchlistPage() {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <span>전체 공시 더보기 ({healthData.recent_disclosures.length}건 전체 확인)</span>
+                                                        <span>
+                                                            {selectedDisclosureSymbol !== "ALL" 
+                                                                ? `${uniqueDisclosureStocks.find(s => s.symbol === selectedDisclosureSymbol || s.name === selectedDisclosureSymbol)?.name || '선택 종목'} 공시 전체보기 (${filteredDisclosures.length}건)`
+                                                                : `전체 공시 더보기 (${filteredDisclosures.length}건 전체 확인)`}
+                                                        </span>
                                                         <ChevronDown className="w-3.5 h-3.5" />
                                                     </>
                                                 )}
