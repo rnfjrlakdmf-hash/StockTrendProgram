@@ -1,9 +1,34 @@
 import pandas as pd
 import numpy as np
 import yfinance as yf
+import math
 from datetime import datetime
 from pattern_statistics import PatternStatistician
 from korea_data import get_naver_daily_prices, get_investor_history, search_stock_code, get_naver_stock_info
+
+def clean_nan_values(obj):
+    """
+    JSON 직렬화 시 Starlette/FastAPI에서 'ValueError: Out of range float values are not JSON compliant: nan'
+    에러가 발생하지 않도록 NaN, Inf를 0.0 또는 None으로 안전하게 정제합니다.
+    """
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return 0.0
+        return obj
+    elif isinstance(obj, np.floating):
+        if np.isnan(obj) or np.isinf(obj):
+            return 0.0
+        return float(obj)
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, dict):
+        return {k: clean_nan_values(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [clean_nan_values(v) for v in obj]
+    elif pd.isna(obj):
+        return None
+    return obj
+
 
 class ChartAnalyzer:
     def __init__(self):
@@ -276,13 +301,30 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
         df = yf.Ticker(yf_ticker).history(period=yf_period, interval=interval)
         
         if not df.empty:
+            # [Fix] NaN 결측치 행 제거 및 보정
+            df = df.dropna(subset=['Close', 'Open', 'High', 'Low'], how='all')
+            df['Close'] = df['Close'].ffill()
+            df['Open'] = df['Open'].fillna(df['Close'])
+            df['High'] = df['High'].fillna(df['Close'])
+            df['Low'] = df['Low'].fillna(df['Close'])
+            df['Volume'] = df['Volume'].fillna(0)
+            df = df.dropna(subset=['Close'])
+
+        if not df.empty:
             df_reset = df.reset_index()
             date_col = 'Date' if 'Date' in df_reset.columns else 'Datetime'
             
             for _, row in df_reset.iterrows():
+                c = row['Close']
+                if pd.isna(c) or np.isnan(c):
+                    continue
+                o = row['Open'] if not (pd.isna(row['Open']) or np.isnan(row['Open'])) else c
+                h = row['High'] if not (pd.isna(row['High']) or np.isnan(row['High'])) else max(o, c)
+                l = row['Low'] if not (pd.isna(row['Low']) or np.isnan(row['Low'])) else min(o, c)
+                v = row['Volume'] if not (pd.isna(row['Volume']) or np.isnan(row['Volume'])) else 0
                 date_str = row[date_col].strftime('%Y-%m-%d %H:%M') if yf_period == "1d" else row[date_col].strftime('%Y-%m-%d')
                 history.append({
-                    "date": date_str, "open": row['Open'], "high": row['High'], "low": row['Low'], "close": row['Close'], "volume": row['Volume']
+                    "date": date_str, "open": float(o), "high": float(h), "low": float(l), "close": float(c), "volume": int(v)
                 })
             
             stories = detect_inflection_points(yf_ticker, yf_period, interval)
@@ -291,6 +333,8 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
             insight_df = df
             if interval != "1d" or yf_period != "1y":
                 insight_df = yf.Ticker(yf_ticker).history(period="1y", interval="1d")
+                if not insight_df.empty:
+                    insight_df = insight_df.dropna(subset=['Close'])
             beginner_insight = generate_beginner_insight(insight_df, ticker=yf_ticker)
         
         weather = chart_analyzer.analyze_weather_forecast(yf_ticker, df=df)
@@ -298,7 +342,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     except Exception as e:
         print(f"Chart Full Fetch Error: {e}")
 
-    return {
+    result = {
         "weather": weather,
         "whale": chart_analyzer.analyze_whale_tracker(code),
         "history": history,
@@ -306,3 +350,4 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
         "beginner_insight": beginner_insight,
         "debug_v": "v2.2"
     }
+    return clean_nan_values(result)

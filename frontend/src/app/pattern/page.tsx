@@ -133,11 +133,11 @@ export default function PatternPage() {
                 }
                 setResult(json.data);
             } else {
-                alert("검색 결과가 없습니다. 티커를 확인해주세요.");
+                alert(json.message || "검색 결과가 없습니다. 티커를 확인해주세요.");
             }
         } catch (e) {
             console.error(e);
-            alert("서버 연결 오류");
+            alert("서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
         } finally {
             setLoading(false);
             setUpdating(false);

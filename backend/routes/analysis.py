@@ -425,18 +425,25 @@ async def read_theme(keyword: str):
     
 @router.get("/chart/patterns/{ticker}")
 async def read_chart_patterns(ticker: str, interval: str = "1d", period: str = None):
-    from turbo_engine import CACHE_VERSION
-    cache_key = f"{CACHE_VERSION}_chart_{ticker}_{interval}_{period}"
-    cached = turbo_engine.get_cache(cache_key)
-    if cached:
-        return {"status": "success", "data": cached, "turbo": True}
-        
-    from chart_analysis import get_chart_analysis_full
-    result = await asyncio.to_thread(get_chart_analysis_full, ticker, interval, period)
-    if result and "history" in result and len(result["history"]) > 0:
-        turbo_engine.set_cache(cache_key, result, ttl=3600)  # 1시간 동안 AI 분석 결과 재사용
-        return {"status": "success", "data": result}
-    return {"status": "error", "message": "No data found"}
+    try:
+        from turbo_engine import CACHE_VERSION
+        cache_key = f"{CACHE_VERSION}_chart_{ticker}_{interval}_{period}"
+        cached = turbo_engine.get_cache(cache_key)
+        if cached:
+            return {"status": "success", "data": cached, "turbo": True}
+            
+        from chart_analysis import get_chart_analysis_full, clean_nan_values
+        result = await asyncio.to_thread(get_chart_analysis_full, ticker, interval, period)
+        if result and "history" in result and len(result["history"]) > 0:
+            cleaned = clean_nan_values(result)
+            turbo_engine.set_cache(cache_key, cleaned, ttl=3600)  # 1시간 동안 AI 분석 결과 재사용
+            return {"status": "success", "data": cleaned}
+        return {"status": "error", "message": "차트 데이터를 찾을 수 없습니다."}
+    except Exception as e:
+        import logging, traceback
+        logging.error(f"Error in read_chart_patterns for {ticker}: {traceback.format_exc()}")
+        return {"status": "error", "message": f"차트 분석 중 오류가 발생했습니다: {str(e)}"}
+
 
 
 @router.get("/stock/{symbol}/investor")
