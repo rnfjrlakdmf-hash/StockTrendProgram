@@ -15,7 +15,8 @@ import {
     Zap, 
     ShieldAlert,
     ChevronRight,
-    Sparkles
+    Sparkles,
+    Clock
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -39,11 +40,51 @@ interface EventAnalysis {
     icon: any;
 }
 
+// 시간 포맷 헬퍼 함수
+function formatEventTime(rawTs: any): string {
+    try {
+        let date: Date | null = null;
+        if (!rawTs) date = new Date();
+        else if (typeof rawTs.toDate === 'function') date = rawTs.toDate();
+        else if (rawTs.seconds) date = new Date(rawTs.seconds * 1000);
+        else if (typeof rawTs === 'number') date = new Date(rawTs);
+        else if (typeof rawTs === 'string') date = new Date(rawTs);
+        else if (rawTs instanceof Date) date = rawTs;
+
+        if (!date || isNaN(date.getTime())) date = new Date();
+
+        return date.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch {
+        return new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+}
+
 // 공시 및 이벤트 제목 기반 스마트 분류 & 전문가 마켓 인사이트 도출 함수
 function analyzeWhaleEvent(title: string): EventAnalysis {
     const t = title.toLowerCase();
 
-    if (t.includes('대표이사') || t.includes('임원') || t.includes('경영진') || t.includes('지배구조')) {
+    // 1. 대주주·내부자 지분변동 및 소유상황보고서 우선 분류 (임원·주요주주 보고서 포함)
+    if (t.includes('소유상황보고서') || t.includes('주식등의대량보유') || t.includes('대량보유') || t.includes('최대주주') || t.includes('임원ㆍ주요주주') || t.includes('임원·주요주주') || t.includes('지분')) {
+        return {
+            category: '대주주·내부자 지분변동',
+            subBadge: 'INSIDER TRADING',
+            insight: '핵심 경영진 및 최대주주의 책임경영 신호(장내매수) 또는 차익실현 출회 여부 파악',
+            badgeStyle: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+            glowStyle: 'rgba(59, 130, 246, 0.25)',
+            barColor: 'from-blue-500 to-cyan-500',
+            icon: ShieldAlert,
+        };
+    }
+    // 2. 경영진·대표이사 변경 (순수 리더십 교체)
+    if (t.includes('대표이사') || t.includes('경영진') || t.includes('지배구조') || t.includes('임원선임') || t.includes('임원해임') || t.includes('이사선임')) {
         return {
             category: '경영진·대표이사 변경',
             subBadge: 'LEADERSHIP SHIFT',
@@ -74,17 +115,6 @@ function analyzeWhaleEvent(title: string): EventAnalysis {
             glowStyle: 'rgba(245, 158, 11, 0.25)',
             barColor: 'from-amber-500 to-orange-500',
             icon: Briefcase,
-        };
-    }
-    if (t.includes('지분') || t.includes('최대주주') || t.includes('주식등의대량보유') || t.includes('임원ㆍ주요주주')) {
-        return {
-            category: '대주주·내부자 지분변동',
-            subBadge: 'INSIDER TRADING',
-            insight: '핵심 경영진 및 최대주주의 책임경영 신호(장내매수) 또는 차익실현 출회 여부 파악',
-            badgeStyle: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-            glowStyle: 'rgba(59, 130, 246, 0.25)',
-            barColor: 'from-blue-500 to-cyan-500',
-            icon: ShieldAlert,
         };
     }
     if (t.includes('영업실적') || t.includes('잠정') || t.includes('분기보고서') || t.includes('반기보고서') || t.includes('사업보고서') || t.includes('배당') || t.includes('자기주식') || t.includes('소각')) {
@@ -272,7 +302,13 @@ export default function WhaleSiren() {
                                     </span>
                                 </div>
 
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {/* 실시간 이벤트 포착 시간 표기 */}
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-slate-400 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md shadow-sm">
+                                        <Clock className="w-3 h-3 text-slate-400" />
+                                        <span>{formatEventTime(currentEvent.timestamp)}</span>
+                                    </span>
+
                                     {/* 음소거 버튼 */}
                                     <button
                                         onClick={(e) => {

@@ -99,6 +99,23 @@ export default function GlobalBroadcastListener() {
                     const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
 
                     if (isGlobal || isTargeted) {
+                        // ✅ DART 공시 및 세력 포착은 우측 상단의 'WhaleSiren' 스마트 카드가 
+                        // 전문가 핵심 관전 포인트(💡)와 함께 단독 표시하므로 상단 배너 중복 팝업 방지
+                        const typeStr = (data.type || '').toLowerCase();
+                        const titleStr = (data.title || '').toLowerCase();
+                        const hasDartUrl = Boolean(data.dart_url);
+
+                        const isDartOrWhale = hasDartUrl || 
+                            typeStr.includes('disclosure') || 
+                            typeStr.includes('whale') || 
+                            titleStr.includes('공시') || 
+                            titleStr.includes('슈퍼개미') || 
+                            titleStr.includes('대량보유');
+
+                        if (isDartOrWhale) {
+                            return;
+                        }
+
                         setIsClosing(false);
                         setPopupAlert({ id: change.doc.id, ...data });
                         playAlertSound();
