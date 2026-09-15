@@ -20,6 +20,7 @@ import {
     BarChart2,
     LineChart as LineChartIcon
 } from "lucide-react";
+import KakaoShareButton from "@/components/KakaoShareButton";
 
 interface StockTimingBadgeCardProps {
     symbol: string;
@@ -373,13 +374,23 @@ export default function StockTimingBadgeCard({
                                     </p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="p-2 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
-                                aria-label="닫기"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                                <KakaoShareButton
+                                    title={`[과열 진단] ${stockName} (${cleanTicker}) - ${signal.statusLabel}`}
+                                    description={`${stockName} 현재가 ${priceNum.toLocaleString()}${currency === "KRW" ? "원" : currency} (${parsedChangePct >= 0 ? "+" : ""}${parsedChangePct.toFixed(2)}%)\n🚦 ${signal.statusLabel}\n${signal.subTitle}\n👉 실시간 진단 결과 확인하기`}
+                                    url={`https://stock-trend-program.co.kr/discovery?q=${cleanTicker}`}
+                                    buttonText="진단 결과 확인"
+                                    className="px-3 py-1.5 rounded-full bg-[#FEE500] hover:bg-[#FEE500]/90 text-[#191919] font-black text-xs transition-all shadow-md shadow-[#FEE500]/20 flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                                    showTextAlways={true}
+                                />
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="p-2 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                                    aria-label="닫기"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* 모달 스크롤 콘텐츠 */}
@@ -786,20 +797,28 @@ export default function StockTimingBadgeCard({
 
                         {/* 모달 푸터 */}
                         <div className="px-5 sm:px-7 py-4 border-t border-zinc-800/80 bg-zinc-900/80 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                 <button
                                     onClick={handleOpenChart}
-                                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-black transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 active:scale-95"
+                                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-black transition-all shadow-md shadow-blue-500/20 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                                     title="실시간 캔들 차트 새 창으로 열기"
                                 >
                                     <LineChartIcon className="w-4 h-4" />
-                                    <span>실시간 캔들 차트 바로보기</span>
+                                    <span>캔들 차트 바로보기</span>
                                     <ExternalLink className="w-3.5 h-3.5 opacity-80" />
                                 </button>
+                                <KakaoShareButton
+                                    title={`[과열 진단] ${stockName} (${cleanTicker}) - ${signal.statusLabel}`}
+                                    description={`${stockName} 현재가 ${priceNum.toLocaleString()}${currency === "KRW" ? "원" : currency} (${parsedChangePct >= 0 ? "+" : ""}${parsedChangePct.toFixed(2)}%)\n🚦 ${signal.statusLabel}\n${signal.subTitle}\n👉 실시간 진단 결과 확인하기`}
+                                    url={`https://stock-trend-program.co.kr/discovery?q=${cleanTicker}`}
+                                    buttonText="진단 결과 확인"
+                                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-[#FEE500] hover:bg-[#FEE500]/90 text-[#191919] font-black text-xs transition-all shadow-md shadow-[#FEE500]/20 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                                    showTextAlways={true}
+                                />
                             </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all active:scale-95 text-center"
+                                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all active:scale-95 text-center cursor-pointer"
                             >
                                 확인 완료
                             </button>
