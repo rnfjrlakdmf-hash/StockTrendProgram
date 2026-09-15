@@ -3329,49 +3329,55 @@ def get_korean_interest_rates():
 
 def get_market_summary_stats():
     """
-    네이버 국내증시 통합시세 폐지에 대응하여, 네이버 금융 메인(finance.naver.com)의
-    우측 지수 박스(kospi_area, kosdaq_area)에서 실시간 상승/하락/보합 종목 수를 크롤링합니다.
+    네이버 공식 모바일 JSON API를 통해 실시간 상승/하락/보합 및 상한가/하한가 종목 수를 집계합니다.
     """
     stats = {
-        "kospi": {"up": 0, "same": 0, "down": 0},
-        "kosdaq": {"up": 0, "same": 0, "down": 0}
+        "kospi": {"up": 0, "same": 0, "down": 0, "up_limit": 0, "down_limit": 0},
+        "kosdaq": {"up": 0, "same": 0, "down": 0, "up_limit": 0, "down_limit": 0}
     }
 
     try:
-        url = "https://finance.naver.com/"
-        res = requests.get(url, headers=HEADER, timeout=5)
-        # 중요: euc-kr 디코드 후 BS4로 파싱해야 정규식이 한글을 제대로 인식합니다.
-        html = res.content.decode('euc-kr', 'replace')
-        soup = BeautifulSoup(html, 'html.parser')
-        import re
+        import concurrent.futures
+        import urllib.request
+        import json
 
-        def extract_stats(area_class, market_key):
-            area = soup.select_one(area_class)
-            if not area:
-                return
+        def fetch_breadth_api(market):
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            def get_json(ep, size):
+                url = f"https://m.stock.naver.com/api/stocks/{ep}/{market}?page=1&pageSize={size}"
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=3) as res:
+                    return json.loads(res.read().decode("utf-8"))
 
-            # HTML 특수문자 및 한글 깨짐에 완벽히 대응하는 후위 숫자 추출법
-            # 지수 % 변동률 뒤에 항상 투자자 동향 -> 상하락 종목수가 렌더링됨
-            tail_text = area.text.replace(',', '').split('%')[-1]
-            nums = re.findall(r'\d+', tail_text)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+                f_up = ex.submit(get_json, "up", 25)
+                f_down = ex.submit(get_json, "down", 25)
+                f_total = ex.submit(get_json, "quantTop", 1)
+                up_data, down_data, total_data = f_up.result(), f_down.result(), f_total.result()
 
-            # 최소 5개의 숫자가 있어야 함 (상한, 상승, 보합, 하락, 하한)
-            if len(nums) >= 5:
-                # 무조건 맨 뒤 5개의 숫자가 종목 개수임 (네이버 증권 공통 구조)
-                v_up_limit = int(nums[-5])
-                v_up = int(nums[-4])
-                v_same = int(nums[-3])
-                v_down = int(nums[-2])
-                v_down_limit = int(nums[-1])
+            up = up_data.get("totalCount", 0)
+            down = down_data.get("totalCount", 0)
+            total = total_data.get("totalCount", 0) or (up + down)
+            same = max(0, total - up - down)
 
-                stats[market_key]['up'] = v_up + v_up_limit
-                stats[market_key]['same'] = v_same
-                stats[market_key]['down'] = v_down + v_down_limit
-                stats[market_key]['up_limit'] = v_up_limit
-                stats[market_key]['down_limit'] = v_down_limit
+            up_limit = sum(1 for s in up_data.get("stocks", [])
+                           if s.get("compareToPreviousPrice", {}).get("name") == "UPPER_LIMIT" or float(s.get("fluctuationsRatio", 0)) >= 29.5)
+            down_limit = sum(1 for s in down_data.get("stocks", [])
+                             if s.get("compareToPreviousPrice", {}).get("name") == "LOWER_LIMIT" or float(s.get("fluctuationsRatio", 0)) <= -29.5)
 
-        extract_stats('.kospi_area', 'kospi')
-        extract_stats('.kosdaq_area', 'kosdaq')
+            return {
+                "up": up,
+                "same": same,
+                "down": down,
+                "up_limit": up_limit,
+                "down_limit": down_limit
+            }
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+            f_kospi = ex.submit(fetch_breadth_api, "KOSPI")
+            f_kosdaq = ex.submit(fetch_breadth_api, "KOSDAQ")
+            stats["kospi"] = f_kospi.result()
+            stats["kosdaq"] = f_kosdaq.result()
 
         # === 🚀 공포/탐욕 지수 (Fear & Greed Index) 고퀄리티 알고리즘 ===
         import yfinance as yf
@@ -3450,103 +3456,59 @@ def get_market_summary_stats():
 
 def get_live_disclosures():
     """
-    네이버 증권 '공시' 탭 최신 뉴스 1페이지를 스크랩하여,
-    투자자들이 주목할 만한 특이 공시(계약, 증자, 타법인 등)만 필터링해 반환합니다.
+    네이버 증권 공식 뉴스 API를 통해 최신 공시 및 핵심 속보를 수집하여,
+    주가 변동성을 촉발하는 특이 공시/호재/악재를 필터링해 반환합니다.
     """
-    url = "https://finance.naver.com/news/news_list.naver?mode=LSS2D&section_id=101&section_id2=258"
+    url = "https://m.stock.naver.com/api/news/list?page=1&pageSize=50"
     results = []
-
-    # 필터링할 관심(특이) 키워드
-    target_keywords = [
-        "유상증자",
-        "무상증자",
-        "단일판매",
-        "공급계약",
-        "타법인",
-        "영업실적",
-        "잠정",
-        "자사주",
-        "주식소각",
-        "전환사채",
-        "신주인수권",
-        "합병",
-        "분할",
-        "공개매수",
-        "감자",
-        "결정",
-        "수주",
-        "취득",
-        "처분",
-        "배당",
-        "주주",
-        "특허",
-        "임상",
-        " MOU",
-        "투자"]
     fallback_results = []
 
+    target_keywords = [
+        "공시", "수주", "계약", "증자", "감자", "합병", "분할", "실적", "잠정", "영업익", "매출",
+        "자사주", "소각", "전환사채", "CB", "BW", "취득", "처분", "배당", "특허", "임상", "MOU",
+        "공개매수", "타법인", "최대주주", "단일판매"
+    ]
+
     try:
-        res = requests.get(url, headers=HEADER, timeout=5)
-        res.encoding = 'cp949'
-        html = res.text
-        soup = BeautifulSoup(html, "html.parser")
+        import urllib.request
+        import json
 
-        articles = soup.select("ul.realtimeNewsList > li")
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        with urllib.request.urlopen(req, timeout=4) as res:
+            data = json.loads(res.read().decode("utf-8"))
 
-        for li in articles:
-            dl = li.select_one("dl")
-            if not dl:
-                continue
+        if isinstance(data, list):
+            for item in data:
+                title = robust_name(item.get("tit", ""))
+                oid = item.get("oid", "")
+                aid = item.get("aid", "")
+                press = robust_name(item.get("ohnm", ""))
+                dt_raw = item.get("dt", "")
+                if len(dt_raw) >= 12:
+                    dt_fmt = f"{dt_raw[:4]}.{dt_raw[4:6]}.{dt_raw[6:8]} {dt_raw[8:10]}:{dt_raw[10:12]}"
+                else:
+                    dt_fmt = dt_raw
 
-            title_tag = dl.select_one(
-                "dt.articleSubject a") or dl.select_one("dd.articleSubject a")
-            if not title_tag:
-                continue
+                link = f"https://n.news.naver.com/mnews/article/{oid}/{aid}" if oid and aid else "https://m.stock.naver.com"
 
-            title = title_tag.text.strip()
-            href = title_tag.get("href", "")
+                entry = {
+                    "title": title,
+                    "link": link,
+                    "press": press,
+                    "date": dt_fmt
+                }
+                fallback_results.append(entry)
+                if any(kw in title for kw in target_keywords):
+                    results.append(entry)
 
-            # 모바일/PC 하이브리드 지원을 위한 통합 네이버 뉴스 주소 추출
-            import urllib.parse
-            parsed = urllib.parse.urlparse(href)
-            qs = urllib.parse.parse_qs(parsed.query)
-            aid = qs.get("article_id", [""])[0]
-            oid = qs.get("office_id", [""])[0]
-
-            if aid and oid:
-                link = f"https://n.news.naver.com/mnews/article/{oid}/{aid}"
-            else:
-                link = "https://finance.naver.com" + href
-
-            summary_dd = dl.select_one("dd.articleSummary")
-            press = summary_dd.select_one("span.press").text.strip(
-            ) if summary_dd and summary_dd.select_one("span.press") else ""
-            date = summary_dd.select_one("span.wdate").text.strip(
-            ) if summary_dd and summary_dd.select_one("span.wdate") else ""
-
-            item = {
-                "title": title,
-                "link": link,
-                "press": press,
-                "date": date
-            }
-            fallback_results.append(item)
-
-            # 관심 키워드 포함 여부 판별
-            is_target = any(kw in title for kw in target_keywords)
-            if is_target:
-                results.append(item)
-
-        # 4~6개가 나오도록 설정 (그리드 레이아웃 최적화)
         if len(results) < 6:
             for item in fallback_results:
                 if item not in results:
                     results.append(item)
                 if len(results) >= 6:
                     break
-        
-        results = results[:6]
 
+        results = results[:6]
     except Exception as e:
         print(f"Live Disclosures fetch error: {e}")
 
