@@ -318,8 +318,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
         <>
         <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#07080d]/90 backdrop-blur-2xl transition-all duration-300 shadow-2xl">
             {/* Top Navigation Row */}
-            <div className="flex flex-row items-center justify-between px-4 py-2.5 md:px-6 md:py-3 gap-2">
-                <div className="flex items-center gap-2 flex-shrink-0 min-w-max mr-2 z-20">
+            <div className="flex flex-row items-center justify-between px-4 py-2.5 md:px-6 md:py-3 gap-2 min-w-0">
+                {/* Left: Title & Subtitle */}
+                <div className="flex items-center gap-2 shrink-0 z-20">
                     <button
                         onClick={() => window.dispatchEvent(new Event('open-mobile-sidebar'))}
                         className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-orange-400 active:scale-95 transition-all cursor-pointer border border-white/10"
@@ -327,12 +328,12 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     >
                         <Menu className="h-5 w-5" />
                     </button>
-                    <div className="flex flex-col min-w-0">
-                        <h2 className="text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap">
+                    <div className="flex flex-col min-w-0 max-w-[180px] sm:max-w-[240px] md:max-w-[280px] 2xl:max-w-none">
+                        <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap truncate">
                             {title}
                         </h2>
                         {subtitle && (
-                            <p className="text-[11px] md:text-xs text-gray-400 font-medium hidden md:block whitespace-nowrap tracking-tight">
+                            <p className="text-[10px] md:text-xs text-gray-400 font-medium hidden md:block whitespace-nowrap truncate tracking-tight">
                                 {subtitle}
                             </p>
                         )}
@@ -340,38 +341,38 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </div>
 
                 {/* Desktop Knowledge & Report Quick Nav (E-E-A-T & AdSense Navigation Boost) */}
-                <nav className="hidden lg:flex items-center gap-1.5 ml-2 mr-auto" aria-label="메인 지식 네비게이션">
+                <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 mx-2 min-w-0 flex-shrink" aria-label="메인 지식 네비게이션">
                     <Link 
                         href="/signals?tab=scanner" 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                        className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>🔥</span>
                         <span>장마감 스캐너</span>
                     </Link>
                     <Link 
                         href="/guide" 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>📚</span>
                         <span>투자 가이드</span>
                     </Link>
                     <Link 
                         href="/blog" 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/blog') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/blog') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>📊</span>
                         <span>마켓 리포트</span>
                     </Link>
                     <Link 
                         href="/theory" 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname?.startsWith('/theory') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`hidden xl:flex px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/theory') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>📈</span>
                         <span>차트 스터디</span>
                     </Link>
                     <Link 
                         href="/about" 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${pathname === '/about' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`hidden 2xl:flex px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname === '/about' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>ℹ️</span>
                         <span>서비스 소개</span>
@@ -379,20 +380,20 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 </nav>
 
                 <div className="flex items-center gap-2 md:gap-3 justify-end shrink-0 ml-auto z-20">
-                {/* Global Search Bar */}
-                <div className="flex relative w-full flex-1 max-w-[130px] sm:max-w-[160px] md:max-w-[180px] group transition-all duration-500 ease-out hover:max-w-[200px] sm:hover:max-w-[240px] md:hover:max-w-[340px] focus-within:flex-1 focus-within:max-w-[200px] sm:focus-within:max-w-[240px] md:focus-within:max-w-[340px] pl-10 sm:pl-0">
-                    <div className="absolute inset-y-0 left-10 sm:left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-4 w-4 text-gray-400 group-hover:text-gray-200 group-focus-within:text-blue-400 transition-colors" />
+                    {/* Global Search Bar */}
+                    <div className="relative w-28 sm:w-36 md:w-44 lg:w-48 group transition-all duration-300 shrink-0">
+                        <div className="absolute inset-y-0 left-0 pl-2.5 sm:pl-3 flex items-center pointer-events-none">
+                            <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 group-hover:text-gray-200 group-focus-within:text-blue-400 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="종목/테마 검색"
+                            className="block w-full pl-8 sm:pl-9 pr-3 py-1.5 md:py-2 border border-white/10 rounded-full bg-white/5 text-xs placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-glass hover:bg-white/10"
+                        />
                     </div>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="종목/테마 검색"
-                        className="block w-full pl-9 pr-3 py-1.5 md:py-2 border border-white/5 rounded-full bg-white/5 text-xs md:text-sm placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-glass hover:bg-white/10"
-                    />
-                </div>
 
                 <div className="flex items-center justify-end gap-3" ref={dropdownRef}>
                     <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all hover:shadow-glass group">
