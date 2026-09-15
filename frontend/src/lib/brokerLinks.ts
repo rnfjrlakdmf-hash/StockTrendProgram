@@ -216,11 +216,44 @@ export function getStoreDownloadUrl(broker: BrokerInfo): string {
 }
 
 /**
- * 스마트 딥링크 실행기 (스마트폰에 설치된 MTS 어플 즉시 켜기)
+ * 종목 코드 클립보드 자동 복사 유틸리티 (모바일 브라우저 최적화)
  */
-export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: BrokerInfo } {
+export async function copyTickerToClipboard(ticker: string): Promise<boolean> {
+    if (typeof window === "undefined" || !ticker) return false;
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(ticker);
+            return true;
+        } else {
+            // 구형/모바일 브라우저 폴백
+            const textArea = document.createElement("textarea");
+            textArea.value = ticker;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            const successful = document.execCommand("copy");
+            textArea.remove();
+            return successful;
+        }
+    } catch (e) {
+        console.warn("Clipboard copy failed:", e);
+        return false;
+    }
+}
+
+/**
+ * 스마트 딥링크 실행기 (스마트폰에 설치된 MTS 어플 즉시 켜기 + 종목 연동)
+ */
+export function launchMtsApp(
+    brokerId?: string,
+    symbol?: string,
+    stockName?: string
+): { isMobile: boolean; broker: BrokerInfo; copied: boolean } {
     if (typeof window === "undefined") {
-        return { isMobile: false, broker: BROKER_LIST[0] };
+        return { isMobile: false, broker: BROKER_LIST[0], copied: false };
     }
 
     const targetId = brokerId || localStorage.getItem(PREFERRED_BROKER_KEY) || "nh";
@@ -229,28 +262,77 @@ export function launchMtsApp(brokerId?: string): { isMobile: boolean; broker: Br
     const ua = navigator.userAgent.toLowerCase();
     const isAndroid = /android/.test(ua);
     const isIOS = /iphone|ipad|ipod/.test(ua);
+    const isMobile = isAndroid || isIOS;
 
+    // 종목코드 순수 6자리 추출 (예: 000660.KS -> 000660)
+    const cleanTicker = (symbol || "").replace(/\.(KS|KQ)$/i, "").replace(/^A/i, "").trim();
+
+    // 1. 토스증권 특별 처리 (토스는 종목 URL로 앱 내 다이렉트 직행 100% 지원)
+    if (broker.id === "toss" && cleanTicker) {
+        const tossStockUrl = `https://tossinvest.com/stocks/${cleanTicker}`;
+        if (isMobile) {
+            // 모바일: 토스 앱스킴 시도 후 유니버설 링크 이동
+            window.location.href = `supertoss://stock/stockDetail?stockCode=${cleanTicker}`;
+            setTimeout(() => {
+                window.location.href = tossStockUrl;
+            }, 600);
+        } else {
+            window.open(tossStockUrl, "_blank", "noopener,noreferrer");
+        }
+        return { isMobile, broker, copied: false };
+    }
+
+    // 2. 카카오페이증권 종목 직행 시도
+    if (broker.id === "kakaopay" && cleanTicker && isMobile) {
+        window.location.href = `kakaopay://securities/stocks/${cleanTicker}`;
+        return { isMobile, broker, copied: true };
+    }
+
+    // 3. 전통 증권사 (NH나무, 키움, 삼성, KB 등) 모바일 실행
     if (isAndroid) {
-        // 안드로이드: 커스텀 스킴 직접 호출 (설치된 경우 안드로이드 OS가 앱을 즉시 실행)
+        // 안드로이드: 종목 파라미터 포함 스킴 시도
         const cleanScheme = broker.appScheme.replace("://", "").replace("/stock", "").replace("/securities", "");
+        let targetScheme = broker.appScheme;
+        
+        // 증권사별 종목 파라미터 시도
+        if (cleanTicker) {
+            if (broker.id === "kiwoom") targetScheme = `heromts://order?stockcode=${cleanTicker}`;
+            else if (broker.id === "nh") targetScheme = `txsmart://stock?code=${cleanTicker}`;
+            else if (broker.id === "samsung") targetScheme = `mpopapp://stock?code=${cleanTicker}`;
+            else if (broker.id === "kb") targetScheme = `kbma://stock?code=${cleanTicker}`;
+            else if (broker.id === "shinhan") targetScheme = `newshinhanialpha://stock?code=${cleanTicker}`;
+        }
+
         const intentUrl = `intent://#Intent;scheme=${cleanScheme};package=${broker.androidPackage};end;`;
 
-        // 1. 직접 스킴 실행 시도
         try {
-            window.location.href = broker.appScheme;
+            window.location.href = targetScheme;
+            setTimeout(() => {
+                // 특정 스킴 미지원 시 기본 패키지 인텐트로 앱 오픈
+                window.location.href = intentUrl;
+            }, 500);
         } catch (e) {
-            // Intent 시도
             window.location.href = intentUrl;
         }
 
-        return { isMobile: true, broker };
+        return { isMobile: true, broker, copied: !!cleanTicker };
     } else if (isIOS) {
         // iOS: 커스텀 URL 스킴 호출
-        window.location.href = broker.appScheme;
-        return { isMobile: true, broker };
+        let targetScheme = broker.appScheme;
+        if (cleanTicker) {
+            if (broker.id === "kiwoom") targetScheme = `heromts://order?stockcode=${cleanTicker}`;
+            else if (broker.id === "nh") targetScheme = `txsmart://stock?code=${cleanTicker}`;
+        }
+
+        window.location.href = targetScheme;
+        return { isMobile: true, broker, copied: !!cleanTicker };
     } else {
-        // PC / 데스크탑 환경: WTS 웹 트레이딩 또는 공식 사이트 오픈
-        window.open(broker.webTradeUrl, "_blank", "noopener,noreferrer");
-        return { isMobile: false, broker };
+        // PC / 데스크탑 환경: 네이버페이 증권 종목창 또는 WTS 사이트 오픈
+        if (cleanTicker) {
+            window.open(`https://m.stock.naver.com/item/${cleanTicker}`, "_blank", "noopener,noreferrer");
+        } else {
+            window.open(broker.webTradeUrl, "_blank", "noopener,noreferrer");
+        }
+        return { isMobile: false, broker, copied: !!cleanTicker };
     }
 }
