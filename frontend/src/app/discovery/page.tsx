@@ -1442,26 +1442,52 @@ function DiscoveryContent() {
                                                     return false;
                                                 })();
 
+                                                const afterData = stock.after_market_data || stock.nxt_data;
+                                                const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
+                                                    Number(String(
+                                                    stock.is_extended_hours && stock.extended_price ? stock.extended_price :
+                                                    (afterData?.price || 0)
+                                                ).replace(/,/g, ''));
+                                                const hasAfterData = Boolean(extP && extP > 0);
+
                                                 return (
                                                     <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-                                                        <div className="flex flex-wrap items-center gap-3">
-                                                            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                                                                extendedHours?.regular?.is_active || stock.market_status === '장중' 
-                                                                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' 
-                                                                    : isOvertimeSession
-                                                                    ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
-                                                                    : stock.market_status?.includes('동시호가')
-                                                                    ? 'text-purple-400 bg-purple-500/10 border-purple-500/30'
-                                                                    : 'text-zinc-400 bg-white/5 border-white/10'
-                                                            }`}>
-                                                                {extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
-                                                                 isOvertimeSession ? 'AFTER-MARKET 시간외 단일가' :
-                                                                 stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
-                                                                 'REGULAR MARKET 정규장 종가'}
-                                                            </span>
+                                                        {/* 좌측: 세션 뱃지 + 대형 가격 + 등락률 (절대 줄바꿈 안 되도록 2단 구조화) */}
+                                                        <div className="flex flex-col gap-1.5 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md border w-fit shrink-0 whitespace-nowrap ${
+                                                                    extendedHours?.regular?.is_active || stock.market_status === '장중' 
+                                                                        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' 
+                                                                        : isOvertimeSession
+                                                                        ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
+                                                                        : stock.market_status?.includes('동시호가')
+                                                                        ? 'text-purple-400 bg-purple-500/10 border-purple-500/30'
+                                                                        : 'text-zinc-400 bg-white/5 border-white/10'
+                                                                }`}>
+                                                                    {extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
+                                                                     isOvertimeSession ? 'AFTER-MARKET 시간외 단일가' :
+                                                                     stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
+                                                                     'REGULAR MARKET 정규장 종가'}
+                                                                </span>
 
-                                                            <div className="flex items-baseline gap-2.5">
-                                                                <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline font-mono">
+                                                                {/* 해외(미국) 주식 원화 환산 가격 표시 */}
+                                                                {stock.currency !== 'KRW' && (() => {
+                                                                    const currentPriceNum = extendedHours?.regular?.price 
+                                                                        ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                                    const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
+                                                                    const krwPrice = Math.round(currentPriceNum * rate);
+                                                                    
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 text-xs font-mono shrink-0 whitespace-nowrap">
+                                                                            <span className="text-[10px] font-sans font-semibold text-zinc-400">원화 환산</span>
+                                                                            <span className="font-black text-amber-300">≈ {krwPrice.toLocaleString()}원</span>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            <div className="flex items-baseline gap-2.5 sm:gap-3 flex-nowrap shrink-0">
+                                                                <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight flex items-baseline font-mono whitespace-nowrap shrink-0">
                                                                     <span className="text-lg sm:text-xl mr-1 text-zinc-400 font-bold">
                                                                         {stock.currency === 'KRW' ? '₩' : '$'}
                                                                     </span>
@@ -1470,7 +1496,7 @@ function DiscoveryContent() {
                                                                             (stock.currency === 'KRW'
                                                                             ? Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString()
                                                                             : Number(String(stock.regular_price || stock.regular_close || stock.price).replace(/,/g, '')).toLocaleString(undefined, {minimumFractionDigits: 2}))}
-                                                                        className="text-white bg-transparent"
+                                                                        className="text-white bg-transparent whitespace-nowrap"
                                                                     />
                                                                 </span>
 
@@ -1522,7 +1548,7 @@ function DiscoveryContent() {
                                                                     const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
 
                                                                     return (
-                                                                        <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-xl font-black text-xs sm:text-sm border shadow-sm ${
+                                                                        <div className={`flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm border shadow-sm whitespace-nowrap shrink-0 ${
                                                                             isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
                                                                             isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
                                                                             'bg-zinc-800 border-white/10 text-zinc-400'
@@ -1533,35 +1559,12 @@ function DiscoveryContent() {
                                                                     );
                                                                 })()}
                                                             </div>
-
-                                                            {/* 해외(미국) 주식 원화 환산 가격 표시 */}
-                                                            {stock.currency !== 'KRW' && (() => {
-                                                                const currentPriceNum = extendedHours?.regular?.price 
-                                                                    ?? Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
-                                                                const rate = extendedHours?.usd_krw || (stock as any).exchange_rate || 1435;
-                                                                const krwPrice = Math.round(currentPriceNum * rate);
-                                                                
-                                                                return (
-                                                                    <div className="flex items-center gap-2 text-xs font-mono">
-                                                                        <span className="text-[11px] font-sans font-semibold text-zinc-400">원화 환산</span>
-                                                                        <span className="font-black text-amber-300">≈ {krwPrice.toLocaleString()}원</span>
-                                                                    </div>
-                                                                );
-                                                            })()}
                                                         </div>
 
-                                                        <div className="flex items-center gap-2.5 self-end md:self-center flex-wrap sm:flex-nowrap shrink-0">
+                                                        {/* 우측: 시간외 거래 정보 및 상태 뱃지 */}
+                                                        <div className="flex items-center gap-2.5 self-start md:self-center flex-wrap sm:flex-nowrap shrink-0">
                                                             {/* 시간외 거래 정보 (시간외 단일가 거래 중이거나 장마감 후 시간외 체결 데이터가 있을 때 항상 표출) */}
-                                                            {(() => {
-                                                                const afterData = stock.after_market_data || stock.nxt_data;
-                                                                const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
-                                                                    Number(String(
-                                                                    stock.is_extended_hours && stock.extended_price ? stock.extended_price :
-                                                                    (afterData?.price || 0)
-                                                                ).replace(/,/g, ''));
-
-                                                                if (!extP || extP <= 0) return null;
-
+                                                            {hasAfterData && (() => {
                                                                 let val = extendedHours?.extended?.change;
                                                                 let pct = extendedHours?.extended?.change_pct;
                                                                 if (val === undefined || val === null || val === 0) {
@@ -1604,7 +1607,7 @@ function DiscoveryContent() {
                                                                 );
                                                             })()}
 
-                                                            {/* 장중 / 시간외 단일가 / 프리마켓 / 동시호가 / 장마감 뱃지 */}
+                                                            {/* 장중 / 시간외 단일가 / 프리마켓 / 동시호가 / 장마감 뱃지 (시간외 카드와 중복 방지) */}
                                                             {(() => {
                                                                 const isRegular = extendedHours?.regular?.is_active || stock.market_status === '장중';
                                                                 const isPreMarket = stock.market_status?.includes('프리') || extendedHours?.extended?.session === 'PRE';
@@ -1620,6 +1623,8 @@ function DiscoveryContent() {
                                                                     );
                                                                 }
                                                                 if (isOvertimeSession) {
+                                                                    // 시간외 카드(hasAfterData)가 이미 있을 경우 동일한 단일가 뱃지 중복 표출 방지
+                                                                    if (hasAfterData) return null;
                                                                     return (
                                                                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)] whitespace-nowrap">
                                                                             <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.9)]" />

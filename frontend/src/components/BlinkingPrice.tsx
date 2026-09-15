@@ -39,7 +39,7 @@ export default function BlinkingPrice({ price, color, className = "", prefix = "
 
     return (
         <span
-            className={`transition-colors duration-300 px-1.5 py-0.5 rounded ${flashBufferClass} ${className}`}
+            className={`transition-colors duration-300 px-1.5 py-0.5 rounded inline-block whitespace-nowrap ${flashBufferClass} ${className}`}
         >
             {prefix && <span className="opacity-70 text-[0.8em] mr-0.5">{prefix}</span>}
             {displayPrice}
