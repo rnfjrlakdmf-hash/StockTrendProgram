@@ -318,9 +318,9 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
         <>
         <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#07080d]/90 backdrop-blur-2xl transition-all duration-300 shadow-2xl">
             {/* Top Navigation Row */}
-            <div className="flex flex-row items-center justify-between px-4 py-2.5 md:px-6 md:py-3 gap-2 min-w-0">
-                {/* Left: Title & Subtitle */}
-                <div className="flex items-center gap-2 shrink-0 z-20">
+            <div className="flex flex-row items-center justify-between px-4 py-2.5 md:px-6 md:py-3 gap-3 min-w-0">
+                {/* 1. Left: Title & Subtitle */}
+                <div className="flex items-center gap-2 shrink-0 z-10">
                     <button
                         onClick={() => window.dispatchEvent(new Event('open-mobile-sidebar'))}
                         className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-orange-400 active:scale-95 transition-all cursor-pointer border border-white/10"
@@ -328,7 +328,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     >
                         <Menu className="h-5 w-5" />
                     </button>
-                    <div className="flex flex-col min-w-0 max-w-[180px] sm:max-w-[240px] md:max-w-[280px] 2xl:max-w-none">
+                    <div className="flex flex-col min-w-0 max-w-[180px] sm:max-w-[240px] md:max-w-[280px] lg:max-w-[320px]">
                         <h2 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap truncate">
                             {title}
                         </h2>
@@ -340,49 +340,36 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     </div>
                 </div>
 
-                {/* Desktop Knowledge & Report Quick Nav (E-E-A-T & AdSense Navigation Boost) */}
-                <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 mx-2 min-w-0 flex-shrink" aria-label="메인 지식 네비게이션">
+                {/* 2. Center: Core Knowledge Tabs (Clean & 100% Conflict-Free) */}
+                <nav className="hidden lg:flex items-center gap-1.5 shrink-0" aria-label="메인 지식 네비게이션">
                     <Link 
                         href="/signals?tab=scanner" 
-                        className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>🔥</span>
                         <span>장마감 스캐너</span>
                     </Link>
                     <Link 
                         href="/guide" 
-                        className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>📚</span>
                         <span>투자 가이드</span>
                     </Link>
                     <Link 
                         href="/blog" 
-                        className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/blog') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/blog') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
                         <span>📊</span>
                         <span>마켓 리포트</span>
                     </Link>
-                    <Link 
-                        href="/theory" 
-                        className={`hidden xl:flex px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname?.startsWith('/theory') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <span>📈</span>
-                        <span>차트 스터디</span>
-                    </Link>
-                    <Link 
-                        href="/about" 
-                        className={`hidden 2xl:flex px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full text-xs font-bold transition-all items-center gap-1.5 shrink-0 whitespace-nowrap ${pathname === '/about' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <span>ℹ️</span>
-                        <span>서비스 소개</span>
-                    </Link>
                 </nav>
 
-                <div className="flex items-center gap-2 md:gap-3 justify-end shrink-0 ml-auto z-20">
+                {/* 3. Right: Search & Actions */}
+                <div className="flex items-center gap-2 md:gap-3 justify-end shrink-0 z-10">
                     {/* Global Search Bar */}
-                    <div className="relative w-28 sm:w-36 md:w-44 lg:w-48 group transition-all duration-300 shrink-0">
-                        <div className="absolute inset-y-0 left-0 pl-2.5 sm:pl-3 flex items-center pointer-events-none">
+                    <div className="relative w-32 sm:w-40 md:w-48 group transition-all duration-300 shrink-0">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 group-hover:text-gray-200 group-focus-within:text-blue-400 transition-colors" />
                         </div>
                         <input
@@ -391,7 +378,7 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="종목/테마 검색"
-                            className="block w-full pl-8 sm:pl-9 pr-3 py-1.5 md:py-2 border border-white/10 rounded-full bg-white/5 text-xs placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-glass hover:bg-white/10"
+                            className="block w-full pl-9 pr-3 py-1.5 md:py-2 border border-white/10 rounded-full bg-white/5 text-xs placeholder-gray-500 text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white/10 transition-all shadow-glass hover:bg-white/10"
                         />
                     </div>
 
