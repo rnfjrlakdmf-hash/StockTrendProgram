@@ -4086,7 +4086,6 @@ def get_investor_ranking_data():
     - institution_top: KOSDAQ 거래량 TOP
     """
     import requests
-    from bs4 import BeautifulSoup
     import time
 
     cache_attr = "_investor_ranking_cache"
@@ -4096,56 +4095,43 @@ def get_investor_ranking_data():
     if cached_data and (time.time() - cached_ts) < 30:
         return cached_data
 
-    def parse_naver_sise(url, is_rise=False):
+    def fetch_ranking_naver(endpoint, is_rise=False):
+        url = f"https://m.stock.naver.com/api/stocks/{endpoint}?page=1&pageSize=15"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
         try:
-            res = requests.get(url, headers=HEADER, timeout=5)
-            soup = BeautifulSoup(decode_safe(res), "html.parser")
-            table = soup.select_one("table.type_2")
-            if not table:
+            res = requests.get(url, headers=headers, timeout=4)
+            if res.status_code != 200:
                 return []
-
+            data = res.json()
+            stocks = data.get("stocks", [])
             items = []
-            rows = table.select("tr")
-            for row in rows:
-                cols = row.select("td")
-                if len(cols) < 6:
-                    continue
+            for s in stocks:
+                name = robust_name(s.get("stockName", ""))
+                symbol = s.get("itemCode", "")
+                price_raw = s.get("closePrice", "")
+                ratio = str(s.get("fluctuationsRatio", "0.00"))
+                vol_raw = s.get("accumulatedTradingVolume", "0")
+                vol_num = int(s.get("accumulatedTradingVolumeRaw", 0) or vol_raw.replace(",", "") or 0)
 
-                name_tag = cols[1].select_one("a")
-                if not name_tag:
-                    continue
+                direction = s.get("compareToPreviousPrice", {}).get("name", "")
+                if "UPPER" in direction or "RISE" in direction or "RISING" in direction or (not ratio.startswith("-") and float(ratio or 0) > 0):
+                    change_clean = f"+{ratio}%" if not ratio.startswith("+") else f"{ratio}%"
+                elif "LOWER" in direction or "FALL" in direction or "FALLING" in direction or float(ratio or 0) < 0:
+                    change_clean = f"-{ratio}%" if not ratio.startswith("-") else f"{ratio}%"
+                else:
+                    change_clean = f"{ratio}%"
 
-                name = name_tag.text.strip()
-                href = name_tag.get("href", "")
-                symbol = href.split("code=")[-1] if "code=" in href else ""
-
-                price_raw = cols[2].text.strip()
-                diff_raw = cols[3].text.strip().replace("\n", " ").replace("\t", "")
-                change_raw = cols[4].text.strip()
-                vol_raw = cols[5].text.strip()
-
-                # Clean change string
-                change_clean = change_raw
-                if not change_clean.startswith("+") and not change_clean.startswith("-") and not change_clean.startswith("0"):
-                    if "상승" in diff_raw or "▲" in diff_raw:
-                        change_clean = f"+{change_clean}"
-                    elif "하락" in diff_raw or "▼" in diff_raw:
-                        change_clean = f"-{change_clean}"
-
-                # Value and Amount formatted for UI
                 if is_rise:
                     display_val = change_clean
                     display_sub = f"{price_raw}원"
                 else:
-                    try:
-                        vol_num = int(vol_raw.replace(",", ""))
-                        if vol_num >= 100000000:
-                            vol_fmt = f"{vol_num / 100000000:.1f}억주"
-                        elif vol_num >= 10000:
-                            vol_fmt = f"{vol_num / 10000:.0f}만주"
-                        else:
-                            vol_fmt = f"{vol_raw}주"
-                    except Exception:
+                    if vol_num >= 100000000:
+                        vol_fmt = f"{vol_num / 100000000:.1f}억주"
+                    elif vol_num >= 10000:
+                        vol_fmt = f"{vol_num / 10000:.0f}만주"
+                    else:
                         vol_fmt = f"{vol_raw}주"
                     display_val = vol_fmt
                     display_sub = f"{change_clean} ({price_raw}원)"
@@ -4156,30 +4142,20 @@ def get_investor_ranking_data():
                     "price": f"{price_raw}원" if price_raw else "",
                     "change": change_clean,
                     "volume": f"{vol_raw}주" if vol_raw else "",
-                    "diff": diff_raw,
                     "value": display_val,
                     "amount": display_sub
                 })
-                if len(items) >= 15:
-                    break
             return items
         except Exception as e:
             print(f"[Investor Ranking Error] {e}")
             return []
 
     data = {
-        "foreign_sell": parse_naver_sise(
-            "https://finance.naver.com/sise/sise_rise.naver?sosok=0",
-            True),
-        "institution_sell": parse_naver_sise(
-            "https://finance.naver.com/sise/sise_rise.naver?sosok=1",
-            True),
-        "foreign_top": parse_naver_sise(
-            "https://finance.naver.com/sise/sise_quant.naver?sosok=0",
-            False),
-        "institution_top": parse_naver_sise(
-            "https://finance.naver.com/sise/sise_quant.naver?sosok=1",
-            False)}
+        "foreign_sell": fetch_ranking_naver("up/KOSPI", is_rise=True),
+        "institution_sell": fetch_ranking_naver("up/KOSDAQ", is_rise=True),
+        "foreign_top": fetch_ranking_naver("quantTop/KOSPI", is_rise=False),
+        "institution_top": fetch_ranking_naver("quantTop/KOSDAQ", is_rise=False)
+    }
     globals()[cache_attr] = data
     globals()[cache_ts_attr] = time.time()
     return data
