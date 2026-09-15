@@ -3553,246 +3553,142 @@ def get_live_disclosures():
     return results
 
 
-async def fetch_stocks_for_heatmap(session, item, item_type='sector'):
+_sector_heatmap_cache = {"data": [], "timestamp": 0}
+_theme_heatmap_cache = {"data": [], "timestamp": 0}
+
+async def fetch_stocks_for_heatmap_group(session, item_no, item_type='sector'):
     stocks = []
     try:
-        url = item['url']
-        if item_type == 'theme' and 'type=theme' not in url:
-            if 'type=' in url:
-                import re
-                url = re.sub(r'type=[^&]+', 'type=theme', url)
-            else:
-                separator = '&' if '?' in url else '?'
-                url = f"{url}{separator}type=theme"
-
+        group_type = 'industry' if item_type == 'sector' else 'theme'
+        url = f"https://m.stock.naver.com/api/stocks/{group_type}/{item_no}?pageSize=4"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Referer': 'https://finance.naver.com/',
+            'Referer': 'https://m.stock.naver.com/'
         }
-
-        async with session.get(url, headers=headers, timeout=5) as res:
-            text = await res.text('euc-kr', 'replace')
-            from bs4 import BeautifulSoup
-            soup_sub = BeautifulSoup(text, 'html.parser')
-
-            sub_rows = soup_sub.select("table.type_5 tr")
-            for s_row in sub_rows:
-                if len(stocks) >= 3:
-                    break
-                s_cols = s_row.select("td")
-
-                if item_type == "sector":
-                    if len(s_cols) < 5:
-                        continue
-                    change_idx = 3
-                else:
-                    if len(s_cols) < 5:
-                        continue
-                    change_idx = 4
-
-                s_name_tag = s_cols[0].select_one("a")
-                if not s_name_tag:
-                    continue
-                s_name = s_name_tag.text.strip()
-
-                s_change_txt = s_cols[change_idx].text.strip()
-
-                s_change_val = 0.0
-                if item_type == "sector":
-                    c_r = s_change_txt.replace(
-                        ",", "").replace(
-                        "%", "").strip()
-                    if "▼" in c_r or c_r.startswith("-"):
-                        s_change_val = - \
-                            abs(float(c_r.replace("▼", "").replace("-", "").strip() or "0"))
-                    elif "▲" in c_r or c_r.startswith("+"):
-                        s_change_val = abs(
-                            float(
-                                c_r.replace(
-                                    "▲",
-                                    "").replace(
-                                    "+",
-                                    "").strip() or "0"))
-                    else:
-                        try:
-                            s_change_val = float(
-                                c_r.replace(
-                                    "▲", "").replace(
-                                    "▼", "").strip())
-                        except BaseException:
-                            pass
-                    s_change_val = round(s_change_val, 2)
-                    stocks.append({"name": s_name, "change": s_change_val})
-                else:
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as res:
+            if res.status == 200:
+                data = await res.json()
+                raw_stocks = data.get('stocks', []) or []
+                for s in raw_stocks[:4]:
                     try:
-                        clean_change = s_change_txt.replace(
-                            '%', '').replace(',', '').strip()
-                        s_change_val = round(float(clean_change), 2)
-                        stocks.append({"name": s_name, "change": s_change_val})
-                    except BaseException:
-                        continue
+                        s_name = s.get('stockName', '').strip()
+                        if not s_name:
+                            continue
+                        s_chg = float(s.get('fluctuationsRatio', 0) or 0)
+                        cmp_name = s.get('compareToPreviousPrice', {}).get('name', '')
+                        if cmp_name in ['FALL', 'LOWER_LIMIT'] and s_chg > 0:
+                            s_chg = -s_chg
+                        stocks.append({
+                            "name": s_name,
+                            "change": round(s_chg, 2),
+                            "code": s.get('itemCode', '')
+                        })
+                    except Exception:
+                        pass
     except Exception as e:
-        print(f"fetch_stocks_for_heatmap error: {e}")
         pass
-
-    return {
-        "name" if item_type == 'sector' else "theme": item['name'],
-        "percent": item['percent'],
-        "change": item['change'],
-        "stocks": stocks
-    }
+    return stocks
 
 
 async def get_sector_heatmap_data():
+    global _sector_heatmap_cache
+    import time
+    now = time.time()
+    if _sector_heatmap_cache["data"] and (now - _sector_heatmap_cache["timestamp"] < 60):
+        return _sector_heatmap_cache["data"]
+
     try:
-        url = "https://finance.naver.com/sise/sise_group.naver?type=upjong"
+        url = "https://m.stock.naver.com/api/stocks/industry?pageSize=50"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://m.stock.naver.com/'
+        }
         async with aiohttp.ClientSession() as session:
-            from bs4 import BeautifulSoup
-            async with session.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5) as res:
-                text = await res.text('euc-kr', 'replace')
-            soup = BeautifulSoup(text, 'html.parser')
-            rows = soup.select("table.type_1 tr")
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as res:
+                if res.status != 200:
+                    return _sector_heatmap_cache["data"] or []
+                data = await res.json()
+                groups = data.get('groups', []) or []
 
-            candidates = []
-            for row in rows:
-                if len(candidates) >= 30:
-                    break
-                cols = row.select("td")
-                if len(cols) < 2:
-                    continue
-                link = cols[0].select_one("a")
-                if not link:
-                    continue
-
-                sector_name = link.text.strip()
-                sector_url = "https://finance.naver.com" + link['href']
-                percent_text = cols[1].text.strip()
-
-                if not sector_name or not percent_text:
-                    continue
-
-                raw = percent_text.replace(",", "").replace("%", "").strip()
-                if "▼" in raw or raw.startswith("-"):
-                    val = - \
-                        abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
-                elif "▲" in raw or raw.startswith("+"):
-                    val = abs(
-                        float(
-                            raw.replace(
-                                "▲",
-                                "").replace(
-                                "+",
-                                "").strip() or "0"))
-                else:
-                    try:
-                        val = float(
-                            raw.replace(
-                                "▲", "").replace(
-                                "▼", "").strip())
-                    except BaseException:
-                        continue
-
-                candidates.append({
-                    "name": sector_name,
-                    "url": sector_url,
-                    "percent": percent_text,
-                    "change": val
-                })
-
-            sem = asyncio.Semaphore(5)
-            async def fetch_with_sem(c):
+            sem = asyncio.Semaphore(8)
+            async def fetch_one(g):
                 async with sem:
-                    await asyncio.sleep(0.1)
-                    return await fetch_stocks_for_heatmap(session, c, "sector")
+                    no = g.get('no')
+                    name = g.get('name', '').strip()
+                    try:
+                        chg = float(g.get('changeRate', 0) or 0)
+                    except:
+                        chg = 0.0
+                    percent_str = f"{'+' if chg > 0 else ''}{chg:.2f}%"
+                    stocks = await fetch_stocks_for_heatmap_group(session, no, 'sector')
+                    return {
+                        "name": name,
+                        "percent": percent_str,
+                        "change": chg,
+                        "stocks": stocks
+                    }
 
-            tasks = [fetch_with_sem(c) for c in candidates]
+            tasks = [fetch_one(g) for g in groups]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            sectors = [
-                r for r in results if isinstance(
-                    r, dict) and "stocks" in r]
+            sectors = [r for r in results if isinstance(r, dict)]
             sectors.sort(key=lambda x: x['change'], reverse=True)
+            if sectors:
+                _sector_heatmap_cache = {"data": sectors, "timestamp": now}
             return sectors
     except Exception as e:
         print(f"Sector Heatmap Async Error: {e}")
-        return []
+        return _sector_heatmap_cache["data"] or []
 
 
 async def get_theme_heatmap_data():
+    global _theme_heatmap_cache
+    import time
+    now = time.time()
+    if _theme_heatmap_cache["data"] and (now - _theme_heatmap_cache["timestamp"] < 60):
+        return _theme_heatmap_cache["data"]
+
     try:
-        url = "https://finance.naver.com/sise/theme.naver"
+        url = "https://m.stock.naver.com/api/stocks/theme?pageSize=50"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://m.stock.naver.com/'
+        }
         async with aiohttp.ClientSession() as session:
-            from bs4 import BeautifulSoup
-            async with session.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5) as res:
-                text = await res.text('euc-kr', 'replace')
-            soup = BeautifulSoup(text, 'html.parser')
-            rows = soup.select("table.type_1 tr")
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as res:
+                if res.status != 200:
+                    return _theme_heatmap_cache["data"] or []
+                data = await res.json()
+                groups = data.get('groups', []) or []
 
-            candidates = []
-            for row in rows:
-                if len(candidates) >= 30:
-                    break
-                cols = row.select("td")
-                if len(cols) < 2:
-                    continue
-                link = cols[0].select_one("a")
-                if not link:
-                    continue
-
-                theme_name = link.text.strip()
-                theme_url = "https://finance.naver.com" + link['href']
-                percent_text = cols[1].text.strip()
-
-                if not theme_name or not percent_text:
-                    continue
-
-                raw = percent_text.replace(",", "").replace("%", "").strip()
-                if "▼" in raw or raw.startswith("-"):
-                    val = - \
-                        abs(float(raw.replace("▼", "").replace("-", "").strip() or "0"))
-                elif "▲" in raw or raw.startswith("+"):
-                    val = abs(
-                        float(
-                            raw.replace(
-                                "▲",
-                                "").replace(
-                                "+",
-                                "").strip() or "0"))
-                else:
-                    try:
-                        val = float(
-                            raw.replace(
-                                "▲", "").replace(
-                                "▼", "").strip())
-                    except BaseException:
-                        continue
-
-                candidates.append({
-                    "name": theme_name,
-                    "url": theme_url,
-                    "percent": percent_text,
-                    "change": val
-                })
-
-            sem = asyncio.Semaphore(5)
-            async def fetch_with_sem(c):
+            sem = asyncio.Semaphore(8)
+            async def fetch_one(g):
                 async with sem:
-                    await asyncio.sleep(0.1)
-                    return await fetch_stocks_for_heatmap(session, c, "theme")
+                    no = g.get('no')
+                    name = g.get('name', '').strip()
+                    try:
+                        chg = float(g.get('changeRate', 0) or 0)
+                    except:
+                        chg = 0.0
+                    percent_str = f"{'+' if chg > 0 else ''}{chg:.2f}%"
+                    stocks = await fetch_stocks_for_heatmap_group(session, no, 'theme')
+                    return {
+                        "name": name,
+                        "theme": name,
+                        "percent": percent_str,
+                        "change": chg,
+                        "stocks": stocks
+                    }
 
-            tasks = [fetch_with_sem(c) for c in candidates]
+            tasks = [fetch_one(g) for g in groups]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            themes = [
-                r for r in results if isinstance(
-                    r, dict) and "stocks" in r]
+            themes = [r for r in results if isinstance(r, dict)]
             themes.sort(key=lambda x: x['change'], reverse=True)
+            if themes:
+                _theme_heatmap_cache = {"data": themes, "timestamp": now}
             return themes
     except Exception as e:
         print(f"Theme Heatmap Async Error: {e}")
-        return []
+        return _theme_heatmap_cache["data"] or []
 
 
 @turbo_cache(ttl_seconds=3600)
