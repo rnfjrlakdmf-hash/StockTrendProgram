@@ -311,26 +311,27 @@ def search_stock_api(q: str = None, query: str = None):
     if not search_q: return {"status": "error", "message": "Query parameter 'q' or 'query' is required"}
     q = search_q # Use the resolved one
     from stock_data import GLOBAL_KOREAN_NAMES
-    from korea_data import search_stock_code
-    from global_search import search_global_ticker
+    from stock_names import STOCK_MAP
     import unicodedata
     import urllib.parse
+    import re
     
     # [Fix] Decode URL encoded characters and Normalize to NFC
     try:
         q_decoded = urllib.parse.unquote(q)
-        q_norm = unicodedata.normalize('NFC', q_decoded.strip()).replace(" ", "")
+        q_norm = unicodedata.normalize('NFC', q_decoded.strip()).replace(" ", "").upper()
     except:
-        q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "")
+        q_norm = unicodedata.normalize('NFC', q.strip()).replace(" ", "").upper()
     
+    if not q_norm:
+        return {"status": "error", "message": "검색어가 비어있습니다."}
+
     results = []
     seen_codes = set()
     
     def add_result(code, name, market):
         if not code or not name: return
-        # [Fix] Filter out results where code is same as Korean name (invalid ticker)
-        # Ticker should be alphanumeric/dots (Global) or 6-digit (KR)
-        import re
+        # Validation
         is_valid_global = bool(re.match(r'^[A-Z0-9.]{1,10}$', code.upper()))
         is_valid_kr = bool(re.match(r'^\d{6}$', code))
         
@@ -341,34 +342,56 @@ def search_stock_api(q: str = None, query: str = None):
             results.append({"code": code, "symbol": code, "name": name, "market": market})
             seen_codes.add(code)
 
-    # 1. Direct Ticker Check (6-digit KR or simple Alpha Global)
+    # 1. Direct Ticker Check (6-digit KR or 1~5 ASCII Alpha Global)
     if q_norm.isdigit() and len(q_norm) == 6:
-        add_result(q_norm, q_norm, "KR")
-    elif q_norm.isalpha() and 1 <= len(q_norm) <= 5:
-        # Looks like a US ticker
-        add_result(q_norm.upper(), q_norm.upper(), "Global")
+        kr_name = next((n for n, c in STOCK_MAP.items() if c == q_norm), q_norm)
+        add_result(q_norm, kr_name, "KR")
+    elif q_norm.isalpha() and 1 <= len(q_norm) <= 5 and q_norm.isascii():
+        add_result(q_norm, q_norm, "Global")
     
-    # 2. High-Priority Global Mapping Check (e.g. '애플' -> 'AAPL')
+    # 2. High-Priority Global Mapping Check (e.g. '애플' -> 'AAPL', '엔비' -> 'NVDA')
     for ticker, ko_names in GLOBAL_KOREAN_NAMES.items():
-        # Support both string and list of names
         names = ko_names if isinstance(ko_names, list) else [ko_names]
         for ko_name in names:
-            clean_ko = ko_name.replace(" ", "").strip()
-            if q_norm == clean_ko or q_norm in clean_ko or clean_ko in q_norm:
+            clean_ko = ko_name.replace(" ", "").upper()
+            if q_norm == clean_ko or clean_ko.startswith(q_norm) or q_norm in clean_ko:
                 add_result(ticker, names[0], "Global")
-                break # Found for this ticker
+                break
     
-    # 3. Domestic Search Fallback
-    kr_result = search_stock_code(q_norm)
-    if kr_result:
-        m_type = "KR" if (kr_result.isdigit() and len(kr_result) == 6) else "Global"
-        add_result(kr_result, q_norm, m_type)
+    # 3. [초고속 0.001초 인메모리 검색] STOCK_MAP (2,892개 한국 상장 종목 전체)
+    exact_kr = []
+    prefix_kr = []
+    contain_kr = []
+
+    for s_name, s_code in STOCK_MAP.items():
+        s_name_clean = s_name.replace(" ", "").upper()
+        if s_name_clean == q_norm:
+            exact_kr.append((s_code, s_name, "KR"))
+        elif s_name_clean.startswith(q_norm):
+            prefix_kr.append((s_code, s_name, "KR"))
+        elif q_norm in s_name_clean or (q_norm.isdigit() and s_code.startswith(q_norm)):
+            contain_kr.append((s_code, s_name, "KR"))
+
+    # 정확 일치 -> 접두사 일치 -> 부분 일치 순서로 결과 추가 (최대 10개)
+    for code, name, market in (exact_kr + prefix_kr + contain_kr):
+        add_result(code, name, market)
+        if len(results) >= 10:
+            break
+            
+    # 4. Fallback: 만약 메모리에서 못 찾았을 경우에만 외부 크롤링/야후 검색 실행
+    if not results:
+        from korea_data import search_stock_code
+        from global_search import search_global_ticker
         
-    # 4. Global Search Fallback
-    if not results or any(c.isalpha() for c in q_norm):
-        gb_result = search_global_ticker(q_norm)
-        if gb_result:
-            add_result(gb_result, q_norm, "Global")
+        kr_result = search_stock_code(q_norm)
+        if kr_result:
+            m_type = "KR" if (kr_result.isdigit() and len(kr_result) == 6) else "Global"
+            add_result(kr_result, q_norm, m_type)
+            
+        if not results or any(c.isalpha() and c.isascii() for c in q_norm):
+            gb_result = search_global_ticker(q_norm)
+            if gb_result:
+                add_result(gb_result, q_norm, "Global")
             
     if results:
         return {"status": "success", "data": results}

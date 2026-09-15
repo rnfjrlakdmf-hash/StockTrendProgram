@@ -242,7 +242,7 @@ async def read_stock(symbol: str, skip_ai: bool = False):
     from db_manager import save_analysis_result, get_cached_ai_analysis, save_ai_analysis_cache
     
     # Use to_thread to prevent blocking
-    data = await asyncio.to_thread(get_stock_info, symbol)
+    data = await asyncio.to_thread(get_stock_info, symbol, skip_ai=skip_ai)
     if data:
         if not skip_ai:
             try:

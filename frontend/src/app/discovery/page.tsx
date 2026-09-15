@@ -814,21 +814,31 @@ function DiscoveryContent() {
         return (p * rate).toLocaleString(undefined, { maximumFractionDigits: 0 });
     };
 
-    // [New] Real-time Search Logic
-    useEffect(() => {
-        const fetchSearchResults = async () => {
-            const query = searchInput.trim();
-            if (!query) {
-                setSearchResults([]);
-                setShowResults(false);
-                return;
-            }
+    // [Super Turbo Search] 검색어 메모리 캐시 및 초고속 120ms 디바운스
+    const searchCacheRef = useRef<Map<string, any[]>>(new Map());
 
+    useEffect(() => {
+        const query = searchInput.trim();
+        if (!query) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        const cacheKey = query.toUpperCase();
+        // 1. 메모리 캐시에 이미 결과가 있으면 0ms 즉시 노출!
+        if (searchCacheRef.current.has(cacheKey)) {
+            const cached = searchCacheRef.current.get(cacheKey) || [];
+            setSearchResults(cached);
+            setShowResults(cached.length > 0);
+        }
+
+        const fetchSearchResults = async () => {
             try {
-                // Remove console log to avoid cluttering in instant search
-                const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(query)}&_t=${Date.now()}`);
+                const res = await fetch(`${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 if (data.status === 'success' && Array.isArray(data.data)) {
+                    searchCacheRef.current.set(cacheKey, data.data);
                     setSearchResults(data.data);
                     setShowResults(data.data.length > 0);
                 }
@@ -837,8 +847,8 @@ function DiscoveryContent() {
             }
         };
 
-        // 타자 치는 동안 불필요한 API 호출을 막기 위해 디바운스 시간 최적화 (30ms -> 400ms)
-        const timer = setTimeout(fetchSearchResults, 400);
+        // 타자 속도에 맞춘 초고속 디바운스 (400ms -> 120ms로 3.3배 단축)
+        const timer = setTimeout(fetchSearchResults, 120);
         return () => clearTimeout(timer);
     }, [searchInput]);
 
@@ -872,30 +882,40 @@ function DiscoveryContent() {
         setShowResults(false);
 
         try {
-            // [Speed Optimization] Use local mapping first to avoid unnecessary API calls
+            // [Speed Optimization] Use local mapping & memory cache first to avoid unnecessary API calls
             let targetSymbol = query;
-            const localTicker = getTickerFromKorean(targetSymbol);
-            
-            if (localTicker !== targetSymbol) {
-                targetSymbol = localTicker;
-                console.log("[Search] Resolved instantly via local mapping:", targetSymbol);
-            } else {
-                const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
-                if (isKorean) {
-                    console.log("[Search] Korean query detected. Resolving ticker via API...");
-                    const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}&_t=${timestamp}`;
-                    const searchRes = await fetch(searchUrl, { cache: 'no-store' });
-                    if (!searchRes.ok) throw new Error(`Search API failed with status ${searchRes.status}`);
-                    
-                    const searchJson = await searchRes.json();
-                    if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
-                        const found = searchJson.data[0];
-                        targetSymbol = found.symbol || found.code || targetSymbol;
+            const isDirectTicker = /^\d{6}$/.test(targetSymbol) || (/^[A-Za-z0-9.]{1,10}$/.test(targetSymbol) && !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol));
+
+            if (!isDirectTicker) {
+                const localTicker = getTickerFromKorean(targetSymbol);
+                if (localTicker !== targetSymbol) {
+                    targetSymbol = localTicker;
+                    console.log("[Search] Resolved instantly via local mapping:", targetSymbol);
+                } else {
+                    // 1. 메모리 캐시에 이미 검색 결과가 있으면 0ms 즉시 해결!
+                    const cachedMatches = searchCacheRef.current.get(targetSymbol.toUpperCase());
+                    if (cachedMatches && cachedMatches.length > 0) {
+                        targetSymbol = cachedMatches[0].symbol || cachedMatches[0].code || targetSymbol;
+                        console.log("[Search] Resolved instantly via memory cache:", targetSymbol);
                     } else {
-                        setStock(null);
-                        setLoading(false);
-                        setError(`'${query}'에 대한 검색 결과가 없습니다.`);
-                        return;
+                        const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(targetSymbol);
+                        if (isKorean) {
+                            console.log("[Search] Korean query detected. Resolving ticker via API...");
+                            const searchUrl = `${API_BASE_URL}/api/market/stock/search?q=${encodeURIComponent(targetSymbol)}`;
+                            const searchRes = await fetch(searchUrl);
+                            if (!searchRes.ok) throw new Error(`Search API failed with status ${searchRes.status}`);
+                            
+                            const searchJson = await searchRes.json();
+                            if (searchJson.status === "success" && Array.isArray(searchJson.data) && searchJson.data.length > 0) {
+                                const found = searchJson.data[0];
+                                targetSymbol = found.symbol || found.code || targetSymbol;
+                            } else {
+                                setStock(null);
+                                setLoading(false);
+                                setError(`'${query}'에 대한 검색 결과가 없습니다.`);
+                                return;
+                            }
+                        }
                     }
                 }
             }
