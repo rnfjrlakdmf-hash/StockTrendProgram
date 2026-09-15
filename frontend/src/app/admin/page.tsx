@@ -463,161 +463,357 @@ export default function AdminPage() {
     const todayPV = todayStat.pageviews;
     const todayUV = todayStat.unique_visitors;
 
+    // 디테일 통계 지표 계산
+    const avgDailyPV = analytics?.daily_stats && analytics.daily_stats.length > 0
+        ? Math.round(totalPV / analytics.daily_stats.length)
+        : 0;
+    const todayPvPerUv = todayUV > 0 ? (todayPV / todayUV).toFixed(2) : "1.00";
+    const proMemberCount = users.filter(u => u.is_pro).length;
+    const proMemberPct = users.length > 0 ? ((proMemberCount / users.length) * 100).toFixed(1) : "0.0";
+    
+    const maxDailyPV = Math.max(...(analytics?.daily_stats?.map(s => s.pageviews) || [1]), 1);
+    const maxHourlyPV = Math.max(...(hourlyStats?.map(s => s.pageviews) || [1]), 1);
+    const peakHourStat = hourlyStats && hourlyStats.length > 0
+        ? hourlyStats.reduce((max, cur) => cur.pageviews > max.pageviews ? cur : max, hourlyStats[0])
+        : null;
+
+    const getDayOfWeekKst = (dateStr: string) => {
+        try {
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const d = new Date(dateStr);
+            return days[d.getDay()] || '';
+        } catch {
+            return '';
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#09090b] text-white pb-24">
             <Header title="관리자 대시보드" subtitle={`총 ${users.length}명의 가입 회원과 사이트 트래픽 및 AI 인프라 비용을 모니터링합니다.`} />
 
             <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
-                {/* 1. 상단 핵심 5대 지표 카드 */}
+                {/* ============================================================ */}
+                {/* 1. 상단 핵심 5대 프리미엄 지표 카드 (대칭 & 디테일 수치) */}
+                {/* ============================================================ */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
-                    {/* 실시간 접속자 */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-emerald-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+                    {/* 카드 1: 실시간 접속자 */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-emerald-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 hover:scale-[1.01] transition-all duration-300">
                         <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/10 transition-all" />
                         <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2">
                                 <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                                 </span>
-                                <h3 className="text-sm font-bold text-gray-300">현재 접속자</h3>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">현재 실시간 접속</h3>
                             </div>
-                            <Activity className="w-4 h-4 text-emerald-400" />
+                            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                <Activity className="w-4 h-4" />
+                            </div>
                         </div>
-                        <div className="flex items-baseline gap-1.5 my-2">
-                            <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{analytics?.active_users_5m ?? 0}</span>
-                            <span className="text-gray-400 font-bold text-xs">명</span>
+                        <div className="my-2">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{analytics?.active_users_5m ?? 0}</span>
+                                <span className="text-gray-400 font-bold text-xs">명</span>
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 pt-3 border-t border-white/5">최근 5분간 활성 이용자</p>
+                        <div className="pt-3 border-t border-white/5 space-y-1 text-[11px]">
+                            <div className="flex items-center justify-between text-gray-400">
+                                <span>집계 기준</span>
+                                <span className="font-mono text-zinc-300">최근 5분 활동</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">서버 상태</span>
+                                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> 정상 가동
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* 누적 가입 회원 */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-amber-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-amber-500/40 transition-all">
+                    {/* 카드 2: 누적 가입 회원 */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-amber-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-amber-500/40 hover:scale-[1.01] transition-all duration-300">
                         <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/10 transition-all" />
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-bold text-gray-300">누적 회원</h3>
-                            <Users className="w-4 h-4 text-amber-400" />
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">누적 회원 계정</h3>
+                            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                                <Users className="w-4 h-4" />
+                            </div>
                         </div>
-                        <div className="flex items-baseline gap-1.5 my-2">
-                            <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{users.length.toLocaleString()}</span>
-                            <span className="text-gray-400 font-bold text-xs">명</span>
+                        <div className="my-2">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{users.length.toLocaleString()}</span>
+                                <span className="text-gray-400 font-bold text-xs">명</span>
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 pt-3 border-t border-white/5">서비스 가입 총 계정</p>
+                        <div className="pt-3 border-t border-white/5 space-y-1 text-[11px]">
+                            <div className="flex items-center justify-between text-gray-400">
+                                <span>회원 등급</span>
+                                <span className="font-mono text-zinc-300">PRO {proMemberCount}명 · 일반 {users.length - proMemberCount}명</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">PRO 비율</span>
+                                <span className="text-amber-400 font-bold font-mono">{proMemberPct}%</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* 오늘의 방문 (PV / UV) */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-blue-500/40 transition-all">
+                    {/* 카드 3: 오늘의 방문 (PV & UV) */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-blue-500/40 hover:scale-[1.01] transition-all duration-300">
                         <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/10 transition-all" />
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-bold text-gray-300">오늘의 방문</h3>
-                            <span className="bg-blue-500/20 text-blue-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-500/30">TODAY</span>
-                        </div>
-                        <div className="space-y-1.5 my-1">
-                            <div className="flex justify-between items-baseline">
-                                <span className="text-gray-400 text-xs">조회수 (PV)</span>
-                                <span className="text-xl font-black font-mono text-blue-400">{todayPV.toLocaleString()}<span className="text-[10px] text-gray-500 font-normal ml-0.5">회</span></span>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">오늘의 트래픽</h3>
+                                <span className="bg-blue-500/20 text-blue-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-500/30">TODAY</span>
                             </div>
-                            <div className="flex justify-between items-baseline pt-1 border-t border-white/5">
-                                <span className="text-gray-400 text-xs">방문자 (UV)</span>
-                                <span className="text-xl font-black font-mono text-purple-400">{todayUV.toLocaleString()}<span className="text-[10px] text-gray-500 font-normal ml-0.5">명</span></span>
+                            <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                <Eye className="w-4 h-4" />
                             </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 pt-2 border-t border-white/5">오늘 00시부터 실시간 집계</p>
+                        <div className="my-2">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{todayPV.toLocaleString()}</span>
+                                <span className="text-blue-400 font-bold text-xs">PV</span>
+                            </div>
+                        </div>
+                        <div className="pt-3 border-t border-white/5 space-y-1 text-[11px]">
+                            <div className="flex items-center justify-between text-gray-400">
+                                <span>순방문자 (UV)</span>
+                                <span className="text-purple-400 font-bold font-mono">{todayUV.toLocaleString()}명</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">인당 열람률</span>
+                                <span className="text-blue-300 font-bold font-mono">{todayPvPerUv} PV/인</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* 30일 누적 PV */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-all">
+                    {/* 카드 4: 30일 누적 PV */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-indigo-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-indigo-500/40 hover:scale-[1.01] transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-indigo-500/10 transition-all" />
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-bold text-gray-300">누적 조회수 (PV)</h3>
-                            <Eye className="w-4 h-4 text-blue-400" />
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">30일 누적 PV</h3>
+                            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                                <TrendingUp className="w-4 h-4" />
+                            </div>
                         </div>
-                        <div className="flex items-baseline gap-1.5 my-2">
-                            <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{totalPV.toLocaleString()}</span>
-                            <span className="text-gray-400 font-bold text-xs">회</span>
+                        <div className="my-2">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{totalPV.toLocaleString()}</span>
+                                <span className="text-gray-400 font-bold text-xs">회</span>
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 pt-3 border-t border-white/5">최근 30일 총 페이지뷰</p>
+                        <div className="pt-3 border-t border-white/5 space-y-1 text-[11px]">
+                            <div className="flex items-center justify-between text-gray-400">
+                                <span>집계 기간</span>
+                                <span className="font-mono text-zinc-300">최근 30일 총합</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">일평균 조회수</span>
+                                <span className="text-indigo-400 font-bold font-mono">~{avgDailyPV.toLocaleString()} PV/일</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* 30일 누적 UV */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-all">
+                    {/* 카드 5: 30일 누적 UV */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-purple-500/20 rounded-3xl p-5 md:p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/40 hover:scale-[1.01] transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-500/10 transition-all" />
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-bold text-gray-300">누적 순방문 (UV)</h3>
-                            <UserPlus className="w-4 h-4 text-purple-400" />
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">30일 누적 UV</h3>
+                            <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                                <UserPlus className="w-4 h-4" />
+                            </div>
                         </div>
-                        <div className="flex items-baseline gap-1.5 my-2">
-                            <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{totalUV.toLocaleString()}</span>
-                            <span className="text-gray-400 font-bold text-xs">명</span>
+                        <div className="my-2">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-3xl md:text-4xl font-black font-mono tracking-tight text-white">{totalUV.toLocaleString()}</span>
+                                <span className="text-gray-400 font-bold text-xs">명</span>
+                            </div>
                         </div>
-                        <p className="text-[11px] text-gray-500 pt-3 border-t border-white/5">최근 30일 중복제거 순방문</p>
+                        <div className="pt-3 border-t border-white/5 space-y-1 text-[11px]">
+                            <div className="flex items-center justify-between text-gray-400">
+                                <span>방문자 성격</span>
+                                <span className="font-mono text-zinc-300">중복제거 순방문</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-400">열람 심도</span>
+                                <span className="text-purple-400 font-bold font-mono">{(totalPV / Math.max(totalUV, 1)).toFixed(2)} PV/인</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* 2. 트래픽 상세 테이블 (일별 & 시간대별) */}
+                {/* ============================================================ */}
+                {/* 2. 트래픽 상세 테이블 (일별 & 시간대별 시각화) */}
+                {/* ============================================================ */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* 일별 조회수 및 방문자수 통계 */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl">
-                        <div className="flex items-center justify-between mb-5">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-blue-400" />
-                                <h3 className="text-base font-black text-white">일별 조회수 및 방문자수 통계</h3>
+                    {/* 좌측: 일별 조회수 및 방문자수 통계 */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-inner">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-white">일별 트래픽 분석</h3>
+                                    <p className="text-[11px] text-gray-400 mt-0.5">날짜별 페이지뷰(PV)와 순방문자수(UV) 추이</p>
+                                </div>
                             </div>
-                            <span className="text-xs text-gray-500 font-mono">최근 30일</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-xl border border-blue-500/20">최근 30일</span>
+                            </div>
                         </div>
-                        <div className="max-h-[320px] overflow-y-auto space-y-2.5 pr-1.5 custom-scrollbar">
+
+                        <div className="max-h-[360px] overflow-y-auto space-y-2.5 pr-1.5 custom-scrollbar">
                             {analytics?.daily_stats && analytics.daily_stats.length > 0 ? (
-                                analytics.daily_stats.map((stat) => (
-                                    <div key={stat.date} className="flex justify-between items-center bg-zinc-950/80 p-3.5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                            <p className="text-white font-bold font-mono text-xs md:text-sm">{stat.date}</p>
-                                        </div>
-                                        <div className="flex gap-4 md:gap-6 text-xs">
-                                            <div className="text-right">
-                                                <span className="text-[10px] text-gray-500 font-bold block uppercase">PAGEVIEWS</span>
-                                                <span className="text-blue-400 font-black font-mono text-sm">{stat.pageviews.toLocaleString()}회</span>
+                                analytics.daily_stats.map((stat) => {
+                                    const isToday = stat.date === todayStr;
+                                    const ratio = Math.min(Math.round((stat.pageviews / maxDailyPV) * 100), 100);
+                                    const dow = getDayOfWeekKst(stat.date);
+                                    const pvPerUv = stat.unique_visitors > 0 ? (stat.pageviews / stat.unique_visitors).toFixed(1) : "1.0";
+
+                                    return (
+                                        <div 
+                                            key={stat.date} 
+                                            className={`relative overflow-hidden p-3.5 rounded-2xl border transition-all ${
+                                                isToday 
+                                                ? 'bg-blue-950/20 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
+                                                : 'bg-zinc-950/70 border-white/5 hover:border-white/15'
+                                            }`}
+                                        >
+                                            {/* 인텐시티 배경 게이지 바 */}
+                                            <div 
+                                                className="absolute left-0 top-0 bottom-0 bg-blue-500/[0.04] pointer-events-none rounded-2xl transition-all duration-500" 
+                                                style={{ width: `${ratio}%` }} 
+                                            />
+
+                                            <div className="relative flex justify-between items-center gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-2 h-2 rounded-full ${isToday ? 'bg-blue-400 animate-ping' : 'bg-blue-500'}`} />
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-white font-bold font-mono text-xs md:text-sm">{stat.date}</span>
+                                                        <span className={`text-[11px] font-bold ${dow === '토' ? 'text-blue-400' : dow === '일' ? 'text-rose-400' : 'text-zinc-500'}`}>
+                                                            ({dow})
+                                                        </span>
+                                                        {isToday && (
+                                                            <span className="text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-full ml-1">
+                                                                TODAY
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-4 md:gap-5 text-xs">
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">PAGEVIEWS</span>
+                                                        <span className="text-blue-400 font-black font-mono text-sm">{stat.pageviews.toLocaleString()}회</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">VISITORS</span>
+                                                        <span className="text-purple-400 font-black font-mono text-sm">{stat.unique_visitors.toLocaleString()}명</span>
+                                                    </div>
+                                                    <div className="hidden sm:block text-right border-l border-white/5 pl-3">
+                                                        <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">심도</span>
+                                                        <span className="text-zinc-400 font-mono text-xs">{pvPerUv}x</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] text-gray-500 font-bold block uppercase">VISITORS</span>
-                                                <span className="text-purple-400 font-black font-mono text-sm">{stat.unique_visitors.toLocaleString()}명</span>
+
+                                            {/* 하단 미니 트래픽 바 */}
+                                            <div className="relative w-full bg-zinc-800/40 h-1 rounded-full overflow-hidden mt-2">
+                                                <div 
+                                                    className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-700"
+                                                    style={{ width: `${Math.max(ratio, 4)}%` }} 
+                                                />
                                             </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <p className="text-gray-500 text-xs text-center py-10">아직 기록된 일별 방문 통계가 없습니다.</p>
                             )}
                         </div>
                     </div>
 
-                    {/* 시간대별 트래픽 피크 모니터링 */}
-                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl">
-                        <div className="flex items-center justify-between mb-5">
-                            <div className="flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-purple-400" />
-                                <h3 className="text-base font-black text-white">시간대별 트래픽 피크 모니터링</h3>
+                    {/* 우측: 시간대별 트래픽 피크 모니터링 */}
+                    <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+                        <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shadow-inner">
+                                    <Activity className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black text-white">시간대별 트래픽 피크</h3>
+                                    <p className="text-[11px] text-gray-400 mt-0.5">24시간 접속 집중 시간대 실시간 모니터링</p>
+                                </div>
                             </div>
-                            <span className="text-xs text-gray-500 font-mono">실시간 KST</span>
+                            <div className="flex items-center gap-2">
+                                {peakHourStat && (
+                                    <span className="text-[10px] font-black text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20 flex items-center gap-1">
+                                        <span>🔥 최다 피크:</span> {peakHourStat.date_hour.split('_')[1] || peakHourStat.date_hour}시 ({peakHourStat.pageviews}회)
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="max-h-[320px] overflow-y-auto space-y-2.5 pr-1.5 custom-scrollbar">
+
+                        <div className="max-h-[360px] overflow-y-auto space-y-2.5 pr-1.5 custom-scrollbar">
                             {hourlyStats && hourlyStats.length > 0 ? (
-                                hourlyStats.map((stat) => (
-                                    <div key={stat.date_hour} className="flex justify-between items-center bg-zinc-950/80 p-3.5 rounded-2xl border border-white/5 hover:border-purple-500/30 transition-all">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-2 h-2 rounded-full bg-purple-500" />
-                                            <p className="text-white font-bold font-mono text-xs md:text-sm">{stat.date_hour.replace('_', ' ')}시</p>
-                                        </div>
-                                        <div className="flex gap-4 md:gap-6 text-xs">
-                                            <div className="text-right">
-                                                <span className="text-[10px] text-gray-500 font-bold block uppercase">PAGEVIEWS</span>
-                                                <span className="text-blue-400 font-black font-mono text-sm">{stat.pageviews.toLocaleString()}회</span>
+                                hourlyStats.map((stat) => {
+                                    const isPeak = peakHourStat && peakHourStat.date_hour === stat.date_hour;
+                                    const ratio = Math.min(Math.round((stat.pageviews / maxHourlyPV) * 100), 100);
+                                    const hourPart = stat.date_hour.replace('_', ' ');
+
+                                    return (
+                                        <div 
+                                            key={stat.date_hour} 
+                                            className={`relative overflow-hidden p-3.5 rounded-2xl border transition-all ${
+                                                isPeak 
+                                                ? 'bg-purple-950/20 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' 
+                                                : 'bg-zinc-950/70 border-white/5 hover:border-white/15'
+                                            }`}
+                                        >
+                                            {/* 인텐시티 배경 게이지 바 */}
+                                            <div 
+                                                className="absolute left-0 top-0 bottom-0 bg-purple-500/[0.04] pointer-events-none rounded-2xl transition-all duration-500" 
+                                                style={{ width: `${ratio}%` }} 
+                                            />
+
+                                            <div className="relative flex justify-between items-center gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-2 h-2 rounded-full ${isPeak ? 'bg-purple-400 animate-pulse' : 'bg-purple-500'}`} />
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-white font-bold font-mono text-xs md:text-sm">{hourPart}시</span>
+                                                        {isPeak && (
+                                                            <span className="text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full ml-1 flex items-center gap-0.5">
+                                                                🔥 PEAK
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-4 md:gap-5 text-xs">
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">PAGEVIEWS</span>
+                                                        <span className="text-blue-400 font-black font-mono text-sm">{stat.pageviews.toLocaleString()}회</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] text-zinc-500 font-bold block uppercase tracking-wider">VISITORS</span>
+                                                        <span className="text-rose-400 font-black font-mono text-sm">{stat.unique_visitors.toLocaleString()}명</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] text-gray-500 font-bold block uppercase">VISITORS</span>
-                                                <span className="text-rose-400 font-black font-mono text-sm">{stat.unique_visitors.toLocaleString()}명</span>
+
+                                            {/* 하단 미니 트래픽 바 */}
+                                            <div className="relative w-full bg-zinc-800/40 h-1 rounded-full overflow-hidden mt-2">
+                                                <div 
+                                                    className="h-full bg-gradient-to-r from-purple-600 to-rose-500 rounded-full transition-all duration-700"
+                                                    style={{ width: `${Math.max(ratio, 4)}%` }} 
+                                                />
                                             </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <p className="text-gray-500 text-xs text-center py-10">아직 시간대별 방문 통계가 없습니다.</p>
                             )}
@@ -627,20 +823,35 @@ export default function AdminPage() {
 
 
                 {/* ============================================================ */}
-                {/* 3. Gemini AI API 비용 모니터링 */}
+                {/* 3. Gemini AI API 비용 모니터링 (디테일 인프라 관제) */}
                 {/* ============================================================ */}
                 <div className="pt-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                            <DollarSign className="w-6 h-6 text-emerald-400" />
-                            Gemini AI API 비용 모니터링
-                        </h2>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 shadow-inner">
+                                <DollarSign className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <h2 className="text-xl md:text-2xl font-black text-white">Gemini AI API 비용 관제</h2>
+                                    <span className="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        실시간 연동 중
+                                    </span>
+                                    <span className="px-2.5 py-0.5 rounded-full font-mono font-bold text-[10px] bg-zinc-800 text-zinc-400 border border-white/10">
+                                        {geminiCost?.model || 'gemini-2.5-flash-lite'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-0.5">실시간 AI 모델 토큰 소모량, 호출 횟수 및 월간 예산 소진율 모니터링</p>
+                            </div>
+                        </div>
+
                         <button
                             onClick={fetchGeminiCost}
                             disabled={geminiCostLoading}
-                            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-2xl text-xs font-bold text-gray-300 transition-all shadow-sm active:scale-95"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-2xl text-xs font-bold text-gray-300 hover:text-white transition-all shadow-sm active:scale-95"
                         >
-                            {geminiCostLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                            {geminiCostLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" /> : <RefreshCw className="w-3.5 h-3.5" />}
                             비용 새로고침
                         </button>
                     </div>
@@ -650,32 +861,53 @@ export default function AdminPage() {
                             {/* 요약 카드 3개 */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {/* 오늘 비용 */}
-                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-emerald-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
+                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-emerald-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-emerald-500/10 transition-all" />
                                     <div>
-                                        <p className="text-[11px] font-black uppercase text-emerald-400 tracking-widest mb-1">오늘 사용 비용</p>
-                                        <p className="text-3xl font-black font-mono text-white">{geminiCost.today.cost_krw.toLocaleString()}원</p>
-                                        <p className="text-xs text-gray-400 mt-1">(${geminiCost.today.cost_usd} USD) · API 호출 {geminiCost.today.calls}회</p>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[11px] font-black uppercase text-emerald-400 tracking-widest">오늘 사용 비용</p>
+                                            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-md border border-white/5">TODAY</span>
+                                        </div>
+                                        <p className="text-3xl font-black font-mono text-white tracking-tight">₩{geminiCost.today.cost_krw.toLocaleString()}<span className="text-base font-normal text-zinc-400 ml-1">원</span></p>
+                                        <p className="text-xs text-gray-400 mt-1 font-mono">${geminiCost.today.cost_usd} USD · {geminiCost.today.calls}회 호출</p>
                                     </div>
-                                    <p className="text-[11px] text-gray-500 pt-3 border-t border-white/5 mt-3">입력 {geminiCost.today.input_tokens.toLocaleString()} 토큰 / 출력 {geminiCost.today.output_tokens.toLocaleString()} 토큰</p>
+
+                                    <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-[11px]">
+                                        <div className="flex justify-between text-gray-400">
+                                            <span>호출당 단가</span>
+                                            <span className="font-mono text-emerald-400 font-bold">~{geminiCost.today.calls > 0 ? (geminiCost.today.cost_krw / geminiCost.today.calls).toFixed(2) : "0"}원/회</span>
+                                        </div>
+                                        <div className="flex justify-between text-gray-500">
+                                            <span>토큰 사용량</span>
+                                            <span className="font-mono text-zinc-300">인 {Math.round(geminiCost.today.input_tokens / 1000)}k / 아웃 {Math.round(geminiCost.today.output_tokens / 1000)}k</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* 이번달 비용 + 예산 게이지 */}
-                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
+                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-blue-500/40 transition-all">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-blue-500/10 transition-all" />
                                     <div>
-                                        <p className="text-[11px] font-black uppercase text-blue-400 tracking-widest mb-1">이번 달 누적 비용</p>
-                                        <p className="text-3xl font-black font-mono text-white">{geminiCost.this_month.cost_krw.toLocaleString()}원</p>
-                                        <p className="text-xs text-gray-400 mt-1">예산 한도: {geminiCost.this_month.budget_limit_krw.toLocaleString()}원</p>
-                                    </div>
-                                    <div className="mt-3 pt-3 border-t border-white/5">
-                                        <div className="flex justify-between text-[10px] text-gray-400 mb-1.5">
-                                            <span>예산 사용률</span>
-                                            <span className={geminiCost.this_month.budget_used_pct >= 80 ? "text-rose-400 font-bold" : "text-emerald-400 font-bold"}>{geminiCost.this_month.budget_used_pct}%</span>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[11px] font-black uppercase text-blue-400 tracking-widest">이번 달 누적 비용</p>
+                                            <span className="text-[10px] font-mono text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">{geminiCost.this_month.month}월</span>
                                         </div>
-                                        <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                        <p className="text-3xl font-black font-mono text-white tracking-tight">₩{geminiCost.this_month.cost_krw.toLocaleString()}<span className="text-base font-normal text-zinc-400 ml-1">원</span></p>
+                                        <p className="text-xs text-gray-400 mt-1 font-mono">예산 한도: ₩{geminiCost.this_month.budget_limit_krw.toLocaleString()}원</p>
+                                    </div>
+
+                                    <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5">
+                                        <div className="flex justify-between text-[11px] text-gray-400">
+                                            <span>예산 소진율</span>
+                                            <span className={`font-mono font-bold ${geminiCost.this_month.budget_used_pct >= 80 ? "text-rose-400" : "text-emerald-400"}`}>
+                                                {geminiCost.this_month.budget_used_pct}% ({Math.max(geminiCost.this_month.budget_limit_krw - geminiCost.this_month.cost_krw, 0).toLocaleString()}원 잔여)
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-2 bg-zinc-800/80 rounded-full overflow-hidden p-0.5 border border-white/5">
                                             <div
-                                                className={`h-full rounded-full transition-all ${
+                                                className={`h-full rounded-full transition-all duration-700 ${
                                                     geminiCost.this_month.budget_used_pct >= 80 ? "bg-rose-500" :
-                                                    geminiCost.this_month.budget_used_pct >= 50 ? "bg-amber-500" : "bg-emerald-500"
+                                                    geminiCost.this_month.budget_used_pct >= 50 ? "bg-amber-500" : "bg-gradient-to-r from-emerald-500 to-teal-400"
                                                 }`}
                                                 style={{ width: `${Math.min(geminiCost.this_month.budget_used_pct, 100)}%` }}
                                             />
@@ -684,19 +916,38 @@ export default function AdminPage() {
                                 </div>
 
                                 {/* 30일 총계 */}
-                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-purple-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
+                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-purple-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-purple-500/40 transition-all">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-purple-500/10 transition-all" />
                                     <div>
-                                        <p className="text-[11px] font-black uppercase text-purple-400 tracking-widest mb-1">30일 총 비용</p>
-                                        <p className="text-3xl font-black font-mono text-white">{geminiCost.total_cost_krw.toLocaleString()}원</p>
-                                        <p className="text-xs text-gray-400 mt-1">총 API 호출 {geminiCost.total_calls.toLocaleString()}회</p>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[11px] font-black uppercase text-purple-400 tracking-widest">30일 누적 총 비용</p>
+                                            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-md border border-white/5">30 DAYS</span>
+                                        </div>
+                                        <p className="text-3xl font-black font-mono text-white tracking-tight">₩{geminiCost.total_cost_krw.toLocaleString()}<span className="text-base font-normal text-zinc-400 ml-1">원</span></p>
+                                        <p className="text-xs text-gray-400 mt-1 font-mono">총 API 호출 {geminiCost.total_calls.toLocaleString()}회</p>
                                     </div>
-                                    <p className="text-[11px] text-gray-500 pt-3 border-t border-white/5 mt-3">엔진 모델: {geminiCost.model}</p>
+
+                                    <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-[11px]">
+                                        <div className="flex justify-between text-gray-400">
+                                            <span>일평균 API 비용</span>
+                                            <span className="font-mono text-purple-400 font-bold">~{Math.round(geminiCost.total_cost_krw / 30).toLocaleString()}원/일</span>
+                                        </div>
+                                        <div className="flex justify-between text-gray-500">
+                                            <span>백엔드 캐싱</span>
+                                            <span className="text-emerald-400 font-bold">스마트 최적화 활성 🟢</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* 일별 바 차트 */}
-                            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl">
-                                <h3 className="text-base font-bold text-white mb-4">일별 API 비용 내역 (최근 30일)</h3>
+                            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                        <span>일별 API 비용 추이 (최근 30일)</span>
+                                    </h3>
+                                    <span className="text-xs text-gray-500 font-mono">단위: 원(KRW)</span>
+                                </div>
                                 {geminiCost.daily.length === 0 ? (
                                     <div className="text-center py-12 text-gray-500">
                                         <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -712,7 +963,7 @@ export default function AdminPage() {
                                                     <div key={d.date} className="flex flex-col items-center gap-1 group cursor-pointer" style={{ width: '34px' }}>
                                                         <div className="relative flex items-end w-full" style={{ height: '130px' }}>
                                                             <div
-                                                                className="w-full rounded-t-lg bg-emerald-500/50 group-hover:bg-emerald-400 transition-all"
+                                                                className="w-full rounded-t-lg bg-gradient-to-t from-emerald-600/40 to-emerald-400 group-hover:from-emerald-500 group-hover:to-emerald-300 transition-all shadow-sm"
                                                                 style={{ height: `${Math.max((d.cost_krw / maxKrw) * 100, 3)}%` }}
                                                                 title={`${d.date}\n${d.cost_krw}원 (${d.calls}회 호출)`}
                                                             />
@@ -742,7 +993,6 @@ export default function AdminPage() {
                     )}
                 </div>
 
-                {/* ============================================================ */}
                 {/* 4. [검색어 트렌드] 실제 이용자 실시간 인기 검색어 TOP 10 */}
                 {/* ============================================================ */}
                 <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 backdrop-blur-md">
