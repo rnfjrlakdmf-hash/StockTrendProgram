@@ -142,6 +142,95 @@ class ChartAnalyzer:
             "ingredients": ingredients
         }
 
+    def calculate_support_resistance(self, df: pd.DataFrame):
+        """
+        [합법 준수] 과거 60영업일 가격 변동 및 스윙 고저점 통계 알고리즘 기반 기술적 지지·저항선 산출
+        자본시장법 준수: 불특정 다수 대상 수학적/기술적 보조선 단순 산출 (매매 권유나 가격 단정 배제)
+        """
+        try:
+            if df is None or df.empty or len(df) < 5:
+                return None
+
+            recent = df.tail(60).copy()
+            if recent.empty:
+                return None
+
+            current_price = float(recent['Close'].iloc[-1])
+            if current_price <= 0:
+                return None
+
+            highs = recent['High'].values
+            lows = recent['Low'].values
+
+            # 1. 스윙 하이/로우 (Local Extrema) 탐지
+            local_highs = []
+            local_lows = []
+            n = len(recent)
+            if n >= 7:
+                for i in range(2, n - 2):
+                    if highs[i] >= highs[i-1] and highs[i] >= highs[i-2] and highs[i] >= highs[i+1] and highs[i] >= highs[i+2]:
+                        local_highs.append(float(highs[i]))
+                    if lows[i] <= lows[i-1] and lows[i] <= lows[i-2] and lows[i] <= lows[i+1] and lows[i] <= lows[i+2]:
+                        local_lows.append(float(lows[i]))
+
+            # 2. 피봇 포인트 (최근 20일 기준)
+            recent_20 = df.tail(min(20, len(df)))
+            p_high = float(recent_20['High'].max())
+            p_low = float(recent_20['Low'].min())
+            p_close = float(recent_20['Close'].iloc[-1])
+            pivot = (p_high + p_low + p_close) / 3.0
+            r1_pivot = 2 * pivot - p_low
+            s1_pivot = 2 * pivot - p_high
+            r2_pivot = pivot + (p_high - p_low)
+            s2_pivot = pivot - (p_high - p_low)
+
+            # 3. 1차 저항선 (현재가보다 높은 스윙 고점 중 가장 가까운 구간)
+            above_highs = sorted([h for h in local_highs if h > current_price * 1.005])
+            if above_highs:
+                r1 = above_highs[0]
+                r2 = above_highs[1] if len(above_highs) > 1 else r1 * 1.04
+            else:
+                r1 = max(r1_pivot, current_price * 1.03)
+                r2 = r1 * 1.04
+            r2 = min(r2, r1 * 1.08)
+
+            # 4. 1차 지지선 (현재가보다 낮은 스윙 저점 중 가장 가까운 구간)
+            below_lows = sorted([l for l in local_lows if l < current_price * 0.995], reverse=True)
+            if below_lows:
+                s1 = below_lows[0]
+                s2 = below_lows[1] if len(below_lows) > 1 else s1 * 0.96
+            else:
+                s1 = min(s1_pivot, current_price * 0.97)
+                s2 = s1 * 0.96
+            s2 = max(s2, s1 * 0.92)
+
+            # 포맷팅 (원화는 정수, 달러는 소수점 둘째 자리)
+            is_kr = current_price >= 50
+            if is_kr:
+                s1, s2, r1, r2, pivot = round(s1), round(s2), round(r1), round(r2), round(pivot)
+            else:
+                s1, s2, r1, r2, pivot = round(s1, 2), round(s2, 2), round(r1, 2), round(r2, 2), round(pivot, 2)
+
+            s1_pct = round(((s1 - current_price) / current_price) * 100, 1)
+            r1_pct = round(((r1 - current_price) / current_price) * 100, 1)
+
+            return {
+                "current_price": current_price,
+                "support1": s1,
+                "support2": s2,
+                "resistance1": r1,
+                "resistance2": r2,
+                "support1_pct": s1_pct,
+                "resistance1_pct": r1_pct,
+                "pivot": pivot,
+                "description": "최근 60영업일 가격 변동 및 스윙 고저점 통계 알고리즘으로 산출된 기술적 기준선입니다.",
+                "disclaimer": "본 지지·저항선은 과거 데이터를 바탕으로 산출된 기술적 보조선일 뿐이며, 특정 가격의 매수/매도를 권유하거나 보장하지 않습니다."
+            }
+        except Exception as e:
+            print(f"Support/Resistance Error: {e}")
+            return None
+
+
 # Helper to clean code (e.g. 005930.KS -> 005930)
 def symbol_to_clean_code(symbol: str) -> str:
     import re
@@ -276,6 +365,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
     stories = []
     beginner_insight = {"text": "분석 데이터가 부족합니다.", "status": "normal", "tips": []}
     weather = {"pattern": "분석 중", "comment": "데이터를 불러오는 중입니다."}
+    support_resistance = None
 
     try:
         # [NEW] Strictly limit intraday intervals to 1d to prevent performance lag
@@ -338,6 +428,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
             beginner_insight = generate_beginner_insight(insight_df, ticker=yf_ticker)
         
         weather = chart_analyzer.analyze_weather_forecast(yf_ticker, df=df)
+        support_resistance = chart_analyzer.calculate_support_resistance(df)
         
     except Exception as e:
         print(f"Chart Full Fetch Error: {e}")
@@ -348,6 +439,7 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
         "history": history,
         "stories": stories,
         "beginner_insight": beginner_insight,
+        "support_resistance": support_resistance,
         "debug_v": "v2.2"
     }
     return clean_nan_values(result)
