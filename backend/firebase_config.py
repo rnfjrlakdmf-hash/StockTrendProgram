@@ -470,7 +470,10 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     # 7. 장시작 / 장마감 / 스터디 / 콘텐츠 / 브리핑 및 기타 모든 알림 (형식적 기계적 해석 없이 본문만 깔끔하게 전달)
     else:
         body_no_interp = clean_no_interp
-        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+        if "투자 권유" not in body_no_interp and "투자권유" not in body_no_interp:
+            new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+        else:
+            new_body = body_no_interp
         return sanitize_notification_text(clean_title, new_body)
 
 
@@ -490,10 +493,15 @@ def sanitize_notification_text(title: str, body: str):
         market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
         clean_title = f"☀️ 장시작: {market_name}" if market_name else "☀️ 장시작 알림"
         
-    elif "장마감" in clean_title:
-        market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
+    elif "장마감" in clean_title or "결산" in clean_title:
+        market_name = "국내" if "국내" in clean_title else "해외" if ("해외" in clean_title or "미국" in clean_title) else ""
         emoji = "📈" if "📈" in clean_title else "📉" if "📉" in clean_title else ""
-        clean_title = f"🌕 장마감: {market_name} {emoji}".strip()
+        if "관심종목" in clean_title:
+            clean_title = f"💰 [내 관심종목 결산] {market_name} {emoji}".strip()
+        elif "지수" in clean_title or "시황" in clean_title:
+            clean_title = f"📊 [시장·섹터 지수 결산] {market_name}".strip()
+        else:
+            clean_title = f"🌕 장마감: {market_name} {emoji}".strip()
         
     elif "마켓 밸런스 브리핑" in clean_title:
         stock_part = clean_title.replace("⚖️", "").replace("AI", "").replace("마켓 밸런스 브리핑", "").strip()
@@ -616,9 +624,13 @@ def send_push_notification(
         
         # [Fix] 알림 덮어쓰기(Collapse) 방지: 타입별/심볼별 고유 태그 부여
         import time as _time_mod
-        alert_type_tag = str((data or {}).get("type", "alert")).strip()
-        symbol_tag = str((data or {}).get("symbol", "")).strip()
-        fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_time_mod.time())}"
+        custom_tag = str((data or {}).get("tag", "")).strip()
+        if custom_tag:
+            fcm_tag = custom_tag
+        else:
+            alert_type_tag = str((data or {}).get("type", "alert")).strip()
+            symbol_tag = str((data or {}).get("symbol", "")).strip()
+            fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_time_mod.time())}"
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(
@@ -821,9 +833,13 @@ def send_multicast_notification(
         click_url = resolve_click_url(title, data)
         
         # [Fix] 알림 덮어쓰기(Collapse) 방지: 타입별/심볼별 고유 태그 부여
-        alert_type_tag = str((data or {}).get("type", "alert")).strip()
-        symbol_tag = str((data or {}).get("symbol", "")).strip()
-        fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_now)}"
+        custom_tag = str((data or {}).get("tag", "")).strip()
+        if custom_tag:
+            fcm_tag = custom_tag
+        else:
+            alert_type_tag = str((data or {}).get("type", "alert")).strip()
+            symbol_tag = str((data or {}).get("symbol", "")).strip()
+            fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_now)}"
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(

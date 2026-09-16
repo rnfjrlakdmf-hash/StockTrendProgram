@@ -397,10 +397,10 @@ def generate_market_closing_diagnosis(market, kospi_info, kosdaq_info, flow_data
         return "글로벌 금리 및 경기 지표 추이에 따른 기술주/가치주 섹터별 로테이션 장세", "neutral"
 
 
-def send_closing_notification(market: str):
-    """시장 마감 리포트 발송 로직 (기본 지수 + 맞춤형 지수 하이브리드)"""
+def send_closing_notification(market: str, target_user_id: Optional[str] = None):
+    """시장 마감 리포트 발송 로직 (1. 시장·섹터 지수 결산 / 2. 내 관심종목 결산 2분할 발송)"""
     initialize_firebase()
-    print(f"[Scheduler] Generating hybrid {market} market closing report...")
+    print(f"[Scheduler] Generating hybrid {market} market closing report (target_user_id={target_user_id})...")
     
     # 공통 기본 지표 캐싱
     kr_indices = {}
@@ -414,7 +414,6 @@ def send_closing_notification(market: str):
     def get_safe_quote(sym: str, default_price="-", default_change="0.00%", default_change_val="0.00"):
         try:
             import time
-            # 봇 필터 회피 지연
             time.sleep(0.1)
             quote = get_simple_quote(sym)
             if quote and quote.get("price") and quote["price"] != "-":
@@ -451,65 +450,77 @@ def send_closing_notification(market: str):
         sign = "+" if idx_info.get("direction") == "Up" else "-" if idx_info.get("direction") == "Down" else ""
         return f"{default_name}: {val} ({sign}{chg} / {pct})"
         
-    # 글로벌 마켓 데이터 캐시 활용 (나스닥, S&P500 등)
+    # 글로벌 마켓 데이터 캐시 활용 (나스닥, S&P500 등 고속 조회)
     try:
         from stock_data import get_market_data
-        md = get_market_data()
-        md_dict = {item['label']: item for item in md}
-    except:
+        md = get_market_data() or []
+        md_dict = {item['label']: item for item in md if isinstance(item, dict) and 'label' in item}
+    except Exception as e:
         md_dict = {}
 
-    def _format_us_index(quote, default_name, md_label=None):
-        # 1. 우선적으로 안정적인 get_market_data() 결과 사용
+    def _format_us_index(default_name, md_label=None, yf_sym=None):
         if md_label and md_label in md_dict:
             data = md_dict[md_label]
             if data.get("value") not in ["준비중", "-", "0.00"]:
-                return f"{default_name}: {data['value']} ({data['change']})"
-        
-        # 2. 실패 시 개별 yfinance 호출 (get_safe_quote)
-        if not quote or quote.get("price") == "-": return f"{default_name}: -"
-        val = quote.get("price", "0.00")
-        pct = quote.get("change_percent", quote.get("change", "0.00%"))
-        chg_val = quote.get("regular_change", 0)
-        try:
-             chg_val_f = float(chg_val)
-             sign = "+" if chg_val_f >= 0 else ""
-             chg_str = f"{sign}{chg_val_f:.2f}"
-        except:
-             chg_str = "0.00"
-        return f"{default_name}: {val} ({chg_str} / {pct})"
+                return f"{default_name}: {data['value']} ({data.get('change', '0.00%')})"
+        if yf_sym and market == "US":
+            quote = get_safe_quote(yf_sym)
+            if quote and quote.get("price") != "-":
+                val = quote.get("price", "0.00")
+                pct = quote.get("change_percent", quote.get("change", "0.00%"))
+                chg_val = quote.get("regular_change", 0)
+                try:
+                    chg_val_f = float(chg_val)
+                    sign = "+" if chg_val_f >= 0 else ""
+                    chg_str = f"{sign}{chg_val_f:.2f}"
+                except:
+                    chg_str = "0.00"
+                return f"{default_name}: {val} ({chg_str} / {pct})"
+        return f"{default_name}: -"
 
-    def _get_raw_val(quote, fallback, md_label):
+    def _get_raw_val(md_label, fallback="0.00", yf_sym=None):
         if md_label and md_label in md_dict:
             d = md_dict[md_label]
             if d.get("value") not in ["준비중", "-", "0.00"]:
                 return {"price": str(d["value"]), "change": str(d.get("change", "0.00%"))}
-        if not quote or quote.get("price") == "-":
-            return {"price": fallback, "change": "0.00%"}
-        return quote
+        if yf_sym and market == "US":
+            quote = get_safe_quote(yf_sym, default_price=fallback)
+            if quote and quote.get("price") != "-":
+                return quote
+        return {"price": fallback, "change": "0.00%"}
+
+    fx_dict = get_alpha_vantage_fx()
+    if not fx_dict or fx_dict.get("price") in ["-", "0.00", None]:
+        if "USD/KRW" in md_dict:
+            fx_dict = {"price": str(md_dict["USD/KRW"].get("value", "1,350")), "change": str(md_dict["USD/KRW"].get("change", "0.00%"))}
+        else:
+            fx_dict = {"price": "1,350", "change": "0.00%"}
 
     common = {
         "KOSPI": _format_index(kospi_info, "코스피"),
         "KOSDAQ": _format_index(kosdaq_info, "코스닥"),
-        "DOW": _format_us_index(get_safe_quote("^DJI"), "다우존스"),
-        "NASDAQ": _format_us_index(get_safe_quote("^IXIC"), "나스닥", "NASDAQ"),
-        "SP500": _format_us_index(get_safe_quote("^GSPC"), "S&P500", "S&P 500"),
-        "SOX": _format_us_index(get_safe_quote("^SOX"), "반도체지수", "SOX"),
-        "TNX": get_safe_quote("^TNX", default_price="4.50"),
-        "OIL": _get_raw_val(get_safe_quote("CL=F", default_price="0.00"), "0.00", "WTI"),
-        "FX": get_alpha_vantage_fx(),
-        "TSLA": get_safe_quote("TSLA")
+        "DOW": _format_us_index("다우존스", "DOW", "^DJI"),
+        "NASDAQ": _format_us_index("나스닥", "NASDAQ", "^IXIC"),
+        "SP500": _format_us_index("S&P500", "S&P 500", "^GSPC"),
+        "SOX": _format_us_index("반도체지수", "SOX", "^SOX"),
+        "TNX": _get_raw_val("미 10년 국채금리", "4.20", "^TNX"),
+        "OIL": _get_raw_val("WTI 유가", "0.00", "CL=F"),
+        "FX": fx_dict,
+        "TSLA": _get_raw_val("TSLA", "0.00", "TSLA")
     }
 
     # 당일 시장 전체 외국인/기관/개인 수급 및 전문 진단 산출
     flow_data = get_market_major_investor_trend() if market == "KR" else {}
     diagnosis, sentiment = generate_market_closing_diagnosis(market, kospi_info, kosdaq_info, flow_data, common['FX'].get('price', '1350'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT user_id FROM watchlist")
-    user_ids = [row[0] for row in cursor.fetchall()]
-    conn.close()
+    if target_user_id:
+        user_ids = [target_user_id]
+    else:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT user_id FROM watchlist")
+        user_ids = [row[0] for row in cursor.fetchall()]
+        conn.close()
     
     for user_id in user_ids:
         try:
@@ -517,190 +528,165 @@ def send_closing_notification(market: str):
             if not perf: continue
             
             symbols = [item['symbol'] for item in perf["items"]]
-            
-            # 1. 기본 지수 구성 (KR: 코스피/코스닥/환율, US: 다우/나스닥/S&P)
+            clean_symbols = [s.split('.')[0] if '.' in s else s for s in symbols]
+            unit = "원" if market == "KR" else "$"
+            market_name = "국내" if market == "KR" else "해외"
+
+            # -----------------------------------------------------------------
+            # 1. [알림 1] 시장 및 내 관심종목 관련 지수 결산 (스마트워치 최적화 슬림형)
+            # -----------------------------------------------------------------
+            title_market = f"📊 [시장·섹터 지수 결산] {market_name}"
+
             if market == "KR":
-                base_str = f"📊 {common['KOSPI']}\n📊 {common['KOSDAQ']}\n" \
-                           f"💵 환율: {common['FX'].get('price')}원"
+                idx_lines = [f"📊 {common['KOSPI']}", f"📊 {common['KOSDAQ']}"]
+                fx_val = common['FX'].get('price', '1,350')
+                macro_items = [f"💵 환율: {fx_val}원"]
             else:
-                base_str = f"🇺🇸 {common['NASDAQ']}\n🇺🇸 {common['SP500']}"
+                idx_lines = [f"🇺🇸 {common['NASDAQ']}", f"🇺🇸 {common['SP500']}"]
+                macro_items = []
 
-            # 2. 맞춤형 및 필수 원자재 추가 (유가는 기본 포함)
-            extra_list = [f"🛢️ 유가: {common['OIL'].get('change')}"]
-            
-            if any(s in ['005930', '000660', 'NVDA', 'AMD', 'TSM'] for s in symbols):
-                extra_list.append(f"💻 반도체: {common['SOX']}")
-            if any(s in ['247540', '086520', '373220', 'TSLA'] for s in symbols):
-                extra_list.append(f"🔋 테슬라: {common['TSLA'].get('change')}")
-            if any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL'] for s in symbols) or market == "US":
-                extra_list.append(f"📈 금리: {common['TNX'].get('price')}")
+            # 사용자 관심종목 섹터 기반 연관 매크로/섹터 지표 동적 선별
+            is_semi = any(s in ['005930', '000660', '042700', 'NVDA', 'AMD', 'TSM'] for s in clean_symbols)
+            is_battery = any(s in ['373220', '006400', '086520', '247540', '003670', 'TSLA'] for s in clean_symbols)
+            is_tech = any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL', '035720', '035420'] for s in clean_symbols) or market == "US"
+            is_heavy = any(s in ['010140', '329180', '042660', '009540'] for s in clean_symbols)
 
-            market_summary = base_str + "\n" + " | ".join(extra_list[:2]) + "\n\n"
-            
+            if is_semi and common['SOX'] and common['SOX'] != "반도체지수: -":
+                macro_items.append(f"💻 반도체: {common['SOX']}")
+            if is_battery and common['TSLA'].get('change'):
+                macro_items.append(f"🔋 테슬라: {common['TSLA'].get('change')}")
+            if is_tech and common['TNX'].get('price'):
+                macro_items.append(f"📈 美금리: {common['TNX'].get('price')}%")
+            if (is_heavy or len(macro_items) < 2) and common['OIL'].get('change'):
+                macro_items.append(f"🛢️ 유가: {common['OIL'].get('change')}")
+
+            supply_market_line = ""
+            if market == "KR":
+                k_flow = flow_data.get("kospi", {})
+                frgn_str = format_krw_amount_korean(k_flow.get("foreign", 0))
+                inst_str = format_krw_amount_korean(k_flow.get("institution", 0))
+                retail_str = format_krw_amount_korean(k_flow.get("personal", 0))
+                supply_market_line = f"🌊 수급: 외인 {frgn_str} · 기관 {inst_str} (개인 {retail_str})"
+
+            diag_market_line = f"💡 [진단] {diagnosis}"
+
+            lines_market = list(idx_lines)
+            if macro_items:
+                lines_market.append(" | ".join(macro_items[:3]))
+            if supply_market_line:
+                lines_market.append(supply_market_line)
+            lines_market.append(diag_market_line)
+            lines_market.append("(한국거래소 정규장 종가 기준 · 단순 시황 통계)")
+            body_market = "\n".join(lines_market)
+
+            # -----------------------------------------------------------------
+            # 2. [알림 2] 내 관심종목 결산 (스마트워치 최적화, 지수 제외 순수 포트폴리오)
+            # -----------------------------------------------------------------
             avg_change = perf["avg_daily_change"]
             portfolio_return = perf.get("portfolio_return")
             total_profit = perf.get("total_profit_amt", 0)
-            
+
             if portfolio_return is not None:
                 display_return = portfolio_return
                 return_label = "총 누적 수익률"
             else:
                 display_return = avg_change
-                return_label = "평균 일간 등락률"
-                
-            unit = "원" if market == "KR" else "$"
-            market_name = "국내" if market == "KR" else "해외"
+                return_label = "당일 평균 등락률"
+
             emoji = "📈" if display_return > 0 else "📉" if display_return < 0 else "➖"
-            title = f"🌕 {market_name} 장마감 리포트 {emoji}"
-            
-            # 수익금 문자열 생성 (미국장은 원화 환산 추가)
+            title_portfolio = f"💰 [내 관심종목 결산] {market_name} {emoji}"
+
+            # 총 손익금액 (미국장은 원화 환산 병기)
+            profit_str = ""
             if total_profit != 0:
                 if market == "US":
                     try:
-                        fx_rate = float(str(common['FX'].get('price', '1350')).replace(',', ''))
-                    except ValueError:
-                        fx_rate = 1350.0
-                    profit_krw = total_profit * fx_rate
-                    # 원화는 만원 단위로 가독성 있게 표시 (10,000원 이상일 때)
+                        fx_rate_val = float(str(common['FX'].get('price', '1350')).replace(',', ''))
+                    except:
+                        fx_rate_val = 1350.0
+                    profit_krw = total_profit * fx_rate_val
                     if abs(profit_krw) >= 10000:
-                        profit_str = f"💰 총 누적 수익: {total_profit:+,.2f}{unit} (약 {profit_krw/10000:+,.1f}만원)\n"
+                        profit_str = f"💰 총 누적 손익: {total_profit:+,.2f}{unit} (약 {profit_krw/10000:+,.1f}만원)\n"
                     else:
-                        profit_str = f"💰 총 누적 수익: {total_profit:+,.2f}{unit} ({profit_krw:+,.0f}원)\n"
+                        profit_str = f"💰 총 누적 손익: {total_profit:+,.2f}{unit} ({profit_krw:+,.0f}원)\n"
                 else:
-                    profit_str = f"💰 총 누적 수익: {total_profit:+,.0f}{unit}\n"
-            else:
-                profit_str = ""
+                    profit_str = f"💰 총 누적 손익: {total_profit:+,.0f}{unit}\n"
 
-            # 상세 리스트
+            # MVP 및 약세 종목
+            sorted_items = sorted(perf["items"], key=lambda x: x.get("daily_change", 0), reverse=True)
+            mvp_parts = []
+            if sorted_items and sorted_items[0].get("daily_change", 0) > 0:
+                best = sorted_items[0]
+                mvp_parts.append(f"🏆 MVP: {best['name']} ({best['daily_change']:+.1f}%)")
+            if len(sorted_items) > 1 and sorted_items[-1].get("daily_change", 0) < 0:
+                worst = sorted_items[-1]
+                mvp_parts.append(f"⚠️ 약세: {worst['name']} ({worst['daily_change']:+.1f}%)")
+            mvp_str = (" · ".join(mvp_parts) + "\n") if mvp_parts else ""
+
+            # 종목별 등락 및 수익 (스마트워치 화면 최적화: 최대 5개 종목 우선 노출)
             price_list = []
-            for item in perf["items"][:8]:
+            max_disp = 5
+            for item in perf["items"][:max_disp]:
                 change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
-                
-                # Format current_price nicely
                 if market == "US":
-                    krw_curr = item['current_price'] * fx_rate
-                    krw_curr_str = f"{krw_curr/10000:,.1f}만원" if krw_curr >= 10000 else f"{krw_curr:,.0f}원"
-                    curr_price_str = f"{item['current_price']:,.2f} (약 {krw_curr_str})"
+                    curr_price_str = f"{item['current_price']:,.2f}"
                 else:
                     curr_price_str = f"{item['current_price']:,.0f}"
-                
-                # Format absolute daily change (e.g., 900원)
+
                 chg_val = item.get('daily_change_val', 0)
                 if chg_val:
                     try:
-                         chg_val_f = float(chg_val)
-                         chg_val_str = f"{abs(chg_val_f):,.0f}원" if market == "KR" else f"${abs(chg_val_f):,.2f}"
+                        chg_val_f = float(chg_val)
+                        chg_val_str = f"{abs(chg_val_f):,.0f}원" if market == "KR" else f"${abs(chg_val_f):,.2f}"
                     except:
-                         chg_val_str = ""
+                        chg_val_str = ""
                 else:
-                    # Approximation if missing
                     approx = abs(item['current_price'] * item['daily_change'] / (100.0 + item['daily_change'])) if (100.0 + item['daily_change']) != 0 else 0
                     chg_val_str = f"{approx:,.0f}원" if market == "KR" else f"${approx:,.2f}"
-                
+
                 qty_str = f"({item['quantity']:g}주)" if item.get('quantity', 1) != 1 else ""
                 line = f"• {item['name']}{qty_str}: {curr_price_str}{unit} ({change_emoji}{chg_val_str} / {change_emoji}{abs(item['daily_change']):.1f}%)"
+
                 if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
                     diff = item['price_diff']
                     added_perf = item.get('added_perf', 0)
                     if market == "US":
-                        krw_diff = diff * fx_rate
+                        try:
+                            fx_rate_val = float(str(common['FX'].get('price', '1350')).replace(',', ''))
+                        except:
+                            fx_rate_val = 1350.0
+                        krw_diff = diff * fx_rate_val
                         sign = "+" if krw_diff > 0 else "-" if krw_diff < 0 else ""
                         krw_diff_str = f"{sign}{abs(krw_diff)/10000:,.1f}만원" if abs(krw_diff) >= 10000 else f"{sign}{abs(krw_diff):,.0f}원"
                         diff_str = f"{diff:+,.2f} (약 {krw_diff_str})"
                     else:
                         diff_str = f"{diff:+,.0f}"
-                    line += f"\n  ↳ 💰총 수익: {diff_str}{unit} ({added_perf:+.1f}%)"
-                    
-                    # 다중 매수 건일 경우 세부 내역 추가
-                    pd_list = item.get("purchases_details", [])
-                    if len(pd_list) > 1:
-                        for p in pd_list:
-                            p_diff = p['profit']
-                            p_perf = p['perf']
-                            if market == "US":
-                                p_krw_diff = p_diff * fx_rate
-                                p_sign = "+" if p_krw_diff > 0 else "-" if p_krw_diff < 0 else ""
-                                p_krw_str = f"{p_sign}{abs(p_krw_diff)/10000:,.1f}만원" if abs(p_krw_diff) >= 10000 else f"{p_sign}{abs(p_krw_diff):,.0f}원"
-                                p_diff_str = f"{p_diff:+,.2f} (약 {p_krw_str})"
-                            else:
-                                p_diff_str = f"{p_diff:+,.0f}"
-                            line += f"\n      [{p['idx']}차] {p['qty']:g}주: {p_diff_str}{unit} ({p_perf:+.1f}%)"
-                            
+                    line += f"\n  ↳ 💰수익: {diff_str}{unit} ({added_perf:+.1f}%)"
+
                 price_list.append(line)
-            # 전문 마켓 시황 본문 구성 (지수 + 매크로 + 메이저 수급 + 마켓 진단)
-            if market == "KR":
-                base_market_str = f"📊 {common['KOSPI']}\n📊 {common['KOSDAQ']}"
-                fx_val = common['FX'].get('price', '1,350')
-                fx_str = f"💵 환율: {fx_val}원"
-                
-                k_flow = flow_data.get("kospi", {})
-                frgn_str = format_krw_amount_korean(k_flow.get("foreign", 0))
-                inst_str = format_krw_amount_korean(k_flow.get("institution", 0))
-                retail_str = format_krw_amount_korean(k_flow.get("personal", 0))
-                supply_market_line = f"🌊 메이저 수급: 외인 {frgn_str} · 기관 {inst_str} (개인 {retail_str})"
-            else:
-                base_market_str = f"🇺🇸 {common['NASDAQ']}\n🇺🇸 {common['SP500']}"
-                fx_str = ""
-                supply_market_line = ""
 
-            macro_items = []
-            if fx_str: macro_items.append(fx_str)
-            macro_items.append(f"🛢️ 유가: {common['OIL'].get('change')}")
-            if any(s in ['005930', '000660', 'NVDA', 'AMD', 'TSM'] for s in symbols) and common['SOX'] and common['SOX'] != "반도체지수: -":
-                macro_items.append(f"💻 반도체: {common['SOX']}")
-            if any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL'] for s in symbols) or market == "US":
-                macro_items.append(f"📈 금리: {common['TNX'].get('price')}%")
+            if len(perf["items"]) > max_disp:
+                price_list.append(f"💬 외 {len(perf['items']) - max_disp}개 종목은 앱에서 확인")
 
-            macro_market_line = " | ".join(macro_items[:3])
-            diag_market_line = f"💡 [마켓 진단] {diagnosis}"
-
-            lines_market = [base_market_str]
-            if macro_market_line: lines_market.append(macro_market_line)
-            if supply_market_line: lines_market.append(supply_market_line)
-            lines_market.append(diag_market_line)
-            lines_market.append("(한국거래소 정규장 종가 기준 · 단순 시황 통계)")
-            body_market = "\n".join(lines_market)
-            title_market = f"🌕 {market_name} 장마감 시황"
-            
-            # 1. MVP (최고 효자 종목) & 약세 종목 산출
-            sorted_items = sorted(perf["items"], key=lambda x: x.get("daily_change", 0), reverse=True)
-            mvp_str = ""
-            if sorted_items and sorted_items[0].get("daily_change", 0) > 0:
-                best = sorted_items[0]
-                mvp_str += f"🏆 오늘의 MVP: {best['name']} ({best['daily_change']:+.1f}%)\n"
-            if len(sorted_items) > 1 and sorted_items[-1].get("daily_change", 0) < 0:
-                worst = sorted_items[-1]
-                mvp_str += f"⚠️ 약세 종목: {worst['name']} ({worst['daily_change']:+.1f}%)\n"
-
-            # 2. 외인/기관 수급 집계 (무료 API 데이터 합산)
-            tot_frgn = sum(i.get("foreign_net_buy", 0) for i in perf["items"])
-            tot_inst = sum(i.get("inst_net_buy", 0) for i in perf["items"])
-            supply_str = ""
-            if tot_frgn != 0 or tot_inst != 0:
-                def _fmt_vol(v):
-                    s = "+" if v > 0 else ""
-                    return f"{s}{v/10000:,.1f}만주" if abs(v) >= 10000 else f"{s}{v:,}주"
-                supply_str = f"🌊 수급 합산: 외인 {_fmt_vol(tot_frgn)} · 기관 {_fmt_vol(tot_inst)}\n"
-
-            # 0. 당일 시장 지수 요약 헤더 (국내: 코스피/코스닥, 미국: 나스닥/S&P500)
-            if market == "KR":
-                market_indices_str = f"📊 {common['KOSPI']} · {common['KOSDAQ']}\n"
-            else:
-                market_indices_str = f"🇺🇸 {common['NASDAQ']} · {common['SP500']}\n"
-
-            body_portfolio = market_indices_str + f"{return_label}: {display_return:+.2f}%\n" + profit_str + mvp_str + supply_str + "\n".join(price_list) + "\n\n(단순 집계 통계 결과이며 투자 권유가 아닙니다)"
-            title_portfolio = f"💰 내 {market_name} 관심종목 결산 {emoji}"
+            body_portfolio = (
+                f"{return_label}: {display_return:+.2f}%\n"
+                + profit_str
+                + mvp_str
+                + "\n".join(price_list)
+                + "\n\n(단순 집계 통계 결과이며 투자 권유가 아닙니다)"
+            )
             
             tokens_data = get_user_fcm_tokens(user_id)
             if tokens_data:
                 tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
                 if tokens:
-                    # 1. 시장 지수 요약 알림 (구조화된 프리미엄 메타데이터 포함)
+                    # 1. 시장 및 내 관심종목 관련 지수 결산 알림 발송
                     k_flow = flow_data.get("kospi", {})
                     kq_flow = flow_data.get("kosdaq", {})
                     market_payload = {
                         "url": "/discovery",
                         "type": "market_summary",
+                        "tag": f"closing-market-{user_id}",
                         "market": market,
                         "sentiment": sentiment,
                         "diagnosis": diagnosis,
@@ -737,12 +723,17 @@ def send_closing_notification(market: str):
                     except Exception as e:
                         print(f"[Scheduler-Error] Failed to save closing market alert to DB: {e}")
                     
-                    # 2초 대기 (모바일 환경에서 두 개의 푸시가 씹히지 않고 연속으로 뜨도록 순서 보장)
+                    # 2초 대기 (스마트폰 및 스마트워치에서 두 개의 푸시가 씹히지 않고 각각 온전한 카드로 뜨도록 보장)
                     import time
                     time.sleep(2.0)
                     
-                    # 2. 내 관심종목 수익 현황 알림
-                    send_multicast_notification(tokens, title_portfolio, body_portfolio, {"url": "/watchlist", "type": "portfolio_summary"}, target_users=[user_id])
+                    # 2. 내 관심종목 결산 알림 발송
+                    portfolio_payload = {
+                        "url": "/watchlist",
+                        "type": "portfolio_summary",
+                        "tag": f"closing-portfolio-{user_id}"
+                    }
+                    send_multicast_notification(tokens, title_portfolio, body_portfolio, portfolio_payload, target_users=[user_id])
                     
                     try:
                         conn = get_db_connection()

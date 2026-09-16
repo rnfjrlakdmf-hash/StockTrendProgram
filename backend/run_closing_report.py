@@ -31,8 +31,9 @@ logger = logging.getLogger(__name__)
 
 def main():
     market = sys.argv[1].upper() if len(sys.argv) > 1 else 'KR'
+    target_user_id = sys.argv[2] if len(sys.argv) > 2 else None
     print(f"\n=======================================================")
-    print(f"🌕 [Closing Report Runner] Starting for market: {market}")
+    print(f"🌕 [Closing Report Runner] Starting for market: {market} (target_user_id={target_user_id})")
     print(f"=======================================================")
 
     market_type_str = 'kor' if market == 'KR' else 'us'
@@ -43,7 +44,7 @@ def main():
     initialize_firebase()
 
     try:
-        send_closing_notification(market)
+        send_closing_notification(market, target_user_id=target_user_id)
         print(f"✅ [Closing Report Runner] Successfully completed {market} market closing notification.")
     except Exception as e:
         print(f"❌ [Closing Report Runner] Error occurred during execution: {e}")
