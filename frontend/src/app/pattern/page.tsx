@@ -1056,8 +1056,30 @@ export default function PatternPage() {
                                             </div>
                                         </div>
                                     </div>
+                                    {/* 초보자를 위한 1분 쉬운 개념 가이드 */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                                            <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                <span>🟢 지지선(Support) = 주가의 '바닥'</span>
+                                            </div>
+                                            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
+                                                주가가 내려올 때 <strong className="text-white font-bold">&quot;이 가격이면 싸다&quot;</strong>며 사려는 힘이 모여 튕겨 올라가는 <strong className="text-emerald-400 font-bold">바닥(트램펄린)</strong> 역할을 합니다.
+                                            </p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/15">
+                                            <div className="flex items-center gap-1.5 text-xs font-black text-rose-300">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                                <span>🔴 저항선(Resistance) = 주가의 '천장'</span>
+                                            </div>
+                                            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
+                                                주가가 올라갈 때 과거에 샀던 사람들의 본전 매도 물량이 쏟아져 더 오르지 못하고 막히는 <strong className="text-rose-400 font-bold">천장(벽)</strong> 역할을 합니다.
+                                            </p>
+                                        </div>
+                                    </div>
+
                                     {/* 법적 준수 안내문구 */}
-                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium">
+                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium pt-1">
                                         <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
                                         <span>본 지표는 수학적 알고리즘으로 산출된 기술적 보조선일 뿐이며, 특정 가격의 매수/매도 권유가 아닙니다.</span>
                                     </div>
