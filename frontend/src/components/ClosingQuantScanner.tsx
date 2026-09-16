@@ -506,140 +506,152 @@ export default function ClosingQuantScanner() {
             </div>
 
             {/* 데이터 테이블 컨테이너 */}
-            <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02]">
-                {loading ? (
-                    <div className="py-16 text-center text-slate-400 space-y-3">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-400" />
-                        <p className="text-xs">수급 퀀트 알고리즘 데이터를 분석하고 있습니다...</p>
-                    </div>
-                ) : !data || data.data.length === 0 ? (
-                    <div className="py-16 text-center text-slate-500 text-xs">
-                        해당 일자에는 퀀트 필터 기준을 충족한 포착 종목이 없습니다.
-                    </div>
-                ) : (
-                    <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                        <thead>
-                            <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
-                                <th className="p-3.5 sm:p-4">
-                                    <QuantTooltip
-                                        title="⭐ 관심종목 & 종목 정보"
-                                        headline="별(★) 클릭으로 관심종목 즉시 등록"
-                                        description="별(★) 아이콘을 클릭하면 내 관심종목에 즉시 저장되어 사이드바와 알림 기능으로 실시간 추적할 수 있습니다. 종목명을 클릭하면 '5대 안전벨트 진단'과 차트를 열람할 수 있습니다."
-                                        tip="상단의 [전체 관심등록] 버튼을 누르면 오늘 포착된 모든 유망 종목을 한 번에 등록할 수 있어 매우 편리합니다."
-                                        statusText="원클릭 연동"
-                                        statusColor="amber"
-                                        forcePosition="bottom"
-                                    >
-                                        <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
-                                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                                            <span>종목코드 / 종목명</span>
-                                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                                        </span>
-                                    </QuantTooltip>
-                                </th>
-                                <th className="p-3.5 sm:p-4 text-center hidden md:table-cell">
-                                    <div className="inline-flex items-center justify-center gap-1.5">
+            <div className="space-y-2">
+                {/* 모바일 전용 좌우 스크롤 힌트 */}
+                <div className="flex md:hidden items-center justify-between px-1 text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1.5 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        <span>포착 종목 퀀트 현황</span>
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span>👈 좌우로 밀어서 전체 확인 👉</span>
+                    </span>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] shadow-xl">
+                    {loading ? (
+                        <div className="py-16 text-center text-slate-400 space-y-3">
+                            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-400" />
+                            <p className="text-xs">수급 퀀트 알고리즘 데이터를 분석하고 있습니다...</p>
+                        </div>
+                    ) : !data || data.data.length === 0 ? (
+                        <div className="py-16 text-center text-slate-500 text-xs">
+                            해당 일자에는 퀀트 필터 기준을 충족한 포착 종목이 없습니다.
+                        </div>
+                    ) : (
+                        <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[700px]">
+                            <thead>
+                                <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
+                                    <th className="py-3 px-3 sm:p-4 min-w-[190px] sm:min-w-[220px]">
                                         <QuantTooltip
-                                            title="📊 수급 퀀트 엔진 (CVD / OBV)"
-                                            statusText="수급 델타"
-                                            statusColor="blue"
-                                            headline="차트 뒤에 숨은 '진짜 자금의 흐름'을 추적합니다"
-                                            description="CVD는 당일 장중 '시장가 매수 vs 매도'의 실시간 힘겨루기를, OBV는 최근 20거래일 동안 세력이 물량을 모았는지 털었는지를 밝혀내는 퀀트 수급 지표입니다."
-                                            tip="개별 종목의 CVD / OBV 뱃지에 마우스를 올리시거나 터치하시면 해당 종목의 상세 수급 상태를 바로 확인할 수 있습니다."
+                                            title="⭐ 관심종목 & 종목 정보"
+                                            headline="별(★) 클릭으로 관심종목 즉시 등록"
+                                            description="별(★) 아이콘을 클릭하면 내 관심종목에 즉시 저장되어 사이드바와 알림 기능으로 실시간 추적할 수 있습니다. 종목명을 클릭하면 '5대 안전벨트 진단'과 차트를 열람할 수 있습니다."
+                                            tip="상단의 [전체 관심등록] 버튼을 누르면 오늘 포착된 모든 유망 종목을 한 번에 등록할 수 있어 매우 편리합니다."
+                                            statusText="원클릭 연동"
+                                            statusColor="amber"
                                             forcePosition="bottom"
                                         >
-                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
-                                                <span>CVD / OBV 수급 델타</span>
-                                                <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                                            <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
+                                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                                <span>종목코드 / 종목명</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500" />
                                             </span>
                                         </QuantTooltip>
-                                    </div>
-                                </th>
-                                <th className="p-3.5 sm:p-4 text-right">
-                                    <QuantTooltip
-                                        title="⏱️ 스캔 시점 시세"
-                                        headline="알고리즘이 종목을 처음 포착한 기준 가격"
-                                        description="당일 장마감 시점 거래량 폭발과 메이저 수급 유입 조건을 충족하여 알고리즘이 최초 감지한 당시의 주가입니다."
-                                        tip="이 가격을 기준으로 이후 수익률(+%)과 10% 벤치마크 목표선 도달 여부를 객관적으로 측정합니다."
-                                        statusText="포착 기준가"
-                                        statusColor="blue"
-                                        forcePosition="bottom"
-                                    >
-                                        <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                            <span>스캔 시점 시세</span>
-                                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                                        </span>
-                                    </QuantTooltip>
-                                </th>
-                                <th className="p-3.5 sm:p-4 text-right">
-                                    <QuantTooltip
-                                        title="💵 현재 시세"
-                                        headline="실시간 현재 주가"
-                                        description="정규장 중에는 실시간 현재가, 장마감 후에는 당일 최종 종가를 표시합니다."
-                                        tip="스캔 시점 가격과 비교하여 현재 주가가 얼마나 움직였는지 한눈에 비교할 수 있습니다."
-                                        statusText="현재 주가"
-                                        statusColor="slate"
-                                        forcePosition="bottom"
-                                    >
-                                        <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                            <span>현재 시세</span>
-                                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                                        </span>
-                                    </QuantTooltip>
-                                </th>
-                                <th className="p-3.5 sm:p-4 text-right">
-                                    <QuantTooltip
-                                        title="📊 기준 대비 변동률"
-                                        headline="스캔 시점 대비 현재까지의 수익률"
-                                        description="포착 시점 가격 대비 현재 주가가 몇 % 상승하거나 하락했는지를 실시간으로 계산한 수치입니다."
-                                        tip="빨간색은 상승(+), 파란색은 하락(-)을 나타내며, 포착 이후 주가의 실제 흐름을 투명하게 확인하는 핵심 지표입니다."
-                                        statusText="수익률"
-                                        statusColor="rose"
-                                        forcePosition="bottom"
-                                        align="right"
-                                    >
-                                        <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                            <span>기준 대비 변동률</span>
-                                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                                        </span>
-                                    </QuantTooltip>
-                                </th>
-                                <th className="p-3.5 sm:p-4 text-right">
-                                    <QuantTooltip
-                                        title="🎯 기술적 벤치마크 (+10%)"
-                                        headline="단기 1차 익절 목표선 (저항선)"
-                                        description="스캔 시점 가격에서 정확히 +10.0% 상승한 가격입니다. 단기 매매 시 1차 수익 실현(익절) 구간으로 삼기 가장 좋은 기술적 기준선입니다."
-                                        tip="주가가 이 가격 근처에 도달하면 분할 매도로 안전하게 수익을 챙기는 전략을 권장합니다."
-                                        statusText="1차 목표선"
-                                        statusColor="indigo"
-                                        forcePosition="bottom"
-                                        align="right"
-                                    >
-                                        <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                            <span>기술적 벤치마크 (+10%)</span>
-                                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                                        </span>
-                                    </QuantTooltip>
-                                </th>
-                                <th className="p-3.5 sm:p-4 text-center">
-                                    <QuantTooltip
-                                        title="✅ 시세 도달 확인 여부"
-                                        headline="+10% 목표선 실제 터치 여부 추적"
-                                        description="포착 이후 당일 고가 기준으로 +10% 벤치마크선을 실제로 터치하거나 돌파했는지 실시간으로 검증한 결과입니다."
-                                        tip="'도달 확인' 마크가 뜨면 1차 목표 수익률 달성에 성공한 종목입니다. '관측 중'은 현재 목표선을 향해 진행 중인 상태입니다."
-                                        statusText="목표 도달 검증"
-                                        statusColor="emerald"
-                                        forcePosition="bottom"
-                                        align="right"
-                                    >
-                                        <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
-                                            <span>시세 도달 확인</span>
-                                            <HelpCircle className="w-3 h-3 text-slate-500" />
-                                        </span>
-                                    </QuantTooltip>
-                                </th>
-                            </tr>
-                        </thead>
+                                    </th>
+                                    <th className="py-3 px-3 sm:p-4 text-center hidden md:table-cell min-w-[150px]">
+                                        <div className="inline-flex items-center justify-center gap-1.5">
+                                            <QuantTooltip
+                                                title="📊 수급 퀀트 엔진 (CVD / OBV)"
+                                                statusText="수급 델타"
+                                                statusColor="blue"
+                                                headline="차트 뒤에 숨은 '진짜 자금의 흐름'을 추적합니다"
+                                                description="CVD는 당일 장중 '시장가 매수 vs 매도'의 실시간 힘겨루기를, OBV는 최근 20거래일 동안 세력이 물량을 모았는지 털었는지를 밝혀내는 퀀트 수급 지표입니다."
+                                                tip="개별 종목의 CVD / OBV 뱃지에 마우스를 올리시거나 터치하시면 해당 종목의 상세 수급 상태를 바로 확인할 수 있습니다."
+                                                forcePosition="bottom"
+                                            >
+                                                <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
+                                                    <span>CVD / OBV 수급 델타</span>
+                                                    <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                                                </span>
+                                            </QuantTooltip>
+                                        </div>
+                                    </th>
+                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[105px] whitespace-nowrap">
+                                        <QuantTooltip
+                                            title="⏱️ 스캔 시점 시세"
+                                            headline="알고리즘이 종목을 처음 포착한 기준 가격"
+                                            description="당일 장마감 시점 거래량 폭발과 메이저 수급 유입 조건을 충족하여 알고리즘이 최초 감지한 당시의 주가입니다."
+                                            tip="이 가격을 기준으로 이후 수익률(+%)과 10% 벤치마크 목표선 도달 여부를 객관적으로 측정합니다."
+                                            statusText="포착 기준가"
+                                            statusColor="blue"
+                                            forcePosition="bottom"
+                                        >
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
+                                                <span>스캔 시점 시세</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            </span>
+                                        </QuantTooltip>
+                                    </th>
+                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[105px] whitespace-nowrap">
+                                        <QuantTooltip
+                                            title="💵 현재 시세"
+                                            headline="실시간 현재 주가"
+                                            description="정규장 중에는 실시간 현재가, 장마감 후에는 당일 최종 종가를 표시합니다."
+                                            tip="스캔 시점 가격과 비교하여 현재 주가가 얼마나 움직였는지 한눈에 비교할 수 있습니다."
+                                            statusText="현재 주가"
+                                            statusColor="slate"
+                                            forcePosition="bottom"
+                                        >
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
+                                                <span>현재 시세</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            </span>
+                                        </QuantTooltip>
+                                    </th>
+                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[95px] whitespace-nowrap">
+                                        <QuantTooltip
+                                            title="📊 기준 대비 변동률"
+                                            headline="스캔 시점 대비 현재까지의 수익률"
+                                            description="포착 시점 가격 대비 현재 주가가 몇 % 상승하거나 하락했는지를 실시간으로 계산한 수치입니다."
+                                            tip="빨간색은 상승(+), 파란색은 하락(-)을 나타내며, 포착 이후 주가의 실제 흐름을 투명하게 확인하는 핵심 지표입니다."
+                                            statusText="수익률"
+                                            statusColor="rose"
+                                            forcePosition="bottom"
+                                            align="right"
+                                        >
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
+                                                <span>기준 대비 변동률</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            </span>
+                                        </QuantTooltip>
+                                    </th>
+                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[115px] whitespace-nowrap">
+                                        <QuantTooltip
+                                            title="🎯 기술적 벤치마크 (+10%)"
+                                            headline="단기 1차 익절 목표선 (저항선)"
+                                            description="스캔 시점 가격에서 정확히 +10.0% 상승한 가격입니다. 단기 매매 시 1차 수익 실현(익절) 구간으로 삼기 가장 좋은 기술적 기준선입니다."
+                                            tip="주가가 이 가격 근처에 도달하면 분할 매도로 안전하게 수익을 챙기는 전략을 권장합니다."
+                                            statusText="1차 목표선"
+                                            statusColor="indigo"
+                                            forcePosition="bottom"
+                                            align="right"
+                                        >
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
+                                                <span>기술적 벤치마크 (+10%)</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            </span>
+                                        </QuantTooltip>
+                                    </th>
+                                    <th className="py-3 px-3 sm:p-4 text-center min-w-[110px] whitespace-nowrap">
+                                        <QuantTooltip
+                                            title="✅ 시세 도달 확인 여부"
+                                            headline="+10% 목표선 실제 터치 여부 추적"
+                                            description="포착 이후 당일 고가 기준으로 +10% 벤치마크선을 실제로 터치하거나 돌파했는지 실시간으로 검증한 결과입니다."
+                                            tip="'도달 확인' 마크가 뜨면 1차 목표 수익률 달성에 성공한 종목입니다. '관측 중'은 현재 목표선을 향해 진행 중인 상태입니다."
+                                            statusText="목표 도달 검증"
+                                            statusColor="emerald"
+                                            forcePosition="bottom"
+                                            align="right"
+                                        >
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
+                                                <span>시세 도달 확인</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            </span>
+                                        </QuantTooltip>
+                                    </th>
+                                </tr>
+                            </thead>
                         <tbody className="divide-y divide-white/5 font-mono">
                             {data.data.map((item, idx) => {
                                 const isUp = item.returnRate > 0;
@@ -649,7 +661,7 @@ export default function ClosingQuantScanner() {
                                 return (
                                     <tr key={idx} className="hover:bg-white/[0.04] transition-colors group">
                                         {/* 종목명 및 코드 + 원클릭 관심종목 등록/해제 버튼 */}
-                                        <td className="p-3.5 sm:p-4">
+                                        <td className="py-2.5 px-3 sm:p-4 min-w-[190px] sm:min-w-[220px]">
                                             <div className="flex items-center gap-2">
                                                 {/* 원클릭 관심종목 별 버튼 */}
                                                 {(() => {
@@ -666,7 +678,7 @@ export default function ClosingQuantScanner() {
                                                             }}
                                                             disabled={isToggling}
                                                             title={isSaved ? "관심종목에서 해제" : "관심종목에 등록"}
-                                                            className={`p-1.5 rounded-xl transition-all active:scale-90 shrink-0 ${
+                                                            className={`p-1.5 rounded-xl transition-all active:scale-90 shrink-0 self-center ${
                                                                 isSaved 
                                                                     ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 shadow-sm shadow-amber-400/20" 
                                                                     : "text-slate-500 hover:text-amber-300 hover:bg-white/10"
@@ -695,8 +707,8 @@ export default function ClosingQuantScanner() {
                                                         </div>
                                                         <span className="text-[11px] text-slate-400 font-mono">{item.code}</span>
                                                     
-                                                    {/* 모바일 전용 CVD/OBV 뱃지 */}
-                                                    <div className="flex md:hidden flex-wrap items-center gap-1 mt-1 font-mono">
+                                                    {/* 모바일 전용 CVD/OBV 뱃지 (줄바꿈 방지 whitespace-nowrap & 가로 정렬) */}
+                                                    <div className="flex md:hidden items-center gap-1 mt-1 font-mono flex-wrap">
                                                         {item.cvd && (
                                                             <QuantTooltip
                                                                 title="💎 CVD (누적 체결 델타)"
@@ -719,7 +731,7 @@ export default function ClosingQuantScanner() {
                                                                 }
                                                                 forcePosition={tooltipPos}
                                                             >
-                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
                                                                     item.cvd.isBullish 
                                                                         ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
                                                                         : 'bg-slate-800 text-slate-400 border border-white/10'
@@ -751,7 +763,7 @@ export default function ClosingQuantScanner() {
                                                                 }
                                                                 forcePosition={tooltipPos}
                                                             >
-                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
                                                                     item.obv.isBullish 
                                                                         ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
                                                                         : 'bg-slate-800 text-slate-400 border border-white/10'
@@ -763,13 +775,13 @@ export default function ClosingQuantScanner() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 ml-auto transition-colors" />
+                                                <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 ml-auto transition-colors shrink-0" />
                                             </Link>
                                             </div>
                                         </td>
 
                                         {/* PC 전용 CVD / OBV 퀀트 뱃지 열 */}
-                                        <td className="p-3.5 sm:p-4 text-center hidden md:table-cell font-sans">
+                                        <td className="py-2.5 px-3 sm:p-4 text-center hidden md:table-cell font-sans min-w-[150px]">
                                             <div className="flex flex-col items-center gap-1.5">
                                                 {item.cvd && (
                                                     <QuantTooltip
@@ -839,7 +851,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 스캔 시점 시세 */}
-                                        <td className="p-3.5 sm:p-4 text-right text-slate-300">
+                                        <td className="py-2.5 px-3 sm:p-4 text-right text-slate-300 whitespace-nowrap min-w-[105px]">
                                             <QuantTooltip
                                                 title={`⏱️ ${item.name} 스캔 시점가`}
                                                 headline={`포착 당시 기준가: ${item.entryPrice.toLocaleString()}원`}
@@ -854,7 +866,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 현재 시세 */}
-                                        <td className="p-3.5 sm:p-4 text-right font-bold text-white">
+                                        <td className="py-2.5 px-3 sm:p-4 text-right font-bold text-white whitespace-nowrap min-w-[105px]">
                                             <QuantTooltip
                                                 title={`💵 ${item.name} 현재 시세`}
                                                 headline={`실시간 현재가: ${item.currentPrice.toLocaleString()}원`}
@@ -869,7 +881,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 변동률 */}
-                                        <td className="p-3.5 sm:p-4 text-right font-bold">
+                                        <td className="py-2.5 px-3 sm:p-4 text-right font-bold whitespace-nowrap min-w-[95px]">
                                             <QuantTooltip
                                                 title={`📊 ${item.name} 실시간 수익률`}
                                                 headline={isUp ? `+${item.returnRate}% 상승 추세` : item.returnRate < 0 ? `${item.returnRate}% 조정 중` : '변동 없음 (0%)'}
@@ -888,7 +900,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 기술적 벤치마크 (+10%) */}
-                                        <td className="p-3.5 sm:p-4 text-right text-slate-300">
+                                        <td className="py-2.5 px-3 sm:p-4 text-right text-slate-300 whitespace-nowrap min-w-[115px]">
                                             <QuantTooltip
                                                 title={`🎯 ${item.name} 1차 목표선`}
                                                 headline={`1차 익절 목표가: ${item.resistancePrice.toLocaleString()}원 (+10.0%)`}
@@ -907,7 +919,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 시세 도달 확인 여부 */}
-                                        <td className="p-3.5 sm:p-4 text-center">
+                                        <td className="py-2.5 px-3 sm:p-4 text-center whitespace-nowrap min-w-[110px]">
                                             {item.reachedResistance ? (
                                                 <QuantTooltip
                                                     title="🏆 10% 벤치마크 도달 완료"
@@ -955,6 +967,7 @@ export default function ClosingQuantScanner() {
                         </tbody>
                     </table>
                 )}
+                </div>
             </div>
 
             {/* 법적 면책 조항 (유사투자자문업 방지 100% 안전 고지 배너) */}
