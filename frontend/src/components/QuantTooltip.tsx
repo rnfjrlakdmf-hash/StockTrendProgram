@@ -200,7 +200,7 @@ export default function QuantTooltip({
             {isOpen && (
                 <div 
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    className={`absolute z-50 ${alignClass} w-[280px] sm:w-[320px] max-w-[calc(100vw-32px)] rounded-2xl bg-[#0a0f1d]/98 backdrop-blur-2xl border ${themeStyles.border} p-4 text-left pointer-events-auto transition-all animate-in fade-in zoom-in-95 duration-150 ${
+                    className={`absolute z-50 ${alignClass} w-[280px] sm:w-[320px] max-w-[calc(100vw-32px)] rounded-2xl bg-[#0a0f1d]/98 backdrop-blur-2xl border ${themeStyles.border} p-4 text-left pointer-events-auto transition-all animate-in fade-in zoom-in-95 duration-150 whitespace-normal break-keep break-words select-text ${
                         position === "top" 
                             ? "bottom-full mb-3" 
                             : "top-full mt-3"
@@ -211,12 +211,12 @@ export default function QuantTooltip({
 
                     {/* 헤더: 지표 이름 & 상태 뱃지 */}
                     <div className="flex items-center justify-between gap-2 mb-2.5 pt-1 border-b border-white/10 pb-2">
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-                            <span className="font-bold text-white text-xs tracking-tight">{title}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0"></span>
+                            <span className="font-bold text-white text-xs tracking-tight truncate">{title}</span>
                         </div>
                         {statusText && (
-                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${themeStyles.badge}`}>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 shrink-0 ${themeStyles.badge}`}>
                                 <span className={`w-1 h-1 rounded-full ${themeStyles.dot}`}></span>
                                 {statusText}
                             </span>
@@ -225,21 +225,21 @@ export default function QuantTooltip({
 
                     {/* 한 줄 핵심 요약 (눈에 확 들어오는 큰 글씨) */}
                     <div className="mb-2">
-                        <p className={`text-[12.5px] font-bold leading-snug tracking-tight ${themeStyles.headlineText}`}>
+                        <p className={`text-[12.5px] font-bold leading-snug tracking-tight whitespace-normal break-keep break-words ${themeStyles.headlineText}`}>
                             {headline}
                         </p>
                     </div>
 
-                    {/* 초보자도 1초 만에 이해되는 쉬운 설명 */}
-                    <p className="text-[11.5px] text-slate-300 leading-relaxed font-sans mb-3">
+                    {/* 초보자도 1초 만에 이해되는 쉬운 설명 (줄바꿈 허용으로 글자 잘림 방지) */}
+                    <p className="text-[11.5px] text-slate-300 leading-relaxed font-sans mb-3 whitespace-normal break-keep break-words">
                         {description}
                     </p>
 
-                    {/* 실전 투자 꿀팁 카드 */}
+                    {/* 실전 투자 꿀팁 카드 (줄바꿈 허용) */}
                     {tip && (
-                        <div className={`rounded-xl p-2.5 text-[11px] font-sans border ${themeStyles.tipBorder} flex items-start gap-2 leading-relaxed`}>
+                        <div className={`rounded-xl p-2.5 text-[11px] font-sans border ${themeStyles.tipBorder} flex items-start gap-2 leading-relaxed whitespace-normal break-keep break-words`}>
                             <Zap className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${themeStyles.tipIcon}`} />
-                            <div>
+                            <div className="flex-1 min-w-0 whitespace-normal break-keep break-words">
                                 <span className="font-bold text-slate-200 mr-1">실전 체크:</span>
                                 <span className="text-slate-300">{tip}</span>
                             </div>
