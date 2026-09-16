@@ -711,10 +711,10 @@ export default function ClosingQuantScanner() {
                                 <span>좌우로 밀어서 전체 지표를 확인하세요</span>
                                 <span>👈 스크롤 👉</span>
                             </div>
-                            <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[700px]">
+                            <table className="w-full text-left border-collapse text-xs sm:text-sm">
                             <thead>
                                 <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
-                                    <th className="py-3 px-3 sm:p-4 min-w-[190px] sm:min-w-[220px]">
+                                    <th className="py-3 px-2 sm:px-3 min-w-[130px]">
                                         <QuantTooltip
                                             title="⭐ 관심종목 & 종목 정보"
                                             headline="별(★) 클릭으로 관심종목 즉시 등록"
@@ -731,7 +731,7 @@ export default function ClosingQuantScanner() {
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-3 sm:p-4 text-center hidden md:table-cell min-w-[150px]">
+                                    <th className="py-3 px-2 sm:px-2.5 text-center hidden md:table-cell w-[130px]">
                                         <div className="inline-flex items-center justify-center gap-1.5">
                                             <QuantTooltip
                                                 title="📊 수급 퀀트 엔진 (CVD / OBV)"
@@ -749,7 +749,7 @@ export default function ClosingQuantScanner() {
                                             </QuantTooltip>
                                         </div>
                                     </th>
-                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[105px] whitespace-nowrap">
+                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[90px] sm:w-[100px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="⏱️ 스캔 시점 시세"
                                             headline="알고리즘이 종목을 처음 포착한 기준 가격"
@@ -765,7 +765,7 @@ export default function ClosingQuantScanner() {
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[105px] whitespace-nowrap">
+                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[90px] sm:w-[100px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="💵 현재 시세"
                                             headline="실시간 현재 주가"
@@ -781,7 +781,7 @@ export default function ClosingQuantScanner() {
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[95px] whitespace-nowrap">
+                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[75px] sm:w-[85px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="📊 기준 대비 변동률"
                                             headline="스캔 시점 대비 현재까지의 수익률"
@@ -798,7 +798,7 @@ export default function ClosingQuantScanner() {
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-3 sm:p-4 text-right min-w-[115px] whitespace-nowrap">
+                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[95px] sm:w-[105px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="🎯 기술적 벤치마크 (+10%)"
                                             headline="단기 1차 익절 목표선 (저항선)"
@@ -815,7 +815,7 @@ export default function ClosingQuantScanner() {
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-3 sm:p-4 text-center min-w-[110px] whitespace-nowrap">
+                                    <th className="py-3 pl-2 pr-3 sm:pr-4 text-center w-[100px] sm:w-[115px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="✅ 시세 도달 확인 여부"
                                             headline="+10% 목표선 실제 터치 여부 추적"
@@ -843,7 +843,7 @@ export default function ClosingQuantScanner() {
                                 return (
                                     <tr key={idx} className="hover:bg-white/[0.04] transition-colors group">
                                         {/* 종목명 및 코드 + 원클릭 관심종목 등록/해제 버튼 */}
-                                        <td className="py-2.5 px-3 sm:p-4 min-w-[190px] sm:min-w-[220px]">
+                                        <td className="py-2.5 px-2 sm:px-3 min-w-[130px]">
                                             <div className="flex items-center gap-2">
                                                 {/* 원클릭 관심종목 별 버튼 */}
                                                 {(() => {
@@ -963,7 +963,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* PC 전용 CVD / OBV 퀀트 뱃지 열 */}
-                                        <td className="py-2.5 px-3 sm:p-4 text-center hidden md:table-cell font-sans min-w-[150px]">
+                                        <td className="py-2.5 px-2 sm:px-2.5 text-center hidden md:table-cell font-sans w-[130px]">
                                             <div className="flex flex-col items-center gap-1.5">
                                                 {item.cvd && (
                                                     <QuantTooltip
@@ -1033,7 +1033,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 스캔 시점 시세 */}
-                                        <td className="py-2.5 px-3 sm:p-4 text-right text-slate-300 whitespace-nowrap min-w-[105px]">
+                                        <td className="py-2.5 px-2 sm:px-2.5 text-right text-slate-300 whitespace-nowrap w-[90px] sm:w-[100px]">
                                             <QuantTooltip
                                                 title={`⏱️ ${item.name} 스캔 시점가`}
                                                 headline={`포착 당시 기준가: ${item.entryPrice.toLocaleString()}원`}
@@ -1048,7 +1048,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 현재 시세 */}
-                                        <td className="py-2.5 px-3 sm:p-4 text-right font-bold text-white whitespace-nowrap min-w-[105px]">
+                                        <td className="py-2.5 px-2 sm:px-2.5 text-right font-bold text-white whitespace-nowrap w-[90px] sm:w-[100px]">
                                             <QuantTooltip
                                                 title={`💵 ${item.name} 현재 시세`}
                                                 headline={`실시간 현재가: ${item.currentPrice.toLocaleString()}원`}
@@ -1063,7 +1063,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 변동률 */}
-                                        <td className="py-2.5 px-3 sm:p-4 text-right font-bold whitespace-nowrap min-w-[95px]">
+                                        <td className="py-2.5 px-2 sm:px-2.5 text-right font-bold whitespace-nowrap w-[75px] sm:w-[85px]">
                                             <QuantTooltip
                                                 title={`📊 ${item.name} 실시간 수익률`}
                                                 headline={isUp ? `+${item.returnRate}% 상승 추세` : item.returnRate < 0 ? `${item.returnRate}% 조정 중` : '변동 없음 (0%)'}
@@ -1082,7 +1082,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 기술적 벤치마크 (+10%) */}
-                                        <td className="py-2.5 px-3 sm:p-4 text-right text-slate-300 whitespace-nowrap min-w-[115px]">
+                                        <td className="py-2.5 px-2 sm:px-2.5 text-right text-slate-300 whitespace-nowrap w-[95px] sm:w-[105px]">
                                             <QuantTooltip
                                                 title={`🎯 ${item.name} 1차 목표선`}
                                                 headline={`1차 익절 목표가: ${item.resistancePrice.toLocaleString()}원 (+10.0%)`}
@@ -1101,7 +1101,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 시세 도달 확인 여부 */}
-                                        <td className="py-2.5 px-3 sm:p-4 text-center whitespace-nowrap min-w-[110px]">
+                                        <td className="py-2.5 pl-2 pr-3 sm:pr-4 text-center whitespace-nowrap w-[100px] sm:w-[115px]">
                                             {item.reachedResistance ? (
                                                 <QuantTooltip
                                                     title="🏆 10% 벤치마크 도달 완료"
