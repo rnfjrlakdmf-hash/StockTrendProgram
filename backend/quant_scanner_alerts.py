@@ -6,12 +6,21 @@
 """
 
 import os
+import sys
 import json
 import asyncio
 import logging
 import urllib.request
 from datetime import datetime
 import pytz
+
+try:
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stderr.encoding != 'utf-8':
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
 from holiday_checker import is_holiday, is_market_open_hours
 
