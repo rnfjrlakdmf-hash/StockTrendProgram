@@ -1433,11 +1433,16 @@ def run_market_scheduler():
                     send_opening_notification("KR")
                     last_run_open_kr = current_date
 
-            # 2. 국내 장마감 종가 리포트
-            if day_of_week <= 4:
-                if now.hour == 15 and 40 <= now.minute <= 45 and current_date != last_run_close_kr and not is_market_holiday("KR"):
-                    send_closing_notification("KR")
-                    last_run_close_kr = current_date
+            # 2. 국내 장마감 종가 리포트 - 15:40 이후 미발송 시 무조건 1회 실행 보장
+            if day_of_week <= 4 and not is_holiday("kor"):
+                if now.hour == 15 and now.minute >= 40 and current_date != last_run_close_kr:
+                    try:
+                        print(f"[Scheduler] 🌕 Launching Closing Notification (KR) for {current_date}...")
+                        send_closing_notification("KR")
+                        last_run_close_kr = current_date
+                        print(f"[Scheduler] ✅ Closing Notification (KR) completed.")
+                    except Exception as cl_e:
+                        print(f"[Scheduler-Error] Closing notification KR failed: {cl_e}")
             
             # 미국 서머타임(DST) 적용 여부 확인 (미국 동부 시간 기준)
             ny_tz = pytz.timezone('America/New_York')
