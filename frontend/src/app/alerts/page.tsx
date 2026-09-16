@@ -505,6 +505,12 @@ function formatUsdToKrwInText(text: string): string {
                 // 새로운 종목 행 파싱 (예: • 삼성중공업(7주): 21,350원 (▼251원 / ▼1.2%) 또는 2만 1,350원)
                 const parts = cleanLine.split(':');
                 const nameWithQty = parts[0].replace('•', '').trim();
+
+                // 지수(코스피, 코스닥 등) 및 시장 거시 지표는 개별 보유 종목이 아니므로 스킵
+                if (/^(코스피|코스닥|KOSPI|KOSDAQ|나스닥|환율|다우|S&P|유가|금리)/i.test(nameWithQty)) {
+                    return;
+                }
+
                 let stockName = nameWithQty;
                 let stockQty = "";
                 let qtyNum = 1;
@@ -790,133 +796,109 @@ function formatUsdToKrwInText(text: string): string {
                             <span className="text-[11px] text-zinc-500 font-mono">총 {stockItems.length}개 종목</span>
                         </div>
                         
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                             {stockItems.map((item, idx) => (
                                 <div 
                                     key={idx} 
-                                    className="p-4 md:p-5 bg-zinc-900/95 hover:bg-zinc-900 border border-white/10 hover:border-amber-500/30 rounded-2xl transition-all space-y-3.5 shadow-lg"
+                                    className="p-3 sm:p-3.5 bg-zinc-900/90 hover:bg-zinc-900 border border-white/10 hover:border-amber-500/30 rounded-2xl transition-all space-y-2.5 shadow-md"
                                 >
-                                    {/* 상단 헤더: 종목명 + 보유 수량 뱃지 + 당일 마감 종가 (잘림 없이 크고 정확하게 표기) */}
-                                    <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-base md:text-lg font-black text-white">{item.name}</span>
+                                    {/* 1층: 종목명 + 보유 수량 뱃지 + 당일 마감 종가 & 등락률 */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                                            <span className="text-sm sm:text-base font-black text-white truncate">{item.name}</span>
                                             {item.qty && (
-                                                <span className="px-2.5 py-0.5 text-xs font-bold rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
                                                     {item.qty} 보유
                                                 </span>
                                             )}
+                                            {(item.profitStr || item.profitPctStr) && (
+                                                <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded shrink-0 hidden sm:inline-block ${
+                                                    item.isProfitUp ? 'bg-red-500/10 text-red-400' : 'bg-blue-500/10 text-blue-400'
+                                                }`}>
+                                                    {item.isProfitUp ? '수익 실현 중' : '손실 구간'}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <div className="text-base md:text-lg font-black font-mono text-zinc-100">
+                                        <div className="text-right shrink-0 flex items-baseline gap-1.5 sm:gap-2 font-mono">
+                                            <span className="text-sm sm:text-base font-black text-zinc-100">
                                                 {item.price || '종가 집계'}
-                                            </div>
+                                            </span>
                                             {item.dayChangeStr && (
-                                                <div className={`text-xs font-bold font-mono ${item.isDayUp ? 'text-red-400' : 'text-blue-400'}`}>
+                                                <span className={`text-xs font-bold ${item.isDayUp ? 'text-red-400' : 'text-blue-400'}`}>
                                                     {item.dayChangeStr}
-                                                </div>
+                                                </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* 디테일 스탯 3분할 칩 (평균 매수가, 총 평가금액, 당일 변동 손익 + 직관적 서브 설명) */}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div className="p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-center flex flex-col justify-between">
-                                            <div>
-                                                <p className="text-[10px] text-gray-400 font-medium">내 평균단가</p>
-                                                <p className="text-xs md:text-sm font-black font-mono text-zinc-200 mt-0.5">
-                                                    {item.avgBuyPrice > 0 ? `${item.avgBuyPrice.toLocaleString()}원` : '-'}
-                                                </p>
-                                            </div>
-                                            <p className="text-[9px] text-zinc-500 mt-1">내가 산 1주당 평균가</p>
+                                    {/* 2층: 초슬림 4분할 지표 그리드 (평단가 / 총 평가금액 / 누적 손익·수익률 / 오늘 손익) */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-2 sm:p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-xs">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-zinc-400">내 평균단가</span>
+                                            <span className="font-mono font-bold text-zinc-200 mt-0.5">
+                                                {item.avgBuyPrice > 0 ? `${item.avgBuyPrice.toLocaleString()}원` : '-'}
+                                            </span>
                                         </div>
-                                        <div className="p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-center flex flex-col justify-between">
-                                            <div>
-                                                <p className="text-[10px] text-gray-400 font-medium">총 평가금액</p>
-                                                <p className="text-xs md:text-sm font-black font-mono text-zinc-200 mt-0.5">
-                                                    {item.evalAmount > 0 ? `${item.evalAmount.toLocaleString()}원` : '-'}
-                                                </p>
-                                            </div>
-                                            <p className="text-[9px] text-zinc-500 mt-1">현재 시세 기준 내 주식</p>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-zinc-400">총 평가금액</span>
+                                            <span className="font-mono font-bold text-zinc-200 mt-0.5">
+                                                {item.evalAmount > 0 ? `${item.evalAmount.toLocaleString()}원` : '-'}
+                                            </span>
                                         </div>
-                                        <div className="p-2.5 bg-zinc-950/80 rounded-xl border border-white/5 text-center flex flex-col justify-between">
-                                            <div>
-                                                <p className="text-[10px] text-gray-400 font-medium">오늘 하루 손익</p>
-                                                <p className={`text-xs md:text-sm font-black font-mono mt-0.5 ${
-                                                    item.todayProfitVal > 0 ? 'text-red-400' : item.todayProfitVal < 0 ? 'text-blue-400' : 'text-zinc-400'
-                                                }`}>
-                                                    {item.todayProfitVal !== 0 ? `${item.todayProfitVal > 0 ? '+' : ''}${item.todayProfitVal.toLocaleString()}원` : '-'}
-                                                </p>
-                                            </div>
-                                            <p className="text-[9px] text-zinc-500 mt-1">오늘 하루 계좌 변동</p>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-zinc-400">누적 손익(수익률)</span>
+                                            <span className={`font-mono font-black mt-0.5 flex items-center gap-1 ${
+                                                item.isProfitUp ? 'text-red-400' : 'text-blue-400'
+                                            }`}>
+                                                <span>{item.profitStr || '-'}</span>
+                                                {item.profitPctStr && (
+                                                    <span className={`text-[10px] px-1 py-0.2 rounded ${
+                                                        item.isProfitUp ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
+                                                    }`}>
+                                                        {item.profitPctStr}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-zinc-400">오늘 하루 손익</span>
+                                            <span className={`font-mono font-bold mt-0.5 ${
+                                                item.todayProfitVal > 0 ? 'text-red-400' : item.todayProfitVal < 0 ? 'text-blue-400' : 'text-zinc-400'
+                                            }`}>
+                                                {item.todayProfitVal !== 0 ? `${item.todayProfitVal > 0 ? '+' : ''}${item.todayProfitVal.toLocaleString()}원` : '-'}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    {/* 내 누적 평가손익 & 수익률 하이라이트 박스 (직관적 투자 설명 바 포함) */}
-                                    {(item.profitStr || item.profitPctStr) && (
-                                        <div className={`p-3.5 rounded-xl border space-y-2 transition-colors ${
-                                            item.isProfitUp 
-                                                ? 'bg-red-500/10 border-red-500/25 text-red-300' 
-                                                : 'bg-blue-500/10 border-blue-500/25 text-blue-300'
-                                        }`}>
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <p className="text-[10px] text-gray-400 font-medium">내 누적 평가손익</p>
-                                                        <span className="text-[9px] text-gray-500 font-normal">(매수 이후 총 손익)</span>
-                                                    </div>
-                                                    <p className="text-base md:text-lg font-black font-mono tracking-tight mt-0.5">
-                                                        {item.profitStr}
-                                                    </p>
-                                                </div>
-                                                {item.profitPctStr && (
-                                                    <div className="text-right">
-                                                        <p className="text-[10px] text-gray-400 font-medium mb-0.5">누적 수익률</p>
-                                                        <span className={`text-xs md:text-sm font-black font-mono px-2.5 py-0.5 rounded-lg border inline-block ${
-                                                            item.isProfitUp 
-                                                                ? 'bg-red-500/20 text-red-300 border-red-500/40' 
-                                                                : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                                                        }`}>
-                                                            {item.profitPctStr}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
-                                                <span>투자원금 약 {item.investAmount > 0 ? `${(item.investAmount / 10000).toFixed(1)}만 원` : '-'} 기준</span>
-                                                <span className={item.isProfitUp ? 'text-red-400 font-bold' : 'text-blue-400 font-bold'}>
-                                                    {item.isProfitUp ? '원금 대비 수익 실현 중' : '원금 대비 손실 조정 구간'}
-                                                </span>
-                                            </div>
+                                    {/* 3층: 컴팩트 마감 진단 1줄 + 빠른 심층 분석/시세 액션 버튼 */}
+                                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                                        <div className="min-w-0 flex-1">
+                                            {item.insight && (
+                                                <p className="text-[11px] text-zinc-400 truncate flex items-center gap-1">
+                                                    <span className="text-amber-300 font-bold shrink-0">💡 마감 진단:</span>
+                                                    <span className="truncate">{item.insight}</span>
+                                                </p>
+                                            )}
                                         </div>
-                                    )}
-
-                                    {/* 디테일 마감 진단 가이드 */}
-                                    {item.insight && (
-                                        <div className="p-3 bg-zinc-950/80 rounded-xl border border-white/5 text-xs text-zinc-300 leading-relaxed flex items-start gap-2">
-                                            <span className="font-bold text-amber-300 shrink-0">💡 마감 진단</span>
-                                            <span>{item.insight}</span>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <Link 
+                                                href={item.cleanSymbol ? `/discovery?q=${item.cleanSymbol}` : `/discovery?q=${encodeURIComponent(item.name)}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                                            >
+                                                <Sparkles className="w-3 h-3 text-amber-400" />
+                                                <span>심층 분석</span>
+                                                <ChevronRight className="w-3 h-3" />
+                                            </Link>
+                                            <Link 
+                                                href="/watchlist"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="px-2 py-1 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 border border-white/10 text-[11px] font-medium transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                                            >
+                                                <TrendingUp className="w-3 h-3 text-cyan-400" />
+                                                <span>시세</span>
+                                            </Link>
                                         </div>
-                                    )}
-
-                                    {/* 종목별 빠른 액션 버튼 바 */}
-                                    <div className="flex items-center gap-2 pt-1 border-t border-white/5">
-                                        <Link 
-                                            href={item.cleanSymbol ? `/discovery?q=${item.cleanSymbol}` : `/discovery?q=${encodeURIComponent(item.name)}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-center py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                                        >
-                                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                                            {item.name} 정밀 심층 분석
-                                            <ChevronRight className="w-3.5 h-3.5" />
-                                        </Link>
-                                        <Link 
-                                            href="/watchlist"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 border border-white/10 text-center px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
-                                        >
-                                            <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                                            실시간 시세
-                                        </Link>
                                     </div>
                                 </div>
                             ))}
