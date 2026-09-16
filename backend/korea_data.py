@@ -433,16 +433,33 @@ def gather_naver_stock_data(symbol: str):
         # 4. 시장 타입 (KS/KQ)
         market_type = "KS" if yf_symbol.endswith('.KS') else "KQ"
 
-        # 5. 기업 개요 실시간 한글 번역
-        description = info.get('longBusinessSummary') or ""
-        if description:
-            try:
-                from deep_translator import GoogleTranslator
-                description_ko = GoogleTranslator(source='en', target='ko').translate(description)
-                if description_ko:
-                    description = description_ko
-            except Exception as e:
-                print(f"[yfinance-translation] Failed to translate business summary for {symbol}: {e}")
+        # 5. 기업 개요 실시간 한글 수집 (1차: WiseReport/네이버 공식 개요, 2차: yfinance 번역)
+        description = ""
+        try:
+            url_wr = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}"
+            r_wr = requests.get(url_wr, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
+            if r_wr.status_code == 200:
+                r_wr.encoding = 'utf-8'
+                from bs4 import BeautifulSoup
+                s_wr = BeautifulSoup(r_wr.text, 'html.parser')
+                lis = s_wr.select('.cmp_comment li')
+                if lis:
+                    texts = [li.text.strip() for li in lis if li.text.strip()]
+                    if texts:
+                        description = ' '.join(texts)
+        except Exception:
+            pass
+
+        if not description:
+            description = info.get('longBusinessSummary') or ""
+            if description:
+                try:
+                    from deep_translator import GoogleTranslator
+                    description_ko = GoogleTranslator(source='en', target='ko').translate(description)
+                    if description_ko:
+                        description = description_ko
+                except Exception as e:
+                    print(f"[yfinance-translation] Failed to translate business summary for {symbol}: {e}")
 
         # Fallback to Naver scraping for PER, PBR, EPS, BPS if missing
         per_val = info.get('trailingPE')

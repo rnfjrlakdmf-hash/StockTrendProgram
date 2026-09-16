@@ -54,6 +54,27 @@ def get_all_kospi_kosdaq():
 import requests
 from bs4 import BeautifulSoup
 
+def fetch_korean_company_overview(ticker: str, name: str) -> str:
+    """
+    네이버 금융 / WiseReport 공식 기업 개요(무슨 회사인지, 주요 사업 및 제품 현황)를 실시간 수집합니다.
+    """
+    clean_ticker = ticker.split('.')[0] if '.' in ticker else ticker
+    try:
+        url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={clean_ticker}"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, timeout=4)
+        if r.status_code == 200:
+            r.encoding = 'utf-8'
+            soup = BeautifulSoup(r.text, 'html.parser')
+            lis = soup.select('.cmp_comment li')
+            if lis:
+                texts = [li.text.strip() for li in lis if li.text.strip()]
+                if texts:
+                    return ' '.join(texts)
+    except Exception as e:
+        logger.warning(f"[SEO] Failed to fetch WiseReport summary for {ticker}: {e}")
+        
+    return f"{name} 기업의 핵심 비즈니스 요약 및 주요 실적 현황입니다. 인공지능 기반 분석을 통해 실시간 주가 동향과 객관적 가치 평가 정보를 제공하고 있습니다."
+
 # Cache for 6 hours to prevent rate limits
 
 def parse_naver_cop_table(soup):
@@ -283,7 +304,7 @@ def get_cached_stock_info(ticker: str):
             except Exception as e:
                 logger.error(f"Error fetching naver finance annual for {ticker}: {e}")
 
-            summary = f"{name} 기업의 핵심 비즈니스 요약 및 주요 실적 현황입니다. 인공지능 기반 분석을 통해 실시간 주가 동향과 객관적 가치 평가 정보를 제공하고 있습니다."
+            summary = fetch_korean_company_overview(ticker, name)
             
             ex_div_str = None
             pay_str = None
