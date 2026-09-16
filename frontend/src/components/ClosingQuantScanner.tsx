@@ -21,7 +21,9 @@ import {
     ExternalLink,
     Target,
     Star,
-    Loader2
+    Loader2,
+    LayoutGrid,
+    Table2
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -75,6 +77,7 @@ export default function ClosingQuantScanner() {
     const [data, setData] = useState<ScannerResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+    const [mobileViewMode, setMobileViewMode] = useState<'card' | 'table'>('card');
 
     // 관심종목 연동 상태
     const { user } = useAuth();
@@ -505,31 +508,210 @@ export default function ClosingQuantScanner() {
                 </QuantTooltip>
             </div>
 
-            {/* 데이터 테이블 컨테이너 */}
-            <div className="space-y-2">
-                {/* 모바일 전용 좌우 스크롤 힌트 */}
-                <div className="flex md:hidden items-center justify-between px-1 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1.5 font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                        <span>포착 종목 퀀트 현황</span>
-                    </span>
-                    <span className="text-[11px] font-bold text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                        <span>👈 좌우로 밀어서 전체 확인 👉</span>
-                    </span>
+            {/* 데이터 테이블 & 카드 뷰 컨테이너 */}
+            <div className="space-y-3">
+                {/* 상단 툴바: 포착 종목 수 + 모바일 뷰 모드(카드/표) 전환 토글 */}
+                <div className="flex items-center justify-between px-1 text-xs">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="font-bold text-slate-300">
+                            스캔 포착 <span className="text-white font-mono font-black">{data?.data?.length || 0}</span>개 종목
+                        </span>
+                    </div>
+
+                    {/* 모바일 전용 카드/표 뷰 전환 스위처 */}
+                    <div className="flex md:hidden items-center bg-black/40 border border-white/10 p-0.5 rounded-xl shadow-inner">
+                        <button
+                            type="button"
+                            onClick={() => setMobileViewMode('card')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                                mobileViewMode === 'card'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30 ring-1 ring-white/20'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                            <span>카드</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileViewMode('table')}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                                mobileViewMode === 'table'
+                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/30 ring-1 ring-white/20'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            <Table2 className="w-3.5 h-3.5" />
+                            <span>표(가로)</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] shadow-xl">
-                    {loading ? (
-                        <div className="py-16 text-center text-slate-400 space-y-3">
-                            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-400" />
-                            <p className="text-xs">수급 퀀트 알고리즘 데이터를 분석하고 있습니다...</p>
+                {loading ? (
+                    <div className="py-16 text-center text-slate-400 space-y-3 rounded-2xl border border-white/10 bg-white/[0.02]">
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-400" />
+                        <p className="text-xs">수급 퀀트 알고리즘 데이터를 분석하고 있습니다...</p>
+                    </div>
+                ) : !data || data.data.length === 0 ? (
+                    <div className="py-16 text-center text-slate-500 text-xs rounded-2xl border border-white/10 bg-white/[0.02]">
+                        해당 일자에는 퀀트 필터 기준을 충족한 포착 종목이 없습니다.
+                    </div>
+                ) : (
+                    <>
+                        {/* 📱 모바일 전용 프리미엄 퀀트 카드 리스트 (모바일 카드 뷰 기본 노출) */}
+                        <div className={`space-y-3 ${mobileViewMode === 'card' ? 'block md:hidden' : 'hidden'}`}>
+                            {data.data.map((item, idx) => {
+                                const isUp = item.returnRate > 0;
+                                const isSaved = watchlistSet.has(item.code) || Array.from(watchlistSet).some(s => s === item.code || s.startsWith(item.code));
+                                const isToggling = togglingCode === item.code;
+
+                                return (
+                                    <div 
+                                        key={idx}
+                                        className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-slate-900/90 to-zinc-950/95 p-4 shadow-xl backdrop-blur-md transition-all active:scale-[0.99] group hover:border-blue-500/40"
+                                    >
+                                        {/* 1열: 별 즐겨찾기 + 종목명/코드 + 실시간 수익률 뱃지 */}
+                                        <div className="flex items-center justify-between gap-2 mb-2.5">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleWatchlist(item);
+                                                    }}
+                                                    disabled={isToggling}
+                                                    title={isSaved ? "관심종목에서 해제" : "관심종목에 등록"}
+                                                    className={`p-2 rounded-xl transition-all active:scale-90 shrink-0 ${
+                                                        isSaved 
+                                                            ? "text-amber-400 bg-amber-400/15 border border-amber-400/30 shadow-sm shadow-amber-400/20" 
+                                                            : "text-slate-500 hover:text-amber-300 bg-white/5 border border-white/5"
+                                                    }`}
+                                                >
+                                                    {isToggling ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                                                    ) : (
+                                                        <Star className={`w-4 h-4 ${isSaved ? "fill-amber-400 text-amber-400 scale-110" : "text-slate-500"}`} />
+                                                    )}
+                                                </button>
+
+                                                <Link href={`/stock/${item.code}`} className="min-w-0 group-hover:text-blue-400 transition-colors">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="font-black text-white text-base tracking-tight truncate">
+                                                            {item.name}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-slate-400 bg-white/10 px-1.5 py-0.5 rounded font-mono">
+                                                            {item.market}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">{item.code}</div>
+                                                </Link>
+                                            </div>
+
+                                            {/* 실시간 변동률 뱃지 */}
+                                            <div className="text-right shrink-0">
+                                                <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-black font-mono shadow-sm ${
+                                                    isUp 
+                                                        ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' 
+                                                        : item.returnRate < 0 
+                                                            ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' 
+                                                            : 'bg-white/5 text-slate-400 border border-white/10'
+                                                }`}>
+                                                    <span>{isUp ? '▲' : item.returnRate < 0 ? '▼' : '―'}</span>
+                                                    <span>{isUp ? `+${item.returnRate}%` : `${item.returnRate}%`}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 2열: 포착 시세 ➔ 실시간 현재가 & 기술적 1차 목표선 비교 박스 */}
+                                        <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-black/40 border border-white/5 mb-3 text-xs">
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 block mb-0.5">포착가 ➔ 현재가</span>
+                                                <div className="flex items-baseline gap-1.5 font-mono">
+                                                    <span className="text-slate-500 text-[11px] line-through">{item.entryPrice.toLocaleString()}원</span>
+                                                    <span className="text-white font-black text-sm">{item.currentPrice.toLocaleString()}원</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right">
+                                                <span className="text-[10px] text-indigo-300 block mb-0.5">🎯 1차 목표선 (+10%)</span>
+                                                <div className="font-mono font-black text-sm text-indigo-200">
+                                                    {item.resistancePrice.toLocaleString()}원
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 3열: 수급 델타(CVD/OBV) & 10% 목표 도달 검증 상태 */}
+                                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/5">
+                                            <div className="flex items-center gap-1.5 flex-wrap font-mono">
+                                                {item.cvd && (
+                                                    <QuantTooltip
+                                                        title="💎 CVD (누적 체결 델타)"
+                                                        statusText={item.cvd.label}
+                                                        statusColor={item.cvd.isBullish ? "emerald" : "slate"}
+                                                        headline={item.cvd.isBullish ? "🔥 시장가 매수세 매도 압도" : "⏳ 관망 및 매도 우위"}
+                                                        description="호가창의 매도 물량을 적극적으로 매수하는 힘을 측정한 퀀트 지표입니다."
+                                                        forcePosition="top"
+                                                    >
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer ${
+                                                            item.cvd.isBullish 
+                                                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
+                                                                : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                        }`}>
+                                                            <span>💎</span>
+                                                            <span>{item.cvd.label}</span>
+                                                        </span>
+                                                    </QuantTooltip>
+                                                )}
+                                                {item.obv && (
+                                                    <QuantTooltip
+                                                        title="📈 OBV (세력 누적 매집 지표)"
+                                                        statusText={item.obv.label}
+                                                        statusColor={item.obv.isBullish ? "indigo" : "slate"}
+                                                        headline={item.obv.isBullish ? "🕵️‍♂️ 큰손 물량 모아가는 중" : "⚖️ 수급 균형 횡보 상태"}
+                                                        description="거래량의 실질적 누적 흐름을 분석하여 세력 매집 여부를 추적한 지표입니다."
+                                                        forcePosition="top"
+                                                    >
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer ${
+                                                            item.obv.isBullish 
+                                                                ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
+                                                                : 'bg-slate-800 text-slate-400 border border-white/10'
+                                                        }`}>
+                                                            <span>📈</span>
+                                                            <span>{item.obv.label}</span>
+                                                        </span>
+                                                    </QuantTooltip>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                {item.reachedResistance ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono shadow-sm">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                        <span>10% 도달 {item.reachedDaysTook ? `(${item.reachedDaysTook})` : ''}</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold text-slate-400 bg-white/5 border border-white/10 font-mono">
+                                                        <Clock className="w-3 h-3 text-slate-500" />
+                                                        <span>목표 관측 중</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    ) : !data || data.data.length === 0 ? (
-                        <div className="py-16 text-center text-slate-500 text-xs">
-                            해당 일자에는 퀀트 필터 기준을 충족한 포착 종목이 없습니다.
-                        </div>
-                    ) : (
-                        <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[700px]">
+
+                        {/* 📊 와이드 테이블 뷰 (PC는 항상 노출, 모바일에서는 '표' 뷰 선택 시 노출) */}
+                        <div className={`overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] shadow-xl ${mobileViewMode === 'card' ? 'hidden md:block' : 'block'}`}>
+                            {/* 모바일 표 뷰 선택 시 스크롤 안내 */}
+                            <div className="flex md:hidden items-center justify-between px-3 py-2 bg-blue-500/10 border-b border-white/5 text-[11px] text-blue-300">
+                                <span>좌우로 밀어서 전체 지표를 확인하세요</span>
+                                <span>👈 스크롤 👉</span>
+                            </div>
+                            <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[700px]">
                             <thead>
                                 <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                     <th className="py-3 px-3 sm:p-4 min-w-[190px] sm:min-w-[220px]">
@@ -965,9 +1147,10 @@ export default function ClosingQuantScanner() {
                                 );
                             })}
                         </tbody>
-                    </table>
+                        </table>
+                        </div>
+                    </>
                 )}
-                </div>
             </div>
 
             {/* 법적 면책 조항 (유사투자자문업 방지 100% 안전 고지 배너) */}
