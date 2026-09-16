@@ -605,6 +605,24 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                         <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
                                     </Link>
 
+                                    {/* 전문가 마켓 리포트 */}
+                                    <Link 
+                                        href="/blog" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 text-zinc-300 hover:text-white transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                                                <BarChart2 className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-xs text-white">전문가 마켓 리포트</div>
+                                                <div className="text-[10px] text-zinc-400">국내·미국 시황 분석 리포트 (200+편)</div>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
+
                                     {/* 이용 가이드 */}
                                     <Link 
                                         href="/guide" 

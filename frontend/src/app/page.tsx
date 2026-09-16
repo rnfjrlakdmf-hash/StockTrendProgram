@@ -172,90 +172,198 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* E-E-A-T 데이터 수집 기준 & 플랫폼 소개 & 4대 엔진 & 투자 가이드 & FAQ (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
-          <div className="sr-only">
-            <section>
-              <h2>스마트 투자 비서 4대 핵심 엔진</h2>
-              <p>국내외 증시 실시간 수급과 공시 팩트를 정량적으로 분석합니다.</p>
-              <Link href="/about">서비스 소개 자세히 보기</Link>
+          {/* 1. 실시간 전문가 마켓 리포트 (최신 블로그 피드) */}
+          <section className="space-y-4 pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
               <div>
-                <div>
-                  <h3>실시간 수급·공시 레이더</h3>
-                  <p>외인·기관 순매수 집중주 및 DART 공급계약·내부자 지분 변동 공시 실시간 포착</p>
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black tracking-wider uppercase mb-1">
+                  DAILY MARKET INTELLIGENCE
                 </div>
-                <div>
-                  <h3>AI 퀀트 종합 밸류에이션</h3>
-                  <p>PER, PBR, ROE, RSI, MACD 등 20개 이상의 핵심 지표를 종합한 정량 분석 점수</p>
-                </div>
-                <div>
-                  <h3>실시간 주도 테마 맵</h3>
-                  <p>인공지능, 2차전지, 바이오, 로봇 등 시장을 주도하는 테마와 대장주 실시간 추적</p>
-                </div>
-                <div>
-                  <h3>리스크 사전 감지 시스템</h3>
-                  <p>대차잔고, 신용융자 잔고율, 공매도 비중을 분석하여 급락 위험성을 사전에 경고</p>
-                </div>
+                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                  📰 전문가 실시간 마켓 리포트
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  국내외 증시 마감 시황, 외인·기관 수급 집중주, 글로벌 거시경제 동향을 매일 심층 분석합니다.
+                </p>
               </div>
-            </section>
+              <Link 
+                href="/blog" 
+                className="px-4 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 hover:text-white text-xs font-bold transition-all shrink-0 self-start sm:self-auto"
+              >
+                전체 리포트 200+ 보기 →
+              </Link>
+            </div>
 
-            <section>
-              <h2>주식 투자 실전 가이드 - 필수 금융 지식 46선</h2>
-              <p>성공적인 자산 관리를 위해 반드시 알아야 할 46대 필수 금융 지식을 정리했습니다.</p>
-              <Link href="/guide">전체 46개 가이드 보기</Link>
-              <div>
-                {INVESTMENT_GUIDES.map(({ href, title, desc }) => (
-                  <div key={href}>
-                    <Link href={href}>{title}</Link>
-                    <p>{desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link 
+                href="/blog" 
+                className="p-5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-blue-500/40 transition-all group space-y-3 block"
+              >
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold">미국 증시 시황</span>
+                  <span>매일 업데이트</span>
+                </div>
+                <h3 className="text-white font-bold text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                  글로벌 거시경제 지표 및 뉴욕 증시 빅테크 수급 분석
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
+                  S&amp;P 500, 나스닥 100 지수 변동 요인과 미 연준 FOMC 금리 향방, 엔비디아·애플 등 핵심 주도주 거래 동향을 상세히 전해드립니다.
+                </p>
+              </Link>
 
-            <section>
-              <h2>DATA-DRIVEN FINANCIAL INTELLIGENCE - 개인 투자자를 위한 차세대 AI 퀀트 금융 정보 플랫폼</h2>
-              <p>
-                스마트 투자 비서는 금융감독원 전자공시시스템(DART), 한국거래소(KRX), 미국 증권거래위원회(SEC EDGAR) 등 
-                공신력 있는 공공 데이터에 최첨단 퀀트 알고리즘을 결합하여, 기관 투자자와 개인 투자자 간의 정보 비대칭성을 해소하는 완전 무료 주식 정보 인프라입니다.
+              <Link 
+                href="/blog" 
+                className="p-5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-emerald-500/40 transition-all group space-y-3 block"
+              >
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">국내 증시 수급</span>
+                  <span>매일 업데이트</span>
+                </div>
+                <h3 className="text-white font-bold text-base group-hover:text-emerald-400 transition-colors line-clamp-2">
+                  코스피·코스닥 외국인·기관 순매수 집중 종목 브리핑
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
+                  반도체, 2차전지, 바이오 등 주요 주도 섹터의 자금 유입 현황과 메이저 세력의 평단가 대비 수익률 통계를 분석합니다.
+                </p>
+              </Link>
+
+              <Link 
+                href="/blog" 
+                className="p-5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-purple-500/40 transition-all group space-y-3 block"
+              >
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold">DART 전자공시</span>
+                  <span>실시간 속보</span>
+                </div>
+                <h3 className="text-white font-bold text-base group-hover:text-purple-400 transition-colors line-clamp-2">
+                  금융감독원 핵심 수주 공시 및 내부자 지분 변동 추적
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
+                  매출액 대비 대규모 단일판매 공급계약, 최대주주 및 임원 주식 매수 공시 등 주가 모멘텀을 유발하는 팩트를 선별 전달합니다.
+                </p>
+              </Link>
+            </div>
+          </section>
+
+          {/* 2. 스마트 투자 비서 4대 핵심 가치 & 플랫폼 소개 */}
+          <section className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div>
+              <h2 className="text-xl md:text-2xl font-black text-white">스마트 투자 비서 4대 핵심 분석 엔진</h2>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                국내외 증시 실시간 수급과 공시 팩트를 정량적으로 분석하여 개인 투자자의 정보 비대칭을 해소합니다.
               </p>
-            </section>
-
-            <section>
-              <h2>공공 데이터 수집 기준 및 신뢰성 정책</h2>
-              <div>
-                <div>
-                  <div>100% 공공 공식 API 연동</div>
-                  <p>
-                    금융감독원 Open DART, 한국거래소(KRX) 정보데이터시스템, 미국 SEC EDGAR 등 공식 인가된 공공 API 파이프라인을 통해 왜곡 없는 순수 원천 데이터만을 수집합니다.
-                  </p>
-                </div>
-                <div>
-                  <div>객관적 정량 분석 지향</div>
-                  <p>
-                    주관적 루머나 미확인 찌라시를 배제하고, 재무제표 팩트, 공시 사실관계, 실시간 수급 통계에 기반한 객관적인 지표만을 산출하여 제공합니다.
-                  </p>
-                </div>
-                <div>
-                  <div>완전 무료 & 안전한 정보</div>
-                  <p>
-                    불법 리딩방 가입 권유나 유료 결제 유도 없이, 건전한 금융 생태계 조성을 위해 모든 핵심 인텔리전스를 개인 투자자에게 평생 무료로 개방합니다.
-                  </p>
-                </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
+                <div className="text-xs font-black text-blue-400">01. 수급·공시 레이더</div>
+                <h3 className="text-white font-bold text-sm">실시간 스마트머니 포착</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">외인·기관 순매수 집중주 및 DART 공급계약·내부자 지분 변동 공시 실시간 감지</p>
               </div>
-            </section>
-
-            <section>
-              <h2>자주 묻는 질문 (FAQ)</h2>
-              <div>
-                {FAQS.map(({ q, a }) => (
-                  <div key={q}>
-                    <h3>Q. {q}</h3>
-                    <p>{a}</p>
-                  </div>
-                ))}
+              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
+                <div className="text-xs font-black text-emerald-400">02. 퀀트 밸류에이션</div>
+                <h3 className="text-white font-bold text-sm">AI 정량 재무 스코어링</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">PER, PBR, ROE, RSI, MACD 등 20개 이상의 핵심 지표를 종합한 객관적 평가 점수</p>
               </div>
-            </section>
-          </div>
+              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
+                <div className="text-xs font-black text-purple-400">03. 주도 테마 맵</div>
+                <h3 className="text-white font-bold text-sm">실시간 섹터 자금 흐름</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">인공지능, 2차전지, 바이오, 로봇 등 시장을 주도하는 테마와 대장주 실시간 추적</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
+                <div className="text-xs font-black text-amber-400">04. 리스크 사전 감지</div>
+                <h3 className="text-white font-bold text-sm">대차·신용 위험 경고</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">대차잔고, 신용융자 잔고율, 공매도 비중을 분석하여 급락 위험성을 사전에 경고</p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <Link href="/about" className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">
+                플랫폼 신뢰성 및 데이터 정책 자세히 보기 →
+              </Link>
+            </div>
+          </section>
+
+          {/* 3. 주식 투자 실전 가이드 - 필수 금융 지식 46선 (시각적 정식 렌더링) */}
+          <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-white">
+                  📚 주식 투자 실전 백과 - 필수 금융 지식 46선
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  워런 버핏의 밸류에이션부터 기술적 차트 보조지표까지 초보자도 쉽게 배울 수 있는 실전 백과사전입니다.
+                </p>
+              </div>
+              <Link 
+                href="/guide" 
+                className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-bold transition-all shrink-0 self-start sm:self-auto"
+              >
+                전체 46개 가이드 보기 →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {INVESTMENT_GUIDES.map(({ href, title, desc }) => (
+                <Link 
+                  key={href} 
+                  href={href}
+                  className="p-3.5 rounded-xl bg-zinc-950/60 border border-white/5 hover:border-purple-500/40 transition-all group block"
+                >
+                  <h3 className="text-white text-xs font-black group-hover:text-purple-400 transition-colors truncate">
+                    {title}
+                  </h3>
+                  <p className="text-gray-400 text-[11px] mt-1 leading-relaxed line-clamp-2">
+                    {desc}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* 4. 공공 데이터 수집 기준 및 E-E-A-T 신뢰성 선언 */}
+          <section className="bg-gradient-to-br from-zinc-900/80 to-black border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
+            <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+              🏛️ 공공 데이터 수집 기준 및 신뢰성 정책 (Data Integrity)
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+              스마트 투자 비서는 금융감독원 전자공시시스템(Open DART), 한국거래소(KRX) 정보데이터시스템, 미국 증권거래위원회(SEC EDGAR) 등 공신력 있는 공식 공공 데이터만을 정량 분석합니다.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5">
+                <div className="text-xs font-bold text-emerald-400 mb-1">✓ 100% 공식 API 연동</div>
+                <p className="text-gray-400 text-xs">금융감독원 및 거래소 인가 파이프라인을 통해 왜곡 없는 순수 원천 데이터만을 수집합니다.</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5">
+                <div className="text-xs font-bold text-blue-400 mb-1">✓ 객관적 정량 분석 지향</div>
+                <p className="text-gray-400 text-xs">주관적 루머나 찌라시를 배제하고, 재무제표 팩트와 실체결 수급 통계에 기반한 객관적 지표만을 산출합니다.</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5">
+                <div className="text-xs font-bold text-purple-400 mb-1">✓ 완전 무료 &amp; 안전한 정보</div>
+                <p className="text-gray-400 text-xs">불법 리딩방 권유나 유료 결제 없이, 건전한 금융 생태계 조성을 위해 모든 핵심 인프라를 평생 무료로 개방합니다.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* 5. 자주 묻는 질문 (FAQ 아코디언/카드) */}
+          <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
+            <h2 className="text-xl md:text-2xl font-black text-white">
+              ❓ 자주 묻는 질문 (FAQ)
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {FAQS.map(({ q, a }, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2">
+                  <h3 className="text-white text-xs sm:text-sm font-bold flex items-start gap-2">
+                    <span className="text-blue-400 font-black shrink-0">Q.</span>
+                    <span>{q}</span>
+                  </h3>
+                  <p className="text-gray-400 text-xs leading-relaxed pl-5">
+                    {a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
 
 
 
