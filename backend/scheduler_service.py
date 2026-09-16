@@ -1,6 +1,7 @@
 import time
 import threading
 from datetime import datetime
+from typing import Optional, List, Dict
 import pytz
 import yfinance as yf
 from firebase_admin import messaging
