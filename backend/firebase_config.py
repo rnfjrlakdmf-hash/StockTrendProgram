@@ -1017,6 +1017,18 @@ def send_price_alert_notification(
             print(f"[Firestore] Price Alert saved for {user_id}")
         except Exception as e:
             print(f"[Firestore] Failed to save price alert: {e}")
+
+    # FCM 멀티캐스트 푸시 발송 (스마트워치 진동 및 모바일 알림 미러링)
+    if tokens:
+        return send_multicast_notification(
+            tokens=tokens,
+            title=title,
+            body=body_message,
+            data=data,
+            target_users=[user_id] if user_id else None,
+            skip_db_save=True
+        )
+    return {"success": True, "count": 0}
             
 
 
