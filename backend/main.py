@@ -201,6 +201,11 @@ async def startup_event():
             from after_hours_alerts import after_hours_alert_loop
             asyncio.create_task(after_hours_alert_loop())
             print("[Background] after_hours_alert_loop task created.")
+
+            # Closing Quant Scanner Alert Monitor (5% 변동 및 10% 벤치마크선 실시간 도달 알림)
+            from quant_scanner_alerts import quant_scanner_alert_monitor
+            asyncio.create_task(quant_scanner_alert_monitor.start())
+            print("[Background] quant_scanner_alert_monitor task created.")
         except Exception as e:
             print(f"[Background] Error starting auto price alerts: {e}")
             traceback.print_exc()

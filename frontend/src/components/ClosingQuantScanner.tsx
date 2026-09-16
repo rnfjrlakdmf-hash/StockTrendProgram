@@ -23,7 +23,9 @@ import {
     Star,
     Loader2,
     LayoutGrid,
-    Table2
+    Table2,
+    Bell,
+    BellRing
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -86,6 +88,41 @@ export default function ClosingQuantScanner() {
     const [isBatchAdding, setIsBatchAdding] = useState<boolean>(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 🔔 퀀트 5% / 10% 도달 알림 권한 상태
+    const [notifPermission, setNotifPermission] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            setNotifPermission(Notification.permission as any);
+        } else {
+            setNotifPermission('unsupported');
+        }
+    }, []);
+
+    const handleRequestNotification = async () => {
+        if (typeof window === 'undefined' || !('Notification' in window)) {
+            showToast("⚠️ 현재 환경에서는 브라우저 푸시 알림이 지원되지 않습니다.");
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            showToast("🔔 퀀트 실시간 도달 알림(+5% & 1차 목표선)이 이미 활성화되어 있습니다.");
+            return;
+        }
+
+        try {
+            const perm = await Notification.requestPermission();
+            setNotifPermission(perm as any);
+            if (perm === 'granted') {
+                showToast("🎉 퀀트 도달 알림이 켜졌습니다! (+5% 및 +10% 벤치마크선 도달 시 실시간 안내)");
+            } else if (perm === 'denied') {
+                showToast("⚠️ 브라우저 설정에서 알림 권한이 차단되었습니다. 사이트 권한을 확인해주세요.");
+            }
+        } catch (e) {
+            console.error("Notification permission error:", e);
+        }
+    };
 
     const showToast = useCallback((msg: string) => {
         setToastMessage(msg);
@@ -302,15 +339,36 @@ export default function ClosingQuantScanner() {
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                    <div className="flex items-center gap-2 ml-auto sm:ml-0 flex-wrap">
                         <span className="text-xs font-mono text-slate-300 bg-white/[0.05] px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             {data?.targetDate ? `${data.targetDate.slice(0,4)}.${data.targetDate.slice(4,6)}.${data.targetDate.slice(6,8)} 기준` : "실시간 갱신"}
                         </span>
                         <button 
+                            onClick={handleRequestNotification}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 shadow-sm ${
+                                notifPermission === 'granted'
+                                    ? "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30 shadow-emerald-500/10"
+                                    : "bg-gradient-to-r from-blue-600/25 to-indigo-600/25 hover:from-blue-600/35 hover:to-indigo-600/35 text-blue-200 hover:text-white border-blue-500/35 shadow-blue-500/10"
+                            }`}
+                            title="스캔 포착 종목의 5% 변동 및 1차 목표선(+10%) 도달 실시간 알림"
+                        >
+                            {notifPermission === 'granted' ? (
+                                <>
+                                    <BellRing className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>도달 알림 켜짐</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Bell className="w-3.5 h-3.5 text-blue-300 animate-pulse" />
+                                    <span>도달 알림 받기</span>
+                                </>
+                            )}
+                        </button>
+                        <button 
                             onClick={addAllToWatchlist} 
                             disabled={isBatchAdding || !data?.data?.length}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-xs font-bold text-amber-300 hover:text-amber-200 border border-amber-500/30 transition-all active:scale-95 disabled:opacity-50 shadow-sm shadow-amber-500/10"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-xs font-bold text-amber-300 hover:text-amber-200 border border-amber-500/30 transition-all active:scale-95 disabled:opacity-50 shadow-sm shadow-amber-500/10"
                             title="현재 화면의 모든 포착 종목을 관심종목에 일괄 등록합니다"
                         >
                             {isBatchAdding ? (
@@ -323,7 +381,7 @@ export default function ClosingQuantScanner() {
                         <button 
                             onClick={() => fetchScannerData(daysAgo)} 
                             disabled={isRefreshing}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-xs font-bold text-blue-200 hover:text-white border border-blue-500/30 transition-all active:scale-95 disabled:opacity-50 shadow-sm shadow-blue-500/10"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-xs font-bold text-blue-200 hover:text-white border border-blue-500/30 transition-all active:scale-95 disabled:opacity-50 shadow-sm shadow-blue-500/10"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-400' : 'text-blue-300'}`} />
                             <span>새로고침</span>
@@ -387,6 +445,24 @@ export default function ClosingQuantScanner() {
                         <p className="text-[11px] text-slate-400 leading-snug">
                             스캔 시점 대비 단기 +10% 벤치마크선 도달 여부를 객관적 통계로 매일 트래킹
                         </p>
+                    </div>
+                </div>
+
+                {/* 🔔 실시간 도달 알림 가동 안내 배너 */}
+                <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-emerald-500/10 border border-blue-500/20">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30">
+                            <BellRing className="w-3.5 h-3.5 text-blue-300" />
+                        </div>
+                        <div className="text-xs text-slate-200">
+                            <span className="font-bold text-white">실시간 도달 알림 가동:</span> 포착 종목이 <span className="text-emerald-300 font-bold">+5.0% 변동 또는 1차 기술적 벤치마크선(+10%)</span>에 도달 시 웹/앱 푸시 및 알림센터로 즉시 통계가 전송됩니다.
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400 ml-auto">
+                        <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-medium">
+                            <CheckCircle2 className="w-3 h-3" />
+                            자본시장법 준수 팩트 알림
+                        </span>
                     </div>
                 </div>
             </div>
@@ -845,9 +921,9 @@ export default function ClosingQuantScanner() {
                                     <th className="py-3.5 px-2 sm:px-2.5 text-right w-[95px] sm:w-[105px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="🎯 기술적 벤치마크 (+10%)"
-                                            headline="단기 1차 익절 목표선 (저항선)"
-                                            description="스캔 시점 가격에서 정확히 +10.0% 상승한 가격입니다. 단기 매매 시 1차 수익 실현(익절) 구간으로 삼기 가장 좋은 기술적 기준선입니다."
-                                            tip="주가가 이 가격 근처에 도달하면 분할 매도로 안전하게 수익을 챙기는 전략을 권장합니다."
+                                            headline="단기 1차 기술적 벤치마크선 (저항선)"
+                                            description="스캔 시점 가격에서 정확히 +10.0% 상승한 가격입니다. 퀀트 시뮬레이션 상 가격 반응 및 도달 여부를 객관적으로 관측하는 기술적 기준선입니다."
+                                            tip="통계적으로 +10% 구간은 차익 매물이 출회될 수 있는 주요 기술적 저항 구간으로 분석됩니다."
                                             statusText="1차 목표선"
                                             statusColor="indigo"
                                             forcePosition="bottom"
@@ -1050,7 +1126,7 @@ export default function ClosingQuantScanner() {
                                                 title={`📊 ${item.name} 실시간 수익률`}
                                                 headline={isUp ? `+${item.returnRate}% 상승 추세` : isDown ? `${item.returnRate}% 조정 중` : '변동 없음 (보합 0.0%)'}
                                                 description={`스캔 시점(${item.entryPrice.toLocaleString()}원)에서 현재가(${item.currentPrice.toLocaleString()}원)까지의 실제 주가 수익률입니다.`}
-                                                tip={isUp ? "목표선(+10%)에 가까워질수록 분할 매도로 수익을 실현하는 것이 안전합니다." : isDown ? "손실 폭이 -3%~-5%를 넘어가면 손절 기준을 준수하는 것이 안전합니다." : "방향성을 모색 중인 보합 구간입니다."}
+                                                tip={isUp ? "기준선(+10%)에 접근할수록 기술적 저항 매물이 출회될 가능성이 통계적으로 증가합니다." : isDown ? "하락 변동성이 확대되는 구간으로 기술적 지지선 이탈 여부를 주시하는 통계 구간입니다." : "방향성을 모색 중인 보합 구간입니다."}
                                                 statusColor={isUp ? "rose" : isDown ? "blue" : "slate"}
                                                 forcePosition={tooltipPos}
                                                 align="right"
@@ -1071,9 +1147,9 @@ export default function ClosingQuantScanner() {
                                         <td className="py-3 px-2 sm:px-2.5 text-right whitespace-nowrap w-[95px] sm:w-[105px]">
                                             <QuantTooltip
                                                 title={`🎯 ${item.name} 1차 목표선`}
-                                                headline={`1차 익절 목표가: ${item.resistancePrice.toLocaleString()}원 (+10.0%)`}
+                                                headline={`1차 기술적 벤치마크선: ${item.resistancePrice.toLocaleString()}원 (+10.0%)`}
                                                 description={`스캔 기준가(${item.entryPrice.toLocaleString()}원) 대비 정확히 +10% 상승한 1차 기술적 목표선(저항선)입니다.`}
-                                                tip="단기 매매 시 욕심부리지 않고 1차 수익을 안전하게 챙기기 가장 좋은 가격입니다."
+                                                tip="사전 정의된 퀀트 알고리즘에 따라 도달 여부를 통계적으로 검증하는 1차 저항선입니다."
                                                 statusText="목표선"
                                                 statusColor="indigo"
                                                 forcePosition={tooltipPos}
@@ -1093,7 +1169,7 @@ export default function ClosingQuantScanner() {
                                                     title="🏆 10% 벤치마크 도달 완료"
                                                     headline={`목표선(${item.resistancePrice.toLocaleString()}원) 터치 성공!`}
                                                     description={`${item.name} 종목이 ${item.reachedDaysTook ? `포착 후 ${item.reachedDaysTook}(${item.reachedDisplayDate})에 ` : ""}장중 최고가(${item.highestPrice.toLocaleString()}원, +${item.highestReturnRate}%)를 기록하며 +10% 벤치마크 목표선에 도달하여 검증을 완료했습니다.`}
-                                                    tip="1차 목표가를 달성했으므로 무리한 추격 매수보다는 분할 익절이나 눌림목 지지 여부를 확인하세요."
+                                                    tip="1차 벤치마크선에 도달하여 통계 검증이 완료된 상태입니다. 저항대 돌파 여부 및 차익 매물 출회 구간을 관측합니다."
                                                     statusText={item.reachedDaysTook ? `${item.reachedDaysTook} 달성` : "목표 달성"}
                                                     statusColor="emerald"
                                                     forcePosition={tooltipPos}
