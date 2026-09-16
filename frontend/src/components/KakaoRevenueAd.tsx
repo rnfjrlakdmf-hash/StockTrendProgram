@@ -121,6 +121,7 @@ export default function KakaoRevenueAd({
     <html style="margin:0;padding:0;overflow:hidden;">
       <head>
         <meta charset="utf-8">
+        <base target="_top">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }

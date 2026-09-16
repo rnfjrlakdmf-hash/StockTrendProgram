@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
 import GaugeChart from "@/components/GaugeChart";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import SeoContentBlock from "@/components/SeoContentBlock";
 import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin } from "lucide-react";
@@ -1887,6 +1888,13 @@ function DiscoveryContent() {
                                                     </p>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 🌟 [골든존 2] AI 3대 인텔리전스 정밀 진단 리포트 하단 (모바일: 300x250 고단가 사각 / PC: 728x90 와이드, 35초 스마트 리프레시) */}
+                                    <div className="flex justify-center my-6">
+                                        <div className="rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-zinc-950/60 border border-white/5 p-2 w-full max-w-[760px] flex justify-center">
+                                            <KakaoRevenueAd type="feed" autoRefreshInterval={35} />
                                         </div>
                                     </div>
 

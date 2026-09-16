@@ -9,6 +9,7 @@ import NaverTopWidget from "@/components/NaverTopWidget";
 import DashboardMarketClock from "@/components/DashboardMarketClock";
 import LiveMarketHub from "@/components/LiveMarketHub";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import MarketIndicators from "@/components/MarketIndicators";
 import SeoContentBlock from "@/components/SeoContentBlock";
 import BloombergLiveTicker from "@/components/BloombergLiveTicker";
@@ -76,6 +77,13 @@ export default function HomeClient() {
               <LiveMarketHub />
             </div>
 
+            {/* 🌟 [골든존 1] 공포·탐욕 속도계 및 실시간 허브 하단 (모바일: 300x250 고단가 사각 / PC: 728x90 와이드, 35초 스마트 리프레시) */}
+            <div className="flex justify-center my-2">
+              <div className="rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-zinc-950/40 border border-white/5 p-2 w-full max-w-[760px] flex justify-center">
+                <KakaoRevenueAd type="feed" autoRefreshInterval={35} />
+              </div>
+            </div>
+
             {/* [New] 장마감 수급 퀀트 스캐너 메인 하이라이트 배너 */}
             <Link 
               href="/signals?tab=scanner" 
@@ -112,11 +120,6 @@ export default function HomeClient() {
                 </div>
               </div>
             </Link>
-
-            {/* 모바일 전용: 위젯 하단으로 스퀘어 배너 이동 */}
-            <div className="flex lg:hidden justify-center my-2">
-              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-            </div>
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
             {(() => {
