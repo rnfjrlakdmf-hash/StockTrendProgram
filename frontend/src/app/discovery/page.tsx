@@ -1428,14 +1428,14 @@ function DiscoveryContent() {
                                                     if (stock.market_status?.includes('시간외') || stock.market_status === 'AFTER_MARKET' || stock.is_extended_hours) return true;
                                                     if (stock.after_market_data?.is_active) return true;
                                                     if (extendedHours?.extended?.session === 'AFTER') return true;
-                                                    // 한국 주식 평일 16:00~18:00 KST 시간 기준 판별 (클라이언트 안전망)
+                                                    // 한국 주식 평일 15:40~20:00 KST 시간 기준 판별 (대체거래소 NXT 및 애프터마켓 저녁 8시 연장 반영)
                                                     if (isKrStock) {
                                                         const now = new Date();
                                                         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
                                                         const kstDate = new Date(utc + (9 * 3600000));
                                                         const day = kstDate.getDay();
                                                         const timeNum = kstDate.getHours() * 100 + kstDate.getMinutes();
-                                                        if (day >= 1 && day <= 5 && timeNum >= 1600 && timeNum < 1800) {
+                                                        if (day >= 1 && day <= 5 && timeNum >= 1540 && timeNum < 2000) {
                                                             return true;
                                                         }
                                                     }
@@ -1465,7 +1465,7 @@ function DiscoveryContent() {
                                                                         : 'text-zinc-400 bg-white/5 border-white/10'
                                                                 }`}>
                                                                     {extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
-                                                                     isOvertimeSession ? 'AFTER-MARKET 시간외 단일가' :
+                                                                     isOvertimeSession ? 'AFTER-MARKET 시간외 / 애프터마켓' :
                                                                      stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
                                                                      'REGULAR MARKET 정규장 종가'}
                                                                 </span>
@@ -1594,7 +1594,7 @@ function DiscoveryContent() {
                                                                             isOvertimeSession ? 'bg-amber-500/25 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
                                                                         }`}>
                                                                             {isOvertimeSession && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
-                                                                            {isOvertimeSession ? '시간외 단일가' : '시간외 종가'}
+                                                                            {isOvertimeSession ? '시간외·애프터마켓' : '시간외 종가'}
                                                                         </span>
                                                                         <span className="font-mono font-black text-sm sm:text-base text-white tracking-normal shrink-0">
                                                                             {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
@@ -1628,7 +1628,7 @@ function DiscoveryContent() {
                                                                     return (
                                                                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)] whitespace-nowrap">
                                                                             <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.9)]" />
-                                                                            <span>시간외 단일가</span>
+                                                                            <span>시간외·애프터마켓</span>
                                                                         </div>
                                                                     );
                                                                 }
