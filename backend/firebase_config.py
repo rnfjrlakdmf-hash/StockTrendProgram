@@ -648,6 +648,14 @@ def send_push_notification(
             )
         )
         
+        # APNs 설정 (iOS)
+        apns_config = messaging.APNSConfig(
+            headers={'apns-priority': '10'},
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(sound='default', badge=1)
+            )
+        )
+        
         # 메시지 생성 (WebPush 뱃지 정상 노출을 위해 data에 title/body 포함)
         safe_data = {k: str(v) for k, v in (data or {}).items()}
         safe_data['title'] = title

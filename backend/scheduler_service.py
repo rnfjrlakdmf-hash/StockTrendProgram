@@ -1378,11 +1378,16 @@ def run_market_scheduler():
                     print(f"[Scheduler-Error] Failed to run Google Indexer: {e}")
                 run_market_scheduler.last_run_google_indexer = current_date
             
-            # [평일 발송] AI 모닝 브리핑 (KR)
-            if day_of_week <= 4 and not is_market_holiday("KR"):
-                if now.hour == 8 and 0 <= now.minute <= 5 and current_date != last_run_morning_kr:
-                    asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
-                    last_run_morning_kr = current_date
+            # [평일 발송] AI 모닝 브리핑 (KR) - 08시 시간대 미발송 시 무조건 1회 실행 보장
+            if day_of_week <= 4 and not is_holiday("kor"):
+                if now.hour == 8 and current_date != last_run_morning_kr:
+                    try:
+                        print(f"[Scheduler] ☀️ Launching Morning Briefing (KR) for {current_date}...")
+                        asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
+                        last_run_morning_kr = current_date
+                        print(f"[Scheduler] ✅ Morning Briefing (KR) completed.")
+                    except Exception as mb_e:
+                        print(f"[Scheduler-Error] Morning briefing KR failed: {mb_e}")
 
             # [매일 발송] 공모주 청약 일정 알림
             if day_of_week <= 4:
