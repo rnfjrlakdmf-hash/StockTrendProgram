@@ -411,15 +411,17 @@ export default function ClosingQuantScanner() {
                 ))}
             </div>
 
-            {/* 초보자 인터랙티브 가이드 힌트 배너 */}
-            <div className="flex items-center gap-2 px-3.5 py-2.5 mb-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 border border-blue-500/25 text-xs text-blue-200 shadow-sm">
-                <HelpCircle className="w-4 h-4 text-blue-400 shrink-0 animate-pulse" />
-                <span className="font-sans">
-                    💡 <strong>초보자 인터랙티브 가이드:</strong> 모든 통계 카드와 표 항목에 <strong>마우스를 올리시면(모바일은 터치)</strong> 실시간 계산 원리와 실전 매매 꿀팁이 상세하게 나타납니다!
-                </span>
+            {/* 초보자 인터랙티브 가이드 힌트 배너 (럭셔리 다크 글래스 & 앰비언트 글로우) */}
+            <div className="relative overflow-hidden flex items-center gap-2.5 px-4 py-3 mb-5 rounded-2xl bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-purple-900/30 border border-blue-500/30 text-xs text-blue-200 shadow-lg backdrop-blur-sm">
+                <div className="p-1.5 rounded-xl bg-blue-500/20 text-blue-300 shrink-0 border border-blue-400/30 shadow-sm shadow-blue-500/20">
+                    <Sparkles className="w-4 h-4 animate-pulse text-blue-300" />
+                </div>
+                <div className="font-sans leading-relaxed text-slate-300">
+                    <strong className="text-white font-semibold">💡 스마트 퀀트 가이드:</strong> 모든 통계 카드와 지표 항목에 <span className="text-blue-300 font-bold underline decoration-blue-400/50 underline-offset-2 cursor-help">마우스를 올리시면(모바일은 터치)</span> 실시간 산출 공식과 실전 퀀트 매매 꿀팁이 나타납니다.
+                </div>
             </div>
 
-            {/* 벤토 서머리 스탯 카드 4분할 (마우스 호버 시 상세 해설 툴팁 제공) */}
+            {/* 벤토 서머리 스탯 카드 4분할 (네온 백라이트 & 글래스모피즘 프리미엄 UI) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
                 <QuantTooltip
                     title="🔍 스캔 종목 수"
@@ -431,13 +433,24 @@ export default function ClosingQuantScanner() {
                     className="w-full h-full block"
                     forcePosition="bottom"
                 >
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-blue-500/30 transition-all h-full group">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-slate-400 group-hover:text-blue-300 transition-colors">스캔 종목 수</span>
+                    <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 via-slate-900/70 to-slate-950/90 border border-blue-500/20 hover:border-blue-400/40 shadow-lg shadow-blue-500/5 transition-all group backdrop-blur-md h-full">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="p-1 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                                    <Flame className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-blue-200 transition-colors">스캔 포착</span>
+                            </div>
                             <HelpCircle className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 transition-colors" />
                         </div>
-                        <div className="text-lg sm:text-xl font-black text-white font-mono">
-                            {data?.totalCount || 0}개
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">
+                                {data?.totalCount || 0}
+                            </span>
+                            <span className="text-xs font-bold text-slate-400 font-sans">개 종목</span>
+                        </div>
+                        <div className="mt-1 text-[10px] text-blue-400/80 font-medium font-sans">
+                            수급 급증 알고리즘 감지
                         </div>
                     </div>
                 </QuantTooltip>
@@ -452,14 +465,24 @@ export default function ClosingQuantScanner() {
                     className="w-full h-full block"
                     forcePosition="bottom"
                 >
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-emerald-500/30 transition-all h-full group">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-slate-400 group-hover:text-emerald-300 transition-colors">벤치마크 도달 종목</span>
+                    <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-slate-900/70 to-slate-950/90 border border-emerald-500/20 hover:border-emerald-400/40 shadow-lg shadow-emerald-500/5 transition-all group backdrop-blur-md h-full">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="p-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-emerald-200 transition-colors">목표 도달</span>
+                            </div>
                             <HelpCircle className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                         </div>
-                        <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono flex items-center gap-1">
-                            <span>{data?.reachedCount || 0}개</span>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 inline" />
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight">
+                                {data?.reachedCount || 0}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-500/80 font-sans">개 성공</span>
+                        </div>
+                        <div className="mt-1 text-[10px] text-emerald-400/80 font-medium font-sans">
+                            +10% 벤치마크 터치 완료
                         </div>
                     </div>
                 </QuantTooltip>
@@ -474,13 +497,23 @@ export default function ClosingQuantScanner() {
                     className="w-full h-full block"
                     forcePosition="bottom"
                 >
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-indigo-500/30 transition-all h-full group">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-slate-400 group-hover:text-indigo-300 transition-colors">기준선 도달률</span>
-                            <HelpCircle className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                    <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-900/70 to-slate-950/90 border border-amber-500/20 hover:border-amber-400/40 shadow-lg shadow-amber-500/5 transition-all group backdrop-blur-md h-full">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="p-1 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                    <Target className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-amber-200 transition-colors">목표 승률</span>
+                            </div>
+                            <HelpCircle className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors" />
                         </div>
-                        <div className="text-lg sm:text-xl font-black text-amber-400 font-mono">
-                            {data?.successRate || 0}%
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl sm:text-2xl font-black text-amber-400 font-mono tracking-tight">
+                                {data?.successRate || 0}%
+                            </span>
+                        </div>
+                        <div className="mt-1 text-[10px] text-amber-400/80 font-medium font-sans">
+                            누적 목표선 도달 비율
                         </div>
                     </div>
                 </QuantTooltip>
@@ -496,13 +529,23 @@ export default function ClosingQuantScanner() {
                     forcePosition="bottom"
                     align="right"
                 >
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-rose-500/30 transition-all h-full group">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-slate-400 group-hover:text-rose-300 transition-colors">평균 변동률</span>
+                    <div className="relative overflow-hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-rose-500/10 via-slate-900/70 to-slate-950/90 border border-rose-500/20 hover:border-rose-400/40 shadow-lg shadow-rose-500/5 transition-all group backdrop-blur-md h-full">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="p-1 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                    <TrendingUp className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="text-xs font-bold text-slate-300 group-hover:text-rose-200 transition-colors">평균 수익률</span>
+                            </div>
                             <HelpCircle className="w-3.5 h-3.5 text-slate-500 group-hover:text-rose-400 transition-colors" />
                         </div>
-                        <div className={`text-lg sm:text-xl font-black font-mono ${(data?.avgReturn || 0) >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
-                            {(data?.avgReturn || 0) > 0 ? `+${data?.avgReturn}%` : `${data?.avgReturn}%`}
+                        <div className="flex items-baseline gap-1.5">
+                            <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${(data?.avgReturn || 0) >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
+                                {(data?.avgReturn || 0) > 0 ? `+${data?.avgReturn}%` : `${data?.avgReturn}%`}
+                            </span>
+                        </div>
+                        <div className="mt-1 text-[10px] text-slate-400 font-medium font-sans">
+                            포착 당시 시세 대비 성적표
                         </div>
                     </div>
                 </QuantTooltip>
@@ -705,16 +748,16 @@ export default function ClosingQuantScanner() {
                         </div>
 
                         {/* 📊 와이드 테이블 뷰 (PC는 항상 노출, 모바일에서는 '표' 뷰 선택 시 노출) */}
-                        <div className={`overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] shadow-xl ${mobileViewMode === 'card' ? 'hidden md:block' : 'block'}`}>
+                        <div className={`overflow-x-auto rounded-2xl border border-slate-800/80 bg-[#0b0f19]/90 shadow-2xl backdrop-blur-xl ${mobileViewMode === 'card' ? 'hidden md:block' : 'block'}`}>
                             {/* 모바일 표 뷰 선택 시 스크롤 안내 */}
-                            <div className="flex md:hidden items-center justify-between px-3 py-2 bg-blue-500/10 border-b border-white/5 text-[11px] text-blue-300">
+                            <div className="flex md:hidden items-center justify-between px-3.5 py-2 bg-blue-500/10 border-b border-white/5 text-[11px] text-blue-300">
                                 <span>좌우로 밀어서 전체 지표를 확인하세요</span>
                                 <span>👈 스크롤 👉</span>
                             </div>
                             <table className="w-full text-left border-collapse text-xs sm:text-sm">
                             <thead>
-                                <tr className="border-b border-white/10 bg-white/[0.03] text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
-                                    <th className="py-3 px-2 sm:px-3 min-w-[130px]">
+                                <tr className="border-b border-slate-800 bg-slate-900/90 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                                    <th className="py-3.5 px-3 min-w-[135px]">
                                         <QuantTooltip
                                             title="⭐ 관심종목 & 종목 정보"
                                             headline="별(★) 클릭으로 관심종목 즉시 등록"
@@ -724,14 +767,14 @@ export default function ClosingQuantScanner() {
                                             statusColor="amber"
                                             forcePosition="bottom"
                                         >
-                                            <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
+                                            <span className="inline-flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
                                                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                                                 <span>종목코드 / 종목명</span>
-                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                                <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-2 sm:px-2.5 text-center hidden md:table-cell w-[130px]">
+                                    <th className="py-3.5 px-2 sm:px-2.5 text-center hidden md:table-cell w-[130px]">
                                         <div className="inline-flex items-center justify-center gap-1.5">
                                             <QuantTooltip
                                                 title="📊 수급 퀀트 엔진 (CVD / OBV)"
@@ -742,14 +785,15 @@ export default function ClosingQuantScanner() {
                                                 tip="개별 종목의 CVD / OBV 뱃지에 마우스를 올리시거나 터치하시면 해당 종목의 상세 수급 상태를 바로 확인할 수 있습니다."
                                                 forcePosition="bottom"
                                             >
-                                                <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
-                                                    <span>CVD / OBV 수급 델타</span>
-                                                    <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors">
+                                                    <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                                                    <span>수급 델타</span>
+                                                    <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                                 </span>
                                             </QuantTooltip>
                                         </div>
                                     </th>
-                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[90px] sm:w-[100px] whitespace-nowrap">
+                                    <th className="py-3.5 px-2 sm:px-2.5 text-right w-[90px] sm:w-[100px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="⏱️ 스캔 시점 시세"
                                             headline="알고리즘이 종목을 처음 포착한 기준 가격"
@@ -759,13 +803,13 @@ export default function ClosingQuantScanner() {
                                             statusColor="blue"
                                             forcePosition="bottom"
                                         >
-                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                                <span>스캔 시점 시세</span>
-                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors ml-auto">
+                                                <span>포착 시세</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[90px] sm:w-[100px] whitespace-nowrap">
+                                    <th className="py-3.5 px-2 sm:px-2.5 text-right w-[90px] sm:w-[100px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="💵 현재 시세"
                                             headline="실시간 현재 주가"
@@ -775,13 +819,13 @@ export default function ClosingQuantScanner() {
                                             statusColor="slate"
                                             forcePosition="bottom"
                                         >
-                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors ml-auto">
                                                 <span>현재 시세</span>
-                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                                <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[75px] sm:w-[85px] whitespace-nowrap">
+                                    <th className="py-3.5 px-2 sm:px-2.5 text-right w-[75px] sm:w-[85px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="📊 기준 대비 변동률"
                                             headline="스캔 시점 대비 현재까지의 수익률"
@@ -792,13 +836,13 @@ export default function ClosingQuantScanner() {
                                             forcePosition="bottom"
                                             align="right"
                                         >
-                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                                <span>기준 대비 변동률</span>
-                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors ml-auto">
+                                                <span>변동률</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 px-2 sm:px-2.5 text-right w-[95px] sm:w-[105px] whitespace-nowrap">
+                                    <th className="py-3.5 px-2 sm:px-2.5 text-right w-[95px] sm:w-[105px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="🎯 기술적 벤치마크 (+10%)"
                                             headline="단기 1차 익절 목표선 (저항선)"
@@ -809,13 +853,14 @@ export default function ClosingQuantScanner() {
                                             forcePosition="bottom"
                                             align="right"
                                         >
-                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors ml-auto">
-                                                <span>기술적 벤치마크 (+10%)</span>
-                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors ml-auto">
+                                                <Target className="w-3 h-3 text-indigo-400" />
+                                                <span>목표선 (+10%)</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                             </span>
                                         </QuantTooltip>
                                     </th>
-                                    <th className="py-3 pl-2 pr-3 sm:pr-4 text-center w-[100px] sm:w-[115px] whitespace-nowrap">
+                                    <th className="py-3.5 pl-2 pr-3.5 sm:pr-4 text-center w-[100px] sm:w-[115px] whitespace-nowrap">
                                         <QuantTooltip
                                             title="✅ 시세 도달 확인 여부"
                                             headline="+10% 목표선 실제 터치 여부 추적"
@@ -826,24 +871,25 @@ export default function ClosingQuantScanner() {
                                             forcePosition="bottom"
                                             align="right"
                                         >
-                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white border-b border-dashed border-slate-500 hover:border-white transition-colors">
-                                                <span>시세 도달 확인</span>
-                                                <HelpCircle className="w-3 h-3 text-slate-500" />
+                                            <span className="inline-flex items-center gap-1 cursor-pointer hover:text-white transition-colors">
+                                                <span>도달 검증</span>
+                                                <HelpCircle className="w-3 h-3 text-slate-500 hover:text-blue-400 transition-colors" />
                                             </span>
                                         </QuantTooltip>
                                     </th>
                                 </tr>
                             </thead>
-                        <tbody className="divide-y divide-white/5 font-mono">
+                        <tbody className="divide-y divide-slate-800/60 font-mono">
                             {data.data.map((item, idx) => {
                                 const isUp = item.returnRate > 0;
+                                const isDown = item.returnRate < 0;
                                 const isNearBottom = idx >= data.data.length - 2;
                                 const tooltipPos = isNearBottom ? "top" : "bottom";
 
                                 return (
-                                    <tr key={idx} className="hover:bg-white/[0.04] transition-colors group">
+                                    <tr key={idx} className="hover:bg-gradient-to-r hover:from-blue-500/[0.08] hover:via-indigo-500/[0.03] hover:to-transparent transition-all duration-150 group">
                                         {/* 종목명 및 코드 + 원클릭 관심종목 등록/해제 버튼 */}
-                                        <td className="py-2.5 px-2 sm:px-3 min-w-[130px]">
+                                        <td className="py-3 px-2 sm:px-3 min-w-[130px]">
                                             <div className="flex items-center gap-2">
                                                 {/* 원클릭 관심종목 별 버튼 */}
                                                 {(() => {
@@ -862,7 +908,7 @@ export default function ClosingQuantScanner() {
                                                             title={isSaved ? "관심종목에서 해제" : "관심종목에 등록"}
                                                             className={`p-1.5 rounded-xl transition-all active:scale-90 shrink-0 self-center ${
                                                                 isSaved 
-                                                                    ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 shadow-sm shadow-amber-400/20" 
+                                                                    ? "text-amber-400 bg-amber-400/15 border border-amber-400/30 shadow-sm shadow-amber-400/20" 
                                                                     : "text-slate-500 hover:text-amber-300 hover:bg-white/10"
                                                             }`}
                                                         >
@@ -883,88 +929,20 @@ export default function ClosingQuantScanner() {
 
                                                 <Link href={`/stock/${item.code}`} className="flex items-center gap-2 group-hover:text-blue-400 transition-colors flex-1 min-w-0">
                                                     <div className="flex flex-col font-sans min-w-0">
-                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                            <span className="font-bold text-white group-hover:text-blue-400 text-xs sm:text-sm truncate">{item.name}</span>
-                                                            <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded font-mono shrink-0">{item.market}</span>
+                                                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                                            <span className="font-bold text-white group-hover:text-blue-300 text-xs sm:text-sm truncate max-w-[110px] sm:max-w-[140px]">{item.name}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded font-mono shrink-0">{item.market}</span>
                                                         </div>
-                                                        <span className="text-[11px] text-slate-400 font-mono">{item.code}</span>
-                                                    
-                                                    {/* 모바일 전용 CVD/OBV 뱃지 (줄바꿈 방지 whitespace-nowrap & 가로 정렬) */}
-                                                    <div className="flex md:hidden items-center gap-1 mt-1 font-mono flex-wrap">
-                                                        {item.cvd && (
-                                                            <QuantTooltip
-                                                                title="💎 CVD (누적 체결 델타)"
-                                                                statusText={item.cvd.label}
-                                                                statusColor={item.cvd.isBullish ? "emerald" : "slate"}
-                                                                headline={
-                                                                    item.cvd.isBullish 
-                                                                        ? "🔥 시장가 매수세가 매도 물량을 압도하고 있습니다" 
-                                                                        : "⏳ 매수보다 관망 및 매도 물량이 많은 숨고르기 구간"
-                                                                }
-                                                                description={
-                                                                    item.cvd.isBullish 
-                                                                        ? "호가창에 쌓인 매도 물량을 더 높은 가격을 주고라도 앞다투어 사들이는 공격적인 시장가 매수세의 힘을 측정한 지표입니다." 
-                                                                        : "호가를 올려 사기보다는 아래에서 받아먹거나, 단기 차익 실현 물량이 나오며 수급이 쉬어가는 관망 상태입니다."
-                                                                }
-                                                                tip={
-                                                                    item.cvd.isBullish 
-                                                                        ? "100%를 초과할수록 세력과 기관이 주가를 적극적으로 끌어올리려는 매수 의지가 강력함을 뜻합니다." 
-                                                                        : "100% 미만일 때는 무리한 추격 매수를 피하고, 매수세가 다시 100% 위로 올라서는지 확인하는 것이 좋습니다."
-                                                                }
-                                                                forcePosition={tooltipPos}
-                                                            >
-                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
-                                                                    item.cvd.isBullish 
-                                                                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' 
-                                                                        : 'bg-slate-800 text-slate-400 border border-white/10'
-                                                                }`}>
-                                                                    <span>💎</span>
-                                                                    <span>{item.cvd.label}</span>
-                                                                </span>
-                                                            </QuantTooltip>
-                                                        )}
-                                                        {item.obv && (
-                                                            <QuantTooltip
-                                                                title="📈 OBV (세력 누적 매집 지표)"
-                                                                statusText={item.obv.label}
-                                                                statusColor={item.obv.isBullish ? "indigo" : "slate"}
-                                                                headline={
-                                                                    item.obv.isBullish 
-                                                                        ? "🕵️‍♂️ 큰손(외인·기관)이 몰래 물량을 모아가는 중" 
-                                                                        : "⚖️ 큰 자금 유출입 없이 수급이 팽팽한 횡보 상태"
-                                                                }
-                                                                description={
-                                                                    item.obv.isBullish 
-                                                                        ? "‘주가는 속여도 거래량은 못 속입니다.’ 주가가 오를 때 실린 진짜 거래량을 누적 합산하여 큰손들의 물량 매집 여부를 추적한 지표입니다." 
-                                                                        : "매수 자금과 매도 자금이 균형을 이루며 방향성을 탐색하고 있는 거래량 숨고르기 구간입니다."
-                                                                }
-                                                                tip={
-                                                                    item.obv.isBullish 
-                                                                        ? "주가가 횡보하거나 조정을 받는데도 OBV가 먼저 우상향하면 조만간 주가가 분출할 가능성이 높은 전형적인 매집 신호입니다." 
-                                                                        : "거래량이 실리면서 OBV 지표가 위쪽으로 고개를 들기 시작할 때가 좋은 진입 타이밍이 됩니다."
-                                                                }
-                                                                forcePosition={tooltipPos}
-                                                            >
-                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap ${
-                                                                    item.obv.isBullish 
-                                                                        ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30' 
-                                                                        : 'bg-slate-800 text-slate-400 border border-white/10'
-                                                                }`}>
-                                                                    <span>📈</span>
-                                                                    <span>{item.obv.label}</span>
-                                                                </span>
-                                                            </QuantTooltip>
-                                                        )}
+                                                        <span className="text-[11px] text-slate-400 font-mono mt-0.5">{item.code}</span>
                                                     </div>
-                                                </div>
-                                                <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 ml-auto transition-colors shrink-0" />
-                                            </Link>
+                                                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 ml-auto transition-colors shrink-0" />
+                                                </Link>
                                             </div>
                                         </td>
 
                                         {/* PC 전용 CVD / OBV 퀀트 뱃지 열 */}
-                                        <td className="py-2.5 px-2 sm:px-2.5 text-center hidden md:table-cell font-sans w-[130px]">
-                                            <div className="flex flex-col items-center gap-1.5">
+                                        <td className="py-3 px-2 sm:px-2.5 text-center hidden md:table-cell font-sans w-[130px]">
+                                            <div className="flex flex-col items-center gap-1">
                                                 {item.cvd && (
                                                     <QuantTooltip
                                                         title="💎 CVD (누적 체결 델타)"
@@ -987,10 +965,10 @@ export default function ClosingQuantScanner() {
                                                         }
                                                         forcePosition={tooltipPos}
                                                     >
-                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 cursor-pointer ${
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono tracking-tight transition-all hover:scale-105 cursor-pointer whitespace-nowrap ${
                                                             item.cvd.isBullish 
                                                                 ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10 hover:border-emerald-400' 
-                                                                : 'bg-slate-800 text-slate-400 border border-white/10 hover:border-slate-500'
+                                                                : 'bg-slate-800/80 text-slate-400 border border-white/10 hover:border-slate-500'
                                                         }`}>
                                                             <span>💎</span>
                                                             <span>{item.cvd.label}</span>
@@ -1019,10 +997,10 @@ export default function ClosingQuantScanner() {
                                                         }
                                                         forcePosition={tooltipPos}
                                                     >
-                                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all hover:scale-105 cursor-pointer ${
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono tracking-tight transition-all hover:scale-105 cursor-pointer whitespace-nowrap ${
                                                             item.obv.isBullish 
                                                                 ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400' 
-                                                                : 'bg-slate-800 text-slate-400 border border-white/10 hover:border-slate-500'
+                                                                : 'bg-slate-800/80 text-slate-400 border border-white/10 hover:border-slate-500'
                                                         }`}>
                                                             <span>📈</span>
                                                             <span>{item.obv.label}</span>
@@ -1033,7 +1011,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 스캔 시점 시세 */}
-                                        <td className="py-2.5 px-2 sm:px-2.5 text-right text-slate-300 whitespace-nowrap w-[90px] sm:w-[100px]">
+                                        <td className="py-3 px-2 sm:px-2.5 text-right whitespace-nowrap w-[90px] sm:w-[100px]">
                                             <QuantTooltip
                                                 title={`⏱️ ${item.name} 스캔 시점가`}
                                                 headline={`포착 당시 기준가: ${item.entryPrice.toLocaleString()}원`}
@@ -1043,12 +1021,14 @@ export default function ClosingQuantScanner() {
                                                 statusColor="blue"
                                                 forcePosition={tooltipPos}
                                             >
-                                                <span className="cursor-pointer hover:text-white transition-colors">{item.entryPrice.toLocaleString()}원</span>
+                                                <div className="cursor-pointer">
+                                                    <span className="font-mono text-xs text-slate-400 hover:text-slate-200 transition-colors font-medium">{item.entryPrice.toLocaleString()}원</span>
+                                                </div>
                                             </QuantTooltip>
                                         </td>
 
                                         {/* 현재 시세 */}
-                                        <td className="py-2.5 px-2 sm:px-2.5 text-right font-bold text-white whitespace-nowrap w-[90px] sm:w-[100px]">
+                                        <td className="py-3 px-2 sm:px-2.5 text-right whitespace-nowrap w-[90px] sm:w-[100px]">
                                             <QuantTooltip
                                                 title={`💵 ${item.name} 현재 시세`}
                                                 headline={`실시간 현재가: ${item.currentPrice.toLocaleString()}원`}
@@ -1058,23 +1038,29 @@ export default function ClosingQuantScanner() {
                                                 statusColor="slate"
                                                 forcePosition={tooltipPos}
                                             >
-                                                <span className="cursor-pointer hover:text-blue-300 transition-colors">{item.currentPrice.toLocaleString()}원</span>
+                                                <div className="cursor-pointer">
+                                                    <span className="font-mono text-xs sm:text-sm font-black text-white hover:text-blue-300 transition-colors">{item.currentPrice.toLocaleString()}원</span>
+                                                </div>
                                             </QuantTooltip>
                                         </td>
 
                                         {/* 변동률 */}
-                                        <td className="py-2.5 px-2 sm:px-2.5 text-right font-bold whitespace-nowrap w-[75px] sm:w-[85px]">
+                                        <td className="py-3 px-2 sm:px-2.5 text-right whitespace-nowrap w-[75px] sm:w-[85px]">
                                             <QuantTooltip
                                                 title={`📊 ${item.name} 실시간 수익률`}
-                                                headline={isUp ? `+${item.returnRate}% 상승 추세` : item.returnRate < 0 ? `${item.returnRate}% 조정 중` : '변동 없음 (0%)'}
+                                                headline={isUp ? `+${item.returnRate}% 상승 추세` : isDown ? `${item.returnRate}% 조정 중` : '변동 없음 (보합 0.0%)'}
                                                 description={`스캔 시점(${item.entryPrice.toLocaleString()}원)에서 현재가(${item.currentPrice.toLocaleString()}원)까지의 실제 주가 수익률입니다.`}
-                                                tip={isUp ? "목표선(+10%)에 가까워질수록 분할 매도로 수익을 실현하는 것이 안전합니다." : "손실 폭이 -3%~-5%를 넘어가면 손절 기준을 준수하는 것이 안전합니다."}
-                                                statusColor={isUp ? "rose" : item.returnRate < 0 ? "blue" : "slate"}
+                                                tip={isUp ? "목표선(+10%)에 가까워질수록 분할 매도로 수익을 실현하는 것이 안전합니다." : isDown ? "손실 폭이 -3%~-5%를 넘어가면 손절 기준을 준수하는 것이 안전합니다." : "방향성을 모색 중인 보합 구간입니다."}
+                                                statusColor={isUp ? "rose" : isDown ? "blue" : "slate"}
                                                 forcePosition={tooltipPos}
                                                 align="right"
                                             >
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md cursor-pointer hover:scale-105 transition-transform ${
-                                                    isUp ? 'text-rose-400 bg-rose-500/10' : item.returnRate < 0 ? 'text-sky-400 bg-sky-500/10' : 'text-slate-400'
+                                                <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-xs font-bold font-mono tracking-tight cursor-pointer hover:scale-105 transition-transform ${
+                                                    isUp 
+                                                        ? 'text-rose-400 bg-rose-500/15 border border-rose-500/30' 
+                                                        : isDown 
+                                                            ? 'text-sky-400 bg-sky-500/15 border border-sky-500/30' 
+                                                            : 'text-slate-400 bg-white/5 border border-white/10'
                                                 }`}>
                                                     {isUp ? `+${item.returnRate}%` : `${item.returnRate}%`}
                                                 </span>
@@ -1082,7 +1068,7 @@ export default function ClosingQuantScanner() {
                                         </td>
 
                                         {/* 기술적 벤치마크 (+10%) */}
-                                        <td className="py-2.5 px-2 sm:px-2.5 text-right text-slate-300 whitespace-nowrap w-[95px] sm:w-[105px]">
+                                        <td className="py-3 px-2 sm:px-2.5 text-right whitespace-nowrap w-[95px] sm:w-[105px]">
                                             <QuantTooltip
                                                 title={`🎯 ${item.name} 1차 목표선`}
                                                 headline={`1차 익절 목표가: ${item.resistancePrice.toLocaleString()}원 (+10.0%)`}
@@ -1093,15 +1079,15 @@ export default function ClosingQuantScanner() {
                                                 forcePosition={tooltipPos}
                                                 align="right"
                                             >
-                                                <div className="cursor-pointer">
-                                                    <span className="border-b border-dotted border-slate-600 hover:border-white transition-colors">{item.resistancePrice.toLocaleString()}원</span>
-                                                    <span className="text-[10px] text-slate-500 block font-sans">(+10.0%)</span>
+                                                <div className="cursor-pointer flex flex-col items-end">
+                                                    <span className="font-mono font-bold text-xs text-indigo-300 hover:text-white transition-colors">{item.resistancePrice.toLocaleString()}원</span>
+                                                    <span className="text-[10px] text-indigo-400/80 font-mono font-medium">(+10.0%)</span>
                                                 </div>
                                             </QuantTooltip>
                                         </td>
 
                                         {/* 시세 도달 확인 여부 */}
-                                        <td className="py-2.5 pl-2 pr-3 sm:pr-4 text-center whitespace-nowrap w-[100px] sm:w-[115px]">
+                                        <td className="py-3 pl-2 pr-3 sm:pr-4 text-center whitespace-nowrap w-[100px] sm:w-[115px]">
                                             {item.reachedResistance ? (
                                                 <QuantTooltip
                                                     title="🏆 10% 벤치마크 도달 완료"
@@ -1114,12 +1100,12 @@ export default function ClosingQuantScanner() {
                                                     align="right"
                                                 >
                                                     <div className="inline-flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition-transform">
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm shadow-emerald-500/10 whitespace-nowrap">
                                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                                                             <span>도달 확인</span>
                                                         </span>
                                                         {item.reachedDisplayDate && (
-                                                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 whitespace-nowrap">
+                                                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">
                                                                 {item.reachedDaysTook} ({item.reachedDisplayDate})
                                                             </span>
                                                         )}
@@ -1136,9 +1122,9 @@ export default function ClosingQuantScanner() {
                                                     forcePosition={tooltipPos}
                                                     align="right"
                                                 >
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold text-slate-400 bg-white/5 border border-white/5 cursor-pointer hover:scale-105 transition-transform">
-                                                        <Clock className="w-3 h-3 text-slate-500" />
-                                                        <span>관측 중</span>
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-slate-300 bg-white/5 border border-white/10 hover:border-blue-500/30 hover:text-white cursor-pointer hover:scale-105 transition-all whitespace-nowrap">
+                                                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                                        <span className="whitespace-nowrap">관측 중</span>
                                                     </span>
                                                 </QuantTooltip>
                                             )}
