@@ -51,9 +51,19 @@ export default function KakaoStickyBottomAd() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 35초마다 스마트 자동 새로고침 (인뷰율 99% 영역)
+  // 24시간 닫기 여부 확인
   useEffect(() => {
-    if (closed || isHiddenPage || !shouldDisplay) return;
+    try {
+      const hideUntil = localStorage.getItem("hide_sticky_ad_until");
+      if (hideUntil && parseInt(hideUntil, 10) > Date.now()) {
+        setClosed(true);
+      }
+    } catch (_) {}
+  }, []);
+
+  // 35초마다 스마트 자동 새로고침 (PC에서 열려있을 때만)
+  useEffect(() => {
+    if (closed || isHiddenPage || !shouldDisplay || !isPC) return;
 
     const intervalId = setInterval(() => {
       if (typeof document !== "undefined" && !document.hidden) {
@@ -62,9 +72,18 @@ export default function KakaoStickyBottomAd() {
     }, 35000);
 
     return () => clearInterval(intervalId);
-  }, [closed, isHiddenPage, shouldDisplay]);
+  }, [closed, isHiddenPage, shouldDisplay, isPC]);
 
-  if (!shouldDisplay || closed || isHiddenPage || isPC === null) return null;
+  const handleClose = () => {
+    setClosed(true);
+    try {
+      // 24시간 동안 다시 뜨지 않도록 저장
+      localStorage.setItem("hide_sticky_ad_until", (Date.now() + 24 * 60 * 60 * 1000).toString());
+    } catch (_) {}
+  };
+
+  // [방안 1 적용] 모바일 환경(!isPC)에서는 사용자 편의 및 콘텐츠 가림 방지를 위해 완전히 숨김
+  if (!shouldDisplay || closed || isHiddenPage || !isPC) return null;
 
   // 모바일: 320x50 (DAN-b9cY6ogHFZTTD0Sl) / PC: 728x90 (DAN-eeR4RhnpmQaeIlYm)
   const unit = isPC ? "DAN-eeR4RhnpmQaeIlYm" : "DAN-b9cY6ogHFZTTD0Sl";
@@ -96,7 +115,7 @@ export default function KakaoStickyBottomAd() {
   `;
 
   return (
-    <div className="fixed bottom-[58px] md:bottom-0 left-0 right-0 z-40 flex justify-center items-center bg-zinc-950/95 backdrop-blur-md border-t border-white/10 py-1 px-2 shadow-2xl transition-all animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center items-center bg-zinc-950/95 backdrop-blur-md border-t border-white/10 py-1.5 px-4 shadow-2xl transition-all animate-in slide-in-from-bottom duration-300">
       <div className="relative flex items-center justify-center w-full max-w-4xl">
         <iframe
           key={refreshKey}
@@ -110,9 +129,9 @@ export default function KakaoStickyBottomAd() {
         
         {/* 닫기 버튼 */}
         <button
-          onClick={() => setClosed(true)}
-          className="absolute -top-3 right-1 md:top-1.5 md:right-2 p-1 rounded-full bg-zinc-800 text-gray-400 hover:text-white border border-white/10 shadow-md transition-all text-xs"
-          title="광고 닫기"
+          onClick={handleClose}
+          className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full bg-zinc-800/90 text-gray-400 hover:text-white border border-white/10 shadow-md transition-all text-xs cursor-pointer hover:bg-zinc-700"
+          title="광고 24시간 닫기"
         >
           <X className="w-3.5 h-3.5" />
         </button>
