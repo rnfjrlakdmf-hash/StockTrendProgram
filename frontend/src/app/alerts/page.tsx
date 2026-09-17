@@ -137,7 +137,7 @@ export default function AlertCenterPage() {
                 snapLatest.forEach(doc => {
                     const data = doc.data();
                     const isGlobal = data.is_global === true;
-                    const isTargeted = userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId);
+                    const isTargeted = Boolean(userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId));
                     
                     const isAdminType = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
                         (data.title || '').includes('[관리자]') || (data.title || '').includes('일일 운영 보고서') || (data.title || '').includes('방문자 보고');
@@ -145,7 +145,13 @@ export default function AlertCenterPage() {
                     // 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
                     if (isAdminType && !isAdmin) return;
 
-                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'portfolio_summary', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
+                    // [보안 강화] 개인 관심종목 결산 및 포트폴리오 알림은 오직 타겟 본인(isTargeted)에게만 노출
+                    // 비로그인 사용자나 타인에게는 DB 조회 단계에서 원천 차단
+                    const isPersonalType = ['portfolio_summary', 'portfolio'].includes(data.type) || 
+                        (data.title || '').includes('관심종목 결산') || (data.title || '').includes('내 관심종목 결산');
+                    if (isPersonalType && !isTargeted) return;
+
+                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
                     
                     if (isGlobal || isTargeted || isPublicType || (isAdmin && isAdminType)) {
                         // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
@@ -1934,8 +1940,12 @@ function formatUsdToKrwInText(text: string): string {
         }
         
         if (activeTab === "portfolio") {
-            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'market_summary', 'market', 'dividend_alert', 'morning_briefing'].includes(alert.type) ||
-                titleText.includes('관심종목 결산') || titleText.includes('장마감 시황') || titleText.includes('마켓 장마감');
+            // [보안 강화] 비로그인 상태에서는 개인 관심종목 결산이나 포트폴리오 정보를 일절 노출하지 않음
+            if (!user) {
+                return false;
+            }
+            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert'].includes(alert.type) ||
+                titleText.includes('관심종목 결산');
             return isPortfolioAlert || ((isNews || isDisclosure || isPrice) && symbolMatch);
         }
         
@@ -2079,16 +2089,25 @@ function formatUsdToKrwInText(text: string): string {
                         <p className="text-xs text-rose-400 mt-1">{errorMsg}</p>
                     </div>
                 ) : filteredAlerts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-28 text-center bg-zinc-950/80 border border-white/5 rounded-3xl shadow-2xl p-6">
+                    <div className="flex flex-col items-center justify-center py-24 text-center bg-zinc-950/80 border border-white/5 rounded-3xl shadow-2xl p-6">
                         <div className="w-16 h-16 mb-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                            📭
+                            {activeTab === 'portfolio' && !user ? '🔒' : '📭'}
                         </div>
                         <h3 className="text-lg font-black text-gray-200 mb-1">
-                            해당 분류의 실시간 알림이 없습니다.
+                            {activeTab === 'portfolio' && !user
+                                ? '로그인 후 내 관심종목 결산을 확인하세요'
+                                : '해당 분류의 실시간 알림이 없습니다.'}
                         </h3>
-                        <p className="text-xs md:text-sm text-gray-400 font-medium max-w-sm leading-relaxed">
-                            새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!
+                        <p className="text-xs md:text-sm text-gray-400 font-medium max-w-sm leading-relaxed mb-4">
+                            {activeTab === 'portfolio' && !user
+                                ? '로그인하시면 회원님만을 위한 관심종목 마감 결산, 수익률, 맞춤형 공시 시그널을 실시간으로 확인하실 수 있습니다.'
+                                : '새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!'}
                         </p>
+                        {activeTab === 'portfolio' && !user && (
+                            <Link href="/login" className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-500/20 whitespace-nowrap active:scale-95">
+                                3초 로그인하기
+                            </Link>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-4">

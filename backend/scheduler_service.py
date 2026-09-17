@@ -732,6 +732,7 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                     portfolio_payload = {
                         "url": "/watchlist",
                         "type": "portfolio_summary",
+                        "is_global": False,
                         "tag": f"closing-portfolio-{user_id}"
                     }
                     send_multicast_notification(tokens, title_portfolio, body_portfolio, portfolio_payload, target_users=[user_id])
