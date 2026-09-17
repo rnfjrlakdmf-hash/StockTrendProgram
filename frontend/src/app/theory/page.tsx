@@ -90,15 +90,15 @@ export default async function TheoryListPage(props: Props) {
                 </p>
 
                 {/* 3대 핵심 특징 뱃지 */}
-                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 mt-6 text-xs md:text-sm text-gray-400 font-semibold">
-                    <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-yellow-400" /> 핵심 보조지표 마스터
+                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3.5 mt-5 md:mt-6 text-xs md:text-sm text-gray-400 font-semibold">
+                    <span className="shrink-0 px-3 py-1.5 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" /> 핵심 보조지표 마스터
                     </span>
-                    <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> 실전 눌림목 & 캔들패턴
+                    <span className="shrink-0 px-3 py-1.5 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> 실전 눌림목 & 캔들패턴
                     </span>
-                    <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5">
-                        <Flame className="w-3.5 h-3.5 text-orange-400" /> 매일 아침 신규 강의 연재
+                    <span className="shrink-0 px-3 py-1.5 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
+                        <Flame className="w-3.5 h-3.5 text-orange-400 shrink-0" /> 매일 아침 신규 강의 연재
                     </span>
                 </div>
             </div>

@@ -111,29 +111,29 @@ export default function TheoryListClient({ initialPosts, totalPages, currentPage
     return (
         <div className="w-full">
             {/* 상단 검색 & 카테고리 필터 바 */}
-            <div className="mb-10 space-y-5 bg-zinc-900/60 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-3xl shadow-xl">
+            <div className="mb-8 md:mb-10 space-y-4 md:space-y-5 bg-zinc-900/70 backdrop-blur-xl border border-white/10 p-4 sm:p-5 md:p-6 rounded-3xl shadow-xl">
                 {/* 실시간 검색창 */}
                 <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                     <input
                         type="text"
                         placeholder="지표명, 캔들 패턴, 매매기법 검색 (예: RSI, 하이킨 아시, 20일선, 스캘핑...)"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3.5 bg-black/60 border border-white/10 rounded-2xl text-white placeholder-gray-500 font-medium focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all text-sm md:text-base"
+                        className="w-full pl-12 pr-16 py-3.5 bg-black/60 border border-white/10 rounded-2xl text-white placeholder-gray-500 font-medium focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all text-sm md:text-base"
                     />
                     {searchQuery && (
                         <button
                             onClick={() => setSearchQuery("")}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-white bg-white/10 px-2 py-1 rounded-md"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-white bg-white/10 px-2.5 py-1 rounded-lg transition-colors"
                         >
                             지우기
                         </button>
                     )}
                 </div>
 
-                {/* 카테고리 필터 탭 */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {/* 카테고리 필터 탭 (모바일 가로 스크롤 완벽 최적화 & 글자 겹침 방지) */}
+                <div className="w-full min-w-0 overflow-x-auto pb-2 pt-1 no-scrollbar flex items-center gap-2.5 touch-pan-x select-none scroll-smooth">
                     <span className="text-xs font-bold text-gray-400 flex items-center gap-1 shrink-0 mr-1 hidden sm:flex">
                         <Filter className="w-3.5 h-3.5 text-emerald-400" /> 주제 분류:
                     </span>
@@ -143,14 +143,14 @@ export default function TheoryListClient({ initialPosts, totalPages, currentPage
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveCategory(cat.id)}
-                                className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                                className={`shrink-0 min-w-max px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                                     isActive
-                                        ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 border border-emerald-400/50 scale-105"
-                                        : "bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
+                                        ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 border border-emerald-400/60 font-black"
+                                        : "bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10"
                                 }`}
                             >
-                                <span>{cat.emoji}</span>
-                                <span>{cat.label}</span>
+                                <span className="text-sm shrink-0">{cat.emoji}</span>
+                                <span className="shrink-0">{cat.label}</span>
                             </button>
                         );
                     })}

@@ -222,3 +222,13 @@ h1, h2, h3, h4, h5, h6, p, span, div, a, li, button {
   color: #6b7280;
   font-weight: bold;
 }
+
+/* 가로 스크롤바 숨김 유틸리티 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
