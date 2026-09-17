@@ -123,6 +123,9 @@ def format_korean_shares_and_amounts(text: str) -> str:
                     return f"{eok}억 {man:,}만 {suffix}"
                 return f"{eok}억 {suffix}"
             elif val >= 10_000:
+                # 100만 원 미만의 원화 주가 금액은 '2만 750원' 대신 '20,750원'으로 금융 표준 콤마 표기 유지
+                if suffix == '원' and val < 1_000_000:
+                    return f"{val:,}{suffix}"
                 man = val // 10_000
                 rem = val % 10_000
                 if rem == 0:
@@ -393,6 +396,15 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
     # 2. 가격 급등 / 급락 / 52주 신고가 알림
     elif alert_type in ['auto_price_alert', 'price_alert'] or any(k in clean_title for k in ["급등", "급락", "신고가"]):
+        # 기존 본문에서 [시장해석] 추출 또는 분리
+        body_no_interp = clean_no_interp
+
+        # [NEW] 본문에 이미 '•' 글머리 기호 형태의 팩트 요약 카드가 있는 경우, 사족인 [시장해석]을 붙이지 않고 깔끔한 요약 유지
+        if "•" in body_no_interp or "현재가:" in body_no_interp:
+            new_title = clean_title
+            new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+            return sanitize_notification_text(new_title, new_body)
+
         company = (data or {}).get("corp") or (data or {}).get("company") or (data or {}).get("stock_name") or ""
         if not company:
             m_comp = re.search(r'\]\s*([가-힣A-Za-z0-9]+)', clean_title)
@@ -402,9 +414,6 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
                 m = re.search(r'\(([^)]+)\)', clean_title)
                 if m:
                     company = m.group(1).strip()
-
-        # 기존 본문에서 [시장해석] 추출 또는 분리
-        body_no_interp = clean_no_interp
 
         if "신고가" in clean_title:
             new_title = f"🏆 [52주 신고가 도달] {company}" if company else "🏆 [52주 신고가 도달]"

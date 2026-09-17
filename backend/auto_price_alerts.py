@@ -253,8 +253,10 @@ class AutoPriceMonitor:
         clean_sym = symbol.split('.')[0]
         is_foreign = len(clean_sym) != 6 or not clean_sym[0].isdigit()
         
-        # 통화 포맷팅
+        # 통화 포맷팅 및 변동폭 계산
         curr_str = f"${current:,.2f}" if is_foreign else f"{int(current):,}원"
+        diff_val = current - prev_close
+        diff_str = f"{int(diff_val):+,}원" if not is_foreign else f"{diff_val:+,.2f}달러"
         
         # 1. 등락률 계산
         change_pct = ((current - prev_close) / prev_close) * 100
@@ -264,14 +266,39 @@ class AutoPriceMonitor:
             print(f"[AutoPriceAlert] Outlier detected for {symbol}: {change_pct:.1f}% -> Skipped")
             return
             
+        stock_name = get_korean_stock_name(symbol) or symbol
+
+        # 수급·거래량 텍스트 포맷팅
+        if vol_ratio and vol_ratio >= 1.5:
+            vol_str = f"평소(10일평균) 대비 {vol_ratio:.1f}배 급증"
+        elif vol_ratio and vol_ratio > 0:
+            vol_str = f"평소(10일평균) 대비 {int(vol_ratio*100)}%"
+        else:
+            vol_str = "평소와 유사 수준"
+
+        # RSI 보조지표 텍스트 포맷팅
+        if rsi_value is not None:
+            if rsi_value <= 30:
+                rsi_str = f"RSI {rsi_value:.0f}p (단기 과매도 구간)"
+            elif rsi_value >= 70:
+                rsi_str = f"RSI {rsi_value:.0f}p (단기 과열 구간)"
+            else:
+                rsi_str = f"RSI {rsi_value:.0f}p"
+        else:
+            rsi_str = "산출 중"
+
         alerts_to_send = []
 
         # 🎯 RSI 30 미만 (과매도 구간 진입) - 팩트 알림 (주관적 추천 없음)
         if rsi_value is not None and rsi_value < 30.0 and not state.get("rsi_30", False):
             state["rsi_30"] = True
             alerts_to_send.append({
-                "title": "🎯 [보조지표 과매도 진입]",
-                "body": f"RSI 지표가 {rsi_value:.1f}p로 30 미만(과매도 통계 구간)에 도달했습니다.\n현재가: {curr_str} ({change_pct:+.2f}%) · 단순 지표 참고용",
+                "title": f"🎯 [과매도 진입] {stock_name} {change_pct:+.2f}%",
+                "body": (
+                    f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                    f"• 보조지표: RSI {rsi_value:.0f}p (단기 과매도 구간)\n"
+                    f"• 거래량: {vol_str}"
+                ),
                 "type": "technical_indicator"
             })
 
@@ -279,18 +306,25 @@ class AutoPriceMonitor:
         if vol_ratio >= 5.0 and change_pct > 0 and not state.get("vol_spike", False):
             state["vol_spike"] = True
             alerts_to_send.append({
-                "title": "💥 [거래량 급증 포착]",
-                "body": f"10일 평균 대비 거래량 {int(vol_ratio*100)}% 폭증 중!\n현재가: {curr_str} ({change_pct:+.2f}%) · 수급 변동 주의",
+                "title": f"💥 [거래량 급증] {stock_name} {change_pct:+.2f}%",
+                "body": (
+                    f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                    f"• 거래량: 평소(10일평균) 대비 {vol_ratio:.1f}배 폭증\n"
+                    f"• 보조지표: {rsi_str}"
+                ),
                 "type": "volume_spike"
             })
 
         # 🚀 5% 이상 상승 포착 (오늘 알림을 안 보낸 경우)
         if change_pct >= 5.0 and not state["up_5"]:
             state["up_5"] = True
-            vol_note = f" (거래량 평소의 {int(vol_ratio*100)}%)" if vol_ratio and vol_ratio >= 2.0 else ""
             alerts_to_send.append({
-                "title": "🔥 [급등 포착]",
-                "body": f"전일 대비 {change_pct:+.2f}% 급등 중!\n현재가: {curr_str}{vol_note}",
+                "title": f"📈 [급등 포착] {stock_name} {change_pct:+.2f}%",
+                "body": (
+                    f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                    f"• 거래량: {vol_str}\n"
+                    f"• 보조지표: {rsi_str}"
+                ),
                 "type": "surge"
             })
 
@@ -298,8 +332,12 @@ class AutoPriceMonitor:
         elif change_pct <= -5.0 and not state["down_5"]:
             state["down_5"] = True
             alerts_to_send.append({
-                "title": "📉 [급락 포착]",
-                "body": f"전일 대비 {change_pct:+.2f}% 하락 중!\n현재가: {curr_str} · 변동성 확대 주의",
+                "title": f"📉 [급락 포착] {stock_name} {change_pct:+.2f}%",
+                "body": (
+                    f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                    f"• 거래량: {vol_str}\n"
+                    f"• 보조지표: {rsi_str}"
+                ),
                 "type": "drop"
             })
 
@@ -308,8 +346,12 @@ class AutoPriceMonitor:
             state["high_52"] = True
             high_str = f"${high_52:,.2f}" if is_foreign else f"{int(high_52):,}원"
             alerts_to_send.append({
-                "title": "🏆 [52주 신고가 경신]",
-                "body": f"최근 1년 중 최고가({high_str})를 돌파 또는 근접했습니다!\n현재가: {curr_str} ({change_pct:+.2f}%)",
+                "title": f"🏆 [52주 신고가] {stock_name} {change_pct:+.2f}%",
+                "body": (
+                    f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                    f"• 돌파기록: 1년 최고가({high_str}) 돌파·근접\n"
+                    f"• 거래량: {vol_str}"
+                ),
                 "type": "high_52"
             })
 
@@ -317,14 +359,13 @@ class AutoPriceMonitor:
         for alert in alerts_to_send:
             await self.send_auto_push(symbol, alert["title"], alert["body"], users)
 
-    async def send_auto_push(self, symbol: str, title_prefix: str, body: str, users: List[str]):
+    async def send_auto_push(self, symbol: str, title: str, body: str, users: List[str]):
         """유저들에게 자동 가격 푸시 알림 발송"""
         try:
             from firebase_config import send_multicast_notification
             from db_manager import get_user_fcm_tokens
             
-            stock_name = get_korean_stock_name(symbol) or symbol
-            push_title = f"{title_prefix} ({stock_name})"
+            push_title = title
             
             from db_manager import check_and_consume_alert_quota
             
