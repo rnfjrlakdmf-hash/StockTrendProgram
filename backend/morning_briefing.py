@@ -134,8 +134,23 @@ class MorningBriefingService:
                             return f"{sign}{vol / 1000:.1f}천주"
                         else:
                             return f"{sign}{vol}주"
-                            
-                    investor_summary = f"📊 [전날 수급] 개인: {format_volume(retail)} | 외인: {format_volume(foreigner)} | 기관: {format_volume(institution)}"
+
+                    # 수급 방향성 스마트 태그
+                    flow_tag = ""
+                    if foreigner > 0 and institution > 0:
+                        flow_tag = "쌍끌이 순매수 🔥"
+                    elif foreigner < 0 and institution < 0:
+                        flow_tag = "외인·기관 동반 매도 ⚠️"
+                    elif foreigner > 0 and institution <= 0:
+                        flow_tag = "외인 순매수 유입 🟢"
+                    elif foreigner <= 0 and institution > 0:
+                        flow_tag = "기관 순매수 유입 🟢"
+                    elif retail > 0 and foreigner <= 0 and institution <= 0:
+                        flow_tag = "개인 나홀로 매수"
+
+                    tag_suffix = f" [{flow_tag}]" if flow_tag else ""
+                    # 가독성을 극대화한 글머리 기호 수급 라인 (웹/모바일 완벽 호환)
+                    investor_summary = f"• 전일 수급: 외인 {format_volume(foreigner)} · 기관 {format_volume(institution)} (개인 {format_volume(retail)}){tag_suffix}"
             except Exception as ie:
                 print(f"[MorningBriefing] Failed to fetch investor data for {stock_name}: {ie}")
 
@@ -148,10 +163,19 @@ class MorningBriefingService:
                 # 필터링할 키워드
                 if any(x in text for x in ["없음", "정보 없", "알 수 없", "해당 뉴스", "확인 불가", "None", "해당 사항"]):
                     continue
-                # 모바일 푸시에서 잘리지 않게 방어 (최대 50자)
+                import re
+                # 불필요한 글머리 기호 제거 후 정돈
+                text = re.sub(r'^(?:[•▪️▪\-\*\#\s])+', '', text).strip()
+                # 앞머리 회사명 주어 중복 제거 (예: '우진이 ', '우진은 ' 등 제거하여 요점 위주로 축약)
+                for prefix in [f"{stock_name}이 ", f"{stock_name}가 ", f"{stock_name}은 ", f"{stock_name}는 ", f"{stock_name} "]:
+                    if text.startswith(prefix):
+                        text = text[len(prefix):].strip()
+                        break
+                # 모바일 화면에 맞춰 최대 50자까지 허용
                 if len(text) > 50:
                     text = text[:47] + "..."
-                res.append(text)
+                if text:
+                    res.append(text)
             return res[:3]
 
         facts_list = filter_items(analysis.get('market_facts', []))
@@ -166,17 +190,16 @@ class MorningBriefingService:
             print(f"[MorningBriefing] No valid facts for {stock_name}, skipping push.")
             return
 
-        # === 모닝 팩트 알림 발송 (모든 팩트와 수급 온전히 보존) ===
+        # === 모닝 팩트 알림 발송 (요점 중심 초깔끔 카드 포맷) ===
         title = f"📰 {stock_name} 간추린 모닝 팩트"
         body_parts = []
         
         if has_facts:
-            body_parts.append("\n".join([f"▪️ {f.replace('[', '').replace(']', '')}" for f in facts_list]))
+            for f in facts_list:
+                body_parts.append(f"• {f}")
             
-        # 사용자의 요청에 따라 단순 동어반복 AI 요약 라인은 알림 본문에서 제외하고 팩트와 수급 중심으로 구성
         if investor_summary:
-            clean_investor = investor_summary.replace("|", "").replace("[전날 수급]", "전날 수급 ").replace("  ", " ").strip()
-            body_parts.append(clean_investor)
+            body_parts.append(investor_summary)
             
         body = "\n".join(body_parts)
 
@@ -259,15 +282,21 @@ class MorningBriefingService:
         2. NEVER recommend buying, selling, or holding. Avoid directive/subjective words: "추천", "주의", "매수", "매도", "목표", "긍정적", "부정적".
         3. Keep all descriptions strictly neutral, factual, and objective. Only state the WHAT and WHY.
         4. Explain in plain Korean (쉬운 우리말) for beginners.
-        5. Each fact MUST include informative context and background (Length: 50~100 characters). Do NOT just write brief headlines (e.g. avoid '주가 변동 발생' or '노조 상경투쟁'). Instead, clearly specify WHY and WHAT occurred (e.g. '사측과의 임단협 난항 속 기본급 인상과 격려금을 요구하며 노조 상경투쟁 돌입, 단기 조업 영향 점검', '외국인 대량 순매수 유입과 기관 매도세가 맞서며 거래량과 주가 변동성 확대').
+
+        STRICT SUMMARY & FORMATTING RULES (VERY IMPORTANT):
+        1. Summarize into 2~3 crisp, high-impact factual bullet points (Length: 20~35 Korean characters per item).
+        2. DO NOT write long explanatory essays or verbose rambling sentences.
+        3. DO NOT repeat the company name '{name}' at the start of every sentence (e.g. write '한수원과 109억 규모 원전 공급계약 체결' instead of '{name}이 한수원과 109억원 규모의 대규모 공급계약을 체결하여...').
+        4. Focus strictly on the core EVENT, CONTRACT, or ACTION (What actually happened).
+        5. Finish each bullet point cleanly without trailing off or cutting mid-sentence.
         
         Headlines:
         {json.dumps(headlines[:25], ensure_ascii=False)}
         
         Response Format (JSON):
         {{
-            "market_facts": ["Detailed factual point 1 with cause/context", "Detailed factual point 2 with cause/context"],
-            "ai_summary": "Informative neutral morning summary"
+            "market_facts": ["간결하고 명확한 핵심 팩트 1", "간결하고 명확한 핵심 팩트 2"],
+            "ai_summary": "핵심 모닝 요약"
         }}
         """
         

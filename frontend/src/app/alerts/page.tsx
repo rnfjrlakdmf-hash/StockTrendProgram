@@ -1027,7 +1027,7 @@ function formatUsdToKrwInText(text: string): string {
             }
             // 그 외 일반 팩트/뉴스 라인
             else {
-                let factText = clean.replace(/^(?:📌|▪️|▪|\s)+/, '').trim();
+                let factText = clean.replace(/^(?:📌|▪️|▪|•|\s)+/, '').trim();
                 if (factText && !factText.startsWith('※') && !factText.startsWith('(')) {
                     let tag = "핵심 이슈";
                     let tagColor = "bg-zinc-800 text-zinc-300 border-zinc-700";

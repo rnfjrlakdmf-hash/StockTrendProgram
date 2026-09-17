@@ -476,6 +476,12 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
         return sanitize_notification_text(new_title, new_body)
 
+    # 6-2. 장전 간추린 모닝 팩트 브리핑 (구조화된 팩트/수급 카드 원형 보존)
+    elif alert_type == 'morning_briefing' or any(k in clean_title for k in ["모닝 팩트", "모닝팩트", "간추린 모닝"]):
+        new_title = clean_title
+        new_body = f"{clean_no_interp}\n{DISCLAIMER_TEXT}" if "투자 권유" not in clean_no_interp else clean_no_interp
+        return sanitize_notification_text(new_title, new_body)
+
     # 7. 장시작 / 장마감 / 스터디 / 콘텐츠 / 브리핑 및 기타 모든 알림 (형식적 기계적 해석 없이 본문만 깔끔하게 전달)
     else:
         body_no_interp = clean_no_interp
