@@ -238,7 +238,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
                                             <span className="text-[9px] text-indigo-300 font-black flex items-center gap-1">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                                {item.currency === 'KRW' ? '시간외' : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
+                                                {item.currency === 'KRW' ? (item.sessionBadge?.label === '프리' ? '프리' : '시간외') : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
                                             </span>
                                             <span className={`text-[11px] font-black font-mono ${
                                                 parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) > 0 ? 'text-rose-400' : 

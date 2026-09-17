@@ -415,17 +415,17 @@ def gather_naver_stock_data(symbol: str):
 
         if is_weekend:
             market_status = "휴장 (주말)"
-        elif 800 <= current_time_num < 830:
-            market_status = "장개시전"
-        elif 830 <= current_time_num < 900:
-            market_status = "장전 시간외"
-        elif 900 <= current_time_num < 1530:
+        elif 800 <= current_time_num < 850:
+            market_status = "프리마켓"
+        elif 850 <= current_time_num < 900:
+            market_status = "동시호가"
+        elif 900 <= current_time_num < 1520:
             market_status = "장중"
-        elif 1530 <= current_time_num < 1540:
+        elif 1520 <= current_time_num < 1540:
             market_status = "동시호가"
         elif 1540 <= current_time_num < 1600:
             market_status = "장후 시간외"
-        elif 1600 <= current_time_num < 1800:
+        elif 1600 <= current_time_num < 2000:
             market_status = "시간외단일가"
         else:
             market_status = "장마감"
@@ -558,7 +558,7 @@ def gather_naver_stock_data(symbol: str):
                                 pass
 
                     # [Daum Finance Fallback] 네이버에 시간외 데이터가 없거나 보강이 필요한 경우 Daum 금융 실시간 애프터마켓 시세 연동
-                    if not nxt_data or market_status in ("시간외단일가", "장후 시간외"):
+                    if not nxt_data or market_status in ("시간외단일가", "장후 시간외", "프리마켓"):
                         try:
                             clean_c = re.sub(r'[^0-9]', '', str(code))
                             daum_url = f"https://finance.daum.net/api/quotes/A{clean_c}"
@@ -589,7 +589,7 @@ def gather_naver_stock_data(symbol: str):
         except Exception as e:
             print(f"[gather_naver_stock_data] Failed to fetch real-time JSON patch: {e}")
 
-        is_ext = (market_status == "시간외단일가") or bool(nxt_data and nxt_data.get("is_active"))
+        is_ext = (market_status in ("시간외단일가", "장후 시간외", "프리마켓")) or bool(nxt_data and nxt_data.get("is_active"))
         ext_p = nxt_data.get("price") if nxt_data else None
         ext_val = nxt_data.get("change_val") if nxt_data else None
         ext_pct = nxt_data.get("change_pct") if nxt_data else None
@@ -1432,16 +1432,31 @@ def get_naver_stock_info(symbol: str):
                         is_weekend = now_kst.weekday() >= 5
                         
                         current_time_num = now_kst.hour * 100 + now_kst.minute
-                        is_after_over_hours = current_time_num >= 1800
+                        is_after_over_hours = current_time_num >= 2000
                         
                         if is_weekend:
                             market_status = "휴장 (주말)"
-                        elif reg_status == 'OPEN':
+                        elif 800 <= current_time_num < 850:
+                            market_status = "프리마켓"
+                        elif 850 <= current_time_num < 900:
+                            market_status = "동시호가"
+                        elif reg_status == 'OPEN' or (900 <= current_time_num < 1520):
                             market_status = "장중"
-                        elif over_status == 'OPEN' and not is_after_over_hours:
-                            market_status = "시간외 거래 중"
+                        elif 1520 <= current_time_num < 1540:
+                            market_status = "동시호가"
+                        elif (over_status == 'OPEN' and not is_after_over_hours) or (1540 <= current_time_num < 2000):
+                            market_status = "시간외단일가"
                         else:
                             market_status = "장마감"
+
+                        nxt_obj = {
+                            "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
+                            "change_pct": float(m_info.get('fluctuationsRatio', 0)),
+                            "change_val": float(str(m_info.get('fluctuations', 0)).replace(',', '')) if m_info.get('fluctuations') else None
+                        } if m_info and m_info.get('overPrice') and m_info.get('tradingSessionType') != 'REGULAR_MARKET' else None
+
+                        ext_p = nxt_obj.get("price") if nxt_obj else None
+                        ext_c = f"{nxt_obj.get('change_pct', 0):+.2f}%" if nxt_obj and nxt_obj.get('change_pct') is not None else None
 
                         return {
                             "symbol": symbol,
@@ -1455,11 +1470,10 @@ def get_naver_stock_info(symbol: str):
                             "up": pct >= 0 or rf_name == 'RISING',
                             "currency": "KRW",
                             "market_status": market_status,
-                            "nxt_data": {
-                                "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
-                                "change_pct": float(m_info.get('fluctuationsRatio', 0)),
-                                "change_val": float(str(m_info.get('fluctuations', 0)).replace(',', '')) if m_info.get('fluctuations') else None
-                            } if m_info.get('overPrice') and m_info.get('tradingSessionType') != 'REGULAR_MARKET' else None
+                            "nxt_data": nxt_obj,
+                            "after_market_data": nxt_obj,
+                            "extended_price": ext_p,
+                            "extended_change": ext_c
                         }
         except Exception as e:
             print(f"[get_naver_stock_info] Domestic New API failed: {e}")

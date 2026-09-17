@@ -62,15 +62,23 @@ def get_market_status_info():
         }
 
     # 시간대별 상세 판별
-    if 830 <= current_time < 900:
+    if 800 <= current_time < 850:
         status_code = "PRE_MARKET"
-        status_text = "장전 시간외"
-        is_open = True # 거래 가능 범위 포함
-    elif 900 <= current_time < 1530:
+        status_text = "프리마켓 (대체거래소)"
+        is_open = True
+    elif 850 <= current_time < 900:
+        status_code = "PRE_AUCTION"
+        status_text = "동시호가"
+        is_open = True
+    elif 900 <= current_time < 1520:
         status_code = "OPEN"
         status_text = "장중 (정규장)"
         is_open = True
-    elif 1530 <= current_time < 2000:
+    elif 1520 <= current_time < 1540:
+        status_code = "POST_AUCTION"
+        status_text = "동시호가"
+        is_open = True
+    elif 1540 <= current_time < 2000:
         status_code = "AFTER_MARKET"
         status_text = "장후 시간외/대체거래소(NXT)"
         is_open = True
@@ -1143,7 +1151,7 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                             market_status = "동시호가"
                         elif "1540" <= hm < "1600":
                             market_status = "장후 시간외"
-                        elif "1600" <= hm < "1800":
+                        elif "1600" <= hm < "2000":
                             market_status = "시간외단일가"
                         else:
                             market_status = "장마감"
