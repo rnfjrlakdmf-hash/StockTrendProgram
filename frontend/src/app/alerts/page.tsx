@@ -145,13 +145,15 @@ export default function AlertCenterPage() {
                     // 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
                     if (isAdminType && !isAdmin) return;
 
-                    // [보안 강화] 개인 관심종목 결산 및 포트폴리오 알림은 오직 타겟 본인(isTargeted)에게만 노출
-                    // 비로그인 사용자나 타인에게는 DB 조회 단계에서 원천 차단
-                    const isPersonalType = ['portfolio_summary', 'portfolio'].includes(data.type) || 
-                        (data.title || '').includes('관심종목 결산') || (data.title || '').includes('내 관심종목 결산');
+                    // [보안 강화] 개인 맞춤 알림(관심종목 뉴스 속보, 포트폴리오 결산 등)은 오직 타겟 본인(isTargeted)에게만 노출
+                    // 비로그인 사용자나 다른 이용자에게는 DB 조회 단계에서 원천 차단
+                    const isPersonalType = !isGlobal && (
+                        ['portfolio_summary', 'portfolio', 'news_alert', 'news_naver', 'news_google', 'news'].includes(data.type) || 
+                        (data.title || '').includes('관심종목 결산') || (data.title || '').includes('내 관심종목 결산')
+                    );
                     if (isPersonalType && !isTargeted) return;
 
-                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'news_alert', 'news_naver', 'news_google', 'news', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
+                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
                     
                     if (isGlobal || isTargeted || isPublicType || (isAdmin && isAdminType)) {
                         // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
@@ -1914,7 +1916,10 @@ function formatUsdToKrwInText(text: string): string {
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert'].includes(alert.type);
 
-        if (activeTab === "news") return isNews;
+        if (activeTab === "news") {
+            if (!user) return false;
+            return isNews;
+        }
 
         let symbolMatch = false;
         if (alert.symbol && watchlistSymbols.includes(alert.symbol)) {
@@ -2091,19 +2096,23 @@ function formatUsdToKrwInText(text: string): string {
                 ) : filteredAlerts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center bg-zinc-950/80 border border-white/5 rounded-3xl shadow-2xl p-6">
                         <div className="w-16 h-16 mb-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                            {activeTab === 'portfolio' && !user ? '🔒' : '📭'}
+                            {(activeTab === 'portfolio' || activeTab === 'news') && !user ? '🔒' : '📭'}
                         </div>
                         <h3 className="text-lg font-black text-gray-200 mb-1">
                             {activeTab === 'portfolio' && !user
                                 ? '로그인 후 내 관심종목 결산을 확인하세요'
-                                : '해당 분류의 실시간 알림이 없습니다.'}
+                                : activeTab === 'news' && !user
+                                    ? '로그인 후 내 관심종목 맞춤 뉴스를 확인하세요'
+                                    : '해당 분류의 실시간 알림이 없습니다.'}
                         </h3>
                         <p className="text-xs md:text-sm text-gray-400 font-medium max-w-sm leading-relaxed mb-4">
                             {activeTab === 'portfolio' && !user
                                 ? '로그인하시면 회원님만을 위한 관심종목 마감 결산, 수익률, 맞춤형 공시 시그널을 실시간으로 확인하실 수 있습니다.'
-                                : '새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!'}
+                                : activeTab === 'news' && !user
+                                    ? '관심종목을 등록하고 로그인하시면 해당 종목의 실시간 주요 언론사 뉴스 속보를 맞춤형으로 받아보실 수 있습니다.'
+                                    : '새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!'}
                         </p>
-                        {activeTab === 'portfolio' && !user && (
+                        {(activeTab === 'portfolio' || activeTab === 'news') && !user && (
                             <Link href="/login" className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-500/20 whitespace-nowrap active:scale-95">
                                 3초 로그인하기
                             </Link>
