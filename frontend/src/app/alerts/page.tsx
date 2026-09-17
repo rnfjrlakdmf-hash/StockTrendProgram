@@ -279,9 +279,8 @@ function formatUsdToKrwInText(text: string): string {
                 continue;
             }
 
-            // 법적 면책 문구 분리
-            if (trimmed.startsWith("※") || (trimmed.startsWith("(") && (trimmed.includes("투자 권유가 아닙니다") || trimmed.includes("투자권유")))) {
-                disclaimerText = trimmed;
+            // 법적 면책 문구 완전 제거 (과거 DB 데이터 잔여 문구 숨김 처리)
+            if (trimmed.startsWith("※") || trimmed.includes("투자 권유가 아닙니다") || trimmed.includes("투자권유가 아닙니다") || trimmed.includes("객관적 공시")) {
                 continue;
             }
 
@@ -444,11 +443,6 @@ function formatUsdToKrwInText(text: string): string {
                         </p>
                     </div>
                 )}
-                {disclaimerText && (
-                    <div className="text-[11px] text-zinc-500 font-normal mt-1 border-t border-white/5 pt-1.5">
-                        {disclaimerText}
-                    </div>
-                )}
             </div>
         );
     };
@@ -465,7 +459,6 @@ function formatUsdToKrwInText(text: string): string {
         let mvpText = "";
         let worstText = "";
         let supplyText = "";
-        let disclaimer = "";
 
         interface PortfolioStockItem {
             name: string;
@@ -507,8 +500,6 @@ function formatUsdToKrwInText(text: string): string {
                 worstText = cleanLine.replace(/^.*?약세\s*종목[:\s]*/, '').trim();
             } else if (cleanLine.includes('수급 합산') || (cleanLine.includes('🌊') && cleanLine.includes('수급'))) {
                 supplyText = cleanLine.replace(/^.*?수급\s*합산[:\s]*/, '').trim();
-            } else if (cleanLine.startsWith('(') && cleanLine.endsWith(')')) {
-                disclaimer = cleanLine;
             } else if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('[') && !cleanLine.includes('수익률') && !cleanLine.includes('수익:'))) {
                 // 새로운 종목 행 파싱 (예: • 삼성중공업(7주): 21,350원 (▼251원 / ▼1.2%) 또는 2만 1,350원)
                 const parts = cleanLine.split(':');
@@ -914,11 +905,6 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 )}
 
-                {/* 5. 법적 고지 안내 */}
-                <p className="text-[11px] text-gray-500 font-medium px-1">
-                    {disclaimer || '(한국거래소 당일 정규장 종가 기준 단순 집계 통계 자료이며 투자 권유가 아닙니다)'}
-                </p>
-
                 {/* 6. 관심종목 포트폴리오 바로가기 액션 버튼 */}
                 <div className="flex flex-wrap gap-2.5 pt-2 border-t border-white/10">
                     <Link 
@@ -1203,11 +1189,6 @@ function formatUsdToKrwInText(text: string): string {
                         </div>
                     </div>
                 )}
-
-                {/* 4. 법적 고지 문구 (원래 알림 하단 면책 문구) */}
-                <p className="text-[11px] text-gray-500 font-normal px-1">
-                    ※ 객관적 공시·시세 팩트 전달이며 투자 권유가 아닙니다.
-                </p>
 
                 {/* 5. 프리미엄 액션 버튼 바 */}
                 <div className="flex items-center gap-2 pt-1 border-t border-white/10">
@@ -1876,10 +1857,10 @@ function formatUsdToKrwInText(text: string): string {
     };
 
     // Filter Navigation Tabs (관리자 로그인 시 '👑 관리자 알림' 탭 추가)
+    // Filter Navigation Tabs (마켓뉴스 탭 제거 -> 4개 탭으로 슬림화 및 내 관심종목으로 뉴스 통합)
     const baseTabs = [
         { id: "all", label: "전체 브리핑", icon: Layers },
         { id: "disclosure", label: "공시 & 세력 수급", icon: Zap },
-        { id: "news", label: "마켓 뉴스", icon: Globe },
         { id: "portfolio", label: "내 관심종목", icon: Crown },
         { id: "system", label: "서비스 공지/운영", icon: ShieldCheck }
     ];
@@ -1907,7 +1888,7 @@ function formatUsdToKrwInText(text: string): string {
             return isSystemNotice;
         }
 
-        // 4. 일반 탭(전체 브리핑, 공시, 뉴스, 내 관심종목)에서는 관리자 보고서 완전 제외
+        // 4. 일반 탭(전체 브리핑, 공시, 내 관심종목)에서는 관리자 보고서 완전 제외
         if (isAdminAlert) {
             return false;
         }
@@ -1915,11 +1896,6 @@ function formatUsdToKrwInText(text: string): string {
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert'].includes(alert.type);
-
-        if (activeTab === "news") {
-            if (!user) return false;
-            return isNews;
-        }
 
         let symbolMatch = false;
         if (alert.symbol && watchlistSymbols.includes(alert.symbol)) {
@@ -1951,7 +1927,11 @@ function formatUsdToKrwInText(text: string): string {
             }
             const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert'].includes(alert.type) ||
                 titleText.includes('관심종목 결산');
-            return isPortfolioAlert || ((isNews || isDisclosure || isPrice) && symbolMatch);
+            
+            // 내 관심종목 뉴스 속보, 공시, 시세 알림 완전 통합
+            const isWatchlistContent = (isNews || isDisclosure || isPrice) && symbolMatch;
+
+            return isPortfolioAlert || isWatchlistContent;
         }
         
         return true;
@@ -2096,23 +2076,19 @@ function formatUsdToKrwInText(text: string): string {
                 ) : filteredAlerts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center bg-zinc-950/80 border border-white/5 rounded-3xl shadow-2xl p-6">
                         <div className="w-16 h-16 mb-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                            {(activeTab === 'portfolio' || activeTab === 'news') && !user ? '🔒' : '📭'}
+                            {activeTab === 'portfolio' && !user ? '🔒' : '📭'}
                         </div>
                         <h3 className="text-lg font-black text-gray-200 mb-1">
                             {activeTab === 'portfolio' && !user
-                                ? '로그인 후 내 관심종목 결산을 확인하세요'
-                                : activeTab === 'news' && !user
-                                    ? '로그인 후 내 관심종목 맞춤 뉴스를 확인하세요'
-                                    : '해당 분류의 실시간 알림이 없습니다.'}
+                                ? '로그인 후 내 관심종목 뉴스와 결산을 확인하세요'
+                                : '해당 분류의 실시간 알림이 없습니다.'}
                         </h3>
                         <p className="text-xs md:text-sm text-gray-400 font-medium max-w-sm leading-relaxed mb-4">
                             {activeTab === 'portfolio' && !user
-                                ? '로그인하시면 회원님만을 위한 관심종목 마감 결산, 수익률, 맞춤형 공시 시그널을 실시간으로 확인하실 수 있습니다.'
-                                : activeTab === 'news' && !user
-                                    ? '관심종목을 등록하고 로그인하시면 해당 종목의 실시간 주요 언론사 뉴스 속보를 맞춤형으로 받아보실 수 있습니다.'
-                                    : '새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!'}
+                                ? '로그인하시면 회원님만을 위한 관심종목 뉴스 속보, 공시, 마감 결산, 수익률 시그널을 실시간으로 확인하실 수 있습니다.'
+                                : '새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!'}
                         </p>
-                        {(activeTab === 'portfolio' || activeTab === 'news') && !user && (
+                        {activeTab === 'portfolio' && !user && (
                             <Link href="/login" className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-500/20 whitespace-nowrap active:scale-95">
                                 3초 로그인하기
                             </Link>
