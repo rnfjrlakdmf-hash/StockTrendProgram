@@ -208,8 +208,8 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     clean_title = title.strip()
     clean_body = body.strip()
 
-    # 자본시장법 준수 법적 면책 문구
-    DISCLAIMER_TEXT = "※ 객관적 공시·시세 팩트 전달이며 투자 권유가 아닙니다."
+    # [v4.5] 사용자 요청: FCM 알림 화면 공간 최적화 (면책 문구는 앱 내에서 상시 고지되므로 푸시 본문에서는 제거)
+    DISCLAIMER_TEXT = ""
 
     # 기존 본문에 들어있던 💡 해석 등 모든 형태의 해석 및 사족 문구를 분리/제거
     import re
@@ -502,6 +502,9 @@ def sanitize_notification_text(title: str, body: str):
     for line in lines:
         line = line.strip()
         if not line:
+            continue
+        # [NEW] 푸시 알림 화면 공간 최적화: 면책 및 안내 사족 문구 제거
+        if any(line.startswith(x) for x in ['※', '👉', '🔍']) or '투자 권유가 아닙니다' in line or '투자권유가 아닙니다' in line or '투자 권유' in line or '단순 집계 통계 결과이며' in line:
             continue
         # 뉴스 제목 및 속보의 전체 전달을 위해 한 줄 최대 길이를 150자로 대폭 완화 (워치/폰 확장 시 전체 감상 가능)
         if len(line) > 150:

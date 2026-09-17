@@ -168,8 +168,7 @@ class QuantScannerAlertMonitor:
                 title = f"📢 [퀀트 시세] {name} +5.0% 변동 도달"
                 body = (
                     f"수급 퀀트 포착가({entry_price:,}원) 대비 실시간 현재가({current_price:,}원, +{current_return:+.1f}%) 도달이 확인되었습니다.\n"
-                    f"장중 최고가: {effective_high:,}원 (+{high_return:+.1f}%)\n"
-                    f"※ 본 알림은 기계적 시세 도달 통계이며 투자 권유가 아닙니다."
+                    f"장중 최고가: {effective_high:,}원 (+{high_return:+.1f}%)"
                 )
                 await self._broadcast_alert(code=code, name=name, title=title, body=body, alert_sub_type="quant_5pct")
 
@@ -182,8 +181,7 @@ class QuantScannerAlertMonitor:
                 title = f"🎯 [퀀트 통계] {name} 1차 벤치마크선 도달 확인"
                 body = (
                     f"수급 퀀트 1차 기술적 벤치마크선({resistance_price:,}원)에 장중 도달했습니다.\n"
-                    f"현재가 {current_price:,}원 / 장중 최고가: {effective_high:,}원 (+{high_return:+.1f}%)\n"
-                    f"※ 본 알림은 알고리즘 통계 검증이며 투자 권유가 아닙니다."
+                    f"현재가 {current_price:,}원 / 장중 최고가: {effective_high:,}원 (+{high_return:+.1f}%)"
                 )
                 await self._broadcast_alert(code=code, name=name, title=title, body=body, alert_sub_type="quant_10pct")
 

@@ -674,7 +674,6 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                 + profit_str
                 + mvp_str
                 + "\n".join(price_list)
-                + "\n\n(단순 집계 통계 결과이며 투자 권유가 아닙니다)"
             )
             
             tokens_data = get_user_fcm_tokens(user_id)

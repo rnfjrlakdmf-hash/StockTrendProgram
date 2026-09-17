@@ -211,8 +211,8 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     clean_title = title.strip()
     clean_body = body.strip()
 
-    # 자본시장법 준수 법적 면책 문구
-    DISCLAIMER_TEXT = "※ 객관적 공시·시세 팩트 전달이며 투자 권유가 아닙니다."
+    # [v4.5] 사용자 요청: FCM 알림 화면 공간 최적화 (면책 문구는 앱 내에서 상시 고지되므로 푸시 본문에서는 제거)
+    DISCLAIMER_TEXT = ""
 
     # 기존 본문에 들어있던 💡 해석 등 모든 형태의 해석 및 사족 문구를 분리/제거
     import re
@@ -241,8 +241,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "대규모 수주 계약 체결 · 매출 및 실적 퀀텀점프 기대"
             new_body = (
                 f"📌 타법인과 대규모 제품/용역 공급계약 체결 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -251,8 +250,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "시설 자금 조달 목적 · 향후 주식 희석(물량 부담) 체크"
             new_body = (
                 f"📌 자금 조달을 위한 전환사채(CB) 발행 결정 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -261,8 +259,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "자금 조달 목적 · 향후 신주 인수(물량 부담) 체크"
             new_body = (
                 f"📌 자금 조달을 위한 신주인수권부사채(BW) 발행 결정 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -271,8 +268,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "자본 확충 신주 발행 · 자금 조달 목적 및 주식 가치 희석 체크"
             new_body = (
                 f"📌 자본 확충을 위한 유상증자(신주 발행) 결정 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -281,8 +277,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "신주 무상 배정 결정 · 유통 주식수 확대 및 대표적 주주친화 호재"
             new_body = (
                 f"📌 기존 주주에게 신주 무상 배정 결정 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -302,8 +297,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
                 
             new_body = (
                 f"📌 {fact_line}\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -312,8 +306,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = "경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
             new_body = (
                 f"📌 회사가 자기 주식 직접 매수 결정 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -322,8 +315,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "자사주 영구 소각 결정 · 주당 가치 상승을 이끄는 강력한 호재"
             new_body = (
                 f"📌 발행 주식수 영구 감축(소각) 결정 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -332,8 +324,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "경영 실적(매출·영업이익) 발표 · 시장 전망치 부합 여부 체크"
             new_body = (
                 f"📌 회사의 최근 경영 실적(매출/영업이익) 공시 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -342,8 +333,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "주주 배당금 지급 확정 · 안정적 배당 수익률 및 현금 흐름 신호"
             new_body = (
                 f"📌 주주 배당금 지급 결정 공시 발표\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -352,8 +342,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "경영 불확실성 및 감자·소송 공시 · 최고 수준 리스크 대응 필요"
             new_body = (
                 f"📌 {report_title[:50]} 관련 중요 공시 접수\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -371,8 +360,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
                 else: interp = "미국 SEC 공식 제출 공시 · 원문 확인 권장"
             new_body = (
                 f"📌 현지 금융당국(SEC) 주요 공시 보고서 접수\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -382,8 +370,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
             interp = existing_interp or "신규 주요 공시 발생 · 세부 원문 확인 권장"
             new_body = (
                 f"📌 {safe_rep}\n"
-                f"💡 [시장해석] {interp}\n"
-                f"{DISCLAIMER_TEXT}"
+                f"💡 [시장해석] {interp}"
             )
             return sanitize_notification_text(new_title, new_body)
 
@@ -391,7 +378,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     elif alert_type in ['market_open', 'open_alert'] or any(k in clean_title for k in ["장시작", "시가 알림"]) or "관심종목 시가입니다" in clean_no_interp:
         new_title = clean_title if clean_title else "☀️ [국내 장시작] 관심종목 시가 알림"
         body_no_interp = clean_no_interp
-        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+        new_body = body_no_interp
         return sanitize_notification_text(new_title, new_body)
 
     # 2. 가격 급등 / 급락 / 52주 신고가 알림
@@ -402,7 +389,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         # [NEW] 본문에 이미 '•' 글머리 기호 형태의 팩트 요약 카드가 있는 경우, 사족인 [시장해석]을 붙이지 않고 깔끔한 요약 유지
         if "•" in body_no_interp or "현재가:" in body_no_interp:
             new_title = clean_title
-            new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+            new_body = body_no_interp
             return sanitize_notification_text(new_title, new_body)
 
         company = (data or {}).get("corp") or (data or {}).get("company") or (data or {}).get("stock_name") or ""
@@ -418,22 +405,22 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         if "신고가" in clean_title:
             new_title = f"🏆 [52주 신고가 도달] {company}" if company else "🏆 [52주 신고가 도달]"
             interp = existing_interp or "최근 1년 최고가 돌파 · 강력한 매수세 및 신고가 랠리 지속"
-            new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+            new_body = f"{body_no_interp}\n💡 [시장해석] {interp}"
             return sanitize_notification_text(new_title, new_body)
         elif "급락" in clean_title:
             new_title = f"📉 [단기 급락세 포착] {company}" if company else "📉 [단기 변동성 확대]"
             interp = existing_interp or "단기 매도세 확대 · 지지선 점검 및 가격 변동성 주의"
-            new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+            new_body = f"{body_no_interp}\n💡 [시장해석] {interp}"
             return sanitize_notification_text(new_title, new_body)
         else:
             # 시가 알림이나 단순 장시작 안내인 경우 불필요한 급등 시장해석 제외
             if "시가" in clean_no_interp or "시가" in clean_title or "시초가" in clean_no_interp or "장시작" in clean_title:
                 new_title = clean_title
-                new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+                new_body = body_no_interp
                 return sanitize_notification_text(new_title, new_body)
             new_title = f"📈 [거래량·주가 급등] {company}" if company else "📈 [거래량·주가 급등 포착]"
             interp = existing_interp or "대량 거래 동반 주가 급등 · 단기 모멘텀 및 스마트머니 유입"
-            new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+            new_body = f"{body_no_interp}\n💡 [시장해석] {interp}"
             return sanitize_notification_text(new_title, new_body)
 
     # 3. 시간외 단일가 알림
@@ -445,7 +432,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         body_no_interp = clean_no_interp
         new_title = f"🌙 [시간외 급등 마감] {company}" if company else clean_title
         interp = existing_interp or "정규장 마감 후 시간외 매수세 집중 · 익일 정규장 시초가 주목"
-        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}\n{DISCLAIMER_TEXT}"
+        new_body = f"{body_no_interp}\n💡 [시장해석] {interp}"
         return sanitize_notification_text(new_title, new_body)
 
     # 4. 공모주(IPO) 알림 (일정 및 주관사 안내 팩트 알림이므로 불필요한 동어반복 시장해석 박스 제외)
@@ -458,7 +445,7 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         formatted_body = body_no_interp
         if "🏢" in formatted_body and "\n🏢" not in formatted_body:
             formatted_body = formatted_body.replace("🏢", "\n🏢")
-        new_body = f"{formatted_body}\n{DISCLAIMER_TEXT}"
+        new_body = formatted_body
         return sanitize_notification_text(new_title, new_body)
 
     # 5. 수급 / 세력 고래 알림 (제목/본문 자체로 수급 팩트가 직관적이므로 동어반복 시장해석 박스 제외)
@@ -466,29 +453,25 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
         t_core = re.sub(r'^[👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨\s]+', '', clean_title).strip()
         new_title = f"🐳 {t_core}" if t_core else clean_title
         body_no_interp = clean_no_interp
-        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+        new_body = body_no_interp
         return sanitize_notification_text(new_title, new_body)
 
     # 6. 뉴스 알림 (뉴스 본문 자체가 핵심 정보이므로 시장해석 박스 없이 본문만 깔끔하게 발송)
     elif alert_type in ['news_alert', 'news_naver', 'news_google', 'news'] or "뉴스" in clean_title or ("속보" in clean_title and "공시" not in clean_title):
         new_title = apply_news_sentiment(clean_title, clean_body)
         body_no_interp = clean_no_interp
-        new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
+        new_body = body_no_interp
         return sanitize_notification_text(new_title, new_body)
 
     # 6-2. 장전 간추린 모닝 팩트 브리핑 (구조화된 팩트/수급 카드 원형 보존)
     elif alert_type == 'morning_briefing' or any(k in clean_title for k in ["모닝 팩트", "모닝팩트", "간추린 모닝"]):
         new_title = clean_title
-        new_body = f"{clean_no_interp}\n{DISCLAIMER_TEXT}" if "투자 권유" not in clean_no_interp else clean_no_interp
+        new_body = clean_no_interp
         return sanitize_notification_text(new_title, new_body)
 
     # 7. 장시작 / 장마감 / 스터디 / 콘텐츠 / 브리핑 및 기타 모든 알림 (형식적 기계적 해석 없이 본문만 깔끔하게 전달)
     else:
-        body_no_interp = clean_no_interp
-        if "투자 권유" not in body_no_interp and "투자권유" not in body_no_interp:
-            new_body = f"{body_no_interp}\n{DISCLAIMER_TEXT}"
-        else:
-            new_body = body_no_interp
+        new_body = clean_no_interp
         return sanitize_notification_text(clean_title, new_body)
 
 
@@ -537,6 +520,9 @@ def sanitize_notification_text(title: str, body: str):
     for line in lines:
         line = line.strip()
         if not line:
+            continue
+        # [NEW] 푸시 알림 화면 공간 최적화: 면책 및 안내 사족 문구 제거
+        if any(line.startswith(x) for x in ['※', '👉', '🔍']) or '투자 권유가 아닙니다' in line or '투자권유가 아닙니다' in line or '투자 권유' in line or '단순 집계 통계 결과이며' in line:
             continue
         # 뉴스 제목 및 속보의 전체 전달을 위해 한 줄 최대 길이를 150자로 대폭 완화 (워치/폰 확장 시 전체 감상 가능)
         if len(line) > 150:
