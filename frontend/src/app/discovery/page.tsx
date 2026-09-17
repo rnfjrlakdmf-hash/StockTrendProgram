@@ -1563,7 +1563,7 @@ function DiscoveryContent() {
                                                         </div>
 
                                                         {/* 우측: 시간외 거래 정보 및 상태 뱃지 */}
-                                                        <div className="flex items-center gap-2.5 self-start md:self-center flex-wrap sm:flex-nowrap shrink-0">
+                                                        <div className="flex items-center gap-2.5 self-start md:self-center flex-wrap sm:flex-nowrap shrink-0 w-full md:w-auto">
                                                             {/* 시간외 거래 정보 (시간외 단일가 거래 중이거나 장마감 후 시간외 체결 데이터가 있을 때 항상 표출) */}
                                                             {hasAfterData && (() => {
                                                                 let val = extendedHours?.extended?.change;
@@ -1586,24 +1586,29 @@ function DiscoveryContent() {
                                                                 const isDown = (val || 0) < 0 || (val === 0 && (pct || 0) < 0);
 
                                                                 return (
-                                                                    <div className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border shadow-md transition-all shrink-0 whitespace-nowrap ${
+                                                                    <div className={`flex items-center justify-between md:justify-start gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border shadow-md transition-all w-full md:w-auto ${
                                                                         isOvertimeSession
                                                                             ? 'bg-amber-500/15 border-amber-500/40 text-amber-100'
                                                                             : 'bg-zinc-950/90 border-indigo-500/30 text-zinc-100'
                                                                     }`}>
-                                                                        <span className={`text-[11px] sm:text-xs font-black flex items-center gap-1 px-2 py-0.5 rounded-lg shrink-0 ${
+                                                                        {/* 세션 구분 배지 */}
+                                                                        <span className={`text-[10px] sm:text-xs font-black flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap ${
                                                                             isOvertimeSession ? 'bg-amber-500/25 text-amber-300' : 'bg-indigo-500/20 text-indigo-300'
                                                                         }`}>
                                                                             {isOvertimeSession && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                                                                             {isOvertimeSession ? '시간외·애프터마켓' : '시간외 종가'}
                                                                         </span>
-                                                                        <span className="font-mono font-black text-sm sm:text-base text-white tracking-normal shrink-0">
-                                                                            {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
-                                                                        </span>
-                                                                        <span className={`font-mono text-xs sm:text-sm font-black flex items-center gap-1 shrink-0 ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
-                                                                            <span>{isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
-                                                                            <span className="opacity-90">({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})</span>
-                                                                        </span>
+
+                                                                        {/* 시간외 시세 및 등락률 (모바일에서도 텍스트가 잘리지 않도록 정렬) */}
+                                                                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-nowrap">
+                                                                            <span className="font-mono font-black text-xs sm:text-base text-white tracking-normal whitespace-nowrap">
+                                                                                {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
+                                                                            </span>
+                                                                            <span className={`font-mono text-[11px] sm:text-sm font-black flex items-center gap-0.5 whitespace-nowrap ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
+                                                                                <span>{isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                                <span className="opacity-90">({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})</span>
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
                                                                 );
                                                             })()}
