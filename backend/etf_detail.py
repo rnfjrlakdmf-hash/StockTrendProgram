@@ -1,5 +1,7 @@
 import requests
 import json
+import math
+import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 import io
@@ -20,6 +22,27 @@ AMC_MAP = {
     "Direxion": "디렉시온", "JPMorgan": "제이피모건"
 }
 
+def clean_nan_values(obj, default_float=0.0):
+    """
+    JSON 직렬화 시 'Out of range float values are not JSON compliant: nan' 에러를
+    완벽히 방지하기 위해 딕셔너리/리스트 내부의 모든 NaN, Inf, -Inf 값을 재귀적으로 정제합니다.
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, (float, np.floating)):
+        if math.isnan(obj) or math.isinf(obj) or np.isnan(obj) or np.isinf(obj):
+            return default_float
+        return float(obj)
+    if isinstance(obj, (int, np.integer)):
+        return int(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, dict):
+        return {k: clean_nan_values(v, default_float) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [clean_nan_values(v, default_float) for v in obj]
+    return obj
+
 def get_naver_daily_prices(symbol, days=252):
     try:
         now = datetime.now()
@@ -27,7 +50,6 @@ def get_naver_daily_prices(symbol, days=252):
         url = f"https://api.finance.naver.com/siseJson.naver?symbol={symbol}&requestType=1&startTime={start.strftime('%Y%m%d')}&endTime={now.strftime('%Y%m%d')}&timeframe=day"
         resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
         text = resp.content.decode('euc-kr', 'replace')
-        import re
         matches = re.findall(r'\["(20\d{6})",\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)', text)
         if not matches: return pd.DataFrame()
         data_list = []
@@ -42,15 +64,20 @@ def get_naver_daily_prices(symbol, days=252):
     except:
         return pd.DataFrame()
 
-def safe_to_float(val):
-    if val is None: return 0.0
+def safe_to_float(val, default=0.0):
+    if val is None: return default
     try:
-        if isinstance(val, (int, float)): return float(val)
-        # Remove commas, spaces, and percent signs
+        if isinstance(val, (int, float, np.number)):
+            if math.isnan(val) or math.isinf(val):
+                return default
+            return float(val)
         clean = str(val).replace(',', '').replace('%', '').strip()
-        return float(clean)
+        f = float(clean)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
     except:
-        return 0.0
+        return default
 
 def calculate_performance(hist):
     """
@@ -61,7 +88,9 @@ def calculate_performance(hist):
         return perf_data
         
     try:
-        current_close = hist['Close'].iloc[-1]
+        current_close = float(hist['Close'].iloc[-1])
+        if math.isnan(current_close) or current_close <= 0:
+            return perf_data
         last_date = hist.index[-1]
         
         periods = [
@@ -73,15 +102,14 @@ def calculate_performance(hist):
         
         for label, months in periods:
             target_date = last_date - pd.DateOffset(months=months)
-            # 가장 가까운 과거 날짜의 인덱스를 찾음
-            # get_indexer는 일치하는 항목이 없을 때 가장 가까운 항목(nearest)을 찾도록 설정 가능
             past_idx = hist.index.get_indexer([target_date], method='nearest')[0]
             
             if past_idx >= 0:
-                past_close = hist['Close'].iloc[past_idx]
-                if past_close > 0:
+                past_close = float(hist['Close'].iloc[past_idx])
+                if past_close > 0 and not math.isnan(past_close):
                     diff_pct = ((current_close - past_close) / past_close) * 100
-                    perf_data[label] = f"{diff_pct:+.2f}%"
+                    if not math.isnan(diff_pct) and not math.isinf(diff_pct):
+                        perf_data[label] = f"{diff_pct:+.2f}%"
     except Exception as e:
         print(f"Performance calculation error: {e}")
         
@@ -108,31 +136,41 @@ def calculate_risk_stats(hist, risk_free_annual=0.035):
         close = hist['Close'].dropna()
         daily_returns = close.pct_change().dropna()
         if len(daily_returns) >= 20:
-            vol = daily_returns.std() * (252 ** 0.5) * 100
-            stats["volatility"] = f"{vol:.2f}%"
+            vol = float(daily_returns.std() * (252 ** 0.5) * 100)
+            if not math.isnan(vol) and not math.isinf(vol):
+                stats["volatility"] = f"{vol:.2f}%"
         if len(close) >= 2:
             rolling_max = close.cummax()
             drawdown = (close - rolling_max) / rolling_max * 100
-            mdd = drawdown.min()
-            stats["mdd"] = f"{mdd:.2f}%"
+            mdd = float(drawdown.min())
+            if not math.isnan(mdd) and not math.isinf(mdd):
+                stats["mdd"] = f"{mdd:.2f}%"
         if len(daily_returns) >= 20:
             rf_daily = risk_free_annual / 252
             excess = daily_returns - rf_daily
-            if excess.std() > 0:
-                sharpe = (excess.mean() / excess.std()) * (252 ** 0.5)
-                stats["sharpe"] = f"{sharpe:.2f}"
+            ex_std = float(excess.std())
+            if ex_std > 0 and not math.isnan(ex_std) and not math.isinf(ex_std):
+                sharpe = float((excess.mean() / ex_std) * (252 ** 0.5))
+                if not math.isnan(sharpe) and not math.isinf(sharpe):
+                    stats["sharpe"] = f"{sharpe:.2f}"
         if len(close) >= 2:
             current = float(close.iloc[-1])
             high52 = float(close.tail(252).max())
             low52 = float(close.tail(252).min())
-            if high52 > low52:
-                pos = (current - low52) / (high52 - low52) * 100
-                stats["position_pct"] = round(pos, 1)
+            if (high52 > low52 and 
+                not math.isnan(current) and not math.isinf(current) and
+                not math.isnan(high52) and not math.isinf(high52) and
+                not math.isnan(low52) and not math.isinf(low52)):
+                pos = float((current - low52) / (high52 - low52) * 100)
+                if not math.isnan(pos) and not math.isinf(pos):
+                    stats["position_pct"] = round(pos, 1)
                 stats["high52"] = round(high52, 2)
                 stats["low52"] = round(low52, 2)
         if 'Volume' in hist.columns and len(hist) >= 20:
-            avg_vol = int(hist['Volume'].tail(30).mean())
-            stats["avg_volume_30d"] = f"{avg_vol:,}"
+            avg_vol_val = hist['Volume'].tail(30).mean()
+            if not pd.isna(avg_vol_val) and not math.isinf(float(avg_vol_val)):
+                avg_vol = int(avg_vol_val)
+                stats["avg_volume_30d"] = f"{avg_vol:,}"
     except Exception as e:
         print(f"Risk stats calculation error: {e}")
     return stats
@@ -319,15 +357,15 @@ def get_etf_detail(symbol: str):
             data["chart_data"] = [
                 {
                     "date": str(idx).split(' ')[0], 
-                    "open": float(row['Open']),
-                    "high": float(row['High']),
-                    "low": float(row['Low']),
-                    "close": float(row['Close']),
-                    "volume": int(row['Volume']),
-                    "ma5": float(row['ma5']) if pd.notna(row['ma5']) else None,
-                    "ma20": float(row['ma20']) if pd.notna(row['ma20']) else None,
-                    "ma60": float(row['ma60']) if pd.notna(row['ma60']) else None,
-                    "ma120": float(row['ma120']) if pd.notna(row['ma120']) else None
+                    "open": safe_to_float(row['Open']),
+                    "high": safe_to_float(row['High']),
+                    "low": safe_to_float(row['Low']),
+                    "close": safe_to_float(row['Close']),
+                    "volume": int(safe_to_float(row.get('Volume', 0))),
+                    "ma5": safe_to_float(row['ma5']) if pd.notna(row.get('ma5')) and not math.isnan(safe_to_float(row['ma5'])) else None,
+                    "ma20": safe_to_float(row['ma20']) if pd.notna(row.get('ma20')) and not math.isnan(safe_to_float(row['ma20'])) else None,
+                    "ma60": safe_to_float(row['ma60']) if pd.notna(row.get('ma60')) and not math.isnan(safe_to_float(row['ma60'])) else None,
+                    "ma120": safe_to_float(row['ma120']) if pd.notna(row.get('ma120')) and not math.isnan(safe_to_float(row['ma120'])) else None
                 } for idx, row in hist.iterrows()
             ]
             
@@ -364,8 +402,9 @@ def get_etf_detail(symbol: str):
                         if isinstance(item, dict):
                             for k, v in item.items():
                                 label = SECTOR_KO.get(k, k)
-                                pct = round(float(v) * 100, 1) if float(v) <= 1 else round(float(v), 1)
-                                if pct > 0.1:
+                                val_f = safe_to_float(v)
+                                pct = round(val_f * 100, 1) if val_f <= 1 else round(val_f, 1)
+                                if pct > 0.1 and not math.isnan(pct):
                                     sector_list.append({"name": label, "value": pct})
                     sector_list.sort(key=lambda x: x["value"], reverse=True)
                     data["sector_weights"] = sector_list[:10]
@@ -379,8 +418,8 @@ def get_etf_detail(symbol: str):
                     if funds_holdings is not None and not funds_holdings.empty:
                         for idx, row in funds_holdings.head(10).iterrows():
                             name = str(row.get('Name', idx))
-                            pct = row.get('Holding Percent', 0)
-                            if pct > 0:
+                            pct = safe_to_float(row.get('Holding Percent', 0))
+                            if pct > 0 and not math.isnan(pct):
                                 data["holdings"].append({"name": name, "weight": f"{pct*100:.2f}%"})
             except Exception as he:
                 print(f"US Holdings error: {he}")
@@ -414,7 +453,7 @@ def get_etf_detail(symbol: str):
                 elif "EMERGING" in name_upper: data["similar_etfs"] = [{"symbol": "VWO", "name": "Vanguard FTSE Emerging Markets ETF"}, {"symbol": "IEMG", "name": "iShares Core MSCI Emerging Markets ETF"}]
                 else: data["similar_etfs"] = [{"symbol": "SPY", "name": "SPDR S&P 500 ETF Trust (미국 대표)"}, {"symbol": "QQQ", "name": "Invesco QQQ Trust (나스닥 대표)"}]
 
-            return {"status": "success", "data": data}
+            return clean_nan_values({"status": "success", "data": data})
         except Exception as e:
             return {"status": "error", "message": str(e)}
             
@@ -455,11 +494,11 @@ def get_etf_detail(symbol: str):
                         "high": safe_to_float(row['High']),
                         "low": safe_to_float(row['Low']),
                         "close": safe_to_float(row['Close']),
-                        "volume": int(row['Volume']),
-                        "ma5": safe_to_float(row['ma5']) if pd.notna(row['ma5']) else None,
-                        "ma20": safe_to_float(row['ma20']) if pd.notna(row['ma20']) else None,
-                        "ma60": safe_to_float(row['ma60']) if pd.notna(row['ma60']) else None,
-                        "ma120": safe_to_float(row['ma120']) if pd.notna(row['ma120']) else None
+                        "volume": int(safe_to_float(row.get('Volume', 0))),
+                        "ma5": safe_to_float(row['ma5']) if pd.notna(row.get('ma5')) and not math.isnan(safe_to_float(row['ma5'])) else None,
+                        "ma20": safe_to_float(row['ma20']) if pd.notna(row.get('ma20')) and not math.isnan(safe_to_float(row['ma20'])) else None,
+                        "ma60": safe_to_float(row['ma60']) if pd.notna(row.get('ma60')) and not math.isnan(safe_to_float(row['ma60'])) else None,
+                        "ma120": safe_to_float(row['ma120']) if pd.notna(row.get('ma120')) and not math.isnan(safe_to_float(row['ma120'])) else None
                     } for idx, row in hist.iterrows()
                 ]
                 # [NEW] KR ETF 리스크 지표
@@ -556,7 +595,7 @@ def get_etf_detail(symbol: str):
             if not data["similar_etfs"]:
                 data["similar_etfs"] = [{"symbol": "069500", "name": "KODEX 200 (국내 코스피 대표)"}, {"symbol": "360200", "name": "TIGER 미국S&P500 (해외 S&P 대표)"}]
 
-        return {"status": "success", "data": data}
+        return clean_nan_values({"status": "success", "data": data})
     except Exception as e:
         return {"status": "error", "message": f"Global error: {str(e)}"}
 

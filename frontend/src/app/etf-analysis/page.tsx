@@ -1089,10 +1089,24 @@ function EtfAnalysisContent() {
 
                         </div>
                     ) : etfData?.error ? (
-                        <div className="py-32 flex flex-col items-center justify-center text-center">
-                            <ShieldAlert className="w-12 h-12 text-red-500/50 mb-4" />
-                            <p className="text-white font-bold">{etfData.error}</p>
-                            <p className="text-gray-500 text-sm mt-2">입력하신 종목코드를 다시 한 번 확인해주세요.</p>
+                        <div className="py-24 flex flex-col items-center justify-center text-center px-4 max-w-md mx-auto">
+                            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-4">
+                                <ShieldAlert className="w-7 h-7 text-rose-400" />
+                            </div>
+                            <p className="text-white font-black text-lg mb-1.5">
+                                {etfData.error.includes("nan") || etfData.error.includes("JSON") || etfData.error.includes("float")
+                                    ? "일시적인 시장 데이터 수신 지연이 발생했습니다."
+                                    : etfData.error}
+                            </p>
+                            <p className="text-gray-400 text-xs mb-6 leading-relaxed">
+                                종목코드를 다시 확인하시거나 잠시 후 다시 조회를 시도해주세요.
+                            </p>
+                            <button
+                                onClick={() => fetchEtfDetail(symbol)}
+                                className="px-6 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition-all border border-white/10 active:scale-95 flex items-center gap-2"
+                            >
+                                <RefreshCw className="w-3.5 h-3.5" /> 다시 시도
+                            </button>
                         </div>
                     ) : (
                         <div className="py-20 flex flex-col items-center justify-center text-center px-4 max-w-3xl mx-auto">

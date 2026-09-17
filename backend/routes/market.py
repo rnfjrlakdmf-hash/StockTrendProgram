@@ -185,11 +185,13 @@ def read_etf_rank(market: str = "KR", category: Optional[str] = None):
 def read_etf_detail(symbol: str):
     """특정 ETF 상세 분석 데이터 반환"""
     try:
-        from etf_detail import get_etf_detail
+        from etf_detail import get_etf_detail, clean_nan_values
         result = get_etf_detail(symbol)
-        return result
+        return clean_nan_values(result)
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": f"ETF 상세 정보 조회 중 오류가 발생했습니다: {str(e)}"}
 
 @router.get("/stock/{symbol}/daily-history")
 @turbo_cache(ttl_seconds=300)
