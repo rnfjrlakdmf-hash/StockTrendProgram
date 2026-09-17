@@ -118,21 +118,47 @@ def run_system_health_check():
         diagnostics.append(f"⚡ [API 서버] 초고속 응답 ({api_time:.1f}ms)")
 
     # -------------------------------------------------------------
-    # 2. Next.js 프론트엔드 웹 서버 점검
+    # 2. Next.js 프론트엔드 웹 서버 점검 (4회 적응형 재시도 & PM2 자가 치유)
     # -------------------------------------------------------------
     fe_success = False
     fe_time = 0
-    try:
-        t0 = time.time()
-        res_fe = requests.get('http://127.0.0.1:3000/discovery', timeout=8)
-        fe_time = (time.time() - t0) * 1000
-        if res_fe.status_code in [200, 307, 308]:
-            fe_success = True
-            diagnostics.append(f"🌐 [웹 프론트엔드] 정상 가동 ({fe_time:.1f}ms)")
-        else:
-            issues.append(f"⚠️ 프론트엔드 웹 응답 비정상 (Status: {res_fe.status_code})")
-    except Exception as fe_err:
-        issues.append(f"❌ 프론트엔드 웹 연결 오류: {str(fe_err)}")
+    fe_err_detail = ""
+
+    for attempt in range(1, 5):
+        try:
+            t0 = time.time()
+            res_fe = requests.get('http://127.0.0.1:3000/discovery', timeout=10)
+            fe_time = (time.time() - t0) * 1000
+            if res_fe.status_code in [200, 307, 308]:
+                fe_success = True
+                break
+            else:
+                fe_err_detail = f"HTTP 상태 코드 {res_fe.status_code}"
+        except requests.exceptions.Timeout:
+            fe_err_detail = f"응답 시간 지연 (10초 초과, 시도 {attempt}/4)"
+        except requests.exceptions.ConnectionError:
+            fe_err_detail = f"포트 3000 연결 대기 (시도 {attempt}/4)"
+        except Exception as fe_e:
+            fe_err_detail = str(fe_e)
+        time.sleep(2.5)
+
+    if not fe_success:
+        # 프론트엔드가 다운된 경우: PM2 프로세스 자동 재기동(Self-Healing) 시도
+        try:
+            print("[HealthSentinel] Frontend Down detected. Attempting self-healing restart via PM2...")
+            subprocess.run(["bash", "-l", "-c", "pm2 restart stocktrend-frontend || pm2 restart 0"], check=False, timeout=15)
+            time.sleep(5)  # Next.js 웜업 대기
+            # 재확인
+            res_heal_fe = requests.get('http://127.0.0.1:3000/discovery', timeout=10)
+            if res_heal_fe.status_code in [200, 307, 308]:
+                diagnostics.append("🛠️ [자가 치유 성공] 프론트엔드 웹 일시 지연 발생 후 PM2 자동 재기동을 통해 정상 복구 완료")
+                fe_success = True
+            else:
+                issues.append(f"❌ 프론트엔드 웹 연결 오류: {fe_err_detail} (PM2 자동 복구 후에도 비정상: {res_heal_fe.status_code})")
+        except Exception as heal_err:
+            issues.append(f"❌ 프론트엔드 웹 연결 오류: {fe_err_detail} (자가치유 오류: {heal_err})")
+    else:
+        diagnostics.append(f"🌐 [웹 프론트엔드] 정상 가동 ({fe_time:.1f}ms)")
 
     # -------------------------------------------------------------
     # 3. 데이터베이스 & 무결성 점검
