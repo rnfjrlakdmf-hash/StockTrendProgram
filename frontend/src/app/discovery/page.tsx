@@ -180,13 +180,13 @@ const getExchangeLabel = (symbol: string): { code: string; exchange: string; col
 };
 
 function EasyTerm({ label, term, isEasyMode, align = 'left' }: { label: string, term: string, isEasyMode: boolean, align?: 'left' | 'right' }) {
-    if (!isEasyMode) return <div className="text-gray-400 text-[10px] sm:text-xs mb-1 break-words">{label}</div>;
+    if (!isEasyMode) return <span className="text-zinc-400 text-xs font-bold whitespace-nowrap">{label}</span>;
 
     const explanation = TERM_EXPLANATIONS[term];
 
     return (
-        <div className="group relative inline-flex items-center cursor-help mb-1 max-w-full">
-            <span className="text-blue-300 border-b border-dashed border-blue-500/50 text-[10px] sm:text-xs font-bold flex items-center gap-1 break-words leading-tight">
+        <div className="group relative inline-flex items-center cursor-help max-w-full">
+            <span className="text-blue-300 border-b border-dashed border-blue-500/50 text-xs font-bold flex items-center gap-0.5 whitespace-nowrap leading-tight">
                 {label} <span className="text-[10px] text-yellow-400 opacity-80 shrink-0">📋</span>
             </span>
             <div className={`absolute bottom-full mb-2 w-52 p-3 bg-[#09090b] border border-blue-500/30 text-white text-xs rounded-xl shadow-2xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xl leading-relaxed font-medium ${
@@ -1911,6 +1911,22 @@ function DiscoveryContent() {
                                         const isKRW = stock.currency === 'KRW';
                                         const currSign = isKRW ? '₩' : '$';
 
+                                        // 시가총액 모바일 스마트 축약 포맷터 ('1,658조 5,720억원' -> '1,658.6조원')
+                                        const formatCapDisplay = (capStr: string) => {
+                                            if (!capStr || capStr === 'N/A') return 'N/A';
+                                            const joOkMatch = capStr.match(/([\d,]+)\s*조(?:\s*([\d,]+)\s*억)?/);
+                                            if (joOkMatch) {
+                                                const jo = joOkMatch[1];
+                                                const ok = joOkMatch[2] ? parseInt(joOkMatch[2].replace(/,/g, ''), 10) : 0;
+                                                if (ok > 0) {
+                                                    const decimal = Math.round(ok / 1000);
+                                                    return `${jo}.${decimal}조원`;
+                                                }
+                                                return `${jo}조원`;
+                                            }
+                                            return capStr;
+                                        };
+
                                         // 1) 시가총액 (Market Cap)
                                         const rawCap = String(stock.details?.market_cap || '');
                                         let capBadge = '';
@@ -2000,8 +2016,8 @@ function DiscoveryContent() {
                                         let dvrVal = 0;
                                         if (typeof stock.details?.dividend_yield === 'number' && stock.details.dividend_yield !== 0) {
                                             dvrVal = Number(stock.details.dividend_yield) * 100;
-                                        } else if (stock.dvr) {
-                                            dvrVal = parseFloat(String(stock.dvr).replace(/[^0-9.]/g, '')) || 0;
+                                        } else if ((stock as any).dvr) {
+                                            dvrVal = parseFloat(String((stock as any).dvr).replace(/[^0-9.]/g, '')) || 0;
                                         }
                                         let dvrBadge = '성장 재투자 🌱';
                                         let dvrBadgeStyle = 'text-zinc-400 bg-zinc-800/40 border-zinc-700/30';
@@ -2102,9 +2118,9 @@ function DiscoveryContent() {
                                         let dpsVal: number | null = null;
                                         if (typeof stock.details?.dividend_rate === 'number' && stock.details.dividend_rate > 0) {
                                             dpsVal = stock.details.dividend_rate;
-                                        } else if (stock.dps && Number(stock.dps) > 0) {
-                                            dpsVal = Number(stock.dps);
-                                        } else if (stock.details?.dividend_rate === 0 || (stock.dps && Number(stock.dps) === 0)) {
+                                        } else if ((stock as any).dps && Number((stock as any).dps) > 0) {
+                                            dpsVal = Number((stock as any).dps);
+                                        } else if (stock.details?.dividend_rate === 0 || ((stock as any).dps && Number((stock as any).dps) === 0)) {
                                             dpsVal = 0;
                                         }
                                         let dpsBadge = '무배당 (성장집중)';
@@ -2139,7 +2155,7 @@ function DiscoveryContent() {
 
                                                     <button
                                                         onClick={() => setEasyMode(!easyMode)}
-                                                        className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-2.5 border cursor-pointer select-none ${easyMode
+                                                        className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-2.5 border cursor-pointer select-none self-start sm:self-auto ${easyMode
                                                             ? "bg-gradient-to-r from-indigo-600 to-indigo-500 border-indigo-400/40 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-white/20"
                                                             : "bg-white/[0.04] border-white/10 text-zinc-400 hover:bg-white/[0.08] hover:text-white"
                                                             }`}
@@ -2154,84 +2170,93 @@ function DiscoveryContent() {
                                                     </button>
                                                 </div>
 
-                                                {/* 10개 핵심 지표 카드 그리드 (럭셔리 글래스모피즘 & 카테고리 컬러 악센트) */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                                                {/* 10개 핵심 지표 카드 그리드 (모바일 2열 완벽 최적화 & 통일된 높이) */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3.5">
                                                     {/* 1. 시가총액 (Market Cap) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-sky-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-sky-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-sky-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        🏢
-                                                                    </span>
-                                                                    <EasyTerm label="시가총액" term="시가총액" isEasyMode={easyMode} />
-                                                                </div>
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    🏢
+                                                                </span>
+                                                                <EasyTerm label="시가총액" term="시가총액" isEasyMode={easyMode} />
+                                                            </div>
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight truncate">
+                                                                {formatCapDisplay(stock.details?.market_cap || 'N/A')}
+                                                            </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 (단독 행으로 배치되어 텍스트 보존) */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
                                                                 {capBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${capBadgeStyle}`}>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${capBadgeStyle}`}>
                                                                         {capBadge}
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 truncate">
-                                                                {stock.details?.market_cap || 'N/A'}
-                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>기업 전체 시장가치</span>
-                                                            <span className="text-[9px] font-mono text-zinc-400">발행주식×현재가</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            기업 전체 시장가치
                                                         </div>
                                                     </div>
 
                                                     {/* 2. 거래량 (Volume) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-cyan-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-cyan-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-cyan-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        📊
-                                                                    </span>
-                                                                    <EasyTerm label="당일 거래량" term="거래량" isEasyMode={easyMode} align="right" />
-                                                                </div>
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    📊
+                                                                </span>
+                                                                <EasyTerm label="당일 거래량" term="거래량" isEasyMode={easyMode} />
+                                                            </div>
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
+                                                                <span className="truncate">{stock.details?.volume ? Number(stock.details.volume).toLocaleString() : 'N/A'}</span>
+                                                                {stock.details?.volume && <span className="text-xs font-semibold text-zinc-400 shrink-0">주</span>}
+                                                            </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
                                                                 {volBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${volBadgeStyle}`}>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${volBadgeStyle}`}>
                                                                         {volBadge}
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
-                                                                <span className="truncate">{stock.details?.volume ? Number(stock.details.volume).toLocaleString() : 'N/A'}</span>
-                                                                {stock.details?.volume && <span className="text-xs font-semibold text-zinc-400 shrink-0">주</span>}
-                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>당일 총 손바뀜 주식수</span>
-                                                            <span className="text-[9px] font-mono text-cyan-400/80">실시간 체결</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            당일 총 손바뀜 주식수
                                                         </div>
                                                     </div>
 
                                                     {/* 3. PER (주가수익비율) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-purple-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-purple-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-purple-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        ⚖️
-                                                                    </span>
-                                                                    <EasyTerm label="PER (주가배수)" term="PER" isEasyMode={easyMode} />
-                                                                </div>
-                                                                {peBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${peBadgeStyle}`}>
-                                                                        {peBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    ⚖️
+                                                                </span>
+                                                                <EasyTerm label="PER" term="PER" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주가수익비율</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {peVal !== null ? (
                                                                     <>
                                                                         <span>{peVal.toFixed(2)}</span>
@@ -2241,32 +2266,39 @@ function DiscoveryContent() {
                                                                     <span className="text-zinc-500 text-sm font-bold">-</span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {peBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${peBadgeStyle}`}>
+                                                                        {peBadge}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>순이익 대비 주가 배수</span>
-                                                            <span className="text-[9px] font-mono text-purple-400/80">원금회수 기간</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            순이익 대비 주가 배수
                                                         </div>
                                                     </div>
 
                                                     {/* 4. EPS (주당순이익) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-emerald-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        📈
-                                                                    </span>
-                                                                    <EasyTerm label="EPS (주당순익)" term="EPS" isEasyMode={easyMode} align="right" />
-                                                                </div>
-                                                                {epsBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${epsBadgeStyle}`}>
-                                                                        {epsBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    📈
+                                                                </span>
+                                                                <EasyTerm label="EPS" term="EPS" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주당순이익</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {epsVal !== null ? (
                                                                     <>
                                                                         <span className="text-xs font-bold text-zinc-400">{currSign}</span>
@@ -2277,61 +2309,74 @@ function DiscoveryContent() {
                                                                     <span className="text-zinc-500 text-sm font-bold">-</span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {epsBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${epsBadgeStyle}`}>
+                                                                        {epsBadge}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>1주당 번 연간 순이익</span>
-                                                            <span className="text-[9px] font-mono text-emerald-400/80">실질수익력</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            1주당 번 연간 순이익
                                                         </div>
                                                     </div>
 
                                                     {/* 5. 배당수익률 (Yield) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-amber-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-amber-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-amber-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        💰
-                                                                    </span>
-                                                                    <EasyTerm label="배당수익률" term="배당수익률" isEasyMode={easyMode} />
-                                                                </div>
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    💰
+                                                                </span>
+                                                                <EasyTerm label="배당수익률" term="배당수익률" isEasyMode={easyMode} />
+                                                            </div>
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-amber-300 text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
+                                                                <span>{dvrVal.toFixed(2)}</span>
+                                                                <span className="text-xs font-semibold text-amber-400/90">%</span>
+                                                            </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
                                                                 {dvrBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${dvrBadgeStyle}`}>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${dvrBadgeStyle}`}>
                                                                         {dvrBadge}
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="font-mono font-black text-amber-300 text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
-                                                                <span>{dvrVal.toFixed(2)}</span>
-                                                                <span className="text-xs font-semibold text-amber-400/90">%</span>
-                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>주가 대비 현금 배당률</span>
-                                                            <span className="text-[9px] font-mono text-amber-400/80">연간 이자율</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            주가 대비 연간 현금 배당률
                                                         </div>
                                                     </div>
 
                                                     {/* 6. 추정 PER (Forward PE) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-indigo-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-indigo-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-indigo-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        🔮
-                                                                    </span>
-                                                                    <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
-                                                                </div>
-                                                                {fwdPeBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${fwdPeBadgeStyle}`}>
-                                                                        {fwdPeBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    🔮
+                                                                </span>
+                                                                <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">Fwd PER</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-indigo-300 text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-indigo-300 text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {fwdPeVal !== null ? (
                                                                     <>
                                                                         <span>{fwdPeVal.toFixed(2)}</span>
@@ -2341,73 +2386,87 @@ function DiscoveryContent() {
                                                                     <span className="text-zinc-500 text-sm font-bold">-</span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {fwdPeBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${fwdPeBadgeStyle}`}>
+                                                                        {fwdPeBadge}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>증권사 미래 예상 밸류</span>
-                                                            <span className="text-[9px] font-mono text-indigo-400/80">컨센서스</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            증권사 컨센서스 미래 밸류
                                                         </div>
                                                     </div>
 
                                                     {/* 7. 추정 EPS */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-teal-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-teal-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-teal-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        🎯
-                                                                    </span>
-                                                                    <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} align="right" />
-                                                                </div>
-                                                                {fwdEpsBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${fwdEpsBadgeStyle}`}>
-                                                                        {fwdEpsBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    🎯
+                                                                </span>
+                                                                <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">Fwd EPS</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {fwdEpsVal !== null ? (
                                                                     <>
                                                                         <span className="text-xs font-bold text-zinc-400">{currSign}</span>
                                                                         <span className="truncate">{fwdEpsVal.toLocaleString(undefined, { maximumFractionDigits: isKRW ? 0 : 2 })}</span>
                                                                         {isKRW && <span className="text-xs font-semibold text-zinc-400">원</span>}
-                                                                        {isImpliedEps && (
-                                                                            <span className="text-[9px] font-bold text-teal-300 bg-teal-500/20 px-1 py-0.5 rounded font-sans ml-1">
-                                                                                역산
-                                                                            </span>
-                                                                        )}
                                                                     </>
                                                                 ) : (
                                                                     <span className="text-zinc-500 text-xs font-bold font-sans">컨센서스 없음</span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {fwdEpsBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${fwdEpsBadgeStyle}`}>
+                                                                        {fwdEpsBadge}
+                                                                    </span>
+                                                                )}
+                                                                {isImpliedEps && (
+                                                                    <span className="text-[9px] font-bold text-teal-300 bg-teal-500/20 px-1.5 py-0.5 rounded font-sans border border-teal-500/30 whitespace-nowrap">
+                                                                        역산
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>다음 회계연도 예상 순익</span>
-                                                            <span className="text-[9px] font-mono text-teal-400/80">미래 수익력</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            다음 회계연도 예상 순익
                                                         </div>
                                                     </div>
 
                                                     {/* 8. PBR (주가순자산비율) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-orange-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-orange-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-orange-500" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        🏛️
-                                                                    </span>
-                                                                    <EasyTerm label="PBR (장부배수)" term="PBR" isEasyMode={easyMode} />
-                                                                </div>
-                                                                {pbrBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${pbrBadgeStyle}`}>
-                                                                        {pbrBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    🏛️
+                                                                </span>
+                                                                <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주가순자산비율</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {pbrVal !== null ? (
                                                                     <>
                                                                         <span>{pbrVal.toFixed(2)}</span>
@@ -2417,32 +2476,39 @@ function DiscoveryContent() {
                                                                     <span className="text-zinc-500 text-sm font-bold">-</span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {pbrBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${pbrBadgeStyle}`}>
+                                                                        {pbrBadge}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>청산가치(순자산) 대비 배수</span>
-                                                            <span className="text-[9px] font-mono text-orange-400/80">안전마진</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            청산가치(순자산) 대비 배수
                                                         </div>
                                                     </div>
 
                                                     {/* 9. BPS (주당순자산) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-zinc-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-zinc-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-zinc-400" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        📑
-                                                                    </span>
-                                                                    <EasyTerm label="BPS (주당순자산)" term="BPS" isEasyMode={easyMode} align="right" />
-                                                                </div>
-                                                                {bpsBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${bpsBadgeStyle}`}>
-                                                                        {bpsBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    📑
+                                                                </span>
+                                                                <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주당순자산</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-zinc-200 text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-zinc-200 text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {bpsVal !== null ? (
                                                                     <>
                                                                         <span className="text-xs font-bold text-zinc-400">{currSign}</span>
@@ -2453,32 +2519,39 @@ function DiscoveryContent() {
                                                                     <span className="text-zinc-500 text-sm font-bold">-</span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {bpsBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${bpsBadgeStyle}`}>
+                                                                        {bpsBadge}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>기업 청산 시 1주당 분배금</span>
-                                                            <span className="text-[9px] font-mono text-zinc-400">장부 자산</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            기업 청산 시 1주당 분배금
                                                         </div>
                                                     </div>
 
                                                     {/* 10. 주당배당금 (DPS) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between">
+                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
                                                         <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-emerald-400" />
                                                         <div>
-                                                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] shrink-0">
-                                                                        💸
-                                                                    </span>
-                                                                    <EasyTerm label="주당배당금 (DPS)" term="주당배당금" isEasyMode={easyMode} align="right" />
-                                                                </div>
-                                                                {dpsBadge && (
-                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 tracking-tight ${dpsBadgeStyle}`}>
-                                                                        {dpsBadge}
-                                                                    </span>
-                                                                )}
+                                                            {/* 1행: 아이콘 + 지표명 */}
+                                                            <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] shrink-0">
+                                                                    💸
+                                                                </span>
+                                                                <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} />
+                                                                <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">DPS</span>
                                                             </div>
-                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight mt-1 flex items-baseline gap-0.5">
+
+                                                            {/* 2행: 메인 수치 */}
+                                                            <div className="font-mono font-black text-white text-base sm:text-lg md:text-xl tracking-tight flex items-baseline gap-0.5">
                                                                 {dpsVal !== null && dpsVal > 0 ? (
                                                                     <>
                                                                         <span className="text-xs font-bold text-zinc-400">{currSign}</span>
@@ -2491,13 +2564,23 @@ function DiscoveryContent() {
                                                                     </span>
                                                                 )}
                                                             </div>
+
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
+                                                            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                                                                {dpsBadge && (
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${dpsBadgeStyle}`}>
+                                                                        {dpsBadge}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 font-medium">
-                                                            <span>1주당 실제 입금 현금</span>
-                                                            <span className="text-[9px] font-mono text-emerald-400/80">주주 환원</span>
+
+                                                        {/* 4행: 하단 설명 */}
+                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
+                                                            1주당 실제 입금 현금
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </div>}
 
                                             {/* 가격 범위 및 52주 변동성 위치 게이지 바 */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
