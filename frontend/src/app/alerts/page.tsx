@@ -153,7 +153,8 @@ export default function AlertCenterPage() {
                     );
                     if (isPersonalType && !isTargeted) return;
 
-                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update'].includes(data.type);
+                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update', 'morning_briefing'].includes(data.type) || 
+                        (data.title || '').includes('모닝 팩트') || (data.title || '').includes('간추린 모닝');
                     
                     if (isGlobal || isTargeted || isPublicType || (isAdmin && isAdminType)) {
                         // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
@@ -1925,11 +1926,14 @@ function formatUsdToKrwInText(text: string): string {
             if (!user) {
                 return false;
             }
-            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert'].includes(alert.type) ||
-                titleText.includes('관심종목 결산');
+            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert', 'morning_briefing'].includes(alert.type) ||
+                isMorningBriefing ||
+                titleText.includes('관심종목 결산') ||
+                titleText.includes('모닝 팩트') ||
+                titleText.includes('간추린 모닝');
             
-            // 내 관심종목 뉴스 속보, 공시, 시세 알림 완전 통합
-            const isWatchlistContent = (isNews || isDisclosure || isPrice) && symbolMatch;
+            // 내 관심종목 뉴스 속보, 공시, 시세 알림, 모닝 팩트 완전 통합
+            const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorningBriefing) && (symbolMatch || !alert.symbol);
 
             return isPortfolioAlert || isWatchlistContent;
         }
