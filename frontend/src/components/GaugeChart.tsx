@@ -8,9 +8,10 @@ interface GaugeChartProps {
     label: string;
     subLabel?: string;
     color?: string;
+    size?: "sm" | "md" | "lg";
 }
 
-const GaugeChart = memo(function GaugeChart({ score, label, subLabel, color = "#3b82f6" }: GaugeChartProps) {
+const GaugeChart = memo(function GaugeChart({ score, label, subLabel, color = "#3b82f6", size = "lg" }: GaugeChartProps) {
     const data = useMemo(() => [
         { name: "Score", value: score },
         { name: "Remaining", value: 100 - score },
@@ -18,9 +19,36 @@ const GaugeChart = memo(function GaugeChart({ score, label, subLabel, color = "#
 
     const trackData = useMemo(() => [{ name: "Track", value: 100 }], []);
 
+    const sizeConfig = useMemo(() => {
+        switch (size) {
+            case "sm":
+                return {
+                    container: "h-28 w-full max-w-[130px]",
+                    score: "text-xl font-black",
+                    label: "text-[8px] uppercase tracking-wider font-semibold",
+                    top: "top-[62%]"
+                };
+            case "md":
+                return {
+                    container: "h-32 sm:h-36 w-full max-w-[150px] sm:max-w-[170px]",
+                    score: "text-2xl sm:text-3xl font-black",
+                    label: "text-[9px] uppercase tracking-wider font-semibold",
+                    top: "top-[60%]"
+                };
+            case "lg":
+            default:
+                return {
+                    container: "h-48 w-full max-w-[200px]",
+                    score: "text-2xl md:text-4xl font-bold",
+                    label: "text-[10px] md:text-xs uppercase tracking-widest font-semibold",
+                    top: "top-[60%]"
+                };
+        }
+    }, [size]);
+
     return (
         <div className="relative flex flex-col items-center justify-center">
-            <div className="h-48 w-full max-w-[200px] aspect-square relative">
+            <div className={`${sizeConfig.container} aspect-square relative`}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
@@ -56,12 +84,12 @@ const GaugeChart = memo(function GaugeChart({ score, label, subLabel, color = "#
                     </PieChart>
                 </ResponsiveContainer>
 
-                <div className="absolute top-[60%] left-1/2 -translate-x-1/2 text-center transform -translate-y-1/2 whitespace-nowrap">
-                    <span className="text-2xl md:text-4xl font-bold text-white block drop-shadow-lg">{score}</span>
-                    <span className="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest font-semibold">{label}</span>
+                <div className={`absolute ${sizeConfig.top} left-1/2 -translate-x-1/2 text-center transform -translate-y-1/2 whitespace-nowrap`}>
+                    <span className={`${sizeConfig.score} text-white block drop-shadow-lg leading-tight`}>{score}</span>
+                    <span className={`${sizeConfig.label} text-gray-400 block mt-0.5`}>{label}</span>
                 </div>
             </div>
-            {subLabel && <p className="text-sm text-gray-500 mt-[-20px] text-center">{subLabel}</p>}
+            {subLabel && <p className="text-xs text-gray-500 mt-[-10px] text-center">{subLabel}</p>}
         </div>
     );
 });

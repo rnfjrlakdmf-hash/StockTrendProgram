@@ -1783,22 +1783,22 @@ function DiscoveryContent() {
                                     {/* 2. AI 3대 인텔리전스 정밀 분석 센터 (프리미엄 퀀트 지표 & 3대 세부 팩터 바) */}
                                     <div className="pt-2 pb-6 border-t border-white/10">
                                         {/* 섹션 타이틀 헤더 */}
-                                        <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center justify-between mb-3.5">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-2 h-5 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full" />
-                                                <h3 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+                                                <div className="w-1.5 h-4.5 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full" />
+                                                <h3 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
                                                     <span>AI 3대 인텔리전스 정밀 퀀트 진단</span>
                                                     <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono text-zinc-400 font-normal hidden sm:inline-block">
-                                                        BIG DATA QUANT RADAR
+                                                        QUANT RADAR
                                                     </span>
                                                 </h3>
                                             </div>
-                                            <span className="text-[11px] text-zinc-400 font-medium">
+                                            <span className="text-[10px] sm:text-[11px] text-zinc-400 font-medium">
                                                 실시간 종합 스코어링
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 lg:gap-4.5 items-stretch">
                                             {/* ============================================================== */}
                                             {/* [카드 1: 스마트 머니 수급 (큰손 파워)] */}
                                             {/* ============================================================== */}
@@ -1819,48 +1819,48 @@ function DiscoveryContent() {
                                                 );
 
                                                 return (
-                                                    <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-b from-blue-950/30 via-zinc-900/80 to-zinc-950 border border-blue-500/25 hover:border-blue-400/50 transition-all duration-300 shadow-2xl flex flex-col justify-between text-left relative overflow-hidden group hover:shadow-[0_12px_40px_rgba(59,130,246,0.18)]">
+                                                    <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-b from-blue-950/30 via-zinc-900/80 to-zinc-950 border border-blue-500/25 hover:border-blue-400/50 transition-all duration-300 shadow-xl flex flex-col justify-between text-left relative overflow-hidden group hover:shadow-[0_8px_30px_rgba(59,130,246,0.15)] h-full">
                                                         {/* 상단 앰비언트 글로우 라인 */}
                                                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500/80 to-transparent" />
 
                                                         <div>
                                                             {/* 1층: 헤더 & 상태 뱃지 */}
-                                                            <div className="flex items-center justify-between gap-2 mb-2 pb-3 border-b border-white/5">
+                                                            <div className="flex items-center justify-between gap-1.5 mb-1 pb-2.5 border-b border-white/5">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-inner">
-                                                                        <Activity className="w-4 h-4" />
+                                                                    <div className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-inner">
+                                                                        <Activity className="w-3.5 h-3.5" />
                                                                     </div>
                                                                     <div>
-                                                                        <h4 className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                        <h4 className="text-xs sm:text-sm font-black text-white tracking-tight flex items-center gap-1">
                                                                             스마트 머니 수급
                                                                         </h4>
-                                                                        <p className="text-[10px] text-zinc-400 font-mono">SMART MONEY FLOW</p>
+                                                                        <p className="text-[9px] text-zinc-400 font-mono">SMART MONEY FLOW</p>
                                                                     </div>
                                                                 </div>
-                                                                <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-black tracking-tight shadow-sm flex items-center gap-1">
+                                                                <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-black tracking-tight shadow-sm flex items-center gap-1 shrink-0">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
                                                                     {badgeLabel}
                                                                 </span>
                                                             </div>
 
-                                                            {/* 2층: 게이지 차트 & 퀀트 랭킹 */}
-                                                            <div className="my-[-12px] flex flex-col items-center justify-center">
-                                                                <GaugeChart score={score} label="수급 퀀트 스코어" subLabel="" color="#3b82f6" />
-                                                                <div className="mt-[-8px] mb-3 px-3 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-[11px] font-bold text-blue-300 font-mono shadow-sm">
+                                                            {/* 2층: 게이지 차트 & 퀀트 랭킹 (사이즈 최적화: md) */}
+                                                            <div className="my-0 flex flex-col items-center justify-center">
+                                                                <GaugeChart score={score} label="수급 퀀트 스코어" subLabel="" color="#3b82f6" size="md" />
+                                                                <div className="mt-[-6px] mb-2 px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-[10px] font-bold text-blue-300 font-mono shadow-sm">
                                                                     {rankLabel}
                                                                 </div>
                                                             </div>
 
                                                             {/* 3층: 3대 핵심 서브 팩터 정밀 바 */}
-                                                            <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2.5 my-3 shadow-inner">
-                                                                <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400 border-b border-white/5 pb-1">
+                                                            <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2 my-2 shadow-inner">
+                                                                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 border-b border-white/5 pb-1">
                                                                     <span>수급 세부 분석 팩터</span>
-                                                                    <span className="text-[10px] text-blue-400 font-mono">QUANT METRICS</span>
+                                                                    <span className="text-[9px] text-blue-400 font-mono">QUANT METRICS</span>
                                                                 </div>
 
                                                                 {/* 팩터 1: 외국인 메이저 유입 */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-xs">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center justify-between text-[11px]">
                                                                         <span className="text-zinc-300 font-medium">외국인 순매수 강도</span>
                                                                         <span className="text-blue-400 font-mono font-black">{foreignPct}%</span>
                                                                     </div>
@@ -1870,8 +1870,8 @@ function DiscoveryContent() {
                                                                 </div>
 
                                                                 {/* 팩터 2: 기관 스마트머니 포지션 */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-xs">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center justify-between text-[11px]">
                                                                         <span className="text-zinc-300 font-medium">기관·연기금 결집도</span>
                                                                         <span className="text-indigo-300 font-mono font-black">{instPct}%</span>
                                                                     </div>
@@ -1881,40 +1881,40 @@ function DiscoveryContent() {
                                                                 </div>
 
                                                                 {/* 팩터 3: 매수 호가 체결 탄력도 */}
-                                                                <div className="flex items-center justify-between text-xs pt-0.5">
+                                                                <div className="flex items-center justify-between text-[11px] pt-0.5">
                                                                     <span className="text-zinc-300 font-medium">체결강도 / 거래 탄력</span>
-                                                                    <span className="px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/25 text-blue-300 font-mono font-bold text-[11px]">
+                                                                    <span className="px-1.5 py-0.2 rounded bg-blue-500/15 border border-blue-500/25 text-blue-300 font-mono font-bold text-[10px]">
                                                                         {executionPower} ({score >= 80 ? '매수 우세 🚀' : '공방 균형'})
                                                                     </span>
                                                                 </div>
                                                             </div>
 
                                                             {/* 4층: 전문 퀀트 총평 */}
-                                                            <div className="space-y-1.5 my-3">
-                                                                <div className="flex items-center gap-1.5 text-xs font-black text-blue-300">
+                                                            <div className="space-y-1 my-2">
+                                                                <div className="flex items-center gap-1.5 text-[11px] font-black text-blue-300">
                                                                     <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                                                                     <span>AI 퀀트 수급 진단</span>
                                                                 </div>
-                                                                <p className="text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium bg-blue-950/20 p-2.5 rounded-xl border border-blue-500/15 break-keep">
+                                                                <p className="text-[11px] text-zinc-300 leading-relaxed font-medium bg-blue-950/20 p-2 sm:p-2.5 rounded-xl border border-blue-500/15 break-keep line-clamp-3 hover:line-clamp-none transition-all">
                                                                     {verdictText}
                                                                 </p>
                                                             </div>
                                                         </div>
 
                                                         <div>
-                                                            {/* 5층: 초보자용 1초 가이드 배너 (세련된 글래스 배너) */}
-                                                            <div className="p-2.5 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-[11px] text-blue-200/90 flex items-start gap-2 mb-3">
-                                                                <span className="text-base shrink-0 leading-none">💡</span>
+                                                            {/* 5층: 초보자용 1초 가이드 배너 (컴팩트 슬림 글래스) */}
+                                                            <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-[10px] text-blue-200/90 flex items-start gap-1.5 mb-2">
+                                                                <span className="text-sm shrink-0 leading-none">💡</span>
                                                                 <span className="leading-snug break-keep">
-                                                                    <strong>외국인·기관(큰손)</strong>이 주식을 얼마나 적극적으로 매집하는지 분석한 지표입니다. 80점 이상이면 큰손들의 강력한 매수가 주가를 든든하게 받쳐줍니다!
+                                                                    <strong>외국인·기관(큰손)</strong>의 매집 강도입니다. 80점 이상이면 큰손 매수가 주가를 든든하게 받쳐줍니다!
                                                                 </span>
                                                             </div>
 
                                                             {/* 6층: 퀵 퀀트 태그 칩 */}
-                                                            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#메이저수급</span>
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#큰손매집구간</span>
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#하방경직성</span>
+                                                            <div className="flex flex-wrap gap-1 pt-1.5 border-t border-white/5">
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#메이저수급</span>
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#큰손매집</span>
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#하방경직성</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1940,48 +1940,48 @@ function DiscoveryContent() {
                                                 );
 
                                                 return (
-                                                    <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-b from-emerald-950/30 via-zinc-900/80 to-zinc-950 border border-emerald-500/25 hover:border-emerald-400/50 transition-all duration-300 shadow-2xl flex flex-col justify-between text-left relative overflow-hidden group hover:shadow-[0_12px_40px_rgba(16,185,129,0.18)]">
+                                                    <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-b from-emerald-950/30 via-zinc-900/80 to-zinc-950 border border-emerald-500/25 hover:border-emerald-400/50 transition-all duration-300 shadow-xl flex flex-col justify-between text-left relative overflow-hidden group hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)] h-full">
                                                         {/* 상단 앰비언트 글로우 라인 */}
                                                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/80 to-transparent" />
 
                                                         <div>
                                                             {/* 1층: 헤더 & 상태 뱃지 */}
-                                                            <div className="flex items-center justify-between gap-2 mb-2 pb-3 border-b border-white/5">
+                                                            <div className="flex items-center justify-between gap-1.5 mb-1 pb-2.5 border-b border-white/5">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-inner">
-                                                                        <ShieldCheck className="w-4 h-4" />
+                                                                    <div className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-inner">
+                                                                        <ShieldCheck className="w-3.5 h-3.5" />
                                                                     </div>
                                                                     <div>
-                                                                        <h4 className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                        <h4 className="text-xs sm:text-sm font-black text-white tracking-tight flex items-center gap-1">
                                                                             재무 건전성
                                                                         </h4>
-                                                                        <p className="text-[10px] text-zinc-400 font-mono">FINANCIAL HEALTH & MOAT</p>
+                                                                        <p className="text-[9px] text-zinc-400 font-mono">FINANCIAL HEALTH & MOAT</p>
                                                                     </div>
                                                                 </div>
-                                                                <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-black tracking-tight shadow-sm flex items-center gap-1">
+                                                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black tracking-tight shadow-sm flex items-center gap-1 shrink-0">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                                                     {badgeLabel}
                                                                 </span>
                                                             </div>
 
-                                                            {/* 2층: 게이지 차트 & 퀀트 랭킹 */}
-                                                            <div className="my-[-12px] flex flex-col items-center justify-center">
-                                                                <GaugeChart score={score} label="재무 펀더멘털 스코어" subLabel="" color="#10b981" />
-                                                                <div className="mt-[-8px] mb-3 px-3 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 font-mono shadow-sm">
+                                                            {/* 2층: 게이지 차트 & 퀀트 랭킹 (사이즈 최적화: md) */}
+                                                            <div className="my-0 flex flex-col items-center justify-center">
+                                                                <GaugeChart score={score} label="재무 펀더멘털 스코어" subLabel="" color="#10b981" size="md" />
+                                                                <div className="mt-[-6px] mb-2 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 font-mono shadow-sm">
                                                                     {rankLabel}
                                                                 </div>
                                                             </div>
 
                                                             {/* 3층: 3대 핵심 서브 팩터 정밀 바 */}
-                                                            <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2.5 my-3 shadow-inner">
-                                                                <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400 border-b border-white/5 pb-1">
+                                                            <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2 my-2 shadow-inner">
+                                                                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 border-b border-white/5 pb-1">
                                                                     <span>재무 안정성 팩터</span>
-                                                                    <span className="text-[10px] text-emerald-400 font-mono">BALANCE SHEET</span>
+                                                                    <span className="text-[9px] text-emerald-400 font-mono">BALANCE SHEET</span>
                                                                 </div>
 
                                                                 {/* 팩터 1: 자본 수익성 (ROE) */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-xs">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center justify-between text-[11px]">
                                                                         <span className="text-zinc-300 font-medium">자본수익률 (ROE 효율성)</span>
                                                                         <span className="text-emerald-400 font-mono font-black">{roePct}%</span>
                                                                     </div>
@@ -1991,8 +1991,8 @@ function DiscoveryContent() {
                                                                 </div>
 
                                                                 {/* 팩터 2: 부채 레버리지 안전도 */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-xs">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center justify-between text-[11px]">
                                                                         <span className="text-zinc-300 font-medium">부채 안전도 (Z-Score)</span>
                                                                         <span className="text-teal-300 font-mono font-black">{debtSafetyPct}%</span>
                                                                     </div>
@@ -2002,21 +2002,21 @@ function DiscoveryContent() {
                                                                 </div>
 
                                                                 {/* 팩터 3: 잉여현금흐름 창출력 */}
-                                                                <div className="flex items-center justify-between text-xs pt-0.5">
+                                                                <div className="flex items-center justify-between text-[11px] pt-0.5">
                                                                     <span className="text-zinc-300 font-medium">잉여현금흐름 (FCF 창출)</span>
-                                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 font-mono font-bold text-[11px]">
+                                                                    <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 font-mono font-bold text-[10px]">
                                                                         {score >= 80 ? '순현금 유입 극대화 💰' : '안정적 현금 흐름'}
                                                                     </span>
                                                                 </div>
                                                             </div>
 
                                                             {/* 4층: 전문 퀀트 총평 */}
-                                                            <div className="space-y-1.5 my-3">
-                                                                <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
+                                                            <div className="space-y-1 my-2">
+                                                                <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-300">
                                                                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                                                                     <span>AI 펀더멘털 진단</span>
                                                                 </div>
-                                                                <p className="text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-500/15 break-keep">
+                                                                <p className="text-[11px] text-zinc-300 leading-relaxed font-medium bg-emerald-950/20 p-2 sm:p-2.5 rounded-xl border border-emerald-500/15 break-keep line-clamp-3 hover:line-clamp-none transition-all">
                                                                     {verdictText}
                                                                 </p>
                                                             </div>
@@ -2024,18 +2024,18 @@ function DiscoveryContent() {
 
                                                         <div>
                                                             {/* 5층: 초보자용 1초 가이드 배너 */}
-                                                            <div className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-[11px] text-emerald-200/90 flex items-start gap-2 mb-3">
-                                                                <span className="text-base shrink-0 leading-none">💡</span>
+                                                            <div className="p-2 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-[10px] text-emerald-200/90 flex items-start gap-1.5 mb-2">
+                                                                <span className="text-sm shrink-0 leading-none">💡</span>
                                                                 <span className="leading-snug break-keep">
-                                                                    회사가 <strong>빚이 적고(안전성), 알짜배기 진짜 돈을 잘 버는지</strong> 보는 성적표입니다. 80점 이상이면 금융위기에도 부도 걱정 없는 초우량 알짜 기업입니다!
+                                                                    회사가 <strong>빚이 적고, 진짜 돈을 잘 버는지</strong> 보는 성적표입니다. 80점 이상이면 부도 걱정 없는 초우량 알짜 기업입니다!
                                                                 </span>
                                                             </div>
 
                                                             {/* 6층: 퀵 퀀트 태그 칩 */}
-                                                            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#초우량체력</span>
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#부채리스크최저</span>
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#경기방어주</span>
+                                                            <div className="flex flex-wrap gap-1 pt-1.5 border-t border-white/5">
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#초우량체력</span>
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#부채리스크최저</span>
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#경기방어주</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2062,48 +2062,48 @@ function DiscoveryContent() {
                                                 );
 
                                                 return (
-                                                    <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-b from-amber-950/30 via-zinc-900/80 to-zinc-950 border border-amber-500/25 hover:border-amber-400/50 transition-all duration-300 shadow-2xl flex flex-col justify-between text-left relative overflow-hidden group hover:shadow-[0_12px_40px_rgba(245,158,11,0.18)]">
+                                                    <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-b from-amber-950/30 via-zinc-900/80 to-zinc-950 border border-amber-500/25 hover:border-amber-400/50 transition-all duration-300 shadow-xl flex flex-col justify-between text-left relative overflow-hidden group hover:shadow-[0_8px_30px_rgba(245,158,11,0.15)] h-full">
                                                         {/* 상단 앰비언트 글로우 라인 */}
                                                         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-500/80 to-transparent" />
 
                                                         <div>
                                                             {/* 1층: 헤더 & 상태 뱃지 */}
-                                                            <div className="flex items-center justify-between gap-2 mb-2 pb-3 border-b border-white/5">
+                                                            <div className="flex items-center justify-between gap-1.5 mb-1 pb-2.5 border-b border-white/5">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-inner">
-                                                                        <Sparkles className="w-4 h-4" />
+                                                                    <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-inner">
+                                                                        <Sparkles className="w-3.5 h-3.5" />
                                                                     </div>
                                                                     <div>
-                                                                        <h4 className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                        <h4 className="text-xs sm:text-sm font-black text-white tracking-tight flex items-center gap-1">
                                                                             시장 관심도 & 심리
                                                                         </h4>
-                                                                        <p className="text-[10px] text-zinc-400 font-mono">MARKET BUZZ & SENTIMENT</p>
+                                                                        <p className="text-[9px] text-zinc-400 font-mono">MARKET BUZZ & SENTIMENT</p>
                                                                     </div>
                                                                 </div>
-                                                                <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-black tracking-tight shadow-sm flex items-center gap-1">
+                                                                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black tracking-tight shadow-sm flex items-center gap-1 shrink-0">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                                                                     {badgeLabel}
                                                                 </span>
                                                             </div>
 
-                                                            {/* 2층: 게이지 차트 & 퀀트 랭킹 */}
-                                                            <div className="my-[-12px] flex flex-col items-center justify-center">
-                                                                <GaugeChart score={score} label="뉴스 심리 스코어" subLabel="" color="#f59e0b" />
-                                                                <div className="mt-[-8px] mb-3 px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[11px] font-bold text-amber-300 font-mono shadow-sm">
+                                                            {/* 2층: 게이지 차트 & 퀀트 랭킹 (사이즈 최적화: md) */}
+                                                            <div className="my-0 flex flex-col items-center justify-center">
+                                                                <GaugeChart score={score} label="뉴스 심리 스코어" subLabel="" color="#f59e0b" size="md" />
+                                                                <div className="mt-[-6px] mb-2 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-bold text-amber-300 font-mono shadow-sm">
                                                                     {rankLabel}
                                                                 </div>
                                                             </div>
 
                                                             {/* 3층: 3대 핵심 서브 팩터 정밀 바 */}
-                                                            <div className="p-3.5 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2.5 my-3 shadow-inner">
-                                                                <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400 border-b border-white/5 pb-1">
+                                                            <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-2 my-2 shadow-inner">
+                                                                <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 border-b border-white/5 pb-1">
                                                                     <span>미디어 센티먼트 팩터</span>
-                                                                    <span className="text-[10px] text-amber-400 font-mono">SENTIMENT RADAR</span>
+                                                                    <span className="text-[9px] text-amber-400 font-mono">SENTIMENT RADAR</span>
                                                                 </div>
 
                                                                 {/* 팩터 1: AI 헤드라인 긍정 비율 */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-xs">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center justify-between text-[11px]">
                                                                         <span className="text-zinc-300 font-medium">AI 헤드라인 긍정 비율</span>
                                                                         <span className="text-amber-400 font-mono font-black">{posRatioPct}%</span>
                                                                     </div>
@@ -2113,8 +2113,8 @@ function DiscoveryContent() {
                                                                 </div>
 
                                                                 {/* 팩터 2: 포털 관심도 & 검색량 */}
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between text-xs">
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center justify-between text-[11px]">
                                                                         <span className="text-zinc-300 font-medium">포털 검색 & 미디어 버즈</span>
                                                                         <span className="text-yellow-300 font-mono font-black">{buzzPct}%</span>
                                                                     </div>
@@ -2124,21 +2124,21 @@ function DiscoveryContent() {
                                                                 </div>
 
                                                                 {/* 팩터 3: 핵심 촉매 모멘텀 */}
-                                                                <div className="flex items-center justify-between text-xs pt-0.5">
+                                                                <div className="flex items-center justify-between text-[11px] pt-0.5">
                                                                     <span className="text-zinc-300 font-medium">신성장 촉매 모멘텀</span>
-                                                                    <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/25 text-amber-300 font-mono font-bold text-[11px]">
+                                                                    <span className="px-1.5 py-0.2 rounded bg-amber-500/15 border border-amber-500/25 text-amber-300 font-mono font-bold text-[10px]">
                                                                         {catalystPower}
                                                                     </span>
                                                                 </div>
                                                             </div>
 
                                                             {/* 4층: 전문 퀀트 총평 */}
-                                                            <div className="space-y-1.5 my-3">
-                                                                <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                                                            <div className="space-y-1 my-2">
+                                                                <div className="flex items-center gap-1.5 text-[11px] font-black text-amber-300">
                                                                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                                                                     <span>AI 센티먼트 진단</span>
                                                                 </div>
-                                                                <p className="text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium bg-amber-950/20 p-2.5 rounded-xl border border-amber-500/15 break-keep">
+                                                                <p className="text-[11px] text-zinc-300 leading-relaxed font-medium bg-amber-950/20 p-2 sm:p-2.5 rounded-xl border border-amber-500/15 break-keep line-clamp-3 hover:line-clamp-none transition-all">
                                                                     {verdictText}
                                                                 </p>
                                                             </div>
@@ -2146,18 +2146,18 @@ function DiscoveryContent() {
 
                                                         <div>
                                                             {/* 5층: 초보자용 1초 가이드 배너 */}
-                                                            <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-[11px] text-amber-200/90 flex items-start gap-2 mb-3">
-                                                                <span className="text-base shrink-0 leading-none">💡</span>
+                                                            <div className="p-2 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-[10px] text-amber-200/90 flex items-start gap-1.5 mb-2">
+                                                                <span className="text-sm shrink-0 leading-none">💡</span>
                                                                 <span className="leading-snug break-keep">
-                                                                    최근 주요 인터넷 뉴스와 보고서에서 <strong>호재(칭찬)와 악재(우려) 중 무엇이 더 많은지</strong> AI가 측정한 분위기입니다. 80점 이상이면 시장 전체가 이 주식을 긍정적으로 바라보고 있습니다!
+                                                                    주요 뉴스와 보고서에서 <strong>호재와 악재 중 무엇이 더 많은지</strong> AI가 측정한 분위기입니다. 80점 이상이면 시장이 긍정적으로 봅니다!
                                                                 </span>
                                                             </div>
 
                                                             {/* 6층: 퀵 퀀트 태그 칩 */}
-                                                            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#호재성뉴스지배</span>
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#투자심리극대화</span>
-                                                                <span className="px-2 py-0.5 rounded-lg bg-zinc-800/80 text-[10px] text-zinc-300 font-mono">#모멘텀우세</span>
+                                                            <div className="flex flex-wrap gap-1 pt-1.5 border-t border-white/5">
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#호재성뉴스</span>
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#투자심리극대화</span>
+                                                                <span className="px-1.5 py-0.5 rounded bg-zinc-800/80 text-[9px] text-zinc-300 font-mono">#모멘텀우세</span>
                                                             </div>
                                                         </div>
                                                     </div>
