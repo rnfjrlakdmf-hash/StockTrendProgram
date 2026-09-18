@@ -1897,13 +1897,23 @@ function formatUsdToKrwInText(text: string): string {
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert'].includes(alert.type);
+        const isMorning = Boolean(
+            alert.type === 'morning_briefing' ||
+            titleText.includes('모닝 팩트') ||
+            titleText.includes('간추린 모닝') ||
+            ((alert.body || '').includes('전날 수급') && (alert.body || '').includes('🤖'))
+        );
 
         let symbolMatch = false;
-        if (alert.symbol && watchlistSymbols.includes(alert.symbol)) {
+        const alertSymbol = (alert.symbol || '').trim();
+        const safeSymbols = watchlistSymbols || [];
+        const safeNames = watchlistNames || [];
+
+        if (alertSymbol && safeSymbols.includes(alertSymbol)) {
             symbolMatch = true;
         } else {
-            for (const name of watchlistNames) {
-                if (name && (alert.title?.includes(name) || alert.body?.includes(name))) {
+            for (const name of safeNames) {
+                if (name && (titleText.includes(name) || (alert.body || '').includes(name))) {
                     symbolMatch = true;
                     break;
                 }
@@ -1927,13 +1937,13 @@ function formatUsdToKrwInText(text: string): string {
                 return false;
             }
             const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert', 'morning_briefing'].includes(alert.type) ||
-                isMorningBriefing ||
+                isMorning ||
                 titleText.includes('관심종목 결산') ||
                 titleText.includes('모닝 팩트') ||
                 titleText.includes('간추린 모닝');
             
             // 내 관심종목 뉴스 속보, 공시, 시세 알림, 모닝 팩트 완전 통합
-            const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorningBriefing) && (symbolMatch || !alert.symbol);
+            const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorning) && (symbolMatch || isMorning);
 
             return isPortfolioAlert || isWatchlistContent;
         }
