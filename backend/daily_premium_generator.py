@@ -17,43 +17,48 @@ if GEMINI_API_KEY:
     
 def get_naver_net_buying(market_code="01", investor_code="9000", limit=10):
     """
-    네이버 금융에서 순매수 데이터를 크롤링합니다.
+    네이버 금융 공식 API에서 순매수 상위 데이터를 수집합니다.
     market_code: 01(코스피), 02(코스닥)
     investor_code: 9000(외국인), 8000(기관)
     """
-    url = f"https://finance.naver.com/sise/sise_deal_rank_iframe.naver?sosok={market_code}&investor_gubun={investor_code}&type=buy"
+    m_type = "KOSPI" if market_code == "01" else "KOSDAQ"
+    inv_sec = "foreignTop" if investor_code == "9000" else "orgTop"
+    
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Content-Type': 'application/json',
+        'Referer': 'https://stock.naver.com/'
+    }
+    
+    url = "https://stock.naver.com/api/domestic/home/marketaggregate/aggregateInvestorRanking"
+    payload = {
+        "sections": {
+            inv_sec: {
+                "tradeType": "KRX",
+                "marketType": m_type,
+                "krxMarketType": m_type,
+                "startIdx": 0,
+                "pageSize": limit
+            }
+        }
     }
     
     try:
-        res = requests.get(url, headers=headers, timeout=10)
-        res.encoding = 'euc-kr'
-        soup = BeautifulSoup(res.text, 'html.parser')
-        
-        table = soup.find("table", class_="type_1")
-        if not table:
+        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        if res.status_code != 200:
             return []
-            
-        rows = table.find_all("tr")
+        data = res.json().get("data", {})
+        raw_list = data.get(inv_sec, {}).get("buy", [])
+        
         results = []
-        for row in rows:
-            cols = row.find_all("td")
-            if len(cols) >= 3:
-                name_tag = cols[0].find("a")
-                if not name_tag:
-                    continue
-                name = name_tag.text.strip()
-                try:
-                    vol_str = cols[2].text.strip().replace(",", "")  # 3번째 컬럼이 순매수 금액(백만) / 4번째가 순매수량
-                    vol = int(vol_str) if vol_str.isdigit() else 0
-                    if vol > 0:
-                        results.append({"name": name, "volume": vol})
-                except Exception:
-                    pass
-        return results[:limit]
+        for item in raw_list[:limit]:
+            name = item.get("itemname", "").strip()
+            vol = item.get("dailyTradeVolume", 0) or 0
+            if name:
+                results.append({"name": name, "volume": vol})
+        return results
     except Exception as e:
-        print(f"Scraping error: {e}")
+        print(f"[DailyPremium] Scraping error: {e}")
         return []
 
 def generate_objective_report():

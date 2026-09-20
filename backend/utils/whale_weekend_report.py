@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import asyncio
 import requests
@@ -6,51 +7,91 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import pytz
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
+
+DATA_DIR = os.path.join(BACKEND_DIR, "data")
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
 REPORT_FILE = os.path.join(DATA_DIR, "whale_weekend_report.json")
 
+def get_net_volume_for_stock(code: str, investor: str = 'foreign') -> str:
+    url = f"https://m.stock.naver.com/api/stock/{code}/trend?pageSize=2"
+    try:
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+        if r.status_code == 200:
+            rows = r.json()
+            if rows and isinstance(rows, list):
+                target = rows[0]
+                quant = target.get('foreignerPureBuyQuant') if investor == 'foreign' else target.get('organPureBuyQuant')
+                if quant:
+                    return f"{quant}주"
+    except Exception:
+        pass
+    return ""
+
 def fetch_whale_top10():
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Content-Type": "application/json",
+        "Referer": "https://stock.naver.com/"
     }
     
-    def get_rank_from_iframe(market_code="01", investor_code="9000", limit=10):
-        url = f"https://finance.naver.com/sise/sise_deal_rank_iframe.naver?sosok={market_code}&investor_gubun={investor_code}&type=buy"
-        try:
-            res = requests.get(url, headers=headers, timeout=10)
-            res.encoding = 'euc-kr'
-            soup = BeautifulSoup(res.text, 'html.parser')
-            table = soup.find('table', class_='type_1')
-            if not table:
-                return []
-            items = []
-            for row in table.find_all('tr'):
-                cols = row.find_all('td')
-                if len(cols) >= 4:
-                    name_tag = cols[0].find('a')
-                    if name_tag:
-                        name = name_tag.text.strip()
-                        vol = cols[3].text.strip()
-                        if name and vol:
-                            items.append({"stock": name, "amount": f"{vol}주"})
-            return items[:limit]
-        except Exception as e:
-            print(f"[WhaleReport] Scraper error ({market_code}, {investor_code}): {e}")
-            return []
-
-    foreign_top10 = get_rank_from_iframe("01", "9000", 10)
-    inst_top10 = get_rank_from_iframe("01", "8000", 10)
-
-    # Fallback to KOSDAQ if KOSPI is empty
-    if not foreign_top10:
-        foreign_top10 = get_rank_from_iframe("02", "9000", 10)
-    if not inst_top10:
-        inst_top10 = get_rank_from_iframe("02", "8000", 10)
-
-    return foreign_top10, inst_top10
+    url = "https://stock.naver.com/api/domestic/home/marketaggregate/aggregateInvestorRanking"
+    
+    payload = {
+        "sections": {
+            "foreignTop": {
+                "tradeType": "KRX",
+                "marketType": "KOSPI",
+                "krxMarketType": "KOSPI",
+                "startIdx": 0,
+                "pageSize": 10
+            },
+            "orgTop": {
+                "tradeType": "KRX",
+                "marketType": "KOSPI",
+                "krxMarketType": "KOSPI",
+                "startIdx": 0,
+                "pageSize": 10
+            }
+        }
+    }
+    
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        if res.status_code != 200:
+            print(f"[WhaleReport] Modern API error: {res.status_code}")
+            return [], []
+            
+        data = res.json().get("data", {})
+        raw_foreign = data.get("foreignTop", {}).get("buy", [])
+        raw_org = data.get("orgTop", {}).get("buy", [])
+        
+        foreign_top10 = []
+        for item in raw_foreign[:10]:
+            name = item.get("itemname", "").strip()
+            code = item.get("itemcode", "").strip()
+            vol = get_net_volume_for_stock(code, 'foreign')
+            amount_str = vol if vol else f"{item.get('dailyTradeVolume', 0):,}주"
+            if name:
+                foreign_top10.append({"stock": name, "amount": amount_str, "code": code})
+                
+        inst_top10 = []
+        for item in raw_org[:10]:
+            name = item.get("itemname", "").strip()
+            code = item.get("itemcode", "").strip()
+            vol = get_net_volume_for_stock(code, 'org')
+            amount_str = vol if vol else f"{item.get('dailyTradeVolume', 0):,}주"
+            if name:
+                inst_top10.append({"stock": name, "amount": amount_str, "code": code})
+                
+        return foreign_top10, inst_top10
+    except Exception as e:
+        print(f"[WhaleReport] Modern API fetch error: {e}")
+        return [], []
 
 def _generate_whale_report_sync():
     from ai_analysis import generate_with_retry, API_KEY, safe_json_loads
