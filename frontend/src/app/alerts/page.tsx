@@ -870,32 +870,35 @@ function formatUsdToKrwInText(text: string): string {
                                         </div>
                                     </div>
 
-                                    {/* 3층: 컴팩트 마감 진단 1줄 + 빠른 심층 분석/시세 액션 버튼 */}
-                                    <div className="flex items-center justify-between gap-2 pt-0.5">
-                                        <div className="min-w-0 flex-1">
-                                            {item.insight && (
-                                                <p className="text-[11px] text-zinc-400 truncate flex items-center gap-1">
-                                                    <span className="text-amber-300 font-bold shrink-0">💡 마감 진단:</span>
-                                                    <span className="truncate">{item.insight}</span>
+                                    {/* 3층: 마감 진단 인사이트 전용 박스 + 액션 버튼 (글자 잘림 완전 해결) */}
+                                    <div className="space-y-2 pt-1 border-t border-white/5">
+                                        {item.insight && (
+                                            <div className="p-2.5 bg-zinc-950/70 rounded-xl border border-white/5 text-xs leading-relaxed text-zinc-300 flex items-start gap-2">
+                                                <span className="text-amber-300 font-bold shrink-0 flex items-center gap-1 mt-0.5">
+                                                    <span>💡</span>
+                                                    <span className="font-black text-[11px] bg-amber-400/10 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20">마감 진단</span>
+                                                </span>
+                                                <p className="flex-1 break-keep text-zinc-300 text-[11px] sm:text-xs leading-relaxed font-normal">
+                                                    {item.insight}
                                                 </p>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-end gap-2 pt-0.5">
                                             <Link 
                                                 href={item.cleanSymbol ? `/discovery?q=${item.cleanSymbol}` : `/discovery?q=${encodeURIComponent(item.name)}`}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                                                className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-sm"
                                             >
-                                                <Sparkles className="w-3 h-3 text-amber-400" />
+                                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                                                 <span>심층 분석</span>
                                                 <ChevronRight className="w-3 h-3" />
                                             </Link>
                                             <Link 
                                                 href="/watchlist"
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="px-2 py-1 rounded-lg bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 border border-white/10 text-[11px] font-medium transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                                                className="px-2.5 py-1.5 rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 border border-white/10 text-xs font-medium transition-all flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
                                             >
-                                                <TrendingUp className="w-3 h-3 text-cyan-400" />
+                                                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
                                                 <span>시세</span>
                                             </Link>
                                         </div>
