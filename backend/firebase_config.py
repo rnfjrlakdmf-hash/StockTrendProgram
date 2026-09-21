@@ -518,11 +518,12 @@ def sanitize_notification_text(title: str, body: str):
     cleaned_lines = []
     
     for line in lines:
-        line = line.strip()
-        if not line:
+        line = line.rstrip()
+        if not line.strip():
             continue
         # [NEW] 푸시 알림 화면 공간 최적화: 면책 및 안내 사족 문구 제거
-        if any(line.startswith(x) for x in ['※', '👉', '🔍']) or '투자 권유가 아닙니다' in line or '투자권유가 아닙니다' in line or '투자 권유' in line or '단순 집계 통계 결과이며' in line:
+        stripped_line = line.strip()
+        if any(stripped_line.startswith(x) for x in ['※', '👉', '🔍']) or '투자 권유가 아닙니다' in stripped_line or '투자권유가 아닙니다' in stripped_line or '투자 권유' in stripped_line or '단순 집계 통계 결과이며' in stripped_line:
             continue
         # 뉴스 제목 및 속보의 전체 전달을 위해 한 줄 최대 길이를 150자로 대폭 완화 (워치/폰 확장 시 전체 감상 가능)
         if len(line) > 150:
