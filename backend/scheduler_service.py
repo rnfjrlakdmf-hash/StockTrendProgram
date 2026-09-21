@@ -573,15 +573,11 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                 retail_str = format_krw_amount_korean(k_flow.get("personal", 0))
                 supply_market_line = f"🌊 코스피 수급: 외인 {frgn_str} · 기관 {inst_str} (개인 {retail_str})"
 
-            diag_market_line = f"💡 {diagnosis}" if diagnosis else ""
-
             lines_market = [idx_line]
             if macro_items:
                 lines_market.append(" · ".join(macro_items[:2]))
             if supply_market_line:
                 lines_market.append(supply_market_line)
-            if diag_market_line:
-                lines_market.append(diag_market_line)
             body_market = "\n".join(lines_market)
 
             # -----------------------------------------------------------------
