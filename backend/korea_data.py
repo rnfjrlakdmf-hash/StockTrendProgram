@@ -271,9 +271,9 @@ def gather_naver_stock_data(symbol: str):
     import pytz
 
     try:
-        # 종목코드 추출 (예: 005930 -> 005930.KS 또는 005930.KQ)
+        # 종목코드 추출 (예: 005930, 0161M0 등 코스피, 코스닥, K-OTC, 코넥스 6자리 코드)
         code = symbol.split('.')[0]
-        code = re.sub(r'[^0-9]', '', code)
+        code = re.sub(r'[^0-9A-Za-z]', '', code).upper()
         if len(code) != 6:
             return None
 
@@ -324,6 +324,7 @@ def gather_naver_stock_data(symbol: str):
                             'volume': stock_data.get('aq'),
                             'longName': stock_data.get('nm'),
                             'shortName': stock_data.get('nm'),
+                            'koreanName': stock_data.get('nm'),
                             'symbol': f"{code}.KS",
                             'marketCap': 0,
                             'trailingEps': stock_data.get('eps'),
@@ -352,20 +353,22 @@ def gather_naver_stock_data(symbol: str):
 
         # ── 데이터 매핑 및 가공 ──────────────────────────────────
         # Try to resolve Korean stock name from local map or clean/translate
-        name = None
-        try:
-            from stock_names import STOCK_MAP
-            code_to_name = {}
-            for name_key, code_val in STOCK_MAP.items():
-                if isinstance(code_val, str) and code_val.isdigit():
-                    if code_val in code_to_name:
-                        if len(name_key) > len(code_to_name[code_val]):
-                            code_to_name[code_val] = name_key
-                    else:
-                        code_to_name[code_val] = name_key
-            name = code_to_name.get(code)
-        except Exception as name_err:
-            print(f"[gather_naver_stock_data] Error importing stock names: {name_err}")
+        name = info.get('koreanName') or (info.get('shortName') if info.get('shortName') and re.search(r'[가-힣]', str(info.get('shortName'))) else None)
+        if not name:
+            try:
+                from stock_names import STOCK_MAP
+                code_to_name = {}
+                for name_key, code_val in STOCK_MAP.items():
+                    if isinstance(code_val, str):
+                        clean_c = code_val.strip()
+                        if clean_c in code_to_name:
+                            if len(name_key) > len(code_to_name[clean_c]):
+                                code_to_name[clean_c] = name_key
+                        else:
+                            code_to_name[clean_c] = name_key
+                name = code_to_name.get(code)
+            except Exception as name_err:
+                print(f"[gather_naver_stock_data] Error importing stock names: {name_err}")
 
 
         if not name:

@@ -144,7 +144,13 @@ def get_cached_stock_info(ticker: str):
                         break
         # ---------------------------------
         
-        is_us_stock = not ticker.isdigit()
+        clean_ticker = ticker.split('.')[0] if '.' in ticker else ticker
+        
+        # 한국 주식 판별: 
+        # 1) 6자리이고 첫 글자가 숫자인 코드 (예: 005930, 0161M0, 005935, 373220 등 - 코스피, 코스닥, 코넥스, K-OTC 모두 지원)
+        # 2) 접미사가 .KS 또는 .KQ 인 경우
+        is_kr_stock = (len(clean_ticker) == 6 and clean_ticker[0].isdigit()) or ticker.endswith('.KS') or ticker.endswith('.KQ')
+        is_us_stock = not is_kr_stock
         
         if is_us_stock:
             # Handle US Stock via yfinance
@@ -205,7 +211,7 @@ def get_cached_stock_info(ticker: str):
             
             # 1. Integration API (시세, PER, PBR, 배당률, 시가총액, 종목명 등)
             try:
-                url_int = f"https://m.stock.naver.com/api/stock/{ticker}/integration"
+                url_int = f"https://m.stock.naver.com/api/stock/{clean_ticker}/integration"
                 res_int = requests.get(url_int, headers=m_headers, timeout=5)
                 if res_int.status_code == 200:
                     int_data = res_int.json()
@@ -242,7 +248,7 @@ def get_cached_stock_info(ticker: str):
             # 2. 전일가 및 최근가 보정 (/price API)
             prev = price
             try:
-                url_price = f"https://m.stock.naver.com/api/stock/{ticker}/price?pageSize=5"
+                url_price = f"https://m.stock.naver.com/api/stock/{clean_ticker}/price?pageSize=5"
                 res_price = requests.get(url_price, headers=m_headers, timeout=4)
                 if res_price.status_code == 200:
                     price_list = res_price.json()
@@ -255,7 +261,7 @@ def get_cached_stock_info(ticker: str):
 
             # 3. 재무제표 API (/finance/annual)
             try:
-                url_fin = f"https://m.stock.naver.com/api/stock/{ticker}/finance/annual"
+                url_fin = f"https://m.stock.naver.com/api/stock/{clean_ticker}/finance/annual"
                 res_fin = requests.get(url_fin, headers=m_headers, timeout=5)
                 if res_fin.status_code == 200:
                     fin_json = res_fin.json()
@@ -304,16 +310,16 @@ def get_cached_stock_info(ticker: str):
             except Exception as e:
                 logger.error(f"Error fetching naver finance annual for {ticker}: {e}")
 
-            summary = fetch_korean_company_overview(ticker, name)
+            summary = fetch_korean_company_overview(clean_ticker, name)
             
             ex_div_str = None
             pay_str = None
             
             # Fetch dividend schedule for Korean stocks using yfinance
             try:
-                cal = yf.Ticker(f"{ticker}.KS").calendar
+                cal = yf.Ticker(f"{clean_ticker}.KS").calendar
                 if not cal:
-                    cal = yf.Ticker(f"{ticker}.KQ").calendar
+                    cal = yf.Ticker(f"{clean_ticker}.KQ").calendar
                 
                 if cal:
                     ex_div_date = cal.get('Ex-Dividend Date')
@@ -336,8 +342,8 @@ def get_cached_stock_info(ticker: str):
                 random_picks = random.sample(stocks_list, 8)
                 related_stocks = [{"ticker": s["ticker"], "name": s["name"]} for s in random_picks]
 
-        if price == 0 and not ticker.isdigit():
-            # Treat 0 price for non-digit tickers as not found
+        if price == 0 and is_us_stock:
+            # Treat 0 price for US tickers as not found
             return {"status": "error", "message": "Stock not found"}
 
         return {
