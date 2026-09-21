@@ -1874,11 +1874,11 @@ function formatUsdToKrwInText(text: string): string {
         // 2. 관리자 탭 선택 시: 관리자 알림만 집중 표시
         if (activeTab === "admin") return isAdminAlert;
 
-        // 3. 운영 알림 탭 선택 시: 관리자용 보고서는 완전 제외하고, 순수 일반 서비스 공지/업데이트만 표시!
+        // 3. 운영 알림 탭 선택 시: 관리자용 보고서는 완전 제외하고, 순수 일반 서비스 공지/업데이트/스터디 강의 표시!
         if (activeTab === "system") {
             if (isAdminAlert) return false;
-            const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update'].includes(alert.type) ||
-                titleText.includes('[공지]') || titleText.includes('[안내]') || titleText.includes('[업데이트]') || titleText.includes('[점검]');
+            const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update', 'theory_alert', 'study'].includes(alert.type) ||
+                titleText.includes('[공지]') || titleText.includes('[안내]') || titleText.includes('[업데이트]') || titleText.includes('[점검]') || titleText.includes('스터디') || titleText.includes('1타 강사');
             return isSystemNotice;
         }
 
@@ -1892,7 +1892,7 @@ function formatUsdToKrwInText(text: string): string {
             (Array.isArray(alert.target_users) && alert.target_users.length > 0) ||
             ['portfolio_summary', 'portfolio'].includes(alert.type) ||
             titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산') || titleText.includes('간추린 모닝');
-        if (isPersonalAlert && !user) {
+        if (isPersonalAlert && (!user || user.is_guest)) {
             return false;
         }
 
@@ -1908,10 +1908,11 @@ function formatUsdToKrwInText(text: string): string {
 
         let symbolMatch = false;
         const alertSymbol = (alert.symbol || '').trim();
-        const safeSymbols = watchlistSymbols || [];
+        const cleanAlertSymbol = alertSymbol.split('.')[0];
+        const safeSymbols = (watchlistSymbols || []).map(s => s.split('.')[0]);
         const safeNames = watchlistNames || [];
 
-        if (alertSymbol && safeSymbols.includes(alertSymbol)) {
+        if (cleanAlertSymbol && safeSymbols.includes(cleanAlertSymbol)) {
             symbolMatch = true;
         } else {
             for (const name of safeNames) {
