@@ -26,6 +26,8 @@ interface AlertItem {
     dart_url?: string;
     news_url?: string;
     url?: string;
+    is_global?: boolean;
+    target_users?: string[];
 }
 
 // Market Badge Resolver (국내 코스피·코스닥 및 미국 나스닥·NYSE·S&P500 완벽 구분)
@@ -1660,7 +1662,7 @@ function formatUsdToKrwInText(text: string): string {
             typeBadgeLabel = "📰 실시간 뉴스 속보";
             cardBorderHover = "hover:border-sky-500/40 hover:shadow-[0_0_25px_rgba(14,165,233,0.15)]";
             accentBorder = "border-l-4 border-l-sky-400";
-            defaultCta = { href: alert.url || `/discovery?q=${symbol}`, label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
+            defaultCta = { href: alert.url || (alert.symbol ? `/discovery?q=${alert.symbol}` : "/discovery"), label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
         }
         // [5순위: 주도 테마 레이더]
         else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운 테마") || combinedText.includes("대장주") || combinedText.includes("급등주")) {

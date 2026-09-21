@@ -2855,7 +2855,7 @@ function DiscoveryContent() {
                                                             1주당 실제 입금 현금
                                                         </div>
                                                     </div>
-                                                </div>}
+                                                </div>
 
                                             {/* 가격 범위 및 52주 변동성 위치 게이지 바 */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
