@@ -130,26 +130,21 @@ export default function AlertCenterPage() {
                 snapLatest.forEach(doc => {
                     const data = doc.data();
                     const isGlobal = data.is_global === true;
-                    const isTargeted = Boolean(userId && data.target_users && Array.isArray(data.target_users) && data.target_users.includes(userId));
+                    const hasTargetUsers = Array.isArray(data.target_users) && data.target_users.length > 0;
+                    const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
                     
                     const isAdminType = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
                         (data.title || '').includes('[관리자]') || (data.title || '').includes('일일 운영 보고서') || (data.title || '').includes('방문자 보고');
 
-                    // 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
+                    // 1. 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
                     if (isAdminType && !isAdmin) return;
 
-                    // [보안 강화] 개인 맞춤 알림(관심종목 뉴스 속보, 포트폴리오 결산 등)은 오직 타겟 본인(isTargeted)에게만 노출
-                    // 비로그인 사용자나 다른 이용자에게는 DB 조회 단계에서 원천 차단
-                    const isPersonalType = !isGlobal && (
-                        ['portfolio_summary', 'portfolio', 'news_alert', 'news_naver', 'news_google', 'news'].includes(data.type) || 
-                        (data.title || '').includes('관심종목 결산') || (data.title || '').includes('내 관심종목 결산')
-                    );
-                    if (isPersonalType && !isTargeted) return;
-
-                    const isPublicType = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert', 'market_summary', 'system_alert', 'notice', 'announcement', 'service_update', 'morning_briefing'].includes(data.type) || 
-                        (data.title || '').includes('모닝 팩트') || (data.title || '').includes('간추린 모닝');
+                    // 2. [보안 철저] 특정 유저 대상 알림(target_users 존재 또는 비공개 알림)은 본인(isTargeted)이 아니면 무조건 차단!
+                    // 개인 관심종목 결산, 종목별 간추린 모닝팩트 등은 타인이나 비로그인 유저에게 절대 노출되지 않음
+                    if (hasTargetUsers && !isTargeted) return;
+                    if (!isGlobal && !isTargeted) return;
                     
-                    if (isGlobal || isTargeted || isPublicType || (isAdmin && isAdminType)) {
+                    if (isGlobal || isTargeted || (isAdmin && isAdminType)) {
                         // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
                         const sec = data.timestamp?.seconds || 0;
                         const timeBucket = Math.floor(sec / 1800); // 30 minutes bucket
@@ -1890,9 +1885,11 @@ function formatUsdToKrwInText(text: string): string {
             return false;
         }
 
-        // [보안 강화] 비로그인 상태(!user)에서는 어떤 탭(전체 브리핑 포함)에서도 개인 관심종목 결산 알림을 일절 노출하지 않음
-        const isPersonalAlert = ['portfolio_summary', 'portfolio'].includes(alert.type) ||
-            titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산');
+        // [보안 강화] 비로그인 상태(!user)에서는 어떤 탭(전체 브리핑 포함)에서도 개인 맞춤 알림 일절 노출 금지
+        const isPersonalAlert = !alert.is_global || 
+            (Array.isArray(alert.target_users) && alert.target_users.length > 0) ||
+            ['portfolio_summary', 'portfolio'].includes(alert.type) ||
+            titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산') || titleText.includes('간추린 모닝');
         if (isPersonalAlert && !user) {
             return false;
         }
@@ -1935,18 +1932,16 @@ function formatUsdToKrwInText(text: string): string {
         }
         
         if (activeTab === "portfolio") {
-            // [보안 강화] 비로그인 상태에서는 개인 관심종목 결산이나 포트폴리오 정보를 일절 노출하지 않음
+            // [보안 강화] 비로그인 상태에서는 개인 관심종목 탭에 아무것도 노출하지 않고 로그인 잠금 화면 유지
             if (!user) {
                 return false;
             }
-            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert', 'morning_briefing'].includes(alert.type) ||
-                isMorning ||
+            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert'].includes(alert.type) ||
                 titleText.includes('관심종목 결산') ||
-                titleText.includes('모닝 팩트') ||
-                titleText.includes('간추린 모닝');
+                titleText.includes('내 관심종목 결산');
             
-            // 내 관심종목 뉴스 속보, 공시, 시세 알림, 모닝 팩트 완전 통합
-            const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorning) && (symbolMatch || isMorning);
+            // 내 관심종목 뉴스 속보, 공시, 시세 알림, 종목별 모닝 팩트 (반드시 본인이 등록한 종목과 일치해야 함!)
+            const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorning) && symbolMatch;
 
             return isPortfolioAlert || isWatchlistContent;
         }
