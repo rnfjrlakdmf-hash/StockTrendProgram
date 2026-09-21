@@ -233,26 +233,38 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         </span>
                                     )}
 
-                                    {/* 프리/에프터 및 국내 시간외 가격 */}
-                                    {item.extendedPrice && (
-                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
-                                            <span className="text-[9px] text-indigo-300 font-black flex items-center gap-1">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                                {item.currency === 'KRW' ? (item.sessionBadge?.label === '프리' ? '프리' : '시간외') : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
-                                            </span>
-                                            <span className={`text-[11px] font-black font-mono ${
-                                                parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) > 0 ? 'text-rose-400' : 
-                                                parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g,'')) < 0 ? 'text-sky-400' : 'text-zinc-300'
-                                            }`}>
-                                                {item.currency === 'KRW' ? `${item.extendedPrice}원` : `$${item.extendedPrice}`}
-                                                {item.extendedChange && (
-                                                    <span className="ml-1 text-[10px] font-bold">
-                                                        {item.extendedChange.includes('(') ? item.extendedChange : `(${item.extendedChange})`}
-                                                    </span>
-                                                )}
-                                            </span>
-                                        </div>
-                                    )}
+                                    {/* 프리/에프터 및 국내 시간외 가격 (정규장 종가와 완전히 같고 변동이 0%인 경우 중복 노출 방지) */}
+                                    {(() => {
+                                        if (!item.extendedPrice) return null;
+                                        const cleanRegular = String(item.price || '').replace(/[^0-9.]/g, '');
+                                        const cleanExt = String(item.extendedPrice || '').replace(/[^0-9.]/g, '');
+                                        const extChangeNum = parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g, ''));
+                                        
+                                        // 정규장 종가와 시간외 가격이 동일하고 변동률도 0%이면 중복 숫자 노출 생략
+                                        if (cleanRegular && cleanExt && cleanRegular === cleanExt && Math.abs(extChangeNum) === 0) {
+                                            return null;
+                                        }
+
+                                        return (
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
+                                                <span className="text-[9px] text-indigo-300 font-black flex items-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                                                    {item.currency === 'KRW' ? (item.sessionBadge?.label === '프리' ? '프리' : '시간외') : (item.sessionBadge?.label === 'PRE' ? 'PRE' : 'AFTER')}
+                                                </span>
+                                                <span className={`text-[11px] font-black font-mono ${
+                                                    extChangeNum > 0 ? 'text-rose-400' : 
+                                                    extChangeNum < 0 ? 'text-sky-400' : 'text-zinc-300'
+                                                }`}>
+                                                    {item.currency === 'KRW' ? `${item.extendedPrice}원` : `$${item.extendedPrice}`}
+                                                    {item.extendedChange && (
+                                                        <span className="ml-1 text-[10px] font-bold">
+                                                            {item.extendedChange.includes('(') ? item.extendedChange : `(${item.extendedChange})`}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* 등락률 뱃지 */}
                                     <div className={`flex items-center gap-1 text-[11px] sm:text-xs md:text-sm font-black font-mono px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border shadow-sm ${
