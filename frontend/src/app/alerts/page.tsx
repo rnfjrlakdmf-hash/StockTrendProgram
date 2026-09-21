@@ -493,21 +493,21 @@ function formatUsdToKrwInText(text: string): string {
 
             if (cleanLine.startsWith('총 누적 수익률') || cleanLine.startsWith('총 수익률') || (cleanLine.includes('수익률:') && !cleanLine.startsWith('•') && !cleanLine.startsWith('↳'))) {
                 totalReturn = cleanLine.replace(/^.*?수익률[:\s]*/, '').trim();
-            } else if ((cleanLine.startsWith('💰 총 누적 수익') || cleanLine.startsWith('총 누적 수익') || cleanLine.startsWith('💰 총 수익:') || cleanLine.startsWith('총 수익:')) && !cleanLine.startsWith('↳') && !cleanLine.includes('주)')) {
-                totalProfit = cleanLine.replace(/^.*?(?:총\s*누적\s*수익|총\s*수익)[:\s]*/, '').replace(/\(.*?\)/, '').trim();
+            } else if ((cleanLine.includes('총 누적 수익') || cleanLine.includes('총 누적 손익') || cleanLine.includes('총 누적 손실') || cleanLine.includes('총 수익:') || cleanLine.includes('총 손익:') || cleanLine.includes('총 손실:')) && !cleanLine.startsWith('↳') && !cleanLine.includes('주)')) {
+                totalProfit = cleanLine.replace(/^.*?(?:총\s*누적\s*손익|총\s*누적\s*수익|총\s*누적\s*손실|총\s*손익|총\s*수익)[:\s]*/, '').replace(/\(.*?\)/, '').trim();
             } else if (cleanLine.includes('오늘의 MVP') || (cleanLine.includes('🏆') && cleanLine.includes('MVP'))) {
                 mvpText = cleanLine.replace(/^.*?MVP[:\s]*/, '').trim();
             } else if (cleanLine.includes('약세 종목') || (cleanLine.includes('⚠️') && cleanLine.includes('약세'))) {
                 worstText = cleanLine.replace(/^.*?약세\s*종목[:\s]*/, '').trim();
             } else if (cleanLine.includes('수급 합산') || (cleanLine.includes('🌊') && cleanLine.includes('수급'))) {
                 supplyText = cleanLine.replace(/^.*?수급\s*합산[:\s]*/, '').trim();
-            } else if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('[') && !cleanLine.includes('수익률') && !cleanLine.includes('수익:'))) {
+            } else if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('[') && !cleanLine.includes('수익률') && !cleanLine.includes('수익:') && !cleanLine.includes('손익:') && !cleanLine.includes('손실:'))) {
                 // 새로운 종목 행 파싱 (예: • 삼성중공업(7주): 21,350원 (▼251원 / ▼1.2%) 또는 2만 1,350원)
                 const parts = cleanLine.split(':');
                 const nameWithQty = parts[0].replace('•', '').trim();
 
-                // 지수(코스피, 코스닥 등) 및 시장 거시 지표는 개별 보유 종목이 아니므로 스킵
-                if (/^(코스피|코스닥|KOSPI|KOSDAQ|나스닥|환율|다우|S&P|유가|금리)/i.test(nameWithQty)) {
+                // 지수(코스피, 코스닥 등) 및 시장 거시 지표, 전체 요약 메트릭은 개별 보유 종목이 아니므로 스킵
+                if (/^(코스피|코스닥|KOSPI|KOSDAQ|나스닥|환율|다우|S&P|유가|금리|총 누적|총 수익|총 손익|💰)/i.test(nameWithQty) || nameWithQty.includes('손익') || nameWithQty.includes('수익률')) {
                     return;
                 }
 
