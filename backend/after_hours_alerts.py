@@ -13,8 +13,8 @@ async def after_hours_alert_loop():
             kst = pytz.timezone('Asia/Seoul')
             now = datetime.now(kst)
             
-            # 18:05 부터 18:10 사이에 1회 실행 (시간외 단일가 마감은 18:00)
-            if now.hour == 18 and 5 <= now.minute <= 10:
+            # 18:05(KRX 시간외 단일가 마감) 및 20:05(대체거래소 NXT 애프터마켓 마감)에 실행
+            if (now.hour == 18 or now.hour == 20) and 5 <= now.minute <= 10:
                 if is_holiday("kor") or now.weekday() >= 5:
                     await asyncio.sleep(60)
                     continue
@@ -22,8 +22,8 @@ async def after_hours_alert_loop():
                 print(f"[AfterHours] Running after-hours check at {now}")
                 await check_after_hours_limit()
                 
-                # 중복 실행 방지를 위해 한 시간 대기
-                await asyncio.sleep(3600)
+                # 중복 실행 방지를 위해 10분 대기
+                await asyncio.sleep(600)
                 continue
                 
         except Exception as e:
