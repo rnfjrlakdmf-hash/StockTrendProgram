@@ -7,7 +7,7 @@
  * - 알림 클릭 시 단순 통합 대시보드(/)가 아닌, 공시/뉴스 원문 또는 해당 종목 심층 분석창(/discovery?q=종목코드)으로 즉시 직행합니다.
  */
 
-const SW_VERSION = '2026.09.03-v6-navigation-fix';
+const SW_VERSION = '2026.09.21-v7-distinct-closing-tags';
 
 // Firebase SDK 로드
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -27,25 +27,29 @@ const messaging = firebase.messaging();
 
 // 백그라운드 메시지 수신
 messaging.onBackgroundMessage(async (payload) => {
-    console.log('[SW] Background message received (v6 navigation fix):', payload);
+    console.log('[SW] Background message received (v7 distinct tags):', payload);
 
     const notificationTitle = payload.notification?.title || payload.data?.title || '새 알림';
     const notificationBody = payload.notification?.body || payload.data?.body || '';
     const symbol = payload.data?.symbol || '';
     const alertType = payload.data?.type || 'stock-alert';
 
-    // 카테고리 및 종목별 독립 태그 생성:
-    let tag;
-    if (alertType === 'disclosure_alert') {
-        tag = symbol ? `disc-${symbol}` : `disc-${Date.now()}`;
-    } else if (alertType === 'news_alert') {
-        tag = symbol ? `news-${symbol}` : `news-${Date.now()}`;
-    } else if (alertType === 'market_summary' || alertType === 'portfolio_summary') {
-        tag = 'market-briefing-latest';
-    } else if (symbol) {
-        tag = `stock-price-${symbol}`;
-    } else {
-        tag = `alert-${Date.now()}`;
+    // 카테고리 및 종목별 독립 태그 생성 (서버 태그 우선 적용하여 지수/종목 결산 상호 덮어쓰기 완벽 방지)
+    let tag = payload.data?.tag || payload.notification?.tag || '';
+    if (!tag) {
+        if (alertType === 'disclosure_alert') {
+            tag = symbol ? `disc-${symbol}` : `disc-${Date.now()}`;
+        } else if (alertType === 'news_alert') {
+            tag = symbol ? `news-${symbol}` : `news-${Date.now()}`;
+        } else if (alertType === 'market_summary') {
+            tag = `market-summary-${Date.now()}`;
+        } else if (alertType === 'portfolio_summary') {
+            tag = `portfolio-summary-${Date.now()}`;
+        } else if (symbol) {
+            tag = `stock-price-${symbol}`;
+        } else {
+            tag = `alert-${Date.now()}`;
+        }
     }
 
     const notificationOptions = {
