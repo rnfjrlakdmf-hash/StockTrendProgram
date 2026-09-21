@@ -51,20 +51,10 @@ export default function HomeClient() {
 
       <div className="p-4 md:p-8 space-y-8">
 
-        {/* 상단 통합 배너 영역 (가로배너 + 사각배너 나란히 배치) - 여백(Padding) 추가하여 오클릭 방지 */}
-        <div className="flex flex-col xl:flex-row items-center justify-center gap-8 py-6 mb-4 border-y border-white/[0.05]">
-          {/* 좌측/중앙 배너 (모바일: 320x50, PC: 728x90) */}
-          <div className="flex justify-center rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-black/20 p-2">
-            <div className="block md:hidden">
-              <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-            </div>
-            <div className="hidden md:block">
-              <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-            </div>
-          </div>
-          {/* 우측 사각 배너 (PC에서만 상단에 나란히 배치) */}
-          <div className="hidden xl:block rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-black/20 p-2">
-            <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
+        {/* 상단 통합 배너 영역 (모바일: 300x250 고단가 사각 / PC: 728x90, 35초 스마트 리프레시) */}
+        <div className="flex justify-center items-center py-4 mb-2 border-y border-white/[0.05]">
+          <div className="rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-zinc-950/40 border border-white/5 p-2 w-full max-w-[760px] flex justify-center">
+            <KakaoRevenueAd type="feed" autoRefreshInterval={35} />
           </div>
         </div>
         
@@ -198,16 +188,9 @@ export default function HomeClient() {
               </div>
             </div>
 
-            {/* 하단 통합 배너 광고 (모바일: 320x480 세로형, PC: 728x90 가로형) */}
-            <div className="my-2 flex justify-center">
-              {/* 모바일 전용 대형 배너 */}
-              <div className="block md:hidden">
-                <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
-              </div>
-              {/* PC 전용 하단 가로 배너 */}
-              <div className="hidden md:block">
-                <KakaoAdFit adUnit="DAN-kfR4SXJubdA0vEcm" adWidth="728" adHeight="90" />
-              </div>
+            {/* 하단 통합 배너 광고 (모바일: 320x480 고단가 세로형, PC: 728x90, 35초 스마트 리프레시) */}
+            <div className="my-4 flex justify-center">
+              <KakaoRevenueAd type="bottom" autoRefreshInterval={35} />
             </div>
 
 

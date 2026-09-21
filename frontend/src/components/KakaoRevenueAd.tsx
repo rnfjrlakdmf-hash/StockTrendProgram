@@ -43,9 +43,11 @@ export default function KakaoRevenueAd({
   const [shouldDisplay, setShouldDisplay] = useState<boolean>(false);
 
   useEffect(() => {
-    // [Smart Bot & Domestic User Filter]
-    // 1. Googlebot, AdSense review bot, Headless browser detection -> Hide ads (Pristine review)
-    // 2. Real Korean domestic visitors -> Show ads 100% normally (Zero revenue loss)
+    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
+      setShouldDisplay(false);
+      return;
+    }
+
     const ua = (navigator.userAgent || "").toLowerCase();
     const isBot = ua.includes("googlebot") || 
                   ua.includes("mediapartners-google") || 
@@ -55,19 +57,8 @@ export default function KakaoRevenueAd({
                   ua.includes("crawler") ||
                   ua.includes("spider");
 
-    if (isBot) {
-      setShouldDisplay(false);
-      return;
-    }
-
-    // Check Korean timezone or language
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      setShouldDisplay(isKorea);
-    } catch {
-      setShouldDisplay(true);
-    }
+    // 봇만 제외하고 모든 실사용자에게 100% 정상 노출
+    setShouldDisplay(!isBot);
 
     const checkIsPC = () => window.innerWidth >= 768;
     setIsPC(checkIsPC());
@@ -121,7 +112,8 @@ export default function KakaoRevenueAd({
     <html style="margin:0;padding:0;overflow:hidden;">
       <head>
         <meta charset="utf-8">
-        <base target="_top">
+        <base href="https://stock-trend-program.co.kr/" target="_top">
+        <meta name="referrer" content="always">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -133,7 +125,7 @@ export default function KakaoRevenueAd({
           data-ad-unit="${config.unit}"
           data-ad-width="${config.width}"
           data-ad-height="${config.height}"></ins>
-        <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+        <script type="text/javascript" src="https://t1.daumcdn.net/kas/static/ba.min.js" async></script>
       </body>
     </html>
   `;

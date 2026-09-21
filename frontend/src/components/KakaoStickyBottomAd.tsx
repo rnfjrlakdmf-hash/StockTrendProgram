@@ -28,18 +28,8 @@ export default function KakaoStickyBottomAd() {
                   ua.includes("headless") ||
                   ua.includes("crawler");
 
-    if (isBot) {
-      setShouldDisplay(false);
-      return;
-    }
-
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      setShouldDisplay(isKorea);
-    } catch {
-      setShouldDisplay(true);
-    }
+    // 봇만 제외하고 모든 실사용자에게 100% 정상 노출
+    setShouldDisplay(!isBot);
   }, []);
 
   useEffect(() => {
@@ -61,9 +51,9 @@ export default function KakaoStickyBottomAd() {
     } catch (_) {}
   }, []);
 
-  // 35초마다 스마트 자동 새로고침 (PC에서 열려있을 때만)
+  // 35초마다 스마트 자동 새로고침 (모바일 & PC 모두 활성화하여 노출수 극대화)
   useEffect(() => {
-    if (closed || isHiddenPage || !shouldDisplay || !isPC) return;
+    if (closed || isHiddenPage || !shouldDisplay) return;
 
     const intervalId = setInterval(() => {
       if (typeof document !== "undefined" && !document.hidden) {
@@ -72,7 +62,7 @@ export default function KakaoStickyBottomAd() {
     }, 35000);
 
     return () => clearInterval(intervalId);
-  }, [closed, isHiddenPage, shouldDisplay, isPC]);
+  }, [closed, isHiddenPage, shouldDisplay]);
 
   const handleClose = () => {
     setClosed(true);
@@ -82,8 +72,8 @@ export default function KakaoStickyBottomAd() {
     } catch (_) {}
   };
 
-  // [방안 1 적용] 모바일 환경(!isPC)에서는 사용자 편의 및 콘텐츠 가림 방지를 위해 완전히 숨김
-  if (!shouldDisplay || closed || isHiddenPage || !isPC) return null;
+  // [모바일 UX 보호] 모바일 환경(!isPC)에서는 화면 밑부분 가림 및 이용 불편 방지를 위해 완전히 숨김
+  if (!shouldDisplay || closed || isHiddenPage || isPC === null || !isPC) return null;
 
   // 모바일: 320x50 (DAN-b9cY6ogHFZTTD0Sl) / PC: 728x90 (DAN-eeR4RhnpmQaeIlYm)
   const unit = isPC ? "DAN-eeR4RhnpmQaeIlYm" : "DAN-b9cY6ogHFZTTD0Sl";
@@ -97,7 +87,8 @@ export default function KakaoStickyBottomAd() {
     <html style="margin:0;padding:0;overflow:hidden;">
       <head>
         <meta charset="utf-8">
-        <base target="_top">
+        <base href="https://stock-trend-program.co.kr/" target="_top">
+        <meta name="referrer" content="always">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -115,14 +106,14 @@ export default function KakaoStickyBottomAd() {
   `;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center items-center bg-zinc-950/95 backdrop-blur-md border-t border-white/10 py-1.5 px-4 shadow-2xl transition-all animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-[54px] md:bottom-0 left-0 right-0 z-40 flex justify-center items-center bg-zinc-950/95 backdrop-blur-md border-t border-white/10 py-1 px-2 md:py-1.5 md:px-4 shadow-2xl transition-all animate-in slide-in-from-bottom duration-300">
       <div className="relative flex items-center justify-center w-full max-w-4xl">
         <iframe
           key={refreshKey}
           srcDoc={htmlContent}
           width={numWidth}
           height={numHeight}
-          style={{ border: "none", overflow: "hidden", maxWidth: "100%" }}
+          style={{ border: "none", overflow: "hidden", maxWidth: "100%", height: `${numHeight}px` }}
           scrolling="no"
           title="Kakao Sticky Ad"
         />
@@ -130,7 +121,7 @@ export default function KakaoStickyBottomAd() {
         {/* 닫기 버튼 */}
         <button
           onClick={handleClose}
-          className="absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-full bg-zinc-800/90 text-gray-400 hover:text-white border border-white/10 shadow-md transition-all text-xs cursor-pointer hover:bg-zinc-700"
+          className="absolute top-1/2 -translate-y-1/2 right-1 md:right-2 p-1 rounded-full bg-zinc-800/90 text-gray-400 hover:text-white border border-white/10 shadow-md transition-all text-xs cursor-pointer hover:bg-zinc-700"
           title="광고 24시간 닫기"
         >
           <X className="w-3.5 h-3.5" />

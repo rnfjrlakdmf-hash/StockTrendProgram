@@ -1,4 +1,4 @@
-﻿import time
+import time
 import requests
 import yfinance as yf
 from firebase_admin import firestore, messaging
@@ -13,8 +13,8 @@ error_counters = {
     "firebase_db": 0
 }
 
-# 오토 힐링 기능 활성화 플래그
-AUTO_HEAL_ENABLED = False
+# 오토 힐링 기능 활성화 플래그 (다운된 스케줄러 자동 재가동)
+AUTO_HEAL_ENABLED = True
 
 def toggle_auto_heal():
     global AUTO_HEAL_ENABLED

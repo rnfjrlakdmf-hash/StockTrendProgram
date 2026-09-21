@@ -28,18 +28,8 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }
                   ua.includes("headless") ||
                   ua.includes("crawler");
 
-    if (isBot) {
-      setShouldDisplay(false);
-      return;
-    }
-
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      setShouldDisplay(isKorea);
-    } catch {
-      setShouldDisplay(true);
-    }
+    // 봇만 제외하고 모든 실사용자에게 100% 정상 노출
+    setShouldDisplay(!isBot);
   }, []);
 
   if (!shouldDisplay || !adUnit || adUnit === "DAN-PLACEHOLDER") return null;
@@ -52,7 +42,8 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }
     <html style="margin:0;padding:0;overflow:hidden;">
       <head>
         <meta charset="utf-8">
-        <base target="_top">
+        <base href="https://stock-trend-program.co.kr/" target="_top">
+        <meta name="referrer" content="always">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }

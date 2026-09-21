@@ -902,8 +902,8 @@ def send_daily_analytics_report():
             SELECT f.token 
             FROM fcm_tokens f
             LEFT JOIN users u ON f.user_id = u.id
-            WHERE LOWER(u.email) IN ('rnfjrlakdmf@gmail.com')
-               OR f.user_id IN ('110418985320259217419', 'rnfjrlakdmf@gmail.com')
+            WHERE LOWER(u.email) IN ('rnfjrlakdmf@gmail.com', 'rnfjr@gmail.com')
+               OR f.user_id IN ('110418985320259217419', 'rnfjrlakdmf@gmail.com', 'rnfjr@gmail.com')
         """)
         tokens = [row[0] for row in cursor.fetchall() if row[0]]
         
@@ -1096,6 +1096,7 @@ def run_market_scheduler():
     last_run_analytics = ""
     last_run_fomo = ""
     last_run_dormant = ""
+    last_run_crypto_surge = ""
     # [핵심 수정] 서버 재시작 시 오늘 날짜를 기준으로 초기화
     # Firestore에서 오늘 이미 발행된 글이 있으면 무조건 오늘 날짜로 마킹 → 중복 절대 방지
     _init_kst = pytz.timezone('Asia/Seoul')
@@ -1344,10 +1345,15 @@ def run_market_scheduler():
                     print(f"[Scheduler] Weekend report generation error: {e}")
                 last_run_weekend_report_gen = current_date
 
-            # [매일 발송] 밤 11시 59분 일일 방문자 및 시스템 보고서 발송 (Admins)
-            if now.hour == 23 and 55 <= now.minute <= 59 and current_date != last_run_daily_report:
-                send_daily_analytics_report()
-                last_run_daily_report = current_date
+            # [매일 발송] 밤 11시 55분 일일 방문자 및 시스템 보고서 발송 (Admins)
+            if now.hour == 23 and now.minute >= 50 and current_date != last_run_daily_report:
+                try:
+                    print(f"[Scheduler] 📊 Launching Daily Analytics Report for {current_date}...")
+                    send_daily_analytics_report()
+                    last_run_daily_report = current_date
+                    print(f"[Scheduler] ✅ Daily Analytics Report sent successfully.")
+                except Exception as dr_e:
+                    print(f"[Scheduler-Error] Daily analytics report failed: {dr_e}")
                 
             # [매시간 실행] 구글 시트 통계 동기화 (불사조 모드: 누락 방지)
             if now.minute == 0 and getattr(run_market_scheduler, "last_run_sheets_sync_hour", None) != now.hour:
@@ -1359,7 +1365,7 @@ def run_market_scheduler():
                     print(f"[Scheduler] Google Sheets sync error: {e}")
             
             # [매일 실행] 새벽 3시 구글 색인(Indexing) 봇 자동 실행 (최신 종목/테마 페이지 강제 푸시)
-            if now.hour == 3 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
+            if now.hour == 3 and 0 <= now.minute <= 10 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
                 try:
                     from google_indexer import get_urls_from_sitemap, publish_urls_to_google, SITEMAP_URL
                     print("[Scheduler] Running Google Auto-Indexer Bot...")
@@ -1383,47 +1389,31 @@ def run_market_scheduler():
 
             # [매일 발송] 공모주 청약 일정 알림
             if day_of_week <= 4:
-                if now.hour == 8 and 15 <= now.minute <= 20 and current_date != last_run_ipo and not is_market_holiday("KR"):
+                if now.hour == 8 and 15 <= now.minute <= 25 and current_date != last_run_ipo and not is_market_holiday("KR"):
                     try:
                         from batch_ipo_alerts import send_ipo_alerts
                         send_ipo_alerts()
+                        last_run_ipo = current_date
                     except Exception as e:
                         print(f"[Scheduler] IPO 알림 오류: {e}")
-                    last_run_ipo = current_date
-            
-            # [매일 발송] 오전 8:30 모닝 테마주 브리핑 전체 웹 푸시 (유사투자자문업 방어 목적: 객관적 사실 전달)
-            # 사용자의 요청으로 발송 중지됨
-            '''
-            if day_of_week <= 4:
-                if now.hour == 8 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_morning_theme_push", None) and not is_market_holiday("KR"):
-                    try:
-                        conn = get_db_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL")
-                        tokens = [row[0] for row in cursor.fetchall() if row[0]]
-                        conn.close()
-                        
-                        if tokens:
-                            title = "🔔 장 시작 30분 전! (객관적 요약)"
-                            body = "AI가 간추린 오늘의 핵심 테마 브리핑입니다. 특정 종목 추천이 아닌 단순 정보 제공 목적입니다."
-                            send_multicast_notification(tokens, title, body, {"url": "/briefing"})
-                            print(f"[Scheduler] Morning Theme Briefing push sent to {len(tokens)} devices.")
-                    except Exception as e:
-                        print(f"[Scheduler-Error] Failed to send Morning Theme Briefing push: {e}")
-                    run_market_scheduler.last_run_morning_theme_push = current_date
-            '''
             
             # [평일 발송] AI 모닝 브리핑 (US)
             if day_of_week <= 4 and not is_market_holiday("US"):
-                if now.hour == 21 and 30 <= now.minute <= 35 and current_date != last_run_morning_us:
-                    asyncio.run(morning_briefing_service.run_daily_briefing("US"))
-                    last_run_morning_us = current_date
+                if now.hour == 21 and 30 <= now.minute <= 40 and current_date != last_run_morning_us:
+                    try:
+                        asyncio.run(morning_briefing_service.run_daily_briefing("US"))
+                        last_run_morning_us = current_date
+                    except Exception as us_mb_e:
+                        print(f"[Scheduler-Error] Morning briefing US failed: {us_mb_e}")
 
             # 1. 국내 장시작 시가 알림
             if day_of_week <= 4:
-                if now.hour == 9 and 5 <= now.minute <= 10 and current_date != last_run_open_kr and not is_market_holiday("KR"):
-                    send_opening_notification("KR")
-                    last_run_open_kr = current_date
+                if now.hour == 9 and 5 <= now.minute <= 15 and current_date != last_run_open_kr and not is_market_holiday("KR"):
+                    try:
+                        send_opening_notification("KR")
+                        last_run_open_kr = current_date
+                    except Exception as ok_e:
+                        print(f"[Scheduler-Error] Opening notification KR failed: {ok_e}")
 
             # 2. 국내 장마감 종가 리포트 - 15:40 이후 미발송 시 무조건 1회 실행 보장
             if day_of_week <= 4 and not is_holiday("kor"):
@@ -1451,30 +1441,42 @@ def run_market_scheduler():
             # - 서머타임/표준시 무관하게 KST 22:35 / 23:35는 미국 09:35이므로 KST 월~금(0~4)에만 발송
             us_open_days = list(range(0, 5))
             if day_of_week in us_open_days:
-                if now.hour == us_open_hour and 35 <= now.minute <= 40 and current_date != last_run_open_us and not is_market_holiday("US"):
-                    send_opening_notification("US")
-                    last_run_open_us = current_date
+                if now.hour == us_open_hour and 35 <= now.minute <= 45 and current_date != last_run_open_us and not is_market_holiday("US"):
+                    try:
+                        send_opening_notification("US")
+                        last_run_open_us = current_date
+                    except Exception as ous_e:
+                        print(f"[Scheduler-Error] Opening notification US failed: {ous_e}")
 
             # 4. 미국 장마감 종가 리포트
             # - KST 새벽 4~5시는 미국 전날입니다
             # - ny_date(미국 날짜)를 기준으로 중복 발송 방지
             us_close_days = list(range(1, 6)) if is_dst else list(range(1, 6))
             if day_of_week in us_close_days:
-                if now.hour == us_close_hour and 10 <= now.minute <= 15 and ny_date != last_run_close_us and not is_market_holiday("US"):
-                    send_closing_notification("US")
-                    last_run_close_us = ny_date
+                if now.hour == us_close_hour and 10 <= now.minute <= 20 and ny_date != last_run_close_us and not is_market_holiday("US"):
+                    try:
+                        send_closing_notification("US")
+                        last_run_close_us = ny_date
+                    except Exception as cus_e:
+                        print(f"[Scheduler-Error] Closing notification US failed: {cus_e}")
                     
             # 5. 주말 테마 리포트 (일요일 18:00)
             if day_of_week == 6: # 일요일 (0:월, ..., 6:일)
-                if now.hour == 18 and 0 <= now.minute <= 5 and current_date != last_run_weekend_report:
-                    send_weekend_theme_report()
-                    last_run_weekend_report = current_date
+                if now.hour == 18 and 0 <= now.minute <= 10 and current_date != last_run_weekend_report:
+                    try:
+                        send_weekend_theme_report()
+                        last_run_weekend_report = current_date
+                    except Exception as wtr_e:
+                        print(f"[Scheduler-Error] Weekend theme report failed: {wtr_e}")
                     
             # 6. 주말 코인 리포트 (토요일 18:00)
             if day_of_week == 5: # 토요일
-                if now.hour == 18 and 0 <= now.minute <= 5 and current_date != last_run_weekend_crypto:
-                    send_weekend_crypto_report()
-                    last_run_weekend_crypto = current_date
+                if now.hour == 18 and 0 <= now.minute <= 10 and current_date != last_run_weekend_crypto:
+                    try:
+                        send_weekend_crypto_report()
+                        last_run_weekend_crypto = current_date
+                    except Exception as wcr_e:
+                        print(f"[Scheduler-Error] Weekend crypto report failed: {wcr_e}")
             
             time.sleep(30)
             
