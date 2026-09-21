@@ -1359,82 +1359,70 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
 
 def fetch_google_news(query, lang='ko', region='KR', period='1d'):
     """
-    Google News에서 뉴스 검색 (기본값: 한국어, 한국지역)
-    [Improved] 인코딩 문제 해결 + Timeout 적용 + Naver Fallback
+    Google News 공식 RSS 피드 기반 검색 (차단 및 429 Too Many Requests 완전 해결)
+    [Improved] Google Official RSS Feed + Fallback to Naver Integrated News
     """
+    import urllib.request
+    import urllib.parse
+    import xml.etree.ElementTree as ET
+    import html
+    
+    cleaned_results = []
+    
+    # 1. Google 공식 RSS 피드 호출 (차단/429 발생 없음)
     try:
-        def _exec_google_search():
-            if GoogleNews is None:
-                return []
-            gn = GoogleNews(lang=lang, region=region, period=period)
-            gn.search(query)
-            # 페이징 처리를 통해 50개(약 5페이지) 정도의 뉴스를 가져옵니다.
-            for i in range(2, 6):
-                try:
-                    gn.get_page(i)
-                except:
-                    break
-            return gn.results()
+        encoded_query = urllib.parse.quote(query)
+        hl = lang if lang else 'ko'
+        gl = region if region else 'KR'
+        ceid = f"{gl}:{hl}"
+        rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl={hl}&gl={gl}&ceid={ceid}"
+        
+        req = urllib.request.Request(rss_url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
+        with urllib.request.urlopen(req, timeout=8) as response:
+            xml_data = response.read()
+            root = ET.fromstring(xml_data)
+            items = root.findall('.//item')
+            for item in items[:25]:
+                title_elem = item.find('title')
+                link_elem = item.find('link')
+                pub_date_elem = item.find('pubDate')
+                source_elem = item.find('source')
+                
+                title = title_elem.text if title_elem is not None and title_elem.text else ''
+                link = link_elem.text if link_elem is not None and link_elem.text else ''
+                pub_date = pub_date_elem.text if pub_date_elem is not None and pub_date_elem.text else ''
+                source = source_elem.text if source_elem is not None and source_elem.text else 'Google News'
+                
+                title = html.unescape(title).strip()
+                # 출처 접미사 정리 (예: '... - 한국경제' 에서 출처 분리)
+                if ' - ' in title:
+                    parts = title.rsplit(' - ', 1)
+                    title = parts[0].strip()
+                    if source == 'Google News' and len(parts) > 1:
+                        source = parts[1].strip()
+                
+                if title and len(title) >= 3:
+                    cleaned_results.append({
+                        "title": title,
+                        "publisher": source,
+                        "link": link,
+                        "published": pub_date
+                    })
+    except Exception as e:
+        print(f"[News] Google RSS Fetch Warning: {e}")
 
-        raw_results = []
+    # 2. 만약 Google RSS 결과가 비어있으면 네이버 통합 뉴스로 즉시 Fallback
+    if not cleaned_results and lang == 'ko':
         try:
-            # Run in thread with timeout (increased to 15s for multiple pages)
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(_exec_google_search)
-                raw_results = future.result(timeout=15)
-        except concurrent.futures.TimeoutError:
-            print(f"[News] Google News Timeout for '{query}'")
-            # Timeout -> Fallback
-            if lang == 'ko':
-                 from korea_data import get_integrated_stock_news
-                 return get_integrated_stock_news(query=query)
-            return []
-        except Exception as e:
-            print(f"[News] Google News Internal Error: {e}")
-            raise e
-
-        # [Fix] Clean results immediately
-        cleaned_results = []
-        if raw_results:
-            for res in raw_results:
-                link = res.get("link", "")
-                title = res.get("title", "")
-                
-                # Filter out garbage titles
-                if not title or len(title) < 2:
-                    continue
-                    
-                # Link Cleaning
-                if '&ved=' in link:
-                    link = link.split('&ved=')[0]
-                    
-                try:
-                    link = urllib.parse.unquote(link)
-                except:
-                    pass
-                
-                cleaned_results.append({
-                    "title": title,
-                    "publisher": res.get("media", "Google News"),
-                    "link": link,
-                    "published": res.get("date", "")
-                })
-
-        # 2. Fallback if empty (Only for Korean queries)
-        if not cleaned_results and lang == 'ko':
-            print(f"[News] Google News empty for '{query}'. Trying Naver Fallback...")
+            print(f"[News] Google News RSS empty for '{query}'. Using Naver Integrated News Fallback...")
             from korea_data import get_integrated_stock_news
             return get_integrated_stock_news(query=query)
+        except Exception as fe:
+            print(f"[News] Naver Fallback Error: {fe}")
             
-        return cleaned_results
-
-    except Exception as e:
-        print(f"Google News Error: {e}")
-        # Fallback on error
-        if lang == 'ko':
-             from korea_data import get_integrated_stock_news
-             return get_integrated_stock_news(query=query)
-        return []
+    return cleaned_results
 
 
 def get_market_data():
