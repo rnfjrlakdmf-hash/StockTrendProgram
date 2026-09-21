@@ -117,16 +117,9 @@ export default function AlertCenterPage() {
             try {
                 const alertsRef = collection(db, "alerts");
                 
-                let userId = user?.id || (user as any)?.uid || localStorage.getItem('fcm_guest_id');
-                if (!userId) {
-                    try {
-                        const storedUser = localStorage.getItem('stock_user');
-                        if (storedUser) {
-                            const parsed = JSON.parse(storedUser);
-                            userId = parsed.id || parsed.uid;
-                        }
-                    } catch(e){}
-                }
+                // [보안 강화] 오직 명시적으로 로그인된 유저 세션이 존재할 때만 userId 인정
+                // 비로그인 상태에서 로컬스토리지 캐시(stock_user, fcm_guest_id)로 개인 알림을 조회하는 취약점 원천 제거
+                const userId = user?.id || (user as any)?.uid || null;
                 
                 const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
                 const snapLatest = await getDocs(qLatest);
@@ -1894,6 +1887,13 @@ function formatUsdToKrwInText(text: string): string {
 
         // 4. 일반 탭(전체 브리핑, 공시, 내 관심종목)에서는 관리자 보고서 완전 제외
         if (isAdminAlert) {
+            return false;
+        }
+
+        // [보안 강화] 비로그인 상태(!user)에서는 어떤 탭(전체 브리핑 포함)에서도 개인 관심종목 결산 알림을 일절 노출하지 않음
+        const isPersonalAlert = ['portfolio_summary', 'portfolio'].includes(alert.type) ||
+            titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산');
+        if (isPersonalAlert && !user) {
             return false;
         }
 
