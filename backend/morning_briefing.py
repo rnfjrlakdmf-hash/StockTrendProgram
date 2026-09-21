@@ -178,15 +178,33 @@ class MorningBriefingService:
                     res.append(text)
             return res[:3]
 
-        facts_list = filter_items(analysis.get('market_facts', []))
+        facts_list = filter_items(analysis.get('market_facts', [])) if analysis else []
         
-        raw_ai_summary = str(analysis.get('ai_summary', '')).strip()
+        raw_ai_summary = str(analysis.get('ai_summary', '')).strip() if analysis else ""
         ai_summary = raw_ai_summary[:50] + "..." if len(raw_ai_summary) > 50 else raw_ai_summary
+
+        # [핵심 보강] 밤사이 특정 뉴스 팩트가 적거나 없는 경우(주말/연휴 직후 등), 
+        # 수급/종가 팩트를 지능적으로 생성하여 어떤 날에도 모닝팩트 알림이 100% 누락 없이 발송되도록 보장
+        if len(facts_list) == 0:
+            if foreigner > 0 and institution > 0:
+                facts_list.append("외인·기관 쌍끌이 동반 순매수 유입으로 수급 모멘텀 강화")
+            elif foreigner > 0:
+                facts_list.append("외국인 투자자 중심의 순매수 유입세 지속")
+            elif institution > 0:
+                facts_list.append("국내 기관 투자자의 저가 매수세 유입 지속")
+            elif retail > 0:
+                facts_list.append("개인 투자자 중심의 저가 분할 매수세 유입")
+            else:
+                facts_list.append("장 시작 전 주요 돌발 이슈 없이 차분한 관망세 유지")
+
+            if change_pct != 0.0 and close_price > 0:
+                direction_txt = "상승 마감" if change_pct > 0 else "조정 마감"
+                facts_list.append(f"전일 종가 {close_price:,}원({change_pct:+.2f}%)으로 {direction_txt}")
 
         has_facts = len(facts_list) > 0
 
-        # 뉴스가 없으면 발송 생략
-        if not has_facts:
+        # 최소한의 정보도 없을 때만 발송 생략 (사실상 수급/종가 폴백으로 100% 발송됨)
+        if not has_facts and not investor_summary and not price_summary:
             print(f"[MorningBriefing] No valid facts for {stock_name}, skipping push.")
             return
 
@@ -232,19 +250,27 @@ class MorningBriefingService:
             conn.close()
         except Exception as e:
             print(f"[MorningBriefing] Failed to save alert to DB: {e}")
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            print(f"[MorningBriefing] Failed to save alert to DB: {e}")
             
         print(f"[MorningBriefing] Sent briefing for {stock_name} to {user_id}")
 
     async def fetch_latest_news(self, symbol: str, stock_name: str) -> List[str]:
-        """최신 뉴스 헤드라인 수집"""
+        """최신 뉴스 헤드라인 수집 (다중 소스 통합)"""
         headlines = []
-        
-        # 한국 주식 (네이버) - 접미사 제거 후 6자리 코드 추출
         clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
+
+        # 1. 고성능 통합 뉴스 엔진 호출 (네이버 금융 스크래핑 + 네이버 검색 API)
+        try:
+            from korea_data import get_integrated_stock_news
+            raw_news = get_integrated_stock_news(symbol=clean_sym, name=stock_name, query=f"{stock_name} 주식", days=2)
+            if raw_news and isinstance(raw_news, list):
+                for n in raw_news[:15]:
+                    title = n.get('title', '')
+                    if title:
+                        headlines.append(title)
+        except Exception as e:
+            print(f"[MorningBriefing] integrated news fetch failed: {e}")
+
+        # 2. 네이버 모바일 주식 전용 뉴스 보강
         if clean_sym.isdigit() and len(clean_sym) == 6:
             try:
                 url = f"https://m.stock.naver.com/api/news/stock/{clean_sym}?pageSize=15"
@@ -253,18 +279,32 @@ class MorningBriefingService:
                 if isinstance(data, list):
                     for group in data:
                         for item in group.get('items', []):
-                            headlines.append(item.get('title'))
-            except: pass
+                            t = item.get('title')
+                            if t:
+                                headlines.append(t)
+            except Exception:
+                pass
             
-        # 구글 뉴스 (공통)
+        # 3. 구글 뉴스 보강 (안전 타임아웃)
         try:
             g_news = fetch_google_news(f"{stock_name} 주식")
             if g_news:
                 for n in g_news[:10]:
-                    headlines.append(n.get('title'))
-        except: pass
+                    t = n.get('title')
+                    if t:
+                        headlines.append(t)
+        except Exception:
+            pass
         
-        return list(set(headlines))
+        # HTML 엔티티 제거 및 중복 제거
+        import html
+        cleaned = []
+        for h in headlines:
+            c = html.unescape(h).strip()
+            if c and c not in cleaned:
+                cleaned.append(c)
+
+        return cleaned
 
     async def analyze_news_balance(self, symbol: str, name: str, headlines: List[str]) -> Dict[str, Any]:
         """AI를 사용해 객관적 사실(팩트) 3개 추출 (초보자 친화 + 유사투자자문업 준법 버전)"""
