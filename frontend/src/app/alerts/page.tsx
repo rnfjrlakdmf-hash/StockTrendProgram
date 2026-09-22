@@ -304,7 +304,11 @@ function formatUsdToKrwInText(text: string): string {
             trimmed = trimmed.replace(/^공시:\s*/, '').trim();
 
             if (trimmed) {
-                mainLines.push(trimmed.startsWith("📌") ? trimmed : `📌 ${trimmed}`);
+                if (trimmed.startsWith("📌") || trimmed.startsWith("📅") || trimmed.startsWith("•") || trimmed.startsWith("-")) {
+                    mainLines.push(trimmed);
+                } else {
+                    mainLines.push(`📌 ${trimmed}`);
+                }
             }
         }
 
@@ -1604,27 +1608,58 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-amber-400";
             defaultCta = { href: cleanSymbol ? `/discovery?q=${cleanSymbol}` : "/watchlist", label: "장전 관심종목 정밀 분석", icon: Sparkles, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         }
-        // [1순위: DART 공시 / 내부자 거래 / 지분 공시] -> 명확하게 공시 뱃지 우선 부여
-        else if (hasDisclosureKey || titleText.includes("공시") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
-            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
-            typeBadgeLabel = "🇰🇷 DART 공시 팩트 속보";
-            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
-            accentBorder = "border-l-4 border-l-blue-400";
-        } else if (titleText.includes("내부자 거래") || alert.type === 'insider_trading' || alert.type === 'sec_insider_trading') {
+        // [1순위: 공시 세부 유형별 특화 뱃지 우선 부여]
+        else if (titleText.includes("슈퍼개미") || titleText.includes("큰손") || combinedText.includes("슈퍼개미")) {
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+            typeBadgeLabel = "🐜 슈퍼개미 5%+ 대량취득";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+            accentBorder = "border-l-4 border-l-emerald-400";
+            defaultCta = { href: cleanSymbol ? `/discovery?q=${cleanSymbol}` : "/watchlist", label: "큰손 수급 정밀 분석", icon: Sparkles, style: "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30" };
+        } else if (titleText.includes("내부자") || alert.type === 'insider_trading' || alert.type === 'sec_insider_trading' || combinedText.includes("내부자 거래")) {
             typeBadgeStyle = "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.2)]";
             typeBadgeLabel = "🚨 대주주·내부자 지분 변동";
             cardBorderHover = "hover:border-rose-500/40 hover:shadow-[0_0_25px_rgba(244,63,94,0.15)]";
             accentBorder = "border-l-4 border-l-rose-400";
-        } else if (titleText.includes("대량 보유") || titleText.includes("5% 이상") || alert.type === 'large_holding') {
+        } else if (combinedText.includes("기업설명회") || combinedText.includes("ir개최") || combinedText.includes("ir 개최") || combinedText.includes("ir공시")) {
+            typeBadgeStyle = "bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.2)]";
+            typeBadgeLabel = "🎤 기업설명회(IR) 속보";
+            cardBorderHover = "hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)]";
+            accentBorder = "border-l-4 border-l-purple-400";
+        } else if (combinedText.includes("주주총회") || combinedText.includes("주총")) {
+            typeBadgeStyle = "bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-[0_0_15px_rgba(20,184,166,0.2)]";
+            typeBadgeLabel = "🗳️ 주주총회 결의·결과";
+            cardBorderHover = "hover:border-teal-500/40 hover:shadow-[0_0_25px_rgba(20,184,166,0.15)]";
+            accentBorder = "border-l-4 border-l-teal-400";
+        } else if (combinedText.includes("의무보유") || combinedText.includes("보호예수")) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "🔒 의무보유(보호예수) 안내";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+        } else if (combinedText.includes("전환사채") || combinedText.includes("전환가액") || combinedText.includes("신주인수권부사채") || combinedText.includes("cb") || combinedText.includes("bw") || combinedText.includes("메자닌")) {
+            typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
+            typeBadgeLabel = "📜 전환사채(CB)·메자닌 공시";
+            cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
+            accentBorder = "border-l-4 border-l-indigo-400";
+        } else if (combinedText.includes("사업보고서") || combinedText.includes("분기보고서") || combinedText.includes("반기보고서") || combinedText.includes("잠정실적") || combinedText.includes("영업실적")) {
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
+            typeBadgeLabel = "📊 실적·결산 보고서";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
+            accentBorder = "border-l-4 border-l-emerald-400";
+        } else if (combinedText.includes("대량 보유") || combinedText.includes("5% 이상") || alert.type === 'large_holding') {
             typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
             typeBadgeLabel = "🏛️ 5% 이상 대량 보유 공시";
             cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
             accentBorder = "border-l-4 border-l-indigo-400";
         } else if (['sec_13f', 'sec_disclosure'].includes(alert.type) || titleText.includes("SEC")) {
-            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(168,185,129,0.2)]";
+            typeBadgeStyle = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]";
             typeBadgeLabel = "🇺🇸 미국 SEC 공시 속보";
-            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(168,185,129,0.15)]";
+            cardBorderHover = "hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.15)]";
             accentBorder = "border-l-4 border-l-emerald-400";
+        } else if (hasDisclosureKey || titleText.includes("공시") || alert.type === 'disclosure_alert' || alert.type === 'disclosure') {
+            typeBadgeStyle = "bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.2)]";
+            typeBadgeLabel = "🇰🇷 DART 공시 팩트 속보";
+            cardBorderHover = "hover:border-blue-500/40 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)]";
+            accentBorder = "border-l-4 border-l-blue-400";
         } 
         // [1-2순위: 장시작 시가 알림]
         else if ((alert.body || '').includes('관심종목 시가입니다') || (alert.body || '').includes('시가입니다') || titleText.includes('시가 알림') || titleText.includes('장시작')) {

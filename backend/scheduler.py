@@ -45,6 +45,111 @@ def mark_processed_and_save(state: dict, processed_ids: dict, doc_id: str):
     logger.debug(f"[Anti-Duplicate] Marked {doc_id} as processed before API call")
 
 
+def generate_smart_disclosure_alert(market_tag: str, corp: str, report_title: str, rcept_dt: str = "") -> tuple[str, str]:
+    """
+    일반 공시도 밋밋하지 않고 주식 초보자가 한눈에 직관적으로 이해할 수 있도록
+    카테고리별 이모지+명확한 제목과 2~3줄 상세 팩트 + 💡 시장해석으로 변환합니다.
+    """
+    clean = report_title.replace(" ", "")
+    dt_str = f"📅 공시 접수: {rcept_dt[4:6]}월 {rcept_dt[6:8]}일" if len(rcept_dt) >= 8 else ""
+
+    # 1. 기업설명회(IR)
+    if any(k in clean for k in ["기업설명회", "IR", "코퍼릿데이"]):
+        title = f"🎤 [기업설명회(IR) 개최] {market_tag} {corp}".strip()
+        fact = "📌 기관투자자 및 애널리스트 대상 기업설명회(IR) 개최 발표"
+        interp = "💡 [시장해석] 경영 실적 및 미래 성장 파이프라인 공개 · 기관 수급 유입 관심"
+
+    # 2. 주주총회 (결과 or 소집)
+    elif "주주총회결과" in clean or "주총결과" in clean:
+        title = f"🗳️ [주주총회 결과] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 결의 완료 (이사 선임, 재무제표, 정관 변경 등)"
+        interp = "💡 [시장해석] 주요 경영 안건 승인 및 경영권·지배구조 안정성 확보"
+    elif "주주총회" in clean or "주총" in clean:
+        title = f"🗳️ [주주총회 소집] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 공고 접수"
+        interp = "💡 [시장해석] 핵심 경영진 선임 및 사업 목적 변경 등 주총 의결 사안 점검"
+
+    # 3. 의무보유 / 보호예수 / 락업
+    elif any(k in clean for k in ["의무보유", "보호예수", "의무보호"]):
+        title = f"🔒 [의무보유(보호예수) 안내] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 접수"
+        interp = "💡 [시장해석] 보호예수 해제 시 유통 주식수 증가 · 잠재 매도 물량(오버행) 체크 필요"
+
+    # 4. 전환사채(CB) / 신주인수권(BW) 리픽싱 또는 행사
+    elif any(k in clean for k in ["전환가액의조정", "행사가액의조정", "리픽싱"]):
+        title = f"🔄 [전환가액 조정(리픽싱)] {market_tag} {corp}".strip()
+        fact = "📌 주가 변동에 따른 전환사채(CB)/신주인수권 전환가액 조정(리픽싱) 공시"
+        interp = "💡 [시장해석] 전환가액 하향 시 향후 주식 전환 물량 증가(잠재 희석) 점검"
+    elif any(k in clean for k in ["전환청구권행사", "신주인수권행사"]):
+        title = f"⚠️ [전환청구권 행사] {market_tag} {corp}".strip()
+        fact = "📌 채권자의 주식 전환청구권 행사로 신주 상장 예정"
+        interp = "💡 [시장해석] 신주 상장에 따른 유통 물량 증가 및 단기 차익 매물 주의"
+    elif any(k in clean for k in ["전환사채", "신주인수권부사채", "교환사채"]):
+        title = f"⚠️ [사채 발행 공시] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 발표"
+        interp = "💡 [시장해석] 자금 조달 목적(시설투자 vs 운영자금) 및 향후 주식 희석 가능성 체크"
+
+    # 5. 정기 보고서 (분기/반기/사업보고서)
+    elif any(k in clean for k in ["사업보고서", "분기보고서", "반기보고서"]):
+        rep_type = "사업보고서" if "사업보고서" in clean else "분기보고서" if "분기" in clean else "반기보고서"
+        title = f"📊 [{rep_type} 제출] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 금융감독원 접수 완료"
+        interp = "💡 [시장해석] 경영 성적표 공시 · 매출액, 영업이익 및 재무 건전성 점검"
+    elif any(k in clean for k in ["영업(잠정)실적", "잠정실적", "매출액또는손익구조"]):
+        title = f"📊 [경영 실적 발표] {market_tag} {corp}".strip()
+        fact = "📌 최근 분기/연간 매출액 및 영업이익(잠정 실적) 공시 발표"
+        interp = "💡 [시장해석] 시장 컨센서스(전망치) 부합 여부 및 전년 대비 성장률 체크"
+
+    # 6. 배당
+    elif "배당" in clean:
+        title = f"💸 [배당 결정 발표] {market_tag} {corp}".strip()
+        fact = "📌 주주 현금/주식 배당금 지급 결정 발표"
+        interp = "💡 [시장해석] 주당 배당금 및 시가배당률 확인 · 대표적 주주환원 신호"
+
+    # 7. 특허권 / R&D
+    elif "특허" in clean:
+        title = f"🔬 [특허권 취득] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 공시 접수"
+        interp = "💡 [시장해석] 독점 기술력 확보 및 신제품 상용화를 통한 펀더멘털 강화 기대"
+
+    # 8. 바이오 임상 / 허가
+    elif any(k in clean for k in ["임상", "품목허가", "IND"]):
+        title = f"🧬 [바이오 파이프라인 공시] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 공시 접수"
+        interp = "💡 [시장해석] 파이프라인 가치 재평가 및 상용화 라이선스 아웃(L/O) 모멘텀"
+
+    # 9. 상장폐지 / 관리종목 / 거래정지 / 불성실
+    elif any(k in clean for k in ["상장폐지", "관리종목", "거래정지", "불성실공시", "상장적격성"]):
+        title = f"🚨 [투자 유의 공시] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 관련 중요 공시 접수"
+        interp = "💡 [시장해석] 경영 불확실성 및 규제 리스크 · 원문 정밀 점검 및 리스크 대응 필요"
+
+    # 10. 소송 / 횡령 / 배임
+    elif any(k in clean for k in ["소송", "횡령", "배임", "고발"]):
+        title = f"🚨 [법적 리스크 공시] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 공시 접수"
+        interp = "💡 [시장해석] 소송 및 법적 공방에 따른 재무적 영향 및 기업 신뢰도 점검"
+
+    # 11. 주요 경영사항 / 기타 시장안내
+    elif any(k in clean for k in ["투자판단관련", "주요경영사항", "기타시장안내", "주요사항보고서"]):
+        title = f"📋 [주요 경영사항] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title}"
+        interp = "💡 [시장해석] 상장사 공식 주요 경영 안내 · 세부 원문 확인 권장"
+
+    # 12. 일반 기본 공시 폴백
+    else:
+        title = f"📢 [공시 속보] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title}"
+        interp = "💡 [시장해석] 금융감독원 DART 공식 접수 공시 · 세부 원문 확인 권장"
+
+    body_lines = [fact]
+    if dt_str:
+        body_lines.append(dt_str)
+    body_lines.append(interp)
+
+    return title, "\n".join(body_lines)
+
+
 async def check_and_notify_disclosures():
     """
     DART OpenAPI 기반 국내 공시 실시간 체크 (5분마다)
@@ -327,26 +432,26 @@ async def check_and_notify_disclosures():
                             matched_symbol = sym
                             break
 
-                # 공시 유형별 이모지 결정
-                emoji = "📢"
-                if any(kw in report_title for kw in ["유상증자", "무상증자"]):
-                    emoji = "💰"
-                elif any(kw in report_title for kw in ["전환사채", "신주인수권"]):
-                    emoji = "🔄"
-                elif any(kw in report_title for kw in ["보호예수", "대량보유"]):
-                    emoji = "🔒"
-                elif any(kw in report_title for kw in ["실적", "영업이익", "분기보고서", "사업보고서"]):
-                    emoji = "📊"
-                elif any(kw in report_title for kw in ["배당", "주주총회"]):
-                    emoji = "💸"
-                noti_title = w_title if is_whale else f"📢 {market_tag} {corp} 공시 속보"
-                noti_body = fact_str if fact_str else f"📋 {report_title}"
-                if rcept_dt:
-                    try:
-                        dt_fmt = f"{rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
-                        noti_body += f" 📅 {dt_fmt}"
-                    except Exception:
-                        pass
+                if is_whale:
+                    noti_title = w_title
+                    body_parts = [fact_str if fact_str else f"📌 {report_title}"]
+                    if rcept_dt and len(rcept_dt) >= 8:
+                        dt_fmt = f"📅 공시 접수: {rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
+                        if "💡 [시장해석]" in body_parts[0]:
+                            lines = body_parts[0].split("\n")
+                            new_lines = []
+                            for l in lines:
+                                if "💡 [시장해석]" in l:
+                                    new_lines.append(dt_fmt)
+                                new_lines.append(l)
+                            noti_body = "\n".join(new_lines)
+                        else:
+                            body_parts.append(dt_fmt)
+                            noti_body = "\n".join(body_parts)
+                    else:
+                        noti_body = "\n".join(body_parts)
+                else:
+                    noti_title, noti_body = generate_smart_disclosure_alert(market_tag, corp, report_title, rcept_dt)
 
                 data_payload = {
                     "type": "disclosure_alert",
