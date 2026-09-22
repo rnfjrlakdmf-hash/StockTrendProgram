@@ -2,6 +2,7 @@ import asyncio
 import logging
 import json
 import os
+import re
 import urllib.parse
 from datetime import datetime, timedelta
 from holiday_checker import is_holiday
@@ -50,6 +51,7 @@ def generate_smart_disclosure_alert(market_tag: str, corp: str, report_title: st
     일반 공시도 밋밋하지 않고 주식 초보자가 한눈에 직관적으로 이해할 수 있도록
     카테고리별 이모지+명확한 제목과 2~3줄 상세 팩트 + 💡 시장해석으로 변환합니다.
     """
+    report_title = re.sub(r'\s{2,}', ' ', report_title).strip()
     clean = report_title.replace(" ", "")
     dt_str = f"📅 공시 접수: {rcept_dt[4:6]}월 {rcept_dt[6:8]}일" if len(rcept_dt) >= 8 else ""
 
@@ -261,7 +263,7 @@ async def check_and_notify_disclosures():
 
                 raw_code = item.get('stock_code')
                 corp = item.get('corp_name', '알 수 없음')
-                report_title = item.get('report_nm', '공시')
+                report_title = re.sub(r'\s{2,}', ' ', item.get('report_nm', '공시')).strip()
                 dart_link = item.get('link', '')
                 rcept_dt = item.get('rcept_dt', '')
                 flr_nm = item.get('flr_nm', '')

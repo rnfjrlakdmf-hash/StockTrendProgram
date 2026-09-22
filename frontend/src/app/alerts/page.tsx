@@ -298,6 +298,9 @@ function formatUsdToKrwInText(text: string): string {
                 trimmed = trimmed.replace(/(?:[·\s]*▪️?|\s)*💡\s*(?:\[시장\s*해석\]|해석:?).*$/, '').trim();
             }
 
+            // 다중 공백을 단일 공백으로 정규화 (14칸 공백 버그 원천 해결)
+            trimmed = trimmed.replace(/\s{2,}/g, ' ');
+
             // 앞머리 중복 불릿 및 불필요한 접두사 정리 (📌 ▪️ 📊 수급: -> 📌)
             trimmed = trimmed.replace(/^(?:📌|▪️|▪|📊|📋|\s)+/, '').trim();
             trimmed = trimmed.replace(/^수급:\s*/, '').trim();
@@ -375,8 +378,6 @@ function formatUsdToKrwInText(text: string): string {
             marketInterpretation = "";
         }
 
-        const mainText = mainLines.join('\n').trim();
-
         const urlRegex = /(https?:\/\/[^\s]+)/g;
 
         const formatSegment = (str: string) => {
@@ -421,15 +422,54 @@ function formatUsdToKrwInText(text: string): string {
             });
         };
 
+        // 글씨 정렬 및 아이콘/텍스트 행간 구조화 파싱
+        const parsedItems: { icon: string; text: string; isDate: boolean }[] = [];
+        for (let line of mainLines) {
+            let clean = line.replace(/\s{2,}/g, ' ').trim();
+            if (!clean) continue;
+
+            let icon = "📌";
+            let isDate = false;
+
+            if (clean.startsWith("📅") || clean.startsWith("🗓️")) {
+                icon = "📅";
+                isDate = true;
+                clean = clean.replace(/^(?:📅|🗓️)\s*/, '');
+            } else if (clean.startsWith("📌")) {
+                icon = "📌";
+                clean = clean.replace(/^📌\s*/, '');
+            } else if (clean.startsWith("•") || clean.startsWith("-") || clean.startsWith("▪️") || clean.startsWith("▪")) {
+                icon = "•";
+                clean = clean.replace(/^(?:•|-|▪️|▪)\s*/, '');
+            } else {
+                const matchIcon = clean.match(/^([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|\S)\s*/);
+                if (matchIcon && matchIcon[1] !== '[' && matchIcon[1] !== '(') {
+                    icon = matchIcon[1];
+                    clean = clean.substring(matchIcon[0].length);
+                }
+            }
+
+            parsedItems.push({ icon, text: clean, isDate });
+        }
+
         return (
             <div className="space-y-2.5">
-                {mainText && (
-                    <div className="text-xs md:text-sm text-zinc-200 leading-relaxed font-medium">
-                        {formatSegment(mainText)}
+                {parsedItems.length > 0 && (
+                    <div className="space-y-2">
+                        {parsedItems.map((item, idx) => (
+                            <div key={idx} className="flex items-start gap-2.5">
+                                <span className="shrink-0 w-5 text-center text-sm md:text-base select-none leading-relaxed mt-0.5">
+                                    {item.icon}
+                                </span>
+                                <div className={`flex-1 text-xs md:text-sm leading-relaxed ${item.isDate ? 'text-zinc-400 font-mono text-[11px] md:text-xs' : 'text-zinc-200 font-medium'}`}>
+                                    {formatSegment(item.text)}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
                 {marketInterpretation && (
-                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3.5 mt-2 flex items-start gap-2.5 shadow-sm">
+                    <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3.5 mt-2.5 flex items-start gap-2.5 shadow-sm">
                         <div className="p-1 bg-amber-500/20 rounded-lg text-amber-400 shrink-0 mt-0.5">
                             <Sparkles className="w-3.5 h-3.5" />
                         </div>
@@ -1773,6 +1813,7 @@ function formatUsdToKrwInText(text: string): string {
                         let t = (alert.title || '')
                             .replace(/[\uFFFD\uFFFE\uFFFF]/g, '') // 깨진 물음표 기호 제거
                             .replace(/^👤\s*/, '🚨 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 👤를 🚨로 안전 대체
+                            .replace(/\s{2,}/g, ' ')
                             .trim();
 
                         // [보정] 본문이 시가 알림인데 급등 제목으로 잘못 붙은 경우 올바르게 교정
@@ -1781,10 +1822,34 @@ function formatUsdToKrwInText(text: string): string {
                             return '☀️ [국내 장시작] 관심종목 시가 알림';
                         }
                         // 앞머리 이모지 중복 정리
-                        t = t.replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨])/, '$2');
+                        t = t.replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨🐜🎤🗳️🔒🔄💸🔬🧬📋])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨🐜🎤🗳️🔒🔄💸🔬🧬📋])/, '$2');
                         // 이모지가 없거나 제거된 경우 깔끔한 기본 이모지 부여
                         if (t.startsWith('[')) {
-                            t = `🚨 ${t}`;
+                            if (t.includes('투자 유의') || t.includes('관리종목') || t.includes('거래정지') || t.includes('법적 리스크') || t.includes('상장폐지')) {
+                                t = `🚨 ${t}`;
+                            } else if (t.includes('사채') || t.includes('전환사채') || t.includes('신주인수권') || t.includes('채무보증') || t.includes('차입금')) {
+                                t = `⚠️ ${t}`;
+                            } else if (t.includes('실적') || t.includes('보고서')) {
+                                t = `📊 ${t}`;
+                            } else if (t.includes('배당')) {
+                                t = `💸 ${t}`;
+                            } else if (t.includes('슈퍼개미')) {
+                                t = `🐜 ${t}`;
+                            } else if (t.includes('기업설명회') || t.includes('IR')) {
+                                t = `🎤 ${t}`;
+                            } else if (t.includes('주주총회')) {
+                                t = `🗳️ ${t}`;
+                            } else if (t.includes('의무보유') || t.includes('보호예수')) {
+                                t = `🔒 ${t}`;
+                            } else if (t.includes('리픽싱') || t.includes('전환가액')) {
+                                t = `🔄 ${t}`;
+                            } else if (t.includes('특허')) {
+                                t = `🔬 ${t}`;
+                            } else if (t.includes('바이오') || t.includes('임상')) {
+                                t = `🧬 ${t}`;
+                            } else {
+                                t = `📢 ${t}`;
+                            }
                         }
                         return t;
                     })()}
@@ -1798,7 +1863,7 @@ function formatUsdToKrwInText(text: string): string {
                 ) : isMarketSummary ? (
                     renderMarketSummaryCardContent(alert)
                 ) : (
-                    <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed font-normal">
+                    <div className="text-sm text-zinc-300 leading-relaxed font-normal">
                         {renderFormattedBody(alert.body, alert)}
                     </div>
                 )}
