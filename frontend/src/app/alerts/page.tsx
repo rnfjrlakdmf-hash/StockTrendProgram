@@ -1484,12 +1484,12 @@ function formatUsdToKrwInText(text: string): string {
                 {/* 6. 전문가 퀵 액션 내비게이션 바 */}
                 <div className="flex flex-wrap gap-2.5 pt-2 border-t border-white/10">
                     <Link
-                        href="/ranking"
+                        href="/premium"
                         onClick={(e) => e.stopPropagation()}
                         className="flex-1 min-w-[130px] bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 text-blue-300 border border-blue-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                     >
                         <TrendingUp className="w-4 h-4 text-cyan-400" />
-                        외인·기관 수급 랭킹
+                        외인·기관 수급 리포트
                         <ChevronRight className="w-4 h-4" />
                     </Link>
                     <Link
@@ -1654,7 +1654,7 @@ function formatUsdToKrwInText(text: string): string {
             typeBadgeLabel = "🐳 외인·기관 수급 특보";
             cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";
             accentBorder = "border-l-4 border-l-cyan-400";
-            defaultCta = { href: "/ranking", label: "실시간 외국인·기관 수급 순위 보기", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
+            defaultCta = { href: targetUrl || "/premium", label: "실시간 외국인·기관 수급 현황 보기", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
         } 
         // [3-1순위: 수급 퀀트 스캐너 급등 & 벤치마크선 도달 알림]
         else if (alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) {
@@ -1807,12 +1807,12 @@ function formatUsdToKrwInText(text: string): string {
                             </Link>
                         )}
                         <Link 
-                            href="/ranking" 
+                            href={targetUrl || "/premium"} 
                             onClick={(e) => e.stopPropagation()}
                             className="flex-1 min-w-[130px] bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                         >
                             <TrendingUp className="w-4 h-4 text-cyan-400" />
-                            실시간 수급 순위 보기
+                            실시간 수급 현황 보기
                         </Link>
                     </div>
                 ) : !isPortfolio && !isMorningBriefing && !isMarketSummary && (
