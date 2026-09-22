@@ -2006,7 +2006,7 @@ function formatUsdToKrwInText(text: string): string {
 
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
-        const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert'].includes(alert.type);
+        const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert', 'quant_scanner'].includes(alert.type) || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계');
         const isMorning = Boolean(
             alert.type === 'morning_briefing' ||
             titleText.includes('모닝 팩트') ||
@@ -2051,16 +2051,20 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         if (activeTab === "disclosure") {
-            if (alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) return true;
+            // 퀀트 시세 및 급등 특보는 공시가 아니므로 공시 탭에서 완전 제외
             if (!isDisclosure) return false;
             if (disclosureFilter === 'my') {
                 return symbolMatch;
             }
+            const isUS = ['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type) ||
+                titleText.includes('[SEC]') ||
+                (alert.url && alert.url.includes('sec.gov'));
+
             if (disclosureFilter === 'kr') {
-                return ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
+                return !isUS;
             }
             if (disclosureFilter === 'us') {
-                return ['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type);
+                return isUS;
             }
             return true;
         }
