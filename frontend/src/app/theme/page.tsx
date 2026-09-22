@@ -1230,73 +1230,77 @@ function ThemePageContent() {
                             {viewMode === "table" && (
                                 <div className="rounded-3xl border border-white/10 bg-zinc-950/80 overflow-hidden shadow-2xl backdrop-blur-xl">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-sm">
+                                        <table className="w-full text-left text-sm min-w-[840px]">
                                             <thead>
                                                 <tr className="border-b border-white/10 bg-white/5 text-xs font-black text-zinc-400 uppercase tracking-wider">
-                                                    <th className="py-4 px-5">구분</th>
-                                                    <th className="py-4 px-5">종목명 (코드)</th>
-                                                    <th className="py-4 px-5 text-right">현재가</th>
-                                                    <th className="py-4 px-5 text-right">등락률</th>
-                                                    <th className="py-4 px-5 text-center">수혜 검증</th>
-                                                    <th className="py-4 px-5">핵심 연관 팩트 &amp; 이유</th>
-                                                    <th className="py-4 px-5 text-center">차트/분석</th>
+                                                    <th className="py-4 px-4 text-center whitespace-nowrap w-[90px]">구분</th>
+                                                    <th className="py-4 px-5 whitespace-nowrap min-w-[160px]">종목명 (코드)</th>
+                                                    <th className="py-4 px-5 text-right whitespace-nowrap min-w-[100px]">현재가</th>
+                                                    <th className="py-4 px-5 text-right whitespace-nowrap min-w-[90px]">등락률</th>
+                                                    <th className="py-4 px-4 text-center whitespace-nowrap w-[105px]">수혜 검증</th>
+                                                    <th className="py-4 px-5 min-w-[280px]">핵심 연관 팩트 &amp; 이유</th>
+                                                    <th className="py-4 px-4 text-center whitespace-nowrap w-[120px]">차트/분석</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-white/5 text-xs">
                                                 {processedStocks.allSorted.map((stock: any) => (
                                                     <tr key={stock.symbol} className="hover:bg-white/[0.04] transition-colors">
-                                                        <td className="py-4 px-5 font-bold">
+                                                        <td className="py-4 px-4 text-center whitespace-nowrap font-bold">
                                                             {stock.isLeader ? (
-                                                                <span className="px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/40 text-[11px] font-black">
-                                                                    👑 대장주
+                                                                <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/40 text-[11px] font-black whitespace-nowrap shadow-sm">
+                                                                    <span>👑</span>
+                                                                    <span>대장주</span>
                                                                 </span>
                                                             ) : (
-                                                                <span className="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[11px] font-bold">
-                                                                    ⚡ 후발주
+                                                                <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[11px] font-bold whitespace-nowrap shadow-sm">
+                                                                    <span>⚡</span>
+                                                                    <span>후발주</span>
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="py-4 px-5 font-bold text-white">
+                                                        <td className="py-4 px-5 font-bold text-white whitespace-nowrap">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-sm font-black">{stock.name}</span>
-                                                                <span className="text-[10px] font-mono text-zinc-400 bg-white/10 px-1.5 py-0.5 rounded">
+                                                                <span className="text-sm font-black whitespace-nowrap">{stock.name}</span>
+                                                                <span className="text-[10px] font-mono text-zinc-400 bg-white/10 px-1.5 py-0.5 rounded whitespace-nowrap">
                                                                     {stock.symbol}
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className="py-4 px-5 text-right font-mono font-black text-white text-sm">
+                                                        <td className="py-4 px-5 text-right font-mono font-black text-white text-sm whitespace-nowrap">
                                                             {stock.price !== '-' ? `${stock.price}원` : '-'}
                                                         </td>
-                                                        <td className={`py-4 px-5 text-right font-black font-mono text-sm ${
+                                                        <td className={`py-4 px-5 text-right font-black font-mono text-sm whitespace-nowrap ${
                                                             stock.isPositive ? 'text-rose-400' : stock.isNegative ? 'text-sky-400' : 'text-zinc-400'
                                                         }`}>
                                                             {stock.change}
                                                         </td>
-                                                        <td className="py-4 px-5 text-center">
+                                                        <td className="py-4 px-4 text-center whitespace-nowrap">
                                                             {stock.is_real ? (
-                                                                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-black">
-                                                                    🛡️ 찐수혜
+                                                                <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-black whitespace-nowrap shadow-sm">
+                                                                    <span>🛡️</span>
+                                                                    <span>찐수혜</span>
                                                                 </span>
                                                             ) : (
-                                                                <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
-                                                                    ⚠️ 편승주의
+                                                                <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold whitespace-nowrap shadow-sm">
+                                                                    <span>⚠️</span>
+                                                                    <span>편승주의</span>
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="py-4 px-5 text-zinc-300 max-w-xs leading-relaxed">
+                                                        <td className="py-4 px-5 text-zinc-300 leading-relaxed text-xs">
                                                             {stock.reason || "-"}
                                                         </td>
-                                                        <td className="py-4 px-5 text-center">
+                                                        <td className="py-4 px-4 text-center whitespace-nowrap">
                                                             <div className="flex items-center justify-center gap-1.5">
                                                                 <button
                                                                     onClick={() => router.push(`/discovery?q=${stock.symbol}`)}
-                                                                    className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-xl font-bold text-[11px] transition-colors cursor-pointer"
+                                                                    className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-xl font-bold text-[11px] transition-colors cursor-pointer whitespace-nowrap"
                                                                 >
                                                                     차트
                                                                 </button>
                                                                 <button
                                                                     onClick={() => router.push(`/stock/${stock.symbol}`)}
-                                                                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[11px] transition-colors cursor-pointer"
+                                                                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[11px] transition-colors cursor-pointer whitespace-nowrap"
                                                                 >
                                                                     상세
                                                                 </button>
