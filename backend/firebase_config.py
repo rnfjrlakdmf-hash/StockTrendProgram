@@ -1125,7 +1125,7 @@ def send_topic_push(
         print(f"[Firebase] Error sending topic message: {e}")
         return {"success": False, "error": str(e)}
 
-def save_alert_to_firestore(title, body, alert_type="system_alert", url="/alerts", is_global=True, target_users=None):
+def save_alert_to_firestore(title, body, alert_type="system_alert", url="/alerts", is_global=True, target_users=None, **kwargs):
     """
     푸시 발송 없이 Firestore 알림 센터에만 기록을 남깁니다.
     주로 텔레그램 공지사항 등을 웹앱 알림센터와 동기화할 때 사용합니다.
@@ -1141,6 +1141,9 @@ def save_alert_to_firestore(title, body, alert_type="system_alert", url="/alerts
             "target_users": target_users or [],
             "url": url
         }
+        for k, v in kwargs.items():
+            if v is not None:
+                alert_doc[k] = v
         db.collection("alerts").add(alert_doc)
         print(f"[Firestore] Alert saved to center (No push): {title}")
         return True
