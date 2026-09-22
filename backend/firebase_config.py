@@ -221,6 +221,15 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
 
     # 1. DART 전자공시 속보 알림 및 임원/대주주 지분 변동
     if alert_type in ['disclosure_alert', 'dart_disclosure', 'insider_trading', 'large_holding', 'sec_insider_trading'] or any(k in clean_title for k in ["공시", "내부자", "지분", "대량보유", "임원"]):
+        # [NEW] 이미 정밀하게 생성된 슈퍼개미(🐜/🚨), 내부자 거래(🚨), 대량보유 등 인텔리전스 알림인 경우 
+        # 공시 템플릿(유상증자 등)으로 오인하여 제목과 알찬 본문 팩트가 덮어써지는 현상을 완벽 방지
+        if any(k in clean_title for k in ["슈퍼개미", "내부자", "🐜"]) or "대량보유" in clean_title:
+            if existing_interp and "💡" not in clean_no_interp:
+                new_body = f"{clean_no_interp}\n💡 [시장해석] {existing_interp}"
+            else:
+                new_body = clean_body
+            return sanitize_notification_text(clean_title, new_body)
+
         company = (data or {}).get("corp") or (data or {}).get("company") or ""
         if not company:
             match = re.search(r'(?:[^\w\s]|\s)*([가-힣A-Za-z0-9]+)\s*(?:공시|SEC|속보)', clean_title)

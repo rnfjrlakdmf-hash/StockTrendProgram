@@ -298,7 +298,8 @@ async def check_and_notify_disclosures():
                                             "type": "disclosure_alert",
                                             "url": f"/stock/{raw_code}",
                                             "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
-                                            "symbol": raw_code
+                                            "symbol": raw_code,
+                                            "is_global": "true"
                                         }
                                         send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids)
                                         logger.info(f"[WhaleSiren] Sent FCM to {len(w_tokens)} users for {corp}")
@@ -354,20 +355,21 @@ async def check_and_notify_disclosures():
                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                 }
 
-                # 1. 글로벌 알림 센터 무조건 저장 (모든 사용자가 볼 수 있도록)
-                try:
-                    from firebase_config import save_alert_to_firestore
-                    save_alert_to_firestore(
-                        title=noti_title,
-                        body=noti_body,
-                        alert_type="disclosure_alert",
-                        url=data_payload["url"],
-                        is_global=True,
-                        symbol=data_payload["symbol"],
-                        dart_url=data_payload["dart_url"]
-                    )
-                except Exception as save_e:
-                    logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
+                # 1. 글로벌 알림 센터 저장 (단, 이미 is_whale로 푸시와 함께 Firestore에 저장된 경우는 중복 방지)
+                if not is_whale:
+                    try:
+                        from firebase_config import save_alert_to_firestore
+                        save_alert_to_firestore(
+                            title=noti_title,
+                            body=noti_body,
+                            alert_type="disclosure_alert",
+                            url=data_payload["url"],
+                            is_global=True,
+                            symbol=data_payload["symbol"],
+                            dart_url=data_payload["dart_url"]
+                        )
+                    except Exception as save_e:
+                        logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
 
                 if not tokens:
                     continue  # 관심종목 등록 사용자 없음 -> 푸시 스킵
