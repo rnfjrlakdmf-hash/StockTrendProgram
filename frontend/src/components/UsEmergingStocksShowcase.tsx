@@ -447,39 +447,32 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                                 return (
                                     <div
                                         key={stock.ticker}
-                                        className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-orange-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 flex flex-col justify-between"
+                                        className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-orange-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 flex flex-col justify-between"
                                     >
-                                        {/* 상단: 아이콘 + 종목명 + 티커 + 실시간 시세 + 관심종목 별표 */}
                                         <div>
-                                            <div className="flex items-start justify-between gap-2 mb-2.5">
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform shrink-0">
+                                            {/* 상단 1행: 아이콘 + 순위 뱃지 + 티커 뱃지 | 실시간 주가 + 등락률 + 관심종목(⭐) */}
+                                            <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-white/5">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-lg group-hover:scale-110 transition-transform shrink-0">
                                                         {stock.icon || "🚀"}
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[10px] font-black font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                                                #{idx + 1}
-                                                            </span>
-                                                            <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors truncate">
-                                                                {stock.nameKo}
-                                                            </h3>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                                                            <span className="font-bold text-cyan-400">{stock.ticker}</span>
-                                                            <span>•</span>
-                                                            <span className="truncate">{stock.nameEn}</span>
-                                                        </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <span className="text-[11px] font-black font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap">
+                                                            #{idx + 1}
+                                                        </span>
+                                                        <span className="text-xs font-black font-mono px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 whitespace-nowrap">
+                                                            {stock.ticker}
+                                                        </span>
                                                     </div>
                                                 </div>
 
                                                 {/* 우측: 실시간 주가 & 등락률 & 관심종목 토글 버튼 */}
-                                                <div className="flex items-center gap-2 shrink-0 pl-2">
-                                                    <div className="flex flex-col items-end">
-                                                        <div className="text-base sm:text-lg font-black font-mono text-white tracking-tight">
+                                                <div className="flex items-center gap-2.5 shrink-0">
+                                                    <div className="flex flex-col items-end leading-tight">
+                                                        <div className="text-sm sm:text-base font-black font-mono text-white tracking-tight">
                                                             ${stock.price.toFixed(2)}
                                                         </div>
-                                                        <div className={`text-xs font-black font-mono flex items-center gap-0.5 ${
+                                                        <div className={`text-[11px] font-bold font-mono flex items-center gap-0.5 ${
                                                             stock.change_pct > 0 ? 'text-rose-400' : stock.change_pct < 0 ? 'text-sky-400' : 'text-zinc-400'
                                                         }`}>
                                                             <span>{stock.change_pct > 0 ? '▲' : stock.change_pct < 0 ? '▼' : ''}</span>
@@ -511,8 +504,18 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                                                 </div>
                                             </div>
 
+                                            {/* 상단 2행: 한글 종목명 (충분한 공간 확보) + 영문 회사명 */}
+                                            <div className="mb-3">
+                                                <h3 className="font-black text-white text-base sm:text-lg group-hover:text-amber-300 transition-colors leading-snug">
+                                                    {stock.nameKo}
+                                                </h3>
+                                                <p className="text-xs text-zinc-400 font-mono mt-0.5 truncate">
+                                                    {stock.nameEn}
+                                                </p>
+                                            </div>
+
                                             {/* 당일 핫 시그널 배지 (급등/거래량 폭증/눌림목 등) */}
-                                            <div className="mb-2.5">
+                                            <div className="mb-3">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-sm ${
                                                     stock.badge_type === 'surge'
                                                         ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
@@ -528,30 +531,30 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                                             </div>
 
                                             {/* 초보자를 위한 1줄 비즈니스 해설 */}
-                                            <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 line-clamp-2">
+                                            <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 min-h-[38px] line-clamp-2">
                                                 {stock.oneLiner}
                                             </p>
 
                                             {/* 핵심 투자 포인트 하이라이트 칩 */}
-                                            <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5">
+                                            <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5 min-h-[44px] flex items-center">
                                                 <span className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5 leading-snug">
-                                                    <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
+                                                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                                                     <span>{stock.highlight}</span>
                                                 </span>
                                             </div>
 
-                                            {/* 태그 모음 */}
+                                            {/* 태그 모음 (whitespace-nowrap) */}
                                             <div className="flex flex-wrap gap-1.5 mb-4">
                                                 {stock.tags.map((tag, tIdx) => (
-                                                    <span key={tIdx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono">
+                                                    <span key={tIdx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono whitespace-nowrap">
                                                         {tag}
                                                     </span>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* 하단: 액션 버튼 2종 (5단계 AI 진단 / 실시간 차트) */}
-                                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
+                                        {/* 하단: 액션 버튼 2종 */}
+                                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5 mt-auto">
                                             <Link
                                                 href={`/stock/${stock.ticker}`}
                                                 className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-md shadow-blue-500/20 active:scale-95 text-center"
@@ -621,32 +624,28 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                             return (
                                 <div
                                     key={stock.ticker}
-                                    className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-cyan-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10 flex flex-col justify-between"
+                                    className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-cyan-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10 flex flex-col justify-between"
                                 >
-                                    {/* 상단: 아이콘 + 종목명 + 티커 + 거래소 + 관심종목 별표 */}
                                     <div>
-                                        <div className="flex items-start justify-between gap-2 mb-2.5">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                        {/* 상단 1행: 아이콘 + 티커 + 거래소 | 카테고리 라벨 + 관심종목(⭐) 버튼 */}
+                                        <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-white/5">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-lg group-hover:scale-110 transition-transform shrink-0">
                                                     {stock.icon}
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition-colors">
-                                                            {stock.nameKo}
-                                                        </h3>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                                                        <span className="font-bold text-cyan-400">{stock.ticker}</span>
-                                                        <span>•</span>
-                                                        <span>{stock.nameEn}</span>
-                                                    </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <span className="text-xs font-black font-mono px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 whitespace-nowrap">
+                                                        {stock.ticker}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400 whitespace-nowrap">
+                                                        {stock.exchange}
+                                                    </span>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center gap-2 shrink-0">
-                                                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">
-                                                    {stock.exchange}
+                                                <span className="text-[11px] font-semibold text-cyan-400/80 hidden sm:inline">
+                                                    {stock.categoryLabel}
                                                 </span>
                                                 <button
                                                     onClick={(e) => {
@@ -655,7 +654,7 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                                                         toggleWatchlist(stock.ticker, stock.nameKo);
                                                     }}
                                                     disabled={togglingTicker === stock.ticker.toUpperCase()}
-                                                    className={`p-1.5 rounded-xl transition-all border flex items-center justify-center cursor-pointer active:scale-95 shrink-0 ${
+                                                    className={`p-2 rounded-xl transition-all border flex items-center justify-center cursor-pointer active:scale-95 shrink-0 ${
                                                         isSaved
                                                             ? "bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-md shadow-amber-500/10 hover:bg-amber-500/30"
                                                             : "bg-white/5 text-zinc-500 border-white/10 hover:text-amber-300 hover:bg-white/10 hover:border-amber-500/30"
@@ -664,23 +663,33 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                                                     aria-label="관심종목 토글"
                                                 >
                                                     {togglingTicker === stock.ticker.toUpperCase() ? (
-                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                                        <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
                                                     ) : (
-                                                        <Star className={`w-3.5 h-3.5 transition-transform ${isSaved ? "fill-amber-400 text-amber-400 scale-110" : ""}`} />
+                                                        <Star className={`w-4 h-4 transition-transform ${isSaved ? "fill-amber-400 text-amber-400 scale-110" : ""}`} />
                                                     )}
                                                 </button>
                                             </div>
                                         </div>
 
+                                        {/* 상단 2행: 한글 종목명 + 영문 회사명 */}
+                                        <div className="mb-3">
+                                            <h3 className="font-black text-white text-base sm:text-lg group-hover:text-cyan-300 transition-colors leading-snug">
+                                                {stock.nameKo}
+                                            </h3>
+                                            <p className="text-xs text-zinc-400 font-mono mt-0.5 truncate">
+                                                {stock.nameEn}
+                                            </p>
+                                        </div>
+
                                         {/* 초보자를 위한 1줄 비즈니스 해설 */}
-                                        <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 line-clamp-2">
+                                        <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 min-h-[38px] line-clamp-2">
                                             {stock.oneLiner}
                                         </p>
 
                                         {/* 핵심 투자 포인트 하이라이트 칩 */}
-                                        <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5">
+                                        <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5 min-h-[44px] flex items-center">
                                             <span className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5 leading-snug">
-                                                <Zap className="w-3 h-3 text-cyan-400 shrink-0" />
+                                                <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                                                 <span>{stock.highlight}</span>
                                             </span>
                                         </div>
@@ -688,15 +697,15 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                                         {/* 태그 모음 */}
                                         <div className="flex flex-wrap gap-1.5 mb-4">
                                             {stock.tags.map((tag, idx) => (
-                                                <span key={idx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono">
+                                                <span key={idx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono whitespace-nowrap">
                                                     {tag}
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
 
-                                    {/* 하단: 액션 버튼 2종 (5단계 AI 진단 / 실시간 차트) */}
-                                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
+                                    {/* 하단: 액션 버튼 2종 */}
+                                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5 mt-auto">
                                         <Link
                                             href={`/stock/${stock.ticker}`}
                                             className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-md shadow-blue-500/20 active:scale-95 text-center"
