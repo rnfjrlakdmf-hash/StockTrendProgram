@@ -834,14 +834,18 @@ def send_multicast_notification(
         # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
         click_url = resolve_click_url(title, data)
         
-        # [Fix] 알림 덮어쓰기(Collapse) 방지: 타입별/심볼별 고유 태그 부여
+        # [Fix] 알림 덮어쓰기(Collapse) 방지: 모든 알림이 단 하나도 사라지지 않고 독립적으로 쌓이도록 고유 태그 부여
         custom_tag = str((data or {}).get("tag", "")).strip()
+        alert_type_tag = str((data or {}).get("type", "alert")).strip()
+        symbol_tag = str((data or {}).get("symbol", "")).strip()
+        now_ms = int(_now * 1000)
+        
         if custom_tag:
-            fcm_tag = custom_tag
+            fcm_tag = f"{custom_tag}-{now_ms}"
+        elif symbol_tag:
+            fcm_tag = f"st-{alert_type_tag}-{symbol_tag}-{now_ms}"
         else:
-            alert_type_tag = str((data or {}).get("type", "alert")).strip()
-            symbol_tag = str((data or {}).get("symbol", "")).strip()
-            fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_now)}"
+            fcm_tag = f"st-{alert_type_tag}-{now_ms}"
             
         webpush_config = messaging.WebpushConfig(
             notification=messaging.WebpushNotification(

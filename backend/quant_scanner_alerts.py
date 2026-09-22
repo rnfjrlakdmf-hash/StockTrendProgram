@@ -220,7 +220,7 @@ class QuantScannerAlertMonitor:
             from telegram_service import send_telegram_teaser
             tg_text = (
                 f"<b>{title}</b>\n\n"
-                f"{body.replace(chr(10), '<br>')}\n\n"
+                f"{body}\n\n"
                 f"👉 <a href='https://stock-trend-program.co.kr/scanner'>장마감 수급 퀀트 스캐너에서 통계 확인하기</a>"
             )
             await asyncio.to_thread(send_telegram_teaser, tg_text, alert_type="quant_scanner")

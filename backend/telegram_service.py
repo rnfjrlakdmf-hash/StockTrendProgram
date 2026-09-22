@@ -50,28 +50,33 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_sa
             title = lines[0] if lines else "📢 텔레그램 알림"
             body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
             
-            # 스터디 관련 공지일 경우 FCM 푸시 발송 연동 (푸시와 함께 theory_alert 타입으로 1회만 저장)
-            if "스터디" in clean_text:
+            # 중요 공지 및 스터디 알림일 경우 FCM 푸시 발송 연동 (푸시와 함께 1회만 저장)
+            is_important_notice = (
+                "스터디" in clean_text or 
+                alert_type in ["theory_alert", "system_alert", "notice", "announcement"] or
+                any(kw in title for kw in ["[공지]", "[안내]", "[업데이트]", "[점검]"])
+            )
+            
+            if is_important_notice and not skip_db_save:
                 try:
                     from firebase_config import send_multicast_notification
                     from db_manager import get_all_fcm_tokens
                     all_tokens = get_all_fcm_tokens()
+                    target_alert_type = "theory_alert" if "스터디" in clean_text else alert_type
                     if all_tokens:
                         push_data = {
-                            "type": "theory_alert",
+                            "type": target_alert_type,
                             "url": url_target
                         }
-                        send_multicast_notification(all_tokens, title, body, push_data, skip_db_save=skip_db_save)
-                        print(f"[Telegram-FCM Sync] 스터디 공지 푸시 {len(all_tokens)}명 발송 성공 (DB 1회 저장 완료)")
-                    elif not skip_db_save:
-                        # 토큰이 없는 환경에서도 알림센터에 1회 정상 저장
-                        save_alert_to_firestore(title=title, body=body, alert_type="theory_alert", url=url_target)
+                        send_multicast_notification(all_tokens, title, body, push_data, skip_db_save=False)
+                        print(f"[Telegram-FCM Sync] 중요 공지/스터디 푸시 {len(all_tokens)}명 발송 성공 (DB 1회 저장 완료)")
+                    else:
+                        save_alert_to_firestore(title=title, body=body, alert_type=target_alert_type, url=url_target)
                 except Exception as push_e:
-                    print(f"[Telegram-FCM Sync] 스터디 공지 푸시 에러: {push_e}")
-                    if not skip_db_save:
-                        save_alert_to_firestore(title=title, body=body, alert_type="theory_alert", url=url_target)
+                    print(f"[Telegram-FCM Sync] 공지 푸시 에러: {push_e}")
+                    save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
             else:
-                # 일반 텔레그램 메시지일 경우 지정된 alert_type으로 1회만 저장
+                # 일반 텔레그램 메시지이거나 이미 별도 푸시가 발송된 경우 알림센터 1회 저장
                 if not skip_db_save:
                     save_alert_to_firestore(title=title, body=body, alert_type=alert_type, url=url_target)
 

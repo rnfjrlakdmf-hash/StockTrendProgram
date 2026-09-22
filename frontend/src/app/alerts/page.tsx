@@ -1656,6 +1656,14 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-cyan-400";
             defaultCta = { href: "/ranking", label: "실시간 외국인·기관 수급 순위 보기", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
         } 
+        // [3-1순위: 수급 퀀트 스캐너 급등 & 벤치마크선 도달 알림]
+        else if (alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) {
+            typeBadgeStyle = "bg-violet-500/25 text-violet-300 border-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.3)]";
+            typeBadgeLabel = "📈 퀀트 시세 급등 특보";
+            cardBorderHover = "hover:border-violet-500/40 hover:shadow-[0_0_25px_rgba(139,92,246,0.2)]";
+            accentBorder = "border-l-4 border-l-violet-400";
+            defaultCta = { href: "/scanner", label: "장마감 수급 퀀트 스캐너 통계 확인", icon: Sparkles, style: "bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border-violet-500/30" };
+        } 
         // [4순위: 뉴스 알림 속보 - 주도 테마 레이더보다 먼저 판정하여 오분류 방지]
         else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) || (alert.title && (alert.title.includes("뉴스") || alert.title.includes("헤드라인") || alert.title.includes("속보")))) {
             typeBadgeStyle = "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-[0_0_15px_rgba(14,165,233,0.2)]";
@@ -1924,6 +1932,7 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         if (activeTab === "disclosure") {
+            if (alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) return true;
             if (!isDisclosure) return false;
             if (disclosureFilter === 'kr') {
                 return ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
