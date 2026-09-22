@@ -8,8 +8,8 @@ export const revalidate = 21600;
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const resolvedParams = await params;
     try {
-        const resolvedParams = await params;
         const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { next: { revalidate: 21600 } });
         if (res.ok) {
             const data = await res.json();
