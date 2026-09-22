@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Header from "@/components/Header";
 import MarketIndicators from "@/components/MarketIndicators";
@@ -9,7 +10,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import SeoContentBlock from "@/components/SeoContentBlock";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, Coins, Activity, Building2, ChevronDown, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin } from "lucide-react";
+import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, Coins, Activity, Building2, ChevronDown, ChevronRight, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin, Rocket } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
@@ -38,7 +39,6 @@ import KakaoShareButton from "@/components/KakaoShareButton";
 import CalendarSyncButton from "@/components/CalendarSyncButton";
 import StockSafetyBadgeCard from "@/components/StockSafetyBadgeCard";
 import StockTimingBadgeCard from "@/components/StockTimingBadgeCard";
-import UsEmergingStocksShowcase from "@/components/UsEmergingStocksShowcase";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
@@ -1260,14 +1260,37 @@ function DiscoveryContent() {
                             </div>
                         </div>
 
-                        {/* 미국 혁신 신생기업 & 텐배거 유망주 큐레이션 쇼케이스 */}
+                        {/* 미국 신생 혁신 기업 바로가기 배너 (사이드바 및 전용 탭으로 연결되는 컴팩트 배너) */}
                         <div className="w-full">
-                            <UsEmergingStocksShowcase 
-                                onSelectStock={(ticker) => {
-                                    setSearchInput(ticker);
-                                    handleSearch(ticker);
-                                }}
-                            />
+                            <Link
+                                href="/emerging"
+                                className="block p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-cyan-950/40 border border-purple-500/25 hover:border-purple-400/50 transition-all group shadow-lg hover:shadow-purple-500/10"
+                            >
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 text-purple-400 group-hover:scale-110 transition-transform shadow-inner">
+                                            <Rocket className="w-5 h-5 animate-pulse" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-500/25 text-purple-300 border border-purple-500/40">
+                                                    초보자 큐레이션
+                                                </span>
+                                                <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-purple-200 transition-colors">
+                                                    미국 혁신 신생기업 13선 큐레이션 보러가기
+                                                </h4>
+                                            </div>
+                                            <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">
+                                                우주항공(ASTS)·양자컴(IONQ)·플라잉카(JOBY)·차세대 AI 등 미래 유망주 모아보기
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-purple-400 shrink-0 group-hover:translate-x-1 transition-transform">
+                                        <span>둘러보기</span>
+                                        <ChevronRight className="w-4 h-4" />
+                                    </div>
+                                </div>
+                            </Link>
                         </div>
 
                         {/* 신규: 팩트 기반 증시 스캐너 & LIVE 공시 속보 */}
