@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, Rocket, Cpu, Plane, Bot, Coins, Dna, ArrowUpRight, TrendingUp, ShieldCheck, Zap, Flame, RefreshCw, Loader2, Award } from "lucide-react";
+import { Sparkles, Rocket, Cpu, Plane, Bot, Coins, Dna, ArrowUpRight, TrendingUp, ShieldCheck, Zap, Flame, RefreshCw, Loader2, Award, Star } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export interface EmergingStock {
     ticker: string;
@@ -224,6 +226,8 @@ interface UsEmergingStocksShowcaseProps {
 }
 
 export default function UsEmergingStocksShowcase({ onSelectStock, className = "" }: UsEmergingStocksShowcaseProps) {
+    const { user } = useAuth();
+
     // 2대 뷰 모드: live(오늘의 실시간 핫 유망주) vs curated(분야별 대표 혁신주)
     const [viewMode, setViewMode] = useState<"live" | "curated">("live");
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -231,6 +235,96 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
     const [liveStocks, setLiveStocks] = useState<LiveEmergingStock[]>([]);
     const [loadingLive, setLoadingLive] = useState<boolean>(true);
     const [lastUpdated, setLastUpdated] = useState<string>("");
+
+    // 관심종목 동기화 State
+    const [watchlistSet, setWatchlistSet] = useState<Set<string>>(new Set());
+    const [togglingTicker, setTogglingTicker] = useState<string | null>(null);
+
+    const fetchWatchlist = useCallback(async () => {
+        try {
+            const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                headers: { "X-User-ID": currentUserId }
+            });
+            const json = await res.json();
+            if (json.status === 'success' && Array.isArray(json.data)) {
+                const set = new Set<string>();
+                json.data.forEach((item: any) => {
+                    const sym = typeof item === 'string' ? item : item.symbol;
+                    if (sym) {
+                        set.add(sym.toUpperCase());
+                    }
+                });
+                setWatchlistSet(set);
+            }
+        } catch (err) {
+            console.error("Failed to fetch watchlist in showcase:", err);
+        }
+    }, [user?.id]);
+
+    useEffect(() => {
+        fetchWatchlist();
+        const handleWatchlistChanged = () => fetchWatchlist();
+        window.addEventListener('watchlistChanged', handleWatchlistChanged);
+        return () => window.removeEventListener('watchlistChanged', handleWatchlistChanged);
+    }, [fetchWatchlist]);
+
+    const toggleWatchlist = async (ticker: string, nameKo: string, currentPrice?: number) => {
+        const sym = ticker.toUpperCase();
+        const isSaved = watchlistSet.has(sym);
+        const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+
+        setTogglingTicker(sym);
+        try {
+            if (isSaved) {
+                const res = await fetch(`${API_BASE_URL}/api/watchlist/${encodeURIComponent(sym)}`, {
+                    method: 'DELETE',
+                    headers: { "X-User-ID": currentUserId }
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setWatchlistSet(prev => {
+                        const next = new Set(prev);
+                        next.delete(sym);
+                        return next;
+                    });
+                    toast.info(`⭐ [${nameKo || sym}] 관심종목에서 해제되었습니다.`);
+                    window.dispatchEvent(new CustomEvent('watchlistChanged'));
+                } else {
+                    toast.error("관심종목 해제 실패: " + (json.message || "오류가 발생했습니다."));
+                }
+            } else {
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-ID': currentUserId
+                    },
+                    body: JSON.stringify({
+                        symbol: sym,
+                        price: currentPrice || 0
+                    })
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setWatchlistSet(prev => {
+                        const next = new Set(prev);
+                        next.add(sym);
+                        return next;
+                    });
+                    toast.success(`⭐ [${nameKo || sym}] 관심종목에 추가되었습니다!`);
+                    window.dispatchEvent(new CustomEvent('watchlistChanged'));
+                } else {
+                    toast.error("관심종목 추가 실패: " + (json.message || "오류가 발생했습니다."));
+                }
+            }
+        } catch (e) {
+            console.error("Watchlist toggle error:", e);
+            toast.error("네트워크 통신 중 오류가 발생했습니다.");
+        } finally {
+            setTogglingTicker(null);
+        }
+    };
 
     const fetchLiveStocks = async (isManual = false) => {
         setLoadingLive(true);
@@ -273,7 +367,7 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                         <span>🚀 지금 월가가 주목하는 미국 혁신 유망주</span>
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                        어려운 종목 코드를 몰라도 괜찮습니다. 오늘 미국 시장에서 거래량이 터지고 급등하는 미래 10배 성장 유망주를 실시간으로 확인하세요.
+                        어려운 종목 코드를 몰라도 괜찮습니다. 오늘 미국 시장에서 거래량이 터지고 급등하는 미래 10배 성장 유망주를 실시간으로 확인하고 관심종목(⭐)으로 찜하세요.
                     </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-400 shrink-0">
@@ -348,118 +442,145 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
                         </div>
                     ) : (
                         <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {liveStocks.map((stock, idx) => (
-                                <div
-                                    key={stock.ticker}
-                                    className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-orange-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 flex flex-col justify-between"
-                                >
-                                    {/* 상단: 아이콘 + 종목명 + 티커 + 실시간 시세 */}
-                                    <div>
-                                        <div className="flex items-start justify-between gap-2 mb-2.5">
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform shrink-0">
-                                                    {stock.icon || "🚀"}
+                            {liveStocks.map((stock, idx) => {
+                                const isSaved = watchlistSet.has(stock.ticker.toUpperCase());
+                                return (
+                                    <div
+                                        key={stock.ticker}
+                                        className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-orange-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 flex flex-col justify-between"
+                                    >
+                                        {/* 상단: 아이콘 + 종목명 + 티커 + 실시간 시세 + 관심종목 별표 */}
+                                        <div>
+                                            <div className="flex items-start justify-between gap-2 mb-2.5">
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform shrink-0">
+                                                        {stock.icon || "🚀"}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[10px] font-black font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                #{idx + 1}
+                                                            </span>
+                                                            <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors truncate">
+                                                                {stock.nameKo}
+                                                            </h3>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                                                            <span className="font-bold text-cyan-400">{stock.ticker}</span>
+                                                            <span>•</span>
+                                                            <span className="truncate">{stock.nameEn}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-[10px] font-black font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                                            #{idx + 1}
-                                                        </span>
-                                                        <h3 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors truncate">
-                                                            {stock.nameKo}
-                                                        </h3>
+
+                                                {/* 우측: 실시간 주가 & 등락률 & 관심종목 토글 버튼 */}
+                                                <div className="flex items-center gap-2 shrink-0 pl-2">
+                                                    <div className="flex flex-col items-end">
+                                                        <div className="text-base sm:text-lg font-black font-mono text-white tracking-tight">
+                                                            ${stock.price.toFixed(2)}
+                                                        </div>
+                                                        <div className={`text-xs font-black font-mono flex items-center gap-0.5 ${
+                                                            stock.change_pct > 0 ? 'text-rose-400' : stock.change_pct < 0 ? 'text-sky-400' : 'text-zinc-400'
+                                                        }`}>
+                                                            <span>{stock.change_pct > 0 ? '▲' : stock.change_pct < 0 ? '▼' : ''}</span>
+                                                            <span>{stock.change_pct > 0 ? `+${stock.change_pct.toFixed(2)}%` : `${stock.change_pct.toFixed(2)}%`}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                                                        <span className="font-bold text-cyan-400">{stock.ticker}</span>
-                                                        <span>•</span>
-                                                        <span className="truncate">{stock.nameEn}</span>
-                                                    </div>
+
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            toggleWatchlist(stock.ticker, stock.nameKo, stock.price);
+                                                        }}
+                                                        disabled={togglingTicker === stock.ticker.toUpperCase()}
+                                                        className={`p-2 rounded-xl transition-all border flex items-center justify-center cursor-pointer active:scale-95 shrink-0 ${
+                                                            isSaved
+                                                                ? "bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-md shadow-amber-500/10 hover:bg-amber-500/30"
+                                                                : "bg-white/5 text-zinc-500 border-white/10 hover:text-amber-300 hover:bg-white/10 hover:border-amber-500/30"
+                                                        }`}
+                                                        title={isSaved ? "관심종목에서 해제" : "내 관심종목에 추가"}
+                                                        aria-label="관심종목 토글"
+                                                    >
+                                                        {togglingTicker === stock.ticker.toUpperCase() ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                                                        ) : (
+                                                            <Star className={`w-4 h-4 transition-transform ${isSaved ? "fill-amber-400 text-amber-400 scale-110" : ""}`} />
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </div>
 
-                                            {/* 실시간 주가 & 등락률 */}
-                                            <div className="flex flex-col items-end shrink-0 pl-2">
-                                                <div className="text-base sm:text-lg font-black font-mono text-white tracking-tight">
-                                                    ${stock.price.toFixed(2)}
-                                                </div>
-                                                <div className={`text-xs font-black font-mono flex items-center gap-0.5 ${
-                                                    stock.change_pct > 0 ? 'text-rose-400' : stock.change_pct < 0 ? 'text-sky-400' : 'text-zinc-400'
+                                            {/* 당일 핫 시그널 배지 (급등/거래량 폭증/눌림목 등) */}
+                                            <div className="mb-2.5">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-sm ${
+                                                    stock.badge_type === 'surge'
+                                                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                                        : stock.badge_type === 'volume'
+                                                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                                        : stock.badge_type === 'dip'
+                                                        ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                                                        : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
                                                 }`}>
-                                                    <span>{stock.change_pct > 0 ? '▲' : stock.change_pct < 0 ? '▼' : ''}</span>
-                                                    <span>{stock.change_pct > 0 ? `+${stock.change_pct.toFixed(2)}%` : `${stock.change_pct.toFixed(2)}%`}</span>
-                                                </div>
+                                                    <Zap className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                                                    <span>{stock.hot_badge}</span>
+                                                </span>
+                                            </div>
+
+                                            {/* 초보자를 위한 1줄 비즈니스 해설 */}
+                                            <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 line-clamp-2">
+                                                {stock.oneLiner}
+                                            </p>
+
+                                            {/* 핵심 투자 포인트 하이라이트 칩 */}
+                                            <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5">
+                                                <span className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5 leading-snug">
+                                                    <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
+                                                    <span>{stock.highlight}</span>
+                                                </span>
+                                            </div>
+
+                                            {/* 태그 모음 */}
+                                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                                {stock.tags.map((tag, tIdx) => (
+                                                    <span key={tIdx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono">
+                                                        {tag}
+                                                    </span>
+                                                ))}
                                             </div>
                                         </div>
 
-                                        {/* 당일 핫 시그널 배지 (급등/거래량 폭증/눌림목 등) */}
-                                        <div className="mb-2.5">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-sm ${
-                                                stock.badge_type === 'surge'
-                                                    ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                                                    : stock.badge_type === 'volume'
-                                                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                                    : stock.badge_type === 'dip'
-                                                    ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                                                    : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
-                                            }`}>
-                                                <Zap className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                                                <span>{stock.hot_badge}</span>
-                                            </span>
-                                        </div>
-
-                                        {/* 초보자를 위한 1줄 비즈니스 해설 */}
-                                        <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 line-clamp-2">
-                                            {stock.oneLiner}
-                                        </p>
-
-                                        {/* 핵심 투자 포인트 하이라이트 칩 */}
-                                        <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5">
-                                            <span className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5 leading-snug">
-                                                <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
-                                                <span>{stock.highlight}</span>
-                                            </span>
-                                        </div>
-
-                                        {/* 태그 모음 */}
-                                        <div className="flex flex-wrap gap-1.5 mb-4">
-                                            {stock.tags.map((tag, tIdx) => (
-                                                <span key={tIdx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono">
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* 하단: 액션 버튼 2종 (5단계 AI 진단 / 실시간 차트) */}
-                                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
-                                        <Link
-                                            href={`/stock/${stock.ticker}`}
-                                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-md shadow-blue-500/20 active:scale-95 text-center"
-                                        >
-                                            <span>5단계 AI 진단</span>
-                                            <ArrowUpRight className="w-3 h-3" />
-                                        </Link>
-
-                                        {onSelectStock ? (
-                                            <button
-                                                onClick={() => onSelectStock(stock.ticker)}
-                                                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
-                                            >
-                                                <TrendingUp className="w-3 h-3 text-cyan-400" />
-                                                <span>실시간 시세·차트</span>
-                                            </button>
-                                        ) : (
+                                        {/* 하단: 액션 버튼 2종 (5단계 AI 진단 / 실시간 차트) */}
+                                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
                                             <Link
-                                                href={`/discovery?q=${stock.ticker}`}
-                                                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 text-center"
+                                                href={`/stock/${stock.ticker}`}
+                                                className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-md shadow-blue-500/20 active:scale-95 text-center"
                                             >
-                                                <TrendingUp className="w-3 h-3 text-cyan-400" />
-                                                <span>실시간 시세·차트</span>
+                                                <span>5단계 AI 진단</span>
+                                                <ArrowUpRight className="w-3 h-3" />
                                             </Link>
-                                        )}
+
+                                            {onSelectStock ? (
+                                                <button
+                                                    onClick={() => onSelectStock(stock.ticker)}
+                                                    className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+                                                >
+                                                    <TrendingUp className="w-3 h-3 text-cyan-400" />
+                                                    <span>실시간 시세·차트</span>
+                                                </button>
+                                            ) : (
+                                                <Link
+                                                    href={`/discovery?q=${stock.ticker}`}
+                                                    className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 text-center"
+                                                >
+                                                    <TrendingUp className="w-3 h-3 text-cyan-400" />
+                                                    <span>실시간 시세·차트</span>
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -495,89 +616,116 @@ export default function UsEmergingStocksShowcase({ onSelectStock, className = ""
 
                     {/* 신생 기업 카드 그리드 (반응형 1~3열) */}
                     <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filteredCuratedStocks.map(stock => (
-                            <div
-                                key={stock.ticker}
-                                className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-cyan-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10 flex flex-col justify-between"
-                            >
-                                {/* 상단: 아이콘 + 종목명 + 티커 + 거래소 */}
-                                <div>
-                                    <div className="flex items-start justify-between gap-2 mb-2.5">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
-                                                {stock.icon}
+                        {filteredCuratedStocks.map(stock => {
+                            const isSaved = watchlistSet.has(stock.ticker.toUpperCase());
+                            return (
+                                <div
+                                    key={stock.ticker}
+                                    className="group relative rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-cyan-500/40 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/10 flex flex-col justify-between"
+                                >
+                                    {/* 상단: 아이콘 + 종목명 + 티커 + 거래소 + 관심종목 별표 */}
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2 mb-2.5">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                                    {stock.icon}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition-colors">
+                                                            {stock.nameKo}
+                                                        </h3>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                                                        <span className="font-bold text-cyan-400">{stock.ticker}</span>
+                                                        <span>•</span>
+                                                        <span>{stock.nameEn}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <h3 className="font-bold text-white text-base group-hover:text-cyan-300 transition-colors">
-                                                        {stock.nameKo}
-                                                    </h3>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                                                    <span className="font-bold text-cyan-400">{stock.ticker}</span>
-                                                    <span>•</span>
-                                                    <span>{stock.nameEn}</span>
-                                                </div>
+
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">
+                                                    {stock.exchange}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        toggleWatchlist(stock.ticker, stock.nameKo);
+                                                    }}
+                                                    disabled={togglingTicker === stock.ticker.toUpperCase()}
+                                                    className={`p-1.5 rounded-xl transition-all border flex items-center justify-center cursor-pointer active:scale-95 shrink-0 ${
+                                                        isSaved
+                                                            ? "bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-md shadow-amber-500/10 hover:bg-amber-500/30"
+                                                            : "bg-white/5 text-zinc-500 border-white/10 hover:text-amber-300 hover:bg-white/10 hover:border-amber-500/30"
+                                                    }`}
+                                                    title={isSaved ? "관심종목에서 해제" : "내 관심종목에 추가"}
+                                                    aria-label="관심종목 토글"
+                                                >
+                                                    {togglingTicker === stock.ticker.toUpperCase() ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                                    ) : (
+                                                        <Star className={`w-3.5 h-3.5 transition-transform ${isSaved ? "fill-amber-400 text-amber-400 scale-110" : ""}`} />
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">
-                                            {stock.exchange}
-                                        </span>
-                                    </div>
 
-                                    {/* 초보자를 위한 1줄 비즈니스 해설 */}
-                                    <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 line-clamp-2">
-                                        {stock.oneLiner}
-                                    </p>
+                                        {/* 초보자를 위한 1줄 비즈니스 해설 */}
+                                        <p className="text-xs sm:text-[13px] text-slate-300 leading-relaxed font-normal mb-3 line-clamp-2">
+                                            {stock.oneLiner}
+                                        </p>
 
-                                    {/* 핵심 투자 포인트 하이라이트 칩 */}
-                                    <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5">
-                                        <span className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5 leading-snug">
-                                            <Zap className="w-3 h-3 text-cyan-400 shrink-0" />
-                                            <span>{stock.highlight}</span>
-                                        </span>
-                                    </div>
-
-                                    {/* 태그 모음 */}
-                                    <div className="flex flex-wrap gap-1.5 mb-4">
-                                        {stock.tags.map((tag, idx) => (
-                                            <span key={idx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono">
-                                                {tag}
+                                        {/* 핵심 투자 포인트 하이라이트 칩 */}
+                                        <div className="p-2.5 rounded-xl bg-cyan-500/5 border border-cyan-500/15 mb-3.5">
+                                            <span className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5 leading-snug">
+                                                <Zap className="w-3 h-3 text-cyan-400 shrink-0" />
+                                                <span>{stock.highlight}</span>
                                             </span>
-                                        ))}
+                                        </div>
+
+                                        {/* 태그 모음 */}
+                                        <div className="flex flex-wrap gap-1.5 mb-4">
+                                            {stock.tags.map((tag, idx) => (
+                                                <span key={idx} className="text-[11px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5 font-mono">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 하단: 액션 버튼 2종 (5단계 AI 진단 / 실시간 차트) */}
+                                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
+                                        <Link
+                                            href={`/stock/${stock.ticker}`}
+                                            className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-md shadow-blue-500/20 active:scale-95 text-center"
+                                        >
+                                            <span>5단계 AI 진단</span>
+                                            <ArrowUpRight className="w-3 h-3" />
+                                        </Link>
+
+                                        {onSelectStock ? (
+                                            <button
+                                                onClick={() => onSelectStock(stock.ticker)}
+                                                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+                                            >
+                                                <TrendingUp className="w-3 h-3 text-cyan-400" />
+                                                <span>실시간 시세·차트</span>
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                href={`/discovery?q=${stock.ticker}`}
+                                                className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 text-center"
+                                            >
+                                                <TrendingUp className="w-3 h-3 text-cyan-400" />
+                                                <span>실시간 시세·차트</span>
+                                            </Link>
+                                        )}
                                     </div>
                                 </div>
-
-                                {/* 하단: 액션 버튼 2종 (5단계 AI 진단 / 실시간 차트) */}
-                                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
-                                    <Link
-                                        href={`/stock/${stock.ticker}`}
-                                        className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all shadow-md shadow-blue-500/20 active:scale-95 text-center"
-                                    >
-                                        <span>5단계 AI 진단</span>
-                                        <ArrowUpRight className="w-3 h-3" />
-                                    </Link>
-
-                                    {onSelectStock ? (
-                                        <button
-                                            onClick={() => onSelectStock(stock.ticker)}
-                                            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
-                                        >
-                                            <TrendingUp className="w-3 h-3 text-cyan-400" />
-                                            <span>실시간 시세·차트</span>
-                                        </button>
-                                    ) : (
-                                        <Link
-                                            href={`/discovery?q=${stock.ticker}`}
-                                            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white border border-white/10 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 text-center"
-                                        >
-                                            <TrendingUp className="w-3 h-3 text-cyan-400" />
-                                            <span>실시간 시세·차트</span>
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}

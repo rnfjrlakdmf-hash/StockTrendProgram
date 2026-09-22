@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import UsEmergingStocksShowcase from "@/components/UsEmergingStocksShowcase";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import SeoContentBlock from "@/components/SeoContentBlock";
-import { Rocket, Sparkles, Search, Compass, ShieldCheck, ArrowRight, ArrowLeft, Zap, Info, ChevronRight, TrendingUp } from "lucide-react";
+import { Rocket, Sparkles, Search, Compass, ShieldCheck, ArrowRight, ArrowLeft, Zap, Info, ChevronRight, TrendingUp, Star } from "lucide-react";
 
 export default function EmergingStocksPage() {
     return (
@@ -32,7 +32,7 @@ function EmergingStocksContent() {
         <div className="min-h-screen pb-20 text-white bg-zinc-950">
             <Header 
                 title="미국 혁신 신생기업 큐레이션" 
-                subtitle="당일 급등주 및 거래량 폭증 테크 기업 실시간 자동 스캔 &amp; 차세대 혁신 유망주 큐레이션" 
+                subtitle="당일 급등주 및 거래량 폭증 테크 기업 실시간 자동 스캔 & 차세대 혁신 유망주 큐레이션" 
             />
 
             <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8 animate-in fade-in duration-500">
@@ -46,13 +46,23 @@ function EmergingStocksContent() {
 
                 {/* 상단 네비게이션 & 빠른 검색 바 */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
-                    <Link
-                        href="/discovery"
-                        className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-cyan-300 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>종목 발굴 &amp; 마켓 스캐너로 이동</span>
-                    </Link>
+                    <div className="flex items-center flex-wrap gap-2.5 sm:gap-3">
+                        <Link
+                            href="/discovery"
+                            className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-cyan-300 transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>종목 발굴 & 마켓 스캐너로 이동</span>
+                        </Link>
+                        <span className="text-zinc-700 hidden sm:inline">|</span>
+                        <Link
+                            href="/watchlist"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/40 transition-all shadow-sm group"
+                        >
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 group-hover:scale-110 transition-transform" />
+                            <span>내 관심종목 보러가기</span>
+                        </Link>
+                    </div>
 
                     <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
                         <div className="relative flex-1 sm:w-64">

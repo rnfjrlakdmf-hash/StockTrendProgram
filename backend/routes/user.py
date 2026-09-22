@@ -33,6 +33,11 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
     import concurrent.futures
 
     try:
+        from routes.seo import US_STOCK_KOREAN_NAMES
+    except Exception:
+        US_STOCK_KOREAN_NAMES = {}
+
+    try:
         from stock_names import STOCK_MAP
         local_code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str)}
     except Exception:
@@ -50,6 +55,10 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
         if sym in GLOBAL_KOREAN_NAMES:
             names = GLOBAL_KOREAN_NAMES[sym]
             name = names[0] if isinstance(names, list) else names
+        elif sym in US_STOCK_KOREAN_NAMES:
+            name = US_STOCK_KOREAN_NAMES[sym]
+        elif base_sym in US_STOCK_KOREAN_NAMES:
+            name = US_STOCK_KOREAN_NAMES[base_sym]
         elif sym in local_code_to_name:
             name = local_code_to_name[sym]
         elif base_sym in local_code_to_name:
