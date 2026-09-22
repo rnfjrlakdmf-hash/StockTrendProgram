@@ -29,7 +29,16 @@ US_PEERS_MAP = {
     "INTC": [("AMD", "AMD"), ("NVDA", "엔비디아"), ("QCOM", "퀄컴"), ("TSM", "TSMC")],
     "AMZN": [("WMT", "월마트"), ("COST", "코스트코"), ("MSFT", "마이크로소프트"), ("GOOGL", "알파벳")],
     "GOOGL": [("META", "메타"), ("MSFT", "마이크로소프트"), ("AMZN", "아마존"), ("AAPL", "애플")],
-    "NFLX": [("DIS", "월트디즈니"), ("WBD", "워너브라더스"), ("CMCSA", "컴캐스트"), ("AMZN", "아마존")]
+    "NFLX": [("DIS", "월트디즈니"), ("WBD", "워너브라더스"), ("CMCSA", "컴캐스트"), ("AMZN", "아마존")],
+    "IONQ": [("RGTI", "리게티 컴퓨팅"), ("QUBT", "퀀텀 컴퓨팅"), ("IBM", "IBM"), ("GOOGL", "알파벳")],
+    "ASTS": [("RKLB", "로켓랩"), ("LUNR", "인튜이티브 머신스"), ("GSAT", "글로벌스타"), ("IRDM", "이리디움")],
+    "RKLB": [("ASTS", "AST 스페이스모바일"), ("LUNR", "인튜이티브 머신스"), ("SPCE", "버진 갤럭틱"), ("BA", "보잉")],
+    "SOFI": [("UPST", "업스타트"), ("AFRM", "어펌"), ("HOOD", "로빈후드"), ("PYPL", "페이팔")],
+    "PLTR": [("SNOW", "스노우플레이크"), ("AI", "C3.ai"), ("BBAI", "빅베어 AI"), ("MSFT", "마이크로소프트")],
+    "RIVN": [("LCID", "루시드"), ("TSLA", "테슬라"), ("NIO", "니오"), ("XPEV", "샤오펑")],
+    "LCID": [("RIVN", "리비안"), ("TSLA", "테슬라"), ("GM", "GM"), ("F", "포드")],
+    "JOBY": [("ACHR", "아처 에비에이션"), ("LILM", "릴리움"), ("EH", "이항"), ("BA", "보잉")],
+    "COIN": [("MSTR", "마이크로스트래티지"), ("MARA", "마라톤 디지털"), ("RIOT", "라이엇"), ("HOOD", "로빈후드")]
 }
 
 def fetch_us_5step_report_data(ticker: str):
@@ -140,7 +149,10 @@ def fetch_us_5step_report_data(ticker: str):
     fund_score = min(10, max(1, fund_score))
     grade = 'S' if fund_score >= 9 else ('A' if fund_score >= 8 else ('B+' if fund_score >= 6 else 'B'))
 
-    step1_insight = f"월가 메이저 기관 지분율 {foreign_rate_label} 확보. PER {per}배 수준으로 글로벌 빅테크 및 성장주 프리미엄이 안정적으로 형성되어 있습니다."
+    if per > 0:
+        step1_insight = f"월가 메이저 기관 지분율 {foreign_rate_label} 확보. PER {per}배 수준으로 글로벌 밸류에이션 및 성장 프리미엄이 형성되어 있습니다."
+    else:
+        step1_insight = f"월가 메이저 기관 지분율 {foreign_rate_label} 수준. 미래 시장 선점을 위해 공격적인 R&D와 매출 확장에 집중하는 신생 혁신 성장주 단계로, 순이익 턴어라운드 및 기술 모멘텀 관찰이 유효합니다."
 
     # 2단계 뉴스/공시
     news_items = []
