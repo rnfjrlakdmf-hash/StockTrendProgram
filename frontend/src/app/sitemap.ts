@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
+import { API_BASE_URL } from '@/lib/config';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
@@ -174,7 +175,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
     });
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
+    const apiUrl = API_BASE_URL || 'http://127.0.0.1:8000';
 
     // 4. 테마별 산업 및 시장 분석 (고품질 테마 분석 콘텐츠)
     try {

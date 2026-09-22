@@ -18,8 +18,9 @@ if (typeof window !== 'undefined') {
     apiBase = ""; 
   }
 } else {
-  // SSR
-  apiBase = process.env.NEXT_PUBLIC_API_URL || "http://13.209.99.170:8000"; // SSR 시 실제 백엔드 주소 바라보게 수정
+  // SSR 및 Next.js 빌드 시점 (내부 127.0.0.1로 초고속 연결하여 자체 공인 IP 루프백 타임아웃 방지)
+  apiBase = process.env.INTERNAL_API_URL || (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('13.209.99.170') ? process.env.NEXT_PUBLIC_API_URL : "http://127.0.0.1:8000");
 }
 
 export const API_BASE_URL = apiBase;
+
