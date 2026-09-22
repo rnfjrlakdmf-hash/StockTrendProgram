@@ -42,7 +42,15 @@ def fetch_us_5step_report_data(ticker: str):
         logger.error(f"yfinance error for {sym}: {e}")
         info = {}
 
-    stock_name = info.get('shortName') or info.get('longName') or sym
+    try:
+        from routes.seo import US_STOCK_KOREAN_NAMES
+        raw_name = info.get('shortName') or info.get('longName') or sym
+        if sym in US_STOCK_KOREAN_NAMES:
+            stock_name = f"{US_STOCK_KOREAN_NAMES[sym]} ({raw_name})"
+        else:
+            stock_name = raw_name
+    except Exception:
+        stock_name = info.get('shortName') or info.get('longName') or sym
     current_price = float(info.get('currentPrice') or info.get('regularMarketPrice') or 0.0)
     prev_close = float(info.get('previousClose') or current_price)
 

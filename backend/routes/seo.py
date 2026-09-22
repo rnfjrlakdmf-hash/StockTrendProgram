@@ -2,6 +2,7 @@ from fastapi import APIRouter
 import FinanceDataReader as fdr
 import yfinance as yf
 import logging
+import os
 from cachetools import TTLCache, cached
 from datetime import timedelta
 
@@ -126,6 +127,143 @@ def parse_naver_cop_table(soup):
         return None
 
 
+US_STOCK_KOREAN_NAMES = {
+    "META": "메타 플랫폼스",
+    "AAPL": "애플",
+    "NVDA": "엔비디아",
+    "TSLA": "테슬라",
+    "MSFT": "마이크로소프트",
+    "GOOGL": "알파벳 (구글)",
+    "GOOG": "알파벳 (구글)",
+    "AMZN": "아마존닷컴",
+    "AMD": "AMD",
+    "INTC": "인텔",
+    "QCOM": "퀄컴",
+    "AVGO": "브로드컴",
+    "TSM": "TSMC",
+    "PLTR": "팔란티어",
+    "NFLX": "넷플릭스",
+    "COIN": "코인베이스",
+    "ARM": "ARM 홀딩스",
+    "MU": "마이크론 테크놀로지",
+    "ASML": "ASML",
+    "BABA": "알리바바",
+    "DIS": "월트 디즈니",
+    "SBUX": "스타벅스",
+    "NKE": "나이키",
+    "KO": "코카콜라",
+    "PEP": "펩시코",
+    "JNJ": "존슨앤드존슨",
+    "UNH": "유나이티드헬스",
+    "V": "비자",
+    "MA": "마스터카드",
+    "JPM": "JP모건 체이스",
+    "BAC": "뱅크오브아메리카",
+    "WMT": "월마트",
+    "COST": "코스트코",
+    "RIVN": "리비안",
+    "LCID": "루시드",
+    "GM": "제너럴모터스",
+    "F": "포드"
+}
+
+US_STOCK_OVERVIEWS_KO = {
+    "META": (
+        "메타 플랫폼스(Meta Platforms, Inc.)는 전 세계 사용자들이 모바일 기기, PC, 가상현실(VR) 헤드셋 및 AI 스마트 글래스를 통해 소통하고 콘텐츠를 공유할 수 있는 플랫폼과 하드웨어를 개발하는 글로벌 선도 빅테크 기업입니다. "
+        "주요 사업은 크게 앱 패밀리(Family of Apps, FoA)와 리얼리티 랩스(Reality Labs, RL) 2대 부문으로 구성되어 있습니다. "
+        "패밀리 오브 앱스(FoA) 부문은 피드, 릴스, 스토리, 그룹, 마켓플레이스를 제공하는 페이스북(Facebook), 이미지 및 비디오 중심 소셜 플랫폼인 인스타그램(Instagram), 실시간 텍스트 및 음성·영상 통화를 지원하는 메신저(Messenger)와 왓츠앱(WhatsApp), 텍스트 기반 대화 플랫폼 스레드(Threads), 그리고 앱과 웹, 스마트 글래스 전반에 탑재된 대화형 인공지능 '메타 AI(Meta AI)'를 운영하고 있습니다. "
+        "리얼리티 랩스(RL) 부문은 메타 퀘스트(Meta Quest) VR/MR 헤드셋을 비롯하여, 레이밴 메타(Ray-Ban Meta) 등 혁신적인 AI 스마트 글래스와 신경 신호 제어 손목 밴드(Meta Neural Band) 등 차세대 공간 컴퓨팅 및 웨어러블 하드웨어, 소프트웨어 생태계를 구축하고 있습니다. "
+        "또한 마이크로소프트(MSFT), 엔비디아(NVDA), AMD, 브로드컴, OpenAI 등 주요 글로벌 테크 기업들과 차세대 AI 및 컴퓨팅 인프라 분야에서 긴밀하게 협력하고 있습니다. "
+        "구 사명은 페이스북(Facebook, Inc.)이었으며 2021년 10월 메타 플랫폼스로 사명을 변경하였습니다. 2004년 설립되었으며 본사는 미국 캘리포니아주 멘로파크에 위치해 있습니다."
+    ),
+    "AAPL": (
+        "애플(Apple Inc.)은 스마트폰(아이폰), 태블릿(아이패드), 개인용 컴퓨터(맥), 웨어러블 기기(애플워치, 에어팟, 비전 프로) 및 다양한 디지털 서비스 생태계를 설계, 제조 및 판매하는 글로벌 선도 테크 기업입니다. "
+        "iOS, macOS 등 독자적인 하드웨어-소프트웨어 통합 운영체제를 기반으로 앱스토어, 애플뮤직, 아이클라우드, 애플페이 등의 고수익 서비스 사업을 영위하고 있으며, 자체 온디바이스 인공지능인 애플 인텔리전스(Apple Intelligence)를 제품 전반에 통합하고 있습니다."
+    ),
+    "NVDA": (
+        "엔비디아(NVIDIA Corporation)는 인공지능(AI), 딥러닝, 고성능 컴퓨팅(HPC) 및 그래픽 가속을 위한 GPU와 풀스택 가속 컴퓨팅 플랫폼을 설계하는 글로벌 반도체 선도 기업입니다. "
+        "생성형 AI 모델 훈련 및 추론의 글로벌 표준인 호퍼(Hopper) 및 블랙웰(Blackwell) 아키텍처 GPU와 독점 소프트웨어 플랫폼인 CUDA를 통해 글로벌 데이터센터와 AI 인프라 시장을 독점적으로 주도하고 있습니다."
+    ),
+    "TSLA": (
+        "테슬라(Tesla, Inc.)는 순수 전기차(EV), 대규모 배터리 에너지 저장 시스템(메가팩·파워월), 태양광 패널 및 완전자율주행(FSD) 소프트웨어, 휴머노이드 로봇(옵티머스)을 설계 및 생산하는 글로벌 친환경 모빌리티 및 AI 로보틱스 기업입니다. "
+        "모델 S, 3, X, Y 및 사이버트럭 등의 완성차 라인업과 슈퍼차저 글로벌 급속 충전 네트워크를 바탕으로 지속 가능한 에너지로의 글로벌 전환을 이끌고 있습니다."
+    ),
+    "MSFT": (
+        "마이크로소프트(Microsoft Corporation)는 애저(Azure) 클라우드 인프라, 윈도우 OS, 오피스 생산성 소프트웨어(Microsoft 365), 깃허브, 링크드인 및 엑스박스 게이밍 플랫폼을 영위하는 글로벌 종합 소프트웨어 및 클라우드 대기업입니다. "
+        "OpenAI와의 독점적 파트너십을 기반으로 엔터프라이즈 생성형 AI 코파일럿(Copilot) 생태계를 구축하여 전 세계 기업의 디지털 전환을 주도하고 있습니다."
+    ),
+    "GOOGL": (
+        "알파벳(Alphabet Inc.)은 전 세계 최대의 검색 엔진 구글(Google), 글로벌 동영상 플랫폼 유튜브(YouTube), 안드로이드 모바일 운영체제, 크롬 브라우저 및 구글 클라우드(GCP)를 운영하는 글로벌 빅테크 기업입니다. "
+        "자체 개발한 초거대 언어모델 제미나이(Gemini)와 전용 AI 칩 TPU(Tensor Processing Unit)를 바탕으로 검색, 광고, 클라우드, 자율주행(웨이모) 전 영역에서 AI 기술 혁신을 선도하고 있습니다."
+    ),
+    "AMZN": (
+        "아마존닷컴(Amazon.com, Inc.)은 글로벌 1위 전자상거래 마켓플레이스와 클라우드 인프라 시장 점유율 1위인 아마존웹서비스(AWS)를 보유한 글로벌 기술 대기업입니다. "
+        "프라임 멤버십, 대규모 물류 자동화 풀필먼트 네트워크, 고마진 디지털 광고 사업 및 생성형 AI 인프라(베드록, 트레이니엄)를 결합하여 견고한 현금 흐름을 창출하고 있습니다."
+    ),
+    "TSM": (
+        "TSMC(Taiwan Semiconductor Manufacturing Company)는 글로벌 최첨단 반도체 파운드리(위탁 제조) 시장 점유율 50% 이상을 차지하고 있는 세계 최대의 파운드리 기업입니다. "
+        "애플, 엔비디아, AMD, 퀄컴 등 글로벌 빅테크 기업들의 최선단 3나노, 2나노 미세공정 AI 반도체 칩을 독점적으로 양산하고 있습니다."
+    ),
+    "AMD": (
+        "AMD(Advanced Micro Devices, Inc.)는 고성능 컴퓨팅 및 그래픽 처리를 위한 마이크로프로세서(라이젠 CPU), 그래픽 가속기(라데온 GPU) 및 데이터센터용 AI 가속 칩(인스팅트)을 설계하는 글로벌 팹리스 반도체 선도 기업입니다. "
+        "데이터센터용 EPYC 프로세서와 오픈소스 ROCm AI 소프트웨어 플랫폼을 통해 글로벌 AI 가속기 시장에서 엔비디아의 핵심 대항마로 부상하고 있습니다."
+    ),
+    "INTC": (
+        "인텔(Intel Corporation)은 PC 및 데이터센터용 x86 마이크로프로세서, 반도체 칩셋을 개발하고 자체 첨단 반도체 파운드리 제조 시설을 육성 중인 미국의 선도적 종합 반도체 기업(IDM)입니다. "
+        "미국 정부의 반도체법 지원과 자체 코어 울트라 AI PC 프로세서를 기반으로 차세대 반도체 제조 및 AI 시장 반등을 도모하고 있습니다."
+    ),
+    "PLTR": (
+        "팔란티어 테크놀로지스(Palantir Technologies Inc.)는 국가 안보, 국방 및 대기업을 위한 대규모 빅데이터 분석과 인공지능 의사결정 플랫폼(고담, 파운드리, AIP)을 공급하는 소프트웨어 기업입니다. "
+        "기업 및 군사용 생성형 AI 도입을 가속화하는 AIP(Artificial Intelligence Platform)의 폭발적 수요에 힘입어 빠른 매출 성장과 수익성 개선을 달성하고 있습니다."
+    )
+}
+
+_US_OVERVIEW_TRANSLATION_CACHE = {}
+
+def translate_us_overview_to_korean(ticker: str, name: str, raw_summary: str) -> str:
+    sym = ticker.upper().split('.')[0]
+    if sym in US_STOCK_OVERVIEWS_KO:
+        return US_STOCK_OVERVIEWS_KO[sym]
+
+    if sym in _US_OVERVIEW_TRANSLATION_CACHE:
+        return _US_OVERVIEW_TRANSLATION_CACHE[sym]
+
+    if not raw_summary or len(raw_summary.strip()) < 15:
+        return f"{name} 기업의 핵심 비즈니스 모델 및 주요 사업 현황입니다. 인공지능 기반 분석을 통해 실시간 주가 동향과 객관적 가치 평가 정보를 제공하고 있습니다."
+
+    # Gemini LLM 번역 시도
+    try:
+        from ai_analysis import get_text_model
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        if gemini_key:
+            model = get_text_model()
+            prompt = (
+                f"다음 미국 주식({sym} / {name})의 기업 비즈니스 소개를 한국 주식 투자자를 위해 이해하기 쉽고 유려한 한국어로 번역 및 요약해줘.\n"
+                f"- 조건: 3~5개 문장, 고유명사나 제품명은 적절한 한글/원어 표기를 사용하고, 서술어는 '~합니다', '~제공합니다' 등의 정중한 어조를 사용할 것.\n"
+                f"- 서두나 사족 없이 번역된 본문 내용만 출력할 것.\n\n"
+                f"{raw_summary[:2500]}"
+            )
+            resp = model.generate_content(prompt)
+            if resp and resp.text and len(resp.text.strip()) > 20:
+                result = resp.text.strip()
+                _US_OVERVIEW_TRANSLATION_CACHE[sym] = result
+                return result
+    except Exception as e:
+        logger.warning(f"[SEO] Gemini translation failed for {ticker}: {e}")
+
+    # Fallback to deep_translator
+    try:
+        from deep_translator import GoogleTranslator
+        result = GoogleTranslator(source='en', target='ko').translate(raw_summary[:1200])
+        if result and len(result) > 20:
+            _US_OVERVIEW_TRANSLATION_CACHE[sym] = result
+            return result
+    except Exception as e:
+        logger.warning(f"[SEO] deep_translator fallback failed for {ticker}: {e}")
+
+    return f"{name} 기업의 핵심 비즈니스 모델 및 주요 사업 현황입니다. 인공지능 기반 분석을 통해 실시간 주가 동향과 객관적 가치 평가 정보를 제공하고 있습니다."
+
+
 @cached(cache=TTLCache(maxsize=2000, ttl=21600))
 def get_cached_stock_info(ticker: str):
     try:
@@ -159,14 +297,21 @@ def get_cached_stock_info(ticker: str):
             info = t.info
             cal = t.calendar or {}
             
-            name = info.get('shortName') or info.get('longName') or f"종목 {us_ticker}"
+            raw_name = info.get('shortName') or info.get('longName') or f"종목 {us_ticker}"
+            if us_ticker in US_STOCK_KOREAN_NAMES:
+                name = f"{US_STOCK_KOREAN_NAMES[us_ticker]} ({raw_name})"
+            else:
+                name = raw_name
+
             price = info.get('currentPrice') or info.get('regularMarketPrice') or 0
             prev = info.get('previousClose') or 0
             per = info.get('trailingPE') or 0.0
             pbr = info.get('priceToBook') or 0.0
             div = info.get('dividendYield') or 0.0
             cap = info.get('marketCap') or 0
-            summary = info.get('longBusinessSummary') or f"{name} 기업의 핵심 비즈니스 정보 및 주가 동향 리포트입니다."
+            
+            raw_summary = info.get('longBusinessSummary') or ""
+            summary = translate_us_overview_to_korean(us_ticker, name, raw_summary)
             
             # Dividend Schedule
             ex_div_date = cal.get('Ex-Dividend Date')
