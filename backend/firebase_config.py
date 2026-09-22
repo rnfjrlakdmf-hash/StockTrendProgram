@@ -504,7 +504,7 @@ def sanitize_notification_text(title: str, body: str):
         market_name = "국내" if "국내" in clean_title else "해외" if ("해외" in clean_title or "미국" in clean_title) else ""
         emoji = "📈" if "📈" in clean_title else "📉" if "📉" in clean_title else ""
         if "관심종목" in clean_title:
-            clean_title = f"💰 [내 관심종목 결산] {market_name} {emoji}".strip()
+            clean_title = f"👑 [내 관심종목 결산] {market_name} {emoji}".strip()
         elif "지수" in clean_title or "시황" in clean_title:
             clean_title = f"📊 [시장·섹터 지수 결산] {market_name}".strip()
         else:

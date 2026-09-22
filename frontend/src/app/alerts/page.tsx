@@ -524,26 +524,141 @@ function formatUsdToKrwInText(text: string): string {
 
         lines.forEach((line: string) => {
             const cleanLine = line.trim();
+            if (!cleanLine) return;
 
-            if (cleanLine.startsWith('총 누적 수익률') || cleanLine.startsWith('총 수익률') || (cleanLine.includes('수익률:') && !cleanLine.startsWith('•') && !cleanLine.startsWith('↳'))) {
-                totalReturn = cleanLine.replace(/^.*?수익률[:\s]*/, '').trim();
-            } else if ((cleanLine.includes('총 누적 수익') || cleanLine.includes('총 누적 손익') || cleanLine.includes('총 누적 손실') || cleanLine.includes('총 수익:') || cleanLine.includes('총 손익:') || cleanLine.includes('총 손실:')) && !cleanLine.startsWith('↳') && !cleanLine.includes('주)')) {
-                totalProfit = cleanLine.replace(/^.*?(?:총\s*누적\s*손익|총\s*누적\s*수익|총\s*누적\s*손실|총\s*손익|총\s*수익)[:\s]*/, '').replace(/\(.*?\)/, '').trim();
-            } else if (cleanLine.includes('오늘의 MVP') || (cleanLine.includes('🏆') && cleanLine.includes('MVP'))) {
-                mvpText = cleanLine.replace(/^.*?MVP[:\s]*/, '').trim();
-            } else if (cleanLine.includes('약세 종목') || (cleanLine.includes('⚠️') && cleanLine.includes('약세'))) {
-                worstText = cleanLine.replace(/^.*?약세\s*종목[:\s]*/, '').trim();
-            } else if (cleanLine.includes('수급 합산') || (cleanLine.includes('🌊') && cleanLine.includes('수급'))) {
-                supplyText = cleanLine.replace(/^.*?수급\s*합산[:\s]*/, '').trim();
-            } else if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('[') && !cleanLine.includes('수익률') && !cleanLine.includes('수익:') && !cleanLine.includes('손익:') && !cleanLine.includes('손실:'))) {
-                // 새로운 종목 행 파싱 (예: • 삼성중공업(7주): 21,350원 (▼251원 / ▼1.2%) 또는 2만 1,350원)
-                const parts = cleanLine.split(':');
-                const nameWithQty = parts[0].replace('•', '').trim();
+            // 0. 구분선 및 면책/안내 스킵
+            if (/^[─━\-\=]{3,}$/.test(cleanLine) || cleanLine.startsWith('───') || cleanLine.startsWith('===') || cleanLine.startsWith('---')) {
+                return;
+            }
+            if (cleanLine.startsWith('※') || cleanLine.startsWith('👉') || cleanLine.startsWith('🔍') || cleanLine.startsWith('💬') || cleanLine.includes('앱에서 확인')) {
+                return;
+            }
 
-                // 지수(코스피, 코스닥 등) 및 시장 거시 지표, 전체 요약 메트릭은 개별 보유 종목이 아니므로 스킵
-                if (/^(코스피|코스닥|KOSPI|KOSDAQ|나스닥|환율|다우|S&P|유가|금리|총 누적|총 수익|총 손익|💰)/i.test(nameWithQty) || nameWithQty.includes('손익') || nameWithQty.includes('수익률')) {
-                    return;
+            // 1. 헤더: 총 평가손익 / 총 누적 손익 / 당일 평균 등락률 / 총 수익률
+            if (cleanLine.includes('평가손익') || cleanLine.includes('누적 손익') || cleanLine.includes('누적 수익') || cleanLine.includes('총 손익') || cleanLine.includes('총 수익') || cleanLine.includes('등락률') || cleanLine.includes('수익률')) {
+                const pctMatch = cleanLine.match(/([▲▼\-+]?[\d\.]+%)/);
+                if (pctMatch && !totalReturn) {
+                    totalReturn = pctMatch[1].replace('▲', '+').replace('▼', '-');
                 }
+                const amtMatch = cleanLine.match(/([▲▼\-+]?[\d,]+만?\s*[\d,]*원|[▲▼\-+]?\$[\d,\.]+)/);
+                if (amtMatch && !totalProfit) {
+                    totalProfit = amtMatch[1].trim();
+                }
+                return;
+            }
+
+            // 2. MVP & 약세
+            if (cleanLine.includes('MVP') || cleanLine.includes('약세')) {
+                const parts = cleanLine.split('·');
+                for (const p of parts) {
+                    const pt = p.trim();
+                    if (pt.includes('MVP')) {
+                        mvpText = pt.replace(/^.*?MVP[:\s]*/, '').trim();
+                    } else if (pt.includes('약세')) {
+                        worstText = pt.replace(/^.*?약세[:\s]*/, '').trim();
+                    }
+                }
+                return;
+            }
+
+            // 3. 외인/기관 수급
+            if (cleanLine.includes('수급 합산') || (cleanLine.includes('🌊') && cleanLine.includes('수급'))) {
+                supplyText = cleanLine.replace(/^.*?수급\s*합산[:\s]*/, '').replace(/^.*?수급[:\s]*/, '').trim();
+                return;
+            }
+
+            // 4. [신규 포맷 A] 현재가 라인 (예: "현재가 20,600원 (-0원 · +0.0%)")
+            if (cleanLine.startsWith('현재가') || cleanLine.startsWith('▪ 현재가') || cleanLine.includes('현재가 ')) {
+                if (currentItem) {
+                    const pricePart = cleanLine.replace(/^.*?현재가\s*/, '').trim();
+                    const match = pricePart.match(/^([\d,]+만?\s*[\d,]*원|\$[\d,\.]+|[\d,]+)\s*(?:\((.*?)\))?/);
+                    if (match) {
+                        let pStr = match[1].trim();
+                        const manMatch = pStr.match(/(\d+)만\s*([\d,]+)원/);
+                        if (manMatch) {
+                            const fullVal = parseInt(manMatch[1]) * 10000 + parseInt(manMatch[2].replace(/,/g, ''));
+                            pStr = `${fullVal.toLocaleString()}원`;
+                        }
+                        currentItem.price = pStr;
+                        currentItem.priceNum = parseFloat(pStr.replace(/[^0-9.]/g, '')) || 0;
+
+                        if (match[2]) {
+                            currentItem.dayChangeStr = match[2].trim();
+                            const pctMatch = currentItem.dayChangeStr.match(/([▲▼\-+]?[\d\.]+)%/);
+                            if (pctMatch) {
+                                const clean = pctMatch[1].replace('▲', '+').replace('▼', '-').replace('+', '');
+                                currentItem.dayChangePct = parseFloat(clean) || 0;
+                                currentItem.isDayUp = currentItem.dayChangePct >= 0;
+                            }
+                            const valMatch = currentItem.dayChangeStr.match(/([▲▼\-+]?[\d,]+)원/);
+                            if (valMatch) {
+                                const cleanVal = valMatch[1].replace(/[▲+]/g, '').replace('▼', '-').replace(/,/g, '');
+                                currentItem.dayChangeVal = parseFloat(cleanVal) || 0;
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+
+            // 5. [신규 포맷 A / 구형 B] 내 손익 라인 (예: "내 손익 -55,650원 (-27.8%)" or "↳ 💰수익: -55,650원 (-27.8%)")
+            if (cleanLine.startsWith('내 손익') || cleanLine.startsWith('▪ 내 손익') || cleanLine.startsWith('↳') || cleanLine.includes('총 수익:')) {
+                if (currentItem) {
+                    const profitPart = cleanLine.replace(/^.*?(?:내\s*손익|총\s*수익|수익)[:\s]*/, '').trim();
+                    const pctMatch = profitPart.match(/\((.*?)\)/);
+                    if (pctMatch) {
+                        currentItem.profitPctStr = pctMatch[1].trim();
+                        currentItem.profitStr = profitPart.replace(/\(.*?\)/, '').trim();
+                    } else {
+                        currentItem.profitStr = profitPart;
+                    }
+                    currentItem.isProfitUp = !currentItem.profitStr.includes('-') && !currentItem.profitPctStr.includes('-');
+
+                    const pMan = currentItem.profitStr.match(/([+-]?\d+)만\s*([\d,]+)원/);
+                    if (pMan) {
+                        const isMinus = currentItem.profitStr.includes('-');
+                        const rawVal = Math.abs(parseInt(pMan[1])) * 10000 + parseInt(pMan[2].replace(/,/g, ''));
+                        const pNum = isMinus ? -rawVal : rawVal;
+                        currentItem.profitStr = `${pNum > 0 ? '+' : ''}${pNum.toLocaleString()}원`;
+                        currentItem.profitNum = pNum;
+                    } else {
+                        const isMinus = currentItem.profitStr.includes('-');
+                        const rawVal = parseFloat(currentItem.profitStr.replace(/[^0-9.]/g, '')) || 0;
+                        currentItem.profitNum = isMinus ? -rawVal : rawVal;
+                    }
+
+                    currentItem.profitPct = parseFloat(currentItem.profitPctStr.replace(/[^0-9.-]/g, '')) || 0;
+
+                    if (currentItem.priceNum > 0 && currentItem.qtyNum > 0) {
+                        currentItem.evalAmount = Math.round(currentItem.priceNum * currentItem.qtyNum);
+                        currentItem.investAmount = currentItem.evalAmount - currentItem.profitNum;
+                        if (currentItem.investAmount > 0) {
+                            currentItem.avgBuyPrice = Math.round(currentItem.investAmount / currentItem.qtyNum);
+                        } else {
+                            currentItem.avgBuyPrice = currentItem.priceNum;
+                        }
+                    }
+
+                    if (currentItem.dayChangeVal !== 0 && currentItem.qtyNum > 0) {
+                        currentItem.todayProfitVal = Math.round(currentItem.dayChangeVal * currentItem.qtyNum);
+                    }
+
+                    if (currentItem.isProfitUp) {
+                        currentItem.insight = `수익 구간을 순항 중입니다. 평균 매수가(${currentItem.avgBuyPrice.toLocaleString()}원) 대비 안정적인 흐름이며, 분할 익절 전략 및 추세 지속 여부를 점검하세요.`;
+                    } else if (currentItem.profitPct <= -20) {
+                        currentItem.insight = `평균 매수가(${currentItem.avgBuyPrice.toLocaleString()}원) 대비 단기 낙폭 과대 구간입니다. 조급한 추가 매수보다는 지지선 확인 및 외국인·기관 메이저 수급 유입 전환을 확인하세요.`;
+                    } else {
+                        currentItem.insight = `단기 숨고르기 조정 국면입니다. 평균 매수가(${currentItem.avgBuyPrice.toLocaleString()}원) 근처 지지 여부와 거래량 회전율을 확인하며 차분히 대응하세요.`;
+                    }
+                }
+                return;
+            }
+
+            // 6. [구형 포맷 B] 인라인 종목 행 (예: • 삼성중공업(7주): 20,600원 (▼200원 / ▼1.0%))
+            if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('['))) {
+                const parts = cleanLine.split(':');
+                const nameWithQty = parts[0].replace('•', '').replace('▪', '').trim();
+                if (/^(코스피|코스닥|나스닥|환율|총|등락|평가|손익|수익)/i.test(nameWithQty)) return;
 
                 let stockName = nameWithQty;
                 let stockQty = "";
@@ -557,26 +672,16 @@ function formatUsdToKrwInText(text: string): string {
                 }
 
                 const detailPart = parts.slice(1).join(':').trim();
-                
-                // 가격 파싱: "2만 1,350원", "21,350원", "$152.50", "약 21,350원" 등 완벽 지원
                 let priceStr = "";
-                const priceMatch = detailPart.match(/^([\d,]+만\s*[\d,]*원|약\s*[\d,]+만?\s*[\d,]*원|[\d,]+원|\$[\d,\.]+|[\d,]+)/);
+                const priceMatch = detailPart.match(/^([\d,]+만?\s*[\d,]*원|약\s*[\d,]+만?\s*[\d,]*원|[\d,]+원|\$[\d,\.]+|[\d,]+)/);
                 if (priceMatch) {
                     priceStr = priceMatch[1].trim();
                 } else {
                     priceStr = detailPart.split('(')[0].trim();
                 }
 
-                // 만약 "2만 1,350원"처럼 한글 만이 섞여있다면 표준 "21,350원" 숫자로 변환 복원
-                const manMatch = priceStr.match(/(\d+)만\s*([\d,]+)원/);
-                if (manMatch) {
-                    const fullVal = parseInt(manMatch[1]) * 10000 + parseInt(manMatch[2].replace(/,/g, ''));
-                    priceStr = `${fullVal.toLocaleString()}원`;
-                }
-
                 const chgMatch = detailPart.match(/\((.*?)\)/);
                 const dayChangeStr = chgMatch ? chgMatch[1] : "";
-                
                 let dayChangePct = 0;
                 let isDayUp = false;
                 const pctMatch = dayChangeStr.match(/([▲▼\-+]?[\d\.]+)%/);
@@ -586,21 +691,11 @@ function formatUsdToKrwInText(text: string): string {
                     isDayUp = dayChangePct >= 0;
                 }
 
-                let dayChangeVal = 0;
-                const valMatch = dayChangeStr.match(/([▲▼\-+]?[\d,]+)원/);
-                if (valMatch) {
-                    const cleanVal = valMatch[1].replace(/[▲+]/g, '').replace('▼', '-').replace(/,/g, '');
-                    dayChangeVal = parseFloat(cleanVal) || 0;
-                }
-
-                // 종목 심볼 매핑
                 let cleanSym = "";
                 const sIdx = watchlistNames.findIndex(n => n === stockName);
                 if (sIdx !== -1 && watchlistSymbols[sIdx]) {
                     cleanSym = watchlistSymbols[sIdx].split('.')[0];
                 }
-
-                const priceNum = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
 
                 currentItem = {
                     name: stockName,
@@ -608,9 +703,9 @@ function formatUsdToKrwInText(text: string): string {
                     qty: stockQty,
                     qtyNum: qtyNum,
                     price: priceStr,
-                    priceNum: priceNum,
+                    priceNum: parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0,
                     dayChangeStr: dayChangeStr,
-                    dayChangeVal: dayChangeVal,
+                    dayChangeVal: 0,
                     dayChangePct: dayChangePct,
                     isDayUp: isDayUp,
                     profitStr: "",
@@ -626,66 +721,53 @@ function formatUsdToKrwInText(text: string): string {
                     insight: ""
                 };
                 stockItems.push(currentItem);
-            } else if (cleanLine.startsWith('↳') || cleanLine.includes('총 수익:')) {
-                if (currentItem) {
-                    const pClean = cleanLine.replace(/^.*?총\s*수익[:\s]*/, '').trim();
-                    const pctMatch = pClean.match(/\((.*?)\)/);
-                    if (pctMatch) {
-                        currentItem.profitPctStr = pctMatch[1];
-                        currentItem.profitStr = pClean.replace(/\(.*?\)/, '').trim();
-                        currentItem.isProfitUp = !currentItem.profitPctStr.includes('-') && !currentItem.profitStr.includes('-');
-                    } else {
-                        currentItem.profitStr = pClean;
-                        currentItem.isProfitUp = !currentItem.profitStr.includes('-');
-                    }
+                return;
+            }
 
-                    // "5만 400원" 형태의 한글 만 단위를 숫자로 복원
-                    let pNum = 0;
-                    const pMan = currentItem.profitStr.match(/([+-]?\d+)만\s*([\d,]+)원/);
-                    if (pMan) {
-                        const isMinus = currentItem.profitStr.includes('-');
-                        const rawVal = Math.abs(parseInt(pMan[1])) * 10000 + parseInt(pMan[2].replace(/,/g, ''));
-                        pNum = isMinus ? -rawVal : rawVal;
-                        currentItem.profitStr = `${pNum > 0 ? '+' : ''}${pNum.toLocaleString()}원`;
-                    } else {
-                        const isMinus = currentItem.profitStr.includes('-');
-                        const rawVal = parseFloat(currentItem.profitStr.replace(/[^0-9.]/g, '')) || 0;
-                        pNum = isMinus ? -rawVal : rawVal;
-                    }
-                    currentItem.profitNum = pNum;
-
-                    const pPct = parseFloat(currentItem.profitPctStr.replace(/[^0-9.-]/g, '')) || 0;
-                    currentItem.profitPct = pPct;
-
-                    // 평가액, 원금, 평단가 계산
-                    if (currentItem.priceNum > 0 && currentItem.qtyNum > 0) {
-                        currentItem.evalAmount = Math.round(currentItem.priceNum * currentItem.qtyNum);
-                        currentItem.investAmount = currentItem.evalAmount - currentItem.profitNum;
-                        if (currentItem.investAmount > 0) {
-                            currentItem.avgBuyPrice = Math.round(currentItem.investAmount / currentItem.qtyNum);
-                        } else {
-                            currentItem.avgBuyPrice = currentItem.priceNum;
-                        }
-                    }
-
-                    // 당일 하루 손익 계산
-                    if (currentItem.dayChangeVal !== 0 && currentItem.qtyNum > 0) {
-                        currentItem.todayProfitVal = Math.round(currentItem.dayChangeVal * currentItem.qtyNum);
-                    }
-
-                    // 종목별 마감 인사이트 코멘트 생성
-                    if (currentItem.isProfitUp) {
-                        currentItem.insight = `수익 구간을 순항 중입니다. 평균 매수가(${currentItem.avgBuyPrice.toLocaleString()}원) 대비 안정적인 흐름이며, 분할 익절 전략 및 추세 지속 여부를 점검하세요.`;
-                    } else if (currentItem.profitPct <= -20) {
-                        currentItem.insight = `평균 매수가(${currentItem.avgBuyPrice.toLocaleString()}원) 대비 단기 낙폭 과대 구간입니다. 조급한 추가 매수보다는 지지선 확인 및 외국인·기관 메이저 수급 유입 전환을 확인하세요.`;
-                    } else {
-                        currentItem.insight = `단기 숨고르기 조정 국면입니다. 평균 매수가(${currentItem.avgBuyPrice.toLocaleString()}원) 근처 지지 여부와 거래량 회전율을 확인하며 차분히 대응하세요.`;
-                    }
+            // 7. [신규 포맷 A] 종목명 단독 라인 (예: "삼성중공업 (7주)" or "▪ 삼성중공업 (7주)" or "카카오")
+            const cleanStockHeader = cleanLine.replace(/^[▪•\-\*]\s*/, '').trim();
+            if (!/^(코스피|코스닥|나스닥|환율|총|등락|평가|손익|수익|오늘|외인|기관|수급|⚠️|🏆|🌊|📊|💰|💬)/.test(cleanStockHeader) && cleanStockHeader.length < 35) {
+                let sName = cleanStockHeader;
+                let sQty = "";
+                let qNum = 1;
+                const qMatch = cleanStockHeader.match(/\(([\d\.]+주)\)/);
+                if (qMatch) {
+                    sQty = qMatch[1];
+                    sName = cleanStockHeader.replace(/\([\d\.]+주\)/, '').trim();
+                    const qn = parseFloat(sQty.replace('주', ''));
+                    if (!isNaN(qn) && qn > 0) qNum = qn;
                 }
-            } else if (cleanLine.includes('차]') || cleanLine.startsWith('[')) {
-                if (currentItem) {
-                    currentItem.subPurchases.push(cleanLine);
+
+                let cleanSym = "";
+                const sIdx = watchlistNames.findIndex(n => n === sName);
+                if (sIdx !== -1 && watchlistSymbols[sIdx]) {
+                    cleanSym = watchlistSymbols[sIdx].split('.')[0];
                 }
+
+                currentItem = {
+                    name: sName,
+                    cleanSymbol: cleanSym,
+                    qty: sQty,
+                    qtyNum: qNum,
+                    price: "",
+                    priceNum: 0,
+                    dayChangeStr: "",
+                    dayChangeVal: 0,
+                    dayChangePct: 0,
+                    isDayUp: false,
+                    profitStr: "",
+                    profitNum: 0,
+                    profitPctStr: "",
+                    profitPct: 0,
+                    isProfitUp: false,
+                    avgBuyPrice: 0,
+                    evalAmount: 0,
+                    investAmount: 0,
+                    todayProfitVal: 0,
+                    subPurchases: [],
+                    insight: ""
+                };
+                stockItems.push(currentItem);
             }
         });
 
@@ -750,35 +832,37 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
 
                     {/* 하단 미니 서브 스탯 바 (총 평가액 vs 투자원금 & 당일 하루 손익) */}
-                    <div className="p-3 bg-zinc-950/80 rounded-xl border border-white/5 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-                        <div className="flex items-center gap-3">
-                            {totalEvalSum > 0 && (
-                                <div>
-                                    <span className="text-gray-400 text-[11px]">총 평가액 </span>
-                                    <span className="text-zinc-200 font-bold font-mono">{totalEvalSum.toLocaleString()}원</span>
-                                </div>
-                            )}
-                            {totalInvestSum > 0 && (
-                                <div className="text-gray-500">
-                                    <span className="text-[11px]">원금 </span>
-                                    <span className="font-mono text-zinc-400">{totalInvestSum.toLocaleString()}원</span>
+                    {(totalEvalSum > 0 || totalInvestSum > 0 || totalTodayPnL !== 0) && (
+                        <div className="p-3 bg-zinc-950/80 rounded-xl border border-white/5 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                            <div className="flex items-center gap-3">
+                                {totalEvalSum > 0 && (
+                                    <div>
+                                        <span className="text-gray-400 text-[11px]">총 평가액 </span>
+                                        <span className="text-zinc-200 font-bold font-mono">{totalEvalSum.toLocaleString()}원</span>
+                                    </div>
+                                )}
+                                {totalInvestSum > 0 && (
+                                    <div className="text-gray-500">
+                                        <span className="text-[11px]">원금 </span>
+                                        <span className="font-mono text-zinc-400">{totalInvestSum.toLocaleString()}원</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {totalTodayPnL !== 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[11px] text-gray-400">오늘 하루 변동</span>
+                                    <span className={`font-black font-mono px-2 py-0.5 rounded-lg border text-[11px] ${
+                                        totalTodayPnL > 0 
+                                            ? 'bg-red-500/15 text-red-300 border-red-500/30' 
+                                            : 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                                    }`}>
+                                        {totalTodayPnL > 0 ? '+' : ''}{totalTodayPnL.toLocaleString()}원
+                                    </span>
                                 </div>
                             )}
                         </div>
-
-                        {totalTodayPnL !== 0 && (
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] text-gray-400">오늘 하루 변동</span>
-                                <span className={`font-black font-mono px-2 py-0.5 rounded-lg border text-[11px] ${
-                                    totalTodayPnL > 0 
-                                        ? 'bg-red-500/15 text-red-300 border-red-500/30' 
-                                        : 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-                                }`}>
-                                    {totalTodayPnL > 0 ? '+' : ''}{totalTodayPnL.toLocaleString()}원
-                                </span>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
 
                 {/* 2. 오늘의 MVP & 약세 종목 */}
@@ -1813,8 +1897,15 @@ function formatUsdToKrwInText(text: string): string {
                         let t = (alert.title || '')
                             .replace(/[\uFFFD\uFFFE\uFFFF]/g, '') // 깨진 물음표 기호 제거
                             .replace(/^👤\s*/, '🚨 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 👤를 🚨로 안전 대체
+                            .replace(/^💰\s*/, '👑 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 💰를 👑로 안전 대체
                             .replace(/\s{2,}/g, ' ')
                             .trim();
+
+                        // [보정] 관심종목 결산 알림 제목 교정 (깨진 기호 방지 및 👑 부여)
+                        if (t.includes('관심종목 결산') || t.includes('내 관심종목 결산')) {
+                            t = t.replace(/^[^\w\[\s]*/, '').trim();
+                            return `👑 ${t}`;
+                        }
 
                         // [보정] 본문이 시가 알림인데 급등 제목으로 잘못 붙은 경우 올바르게 교정
                         const bodyText = alert.body || '';

@@ -593,7 +593,7 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                 display_return = avg_change
 
             emoji = "📈" if display_return > 0 else "📉" if display_return < 0 else "➖"
-            title_portfolio = f"💰 [내 관심종목 결산] {market_name} {emoji}"
+            title_portfolio = f"👑 [내 관심종목 결산] {market_name} {emoji}"
 
             # 총 손익금액 헤더
             if total_profit != 0:
