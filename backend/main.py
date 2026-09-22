@@ -32,6 +32,7 @@ from routes.weekend import router as weekend_router
 from routes.step_report import router as step_report_router
 from routes.closing_scanner import router as closing_scanner_router
 from routes.stock_health import router as stock_health_router
+from routes.emerging_scanner import router as emerging_scanner_router
 
 
 
@@ -104,6 +105,7 @@ app.include_router(weekend_router, tags=["Weekend"])
 app.include_router(step_report_router, prefix="/api", tags=["StepReport"])
 app.include_router(closing_scanner_router, prefix="/api", tags=["ClosingScanner"])
 app.include_router(stock_health_router, prefix="/api", tags=["StockHealth"])
+app.include_router(emerging_scanner_router, prefix="/api/market", tags=["EmergingScanner"])
 
 
 

@@ -32,7 +32,7 @@ function EmergingStocksContent() {
         <div className="min-h-screen pb-20 text-white bg-zinc-950">
             <Header 
                 title="미국 혁신 신생기업 큐레이션" 
-                subtitle="우주항공, 양자컴퓨터, UAM 등 미국의 미래를 이끌 차세대 혁신 유망주 13선" 
+                subtitle="당일 급등주 및 거래량 폭증 테크 기업 실시간 자동 스캔 &amp; 차세대 혁신 유망주 큐레이션" 
             />
 
             <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8 animate-in fade-in duration-500">
