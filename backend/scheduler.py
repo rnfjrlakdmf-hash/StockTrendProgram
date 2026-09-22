@@ -174,6 +174,35 @@ def generate_smart_disclosure_alert(market_tag: str, corp: str, report_title: st
     return title, "\n".join(body_lines)
 
 
+def is_high_priority_disclosure(clean_title: str) -> bool:
+    """
+    주가 파급력이 크고 투자자에게 실질적인 리스크/기회가 되는 고중요도 공시인지 판별.
+    단순 일상적 공시(IR 공지, 통상 주총, 특허, 스톡옵션 등)는 제외하고
+    담보계약, CB/BW 리픽싱, 실적, 배당, 바이오 임상, 상폐/관리/투자유의, 소송, 채무보증, 차입금 증가, 증권신고서 등만 True 반환.
+    """
+    HIGH_PRIORITY_KEYWORDS = [
+        # 1. 지분 담보 및 지배구조 리스크 (초특급 위험)
+        "주식담보제공", "주식담보", "담보제공계약", "최대주주변경", "경영권분쟁",
+        # 2. 전환사채(CB) / 메자닌 (오버행 및 물량 희석)
+        "전환가액의조정", "행사가액의조정", "리픽싱", "전환청구권행사", "신주인수권행사", "전환사채", "신주인수권부사채", "교환사채",
+        # 3. 실적 성적표
+        "사업보고서", "분기보고서", "반기보고서", "영업(잠정)실적", "잠정실적", "매출액또는손익구조",
+        # 4. 주주환원 배당
+        "배당",
+        # 5. 바이오 파이프라인
+        "임상", "품목허가", "IND",
+        # 6. 상폐 및 규제 리스크 (초특급 위험)
+        "상장폐지", "관리종목", "거래정지", "불성실공시", "상장적격성", "감자결정",
+        # 7. 소송/횡령/배임
+        "소송", "횡령", "배임", "고발",
+        # 8. 부채 및 재무 리스크
+        "채무보증", "보증결정", "차입금증가", "단기차입금",
+        # 9. 대규모 신주 발행
+        "증권신고서", "유상증자"
+    ]
+    return any(kw in clean_title for kw in HIGH_PRIORITY_KEYWORDS)
+
+
 async def check_and_notify_disclosures():
     """
     DART OpenAPI 기반 국내 공시 실시간 체크 (5분마다)
@@ -484,21 +513,28 @@ async def check_and_notify_disclosures():
                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                 }
 
-                # 1. 글로벌 알림 센터 저장 (단, 이미 is_whale로 푸시와 함께 Firestore에 저장된 경우는 중복 방지)
+                # 1. 알림 센터 저장: 고중요도 공시이거나 관심종목인 경우에만 저장!
                 if not is_whale:
-                    try:
-                        from firebase_config import save_alert_to_firestore
-                        save_alert_to_firestore(
-                            title=noti_title,
-                            body=noti_body,
-                            alert_type="disclosure_alert",
-                            url=data_payload["url"],
-                            is_global=True,
-                            symbol=data_payload["symbol"],
-                            dart_url=data_payload["dart_url"]
-                        )
-                    except Exception as save_e:
-                        logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
+                    is_high = is_high_priority_disclosure(clean_title)
+                    if is_high or tokens:
+                        try:
+                            from firebase_config import save_alert_to_firestore
+                            save_alert_to_firestore(
+                                title=noti_title,
+                                body=noti_body,
+                                alert_type="disclosure_alert",
+                                url=data_payload["url"],
+                                is_global=is_high,  # 고중요도만 전체 글로벌 노출, 일반 공시는 관심종목 유저에게만
+                                target_users=target_uids if not is_high else None,
+                                symbol=data_payload["symbol"],
+                                dart_url=data_payload["dart_url"]
+                            )
+                            logger.info(f"[공시Monitor] 공시 알림센터 저장: {corp} ({'🔥 고중요도 글로벌' if is_high else '⭐ 관심종목'})")
+                        except Exception as save_e:
+                            logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
+                    else:
+                        # 🚫 중요도가 떨어지고 관심종목도 아닌 일반 공시는 저장 안 하고 그냥 흘려보냄!
+                        logger.debug(f"[공시Monitor] 저중요도 공시 패스 (DB 미저장): {corp} - {report_title}")
 
                 if not tokens:
                     continue  # 관심종목 등록 사용자 없음 -> 푸시 스킵
