@@ -93,7 +93,7 @@ export default function AlertCenterPage() {
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
     const [watchlistNames, setWatchlistNames] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [disclosureFilter, setDisclosureFilter] = useState<'all' | 'kr' | 'us'>('all');
+    const [disclosureFilter, setDisclosureFilter] = useState<'all' | 'kr' | 'us' | 'my'>('all');
     const ITEMS_PER_PAGE = 20;
 
     const { user } = useAuth();
@@ -1897,7 +1897,7 @@ function formatUsdToKrwInText(text: string): string {
     // Filter Navigation Tabs (마켓뉴스 탭 제거 -> 4개 탭으로 슬림화 및 내 관심종목으로 뉴스 통합)
     const baseTabs = [
         { id: "all", label: "전체 브리핑", icon: Layers },
-        { id: "disclosure", label: "공시 & 세력 수급", icon: Zap },
+        { id: "disclosure", label: "⚡ DART 공시 속보", icon: Zap },
         { id: "portfolio", label: "내 관심종목", icon: Crown },
         { id: "system", label: "서비스 공지/운영", icon: ShieldCheck }
     ];
@@ -1966,9 +1966,31 @@ function formatUsdToKrwInText(text: string): string {
             }
         }
 
+        // [사용자 요청] 일반 DART 공시 속보는 메인 피드(전체 브리핑)에서 싹 빼서 '⚡ DART 공시 속보' 탭으로 완전 분리!
+        // 전체 브리핑에는 모닝 브리핑, 마켓 시황, 포트폴리오 요약, 슈퍼개미/내부자/대량보유 등 세력 수급, 주요 뉴스, 내 관심종목 공시만 노출!
+        if (activeTab === "all") {
+            const isWhaleAlert = titleText.includes("슈퍼개미") || 
+                titleText.includes("큰손") || 
+                titleText.includes("내부자") || 
+                titleText.includes("5% 이상") || 
+                titleText.includes("대량 보유") || 
+                ['whale_accumulation', 'whale_alert', 'large_holding', 'insider_trading', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
+
+            const isGeneralDisclosure = (alert.type === 'disclosure_alert' || alert.type === 'disclosure') && !isWhaleAlert;
+
+            // 내 관심종목이 아닌 일반 공시 속보는 '전체 브리핑'에서 완전 제외하여 피드 클린화!
+            if (isGeneralDisclosure && !symbolMatch) {
+                return false;
+            }
+            return true;
+        }
+
         if (activeTab === "disclosure") {
             if (alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) return true;
             if (!isDisclosure) return false;
+            if (disclosureFilter === 'my') {
+                return symbolMatch;
+            }
             if (disclosureFilter === 'kr') {
                 return ['disclosure_alert', 'large_holding', 'disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
             }
@@ -2068,37 +2090,54 @@ function formatUsdToKrwInText(text: string): string {
 
                 {/* 공시 탭 전용 서브 필터 */}
                 {activeTab === 'disclosure' && (
-                    <div className="flex items-center gap-2 p-1 bg-zinc-950/80 border border-white/5 rounded-2xl w-fit">
-                        <button
-                            onClick={() => setDisclosureFilter('all')}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                disclosureFilter === 'all'
-                                    ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
-                                    : "text-gray-500 hover:text-gray-300"
-                            }`}
-                        >
-                            전체 공시
-                        </button>
-                        <button
-                            onClick={() => setDisclosureFilter('kr')}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                disclosureFilter === 'kr'
-                                    ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
-                                    : "text-gray-500 hover:text-gray-300"
-                            }`}
-                        >
-                            🇰🇷 국내 (DART)
-                        </button>
-                        <button
-                            onClick={() => setDisclosureFilter('us')}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                disclosureFilter === 'us'
-                                    ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
-                                    : "text-gray-500 hover:text-gray-300"
-                            }`}
-                        >
-                            🇺🇸 해외 (SEC)
-                        </button>
+                    <div className="space-y-2.5">
+                        <div className="flex flex-wrap items-center gap-2 p-1.5 bg-zinc-950/80 border border-white/5 rounded-2xl w-fit">
+                            <button
+                                onClick={() => setDisclosureFilter('all')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                    disclosureFilter === 'all'
+                                        ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-300"
+                                }`}
+                            >
+                                전체 공시
+                            </button>
+                            <button
+                                onClick={() => setDisclosureFilter('kr')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                    disclosureFilter === 'kr'
+                                        ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-300"
+                                }`}
+                            >
+                                🇰🇷 국내 (DART)
+                            </button>
+                            <button
+                                onClick={() => setDisclosureFilter('us')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                    disclosureFilter === 'us'
+                                        ? "bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-300"
+                                }`}
+                            >
+                                🇺🇸 해외 (SEC)
+                            </button>
+                            <button
+                                onClick={() => setDisclosureFilter('my')}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    disclosureFilter === 'my'
+                                        ? "bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm font-black"
+                                        : "text-gray-500 hover:text-gray-300"
+                                }`}
+                            >
+                                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                                ⭐ 내 관심종목 공시만
+                            </button>
+                        </div>
+                        <p className="text-[11px] text-gray-500 px-1 font-medium flex items-center gap-1.5">
+                            <span>💡</span>
+                            <span>한국거래소 및 DART·SEC 실시간 공시 속보 모아보기입니다. (메인 피드인 &apos;전체 브리핑&apos;에서는 피로도를 낮추기 위해 일반 공시를 제외하고 핵심 브리핑만 노출합니다.)</span>
+                        </p>
                     </div>
                 )}
 

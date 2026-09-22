@@ -130,6 +130,30 @@ def generate_smart_disclosure_alert(market_tag: str, corp: str, report_title: st
         fact = f"📌 {report_title} 공시 접수"
         interp = "💡 [시장해석] 소송 및 법적 공방에 따른 재무적 영향 및 기업 신뢰도 점검"
 
+    # 11. 주식담보제공 (초특급 위험)
+    elif any(k in clean for k in ["주식담보제공", "주식담보", "담보제공계약"]):
+        title = f"🚨 [주식담보제공 계약] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 체결"
+        interp = "💡 [시장해석] 대주주 지분 담보 대출 · 주가 하락 시 반대매매(강제매도) 위험 주의"
+
+    # 12. 채무보증 (빚보증)
+    elif any(k in clean for k in ["채무보증", "보증결정"]):
+        title = f"⚠️ [채무보증 결정] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 공시"
+        interp = "💡 [시장해석] 계열사 등에 대출 빚보증 제공 · 보증 대상 기업의 재무 리스크 전이 점검"
+
+    # 13. 차입금 증가 (단기차입금)
+    elif any(k in clean for k in ["차입금증가", "단기차입금", "차입금"]):
+        title = f"⚠️ [단기차입금 증가] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 발표"
+        interp = "💡 [시장해석] 단기 대출금 증가 · 사업 운영자금 vs 자금난 유동성 악화 여부 점검"
+
+    # 14. 증권신고서
+    elif "증권신고서" in clean:
+        title = f"📋 [증권신고서 제출] {market_tag} {corp}".strip()
+        fact = f"📌 {report_title} 금융감독원 제출"
+        interp = "💡 [시장해석] 신주 발행(유상증자/사채) 일정 및 발행 규모 · 주식 희석 비율 확인"
+
     # 11. 주요 경영사항 / 기타 시장안내
     elif any(k in clean for k in ["투자판단관련", "주요경영사항", "기타시장안내", "주요사항보고서"]):
         title = f"📋 [주요 경영사항] {market_tag} {corp}".strip()
