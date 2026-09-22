@@ -120,9 +120,19 @@ export default async function StockSeoPage({ params }: Props) {
         notFound();
     }
 
+    const isUs = Boolean(data.isUs) || (!/^\d{6}$/.test(decodedTicker) && !decodedTicker.endsWith('.KS') && !decodedTicker.endsWith('.KQ'));
+    const currency = isUs ? 'USD' : 'KRW';
+    const currencySymbol = isUs ? '$' : '원';
+
     const name = data.name || decodedTicker;
-    const price = data.price?.toLocaleString() || 'N/A';
-    const prevClose = data.previousClose?.toLocaleString() || 'N/A';
+    const price = typeof data.price === 'number' 
+        ? (isUs ? data.price.toFixed(2) : data.price.toLocaleString()) 
+        : (data.price?.toString() || 'N/A');
+    const prevClose = typeof data.previousClose === 'number' 
+        ? (isUs ? data.previousClose.toFixed(2) : data.previousClose.toLocaleString()) 
+        : (data.previousClose?.toString() || 'N/A');
+    const formattedPrice = isUs ? `$${price}` : `${price}원`;
+    const formattedPrevClose = isUs ? `$${prevClose}` : `${prevClose}원`;
     const pbr = data.pbr?.toFixed(2) || 'N/A';
     const per = data.per?.toFixed(2) || 'N/A';
     const divYield = data.dividendYield ? (data.dividendYield * 100).toFixed(2) + '%' : 'N/A';
@@ -134,6 +144,9 @@ export default async function StockSeoPage({ params }: Props) {
     const priceDiffRate = prevCloseNum > 0 ? ((priceDiff / prevCloseNum) * 100).toFixed(2) : '0.00';
     const isUp = priceDiff > 0;
     const isDown = priceDiff < 0;
+    const formattedPriceDiff = isUs 
+        ? (isUp ? `▲ $${Math.abs(priceDiff).toFixed(2)}` : isDown ? `▼ $${Math.abs(priceDiff).toFixed(2)}` : '$0.00')
+        : (isUp ? `▲ ${priceDiff.toLocaleString()}원` : isDown ? `▼ ${Math.abs(priceDiff).toLocaleString()}원` : '- 0원');
     const perNum = typeof data.per === 'number' ? data.per : 0;
     const pbrNum = typeof data.pbr === 'number' ? data.pbr : 0;
     const divNum = typeof data.dividendYield === 'number' ? data.dividendYield : 0;
@@ -151,7 +164,7 @@ export default async function StockSeoPage({ params }: Props) {
             "offers": {
                 "@type": "Offer",
                 "price": data.price || 0,
-                "priceCurrency": "KRW"
+                "priceCurrency": currency
             }
         },
         {
@@ -163,7 +176,7 @@ export default async function StockSeoPage({ params }: Props) {
                     "name": `${name} 주가 전망은 어떤가요?`,
                     "acceptedAnswer": {
                         "@type": "Answer",
-                        "text": `현재 ${name}의 주가는 ${price}원이며, PER은 ${per}, PBR은 ${pbr}입니다. 스마트 투자 비서 AI가 분석한 세부 전망을 페이지에서 확인하세요.`
+                        "text": `현재 ${name}의 주가는 ${formattedPrice}이며, PER은 ${per}, PBR은 ${pbr}입니다. 스마트 투자 비서 AI가 분석한 세부 전망을 페이지에서 확인하세요.`
                     }
                 },
                 {
@@ -275,7 +288,7 @@ export default async function StockSeoPage({ params }: Props) {
                                     <span className="w-1.5 h-4 bg-blue-500 rounded-full inline-block" />
                                     핵심 투자 지표 요약
                                 </h2>
-                                <span className="text-xs text-slate-400">네이버 증권 & 거래소 공시 기준</span>
+                                <span className="text-xs text-slate-400">{isUs ? "SEC 공시 및 나스닥/NYSE 기준" : "네이버 증권 & 거래소 공시 기준"}</span>
                             </div>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
                                 {/* 현재가 */}
@@ -287,12 +300,12 @@ export default async function StockSeoPage({ params }: Props) {
                                         </span>
                                     </div>
                                     <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                                        {price}<span className="text-sm font-normal text-slate-400 ml-1">원</span>
+                                        {formattedPrice}
                                     </div>
                                     <div className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                                         <span>전일비</span>
                                         <span className={isUp ? 'text-rose-400 font-semibold' : isDown ? 'text-blue-400 font-semibold' : 'text-slate-400'}>
-                                            {isUp ? `▲ ${priceDiff.toLocaleString()}원` : isDown ? `▼ ${Math.abs(priceDiff).toLocaleString()}원` : '- 0원'}
+                                            {formattedPriceDiff}
                                         </span>
                                     </div>
                                 </div>
@@ -362,7 +375,7 @@ export default async function StockSeoPage({ params }: Props) {
                                 </div>
                                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-medium text-slate-300">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                    <span>FnGuide & WiseReport 공시 검증</span>
+                                    <span>{isUs ? "SEC 10-K & 글로벌 리서치 검증" : "FnGuide & WiseReport 공시 검증"}</span>
                                 </div>
                             </div>
 
@@ -404,7 +417,7 @@ export default async function StockSeoPage({ params }: Props) {
                                     </div>
                                     <h3 className="font-bold text-white text-base mb-2">가격 모멘텀 진단</h3>
                                     <p className="text-sm text-slate-300 leading-relaxed">
-                                        현재가는 <strong className="text-white">{price}원</strong>으로, 직전 종가({prevClose}원) 대비 
+                                        현재가는 <strong className="text-white">{formattedPrice}</strong>으로, 직전 종가({formattedPrevClose}) 대비 
                                         {priceNum && prevCloseNum 
                                             ? (priceNum > prevCloseNum 
                                                 ? <span className="text-rose-400 font-semibold"> 상승세를 기록하며 매수 우위의 단기 강세 흐름</span> 

@@ -29,6 +29,9 @@ interface StepReportData {
     stockName: string;
     currentPrice: number;
     prevClose: number;
+    isUs?: boolean;
+    currency?: string;
+    currencySymbol?: string;
     step1: {
         market: string;
         per: number;
@@ -151,8 +154,12 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
         return null; // 데이터 로드 실패 시 조용히 숨김 (기존 UI 유지)
     }
 
+    const isUs = Boolean(data.isUs || data.currency === 'USD' || ['NASDAQ', 'NYSE', 'AMEX'].includes(data.step1.market) || !/^\d{6}$/.test(data.ticker));
     const price = data.currentPrice || initialPrice || 0;
     const isPriceUp = data.currentPrice > data.prevClose;
+    const priceDisplay = isUs 
+        ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+        : `${price.toLocaleString()}원`;
 
     return (
         <section className="w-full relative overflow-hidden bg-gradient-to-br from-[#0B0F19]/95 via-[#121829]/95 to-[#090C15]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 sm:p-8 mb-8 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_40px_rgba(59,130,246,0.15)] transition-all">
@@ -176,7 +183,7 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
                         <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                             <span>{data.stockName}</span>
                             <span className="text-lg sm:text-xl font-bold font-mono text-slate-300">
-                                {price.toLocaleString()}원
+                                {priceDisplay}
                             </span>
                         </h2>
                     </div>
@@ -232,7 +239,7 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
                             <span className="text-sm sm:text-base font-bold text-purple-400">{data.step1.pbr > 0 ? `${data.step1.pbr}배` : 'N/A'}</span>
                         </div>
                         <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                            <span className="text-xs text-slate-400 block mb-1">외국인 지분율</span>
+                            <span className="text-xs text-slate-400 block mb-1">{isUs ? "월가 기관 지분율" : "외국인 지분율"}</span>
                             <span className="text-sm sm:text-base font-bold text-emerald-400">{data.step1.foreignRate}</span>
                         </div>
                     </div>
@@ -325,7 +332,9 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
                                 <div key={idx} className="p-3 rounded-xl bg-white/5 border border-white/5 flex flex-col justify-between">
                                     <span className="text-xs text-slate-300 font-bold truncate mb-1">{peer.name}</span>
                                     <div className="flex items-center justify-between text-xs">
-                                        <span className="text-slate-400 font-mono">{peer.price}원</span>
+                                        <span className="text-slate-400 font-mono">
+                                            {peer.price?.startsWith('$') ? peer.price : isUs ? `$${peer.price}` : `${peer.price}원`}
+                                        </span>
                                         <span className={`font-bold ${peer.change.startsWith('+') ? 'text-rose-400' : 'text-sky-400'}`}>
                                             {peer.change}
                                         </span>
@@ -365,27 +374,44 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
                         </span>
                     </div>
 
-                    {/* 3대 주체 20일 누적 순매수 */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                            <span className="text-xs text-slate-400 block mb-1">외국인 20일 순매수</span>
-                            <span className={`text-sm sm:text-base font-black font-mono ${data.step4.foreignSum20d >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
-                                {data.step4.foreignSum20d > 0 ? `+${data.step4.foreignSum20d.toLocaleString()}` : data.step4.foreignSum20d.toLocaleString()}주
-                            </span>
+                    {/* 3대 주체 20일 누적 순매수 또는 미국 증시 기관 지분율 */}
+                    {isUs ? (
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-xs text-slate-400 block mb-1">월가 기관 투자자 보유 비중</span>
+                                <span className="text-sm sm:text-base font-black font-mono text-emerald-400">
+                                    {data.step1.foreignRate}
+                                </span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-xs text-slate-400 block mb-1">글로벌 자금 유동성</span>
+                                <span className="text-sm sm:text-base font-black font-mono text-blue-400">
+                                    {data.step1.market} Market Leader
+                                </span>
+                            </div>
                         </div>
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                            <span className="text-xs text-slate-400 block mb-1">기관 20일 순매수</span>
-                            <span className={`text-sm sm:text-base font-black font-mono ${data.step4.instSum20d >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
-                                {data.step4.instSum20d > 0 ? `+${data.step4.instSum20d.toLocaleString()}` : data.step4.instSum20d.toLocaleString()}주
-                            </span>
+                    ) : (
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-xs text-slate-400 block mb-1">외국인 20일 순매수</span>
+                                <span className={`text-sm sm:text-base font-black font-mono ${data.step4.foreignSum20d >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
+                                    {data.step4.foreignSum20d > 0 ? `+${data.step4.foreignSum20d.toLocaleString()}` : data.step4.foreignSum20d.toLocaleString()}주
+                                </span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-xs text-slate-400 block mb-1">기관 20일 순매수</span>
+                                <span className={`text-sm sm:text-base font-black font-mono ${data.step4.instSum20d >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
+                                    {data.step4.instSum20d > 0 ? `+${data.step4.instSum20d.toLocaleString()}` : data.step4.instSum20d.toLocaleString()}주
+                                </span>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-xs text-slate-400 block mb-1">개인 20일 순매수</span>
+                                <span className={`text-sm sm:text-base font-black font-mono ${data.step4.retailSum20d >= 0 ? 'text-slate-200' : 'text-slate-400'}`}>
+                                    {data.step4.retailSum20d > 0 ? `+${data.step4.retailSum20d.toLocaleString()}` : data.step4.retailSum20d.toLocaleString()}주
+                                </span>
+                            </div>
                         </div>
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                            <span className="text-xs text-slate-400 block mb-1">개인 20일 순매수</span>
-                            <span className={`text-sm sm:text-base font-black font-mono ${data.step4.retailSum20d >= 0 ? 'text-slate-200' : 'text-slate-400'}`}>
-                                {data.step4.retailSum20d > 0 ? `+${data.step4.retailSum20d.toLocaleString()}` : data.step4.retailSum20d.toLocaleString()}주
-                            </span>
-                        </div>
-                    </div>
+                    )}
 
                     {/* CVD / OBV 퀀트 수급 지표 칩 2종 */}
                     {(data.step4.cvd || data.step4.obv) && (
@@ -447,7 +473,7 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
                         <div className="p-3.5 rounded-xl bg-white/5 border border-white/5">
                             <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                                 <span>52주 최고가 대비</span>
-                                <span>{data.step5.high52.toLocaleString()}원</span>
+                                <span>{isUs ? `$${data.step5.high52.toLocaleString()}` : `${data.step5.high52.toLocaleString()}원`}</span>
                             </div>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-lg font-black font-mono text-sky-400">
@@ -514,7 +540,7 @@ export default function FiveStepStockReport({ ticker, stockName, initialPrice }:
 
                 {/* 공식 법적 면책 조항 배너 */}
                 <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-[11px] text-slate-500 leading-relaxed">
-                    ※ 본 5단계 진단 리포트는 한국거래소 및 DART 공시 통계 데이터를 알고리즘으로 단순 요약한 객관적 정보제공 콘텐츠이며, 특정 종목의 매수/매도를 권유하지 않습니다. 모든 투자 판단과 결과의 책임은 투자자 본인에게 있습니다.
+                    ※ 본 5단계 진단 리포트는 {isUs ? "미국 증권거래위원회(SEC) 및 글로벌 금융 통계 데이터" : "한국거래소 및 DART 공시 통계 데이터"}를 알고리즘으로 단순 요약한 객관적 정보제공 콘텐츠이며, 특정 종목의 매수/매도를 권유하지 않습니다. 모든 투자 판단과 결과의 책임은 투자자 본인에게 있습니다.
                 </div>
 
             </div>

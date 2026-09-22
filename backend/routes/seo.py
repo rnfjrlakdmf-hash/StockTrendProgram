@@ -361,7 +361,10 @@ def get_cached_stock_info(ticker: str):
             "exDividendDate": ex_div_str,
             "paymentDate": pay_str,
             "relatedStocks": related_stocks,
-            "financials": financials
+            "financials": financials,
+            "isUs": is_us_stock,
+            "currency": "USD" if is_us_stock else "KRW",
+            "currencySymbol": "$" if is_us_stock else "원"
         }
     except Exception as e:
         import traceback
