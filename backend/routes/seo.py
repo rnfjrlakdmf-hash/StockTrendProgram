@@ -153,12 +153,13 @@ def get_cached_stock_info(ticker: str):
         is_us_stock = not is_kr_stock
         
         if is_us_stock:
-            # Handle US Stock via yfinance
-            t = yf.Ticker(ticker)
+            # Handle US Stock via yfinance (거래소 접미사 .O, .N 등 제거)
+            us_ticker = clean_ticker.upper()
+            t = yf.Ticker(us_ticker)
             info = t.info
             cal = t.calendar or {}
             
-            name = info.get('shortName') or info.get('longName') or f"종목 {ticker}"
+            name = info.get('shortName') or info.get('longName') or f"종목 {us_ticker}"
             price = info.get('currentPrice') or info.get('regularMarketPrice') or 0
             prev = info.get('previousClose') or 0
             per = info.get('trailingPE') or 0.0

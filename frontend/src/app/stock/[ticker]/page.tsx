@@ -24,11 +24,25 @@ export const dynamic = 'force-dynamic';
 
 async function getStockInfo(ticker: string) {
     try {
-        const res = await fetch(`${getApiBaseUrl()}/api/seo/stock-info/${ticker}`, {
+        const cleanTicker = ticker.includes('.') ? ticker.split('.')[0] : ticker;
+        let res = await fetch(`${getApiBaseUrl()}/api/seo/stock-info/${cleanTicker}`, {
             cache: 'no-store'
         });
-        if (!res.ok) return null;
-        return await res.json();
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status !== 'error') return data;
+        }
+
+        if (cleanTicker !== ticker) {
+            res = await fetch(`${getApiBaseUrl()}/api/seo/stock-info/${ticker}`, {
+                cache: 'no-store'
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.status !== 'error') return data;
+            }
+        }
+        return null;
     } catch (e) {
         console.error(e);
         return null;
