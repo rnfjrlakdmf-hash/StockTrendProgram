@@ -38,6 +38,7 @@ import KakaoShareButton from "@/components/KakaoShareButton";
 import CalendarSyncButton from "@/components/CalendarSyncButton";
 import StockSafetyBadgeCard from "@/components/StockSafetyBadgeCard";
 import StockTimingBadgeCard from "@/components/StockTimingBadgeCard";
+import UsEmergingStocksShowcase from "@/components/UsEmergingStocksShowcase";
 
 import { getTickerFromKorean } from "@/lib/stockMapping";
 
@@ -1257,6 +1258,16 @@ function DiscoveryContent() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* 미국 혁신 신생기업 & 텐배거 유망주 큐레이션 쇼케이스 */}
+                        <div className="w-full">
+                            <UsEmergingStocksShowcase 
+                                onSelectStock={(ticker) => {
+                                    setSearchInput(ticker);
+                                    handleSearch(ticker);
+                                }}
+                            />
                         </div>
 
                         {/* 신규: 팩트 기반 증시 스캐너 & LIVE 공시 속보 */}

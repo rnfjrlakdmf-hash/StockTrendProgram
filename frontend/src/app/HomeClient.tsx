@@ -20,6 +20,7 @@ import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplet
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
 import { getTickerFromKorean } from "@/lib/stockMapping";
+import UsEmergingStocksShowcase from "@/components/UsEmergingStocksShowcase";
 
 
 
@@ -110,6 +111,9 @@ export default function HomeClient() {
                 </div>
               </div>
             </Link>
+
+            {/* 🚀 미국 혁신 신생기업 큐레이션 쇼케이스 (초보자용 텐배거 유망주 테마) */}
+            <UsEmergingStocksShowcase onSelectStock={handleSearch} />
 
             {/* 3. 주말 한정 특별 콘텐츠 */}
             {(() => {
