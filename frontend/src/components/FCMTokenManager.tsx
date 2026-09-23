@@ -293,8 +293,8 @@ export default function FCMTokenManager() {
                 console.log('[FCM] Re-syncing token to refresh last_used timestamp...');
             }
 
-            // 서버에 토큰 등록/갱신 (UPSERT → last_used 자동 갱신)
-            const regResult = await registerTokenToBackend(token, currentUserId);
+            // 서버에 토큰 등록/갱신 (구 토큰 자동 교체 및 last_used 자동 갱신)
+            const regResult = await registerTokenToBackend(token, currentUserId, storedToken);
             if (regResult.status === 'success') {
                 console.log('[FCM] Token synced for user:', currentUserId);
                 localStorage.setItem('fcm_token_value', token);
@@ -312,10 +312,11 @@ export default function FCMTokenManager() {
     };
 
 
-    const registerTokenToBackend = async (token: string, forcedUserId?: string) => {
+    const registerTokenToBackend = async (token: string, forcedUserId?: string, oldToken?: string | null) => {
         // [BugFix] stock_user JSON에서 id를 직접 읽어서 가장 신뢰성 있는 user_id 사용
         const userId = forcedUserId || getReliableUserId();
-        console.log('[FCM] Registering token for user:', userId);
+        const prevToken = oldToken !== undefined ? oldToken : (typeof window !== 'undefined' ? localStorage.getItem('fcm_token_value') : null);
+        console.log('[FCM] Registering token for user:', userId, 'oldToken:', prevToken ? prevToken.substring(0, 15) + '...' : 'none');
         const res = await fetch(`${API_BASE_URL}/api/system/fcm/register`, {
             method: 'POST',
             headers: {
@@ -325,7 +326,8 @@ export default function FCMTokenManager() {
             body: JSON.stringify({
                 token,
                 device_type: Capacitor.isNativePlatform() ? 'android' : 'web',
-                device_name: Capacitor.isNativePlatform() ? 'Android App' : navigator.userAgent
+                device_name: Capacitor.isNativePlatform() ? 'Android App' : (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Web'),
+                old_token: prevToken && prevToken !== token ? prevToken : undefined
             })
         });
         return res.json();

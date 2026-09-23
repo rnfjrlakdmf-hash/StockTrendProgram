@@ -7,7 +7,7 @@
  * - 알림 클릭 시 단순 통합 대시보드(/)가 아닌, 공시/뉴스 원문 또는 해당 종목 심층 분석창(/discovery?q=종목코드)으로 즉시 직행합니다.
  */
 
-const SW_VERSION = '2026.09.23-v9-quant-scanner-view';
+const SW_VERSION = '2026.09.23-v10-no-duplicate';
 
 // Firebase SDK 로드
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -27,35 +27,40 @@ const messaging = firebase.messaging();
 
 // 백그라운드 메시지 수신
 messaging.onBackgroundMessage(async (payload) => {
-    console.log('[SW] Background message received (v9 quant scanner link):', payload);
+    console.log('[SW] Background message received (v10 duplicate prevention):', payload);
 
-    const notificationTitle = payload.notification?.title || payload.data?.title || '새 알림';
-    const notificationBody = payload.notification?.body || payload.data?.body || '';
+    // [중복 알림 원천 차단]
+    // FCM 페이로드에 notification 객체가 포함되어 있으면 Firebase JS SDK가 브라우저 푸시 이벤트를 통해 자체적으로 알림을 띄웁니다.
+    // 여기서 self.registration.showNotification을 또 호출하면 동일 알림이 화면에 2개씩 뜨는 현상이 발생합니다.
+    if (payload.notification) {
+        console.log('[SW] Notification already handled natively by WebPush. Skipping duplicate showNotification.');
+        return;
+    }
+
+    const notificationTitle = payload.data?.title || '새 알림';
+    const notificationBody = payload.data?.body || '';
     const symbol = payload.data?.symbol || '';
     const alertType = payload.data?.type || 'stock-alert';
     const subType = payload.data?.sub_type || '';
-    const isQuantAlert = alertType === 'quant_scanner' || subType.startsWith('quant_') || notificationTitle.includes('퀀트');
+    const isQuantAlert = alertType === 'quant_scanner' || (subType && subType.startsWith('quant_')) || (notificationTitle && notificationTitle.includes('퀀트'));
 
-    // 카테고리 및 종목별 독립 태그 생성 (덮어쓰기 완전 방지: 모든 알림에 고유 타임스탬프 결합)
-    const nowMs = Date.now();
-    let tag = payload.data?.tag || payload.notification?.tag || '';
-    if (tag) {
-        tag = `${tag}-${nowMs}`;
-    } else {
+    // 카테고리 및 종목별 결정론적 태그 생성 (임의의 밀리초 타임스탬프로 인한 OS 중복 병합 무력화 방지)
+    let tag = payload.data?.tag || '';
+    if (!tag) {
         if (alertType === 'disclosure_alert') {
-            tag = symbol ? `disc-${symbol}-${nowMs}` : `disc-${nowMs}`;
+            tag = symbol ? `st-disc-${symbol}` : `st-disc`;
         } else if (alertType === 'news_alert') {
-            tag = symbol ? `news-${symbol}-${nowMs}` : `news-${nowMs}`;
+            tag = symbol ? `st-news-${symbol}` : `st-news`;
         } else if (alertType === 'market_summary') {
-            tag = `market-summary-${nowMs}`;
+            tag = `st-market-summary`;
         } else if (alertType === 'portfolio_summary') {
-            tag = `portfolio-summary-${nowMs}`;
+            tag = `st-portfolio-summary`;
         } else if (isQuantAlert) {
-            tag = `quant-scanner-${nowMs}`;
+            tag = symbol ? `st-quant-${symbol}` : `st-quant`;
         } else if (symbol) {
-            tag = `stock-price-${symbol}-${nowMs}`;
+            tag = `st-stock-${symbol}`;
         } else {
-            tag = `alert-${nowMs}`;
+            tag = `st-alert`;
         }
     }
 

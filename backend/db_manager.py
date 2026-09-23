@@ -1733,8 +1733,8 @@ def create_fcm_tokens_table():
     print("[DB] FCM tokens table created")
 
 
-def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_name: str = None):
-    """FCM 토큰 저장 또는 업데이트"""
+def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_name: str = None, old_token: str = None):
+    """FCM 토큰 저장 또는 업데이트 (단일 기기 중복 토큰 정리 및 자동 갱신)"""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -1746,9 +1746,19 @@ def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_na
         return False
     
     try:
-        # [강력 조치 해제] 다중 기기 허용을 위해 기존 토큰 전체 삭제 로직 제거
-        # cursor.execute("DELETE FROM fcm_tokens WHERE user_id = ?", (clean_user_id,))
+        # 1. 토큰 교체(Rotation) 시 명시적으로 전달된 이전 토큰 삭제
+        if old_token and old_token != token:
+            cursor.execute("DELETE FROM fcm_tokens WHERE token = ?", (old_token,))
+            print(f"[FCM-Save] Cleaned up rotated old token: {old_token[:20]}...")
+
+        # 2. 동일 유저의 동일 기기/브라우저에 속한 구 토큰 정리 (단일 기기 내 중복 토큰 완전 방지)
+        if device_name:
+            cursor.execute("""
+                DELETE FROM fcm_tokens 
+                WHERE user_id = ? AND device_name = ? AND token != ?
+            """, (clean_user_id, device_name, token))
         
+        # 3. 신규 토큰 등록 또는 최종 사용 시간(last_used) 갱신
         cursor.execute("""
             INSERT INTO fcm_tokens (user_id, token, device_type, device_name, last_used)
             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -1760,7 +1770,7 @@ def save_fcm_token(user_id: str, token: str, device_type: str = 'web', device_na
         """, (clean_user_id, token, device_type, device_name))
         
         conn.commit()
-        print(f"[FCM-Save] Token saved (Multiple devices allowed): user_id='{clean_user_id}', token={token[:20]}...")
+        print(f"[FCM-Save] Token saved: user_id='{clean_user_id}', token={token[:20]}...")
         return True
     except Exception as e:
         print(f"[DB] Save FCM token error: {e}")

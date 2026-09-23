@@ -601,6 +601,75 @@ def resolve_click_url(title: str, data: dict = None) -> str:
 
     return click_url
 
+
+def generate_deterministic_tag(title: str, data: dict = None) -> str:
+    """
+    동일 알림 중복 노출을 방지하기 위한 결정론적 태그(Collapse Key) 생성
+    - 아침 브리핑: 당일 날짜 + 종목코드
+    - 차트 스터디 / 이론: 당일 날짜
+    - 마감 시황: 당일 날짜
+    - 퀀트 스캐너: 당일 날짜 + 종목코드
+    - 공시 / 뉴스: 종목코드 + 제목 해시
+    - 가격 알림: 종목코드 + 알림타입
+    """
+    import hashlib
+    from datetime import datetime
+    try:
+        import pytz
+        kst = pytz.timezone('Asia/Seoul')
+        today_str = datetime.now(kst).strftime('%Y%m%d')
+    except Exception:
+        today_str = datetime.now().strftime('%Y%m%d')
+
+    data = data or {}
+    custom_tag = str(data.get("tag", "")).strip()
+    if custom_tag:
+        return custom_tag
+
+    alert_type = str(data.get("type", "alert")).strip()
+    sub_type = str(data.get("sub_type", "")).strip()
+    symbol = str(data.get("symbol", "")).strip().split('.')[0]
+
+    if "morning" in alert_type or "모닝" in title:
+        return f"st-morning-{symbol}-{today_str}" if symbol else f"st-morning-{today_str}"
+    elif "closing" in alert_type or "마감" in title:
+        return f"st-closing-{today_str}"
+    elif "theory" in alert_type or "study" in alert_type or "스터디" in title or "강사" in title:
+        return f"st-study-{today_str}"
+    elif alert_type == 'quant_scanner' or sub_type.startswith('quant_') or '퀀트' in title:
+        return f"st-quant-{symbol}-{today_str}" if symbol else f"st-quant-{today_str}"
+    elif alert_type in ('news_alert', 'disclosure_alert') or '공시' in title or '뉴스' in title:
+        title_hash = hashlib.md5(title.encode('utf-8')).hexdigest()[:8]
+        return f"st-{alert_type}-{symbol}-{title_hash}" if symbol else f"st-{alert_type}-{title_hash}"
+    elif alert_type == 'price_alert':
+        price_sub = sub_type or "price"
+        return f"st-price-{symbol}-{price_sub}" if symbol else f"st-price"
+    elif symbol:
+        return f"st-{alert_type}-{symbol}-{today_str}"
+    else:
+        title_hash = hashlib.md5(title.encode('utf-8')).hexdigest()[:8]
+        return f"st-{alert_type}-{title_hash}"
+
+
+def get_webpush_actions(title: str, data: dict = None) -> list:
+    """WebPush용 액션 버튼 생성 (네이티브 브라우저 알림에도 버튼이 정상 노출되도록 구성)"""
+    data = data or {}
+    alert_type = str(data.get("type", "")).strip()
+    sub_type = str(data.get("sub_type", "")).strip()
+    is_quant = alert_type == 'quant_scanner' or sub_type.startswith('quant_') or '퀀트' in title
+
+    if is_quant:
+        return [
+            messaging.WebpushNotificationAction(action='view_scanner', title='📊 퀀트 스캐너 전체보기'),
+            messaging.WebpushNotificationAction(action='view_stock', title='🔍 해당 종목 차트')
+        ]
+    else:
+        return [
+            messaging.WebpushNotificationAction(action='view_stock', title='🔍 AI 정밀 진단'),
+            messaging.WebpushNotificationAction(action='view_doc', title='📄 공시·뉴스 원문')
+        ]
+
+
 def send_push_notification(
     token: str,
     title: str,
@@ -641,15 +710,9 @@ def send_push_notification(
         # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
         click_url = resolve_click_url(title, data)
         
-        # [Fix] 알림 덮어쓰기(Collapse) 방지: 타입별/심볼별 고유 태그 부여
-        import time as _time_mod
-        custom_tag = str((data or {}).get("tag", "")).strip()
-        if custom_tag:
-            fcm_tag = custom_tag
-        else:
-            alert_type_tag = str((data or {}).get("type", "alert")).strip()
-            symbol_tag = str((data or {}).get("symbol", "")).strip()
-            fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_time_mod.time())}"
+        # [Fix] 중복 알림 100% 방지 및 OS 병합(Collapse)을 위한 결정론적 태그 생성
+        fcm_tag = generate_deterministic_tag(title, data)
+        webpush_actions = get_webpush_actions(title, data)
             
         webpush_config = messaging.WebpushConfig(
             headers={
@@ -663,7 +726,8 @@ def send_push_notification(
                 badge='https://stock-trend-program.co.kr/badge.png',
                 vibrate=[200, 100, 200],
                 tag=fcm_tag,
-                renotify=True
+                renotify=True,
+                actions=webpush_actions
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
@@ -697,6 +761,7 @@ def send_push_notification(
         safe_data['title'] = title
         safe_data['body'] = body
         safe_data['url'] = click_url
+        safe_data['tag'] = fcm_tag
 
         message = messaging.Message(
             notification=notification,
@@ -821,7 +886,7 @@ def send_multicast_notification(
 
     # 중복 토큰 제거 (동일 기기 중복 발송 방지)
     if tokens:
-        tokens = list(set(tokens))
+        tokens = list(dict.fromkeys([t.strip() for t in tokens if t and t.strip()]))
 
     # [Korea Compliance] 한국 정보통신망법 야간(21:00 ~ 08:00) 광고성 알림 발송 제한
     # 단, 가격 변동 알림은 실시간 투자 정보로서 24시간 허용
@@ -856,18 +921,9 @@ def send_multicast_notification(
         # [Fix] 클릭 시 통합대시보드(/)가 아닌 정확한 대상 링크로 이동
         click_url = resolve_click_url(title, data)
         
-        # [Fix] 알림 덮어쓰기(Collapse) 방지: 모든 알림이 단 하나도 사라지지 않고 독립적으로 쌓이도록 고유 태그 부여
-        custom_tag = str((data or {}).get("tag", "")).strip()
-        alert_type_tag = str((data or {}).get("type", "alert")).strip()
-        symbol_tag = str((data or {}).get("symbol", "")).strip()
-        now_ms = int(_now * 1000)
-        
-        if custom_tag:
-            fcm_tag = f"{custom_tag}-{now_ms}"
-        elif symbol_tag:
-            fcm_tag = f"st-{alert_type_tag}-{symbol_tag}-{now_ms}"
-        else:
-            fcm_tag = f"st-{alert_type_tag}-{now_ms}"
+        # [Fix] 중복 알림 100% 방지 및 OS 병합(Collapse)을 위한 결정론적 태그 생성
+        fcm_tag = generate_deterministic_tag(title, data)
+        webpush_actions = get_webpush_actions(title, data)
             
         webpush_config = messaging.WebpushConfig(
             headers={
@@ -881,7 +937,8 @@ def send_multicast_notification(
                 badge='https://stock-trend-program.co.kr/badge.png',
                 vibrate=[200, 100, 200],
                 tag=fcm_tag,
-                renotify=True
+                renotify=True,
+                actions=webpush_actions
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
@@ -921,6 +978,7 @@ def send_multicast_notification(
                 safe_data['title'] = title
                 safe_data['body'] = body
                 safe_data['url'] = click_url
+                safe_data['tag'] = fcm_tag
 
                 msg = messaging.Message(
                     notification=notification,

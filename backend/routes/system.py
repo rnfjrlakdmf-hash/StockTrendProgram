@@ -212,14 +212,15 @@ class FCMTokenRequest(BaseModel):
     token: str
     device_type: str = 'web'
     device_name: str = None
+    old_token: str = None
 
 @router.post("/fcm/register")
 def register_fcm_token(req: FCMTokenRequest, x_user_id: str = Header(None)):
-    """FCM 토큰 등록"""
+    """FCM 토큰 등록 및 구 토큰 정리"""
     from db_manager import save_fcm_token
     user_id = x_user_id if x_user_id else "guest"
     try:
-        success = save_fcm_token(user_id, req.token, req.device_type, req.device_name)
+        success = save_fcm_token(user_id, req.token, req.device_type, req.device_name, old_token=req.old_token)
         if success:
             return {"status": "success", "message": "푸시 알림이 활성화되었습니다.", "user_id": user_id}
         else:
