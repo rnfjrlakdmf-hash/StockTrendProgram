@@ -45,6 +45,10 @@ def send_telegram_message(message: str):
                     else:
                         detected_url = raw_u
 
+                lines = [l.strip() for l in clean_text.strip().split('\n') if l.strip()]
+                title = lines[0] if lines else "📢 텔레그램 공지"
+                body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
+
                 save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url=detected_url)
             except Exception as fe:
                 print(f"[Telegram-Firestore Sync Error] {fe}")

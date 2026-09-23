@@ -644,6 +644,10 @@ def send_push_notification(
             fcm_tag = f"st-{alert_type_tag}-{symbol_tag}" if symbol_tag else f"st-{alert_type_tag}-{int(_time_mod.time())}"
             
         webpush_config = messaging.WebpushConfig(
+            headers={
+                'Urgency': 'high',
+                'TTL': '86400'
+            },
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
@@ -661,6 +665,7 @@ def send_push_notification(
         # Android 설정
         android_config = messaging.AndroidConfig(
             priority='high',
+            ttl=86400,
             notification=messaging.AndroidNotification(
                 sound='default',
                 color='#3B82F6',
@@ -857,6 +862,10 @@ def send_multicast_notification(
             fcm_tag = f"st-{alert_type_tag}-{now_ms}"
             
         webpush_config = messaging.WebpushConfig(
+            headers={
+                'Urgency': 'high',
+                'TTL': '86400'
+            },
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
@@ -874,6 +883,7 @@ def send_multicast_notification(
         # Android 설정 (네이티브 앱용 태그 및 뱃지/아이콘 추가)
         android_config = messaging.AndroidConfig(
             priority='high',
+            ttl=86400,
             notification=messaging.AndroidNotification(
                 sound='default',
                 color='#3B82F6',
@@ -1092,6 +1102,7 @@ def send_topic_push(
         # [고우선순위 설정] 핸드폰 꺼져있을때 깨우기
         android_config = messaging.AndroidConfig(
             priority='high',
+            ttl=86400,
             notification=messaging.AndroidNotification(
                 sound='default',
                 color='#3B82F6',
@@ -1107,6 +1118,10 @@ def send_topic_push(
         )
         
         webpush_config = messaging.WebpushConfig(
+            headers={
+                'Urgency': 'high',
+                'TTL': '86400'
+            },
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
