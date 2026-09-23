@@ -279,25 +279,32 @@ async def check_and_notify_disclosures():
                 prefix_title = ""
                 ok_users = []  # whale 알림을 실제로 받은 사용자 UID (중복 방지용)
 
-                # [세력 포착 라이브 사이렌 브로드캐스트]
-                # 원래는 알림 스팸 방지를 위해 '대량보유' 등을 제외했으나, 마케팅(슈퍼개미 추적) 목적으로 다시 추가함.
-                whale_keywords = [
-                    # 🟢 대표적 호재
-                    "단일판매", "무상증자", "자기주식취득", "자기주식소각", "공개매수", "경영권변경",
-                    # 🔴 대표적 악재
-                    "유상증자", "감자결정", "상장폐지", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청"
+                # [공시 분류 체계 개편]
+                # 1. 🚨 초특급 중대 공시 (시장 전체 및 주주가치에 중대한 영향 -> 전원 글로벌 푸시)
+                SUPER_GLOBAL_KEYWORDS = [
+                    # 🔴 최고 수준 중대 악재 / 거래위험 / 상폐
+                    "상장폐지", "정리매매", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청", "감자결정", "회생절차",
+                    # 🟢 최고 수준 주주환원 / 경영권 분쟁 호재
+                    "무상증자", "자기주식소각", "주식소각", "공개매수", "경영권변경"
+                ]
+
+                # 2. 📊 기업 개별 스마트 팩트 공시 (단일판매 공급계약, 임원 매매, 슈퍼개미, 유상증자, 자사주 취득 등)
+                # -> 하루에 수십 개씩 나오므로 전체 글로벌 푸시 금지! 오직 '내 관심종목' 등록 유저에게만 타겟팅 발송
+                FACT_ALERT_KEYWORDS = [
+                    "단일판매", "공급계약", "유상증자", "자기주식취득", "전환사채", "신주인수권", "주요사항보고서"
                 ]
                 
                 clean_title = report_title.replace(" ", "")
+                is_super_global = any(kw in clean_title for kw in SUPER_GLOBAL_KEYWORDS)
                 is_super_ant = "대량보유" in clean_title
                 is_insider = "임원" in clean_title or "주요주주" in clean_title
-                is_whale = any(kw in clean_title for kw in whale_keywords) or is_super_ant or is_insider
+                is_fact_alert = any(kw in clean_title for kw in FACT_ALERT_KEYWORDS)
+                is_whale = is_super_global or is_super_ant or is_insider or is_fact_alert
                 
                 fact_str = ""
                 whale_alerted_uids = set()
                 
                 if is_whale:
-                    # [스마트 필터링] 단일판매ㆍ공급계약체결의 경우 매출액 대비 20% 이상인 초대형 계약만 발송
                     skip_whale_alert = False
                     
                     if is_super_ant:
@@ -406,18 +413,17 @@ async def check_and_notify_disclosures():
                             fact_str = f"⚠️ 영업정지 공시!\n💡 [시장해석] 본업 차질 발생 · 실적 타격 리스크"
                         elif "부도발생" in clean or "파산신청" in clean:
                             fact_str = f"⚠️ 부도·파산 공시!\n💡 [시장해석] 기업 존속 위험 최고 수준 위험"
-                        elif "단일판매" in clean:
+                        elif "단일판매" in clean or "공급계약" in clean:
                             fact_str = f"대규모 공급계약 체결 공시!\n💡 [시장해석] 대형 수주 확보로 향후 매출 및 실적 성장 기대"
                         else:
                             fact_str = f"[{corp}] {report_title} 공시 접수\n💡 [시장해석] 신규 주요 공시 발생 · 원문 확인 권장"
 
-                    
-                    if not skip_whale_alert:
+                    # 텔레그램 티저 메시지 (초특급 공시인 경우에만 발송)
+                    if is_super_global and not skip_whale_alert:
                         try:
                             from telegram_service import send_telegram_teaser
                             import urllib.parse
-                            # 텔레그램 마케팅용 티저 메시지 복구
-                            teaser_msg = f"🚨 <b>[{corp}] 세력 포착!</b>\n\n[{prefix_title}]\n{report_title}\n\n👉 <a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}'>원문 바로가기</a>"
+                            teaser_msg = f"🚨 <b>[{corp}] 초특급 공시 포착!</b>\n\n[{prefix_title}]\n{report_title}\n\n👉 <a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}'>원문 바로가기</a>"
                             send_telegram_teaser(teaser_msg, skip_db_save=True)
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Telegram error: {e}")
@@ -438,33 +444,36 @@ async def check_and_notify_disclosures():
                                 logger.info(f"[WhaleSiren] Broadcasted event for {corp}")
                             except Exception as e:
                                 logger.error(f"[WhaleSiren] Failed to save live_events: {e}")
-                            
-                            # ✅ [글로벌 푸시 발송] 핵심 공시(세력/내부자/팩트)는 관심종목 여부와 관계없이 세력알림 켠 모두에게 발송
-                            if is_whale:
-                                try:
-                                    from db_manager import get_all_fcm_tokens_with_user
-                                    whale_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
-                                    if whale_users:
-                                        # fetchall() returns a list of tuples: (user_id, token)
-                                        w_tokens = [u[1] for u in whale_users]
-                                        w_uids = [u[0] for u in whale_users]
-                                        
-                                        # 관심종목 푸시에서 중복되지 않도록 UID 기록
-                                        whale_alerted_uids.update(w_uids)
-                                        
-                                        w_title = f"{prefix_title} {market_tag} {corp}".strip()
-                                        w_body = f"{fact_str}" if fact_str else f"{report_title}"
-                                        w_data = {
-                                            "type": "disclosure_alert",
-                                            "url": f"/stock/{raw_code}",
-                                            "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
-                                            "symbol": raw_code,
-                                            "is_global": "true"
-                                        }
-                                        send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids)
-                                        logger.info(f"[WhaleSiren] Sent FCM to {len(w_tokens)} users for {corp}")
-                                except Exception as push_e:
-                                    logger.error(f"[WhaleSiren] Global FCM error: {push_e}")
+                        except Exception as e:
+                            logger.error(f"[WhaleSiren] Firestore error: {e}")
+
+                    # ✅ [글로벌 푸시 발송 - 문턱 강화]
+                    # 단일판매(공급계약), 임원 매매, 유상증자 등은 빈번하므로 전체 글로벌 푸시에서 제외!
+                    # 오직 시장 전체를 뒤흔드는 초특급 공시(is_super_global)만 전체 사용자에게 발송합니다.
+                    if is_super_global:
+                        try:
+                            from db_manager import get_all_fcm_tokens_with_user
+                            whale_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
+                            if whale_users:
+                                w_tokens = [u[1] for u in whale_users]
+                                w_uids = [u[0] for u in whale_users]
+                                
+                                # 관심종목 푸시에서 중복되지 않도록 UID 기록
+                                whale_alerted_uids.update(w_uids)
+                                
+                                w_title = f"{prefix_title} {market_tag} {corp}".strip()
+                                w_body = f"{fact_str}" if fact_str else f"{report_title}"
+                                w_data = {
+                                    "type": "disclosure_alert",
+                                    "url": f"/stock/{raw_code}",
+                                    "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
+                                    "symbol": raw_code,
+                                    "is_global": "true"
+                                }
+                                send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids)
+                                logger.info(f"[WhaleSiren] [초특급 글로벌 특보] Sent FCM to {len(w_tokens)} users for {corp}")
+                        except Exception as push_e:
+                            logger.error(f"[WhaleSiren] Global FCM error: {push_e}")
 
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Firestore error: {e}")
@@ -515,38 +524,37 @@ async def check_and_notify_disclosures():
                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                 }
 
-                # 1. 알림 센터 저장: 고중요도 공시이거나 관심종목인 경우에만 저장!
-                if not is_whale:
-                    is_high = is_high_priority_disclosure(clean_title)
-                    if is_high or tokens:
-                        try:
-                            from firebase_config import save_alert_to_firestore
-                            save_alert_to_firestore(
-                                title=noti_title,
-                                body=noti_body,
-                                alert_type="disclosure_alert",
-                                url=data_payload["url"],
-                                is_global=is_high,  # 고중요도만 전체 글로벌 노출, 일반 공시는 관심종목 유저에게만
-                                target_users=target_uids if not is_high else None,
-                                symbol=data_payload["symbol"],
-                                dart_url=data_payload["dart_url"]
-                            )
-                            logger.info(f"[공시Monitor] 공시 알림센터 저장: {corp} ({'🔥 고중요도 글로벌' if is_high else '⭐ 관심종목'})")
-                        except Exception as save_e:
-                            logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
-                    else:
-                        # 🚫 중요도가 떨어지고 관심종목도 아닌 일반 공시는 저장 안 하고 그냥 흘려보냄!
-                        logger.debug(f"[공시Monitor] 저중요도 공시 패스 (DB 미저장): {corp} - {report_title}")
+                # 알림 센터 저장 및 관심종목 유저 푸시 발송
+                if is_super_global:
+                    # 초특급 글로벌 공시는 위에서 이미 전체 푸시 발송 및 글로벌 저장이 완료됨
+                    pass
+                else:
+                    # 단일판매(공급계약), 임원 매매, 슈퍼개미, 유상증자 등 일반/스마트 공시는
+                    # 오직 해당 종목을 관심종목으로 등록한 사용자에게만 타겟팅 저장 및 발송!
+                    if not tokens:
+                        continue  # 관심종목 등록 사용자 없음 -> 푸시 및 개인 저장 스킵
 
-                if not tokens:
-                    continue  # 관심종목 등록 사용자 없음 -> 푸시 스킵
+                    try:
+                        from firebase_config import save_alert_to_firestore
+                        save_alert_to_firestore(
+                            title=noti_title,
+                            body=noti_body,
+                            alert_type="disclosure_alert",
+                            url=data_payload["url"],
+                            is_global=False,  # 초특급 공시가 아니므로 관심종목 등록 유저 전용!
+                            target_users=target_uids,
+                            symbol=data_payload["symbol"],
+                            dart_url=data_payload["dart_url"]
+                        )
+                        logger.info(f"[공시Monitor] 관심종목 공시 알림센터 저장: {corp} ({len(tokens)}명)")
+                    except Exception as save_e:
+                        logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
 
-                data_payload["skip_db_save"] = True
-
-                logger.info(f"[공시Monitor] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
-                send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
-                sent_count += 1
-                await asyncio.sleep(0.5)
+                    data_payload["skip_db_save"] = True
+                    logger.info(f"[공시Monitor] [관심종목 맞춤 알림] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
+                    send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
+                    sent_count += 1
+                    await asyncio.sleep(0.5)
 
             except Exception as item_e:
                 logger.error(f"[공시Monitor] Error processing item {doc_id}: {item_e}")
