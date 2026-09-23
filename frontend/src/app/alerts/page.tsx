@@ -1729,7 +1729,7 @@ function formatUsdToKrwInText(text: string): string {
         let defaultCta = { href: "/discovery", label: "스마트 종목 발굴 레이더 바로가기", icon: Sparkles, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
 
         const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산');
-        const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황');
+        const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황') || titleText.includes('지수 결산') || titleText.includes('시장·섹터 지수');
         const isMorningBriefing = Boolean(
             alert.type === 'morning_briefing' ||
             titleText.includes('모닝 팩트') ||
@@ -2247,9 +2247,15 @@ function formatUsdToKrwInText(text: string): string {
             if (!user) {
                 return false;
             }
-            const isPortfolioAlert = ['portfolio_summary', 'portfolio', 'dividend_alert'].includes(alert.type) ||
+            const isPortfolioAlert = [
+                'portfolio_summary', 'portfolio', 'dividend_alert', 'market_summary', 'market_open'
+            ].includes(alert.type) ||
                 titleText.includes('관심종목 결산') ||
-                titleText.includes('내 관심종목 결산');
+                titleText.includes('내 관심종목 결산') ||
+                titleText.includes('지수 결산') ||
+                titleText.includes('시장·섹터 지수') ||
+                titleText.includes('장마감 시황') ||
+                titleText.includes('개장 시가');
             
             // 내 관심종목 뉴스 속보, 공시, 시세 알림, 종목별 모닝 팩트 (반드시 본인이 등록한 종목과 일치해야 함!)
             const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorning) && symbolMatch;

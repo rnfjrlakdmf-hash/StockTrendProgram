@@ -696,6 +696,7 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                         "type": "market_summary",
                         "tag": f"closing-market-{user_id}",
                         "market": market,
+                        "is_global": False,
                         "sentiment": sentiment,
                         "diagnosis": diagnosis,
                         "kospi_val": str(kospi_info.get("value", "")),
