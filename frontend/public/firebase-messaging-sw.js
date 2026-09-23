@@ -7,7 +7,7 @@
  * - 알림 클릭 시 단순 통합 대시보드(/)가 아닌, 공시/뉴스 원문 또는 해당 종목 심층 분석창(/discovery?q=종목코드)으로 즉시 직행합니다.
  */
 
-const SW_VERSION = '2026.09.23-v10-no-duplicate';
+const SW_VERSION = '2026.09.23-v11-guarantee-show';
 
 // Firebase SDK 로드
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -27,18 +27,10 @@ const messaging = firebase.messaging();
 
 // 백그라운드 메시지 수신
 messaging.onBackgroundMessage(async (payload) => {
-    console.log('[SW] Background message received (v10 duplicate prevention):', payload);
+    console.log('[SW] Background message received (v11 guarantee show):', payload);
 
-    // [중복 알림 원천 차단]
-    // FCM 페이로드에 notification 객체가 포함되어 있으면 Firebase JS SDK가 브라우저 푸시 이벤트를 통해 자체적으로 알림을 띄웁니다.
-    // 여기서 self.registration.showNotification을 또 호출하면 동일 알림이 화면에 2개씩 뜨는 현상이 발생합니다.
-    if (payload.notification) {
-        console.log('[SW] Notification already handled natively by WebPush. Skipping duplicate showNotification.');
-        return;
-    }
-
-    const notificationTitle = payload.data?.title || '새 알림';
-    const notificationBody = payload.data?.body || '';
+    const notificationTitle = payload.notification?.title || payload.data?.title || '새 알림';
+    const notificationBody = payload.notification?.body || payload.data?.body || '';
     const symbol = payload.data?.symbol || '';
     const alertType = payload.data?.type || 'stock-alert';
     const subType = payload.data?.sub_type || '';
