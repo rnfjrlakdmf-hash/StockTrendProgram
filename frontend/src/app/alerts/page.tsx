@@ -2100,6 +2100,7 @@ function formatUsdToKrwInText(text: string): string {
     const baseTabs = [
         { id: "all", label: "전체 브리핑", icon: Layers },
         { id: "disclosure", label: "⚡ DART 공시 속보", icon: Zap },
+        { id: "quant", label: "📊 퀀트 시세", icon: TrendingUp },
         { id: "portfolio", label: "내 관심종목", icon: Crown },
         { id: "system", label: "서비스 공지/운영", icon: ShieldCheck }
     ];
@@ -2127,13 +2128,13 @@ function formatUsdToKrwInText(text: string): string {
             return isSystemNotice;
         }
 
-        // 4. 일반 탭(전체 브리핑, 공시, 내 관심종목)에서는 관리자 보고서 완전 제외
+        // 4. 일반 탭(전체 브리핑, 공시, 퀀트, 내 관심종목)에서는 관리자 보고서 완전 제외
         if (isAdminAlert) {
             return false;
         }
 
         // [보안 강화] 비로그인 상태(!user)에서는 어떤 탭(전체 브리핑 포함)에서도 개인 맞춤 알림 일절 노출 금지
-        // (단, SEC 해외 공시, DART 국내 공시, 세력 매집, 시장 시황 등 공공 정보는 비로그인 상태에서도 모두 열람 가능)
+        // (단, SEC 해외 공시, DART 국내 공시, 세력 매집, 시장 시황, 퀀트 시세 등 공공 정보는 비로그인 상태에서도 모두 열람 가능)
         const isPublicMarketAlert = [
             'sec_insider_trading', 'sec_13f', 'sec_disclosure',
             'disclosure_alert', 'disclosure', 'large_holding',
@@ -2146,6 +2147,7 @@ function formatUsdToKrwInText(text: string): string {
         titleText.includes('Form 4') ||
         titleText.includes('13F') ||
         titleText.includes('1타 강사') ||
+        titleText.includes('퀀트') ||
         (alert.url && String(alert.url).includes('sec.gov'));
 
         const isPersonalAlert = !isPublicMarketAlert && (
@@ -2156,6 +2158,19 @@ function formatUsdToKrwInText(text: string): string {
         );
         if (isPersonalAlert && (!user || user.is_guest)) {
             return false;
+        }
+
+        const isQuant = alert.type === 'quant_scanner' || 
+            (alert.sub_type && alert.sub_type.startsWith('quant_')) || 
+            titleText.includes('퀀트') || 
+            titleText.includes('수급 퀀트') || 
+            titleText.includes('퀀트 스캐너') || 
+            titleText.includes('퀀트 시세') ||
+            titleText.includes('퀀트 통계');
+
+        // [단독 탭] 📊 퀀트 시세 탭: 수급 퀀트 스캐너 시그널만 깔끔하게 노출
+        if (activeTab === "quant") {
+            return isQuant;
         }
 
         const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type) ||
@@ -2187,7 +2202,7 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         // [사용자 요청] 일반 DART 공시 속보는 메인 피드(전체 브리핑)에서 싹 빼서 '⚡ DART 공시 속보' 탭으로 완전 분리!
-        // 전체 브리핑에는 모닝 브리핑, 마켓 시황, 포트폴리오 요약, 슈퍼개미/내부자/대량보유 등 세력 수급, 주요 뉴스, 내 관심종목 공시만 노출!
+        // 전체 브리핑에는 모닝 브리핑, 마켓 시황, 퀀트 시세, 포트폴리오 요약, 슈퍼개미/내부자/대량보유 등 세력 수급, 주요 뉴스, 내 관심종목 공시만 노출!
         if (activeTab === "all") {
             const isWhaleAlert = titleText.includes("슈퍼개미") || 
                 titleText.includes("큰손") || 
@@ -2206,7 +2221,8 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         if (activeTab === "disclosure") {
-            // 퀀트 시세 및 급등 특보는 공시가 아니므로 공시 탭에서 완전 제외
+            // 퀀트 시세는 공시가 아니므로 공시 탭(국내 DART 및 해외 SEC)에서 완전 배제!
+            if (isQuant) return false;
             if (!isDisclosure) return false;
             if (disclosureFilter === 'my') {
                 return symbolMatch;
@@ -2367,6 +2383,35 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 )}
 
+                {/* 퀀트 시세 탭 전용 상단 안내 배너 */}
+                {activeTab === 'quant' && (
+                    <div className="space-y-2.5">
+                        <div className="bg-gradient-to-r from-emerald-950/40 via-teal-900/20 to-transparent border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-400 shrink-0">
+                                    <TrendingUp className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs md:text-sm font-black text-white flex items-center gap-2">
+                                        장마감 수급 퀀트 스캐너 시그널
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">실시간 연동</span>
+                                    </h3>
+                                    <p className="text-[11px] text-gray-400 mt-0.5">
+                                        외인·기관 양매수, 골든크로스, 거래량 폭증 돌파 등 퀀트 알고리즘이 포착한 핵심 유망 종목 모아보기입니다.
+                                    </p>
+                                </div>
+                            </div>
+                            <Link
+                                href="/signals?tab=scanner"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md shadow-emerald-500/20 whitespace-nowrap active:scale-95 flex items-center gap-1.5 shrink-0"
+                            >
+                                📊 퀀트 스캐너 전체보기
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 {/* 게스트 로그인 배너 */}
                 {!user && (
                     <div className="bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-transparent border border-blue-500/30 rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
@@ -2400,21 +2445,30 @@ function formatUsdToKrwInText(text: string): string {
                 ) : filteredAlerts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center bg-zinc-950/80 border border-white/5 rounded-3xl shadow-2xl p-6">
                         <div className="w-16 h-16 mb-4 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                            {activeTab === 'portfolio' && !user ? '🔒' : '📭'}
+                            {activeTab === 'portfolio' && !user ? '🔒' : activeTab === 'quant' ? '📊' : '📭'}
                         </div>
                         <h3 className="text-lg font-black text-gray-200 mb-1">
                             {activeTab === 'portfolio' && !user
                                 ? '로그인 후 내 관심종목 뉴스와 결산을 확인하세요'
+                                : activeTab === 'quant'
+                                ? '포착된 퀀트 시세 알림이 없습니다.'
                                 : '해당 분류의 실시간 알림이 없습니다.'}
                         </h3>
                         <p className="text-xs md:text-sm text-gray-400 font-medium max-w-sm leading-relaxed mb-4">
                             {activeTab === 'portfolio' && !user
                                 ? '로그인하시면 회원님만을 위한 관심종목 뉴스 속보, 공시, 마감 결산, 수익률 시그널을 실시간으로 확인하실 수 있습니다.'
+                                : activeTab === 'quant'
+                                ? '장마감 후 수급 퀀트 스캐너가 실시간으로 분석하여 유망 시그널을 안내해 드립니다.'
                                 : '새로운 중요 공시나 시장 시그널이 포착되면 가장 먼저 실시간으로 알려드릴게요!'}
                         </p>
                         {activeTab === 'portfolio' && !user && (
                             <Link href="/login" className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-blue-500/20 whitespace-nowrap active:scale-95">
                                 3초 로그인하기
+                            </Link>
+                        )}
+                        {activeTab === 'quant' && (
+                            <Link href="/signals?tab=scanner" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-500/20 whitespace-nowrap active:scale-95">
+                                📊 수급 퀀트 스캐너 바로가기
                             </Link>
                         )}
                     </div>
