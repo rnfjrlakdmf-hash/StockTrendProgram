@@ -141,12 +141,28 @@ export default function AlertCenterPage() {
                     // 1. 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
                     if (isAdminType && !isAdmin) return;
 
-                    // 2. [보안 철저] 특정 유저 대상 알림(target_users 존재 또는 비공개 알림)은 본인(isTargeted)이 아니면 무조건 차단!
-                    // 개인 관심종목 결산, 종목별 간추린 모닝팩트 등은 타인이나 비로그인 유저에게 절대 노출되지 않음
-                    if (hasTargetUsers && !isTargeted) return;
-                    if (!isGlobal && !isTargeted) return;
+                    // 2. 공공 시장 정보(SEC 해외 공시, DART 국내 공시, 세력 매집, 시장 시황 등)는 비로그인 방문자도 전원 열람 허용
+                    const isPublicMarketInfo = [
+                        'sec_insider_trading', 'sec_13f', 'sec_disclosure',
+                        'disclosure_alert', 'disclosure', 'large_holding',
+                        'insider_trading', 'whale_accumulation', 'whale_alert',
+                        'market_open', 'market_summary', 'quant_scanner', 'theory_alert', 'system_alert'
+                    ].includes(data.type) ||
+                    (data.title || '').includes('[SEC]') ||
+                    (data.title || '').includes('[DART]') ||
+                    (data.title || '').includes('[미국]') ||
+                    (data.title || '').includes('Form 4') ||
+                    (data.title || '').includes('13F') ||
+                    (data.title || '').includes('1타 강사') ||
+                    (data.url && String(data.url).includes('sec.gov'));
+
+                    // 3. [보안 철저] 특정 유저 대상 순수 개인 맞춤 알림(개인 관심종목 결산, 맞춤 모닝팩트 등)은 본인(isTargeted)이 아니면 무조건 차단!
+                    if (!isPublicMarketInfo) {
+                        if (hasTargetUsers && !isTargeted) return;
+                        if (!isGlobal && !isTargeted) return;
+                    }
                     
-                    if (isGlobal || isTargeted || (isAdmin && isAdminType)) {
+                    if (isPublicMarketInfo || isGlobal || isTargeted || (isAdmin && isAdminType)) {
                         // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
                         const sec = data.timestamp?.seconds || 0;
                         const timeBucket = Math.floor(sec / 1800); // 30 minutes bucket
@@ -2117,15 +2133,33 @@ function formatUsdToKrwInText(text: string): string {
         }
 
         // [보안 강화] 비로그인 상태(!user)에서는 어떤 탭(전체 브리핑 포함)에서도 개인 맞춤 알림 일절 노출 금지
-        const isPersonalAlert = !alert.is_global || 
+        // (단, SEC 해외 공시, DART 국내 공시, 세력 매집, 시장 시황 등 공공 정보는 비로그인 상태에서도 모두 열람 가능)
+        const isPublicMarketAlert = [
+            'sec_insider_trading', 'sec_13f', 'sec_disclosure',
+            'disclosure_alert', 'disclosure', 'large_holding',
+            'insider_trading', 'whale_accumulation', 'whale_alert',
+            'market_open', 'market_summary', 'quant_scanner', 'theory_alert', 'system_alert'
+        ].includes(alert.type) ||
+        titleText.includes('[SEC]') ||
+        titleText.includes('[DART]') ||
+        titleText.includes('[미국]') ||
+        titleText.includes('Form 4') ||
+        titleText.includes('13F') ||
+        titleText.includes('1타 강사') ||
+        (alert.url && String(alert.url).includes('sec.gov'));
+
+        const isPersonalAlert = !isPublicMarketAlert && (
+            !alert.is_global || 
             (Array.isArray(alert.target_users) && alert.target_users.length > 0) ||
             ['portfolio_summary', 'portfolio'].includes(alert.type) ||
-            titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산') || titleText.includes('간추린 모닝');
+            titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산') || titleText.includes('간추린 모닝')
+        );
         if (isPersonalAlert && (!user || user.is_guest)) {
             return false;
         }
 
-        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type);
+        const isDisclosure = ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading', 'whale_accumulation', 'whale_alert'].includes(alert.type) ||
+            titleText.includes('[SEC]') || titleText.includes('[DART]') || titleText.includes('Form 4') || titleText.includes('13F') || (alert.url && String(alert.url).includes('sec.gov'));
         const isNews = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type);
         const isPrice = ['target_price_alert', 'price_alert', 'crypto_bull', 'ipo_alert', 'quant_scanner'].includes(alert.type) || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계');
         const isMorning = Boolean(
@@ -2179,7 +2213,9 @@ function formatUsdToKrwInText(text: string): string {
             }
             const isUS = ['sec_insider_trading', 'sec_13f', 'sec_disclosure'].includes(alert.type) ||
                 titleText.includes('[SEC]') ||
-                (alert.url && alert.url.includes('sec.gov'));
+                titleText.includes('[미국]') ||
+                alert.market === 'US' ||
+                (alert.url && String(alert.url).includes('sec.gov'));
 
             if (disclosureFilter === 'kr') {
                 return !isUS;

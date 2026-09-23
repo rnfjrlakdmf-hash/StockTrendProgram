@@ -322,6 +322,7 @@ def check_sec_form4_alerts():
                     "symbol": ticker or entity_name,
                     "url": filing.get("link", "/discovery"),
                     "market": "US",
+                    "is_global": "true",
                 }
                 result = send_multicast_notification(tokens, title, body, push_data, target_users=target_uids)
                 print(f"[SEC Whale Form4] Sent to {len(tokens)} tokens. Result: {result}")
@@ -515,6 +516,7 @@ def check_sec_13f_alerts():
                     "symbol": ticker or entity_name,
                     "url": filing.get("link", "/discovery"),
                     "market": "US",
+                    "is_global": "true",
                 }
                 result = send_multicast_notification(tokens, title, body, push_data, target_users=target_uids)
                 print(f"[SEC Whale 13F] Sent to {len(tokens)} tokens. Result: {result}")
