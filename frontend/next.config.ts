@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/scanner',
+        destination: '/signals?tab=scanner',
+        permanent: true,
+      },
+    ];
+  },
   // rewrites 완전 제거 - src/app/api/[...path]/route.ts 가 모든 /api/* 처리
 };
 

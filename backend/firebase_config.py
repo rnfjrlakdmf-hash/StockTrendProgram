@@ -564,27 +564,35 @@ def resolve_click_url(title: str, data: dict = None) -> str:
     clean_symbol = symbol.split('.')[0] if '.' in symbol else symbol
     dart_url = str(data.get('dart_url', '')).strip()
     news_url = str(data.get('news_url', '')).strip()
+    alert_type = str(data.get('type', '')).strip()
     notif_title = title.split('\n')[0] if title else ''
 
-    # 1. DART 공시 원문 링크가 있는 경우 -> 경유 페이지(광고+카운트다운) 거쳐 원문 이동
-    if dart_url:
+    # 1. 퀀트 스캐너 알림: 사용자 요청에 따라 스캐너 전체보기(/signals?tab=scanner)로 최우선 연결
+    if alert_type == 'quant_scanner' or '퀀트 시세' in notif_title or '퀀트 통계' in notif_title:
+        click_url = "/signals?tab=scanner"
+    # 2. DART 공시 원문 링크가 있는 경우 -> 경유 페이지(광고+카운트다운) 거쳐 원문 이동
+    elif dart_url:
         params = {'url': dart_url, 'type': 'disclosure'}
         if clean_symbol: params['symbol'] = clean_symbol
         if notif_title: params['title'] = notif_title
         click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
-    # 2. 뉴스 기사 원문 링크가 있는 경우 -> 경유 페이지 거쳐 원문 이동
+    # 3. 뉴스 기사 원문 링크가 있는 경우 -> 경유 페이지 거쳐 원문 이동
     elif news_url:
         params = {'url': news_url, 'type': 'news'}
         if clean_symbol: params['symbol'] = clean_symbol
         if notif_title: params['title'] = notif_title
         click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
-    # 3. 명시적 url이 존재하고, 루트 메인('/')이 아닌 유의미한 상세 경로인 경우
+    # 4. 명시적 url이 존재하고, 루트 메인('/')이 아닌 유의미한 상세 경로인 경우
     elif raw_url and raw_url not in ['/', 'https://stock-trend-program.co.kr', 'https://stock-trend-program.co.kr/', 'http://stock-trend-program.co.kr', 'http://stock-trend-program.co.kr/']:
-        click_url = raw_url
-    # 4. 종목 심볼이 있는 경우 -> 통합대시보드가 아닌 해당 종목 심층 분석창(/discovery?q=코드)으로 바로 진입
+        # 구버전 /scanner 링크가 들어온 경우 퀀트 스캐너 전체보기로 자동 교정
+        if raw_url in ['/scanner', 'https://stock-trend-program.co.kr/scanner']:
+            click_url = "/signals?tab=scanner"
+        else:
+            click_url = raw_url
+    # 5. 종목 심볼이 있는 경우 -> 통합대시보드가 아닌 해당 종목 심층 분석창(/discovery?q=코드)으로 바로 진입
     elif clean_symbol:
         click_url = f"/discovery?q={clean_symbol}"
-    # 5. 그 외의 경우 알림센터로 이동 (통합 대시보드로 떨어지지 않도록)
+    # 6. 그 외의 경우 알림센터로 이동 (통합 대시보드로 떨어지지 않도록)
     else:
         click_url = "/alerts"
 

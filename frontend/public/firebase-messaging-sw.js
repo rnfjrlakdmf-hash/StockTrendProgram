@@ -7,7 +7,7 @@
  * - 알림 클릭 시 단순 통합 대시보드(/)가 아닌, 공시/뉴스 원문 또는 해당 종목 심층 분석창(/discovery?q=종목코드)으로 즉시 직행합니다.
  */
 
-const SW_VERSION = '2026.09.22-v8-no-collapse';
+const SW_VERSION = '2026.09.23-v9-quant-scanner-view';
 
 // Firebase SDK 로드
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -27,12 +27,14 @@ const messaging = firebase.messaging();
 
 // 백그라운드 메시지 수신
 messaging.onBackgroundMessage(async (payload) => {
-    console.log('[SW] Background message received (v8 no collapse):', payload);
+    console.log('[SW] Background message received (v9 quant scanner link):', payload);
 
     const notificationTitle = payload.notification?.title || payload.data?.title || '새 알림';
     const notificationBody = payload.notification?.body || payload.data?.body || '';
     const symbol = payload.data?.symbol || '';
     const alertType = payload.data?.type || 'stock-alert';
+    const subType = payload.data?.sub_type || '';
+    const isQuantAlert = alertType === 'quant_scanner' || subType.startsWith('quant_') || notificationTitle.includes('퀀트');
 
     // 카테고리 및 종목별 독립 태그 생성 (덮어쓰기 완전 방지: 모든 알림에 고유 타임스탬프 결합)
     const nowMs = Date.now();
@@ -48,6 +50,8 @@ messaging.onBackgroundMessage(async (payload) => {
             tag = `market-summary-${nowMs}`;
         } else if (alertType === 'portfolio_summary') {
             tag = `portfolio-summary-${nowMs}`;
+        } else if (isQuantAlert) {
+            tag = `quant-scanner-${nowMs}`;
         } else if (symbol) {
             tag = `stock-price-${symbol}-${nowMs}`;
         } else {
@@ -65,7 +69,16 @@ messaging.onBackgroundMessage(async (payload) => {
         renotify: true,
         requireInteraction: false,
         silent: false,
-        actions: [
+        actions: isQuantAlert ? [
+            {
+                action: 'view_scanner',
+                title: '📊 퀀트 스캐너 전체보기'
+            },
+            {
+                action: 'view_stock',
+                title: '🔍 해당 종목 차트'
+            }
+        ] : [
             {
                 action: 'view_stock',
                 title: '🔍 AI 정밀 진단'
@@ -99,12 +112,18 @@ self.addEventListener('notificationclick', (event) => {
     const newsUrl = data.news_url || '';
     const dartUrl = data.dart_url || '';
     const customUrl = data.url || '';
+    const alertType = data.type || '';
+    const subType = data.sub_type || '';
     const notifTitle = event.notification.body?.split('\n')[0] || '';
+    const fullTitle = event.notification.title || '';
+    const isQuantAlert = alertType === 'quant_scanner' || subType.startsWith('quant_') || fullTitle.includes('퀀트');
 
     let targetUrl;
 
     // 액션 버튼 클릭에 따른 스마트 분기
-    if (event.action === 'view_stock' && cleanSymbol) {
+    if (event.action === 'view_scanner') {
+        targetUrl = '/signals?tab=scanner';
+    } else if (event.action === 'view_stock' && cleanSymbol) {
         targetUrl = `/discovery?q=${cleanSymbol}`;
     } else if (event.action === 'view_doc') {
         if (dartUrl) {
@@ -127,6 +146,10 @@ self.addEventListener('notificationclick', (event) => {
             targetUrl = '/alerts';
         }
     } 
+    // [사용자 요청] 퀀트 시세 알림 본체 클릭 시: 퀀트 스캐너 전체보기로 최우선 이동!
+    else if (isQuantAlert) {
+        targetUrl = '/signals?tab=scanner';
+    }
     // 기본 알림 본체 클릭 시: 공시 원문 > 뉴스 원문 > 종목 심층 분석 > 알림센터 순으로 정밀 타겟팅
     else if (dartUrl) {
         const params = new URLSearchParams();
@@ -143,7 +166,12 @@ self.addEventListener('notificationclick', (event) => {
         if (notifTitle) params.set('title', notifTitle);
         targetUrl = `/news-redirect?${params.toString()}`;
     } else if (customUrl && customUrl !== '/' && !customUrl.endsWith('stock-trend-program.co.kr') && !customUrl.endsWith('stock-trend-program.co.kr/')) {
-        targetUrl = customUrl;
+        // 구버전 /scanner 링크가 들어온 경우 퀀트 스캐너 전체보기로 자동 교정
+        if (customUrl === '/scanner' || customUrl.endsWith('/scanner')) {
+            targetUrl = '/signals?tab=scanner';
+        } else {
+            targetUrl = customUrl;
+        }
     } else if (cleanSymbol) {
         targetUrl = `/discovery?q=${cleanSymbol}`;
     } else {

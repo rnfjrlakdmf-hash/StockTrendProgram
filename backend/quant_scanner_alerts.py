@@ -196,12 +196,15 @@ class QuantScannerAlertMonitor:
 
             tokens = await asyncio.to_thread(get_all_fcm_tokens)
             if tokens:
+                clean_code = code.split('.')[0] if '.' in code else code
                 push_data = {
                     "type": "quant_scanner",
                     "sub_type": alert_sub_type,
                     "symbol": code,
                     "name": name,
-                    "url": "/scanner",
+                    "url": "/signals?tab=scanner",
+                    "scanner_url": "/signals?tab=scanner",
+                    "stock_url": f"/discovery?q={clean_code}",
                     "is_global": "true"
                 }
                 res = await asyncio.to_thread(
@@ -218,10 +221,12 @@ class QuantScannerAlertMonitor:
         # 2. 텔레그램 알림 발송 (HTML 포맷)
         try:
             from telegram_service import send_telegram_teaser
+            clean_code = code.split('.')[0] if '.' in code else code
             tg_text = (
                 f"<b>{title}</b>\n\n"
                 f"{body}\n\n"
-                f"👉 <a href='https://stock-trend-program.co.kr/scanner'>장마감 수급 퀀트 스캐너에서 통계 확인하기</a>"
+                f"📊 <a href='https://stock-trend-program.co.kr/signals?tab=scanner'>장마감 수급 퀀트 스캐너 전체보기 바로가기</a>\n"
+                f"🔍 <a href='https://stock-trend-program.co.kr/discovery?q={clean_code}'>{name} 실시간 차트 & AI 진단</a>"
             )
             await asyncio.to_thread(send_telegram_teaser, tg_text, alert_type="quant_scanner")
         except Exception as e:

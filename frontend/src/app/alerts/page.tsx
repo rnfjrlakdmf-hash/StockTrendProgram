@@ -1674,6 +1674,11 @@ function formatUsdToKrwInText(text: string): string {
             targetUrl = '';
         }
 
+        // 구버전 알림 데이터 중 /scanner로 저장된 건은 퀀트 스캐너 전체보기(/signals?tab=scanner)로 자동 교정
+        if (targetUrl === '/scanner' || targetUrl.startsWith('/scanner')) {
+            targetUrl = '/signals?tab=scanner';
+        }
+
         const dartUrl = (alert as any).dart_url || '';
         const newsUrl = (alert as any).news_url || '';
 
@@ -1821,7 +1826,8 @@ function formatUsdToKrwInText(text: string): string {
             typeBadgeLabel = "📈 퀀트 시세 급등 특보";
             cardBorderHover = "hover:border-violet-500/40 hover:shadow-[0_0_25px_rgba(139,92,246,0.2)]";
             accentBorder = "border-l-4 border-l-violet-400";
-            defaultCta = { href: "/scanner", label: "장마감 수급 퀀트 스캐너 통계 확인", icon: Sparkles, style: "bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border-violet-500/30" };
+            targetUrl = "/signals?tab=scanner";
+            defaultCta = { href: "/signals?tab=scanner", label: "장마감 수급 퀀트 스캐너 전체보기", icon: Sparkles, style: "bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border-violet-500/30" };
         } 
         // [4순위: 뉴스 알림 속보 - 주도 테마 레이더보다 먼저 판정하여 오분류 방지]
         else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) || (alert.title && (alert.title.includes("뉴스") || alert.title.includes("헤드라인") || alert.title.includes("속보")))) {
@@ -2008,7 +2014,31 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 ) : !isPortfolio && !isMorningBriefing && !isMarketSummary && (
                     <div className="mt-4 pt-3.5 border-t border-white/5 flex items-center justify-between">
-                        {targetUrl ? (
+                        {(alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) ? (
+                            <div className="w-full flex flex-col sm:flex-row gap-2">
+                                <Link
+                                    href="/signals?tab=scanner"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex-1 py-2.5 px-4 rounded-xl border text-xs md:text-sm font-bold transition-all flex items-center justify-between shadow-sm active:scale-95 cursor-pointer bg-violet-500/20 hover:bg-violet-500/30 text-violet-200 border-violet-500/40"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-violet-400" />
+                                        📊 퀀트 스캐너 전체보기
+                                    </span>
+                                    <ChevronRight className="w-4 h-4" />
+                                </Link>
+                                {cleanSymbol && (
+                                    <Link
+                                        href={`/discovery?q=${cleanSymbol}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="py-2.5 px-3 rounded-xl border text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 border-white/10"
+                                    >
+                                        <TrendingUp className="w-4 h-4 text-cyan-400" />
+                                        <span>🔍 {cleanSymbol} 차트</span>
+                                    </Link>
+                                )}
+                            </div>
+                        ) : targetUrl ? (
                             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
                                 <span>상세 내용 확인하기</span>
                                 <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
