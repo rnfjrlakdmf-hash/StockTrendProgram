@@ -737,7 +737,6 @@ async def check_and_notify_sec_disclosures():
                         if is_sec_whale:
                             try:
                                 from telegram_service import send_telegram_teaser
-                                import urllib.parse
                                 teaser_msg = f"🚨 <b>[{ticker}] SEC 세력/내부자 포착!</b>\n\n[미국 SEC 공시 속보]\n{kor_title}\n\n👉 <a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}'>원문 확인하기</a>"
                                 send_telegram_teaser(teaser_msg, skip_db_save=True)
                             except Exception as e:

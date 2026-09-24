@@ -719,16 +719,6 @@ def send_push_notification(
                 'Urgency': 'high',
                 'TTL': '86400'
             },
-            notification=messaging.WebpushNotification(
-                title=title,
-                body=body,
-                icon='https://stock-trend-program.co.kr/icon.png',
-                badge='https://stock-trend-program.co.kr/badge.png',
-                vibrate=[200, 100, 200],
-                tag=fcm_tag,
-                renotify=True,
-                actions=webpush_actions
-            ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
             )
@@ -739,6 +729,8 @@ def send_push_notification(
             priority='high',
             ttl=86400,
             notification=messaging.AndroidNotification(
+                title=title,
+                body=body,
                 sound='default',
                 color='#3B82F6',
                 channel_id='price_alerts',
@@ -752,11 +744,15 @@ def send_push_notification(
         apns_config = messaging.APNSConfig(
             headers={'apns-priority': '10'},
             payload=messaging.APNSPayload(
-                aps=messaging.Aps(sound='default', badge=1)
+                aps=messaging.Aps(
+                    alert=messaging.ApsAlert(title=title, body=body),
+                    sound='default',
+                    badge=1
+                )
             )
         )
         
-        # 메시지 생성 (WebPush 뱃지 정상 노출을 위해 data에 title/body 포함)
+        # 메시지 생성 (WebPush에서 SW의 if(payload.notification) return 차단을 우회하기 위해 top-level notification 제거)
         safe_data = {k: str(v) for k, v in (data or {}).items()}
         safe_data['title'] = title
         safe_data['body'] = body
@@ -764,7 +760,6 @@ def send_push_notification(
         safe_data['tag'] = fcm_tag
 
         message = messaging.Message(
-            notification=notification,
             data=safe_data,
             token=token,
             android=android_config,
@@ -930,16 +925,6 @@ def send_multicast_notification(
                 'Urgency': 'high',
                 'TTL': '86400'
             },
-            notification=messaging.WebpushNotification(
-                title=title,
-                body=body,
-                icon='https://stock-trend-program.co.kr/icon.png',
-                badge='https://stock-trend-program.co.kr/badge.png',
-                vibrate=[200, 100, 200],
-                tag=fcm_tag,
-                renotify=True,
-                actions=webpush_actions
-            ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
             )
@@ -950,6 +935,8 @@ def send_multicast_notification(
             priority='high',
             ttl=86400,
             notification=messaging.AndroidNotification(
+                title=title,
+                body=body,
                 sound='default',
                 color='#3B82F6',
                 icon='ic_stat_notification',
@@ -964,7 +951,11 @@ def send_multicast_notification(
         apns_config = messaging.APNSConfig(
             headers={'apns-priority': '10'},
             payload=messaging.APNSPayload(
-                aps=messaging.Aps(sound='default', badge=1)
+                aps=messaging.Aps(
+                    alert=messaging.ApsAlert(title=title, body=body),
+                    sound='default',
+                    badge=1
+                )
             )
         )
         
@@ -981,7 +972,6 @@ def send_multicast_notification(
                 safe_data['tag'] = fcm_tag
 
                 msg = messaging.Message(
-                    notification=notification,
                     data=safe_data,
                     token=token,
                     android=android_config,
