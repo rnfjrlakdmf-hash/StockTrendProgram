@@ -209,9 +209,13 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
     };
 
     const formatPrice = (val: string | number | undefined) => {
-        if (!val) return '0';
-        if (typeof val === 'number') return val.toLocaleString();
-        return parseInt(String(val).replace(/,/g, '')).toLocaleString();
+        if (!val) return market === 'US' ? '$0.00' : '0원';
+        const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/,/g, ''));
+        if (isNaN(num)) return String(val);
+        if (market === 'US') {
+            return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        return `${Math.round(num).toLocaleString()}원`;
     };
 
     const getBrandInfo = (brand?: string) => {
@@ -224,6 +228,18 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         if (b.includes('PLUS') || b.includes('ARIRANG')) return { color: 'text-purple-300 bg-purple-500/20 border-purple-500/40', company: '한화자산' };
         if (b.includes('KOSEF') || b.includes('KIWOOM')) return { color: 'text-indigo-300 bg-indigo-500/20 border-indigo-500/40', company: '키움자산' };
         if (b.includes('TIMEFOLIO')) return { color: 'text-rose-300 bg-rose-500/20 border-rose-500/40', company: '타임폴리오' };
+        // 미국 글로벌 ETF 운용사 매핑
+        if (b.includes('ISHARES')) return { color: 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40', company: '블랙록(BlackRock)' };
+        if (b.includes('VANGUARD')) return { color: 'text-red-300 bg-red-500/20 border-red-500/40', company: '뱅가드(Vanguard)' };
+        if (b.includes('SPDR')) return { color: 'text-amber-300 bg-amber-500/20 border-amber-500/40', company: '스테이트스트리트' };
+        if (b.includes('INVESCO')) return { color: 'text-blue-300 bg-blue-500/20 border-blue-500/40', company: '인베스코(Invesco)' };
+        if (b.includes('PROSHARES')) return { color: 'text-indigo-300 bg-indigo-500/20 border-indigo-500/40', company: '프로셰어즈' };
+        if (b.includes('DIREXION')) return { color: 'text-purple-300 bg-purple-500/20 border-purple-500/40', company: '디렉시온(Direxion)' };
+        if (b.includes('SCHWAB')) return { color: 'text-sky-300 bg-sky-500/20 border-sky-500/40', company: '찰스슈왑(Schwab)' };
+        if (b.includes('JPMORGAN')) return { color: 'text-cyan-300 bg-cyan-500/20 border-cyan-500/40', company: 'JP모건(JPMorgan)' };
+        if (b.includes('VANECK')) return { color: 'text-teal-300 bg-teal-500/20 border-teal-500/40', company: '반에크(VanEck)' };
+        if (b.includes('ARK')) return { color: 'text-pink-300 bg-pink-500/20 border-pink-500/40', company: '아크(ARK Invest)' };
+        if (b.includes('GRANITESHARES') || b.includes('GLOBAL X') || b.includes('FIRST TRUST')) return { color: 'text-violet-300 bg-violet-500/20 border-violet-500/40', company: '글로벌 테마운용' };
         return { color: 'text-zinc-300 bg-white/10 border-white/15', company: '글로벌 운용사' };
     };
 
@@ -232,13 +248,15 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         const gap = item.nav_gap_num || 0;
         const priceNum = item.price_num || parseFloat(String(item.price || 0).replace(/,/g, '')) || 0;
         const navNum = item.nav_num || parseFloat(String(item.nav || 0).replace(/,/g, '')) || 0;
-        const diffVal = item.nav_diff_krw !== undefined ? item.nav_diff_krw : (priceNum > 0 && navNum > 0 ? Math.round(priceNum - navNum) : 0);
-        const unit = market === 'US' ? '$' : '원';
+        const rawDiff = item.nav_diff_krw !== undefined ? item.nav_diff_krw : (priceNum > 0 && navNum > 0 ? (priceNum - navNum) : 0);
+        const diffFormatted = market === 'US'
+            ? `${rawDiff > 0 ? '+' : rawDiff < 0 ? '-' : ''}$${Math.abs(rawDiff).toFixed(2)}`
+            : `${rawDiff > 0 ? '+' : rawDiff < 0 ? '-' : ''}${Math.abs(Math.round(rawDiff)).toLocaleString()}원`;
 
         if (Math.abs(gap) >= 1.0) {
             return {
                 label: gap > 0 ? '⚠️ 할증 확대 (+1%↑)' : '📉 할인 확대 (-1%↓)',
-                subText: diffVal !== 0 ? `NAV 대비 ${diffVal > 0 ? '+' : ''}${diffVal.toLocaleString()}${unit} 편차` : 'LP 호가 스프레드 확대 구간',
+                subText: rawDiff !== 0 ? `NAV 대비 ${diffFormatted} 편차` : 'LP 호가 스프레드 확대 구간',
                 badgeClass: gap > 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
                 textClass: gap > 0 ? 'text-amber-400' : 'text-cyan-400'
             };
@@ -246,7 +264,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         if (gap <= -0.15) {
             return {
                 label: '📉 할인 괴리 (NAV 하회)',
-                subText: diffVal < 0 ? `NAV 대비 -${Math.abs(diffVal).toLocaleString()}${unit} 낮음` : '시장가가 NAV 하회 중',
+                subText: rawDiff < 0 ? `NAV 대비 ${diffFormatted} 낮음` : '시장가가 NAV 하회 중',
                 badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
                 textClass: 'text-cyan-300'
             };
@@ -254,14 +272,14 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         if (gap >= 0.15) {
             return {
                 label: '📈 할증 괴리 (NAV 상회)',
-                subText: diffVal > 0 ? `NAV 대비 +${diffVal.toLocaleString()}${unit} 높음` : '시장가가 NAV 상회 중',
+                subText: rawDiff > 0 ? `NAV 대비 ${diffFormatted} 높음` : '시장가가 NAV 상회 중',
                 badgeClass: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
                 textClass: 'text-orange-300'
             };
         }
         return {
             label: '✅ NAV 수렴 (정상 범위)',
-            subText: '시장가·순자산가치 일치 구간',
+            subText: rawDiff !== 0 ? `NAV 편차 ${diffFormatted} (일치)` : '시장가·순자산가치 일치 구간',
             badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
             textClass: 'text-emerald-400'
         };
@@ -854,7 +872,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                         </div>
                                                         <div className="text-right shrink-0">
                                                             <div className="text-base md:text-lg font-black text-white tabular-nums tracking-tight font-mono">
-                                                                {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
+                                                                {formatPrice(item.price)}
                                                             </div>
                                                             <div className={`text-xs font-black tabular-nums tracking-tight font-mono ${colorClass}`}>
                                                                 {positive ? '▲' : negative ? '▼' : ''}
@@ -910,7 +928,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                     <div className="bg-white/5 rounded-xl p-2">
                                                         <div className="text-zinc-400 text-[10px] font-bold">실시간 NAV (본래가치)</div>
                                                         <div className="font-black text-zinc-100 truncate font-mono mt-0.5">
-                                                            {item.nav && item.nav !== '-' ? `${item.nav}${market === 'US' ? '$' : '원'}` : '실시간 연동'}
+                                                            {item.nav && item.nav !== '-' ? (market === 'US' ? `$${item.nav}` : `${item.nav}원`) : '실시간 연동'}
                                                         </div>
                                                     </div>
 
@@ -1112,7 +1130,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                 </div>
                                             </td>
                                             <td className="p-3 text-right font-mono font-bold text-white">
-                                                {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
+                                                {formatPrice(item.price)}
                                             </td>
                                             <td className={`p-3 text-right font-mono font-bold ${colorClass}`}>
                                                 {positive ? '▲' : negative ? '▼' : ''}{Math.abs(item.change_percent || 0).toFixed(2)}%
@@ -1122,7 +1140,9 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                             <td className={`p-3 text-right font-mono font-bold ${turnover >= 20 ? 'text-rose-400' : 'text-gray-300'}`}>
                                                 {turnover > 0 ? `${turnover}%` : '-'}
                                             </td>
-                                            <td className="p-3 text-right font-mono text-gray-300">{item.nav || '-'}</td>
+                                            <td className="p-3 text-right font-mono text-gray-300">
+                                                {item.nav && item.nav !== '-' ? (market === 'US' ? `$${item.nav}` : `${item.nav}원`) : '-'}
+                                            </td>
                                             <td className={`p-3 text-right font-mono ${navAnalysis.textClass}`}>
                                                 <div className="font-bold">{item.nav_gap || '-'}</div>
                                                 <div className="text-[9px] opacity-85">{navAnalysis.label}</div>

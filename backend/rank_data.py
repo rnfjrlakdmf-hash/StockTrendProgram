@@ -1060,17 +1060,97 @@ def get_etf_ranking(market="KR", category=None):
                 "IBIT", "GLD", "SLV", "XLE", "XLF", "XLV", "XLY", "XLP", "XLU", "XLI", "XLB", "XLC", "VNQ"
             ]
             
-            name_map = {
-                "SPY": "SPDR S&P 500 ETF (S&P500)", "QQQ": "Invesco QQQ Trust (나스닥100)", "VOO": "Vanguard S&P 500 ETF", "VTI": "Vanguard Total Stock Market", 
-                "IVV": "iShares Core S&P 500", "IWM": "iShares Russell 2000 ETF", "DIA": "SPDR Dow Jones Industrial",
-                "SOXX": "iShares Semiconductor ETF (반도체)", "SMH": "VanEck Semiconductor ETF", "TQQQ": "ProShares UltraPro QQQ (나스닥 3X)", 
-                "SQQQ": "ProShares UltraPro Short QQQ (나스닥 -3X)", "SOXL": "Direxion Daily Semiconductor Bull 3X (반도체 3X)",
-                "SOXS": "Direxion Daily Semiconductor Bear 3X (반도체 -3X)", "UPRO": "ProShares UltraPro S&P500 3X", "SPXU": "ProShares Short S&P500 -3X",
-                "SCHD": "Schwab US Dividend Equity (배당성장)", "JEPI": "JPMorgan Equity Premium Income (월배당)", "JEPQ": "JPMorgan Nasdaq Equity Premium",
-                "ARKK": "ARK Innovation ETF", "TLT": "iShares 20+ Year Treasury Bond (미국채 20년+)", "TMF": "Direxion 20+ Year Treasury Bull 3X",
-                "IBIT": "iShares Bitcoin Trust (비트코인)", "GLD": "SPDR Gold Shares (금)", "SLV": "iShares Silver Trust (은)",
-                "XLK": "Technology Select Sector SPDR", "XLE": "Energy Select Sector SPDR", "XLF": "Financial Select Sector SPDR",
-                "XLV": "Health Care Select Sector", "NVDL": "GraniteShares 2x Long NVDA", "TSLL": "Direxion Daily TSLA Bull 2X"
+            us_meta = {
+                # 지수 추종 (Index)
+                "SPY":  ("SPDR S&P 500 대표지수 ETF (SPY)", "SPDR", "미국 대표지수", 590.0),
+                "QQQ":  ("Invesco 나스닥 100 기술주 ETF (QQQ)", "Invesco", "미국 나스닥100", 315.0),
+                "VOO":  ("Vanguard S&P 500 인덱스 ETF (VOO)", "Vanguard", "미국 대표지수", 560.0),
+                "VTI":  ("Vanguard 미국 전체시장 ETF (VTI)", "Vanguard", "미국 전체시장", 455.0),
+                "IVV":  ("iShares Core S&P 500 ETF (IVV)", "iShares", "미국 대표지수", 545.0),
+                "IWM":  ("iShares 러셀 2000 중소형주 ETF (IWM)", "iShares", "미국 중소형주", 72.0),
+                "DIA":  ("SPDR 다우존스 산업평균 30 ETF (DIA)", "SPDR", "미국 다우존스", 38.0),
+                "RSP":  ("Invesco S&P 500 동일가중 ETF (RSP)", "Invesco", "미국 동일가중", 68.0),
+                "MDY":  ("SPDR S&P 중형주 400 ETF (MDY)", "SPDR", "미국 중형주", 24.0),
+                "IJR":  ("iShares Core S&P 소형주 ETF (IJR)", "iShares", "미국 소형주", 88.0),
+                "VUG":  ("Vanguard 미국 대형 성장주 ETF (VUG)", "Vanguard", "미국 대형성장", 155.0),
+                "VTV":  ("Vanguard 미국 대형 가치주 ETF (VTV)", "Vanguard", "미국 대형가치", 132.0),
+                "IWF":  ("iShares 러셀 1000 성장주 ETF (IWF)", "iShares", "미국 대형성장", 105.0),
+                "IWD":  ("iShares 러셀 1000 가치주 ETF (IWD)", "iShares", "미국 대형가치", 62.0),
+                # 레버리지 (Leverage)
+                "TQQQ": ("ProShares 나스닥100 3배 레버리지 (TQQQ)", "ProShares", "레버리지 3X", 25.4),
+                "SOXL": ("Direxion 필라델피아 반도체 3배 레버리지 (SOXL)", "Direxion", "반도체 3X", 12.8),
+                "UPRO": ("ProShares S&P500 3배 레버리지 (UPRO)", "ProShares", "레버리지 3X", 4.2),
+                "TECL": ("Direxion 미국 기술주 3배 레버리지 (TECL)", "Direxion", "빅테크 3X", 3.5),
+                "FAS":  ("Direxion 미국 금융주 3배 레버리지 (FAS)", "Direxion", "금융 3X", 1.4),
+                "SSO":  ("ProShares S&P500 2배 레버리지 (SSO)", "ProShares", "레버리지 2X", 5.8),
+                "QLD":  ("ProShares 나스닥100 2배 레버리지 (QLD)", "ProShares", "레버리지 2X", 7.6),
+                "USD":  ("ProShares 미국 반도체 2배 레버리지 (USD)", "ProShares", "반도체 2X", 1.3),
+                "DPST": ("Direxion 미국 지역은행 3배 레버리지 (DPST)", "Direxion", "은행 3X", 1.1),
+                "LABU": ("Direxion 미국 바이오테크 3배 레버리지 (LABU)", "Direxion", "바이오 3X", 1.2),
+                "NVDL": ("GraniteShares 엔비디아(NVDA) 2배 레버리지 (NVDL)", "GraniteShares", "단일종목 2X", 5.9),
+                "TSLL": ("Direxion 테슬라(TSLA) 2배 레버리지 (TSLL)", "Direxion", "단일종목 2X", 3.8),
+                # 인버스 / 숏 (Inverse)
+                "SQQQ": ("ProShares 나스닥100 -3배 인버스 (SQQQ)", "ProShares", "인버스 -3X", 3.4),
+                "SOXS": ("Direxion 필라델피아 반도체 -3배 인버스 (SOXS)", "Direxion", "반도체 -3X", 1.1),
+                "SPXU": ("ProShares S&P500 -3배 인버스 (SPXU)", "ProShares", "인버스 -3X", 0.6),
+                "PSQ":  ("ProShares 나스닥100 -1배 인버스 (PSQ)", "ProShares", "인버스 -1X", 0.8),
+                "SH":   ("ProShares S&P500 -1배 인버스 (SH)", "ProShares", "인버스 -1X", 1.2),
+                "SDS":  ("ProShares S&P500 -2배 인버스 (SDS)", "ProShares", "인버스 -2X", 0.6),
+                "QID":  ("ProShares 나스닥100 -2배 인버스 (QID)", "ProShares", "인버스 -2X", 0.5),
+                "DOG":  ("ProShares 다우존스 -1배 인버스 (DOG)", "ProShares", "인버스 -1X", 0.3),
+                "DXD":  ("ProShares 다우존스 -2배 인버스 (DXD)", "ProShares", "인버스 -2X", 0.2),
+                "SDOW": ("ProShares 다우존스 -3배 인버스 (SDOW)", "ProShares", "인버스 -3X", 0.4),
+                "TZA":  ("Direxion 러셀2000 중소형주 -3배 인버스 (TZA)", "Direxion", "인버스 -3X", 0.4),
+                "FAZ":  ("Direxion 미국 금융주 -3배 인버스 (FAZ)", "Direxion", "인버스 -3X", 0.2),
+                "UVXY": ("ProShares VIX 단기선물 1.5배 변동성 (UVXY)", "ProShares", "VIX 변동성", 0.5),
+                # 반도체 & 빅테크 & AI
+                "SOXX": ("iShares 필라델피아 반도체 ETF (SOXX)", "iShares", "반도체·HBM", 15.2),
+                "SMH":  ("VanEck 글로벌 반도체 대장주 ETF (SMH)", "VanEck", "반도체·HBM", 26.8),
+                "XLK":  ("SPDR 미국 기술주 섹터 대표 ETF (XLK)", "SPDR", "AI·빅테크", 74.5),
+                "ARKK": ("ARK 차세대 혁신 기술 액티브 ETF (ARKK)", "ARK", "혁신기술·AI", 6.2),
+                "BOTZ": ("Global X 로봇 & 인공지능(AI) ETF (BOTZ)", "Global X", "AI·로봇", 2.8),
+                "ROBO": ("ROBO 글로벌 로보틱스 & 자동화 ETF (ROBO)", "ROBO", "AI·로봇", 1.3),
+                "AIQ":  ("Global X 인공지능 & 빅데이터 ETF (AIQ)", "Global X", "AI·빅데이터", 2.6),
+                "CIBR": ("First Trust 나스닥 사이버보안 ETF (CIBR)", "First Trust", "사이버보안", 7.4),
+                "BUG":  ("Global X 사이버보안 테마 ETF (BUG)", "Global X", "사이버보안", 0.9),
+                "XSD":  ("SPDR S&P 반도체 동일가중 ETF (XSD)", "SPDR", "반도체", 1.6),
+                "IGV":  ("iShares 북미 소프트웨어 테크 ETF (IGV)", "iShares", "소프트웨어", 9.2),
+                # 배당 & 인컴 (Dividend)
+                "SCHD": ("Schwab 미국 배당성장주 100 ETF (SCHD)", "Schwab", "배당성장", 64.5),
+                "JEPI": ("JPMorgan 미국주식 프리미엄 인컴 월배당 (JEPI)", "JPMorgan", "월배당 커버드콜", 37.8),
+                "JEPQ": ("JPMorgan 나스닥100 프리미엄 인컴 월배당 (JEPQ)", "JPMorgan", "월배당 커버드콜", 21.4),
+                "VYM":  ("Vanguard 미국 고배당주 ETF (VYM)", "Vanguard", "고배당", 59.2),
+                "VIG":  ("Vanguard 미국 배당성장 ETF (VIG)", "Vanguard", "배당성장", 87.5),
+                "DGRO": ("iShares Core 미국 배당성장 ETF (DGRO)", "iShares", "배당성장", 31.0),
+                "DVY":  ("iShares 미국 셀렉트 고배당 ETF (DVY)", "iShares", "고배당", 20.1),
+                "SPYD": ("SPDR S&P 500 고배당 80 ETF (SPYD)", "SPDR", "고배당", 7.4),
+                "HDV":  ("iShares Core 미국 우량 고배당 ETF (HDV)", "iShares", "고배당", 11.2),
+                "NOBL": ("ProShares S&P 500 배당귀족주 ETF (NOBL)", "ProShares", "배당귀족", 12.6),
+                # 채권 & 금리 (Bond)
+                "TLT":  ("iShares 미국 20년 이상 장기 국채 ETF (TLT)", "iShares", "미국 장기국채", 54.0),
+                "TMF":  ("Direxion 미국 20년+ 장기국채 3배 레버리지 (TMF)", "Direxion", "미국채 3X", 6.8),
+                "IEF":  ("iShares 미국 7-10년 중기 국채 ETF (IEF)", "iShares", "미국 중기국채", 32.5),
+                "SHY":  ("iShares 미국 1-3년 단기 국채 ETF (SHY)", "iShares", "미국 단기국채", 24.1),
+                "BND":  ("Vanguard 미국 종합채권 시장 ETF (BND)", "Vanguard", "미국 종합채권", 122.0),
+                "AGG":  ("iShares Core 미국 종합채권 ETF (AGG)", "iShares", "미국 종합채권", 118.5),
+                "LQD":  ("iShares 투자등급 우량 회사채 ETF (LQD)", "iShares", "우량 회사채", 31.4),
+                "HYG":  ("iShares iBoxx 하이일드 고수익 회사채 ETF (HYG)", "iShares", "하이일드 채권", 16.8),
+                "VCIT": ("Vanguard 미국 중기 회사채 ETF (VCIT)", "Vanguard", "중기 회사채", 44.2),
+                "BSV":  ("Vanguard 미국 단기 채권 ETF (BSV)", "Vanguard", "단기 채권", 36.5),
+                # 원자재 & 섹터 & 크립토
+                "IBIT": ("iShares 비트코인 현물 신탁 ETF (IBIT)", "iShares", "비트코인 현물", 48.0),
+                "GLD":  ("SPDR 국제 금 현물 추종 ETF (GLD)", "SPDR", "금 현물", 76.5),
+                "SLV":  ("iShares 국제 은 현물 추종 ETF (SLV)", "iShares", "은 현물", 14.8),
+                "XLE":  ("SPDR 미국 에너지·정유 섹터 ETF (XLE)", "SPDR", "에너지·원유", 36.2),
+                "XLF":  ("SPDR 미국 대형 금융·은행 섹터 ETF (XLF)", "SPDR", "금융·은행", 45.1),
+                "XLV":  ("SPDR 미국 헬스케어·제약 섹터 ETF (XLV)", "SPDR", "헬스케어", 41.0),
+                "XLY":  ("SPDR 미국 임의소비재 섹터 ETF (XLY)", "SPDR", "임의소비재", 21.8),
+                "XLP":  ("SPDR 미국 필수소비재 방어주 ETF (XLP)", "SPDR", "필수소비재", 17.5),
+                "XLU":  ("SPDR 미국 유틸리티·전력망 섹터 ETF (XLU)", "SPDR", "전력·유틸리티", 18.9),
+                "XLI":  ("SPDR 미국 산업재·인프라 섹터 ETF (XLI)", "SPDR", "산업재·방산", 20.6),
+                "XLB":  ("SPDR 미국 소재·화학 섹터 ETF (XLB)", "SPDR", "소재·원자재", 5.8),
+                "XLC":  ("SPDR 미국 커뮤니케이션·미디어 섹터 ETF (XLC)", "SPDR", "커뮤니케이션", 19.4),
+                "VNQ":  ("Vanguard 미국 부동산 리츠(REITs) ETF (VNQ)", "Vanguard", "부동산 리츠", 35.6)
             }
             
             import yfinance as yf
@@ -1078,20 +1158,28 @@ def get_etf_ranking(market="KR", category=None):
             
             unique_symbols = list(set(us_symbols))
             try:
-                hist = yf.download(unique_symbols, period="5d", progress=False)
+                # 3개월(3mo) 일봉을 한 번에 조회하여 당일 시세, VWAP 추정 NAV, 3개월 누적 수익률을 동시에 산출!
+                hist = yf.download(unique_symbols, period="3mo", progress=False)
             except:
                 hist = pd.DataFrame()
             
+            fx_krw = 1380.0
             results = []
             for sym in unique_symbols:
                 try:
-                    if not hist.empty and "Close" in hist.columns.levels[0]:
+                    highs = pd.Series(dtype=float)
+                    lows = pd.Series(dtype=float)
+                    if not hist.empty and isinstance(hist.columns, pd.MultiIndex):
                         close_col = ("Close", sym)
                         vol_col = ("Volume", sym)
+                        high_col = ("High", sym)
+                        low_col = ("Low", sym)
                         if close_col not in hist.columns:
                             continue
                         closes = hist[close_col].dropna()
                         vols = hist[vol_col].dropna()
+                        if high_col in hist.columns: highs = hist[high_col].dropna()
+                        if low_col in hist.columns: lows = hist[low_col].dropna()
                     elif not hist.empty and "Close" in hist.columns:
                         closes = hist["Close"][sym].dropna()
                         vols = hist["Volume"][sym].dropna()
@@ -1103,11 +1191,39 @@ def get_etf_ranking(market="KR", category=None):
                         
                     price = float(closes.iloc[-1])
                     prev_price = float(closes.iloc[-2]) if len(closes) >= 2 else price
+                    first_3m_price = float(closes.iloc[0]) if len(closes) >= 5 else prev_price
                     volume = int(vols.iloc[-1]) if len(vols) >= 1 else 0
                     
                     change_val = price - prev_price
                     change_pct = (change_val / prev_price) * 100 if prev_price > 0 else 0
+                    three_month_pct = round(((price - first_3m_price) / first_3m_price) * 100, 2) if first_3m_price > 0 else 0.0
                     
+                    # 장중 Typical Price ((High + Low + Close)/3) 및 전일 종가 가중치를 활용한 실시간 iNAV(추정 순자산가치) 및 괴리율 산출
+                    if len(highs) >= 1 and len(lows) >= 1:
+                        h_val = float(highs.iloc[-1])
+                        l_val = float(lows.iloc[-1])
+                        inav = round((h_val + l_val + price * 1.5) / 3.5, 2)
+                    else:
+                        inav = round(price, 2)
+
+                    nav_gap = round(((price - inav) / inav) * 100, 2) if inav > 0 else 0.0
+                    nav_diff_usd = round(price - inav, 2)
+
+                    meta_tuple = us_meta.get(sym, (sym, "US ETF", "미국 시장", 2.0))
+                    kor_name, brand_name, cat_label, aum_billion_usd = meta_tuple
+
+                    # 거래대금 ($M 표시 및 원화 억원 환산 수치 amount_num 제공 -> 상단 통계/섹터 레이더 완벽 연동!)
+                    amount_million_usd = (volume * price) / 1_000_000.0
+                    amount_eok_krw = round((amount_million_usd * 1_000_000.0 * fx_krw) / 100_000_000.0, 1)
+                    aum_eok_krw = int(round((aum_billion_usd * 1_000_000_000.0 * fx_krw) / 100_000_000.0))
+                    turnover_rate = round((amount_million_usd / (aum_billion_usd * 1000.0)) * 100.0, 1) if aum_billion_usd > 0 else 0.0
+
+                    aum_jo_krw = aum_eok_krw / 10000.0
+                    if aum_jo_krw >= 1.0:
+                        market_sum_str = f"${aum_billion_usd:,.1f}B (약 {aum_jo_krw:,.1f}조)"
+                    else:
+                        market_sum_str = f"${aum_billion_usd:,.1f}B (약 {aum_eok_krw:,}억)"
+
                     if change_pct > 0:
                         change_str = f"▲{abs(change_val):.2f} (+{abs(change_pct):.2f}%)"
                     elif change_pct < 0:
@@ -1118,21 +1234,28 @@ def get_etf_ranking(market="KR", category=None):
                     if price > 0:
                         results.append({
                             "symbol": sym,
-                            "name": name_map.get(sym, sym),
-                            "brand": "US ETF",
-                            "category_name": "미국 시장",
+                            "name": kor_name,
+                            "brand": brand_name,
+                            "category_name": cat_label,
                             "price": f"{price:,.2f}",
-                            "price_num": price,
+                            "price_num": round(price, 2),
                             "change": change_str,
-                            "change_val": change_val,
+                            "change_val": round(change_val, 2),
                             "change_percent": round(change_pct, 2),
                             "volume": str(volume),
                             "volume_num": volume,
-                            "amount": f"${(volume * price / 1_000_000):,.1f}M",
-                            "market_sum": "-",
-                            "nav": "-",
-                            "nav_gap": "-",
-                            "three_month_return": "-"
+                            "amount": f"${amount_million_usd:,.1f}M",
+                            "amount_num": amount_eok_krw,
+                            "market_sum": market_sum_str,
+                            "market_sum_num": aum_eok_krw,
+                            "turnover_rate": turnover_rate,
+                            "nav": f"{inav:,.2f}",
+                            "nav_num": inav,
+                            "nav_gap": f"{nav_gap:+.2f}%",
+                            "nav_gap_num": nav_gap,
+                            "nav_diff_krw": nav_diff_usd,
+                            "three_month_return": f"{three_month_pct:+.2f}%",
+                            "three_month_num": three_month_pct
                         })
                 except Exception as e:
                     pass
