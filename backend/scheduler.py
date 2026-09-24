@@ -447,10 +447,8 @@ async def check_and_notify_disclosures():
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Firestore error: {e}")
 
-                    # ✅ [글로벌 푸시 발송 - 문턱 강화]
-                    # 단일판매(공급계약), 임원 매매, 유상증자 등은 빈번하므로 전체 글로벌 푸시에서 제외!
-                    # 오직 시장 전체를 뒤흔드는 초특급 공시(is_super_global)만 전체 사용자에게 발송합니다.
-                    if is_super_global:
+                    # ✅ [글로벌 푸시 발송: 대주주/내부자 지분변동, 슈퍼개미 5% 대량보유, 주요 공시 팩트 알림, 초특급 공시]
+                    if is_whale and not skip_whale_alert:
                         try:
                             from db_manager import get_all_fcm_tokens_with_user
                             whale_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
@@ -471,12 +469,9 @@ async def check_and_notify_disclosures():
                                     "is_global": "true"
                                 }
                                 send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids)
-                                logger.info(f"[WhaleSiren] [초특급 글로벌 특보] Sent FCM to {len(w_tokens)} users for {corp}")
+                                logger.info(f"[WhaleSiren] [글로벌 핵심공시/지분변동 푸시] Sent FCM to {len(w_tokens)} users for {corp}: {w_title}")
                         except Exception as push_e:
                             logger.error(f"[WhaleSiren] Global FCM error: {push_e}")
-
-                        except Exception as e:
-                            logger.error(f"[WhaleSiren] Firestore error: {e}")
 
                 # 관심종목 등록 여부 확인 (KS / KQ 접미사 모두 시도)
                 symbol_candidates = [f"{raw_code}.KS", f"{raw_code}.KQ", raw_code]
@@ -497,7 +492,7 @@ async def check_and_notify_disclosures():
                             break
 
                 if is_whale:
-                    noti_title = w_title
+                    noti_title = f"{prefix_title} {market_tag} {corp}".strip()
                     body_parts = [fact_str if fact_str else f"📌 {report_title}"]
                     if rcept_dt and len(rcept_dt) >= 8:
                         dt_fmt = f"📅 공시 접수: {rcept_dt[4:6]}월 {rcept_dt[6:8]}일"
@@ -524,16 +519,15 @@ async def check_and_notify_disclosures():
                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                 }
 
-                # 알림 센터 저장 및 관심종목 유저 푸시 발송
-                if is_super_global:
-                    # 초특급 글로벌 공시는 위에서 이미 전체 푸시 발송 및 글로벌 저장이 완료됨
-                    pass
+                # 알림 센터 저장 및 관심종목 유저 추가 푸시 발송
+                if is_whale and not skip_whale_alert:
+                    # 핵심 공시(대주주/내부자, 슈퍼개미 5%, 공시팩트, 초특급)는 위에서 글로벌 푸시 및 알림센터 글로벌 저장이 완료됨
+                    if tokens:
+                        data_payload["skip_db_save"] = True
+                        send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
+                        sent_count += 1
                 else:
-                    # 단일판매(공급계약), 임원 매매, 슈퍼개미, 유상증자 등 일반/스마트 공시는
-                    # 오직 해당 종목을 관심종목으로 등록한 사용자에게만 타겟팅 저장 및 발송!
-                    if not tokens:
-                        continue  # 관심종목 등록 사용자 없음 -> 푸시 및 개인 저장 스킵
-
+                    # 일반 공시도 알림센터(DART 공시 속보 탭)에는 무조건 글로벌(is_global=True)로 저장하여 언제든 볼 수 있게 보장!
                     try:
                         from firebase_config import save_alert_to_firestore
                         save_alert_to_firestore(
@@ -541,20 +535,21 @@ async def check_and_notify_disclosures():
                             body=noti_body,
                             alert_type="disclosure_alert",
                             url=data_payload["url"],
-                            is_global=False,  # 초특급 공시가 아니므로 관심종목 등록 유저 전용!
+                            is_global=True,
                             target_users=target_uids,
                             symbol=data_payload["symbol"],
                             dart_url=data_payload["dart_url"]
                         )
-                        logger.info(f"[공시Monitor] 관심종목 공시 알림센터 저장: {corp} ({len(tokens)}명)")
+                        logger.info(f"[공시Monitor] 알림센터 글로벌 저장 완료: {corp} ({noti_title})")
                     except Exception as save_e:
                         logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
 
-                    data_payload["skip_db_save"] = True
-                    logger.info(f"[공시Monitor] [관심종목 맞춤 알림] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
-                    send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
-                    sent_count += 1
-                    await asyncio.sleep(0.5)
+                    if tokens:
+                        data_payload["skip_db_save"] = True
+                        logger.info(f"[공시Monitor] [관심종목 맞춤 알림] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
+                        send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
+                        sent_count += 1
+                        await asyncio.sleep(0.5)
 
             except Exception as item_e:
                 logger.error(f"[공시Monitor] Error processing item {doc_id}: {item_e}")
@@ -585,13 +580,8 @@ async def check_and_notify_sec_disclosures():
     weekday = now.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
     hour = now.hour
 
-    # KST 기준 미국 장 평일 거래 시간 (월요일 22:00 ~ 토요일 06:00 KST)
-    # 토요일 06:00 ~ 월요일 22:00 KST는 주말 휴장이므로 공시 알림 스킵
-    is_us_trading_window = (
-        (weekday == 0 and hour >= 22) or
-        (weekday in [1, 2, 3, 4] and ((hour >= 22) or (hour < 6))) or
-        (weekday == 5 and hour < 6)
-    )
+    # KST 기준 평일 및 토요일 오전(미국 금요일 장마감/애프터마켓 공시 접수 시간)까지 상시 감시
+    is_us_trading_window = (weekday < 5) or (weekday == 5 and hour < 12)
     if not is_us_trading_window:
         logger.debug(f"[SEC Monitor] 주말/미국 휴장 시간 ({now.strftime('%a %H:%M')} KST), 해외 공시 알림 스킵.")
         return
@@ -1491,13 +1481,8 @@ async def sec_whale_scheduler_loop():
             weekday = now.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
             hour = now.hour
 
-            # KST 기준 미국 장 평일 거래 시간 (월요일 22:00 ~ 토요일 06:00 KST)
-            # 토요일 06:00 ~ 월요일 22:00 KST는 주말 휴장이므로 고래 알림 스킵
-            is_us_trading_window = (
-                (weekday == 0 and hour >= 22) or
-                (weekday in [1, 2, 3, 4] and ((hour >= 22) or (hour < 6))) or
-                (weekday == 5 and hour < 6)
-            )
+            # KST 기준 평일 및 토요일 오전(미국 금요일 장마감/애프터마켓 공시 접수 시간)까지 상시 감시
+            is_us_trading_window = (weekday < 5) or (weekday == 5 and hour < 12)
 
             if is_us_trading_window:
                 logger.info("[Whale SEC] Checking SEC Form4 & 13F filings...")
