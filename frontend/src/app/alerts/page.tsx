@@ -141,23 +141,41 @@ export default function AlertCenterPage() {
                     // 1. 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
                     if (isAdminType && !isAdmin) return;
 
-                    // 2. 공공 시장 정보(SEC 해외 공시, DART 국내 공시, 세력 매집, 시장 시황 등)는 비로그인 방문자도 전원 열람 허용
-                    const isPublicMarketInfo = [
-                        'sec_insider_trading', 'sec_13f', 'sec_disclosure',
-                        'disclosure_alert', 'disclosure', 'large_holding',
-                        'insider_trading', 'whale_accumulation', 'whale_alert',
-                        'market_open', 'market_summary', 'quant_scanner', 'theory_alert', 'system_alert'
-                    ].includes(data.type) ||
-                    (data.title || '').includes('[SEC]') ||
-                    (data.title || '').includes('[DART]') ||
-                    (data.title || '').includes('[미국]') ||
-                    (data.title || '').includes('Form 4') ||
-                    (data.title || '').includes('13F') ||
-                    (data.title || '').includes('1타 강사') ||
-                    (data.url && String(data.url).includes('sec.gov'));
+                    // 2. 순수 개인 맞춤형 알림(내 관심종목 시가, 내 관심종목 섹터 지수 결산, 내 관심종목 마감 결산, 맞춤 모닝팩트 등) 판별
+                    const titleStr = (data.title || '').trim();
+                    const isPersonalWatchlistAlert =
+                        ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(data.type) ||
+                        (data.type === 'market_summary' && (hasTargetUsers || !isGlobal || titleStr.includes('시장·섹터 지수 결산'))) ||
+                        titleStr.includes('관심종목 시가') ||
+                        titleStr.includes('시가 알림') ||
+                        titleStr.includes('관심종목 결산') ||
+                        titleStr.includes('내 관심종목 결산') ||
+                        titleStr.includes('시장·섹터 지수 결산') ||
+                        titleStr.includes('간추린 모닝');
 
-                    // 3. [보안 철저] 특정 유저 대상 순수 개인 맞춤 알림(개인 관심종목 결산, 맞춤 모닝팩트 등)은 본인(isTargeted)이 아니면 무조건 차단!
-                    if (!isPublicMarketInfo) {
+                    // 3. 공공 시장 정보(SEC 해외 공시, DART 국내 공시, 세력 매집, 공식 전체 시황 브리핑 등)만 비로그인/전체 열람 허용
+                    const isPublicMarketInfo = !isPersonalWatchlistAlert && (
+                        [
+                            'sec_insider_trading', 'sec_13f', 'sec_disclosure',
+                            'disclosure_alert', 'disclosure', 'large_holding',
+                            'insider_trading', 'whale_accumulation', 'whale_alert',
+                            'quant_scanner', 'theory_alert', 'system_alert'
+                        ].includes(data.type) ||
+                        (data.type === 'market_summary' && isGlobal && !hasTargetUsers) ||
+                        titleStr.includes('[SEC]') ||
+                        titleStr.includes('[DART]') ||
+                        titleStr.includes('[미국]') ||
+                        titleStr.includes('Form 4') ||
+                        titleStr.includes('13F') ||
+                        titleStr.includes('1타 강사') ||
+                        titleStr.includes('[스톡 트렌드]') ||
+                        (data.url && String(data.url).includes('sec.gov'))
+                    );
+
+                    // 4. [보안 철저] 개인 맞춤 알림(isPersonalWatchlistAlert)이거나 target_users가 지정된 알림은
+                    // 반드시 로그인한 본인(isTargeted)에게만 허용하고, 타인/비로그인 방문자에게는 100% 차단!
+                    if (isPersonalWatchlistAlert || !isPublicMarketInfo) {
+                        if (isPersonalWatchlistAlert && !isTargeted) return;
                         if (hasTargetUsers && !isTargeted) return;
                         if (!isGlobal && !isTargeted) return;
                     }
@@ -1809,7 +1827,7 @@ function formatUsdToKrwInText(text: string): string {
         // [1-2순위: 장시작 시가 알림]
         else if ((alert.body || '').includes('관심종목 시가입니다') || (alert.body || '').includes('시가입니다') || titleText.includes('시가 알림') || titleText.includes('장시작')) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
-            typeBadgeLabel = "☀️ 장시작 시가 알림";
+            typeBadgeLabel = "☀️ 내 관심종목 시가 알림";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
             accentBorder = "border-l-4 border-l-amber-400";
             defaultCta = { href: "/watchlist", label: "내 관심종목 실시간 시세 보기", icon: TrendingUp, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
@@ -1817,16 +1835,17 @@ function formatUsdToKrwInText(text: string): string {
         // [2순위: 리포트 및 결산]
         else if (isPortfolio) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
-            typeBadgeLabel = "👑 관심종목 마감 결산";
+            typeBadgeLabel = "👑 내 관심종목 마감 결산";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
             accentBorder = "border-l-4 border-l-amber-400";
             defaultCta = { href: "/watchlist", label: "관심종목 포트폴리오 관리", icon: Crown, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         } else if (isMarketSummary) {
+            const isPersonalSectorSummary = titleText.includes('시장·섹터 지수') || titleText.includes('지수 결산') || (Array.isArray(alert.target_users) && alert.target_users.length > 0) || alert.is_global === false;
             typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
-            typeBadgeLabel = "🌕 마켓 장마감 시황";
+            typeBadgeLabel = isPersonalSectorSummary ? "📊 내 관심섹터·지수 결산" : "🌕 마켓 장마감 시황";
             cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
             accentBorder = "border-l-4 border-l-indigo-400";
-            defaultCta = { href: "/blog", label: "마켓 심층 브리핑 전문 읽기", icon: Globe, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
+            defaultCta = { href: isPersonalSectorSummary ? "/watchlist" : "/blog", label: isPersonalSectorSummary ? "내 관심종목 & 섹터 지수 확인" : "마켓 심층 브리핑 전문 읽기", icon: Globe, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
         } 
         // [3순위: 세력 및 외국인·기관 수급 특보]
         else if (isWhale) {
@@ -1894,6 +1913,14 @@ function formatUsdToKrwInText(text: string): string {
             defaultCta = { href: "/premium", label: "VIP 프리미엄 리포트 열람", icon: Crown, style: "bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border-purple-500/30" };
         }
 
+        const isPrivatePersonalCard =
+            ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(alert.type) ||
+            (alert.type === 'market_summary' && ((Array.isArray(alert.target_users) && alert.target_users.length > 0) || alert.is_global === false || titleText.includes('시장·섹터 지수 결산'))) ||
+            titleText.includes('관심종목 시가') ||
+            titleText.includes('시가 알림') ||
+            titleText.includes('관심종목 결산') ||
+            titleText.includes('시장·섹터 지수 결산');
+
         const cardContent = (
             <div className={`relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-black border border-white/10 ${accentBorder} ${cardBorderHover} rounded-3xl p-5 md:p-6 transition-all duration-300 shadow-2xl w-full text-left overflow-hidden group`}>
                 {/* Header Row: Type Badge + Market Badge + Timestamp */}
@@ -1902,6 +1929,11 @@ function formatUsdToKrwInText(text: string): string {
                         <span className={`px-3 py-1 rounded-xl text-xs font-black border flex items-center gap-1.5 ${typeBadgeStyle}`}>
                             {typeBadgeLabel}
                         </span>
+                        {isPrivatePersonalCard && (
+                            <span className="px-2.5 py-1 rounded-xl text-[11px] font-black border bg-emerald-500/15 text-emerald-300 border-emerald-500/35 tracking-tight shadow-sm flex items-center gap-1">
+                                🔒 내 맞춤 알림 (나에게만 표시)
+                            </span>
+                        )}
                         {marketBadge && (
                             <span className={`px-2.5 py-1 rounded-xl text-xs font-black border font-mono tracking-tight shadow-sm ${marketBadge.style}`}>
                                 {marketBadge.label}
@@ -1936,6 +1968,12 @@ function formatUsdToKrwInText(text: string): string {
                         if (t.includes('시황 브리핑') || t.includes('모닝 브리핑')) {
                             t = t.replace(/^[^\w\[\s가-힣]*/, '').trim();
                             return t.includes('모닝') ? `🌅 ${t}` : `📈 ${t}`;
+                        }
+
+                        // [보정] 시장·섹터 지수 결산 알림 제목 교정 (깨진 기호 방지 및 📊 부여)
+                        if (t.includes('지수 결산') || t.includes('시장·섹터 지수')) {
+                            t = t.replace(/^[^\w\[\s가-힣]*/, '').trim();
+                            return `📊 ${t}`;
                         }
 
                         // [보정] 관심종목 결산 알림 제목 교정 (깨진 기호 방지 및 👑 부여)
@@ -2148,30 +2186,50 @@ function formatUsdToKrwInText(text: string): string {
             return false;
         }
 
-        // [보안 강화] 비로그인 상태(!user)에서는 어떤 탭(전체 브리핑 포함)에서도 개인 맞춤 알림 일절 노출 금지
-        // (단, SEC 해외 공시, DART 국내 공시, 세력 매집, 시장 시황, 퀀트 시세 등 공공 정보는 비로그인 상태에서도 모두 열람 가능)
-        const isPublicMarketAlert = [
-            'sec_insider_trading', 'sec_13f', 'sec_disclosure',
-            'disclosure_alert', 'disclosure', 'large_holding',
-            'insider_trading', 'whale_accumulation', 'whale_alert',
-            'market_open', 'market_summary', 'quant_scanner', 'theory_alert', 'system_alert'
-        ].includes(alert.type) ||
-        titleText.includes('[SEC]') ||
-        titleText.includes('[DART]') ||
-        titleText.includes('[미국]') ||
-        titleText.includes('Form 4') ||
-        titleText.includes('13F') ||
-        titleText.includes('1타 강사') ||
-        titleText.includes('퀀트') ||
-        (alert.url && String(alert.url).includes('sec.gov'));
+        // [보안 강화] 개인 맞춤 알림(장시작 관심종목 시가, 내 관심섹터·지수 결산, 내 관심종목 결산 등)은
+        // 비로그인 상태(!user) 또는 타인 계정에서는 어떤 탭(전체 브리핑 포함)에서도 일절 노출 금지!
+        const hasTargetUsers = Array.isArray(alert.target_users) && alert.target_users.length > 0;
+        const isTargetedToMe = Boolean(user && !user.is_guest && hasTargetUsers && alert.target_users.includes(user.id));
+
+        const isPersonalWatchlistAlert =
+            ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(alert.type) ||
+            (alert.type === 'market_summary' && (hasTargetUsers || !alert.is_global || titleText.includes('시장·섹터 지수 결산'))) ||
+            titleText.includes('관심종목 시가') ||
+            titleText.includes('시가 알림') ||
+            titleText.includes('관심종목 결산') ||
+            titleText.includes('내 관심종목 결산') ||
+            titleText.includes('시장·섹터 지수 결산') ||
+            titleText.includes('간추린 모닝');
+
+        if (isPersonalWatchlistAlert && !isTargetedToMe) {
+            return false;
+        }
+
+        const isPublicMarketAlert = !isPersonalWatchlistAlert && (
+            [
+                'sec_insider_trading', 'sec_13f', 'sec_disclosure',
+                'disclosure_alert', 'disclosure', 'large_holding',
+                'insider_trading', 'whale_accumulation', 'whale_alert',
+                'quant_scanner', 'theory_alert', 'system_alert'
+            ].includes(alert.type) ||
+            (alert.type === 'market_summary' && alert.is_global === true && !hasTargetUsers) ||
+            titleText.includes('[SEC]') ||
+            titleText.includes('[DART]') ||
+            titleText.includes('[미국]') ||
+            titleText.includes('Form 4') ||
+            titleText.includes('13F') ||
+            titleText.includes('1타 강사') ||
+            titleText.includes('퀀트') ||
+            titleText.includes('[스톡 트렌드]') ||
+            (alert.url && String(alert.url).includes('sec.gov'))
+        );
 
         const isPersonalAlert = !isPublicMarketAlert && (
+            isPersonalWatchlistAlert ||
             !alert.is_global || 
-            (Array.isArray(alert.target_users) && alert.target_users.length > 0) ||
-            ['portfolio_summary', 'portfolio'].includes(alert.type) ||
-            titleText.includes('관심종목 결산') || titleText.includes('내 관심종목 결산') || titleText.includes('간추린 모닝')
+            hasTargetUsers
         );
-        if (isPersonalAlert && (!user || user.is_guest)) {
+        if (isPersonalAlert && !isTargetedToMe) {
             return false;
         }
 
