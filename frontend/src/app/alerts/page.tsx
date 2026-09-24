@@ -1853,6 +1853,14 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-sky-400";
             defaultCta = { href: alert.url || (alert.symbol ? `/discovery?q=${alert.symbol}` : "/discovery"), label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
         }
+        // [4-1순위: 스톡 트렌드 공식 시황 브리핑 / 텔레그램 연동 브리핑]
+        else if (alert.type === 'system_alert' || titleText.includes('[스톡 트렌드]') || titleText.includes('시황 브리핑 업데이트')) {
+            typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
+            typeBadgeLabel = "🌕 공식 장마감 시황 브리핑";
+            cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
+            accentBorder = "border-l-4 border-l-indigo-400";
+            defaultCta = { href: alert.url || "/signals", label: "오늘의 시장 수급 & 퀀트 시그널 보러가기", icon: TrendingUp, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
+        }
         // [5순위: 주도 테마 레이더]
         else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운 테마") || combinedText.includes("대장주") || combinedText.includes("급등주")) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
@@ -1918,10 +1926,17 @@ function formatUsdToKrwInText(text: string): string {
                     {(() => {
                         let t = (alert.title || '')
                             .replace(/[\uFFFD\uFFFE\uFFFF]/g, '') // 깨진 물음표 기호 제거
+                            .replace(/(?:[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF])/g, '') // 깨진 반쪽짜리 이모지(서로게이트) 완벽 제거
                             .replace(/^👤\s*/, '🚨 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 👤를 🚨로 안전 대체
                             .replace(/^💰\s*/, '👑 ') // 윈도우 등 특정 폰트 깨짐 방지 위해 💰를 👑로 안전 대체
                             .replace(/\s{2,}/g, ' ')
                             .trim();
+
+                        // [보정] 스톡 트렌드 공식 시황 브리핑 제목 교정
+                        if (t.includes('시황 브리핑') || t.includes('모닝 브리핑')) {
+                            t = t.replace(/^[^\w\[\s가-힣]*/, '').trim();
+                            return t.includes('모닝') ? `🌅 ${t}` : `📈 ${t}`;
+                        }
 
                         // [보정] 관심종목 결산 알림 제목 교정 (깨진 기호 방지 및 👑 부여)
                         if (t.includes('관심종목 결산') || t.includes('내 관심종목 결산')) {

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import requests
 from dotenv import load_dotenv
@@ -47,7 +48,9 @@ def send_telegram_message(message: str):
 
                 lines = [l.strip() for l in clean_text.strip().split('\n') if l.strip()]
                 title = lines[0] if lines else "📢 텔레그램 공지"
+                title = title.encode("utf-8", errors="ignore").decode("utf-8")
                 body = "\n".join(lines[1:]).strip() if len(lines) > 1 else clean_text
+                body = body.encode("utf-8", errors="ignore").decode("utf-8")
 
                 save_alert_to_firestore(title=title, body=body, alert_type="system_alert", url=detected_url)
             except Exception as fe:
