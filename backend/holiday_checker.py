@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 from datetime import datetime, timezone, timedelta
 import holidays
 
@@ -13,6 +13,9 @@ def is_holiday(market_type: str) -> bool:
         # 주말 체크 (5: 토요일, 6: 일요일)
         if today_date.weekday() >= 5:
             return True
+        # 서버 연도(2026) 달력상 9/24~9/25가 추석 연휴로 잡혀 평일 장마감/모닝 알림이 스킵되는 현상 방지
+        if (today_date.month, today_date.day) in [(9, 24), (9, 25)]:
+            return False
         kr_holidays = holidays.KR()
         return today_date in kr_holidays
         
