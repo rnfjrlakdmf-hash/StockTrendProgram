@@ -962,6 +962,17 @@ def get_etf_ranking(market="KR", category=None):
                     else:
                         change_str = "0 (0.00%)"
 
+                    # 단위 정규화: amount(백만원) -> amount_eok(억원), market_sum(억원)
+                    amount_eok = round(float(amount or 0) / 100.0, 1)
+                    turnover_rate = round((amount_eok / float(market_sum)) * 100.0, 1) if market_sum and market_sum > 0 else 0.0
+                    nav_diff_krw = int(round(price - nav)) if (nav and nav > 0 and price > 0) else 0
+                    if market_sum and market_sum >= 10000:
+                        jo = int(market_sum) // 10000
+                        rem_eok = int(market_sum) % 10000
+                        market_sum_str = f"{jo}조 {rem_eok:,}억" if rem_eok > 0 else f"{jo}조"
+                    else:
+                        market_sum_str = f"{int(market_sum):,}억" if market_sum else "-"
+
                     results.append({
                         "symbol": sym,
                         "name": clean_name,
@@ -975,13 +986,15 @@ def get_etf_ranking(market="KR", category=None):
                         "volume": str(volume),
                         "volume_num": volume,
                         "amount": format_krw_amount(amount),
-                        "amount_num": amount,
-                        "market_sum": f"{market_sum:,}억",
+                        "amount_num": amount_eok,
+                        "market_sum": market_sum_str,
                         "market_sum_num": market_sum,
+                        "turnover_rate": turnover_rate,
                         "nav": f"{int(nav):,}" if nav else "-",
                         "nav_num": nav,
                         "nav_gap": f"{nav_gap:+.2f}%",
                         "nav_gap_num": nav_gap,
+                        "nav_diff_krw": nav_diff_krw,
                         "three_month_return": f"{three_month:+.2f}%" if three_month is not None else "-",
                         "three_month_num": three_month or 0.0
                     })
@@ -1019,7 +1032,7 @@ def get_etf_ranking(market="KR", category=None):
                 if not matched: continue
             
             data.append(item)
-            if len(data) >= 50: break # TOP 50까지 반환
+            if len(data) >= 100: break # TOP 100까지 확장 반환
 
         return data
             

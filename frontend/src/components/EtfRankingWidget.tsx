@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { 
     TrendingUp, TrendingDown, Activity, Globe, Zap, BarChart3, 
     Search, LayoutGrid, List, ArrowUpDown, Filter, Sparkles, 
     ExternalLink, ChevronRight, ShieldAlert, ArrowUpRight,
     AlertTriangle, CheckCircle2, Clock, Coins, Building2, Flame,
-    Layers, BookOpen, HelpCircle
+    Layers, BookOpen, HelpCircle, Star, ChevronDown, ChevronUp, PieChart
 } from 'lucide-react';
 import AIDisclaimer from '@/components/AIDisclaimer';
+import { API_BASE_URL } from '@/lib/config';
+import { useAuth } from '@/context/AuthContext';
 
 export interface EtfItem {
     rank: number;
@@ -29,10 +31,12 @@ export interface EtfItem {
     amount_num?: number;
     market_sum?: string;
     market_sum_num?: number;
+    turnover_rate?: number;
     nav?: string;
     nav_num?: number;
     nav_gap?: string;
     nav_gap_num?: number;
+    nav_diff_krw?: number;
     three_month_return?: string;
     three_month_num?: number;
 }
@@ -44,13 +48,151 @@ interface EtfRankingWidgetProps {
     filterKeyword?: string | null;
 }
 
-type SortField = 'amount' | 'volume' | 'change_high' | 'change_low' | 'nav_gap' | 'three_month';
+type SortField = 'amount' | 'market_sum' | 'turnover' | 'volume' | 'change_high' | 'change_low' | 'discount_best' | 'nav_gap' | 'three_month';
 
 export default function EtfRankingWidget({ data, loading, market, filterKeyword }: EtfRankingWidgetProps) {
+    const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortField, setSortField] = useState<SortField>('amount'); // 거래대금순 기본 (시장 활력 반영)
-    const [displayLimit, setDisplayLimit] = useState<number>(50); // 기본 50위까지 표시
+    const [sortField, setSortField] = useState<SortField>('amount');
+    const [displayLimit, setDisplayLimit] = useState<number>(50);
+    const [onlyWatchlist, setOnlyWatchlist] = useState<boolean>(false);
+
+    // 관심종목(ETF 포함) 상태 관리
+    const [watchlistSet, setWatchlistSet] = useState<Set<string>>(new Set());
+    const [togglingSymbol, setTogglingSymbol] = useState<string | null>(null);
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
+    const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 인라인 미니 분석 드로어(구성종목 TOP 5 · 총보수 · 배당 · 기간수익률) 상태
+    const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
+    const [detailCache, setDetailCache] = useState<Record<string, any>>({});
+    const [detailLoading, setDetailLoading] = useState<string | null>(null);
+
+    const showToast = (msg: string) => {
+        setToastMsg(msg);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => setToastMsg(null), 3800);
+    };
+
+    const fetchWatchlistSet = useCallback(async () => {
+        try {
+            const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                headers: { 'X-User-ID': currentUserId }
+            });
+            const json = await res.json();
+            if (json.status === 'success' && Array.isArray(json.data)) {
+                const set = new Set<string>();
+                json.data.forEach((item: any) => {
+                    const sym = typeof item === 'string' ? item : item.symbol;
+                    if (sym) {
+                        set.add(String(sym).toUpperCase());
+                        if (String(sym).includes('.')) {
+                            set.add(String(sym).split('.')[0].toUpperCase());
+                        }
+                    }
+                });
+                setWatchlistSet(set);
+            }
+        } catch (err) {
+            console.error('Watchlist fetch error in ETF widget:', err);
+        }
+    }, [user?.id]);
+
+    useEffect(() => {
+        fetchWatchlistSet();
+        const handleWatchlistChanged = () => fetchWatchlistSet();
+        window.addEventListener('watchlistChanged', handleWatchlistChanged);
+        return () => {
+            window.removeEventListener('watchlistChanged', handleWatchlistChanged);
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        };
+    }, [fetchWatchlistSet]);
+
+    const isSymbolSaved = (sym: string) => {
+        const clean = String(sym).toUpperCase().trim();
+        return watchlistSet.has(clean) || Array.from(watchlistSet).some(s => s === clean || s.startsWith(clean + '.'));
+    };
+
+    const toggleWatchlistEtf = async (e: React.MouseEvent, item: EtfItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const sym = String(item.symbol).trim();
+        const saved = isSymbolSaved(sym);
+        const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+        const numericPrice = item.price_num || parseFloat(String(item.price || '0').replace(/,/g, '')) || 0;
+
+        setTogglingSymbol(sym);
+        try {
+            if (saved) {
+                const targetSym = Array.from(watchlistSet).find(s => s === sym.toUpperCase() || s.startsWith(sym.toUpperCase() + '.')) || sym;
+                const res = await fetch(`${API_BASE_URL}/api/watchlist/${encodeURIComponent(targetSym)}`, {
+                    method: 'DELETE',
+                    headers: { 'X-User-ID': currentUserId }
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setWatchlistSet(prev => {
+                        const next = new Set(prev);
+                        next.delete(targetSym.toUpperCase());
+                        next.delete(sym.toUpperCase());
+                        return next;
+                    });
+                    showToast(`⭐️ [${item.name}] 관심종목(ETF 알림)에서 해제되었습니다.`);
+                    window.dispatchEvent(new CustomEvent('watchlistChanged'));
+                }
+            } else {
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-ID': currentUserId
+                    },
+                    body: JSON.stringify({
+                        symbol: sym,
+                        price: numericPrice
+                    })
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setWatchlistSet(prev => new Set(prev).add(sym.toUpperCase()));
+                    showToast(`🌟 [${item.name}] 내 관심종목에 등록 완료! (장시작 시가 · 장마감 수익률 · 괴리율 알림 자동 수신)`);
+                    window.dispatchEvent(new CustomEvent('watchlistChanged'));
+                }
+            }
+        } catch (err) {
+            console.error('ETF Watchlist toggle failed:', err);
+            showToast('⚠️ 관심종목 등록 처리 중 오류가 발생했습니다.');
+        } finally {
+            setTogglingSymbol(null);
+        }
+    };
+
+    const toggleExpandDetail = async (e: React.MouseEvent, symbol: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (expandedSymbol === symbol) {
+            setExpandedSymbol(null);
+            return;
+        }
+        setExpandedSymbol(symbol);
+        if (!detailCache[symbol]) {
+            setDetailLoading(symbol);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/market/etf-detail/${encodeURIComponent(symbol)}`);
+                const json = await res.json();
+                if (json && json.status === 'success' && json.data) {
+                    setDetailCache(prev => ({ ...prev, [symbol]: json.data }));
+                }
+            } catch (err) {
+                console.error('Failed to load ETF quick detail:', err);
+            } finally {
+                setDetailLoading(null);
+            }
+        }
+    };
 
     const isPositive = (val: string | number | undefined, percent?: number) => {
         if (percent !== undefined) return percent > 0;
@@ -72,7 +214,6 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         return parseInt(String(val).replace(/,/g, '')).toLocaleString();
     };
 
-    // 브랜드별 배지 스타일 및 운용사 이름 매핑
     const getBrandInfo = (brand?: string) => {
         const b = brand?.toUpperCase() || '';
         if (b.includes('KODEX')) return { color: 'text-blue-300 bg-blue-500/20 border-blue-500/40', company: '삼성자산운용' };
@@ -81,16 +222,59 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         if (b.includes('SOL')) return { color: 'text-cyan-300 bg-cyan-500/20 border-cyan-500/40', company: '신한자산' };
         if (b.includes('RISE') || b.includes('KBSTAR')) return { color: 'text-yellow-300 bg-yellow-500/20 border-yellow-500/40', company: 'KB자산운용' };
         if (b.includes('PLUS') || b.includes('ARIRANG')) return { color: 'text-purple-300 bg-purple-500/20 border-purple-500/40', company: '한화자산' };
-        if (b.includes('KOSEF')) return { color: 'text-indigo-300 bg-indigo-500/20 border-indigo-500/40', company: '키움자산' };
+        if (b.includes('KOSEF') || b.includes('KIWOOM')) return { color: 'text-indigo-300 bg-indigo-500/20 border-indigo-500/40', company: '키움자산' };
         if (b.includes('TIMEFOLIO')) return { color: 'text-rose-300 bg-rose-500/20 border-rose-500/40', company: '타임폴리오' };
-        return { color: 'text-zinc-300 bg-white/10 border-white/15', company: '글로벌/기타' };
+        return { color: 'text-zinc-300 bg-white/10 border-white/15', company: '글로벌 운용사' };
     };
 
-    // 실시간 검색 및 정렬 필터 적용
+    // 괴리율 정밀 해석 헬퍼 (할인/할증/적정 + 1주당 가격 차이)
+    const getNavDisparityAnalysis = (item: EtfItem) => {
+        const gap = item.nav_gap_num || 0;
+        const priceNum = item.price_num || parseFloat(String(item.price || 0).replace(/,/g, '')) || 0;
+        const navNum = item.nav_num || parseFloat(String(item.nav || 0).replace(/,/g, '')) || 0;
+        const diffVal = item.nav_diff_krw !== undefined ? item.nav_diff_krw : (priceNum > 0 && navNum > 0 ? Math.round(priceNum - navNum) : 0);
+        const unit = market === 'US' ? '$' : '원';
+
+        if (Math.abs(gap) >= 1.0) {
+            return {
+                label: gap > 0 ? '⚠️ 과열 할증 주의' : '🔥 대폭 할인(저평가)',
+                subText: diffVal !== 0 ? `NAV 대비 ${diffVal > 0 ? '+' : ''}${diffVal.toLocaleString()}${unit} ${diffVal > 0 ? '비쌈' : '저렴'}` : 'LP 호가 확인 필수',
+                badgeClass: gap > 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+                textClass: gap > 0 ? 'text-amber-400' : 'text-cyan-400'
+            };
+        }
+        if (gap <= -0.15) {
+            return {
+                label: '💡 저평가 할인',
+                subText: diffVal < 0 ? `실제가치보다 ${Math.abs(diffVal).toLocaleString()}${unit} 저렴` : 'NAV 대비 할인 거래 중',
+                badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+                textClass: 'text-cyan-300'
+            };
+        }
+        if (gap >= 0.15) {
+            return {
+                label: '🔸 소폭 할증',
+                subText: diffVal > 0 ? `실제가치보다 +${diffVal.toLocaleString()}${unit} 프리미엄` : 'NAV 대비 할증 거래 중',
+                badgeClass: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
+                textClass: 'text-orange-300'
+            };
+        }
+        return {
+            label: '✅ 적정 가치',
+            subText: 'NAV와 시장가 일치 (안정)',
+            badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+            textClass: 'text-emerald-400'
+        };
+    };
+
+    // 실시간 검색, 관심ETF 필터, 정렬 적용
     const processedData = useMemo(() => {
         let list = Array.isArray(data) ? [...data] : [];
 
-        // 1. 검색어 필터
+        if (onlyWatchlist) {
+            list = list.filter(item => isSymbolSaved(item.symbol));
+        }
+
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             list = list.filter(item => 
@@ -101,38 +285,31 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
             );
         }
 
-        // 2. 정렬 필터
         list.sort((a, b) => {
-            if (sortField === 'amount') {
-                const amtA = a.amount_num || 0;
-                const amtB = b.amount_num || 0;
-                return amtB - amtA;
+            if (sortField === 'amount') return (b.amount_num || 0) - (a.amount_num || 0);
+            if (sortField === 'market_sum') return (b.market_sum_num || 0) - (a.market_sum_num || 0);
+            if (sortField === 'turnover') {
+                const tA = a.turnover_rate ?? ((a.market_sum_num && a.market_sum_num > 0) ? ((a.amount_num || 0) / a.market_sum_num) * 100 : 0);
+                const tB = b.turnover_rate ?? ((b.market_sum_num && b.market_sum_num > 0) ? ((b.amount_num || 0) / b.market_sum_num) * 100 : 0);
+                return tB - tA;
             }
             if (sortField === 'volume') {
                 const volA = a.volume_num || parseInt(String(a.volume || 0).replace(/,/g, '')) || 0;
                 const volB = b.volume_num || parseInt(String(b.volume || 0).replace(/,/g, '')) || 0;
                 return volB - volA;
             }
-            if (sortField === 'change_high') {
-                return (b.change_percent || 0) - (a.change_percent || 0);
-            }
-            if (sortField === 'change_low') {
-                return (a.change_percent || 0) - (b.change_percent || 0);
-            }
-            if (sortField === 'nav_gap') {
-                return Math.abs(b.nav_gap_num || 0) - Math.abs(a.nav_gap_num || 0);
-            }
-            if (sortField === 'three_month') {
-                return (b.three_month_num || 0) - (a.three_month_num || 0);
-            }
+            if (sortField === 'change_high') return (b.change_percent || 0) - (a.change_percent || 0);
+            if (sortField === 'change_low') return (a.change_percent || 0) - (b.change_percent || 0);
+            if (sortField === 'discount_best') return (a.nav_gap_num || 0) - (b.nav_gap_num || 0); // 가장 음수(저평가 할인)인 순서
+            if (sortField === 'nav_gap') return Math.abs(b.nav_gap_num || 0) - Math.abs(a.nav_gap_num || 0);
+            if (sortField === 'three_month') return (b.three_month_num || 0) - (a.three_month_num || 0);
             return 0;
         });
 
-        // 3. 표시 개수 제한
         return list.slice(0, displayLimit);
-    }, [data, searchQuery, sortField, displayLimit]);
+    }, [data, searchQuery, sortField, displayLimit, onlyWatchlist, watchlistSet]);
 
-    // 전체 데이터 기준 4대 매크로 통계 집계
+    // 전체 데이터 기반: 4대 매크로 통계 + 🐂롱/🐻숏 자금 대결 게이지 + 🔥6대 섹터 자금 쏠림 집계
     const macroStats = useMemo(() => {
         if (!Array.isArray(data) || data.length === 0) {
             return {
@@ -140,47 +317,118 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 topAmountName: '-',
                 topAmountVal: '-',
                 gapAlertCount: 0,
+                discountOpportunityCount: 0,
                 topGainerName: '-',
-                topGainerPct: 0
+                topGainerPct: 0,
+                bullAmt: 0,
+                bearAmt: 0,
+                bullRatio: 50,
+                bearRatio: 50,
+                bullFormatted: '0억',
+                bearFormatted: '0억',
+                sectorFlows: [] as { name: string; keyword: string; amount: number; amountFormatted: string; avgChange: number; topEtf: string; count: number }[]
             };
         }
 
-        // 총 거래대금 합계
+        const formatEok = (eok: number) => {
+            if (eok >= 10000) return `${(eok / 10000).toFixed(2)}조원`;
+            return `${Math.round(eok).toLocaleString()}억원`;
+        };
+
         let totalAmt = 0;
+        let bullAmt = 0;
+        let bearAmt = 0;
+
+        const sectorDefs = [
+            { name: '💻 반도체 · HBM', keyword: '반도체', match: ['반도체', 'SOXL', 'SOXX', 'SMH', '필라델피아', '칩', 'HBM', 'NVDA', 'NVDL'] },
+            { name: '🤖 AI · 빅테크', keyword: 'AI', match: ['AI', '인공지능', '빅테크', '나스닥', 'QQQ', 'TQQQ', '테크', '로봇', '소프트웨어', '클라우드'] },
+            { name: '⚡ 2차전지 · 전기차', keyword: '2차전지', match: ['2차전지', '배터리', '전기차', '테슬라', 'TSLL', '양극재', '전고체'] },
+            { name: '💰 배당 · 커버드콜', keyword: '배당', match: ['배당', '커버드콜', '인컴', 'SCHD', 'JEPI', 'JEPQ', '리츠', '고배당', '타겟데일리'] },
+            { name: '🏦 채권 · 금리파킹', keyword: '채권', match: ['채권', '금리', 'CD', 'KOFR', '머니마켓', '단기채', '국고채', '미국채', 'TLT', 'TMF', '파킹'] },
+            { name: '🛡️ 방산 · 조선 · 원자재', keyword: '방산', match: ['방산', '조선', '원자력', '전력', '금현물', '은현물', '원유', 'GLD', 'SLV', '에너지'] }
+        ];
+
+        const sectorMap = sectorDefs.map(s => ({ ...s, amount: 0, changeSum: 0, count: 0, topEtf: '-', topEtfAmt: -1 }));
+
         data.forEach(item => {
-            totalAmt += (item.amount_num || 0);
+            const amt = item.amount_num || 0;
+            totalAmt += amt;
+            const n = (item.name || '').toUpperCase();
+            const sym = (item.symbol || '').toUpperCase();
+
+            const isBear = n.includes('인버스') || n.includes('2X') && n.includes('선물인버스') || n.includes('곱버스') || ['SQQQ', 'SOXS', 'SPXU', 'PSQ', 'SH', 'SDS', 'QID', 'TSLS', 'UVXY'].includes(sym);
+            const isBull = n.includes('레버리지') || n.includes('200') || n.includes('나스닥') || n.includes('S&P') || n.includes('코스닥150') || ['TQQQ', 'SOXL', 'UPRO', 'SPY', 'QQQ', 'VOO', 'NVDL', 'TSLL'].includes(sym);
+
+            if (isBear) bearAmt += amt;
+            else if (isBull) bullAmt += amt;
+
+            sectorMap.forEach(sec => {
+                if (sec.match.some(m => n.includes(m.toUpperCase()) || sym === m.toUpperCase())) {
+                    sec.amount += amt;
+                    sec.changeSum += (item.change_percent || 0);
+                    sec.count += 1;
+                    if (amt > sec.topEtfAmt) {
+                        sec.topEtfAmt = amt;
+                        sec.topEtf = item.name;
+                    }
+                }
+            });
         });
 
-        const totalAmountFormatted = totalAmt >= 10000 
-            ? `${(totalAmt / 10000).toFixed(1)}조원` 
-            : `${totalAmt.toLocaleString()}억원`;
+        const totalDirectional = bullAmt + bearAmt;
+        const bullRatio = totalDirectional > 0 ? Math.round((bullAmt / totalDirectional) * 100) : 50;
+        const bearRatio = 100 - bullRatio;
 
-        // 거래대금 1위 종목
         const sortedByAmt = [...data].sort((a, b) => (b.amount_num || 0) - (a.amount_num || 0));
         const topAmount = sortedByAmt[0];
-
-        // 괴리율 경보 종목 수 (절댓값 1.0% 초과)
         const gapAlertCount = data.filter(item => Math.abs(item.nav_gap_num || 0) >= 1.0).length;
-
-        // 당일 최고 급등 종목
+        const discountOpportunityCount = data.filter(item => (item.nav_gap_num || 0) <= -0.15).length;
         const sortedByGain = [...data].sort((a, b) => (b.change_percent || 0) - (a.change_percent || 0));
         const topGainer = sortedByGain[0];
 
+        const sectorFlows = sectorMap
+            .map(s => ({
+                name: s.name,
+                keyword: s.keyword,
+                amount: s.amount,
+                amountFormatted: formatEok(s.amount),
+                avgChange: s.count > 0 ? s.changeSum / s.count : 0,
+                topEtf: s.topEtf,
+                count: s.count
+            }))
+            .sort((a, b) => b.amount - a.amount);
+
         return {
-            totalAmountFormatted,
+            totalAmountFormatted: formatEok(totalAmt),
             topAmountName: topAmount?.name || '-',
             topAmountVal: topAmount?.amount || '-',
             gapAlertCount,
+            discountOpportunityCount,
             topGainerName: topGainer?.name || '-',
-            topGainerPct: topGainer?.change_percent || 0
+            topGainerPct: topGainer?.change_percent || 0,
+            bullAmt,
+            bearAmt,
+            bullRatio,
+            bearRatio,
+            bullFormatted: formatEok(bullAmt),
+            bearFormatted: formatEok(bearAmt),
+            sectorFlows
         };
     }, [data]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* 실시간 토스트 알림 배너 */}
+            {toastMsg && (
+                <div className="fixed bottom-6 right-6 z-50 max-w-md bg-zinc-900/95 border border-emerald-500/50 text-white px-4 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.35)] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400 shrink-0" />
+                    <span className="text-xs sm:text-sm font-bold leading-snug">{toastMsg}</span>
+                </div>
+            )}
+
             {/* 1. 상단 4대 매크로 ETF 시장 통계 대시보드 */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                {/* 1. 상위 50종목 총 거래대금 */}
+                {/* 1. 상위 ETF 총 거래대금 */}
                 <div className="bg-gradient-to-br from-blue-950/40 via-zinc-900/80 to-black p-4 sm:p-5 rounded-2xl border border-blue-500/30 shadow-lg flex flex-col justify-between">
                     <div className="flex items-center justify-between text-xs font-black text-blue-300 mb-1.5">
                         <span className="flex items-center gap-1.5">
@@ -195,7 +443,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         {macroStats.totalAmountFormatted}
                     </div>
                     <div className="text-xs font-medium text-zinc-400 mt-1.5 break-keep">
-                        {market === 'KR' ? '국내 대표 ETF 실시간 유동성 집계' : '글로벌 지수 ETF 거래 집계'}
+                        {market === 'KR' ? `국내 상위 ${data.length}종목 실시간 유동성 합계` : '글로벌 대표 ETF 거래대금 집계'}
                     </div>
                 </div>
 
@@ -218,37 +466,41 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     </div>
                 </div>
 
-                {/* 3. 괴리율 주의 종목 수 */}
-                <div className={`p-4 sm:p-5 rounded-2xl border shadow-lg flex flex-col justify-between ${
+                {/* 3. 괴리율 주의 & 저평가 할인 종목 수 */}
+                <div 
+                    onClick={() => setSortField('discount_best')}
+                    className={`p-4 sm:p-5 rounded-2xl border shadow-lg flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.01] ${
                     macroStats.gapAlertCount > 0 
                         ? 'bg-gradient-to-br from-amber-950/40 via-zinc-900/80 to-black border-amber-500/40' 
-                        : 'bg-gradient-to-br from-emerald-950/40 via-zinc-900/80 to-black border-emerald-500/30'
+                        : 'bg-gradient-to-br from-cyan-950/40 via-zinc-900/80 to-black border-cyan-500/30'
                 }`}>
                     <div className="flex items-center justify-between text-xs font-black mb-1.5">
                         <span className="flex items-center gap-1.5 text-zinc-300">
-                            <ShieldAlert className={`w-4 h-4 ${macroStats.gapAlertCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`} />
-                            <span>괴리율(±1%) 주의 종목</span>
+                            <ShieldAlert className={`w-4 h-4 ${macroStats.gapAlertCount > 0 ? 'text-amber-400' : 'text-cyan-400'}`} />
+                            <span>저평가 할인 · 괴리율 레이더</span>
                         </span>
-                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
-                            macroStats.gapAlertCount > 0 
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
-                                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                        }`}>
-                            {macroStats.gapAlertCount > 0 ? 'WATCH' : 'NORMAL'}
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border bg-cyan-500/20 text-cyan-300 border-cyan-500/40">
+                            할인 {macroStats.discountOpportunityCount}개
                         </span>
                     </div>
-                    <div className={`text-xl md:text-2xl font-black font-mono tracking-tight mt-1 ${
-                        macroStats.gapAlertCount > 0 ? 'text-amber-400' : 'text-emerald-400'
-                    }`}>
-                        {macroStats.gapAlertCount}개 종목
+                    <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-xl md:text-2xl font-black font-mono tracking-tight text-cyan-300">
+                            할인 {macroStats.discountOpportunityCount}종목
+                        </span>
+                        <span className="text-xs font-bold text-amber-400 font-mono">
+                            (주의 ±1%: {macroStats.gapAlertCount}개)
+                        </span>
                     </div>
                     <div className="text-xs font-medium text-zinc-400 mt-1.5 break-keep">
-                        {macroStats.gapAlertCount > 0 ? '순자산가치(NAV) 대비 매매가 주의' : '전 종목 호가 스프레드 정상 안정'}
+                        클릭 시 실제가치(NAV)보다 저렴한 할인순 정렬
                     </div>
                 </div>
 
                 {/* 4. 당일 최고 급등 ETF */}
-                <div className="bg-gradient-to-br from-rose-950/40 via-zinc-900/80 to-black p-4 sm:p-5 rounded-2xl border border-rose-500/30 shadow-lg flex flex-col justify-between">
+                <div 
+                    onClick={() => setSortField('change_high')}
+                    className="bg-gradient-to-br from-rose-950/40 via-zinc-900/80 to-black p-4 sm:p-5 rounded-2xl border border-rose-500/30 shadow-lg flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.01]"
+                >
                     <div className="flex items-center justify-between text-xs font-black text-rose-300 mb-1.5">
                         <span className="flex items-center gap-1.5">
                             <TrendingUp className="w-4 h-4 text-rose-400" />
@@ -267,33 +519,107 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 </div>
             </div>
 
-            {/* 2. AI ETF 마켓 & 유동성 실시간 총평 */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-zinc-950 via-[#0e162e] to-zinc-950 border border-blue-500/35 shadow-2xl relative overflow-hidden space-y-3">
-                <div className="flex items-center gap-2.5 pb-2.5 border-b border-white/10">
-                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                        <Sparkles className="w-5 h-5 text-blue-400 animate-pulse" />
+            {/* 2. [NEW 업그레이드] 🐂 상승(레버리지·지수) vs 🐻 하락(인버스·곱버스) 실시간 자금 대결 게이지 & 🔥 6대 섹터 자금 쏠림 히트맵 */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* 좌측 5컬럼: 🐂 상승 베팅 vs 🐻 하락 헤지 실시간 머니 플로우 */}
+                <div className="lg:col-span-5 p-5 rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black border border-white/10 shadow-xl flex flex-col justify-between space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-base">⚔️</span>
+                            <h4 className="text-sm sm:text-base font-black text-white">
+                                실시간 ETF 롱(상승) vs 숏(인버스) 자금 대결
+                            </h4>
+                        </div>
+                        <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
+                            macroStats.bullRatio >= 55
+                                ? 'bg-red-500/20 text-red-300 border-red-500/40'
+                                : macroStats.bearRatio >= 55
+                                ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                : 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40'
+                        }`}>
+                            {macroStats.bullRatio >= 55 ? '🐂 매수(상승) 우위 장세' : macroStats.bearRatio >= 55 ? '🐻 인버스(하락헤지) 우위' : '⚖️ 롱·숏 팽팽한 균형'}
+                        </span>
                     </div>
-                    <div>
-                        <h4 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                            <span>AI 퀀트 애널리스트 실시간 ETF 유동성 총평</span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 font-mono">
-                                ETF VERDICT
+
+                    <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-black">
+                            <span className="text-red-400 flex items-center gap-1">
+                                🐂 상승 베팅 (지수·레버리지) <strong className="font-mono text-sm">{macroStats.bullRatio}%</strong>
                             </span>
-                        </h4>
+                            <span className="text-blue-400 flex items-center gap-1">
+                                <strong className="font-mono text-sm">{macroStats.bearRatio}%</strong> 하락 베팅 (인버스·곱버스) 🐻
+                            </span>
+                        </div>
+
+                        {/* 줄다리기 게이지 바 */}
+                        <div className="w-full h-4 rounded-full bg-blue-950/80 overflow-hidden flex border border-white/10 p-0.5">
+                            <div 
+                                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 rounded-l-full transition-all duration-700"
+                                style={{ width: `${macroStats.bullRatio}%` }}
+                            />
+                            <div 
+                                className="h-full bg-gradient-to-l from-blue-600 via-indigo-500 to-cyan-400 rounded-r-full transition-all duration-700"
+                                style={{ width: `${macroStats.bearRatio}%` }}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                            <span>상승 자금: <strong className="text-zinc-200">{macroStats.bullFormatted}</strong></span>
+                            <span>하락 자금: <strong className="text-zinc-200">{macroStats.bearFormatted}</strong></span>
+                        </div>
                     </div>
+
+                    <p className="text-[11px] text-zinc-400 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/5">
+                        💡 <strong className="text-zinc-200">해석 팁:</strong> 레버리지·대표지수 거래대금 비중이 60% 이상이면 시장 참여자들이 강한 상승 추세에 베팅 중이며, 인버스 비중이 급증하면 기관·개인의 단기 하락 헤지(방어) 수요가 몰리고 있음을 뜻합니다.
+                    </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-zinc-900/80 border border-white/10 text-xs sm:text-sm text-zinc-200 leading-relaxed break-keep font-medium space-y-2">
-                    <p>
-                        <strong className="text-blue-400 font-bold">📢 실시간 ETF 시장 흐름 진단: </strong>
-                        현재 {market === 'KR' ? '국내' : '미국'} ETF 시장의 상위 50종목 총 거래대금은 <strong className="text-white font-mono">{macroStats.totalAmountFormatted}</strong> 수준으로 
-                        {market === 'KR' ? ' 지수 파생상품(레버리지·인버스) 및 핵심 성장 테마(반도체, 2차전지, AI) 중심으로 강력한 자금 쏠림이 형성되어 있습니다.' : ' 나스닥100 및 빅테크 3배 레버리지 상품군으로 글로벌 유동성이 집중되고 있습니다.'}
-                    </p>
-                    <div className="pt-2 border-t border-white/5 flex items-start gap-2 text-xs text-zinc-300">
-                        <span className="text-amber-400 font-black shrink-0">💡 괴리율 체크포인트:</span>
-                        <span>
-                            현재 순자산가치(NAV) 대비 괴리율이 ±1%를 초과하는 종목은 <strong className="text-amber-300 font-mono">{macroStats.gapAlertCount}개</strong>입니다. 괴리율이 벌어진 상태에서 시장가로 무리하게 매수하면 의도치 않은 가격 손실(슬리피지)이 발생할 수 있으므로, 지정가 주문 또는 LP 호가 안정이 확인된 후 거래하는 것이 권장됩니다.
+                {/* 우측 7컬럼: 🔥 실시간 6대 핵심 섹터 자금 쏠림 레이더 */}
+                <div className="lg:col-span-7 p-5 rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black border border-white/10 shadow-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Flame className="w-4 h-4 text-amber-400" />
+                            <h4 className="text-sm sm:text-base font-black text-white">
+                                섹터별 ETF 실시간 자금 쏠림 레이더 (클릭 시 즉시 필터)
+                            </h4>
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                            SECTOR MONEY FLOW
                         </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {macroStats.sectorFlows.map((sec, i) => {
+                            const isSelected = searchQuery === sec.keyword;
+                            const isUp = sec.avgChange > 0;
+                            const isDown = sec.avgChange < 0;
+                            return (
+                                <button
+                                    key={sec.name}
+                                    onClick={() => setSearchQuery(isSelected ? '' : sec.keyword)}
+                                    className={`text-left p-3 rounded-2xl border transition-all cursor-pointer ${
+                                        isSelected
+                                            ? 'bg-blue-600/25 border-blue-400 shadow-lg shadow-blue-500/20 scale-[1.02]'
+                                            : 'bg-white/5 hover:bg-white/10 border-white/10'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between gap-1 mb-1">
+                                        <span className="text-xs font-black text-white truncate">{sec.name}</span>
+                                        <span className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${
+                                            isUp ? 'bg-red-500/20 text-red-400' : isDown ? 'bg-blue-500/20 text-blue-400' : 'bg-white/10 text-gray-400'
+                                        }`}>
+                                            {isUp ? '+' : ''}{sec.avgChange.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <div className="text-sm font-black text-amber-300 font-mono">
+                                        {sec.amountFormatted}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 truncate mt-1" title={sec.topEtf}>
+                                        대장: <span className="text-zinc-200 font-bold">{sec.topEtf}</span>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -305,23 +631,36 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 {/* Header Title & View Toggle */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
                     <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                                Market <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">ETF Statistics</span>
+                                Market <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">ETF Statistics &amp; NAV Radar</span>
                             </h2>
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                 TOP {displayLimit}
                             </span>
                         </div>
                         <p className="text-zinc-400 font-medium text-xs">
-                            거래량 및 거래대금 상위 {market === 'KR' ? '국내' : '미국'} ETF의 실시간 가격, NAV, 괴리율 통계 데이터입니다.
+                            ⭐ 각 ETF 카드의 <strong className="text-amber-300">[관심ETF 알림받기]</strong> 버튼을 누르면 내 관심종목에 저장되어 장시작 시가·장마감 수익률·괴리율 브리핑을 받아보실 수 있습니다.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        {/* ⭐ 내 관심 ETF만 보기 토글 */}
+                        <button
+                            onClick={() => setOnlyWatchlist(!onlyWatchlist)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                                onlyWatchlist
+                                    ? 'bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/30'
+                                    : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                            }`}
+                        >
+                            <Star className={`w-3.5 h-3.5 ${onlyWatchlist ? 'fill-black text-black' : 'fill-amber-400 text-amber-400'}`} />
+                            <span>내 관심 ETF만 보기</span>
+                        </button>
+
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
                             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                            <span>LIVE 실시간 집계</span>
+                            <span>LIVE 실시간</span>
                         </div>
 
                         {/* 뷰 모드 토글 (그리드 vs 테이블) */}
@@ -354,39 +693,40 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
 
                 {/* Controls Bar: 실시간 검색 + 정렬 옵션 + 표시 개수 */}
                 <div className="space-y-3 relative z-10 bg-black/50 border border-white/10 p-3.5 md:p-4 rounded-2xl">
-                    <div className="flex flex-col md:flex-row items-center gap-3">
+                    <div className="flex flex-col lg:flex-row items-center gap-3">
                         {/* 실시간 검색창 */}
                         <div className="relative flex-1 w-full">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="ETF 종목명, 브랜드, 코드 검색 (예: KODEX 200, TIGER, 반도체, 레버리지...)"
+                                placeholder="ETF 종목명, 브랜드, 코드 검색 (예: KODEX 반도체, TIGER 미국, 배당, SOXL, SCHD...)"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-12 py-2.5 bg-zinc-900/90 border border-white/10 rounded-xl text-white placeholder-gray-500 text-xs md:text-sm font-medium focus:outline-none focus:border-blue-500/50 transition-all"
+                                className="w-full pl-10 pr-16 py-2.5 bg-zinc-900/90 border border-white/10 rounded-xl text-white placeholder-gray-500 text-xs md:text-sm font-medium focus:outline-none focus:border-blue-500/50 transition-all"
                             />
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-white bg-white/10 px-1.5 py-0.5 rounded cursor-pointer"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-white bg-white/10 px-2 py-0.5 rounded cursor-pointer"
                                 >
-                                    지우기
+                                    초기화
                                 </button>
                             )}
                         </div>
 
-                        {/* 정렬 필터 */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto scrollbar-none pb-1 md:pb-0">
-                            <span className="text-[11px] font-bold text-gray-400 shrink-0 flex items-center gap-1 hidden sm:flex">
+                        {/* 정렬 필터 (시총순, 회전율순, 할인매수순 추가!) */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto scrollbar-none pb-1 lg:pb-0">
+                            <span className="text-[11px] font-bold text-gray-400 shrink-0 hidden sm:flex items-center gap-1">
                                 <ArrowUpDown className="w-3 h-3 text-blue-400" /> 정렬:
                             </span>
                             {[
-                                { id: 'amount', label: '거래대금순' },
-                                { id: 'volume', label: '거래량순' },
-                                { id: 'change_high', label: '급등순' },
-                                { id: 'change_low', label: '급락순' },
-                                { id: 'nav_gap', label: '괴리율순' },
-                                { id: 'three_month', label: '3M수익률' }
+                                { id: 'amount', label: '🔥 거래대금순' },
+                                { id: 'market_sum', label: '🏛️ 순자산(시총)순' },
+                                { id: 'turnover', label: '⚡ 자금회전율순' },
+                                { id: 'discount_best', label: '💡 저평가할인순' },
+                                { id: 'change_high', label: '📈 급등순' },
+                                { id: 'nav_gap', label: '⚠️ 괴리율폭순' },
+                                { id: 'three_month', label: '👑 3M수익률순' }
                             ].map((s) => (
                                 <button
                                     key={s.id}
@@ -421,9 +761,9 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     </div>
                 </div>
 
-                {/* 1. GRID CARD VIEW (2열 프리미엄 카드 모드) */}
+                {/* 1. GRID CARD VIEW (2열 초고밀도 프리미엄 카드 모드) */}
                 {viewMode === 'grid' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
                         {processedData.length > 0 ? (
                             processedData.map((item, idx) => {
                                 const positive = isPositive(item.change, item.change_percent);
@@ -431,7 +771,6 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                 const colorClass = positive ? 'text-red-400' : negative ? 'text-blue-400' : 'text-gray-400';
                                 const rank = item.rank || idx + 1;
                                 
-                                // 순위 뱃지 스타일
                                 const rankBadgeStyle = rank === 1
                                     ? 'bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 text-black font-black shadow-lg shadow-amber-500/30'
                                     : rank === 2
@@ -441,130 +780,280 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                     : 'bg-white/5 border border-white/10 text-gray-400 font-bold';
 
                                 const brandInfo = getBrandInfo(item.brand);
-                                const navGapVal = Math.abs(item.nav_gap_num || 0);
+                                const navAnalysis = getNavDisparityAnalysis(item);
+                                const saved = isSymbolSaved(item.symbol);
+                                const turnover = item.turnover_rate ?? ((item.market_sum_num && item.market_sum_num > 0) ? Number((((item.amount_num || 0) / item.market_sum_num) * 100).toFixed(1)) : 0);
+                                const isExpanded = expandedSymbol === item.symbol;
+                                const quickDetail = detailCache[item.symbol];
 
                                 return (
-                                    <Link 
-                                        key={item.symbol + idx}
-                                        href={`/etf-analysis?symbol=${item.symbol}`}
-                                        className="block group"
-                                    >
-                                        <article className="h-full flex flex-col justify-between bg-zinc-900/90 hover:bg-zinc-800/90 border border-white/10 hover:border-blue-500/40 rounded-2xl p-4 md:p-5 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 relative overflow-hidden">
-                                            <div>
-                                                {/* 상단 행: 순위 + 브랜드 + 운용사 + 자산군 + 종목코드 */}
-                                                <div className="flex items-center justify-between gap-2 mb-2.5">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-xs tabular-nums ${rankBadgeStyle}`}>
-                                                            {rank}
-                                                        </div>
-                                                        {item.brand && (
-                                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 ${brandInfo.color}`}>
-                                                                <span>{item.brand}</span>
-                                                                <span className="text-[9px] opacity-70 font-normal hidden sm:inline">({brandInfo.company})</span>
-                                                            </span>
-                                                        )}
-                                                        {item.category_name && (
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-300">
-                                                                {item.category_name}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 shrink-0">
-                                                        <span className="text-xs font-mono text-zinc-400 font-bold tracking-wider">
-                                                            {item.symbol}
-                                                        </span>
-                                                        <ArrowUpRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-blue-400 transition-colors" />
-                                                    </div>
-                                                </div>
-
-                                                {/* 종목명 & 현재가 / 등락률 */}
-                                                <div className="flex items-start justify-between gap-3 mb-3">
-                                                    <h3 className="font-extrabold text-sm md:text-base text-white group-hover:text-blue-300 transition-colors line-clamp-1 leading-snug flex-1">
-                                                        {item.name}
-                                                    </h3>
-                                                    <div className="text-right shrink-0">
-                                                        <div className="text-base md:text-lg font-black text-white tabular-nums tracking-tight font-mono">
-                                                            {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
-                                                        </div>
-                                                        <div className={`text-xs font-black tabular-nums tracking-tight font-mono ${colorClass}`}>
-                                                            {positive ? '▲' : negative ? '▼' : ''}
-                                                            {Math.abs(item.change_percent || 0).toFixed(2)}%
-                                                            {item.change_val !== undefined && (
-                                                                <span className="text-[10px] text-gray-400 ml-1">
-                                                                    ({positive ? '+' : ''}{item.change_val.toLocaleString()})
+                                    <div key={item.symbol + idx} className="flex flex-col">
+                                        <Link 
+                                            href={`/etf-analysis?symbol=${item.symbol}`}
+                                            className="block group flex-1"
+                                        >
+                                            <article className={`h-full flex flex-col justify-between bg-zinc-900/90 hover:bg-zinc-800/90 border transition-all duration-200 hover:shadow-xl relative overflow-hidden rounded-2xl p-4 md:p-5 ${
+                                                saved ? 'border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.12)]' : 'border-white/10 hover:border-blue-500/40'
+                                            }`}>
+                                                <div>
+                                                    {/* 상단 행: 순위 + 브랜드 + 자산군 + ⭐ 관심ETF 알림받기 버튼 */}
+                                                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <div className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center text-xs tabular-nums ${rankBadgeStyle}`}>
+                                                                {rank}
+                                                            </div>
+                                                            {item.brand && (
+                                                                <span className={`text-[11px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 ${brandInfo.color}`}>
+                                                                    <span>{item.brand}</span>
+                                                                    <span className="text-[9px] opacity-75 font-normal hidden sm:inline">({brandInfo.company})</span>
+                                                                </span>
+                                                            )}
+                                                            {item.category_name && (
+                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-300">
+                                                                    {item.category_name}
+                                                                </span>
+                                                            )}
+                                                            {turnover >= 20 && (
+                                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/40 text-rose-300 animate-pulse">
+                                                                    🔥 수급폭발 (회전율 {turnover}%)
                                                                 </span>
                                                             )}
                                                         </div>
+
+                                                        {/* ⭐ 원터치 내 관심종목(ETF 알림) 등록/해제 버튼 */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => toggleWatchlistEtf(e, item)}
+                                                            disabled={togglingSymbol === item.symbol}
+                                                            className={`px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
+                                                                saved
+                                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                                                                    : 'bg-white/5 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border-white/10 hover:border-amber-500/40'
+                                                            }`}
+                                                            title="내 관심종목에 추가하여 장시작 시가 및 장마감 결산 알림 받기"
+                                                        >
+                                                            <Star className={`w-3.5 h-3.5 ${saved ? 'fill-amber-400 text-amber-400' : 'text-zinc-400'}`} />
+                                                            <span>{saved ? '관심ETF 등록됨' : '+ 관심ETF 알림받기'}</span>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* 종목명 & 현재가 / 등락률 */}
+                                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-extrabold text-sm md:text-base text-white group-hover:text-blue-300 transition-colors truncate leading-snug">
+                                                                {item.name}
+                                                            </h3>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className="text-[11px] font-mono text-zinc-400 font-bold">
+                                                                    티커: {item.symbol}
+                                                                </span>
+                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${navAnalysis.badgeClass}`}>
+                                                                    {navAnalysis.label}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <div className="text-base md:text-lg font-black text-white tabular-nums tracking-tight font-mono">
+                                                                {formatPrice(item.price)}{market === 'US' ? '$' : '원'}
+                                                            </div>
+                                                            <div className={`text-xs font-black tabular-nums tracking-tight font-mono ${colorClass}`}>
+                                                                {positive ? '▲' : negative ? '▼' : ''}
+                                                                {Math.abs(item.change_percent || 0).toFixed(2)}%
+                                                                {item.change_val !== undefined && (
+                                                                    <span className="text-[10px] text-gray-400 ml-1">
+                                                                        ({positive ? '+' : ''}{item.change_val.toLocaleString()})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* 하단 세부 지표 그리드 (거래대금, 거래량, 실시간 NAV & 괴리율, 3M수익률) */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-white/5 text-[11px]">
-                                                {/* 거래대금 */}
-                                                <div className="bg-white/5 rounded-xl p-2">
-                                                    <div className="text-zinc-400 text-[10px] font-bold">거래대금</div>
-                                                    <div className="font-black text-zinc-100 truncate mt-0.5">{item.amount || '-'}</div>
-                                                </div>
-
-                                                {/* 거래량 */}
-                                                <div className="bg-white/5 rounded-xl p-2">
-                                                    <div className="text-zinc-400 text-[10px] font-bold">거래량</div>
-                                                    <div className="font-black text-zinc-100 truncate font-mono mt-0.5">
-                                                        {item.volume ? parseInt(String(item.volume).replace(/,/g, '')).toLocaleString() : '-'}
+                                                {/* 하단 6대 핵심 지표 그리드 (거래대금, 순자산시총, 회전율, 실시간NAV, 괴리율판독, 3M수익률) */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-3 border-t border-white/5 text-[11px]">
+                                                    {/* 1. 거래대금 */}
+                                                    <div className="bg-white/5 rounded-xl p-2">
+                                                        <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
+                                                            <span>당일 거래대금</span>
+                                                            <span className="text-[9px] text-blue-400 font-mono">FLOW</span>
+                                                        </div>
+                                                        <div className="font-black text-white truncate mt-0.5 font-mono">{item.amount || '-'}</div>
                                                     </div>
-                                                </div>
 
-                                                {/* 실시간 NAV & 괴리율 상태 뱃지 */}
-                                                <div className={`rounded-xl p-2 border ${
-                                                    navGapVal >= 1.0 
-                                                        ? 'bg-amber-500/10 border-amber-500/30' 
-                                                        : 'bg-white/5 border-transparent'
-                                                }`}>
-                                                    <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
-                                                        <span>실시간 NAV</span>
-                                                        {navGapVal >= 1.0 && <span className="text-[9px] font-black text-amber-400">주의</span>}
+                                                    {/* 2. 순자산총액(AUM / 시총) */}
+                                                    <div className="bg-white/5 rounded-xl p-2">
+                                                        <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
+                                                            <span>순자산총액(시총)</span>
+                                                            <span className="text-[9px] text-purple-400 font-mono">AUM</span>
+                                                        </div>
+                                                        <div className="font-black text-purple-200 truncate mt-0.5 font-mono">
+                                                            {item.market_sum || (market === 'US' ? '대형 글로벌' : '-')}
+                                                        </div>
                                                     </div>
-                                                    <div className="font-black text-zinc-100 truncate font-mono mt-0.5 flex items-center gap-1">
-                                                        <span>{item.nav || '-'}</span>
-                                                        {item.nav_gap && (
-                                                            <span className={`text-[10px] font-black ${
-                                                                navGapVal >= 1.0 
-                                                                    ? 'text-amber-400' 
-                                                                    : 'text-emerald-400'
-                                                            }`}>
-                                                                ({item.nav_gap})
+
+                                                    {/* 3. 당일 자금 회전율 & 거래량 */}
+                                                    <div className="bg-white/5 rounded-xl p-2">
+                                                        <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
+                                                            <span>자금 회전율 · 거래량</span>
+                                                        </div>
+                                                        <div className="font-black text-zinc-100 truncate font-mono mt-0.5 flex items-center gap-1">
+                                                            <span className={turnover >= 20 ? 'text-rose-400' : 'text-emerald-300'}>
+                                                                {turnover > 0 ? `${turnover}%` : '-'}
                                                             </span>
-                                                        )}
+                                                            <span className="text-zinc-500 text-[10px]">
+                                                                ({item.volume ? parseInt(String(item.volume).replace(/,/g, '')).toLocaleString() : '-'}주)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 4. 실시간 NAV (순자산가치) */}
+                                                    <div className="bg-white/5 rounded-xl p-2">
+                                                        <div className="text-zinc-400 text-[10px] font-bold">실시간 NAV (본래가치)</div>
+                                                        <div className="font-black text-zinc-100 truncate font-mono mt-0.5">
+                                                            {item.nav && item.nav !== '-' ? `${item.nav}${market === 'US' ? '$' : '원'}` : '실시간 연동'}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 5. 괴리율 & 1주당 원화 차익 판독 */}
+                                                    <div className={`rounded-xl p-2 border ${navAnalysis.badgeClass}`}>
+                                                        <div className="text-[10px] font-bold flex items-center justify-between">
+                                                            <span>괴리율 ({item.nav_gap || '0.00%'})</span>
+                                                        </div>
+                                                        <div className={`font-black truncate text-[10px] mt-0.5 ${navAnalysis.textClass}`}>
+                                                            {navAnalysis.subText}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 6. 3개월 누적 수익률 */}
+                                                    <div className="bg-white/5 rounded-xl p-2">
+                                                        <div className="text-zinc-400 text-[10px] font-bold">3개월 누적 수익률</div>
+                                                        <div className={`font-black font-mono truncate mt-0.5 ${
+                                                            (item.three_month_num || 0) > 0 ? 'text-red-400' : (item.three_month_num || 0) < 0 ? 'text-blue-400' : 'text-gray-400'
+                                                        }`}>
+                                                            {item.three_month_return || '-'}
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                {/* 3개월 수익률 */}
-                                                <div className="bg-white/5 rounded-xl p-2">
-                                                    <div className="text-zinc-400 text-[10px] font-bold">3개월 수익률</div>
-                                                    <div className={`font-black font-mono truncate mt-0.5 ${
-                                                        (item.three_month_num || 0) > 0 ? 'text-red-400' : (item.three_month_num || 0) < 0 ? 'text-blue-400' : 'text-gray-400'
-                                                    }`}>
-                                                        {item.three_month_return || '-'}
-                                                    </div>
+                                                {/* 카드 하단 액션 바: [구성종목·총보수·배당 요약 즉시 열기] + [심층 차트 이동] */}
+                                                <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => toggleExpandDetail(e, item.symbol)}
+                                                        className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[11px] font-black flex items-center gap-1.5 transition-all cursor-pointer"
+                                                    >
+                                                        <PieChart className="w-3.5 h-3.5 text-blue-400" />
+                                                        <span>{isExpanded ? '구성종목·보수 요약 닫기' : '🔍 구성종목 TOP 5 · 총보수 · 배당 요약'}</span>
+                                                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                                    </button>
+
+                                                    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-blue-400 flex items-center gap-1">
+                                                        <span>심층 차트</span>
+                                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                                    </span>
                                                 </div>
+                                            </article>
+                                        </Link>
+
+                                        {/* 인라인 미니 분석 드로어 (페이지 이동 없이 편입종목 TOP 5, 총보수, 배당률, 기간별 수익률 표시) */}
+                                        {isExpanded && (
+                                            <div className="mt-1.5 p-4 rounded-2xl bg-zinc-950/95 border border-blue-500/40 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                {detailLoading === item.symbol ? (
+                                                    <div className="py-6 text-center text-xs font-bold text-blue-300 flex items-center justify-center gap-2">
+                                                        <Activity className="w-4 h-4 animate-spin" />
+                                                        <span>[{item.name}] 편입 구성종목 TOP 5 및 운용 보수 데이터를 불러오는 중...</span>
+                                                    </div>
+                                                ) : quickDetail ? (
+                                                    <>
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/10">
+                                                            <div className="text-xs font-black text-white flex items-center gap-1.5">
+                                                                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                                                                <span>{item.name} 핵심 펀드 정보</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-[11px] font-mono">
+                                                                <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-300">
+                                                                    총보수(TER): <strong className="text-amber-300">{quickDetail.expense_ratio || '연 0.15~0.45%'}</strong>
+                                                                </span>
+                                                                <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-300">
+                                                                    배당/분배금: <strong className="text-emerald-300">{quickDetail.dividend_yield || '운용사 기준'}</strong>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 편입 종목 TOP 5 */}
+                                                        {Array.isArray(quickDetail.holdings) && quickDetail.holdings.length > 0 ? (
+                                                            <div className="space-y-1.5">
+                                                                <div className="text-[11px] font-black text-blue-300">
+                                                                    📦 주요 편입 구성종목 (Holdings TOP 5)
+                                                                </div>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                                    {quickDetail.holdings.slice(0, 5).map((h: any, hIdx: number) => (
+                                                                        <div key={hIdx} className="flex items-center justify-between bg-white/5 px-2.5 py-1.5 rounded-lg text-[11px]">
+                                                                            <span className="text-zinc-200 font-bold truncate mr-2">
+                                                                                {hIdx + 1}. {h.name || h.ticker}
+                                                                            </span>
+                                                                            <span className="text-blue-300 font-mono font-black shrink-0">
+                                                                                {typeof h.weight === 'number' ? `${h.weight.toFixed(1)}%` : (h.weight || '-')}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[11px] text-zinc-400">
+                                                                기초지수: <strong className="text-zinc-200">{quickDetail.underlying_index || item.category_name || '대표 지수 추종'}</strong>
+                                                            </div>
+                                                        )}
+
+                                                        {/* 기간별 수익률 요약 */}
+                                                        {quickDetail.performance && (
+                                                            <div className="grid grid-cols-4 gap-1.5 pt-1">
+                                                                {['1개월', '3개월', '6개월', '1년'].map(period => {
+                                                                    const val = quickDetail.performance?.[period];
+                                                                    const numVal = typeof val === 'number' ? val : parseFloat(String(val || 0));
+                                                                    return (
+                                                                        <div key={period} className="bg-white/5 p-1.5 rounded-lg text-center">
+                                                                            <div className="text-[9px] text-zinc-400 font-bold">{period} 수익률</div>
+                                                                            <div className={`text-[11px] font-mono font-black ${
+                                                                                numVal > 0 ? 'text-red-400' : numVal < 0 ? 'text-blue-400' : 'text-zinc-400'
+                                                                            }`}>
+                                                                                {val !== undefined && val !== null ? `${numVal > 0 ? '+' : ''}${numVal.toFixed(1)}%` : '-'}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <div className="text-xs text-zinc-400 py-2">
+                                                        상세 구성종목 및 1년 시세 차트는 심층 분석 페이지에서 확인하실 수 있습니다.
+                                                    </div>
+                                                )}
                                             </div>
-                                        </article>
-                                    </Link>
+                                        )}
+                                    </div>
                                 );
                             })
                         ) : (
                             <div className="col-span-full py-20 text-center">
                                 <Activity className={`w-8 h-8 mx-auto mb-3 ${loading ? 'text-blue-500 animate-spin' : 'text-gray-600'}`} />
                                 <p className="text-gray-400 font-bold text-sm">
-                                    {loading ? '실시간 ETF 랭킹 데이터를 동기화 중입니다...' : '검색 조건에 일치하는 ETF 종목이 없습니다.'}
+                                    {loading
+                                        ? '실시간 ETF 랭킹 데이터를 동기화 중입니다...'
+                                        : onlyWatchlist
+                                        ? '아직 등록한 관심 ETF가 없습니다. 카드 우측 상단의 [+ 관심ETF 알림받기] 버튼을 눌러 등록해보세요!'
+                                        : '검색 조건에 일치하는 ETF 종목이 없습니다.'}
                                 </p>
-                                {!loading && searchQuery && (
+                                {!loading && (searchQuery || onlyWatchlist) && (
                                     <button
-                                        onClick={() => setSearchQuery('')}
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setOnlyWatchlist(false);
+                                        }}
                                         className="mt-3 px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold cursor-pointer"
                                     >
-                                        검색 초기화
+                                        전체 ETF 보기
                                     </button>
                                 )}
                             </div>
@@ -572,7 +1061,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     </div>
                 )}
 
-                {/* 2. TABLE VIEW (상세 표 모드) */}
+                {/* 2. TABLE VIEW (상세 표 모드 - 시총, 회전율, 관심ETF 버튼 포함) */}
                 {viewMode === 'table' && (
                     <div className="relative z-10 overflow-x-auto rounded-2xl border border-white/10 bg-black/40">
                         <table className="w-full text-left text-xs">
@@ -583,11 +1072,12 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                     <th className="p-3 text-right">현재가</th>
                                     <th className="p-3 text-right">등락률</th>
                                     <th className="p-3 text-right">거래대금</th>
-                                    <th className="p-3 text-right">거래량</th>
+                                    <th className="p-3 text-right">순자산(시총)</th>
+                                    <th className="p-3 text-right">회전율</th>
                                     <th className="p-3 text-right">실시간 NAV</th>
-                                    <th className="p-3 text-right">괴리율</th>
+                                    <th className="p-3 text-right">괴리율 · 판독</th>
                                     <th className="p-3 text-right">3M수익률</th>
-                                    <th className="p-3 text-center">분석</th>
+                                    <th className="p-3 text-center">관심알림</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -597,6 +1087,9 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                     const colorClass = positive ? 'text-red-400' : negative ? 'text-blue-400' : 'text-gray-400';
                                     const rank = item.rank || idx + 1;
                                     const brandInfo = getBrandInfo(item.brand);
+                                    const navAnalysis = getNavDisparityAnalysis(item);
+                                    const saved = isSymbolSaved(item.symbol);
+                                    const turnover = item.turnover_rate ?? ((item.market_sum_num && item.market_sum_num > 0) ? Number((((item.amount_num || 0) / item.market_sum_num) * 100).toFixed(1)) : 0);
 
                                     return (
                                         <tr 
@@ -625,14 +1118,14 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                 {positive ? '▲' : negative ? '▼' : ''}{Math.abs(item.change_percent || 0).toFixed(2)}%
                                             </td>
                                             <td className="p-3 text-right font-mono text-gray-200">{item.amount || '-'}</td>
-                                            <td className="p-3 text-right font-mono text-gray-400">
-                                                {item.volume ? parseInt(String(item.volume).replace(/,/g, '')).toLocaleString() : '-'}
+                                            <td className="p-3 text-right font-mono text-purple-300">{item.market_sum || '-'}</td>
+                                            <td className={`p-3 text-right font-mono font-bold ${turnover >= 20 ? 'text-rose-400' : 'text-gray-300'}`}>
+                                                {turnover > 0 ? `${turnover}%` : '-'}
                                             </td>
                                             <td className="p-3 text-right font-mono text-gray-300">{item.nav || '-'}</td>
-                                            <td className={`p-3 text-right font-mono ${
-                                                Math.abs(item.nav_gap_num || 0) >= 1.0 ? 'text-amber-400 font-black' : 'text-emerald-400'
-                                            }`}>
-                                                {item.nav_gap || '-'}
+                                            <td className={`p-3 text-right font-mono ${navAnalysis.textClass}`}>
+                                                <div className="font-bold">{item.nav_gap || '-'}</div>
+                                                <div className="text-[9px] opacity-85">{navAnalysis.label}</div>
                                             </td>
                                             <td className={`p-3 text-right font-mono font-bold ${
                                                 (item.three_month_num || 0) > 0 ? 'text-red-400' : (item.three_month_num || 0) < 0 ? 'text-blue-400' : 'text-gray-400'
@@ -640,9 +1133,18 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                 {item.three_month_return || '-'}
                                             </td>
                                             <td className="p-3 text-center">
-                                                <span className="inline-flex items-center justify-center p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20">
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => toggleWatchlistEtf(e, item)}
+                                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black border cursor-pointer ${
+                                                        saved
+                                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                                            : 'bg-white/5 text-gray-300 border-white/10 hover:text-amber-300'
+                                                    }`}
+                                                >
+                                                    <Star className={`w-3 h-3 ${saved ? 'fill-amber-400 text-amber-400' : ''}`} />
+                                                    <span>{saved ? '등록됨' : '담기'}</span>
+                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -670,33 +1172,30 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed break-keep">
-                    {/* 카드 1 */}
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
                         <div className="font-black text-blue-300 text-sm flex items-center gap-1.5">
-                            <span>1. 괴리율(Discrepancy)이란?</span>
+                            <span>1. 할인(-) vs 할증(+) 괴리율 활용법</span>
                         </div>
                         <p className="text-zinc-300 text-xs leading-relaxed">
-                            ETF가 담고 있는 실제 주식들의 순가치인 <strong className="text-white">'순자산가치(NAV)'</strong>와 시장에서 거래되는 <strong className="text-white">'현재가'</strong>의 차이입니다. 괴리율이 (+)로 너무 크면 실제 가치보다 웃돈을 주고 비싸게 사는 셈이므로, 괴리율이 ±0.5% 이내로 안정적일 때 거래하는 것이 안전합니다.
+                            ETF가 담고 있는 실제 주식들의 순가치인 <strong className="text-white">&apos;순자산가치(NAV)&apos;</strong>보다 현재가가 낮으면 <strong className="text-cyan-300">&apos;저평가 할인(-)&apos;</strong> 상태이므로 매수에 유리하고, 반대로 (+)할증이 크면 실제 가치보다 웃돈을 주고 사는 셈이므로 주의가 필요합니다.
                         </p>
                     </div>
 
-                    {/* 카드 2 */}
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
                         <div className="font-black text-purple-300 text-sm flex items-center gap-1.5">
-                            <span>2. LP(유동성공급자) 거래 주의 시간</span>
+                            <span>2. 자금 회전율(거래대금÷시총)이란?</span>
                         </div>
                         <p className="text-zinc-300 text-xs leading-relaxed">
-                            증권사(LP)는 장 시작 5분 후(09:05)부터 장 마감 10분 전(15:20)까지 호가를 제출합니다. <strong className="text-white">'09:00~09:05 및 15:20~15:30'</strong> 구간에는 LP 호가가 비어 괴리율이 비정상적으로 급변할 수 있으니 시장가 매수를 피하고 지정가로 주문하세요.
+                            ETF의 전체 덩치(순자산총액) 대비 당일 거래대금이 얼마나 폭발했는지 보여주는 지표입니다. <strong className="text-rose-300">회전율이 20% 이상</strong>인 ETF는 오늘 단기 스마트머니와 시장의 주도 수급이 가장 강력하게 쏠리고 있는 핵심 섹터입니다.
                         </p>
                     </div>
 
-                    {/* 카드 3 */}
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
                         <div className="font-black text-amber-300 text-sm flex items-center gap-1.5">
-                            <span>3. 레버리지 '음의 복리(녹아내림)'</span>
+                            <span>3. 관심ETF 등록 시 어떤 알림이 오나요?</span>
                         </div>
                         <p className="text-zinc-300 text-xs leading-relaxed">
-                            2배 레버리지 ETF는 일간 수익률의 2배를 추종합니다. 시장이 오르내림을 반복하며 횡보할 경우 <strong className="text-white">'음의 복리 효과(Volatility Drag)'</strong>로 인해 주가가 제자리여도 원금이 손실을 입게 되므로, 장기 투자보다는 단기 모멘텀용으로 접근해야 합니다.
+                            원하는 국내·미국 ETF 카드에서 <strong className="text-amber-300">[+ 관심ETF 알림받기]</strong>를 눌러두면, 일반 주식과 동일하게 <strong className="text-white">매일 아침 장시작 시가(NAV 괴리율 포함) 알림, 장마감 수익률 결산, 연관 섹터 지수 브리핑</strong>을 자동으로 받아보실 수 있습니다.
                         </p>
                     </div>
                 </div>

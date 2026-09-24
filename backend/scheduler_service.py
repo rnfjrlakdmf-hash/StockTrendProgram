@@ -18,6 +18,35 @@ def is_korean_stock(symbol: str) -> bool:
     clean_sym = symbol.split('.')[0] if '.' in symbol else symbol
     return clean_sym.isdigit() and len(clean_sym) == 6
 
+def _resolve_etf_info(symbol: str) -> Optional[Dict]:
+    """관심종목에 등록된 종목이 국내/해외 ETF인 경우 ETF 이름과 실시간 NAV/괴리율 정보를 반환"""
+    try:
+        clean_sym = symbol.split('.')[0].strip().upper()
+        from rank_data import get_etf_ranking, CACHE_KR_ETFS, CACHE_US_ETFS
+        if clean_sym.isdigit() and len(clean_sym) == 6:
+            kr_list = CACHE_KR_ETFS.get("data") or get_etf_ranking("KR")
+            for item in (kr_list or []):
+                if str(item.get("symbol", "")).strip() == clean_sym:
+                    return {
+                        "name": item.get("name"),
+                        "nav": item.get("nav"),
+                        "nav_gap": item.get("nav_gap"),
+                        "nav_gap_num": item.get("nav_gap_num", 0.0)
+                    }
+        else:
+            us_list = CACHE_US_ETFS.get("data") or get_etf_ranking("US")
+            for item in (us_list or []):
+                if str(item.get("symbol", "")).strip().upper() == clean_sym:
+                    return {
+                        "name": item.get("name"),
+                        "nav": item.get("nav"),
+                        "nav_gap": item.get("nav_gap"),
+                        "nav_gap_num": item.get("nav_gap_num", 0.0)
+                    }
+    except Exception:
+        pass
+    return None
+
 def is_market_holiday(market: str) -> bool:
     """국가별 주요 시장 휴장일 여부 확인 (2024-2025 주요 공휴일)"""
     if market == "KR":
@@ -134,9 +163,14 @@ def calculate_watchlist_performance(user_id: str, market: str):
                         "perf": (total_item_profit / total_item_buy_value) * 100
                     })
 
+            etf_meta = _resolve_etf_info(sym)
+            resolved_name = (etf_meta.get("name") if etf_meta else None) or get_korean_stock_name(sym) or quote.get('name', sym)
+            if etf_meta and etf_meta.get("nav_gap") and etf_meta.get("nav_gap") != "+0.00%":
+                resolved_name = f"{resolved_name} [괴리율 {etf_meta['nav_gap']}]"
+
             item = {
                 "symbol": sym,
-                "name": get_korean_stock_name(sym) or quote.get('name', sym),
+                "name": resolved_name,
                 "current_price": curr_p,
                 "daily_change": change_p,
                 "added_price": (total_item_buy_value / total_item_qty) if total_item_qty > 0 else added_price,
@@ -207,7 +241,8 @@ def send_opening_notification(market: str):
             quote = get_simple_quote(symbol)
             if quote:
                 price = quote.get('price', 0)
-                name = get_korean_stock_name(symbol) or symbol
+                etf_meta = _resolve_etf_info(symbol)
+                name = (etf_meta.get("name") if etf_meta else None) or get_korean_stock_name(symbol) or symbol
                 
                 # Add currency formatting
                 if market == "US":
@@ -228,6 +263,9 @@ def send_opening_notification(market: str):
                         price_str = f"{price_float:,.0f}원"
                     except ValueError:
                         price_str = f"{price}원" if not str(price).endswith("원") else str(price)
+
+                if etf_meta and etf_meta.get("nav_gap") and etf_meta.get("nav_gap") != "+0.00%":
+                    price_str += f" [NAV 괴리율 {etf_meta['nav_gap']}]"
                     
                 items_info.append(f"• {name}: {price_str}")
         
@@ -556,11 +594,12 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                 idx_line = f"🇺🇸 나스닥 {nasdaq_clean} · S&P500 {sp500_clean}"
                 macro_items = []
 
-            # 사용자 관심종목 섹터 기반 연관 매크로/섹터 지표 동적 선별
-            is_semi = any(s in ['005930', '000660', '042700', 'NVDA', 'AMD', 'TSM'] for s in clean_symbols)
-            is_battery = any(s in ['373220', '006400', '086520', '247540', '003670', 'TSLA'] for s in clean_symbols)
-            is_tech = any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL', '035720', '035420'] for s in clean_symbols) or market == "US"
-            is_heavy = any(s in ['010140', '329180', '042660', '009540'] for s in clean_symbols)
+            # 사용자 관심종목(일반 주식 + ETF 포함) 섹터 기반 연관 매크로/섹터 지표 동적 선별
+            item_names_joined = " ".join(str(it.get("name", "")) for it in perf.get("items", []))
+            is_semi = any(s in ['005930', '000660', '042700', '091160', '396500', 'NVDA', 'AMD', 'TSM', 'SOXL', 'SOXX', 'SMH', 'SOXS'] for s in clean_symbols) or ("반도체" in item_names_joined or "SOX" in item_names_joined.upper())
+            is_battery = any(s in ['373220', '006400', '086520', '247540', '003670', '305720', '305540', 'TSLA', 'TSLL'] for s in clean_symbols) or ("2차전지" in item_names_joined or "배터리" in item_names_joined or "테슬라" in item_names_joined)
+            is_tech = any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL', '035720', '035420', 'QQQ', 'TQQQ', 'SQQQ', 'SPY', 'SCHD', 'TLT', 'TMF', '360750', '133690'] for s in clean_symbols) or any(k in item_names_joined for k in ["나스닥", "S&P", "빅테크", "AI", "채권", "국채", "금리"]) or market == "US"
+            is_heavy = any(s in ['010140', '329180', '042660', '009540', 'XLE'] for s in clean_symbols) or any(k in item_names_joined for k in ["조선", "중공업", "원유", "에너지", "방산"])
 
             if is_semi and common['SOX'] and common['SOX'] != "반도체지수: -":
                 macro_items.append(f"반도체 {common['SOX'].replace('반도체지수: ', '')}")

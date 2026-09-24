@@ -96,13 +96,13 @@ export default function EtfAnalysisPage() {
                             <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight flex items-center gap-3 flex-wrap">
                                 <span>실시간 ETF 랭킹 &amp; 괴리율 레이더</span>
                                 <span className="text-xs md:text-sm font-black px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full text-white shadow-lg shadow-blue-500/20">
-                                    TOP 50 실시간
+                                    TOP 100 실시간 · 관심ETF 알림 연동
                                 </span>
                             </h1>
                             <p className="text-gray-400 font-medium max-w-2xl leading-relaxed text-xs md:text-sm">
                                 {market === 'KR' 
-                                    ? "국내 상장된 주요 ETF(레버리지, 인버스, 배당주, 반도체 등)의 실시간 거래량, 거래대금, 실시간 NAV 및 괴리율 데이터를 모니터링합니다."
-                                    : "미국 시장 지수(S&P500, 나스닥) 추종 ETF 및 글로벌 핵심 섹터·레버리지 상품군의 실시간 시세를 집계합니다."
+                                    ? "국내 상장 ETF의 실시간 거래대금, 순자산총액(AUM), 자금 회전율, NAV 할인·할증 괴리율 및 편입 구성종목을 한눈에 분석하고 내 관심종목으로 등록해 장시작·장마감 알림을 받아보세요."
+                                    : "미국 시장 대표 지수(S&P500, 나스닥100), 배당(SCHD, JEPI), 반도체·빅테크 3배 레버리지 ETF의 실시간 시세와 수급을 분석하고 내 관심종목으로 등록해 알림을 받아보세요."
                                 }
                             </p>
                         </div>
