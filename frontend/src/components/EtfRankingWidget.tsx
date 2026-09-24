@@ -50,6 +50,64 @@ interface EtfRankingWidgetProps {
 
 type SortField = 'amount' | 'market_sum' | 'turnover' | 'volume' | 'change_high' | 'change_low' | 'discount_best' | 'nav_gap' | 'three_month';
 
+// 초보자 눈높이 마우스 오버(Hover) 툴팁 컴포넌트
+function BeginnerTooltip({
+    title,
+    desc,
+    children,
+    align = 'center'
+}: {
+    title: string;
+    desc: string;
+    children: React.ReactNode;
+    align?: 'left' | 'center' | 'right';
+}) {
+    const posClass =
+        align === 'left'
+            ? 'left-0'
+            : align === 'right'
+            ? 'right-0'
+            : 'left-1/2 -translate-x-1/2';
+
+    return (
+        <div className="relative group/tip inline-flex items-center">
+            {children}
+            <div
+                className={`pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-all duration-200 z-50 absolute bottom-full mb-2 ${posClass} w-64 sm:w-72 p-3 rounded-2xl bg-[#090d16]/98 border border-blue-400/50 shadow-[0_12px_35px_rgba(0,0,0,0.9)] backdrop-blur-xl text-left`}
+            >
+                <div className="flex items-center gap-1.5 text-[11px] font-black text-blue-300 mb-1 pb-1 border-b border-white/10">
+                    <span>🎓</span>
+                    <span>{title}</span>
+                </div>
+                <p className="text-[11px] text-zinc-200 font-medium leading-relaxed break-keep">
+                    {desc}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+// ETF 유형(레버리지/인버스/배당/채권 등)별 초보자 맞춤 설명 생성기
+function getCategoryBeginnerDesc(categoryName?: string, etfName?: string): string {
+    const text = `${categoryName || ''} ${etfName || ''}`.toUpperCase();
+    if (text.includes('인버스') || text.includes('-3X') || text.includes('-2X') || text.includes('-1X') || text.includes('SHORT')) {
+        return '주가가 떨어질 때 오히려 수익이 나는 [청개구리(하락 방어) 상품]입니다. 시장 하락이 예상될 때 단기 방어용으로 활용합니다.';
+    }
+    if (text.includes('레버리지') || text.includes('3X') || text.includes('2X') || text.includes('BULL')) {
+        return '기초 지수가 하루 1% 오를 때 2배~3배씩 움직이는 [고위험·고수익 가속 상품]입니다. 오를 땐 빠르지만 횡보장에서는 원금이 줄어들 수 있어 단기 매매에 쓰입니다.';
+    }
+    if (text.includes('배당') || text.includes('커버드콜') || text.includes('인컴') || text.includes('리츠')) {
+        return '주가 상승뿐 아니라 매월 또는 분기마다 따박따박 나오는 [배당금(분배금) 현금흐름]을 목적으로 투자하는 인컴형 상품입니다.';
+    }
+    if (text.includes('채권') || text.includes('국채') || text.includes('금리') || text.includes('파킹') || text.includes('회사채')) {
+        return '국가나 우량 기업에 돈을 빌려주고 이자를 받는 [안전자산·금리 연동형 상품]입니다. 주식 시장이 불안할 때 자금을 안전하게 보관하거나 금리 인하 시기에 활용합니다.';
+    }
+    if (text.includes('반도체') || text.includes('AI') || text.includes('빅테크') || text.includes('2차전지')) {
+        return '특정 핵심 미래 산업(반도체·AI·배터리 등)의 대표 기업들만 한 바구니에 모아 집중 투자하는 [섹터·테마형 ETF]입니다.';
+    }
+    return '시장 전체를 대표하는 우량 기업들에 골고루 분산 투자하여, 개별 기업 악재 위험을 줄이고 시장 평균 수익을 따라가는 [기본 지수형 ETF]입니다.';
+}
+
 export default function EtfRankingWidget({ data, loading, market, filterKeyword }: EtfRankingWidgetProps) {
     const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
@@ -449,10 +507,17 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 {/* 1. 상위 ETF 총 거래대금 */}
                 <div className="bg-gradient-to-br from-blue-950/40 via-zinc-900/80 to-black p-4 sm:p-5 rounded-2xl border border-blue-500/30 shadow-lg flex flex-col justify-between">
                     <div className="flex items-center justify-between text-xs font-black text-blue-300 mb-1.5">
-                        <span className="flex items-center gap-1.5">
-                            <Coins className="w-4 h-4 text-blue-400" />
-                            <span>상위 ETF 총 거래대금</span>
-                        </span>
+                        <BeginnerTooltip
+                            align="left"
+                            title="상위 ETF 총 거래대금이란?"
+                            desc="오늘 하루 동안 주요 ETF들에서 사고팔린 전체 금액의 합계입니다. 숫자가 클수록 시장에 현금(유동성)이 활발하게 돌고 있다는 뜻입니다."
+                        >
+                            <span className="flex items-center gap-1.5 cursor-help">
+                                <Coins className="w-4 h-4 text-blue-400" />
+                                <span>상위 ETF 총 거래대금</span>
+                                <HelpCircle className="w-3.5 h-3.5 text-blue-400/70" />
+                            </span>
+                        </BeginnerTooltip>
                         <span className="text-[10px] font-mono font-bold text-blue-300 bg-blue-500/20 border border-blue-500/30 px-2 py-0.5 rounded-md">
                             LIQUIDITY
                         </span>
@@ -468,10 +533,16 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 {/* 2. 당일 거래대금 1위 주도주 */}
                 <div className="bg-gradient-to-br from-purple-950/40 via-zinc-900/80 to-black p-4 sm:p-5 rounded-2xl border border-purple-500/30 shadow-lg flex flex-col justify-between">
                     <div className="flex items-center justify-between text-xs font-black text-purple-300 mb-1.5">
-                        <span className="flex items-center gap-1.5">
-                            <Flame className="w-4 h-4 text-purple-400" />
-                            <span>거래대금 1위 ETF</span>
-                        </span>
+                        <BeginnerTooltip
+                            title="거래대금 1위 ETF란?"
+                            desc="오늘 투자자들의 돈이 가장 많이 몰린 '시장 주인공' ETF입니다. 지금 시장 참여자들이 상승(레버리지)과 하락(인버스) 중 어디에 가장 크게 반응하는지 한눈에 보여줍니다."
+                        >
+                            <span className="flex items-center gap-1.5 cursor-help">
+                                <Flame className="w-4 h-4 text-purple-400" />
+                                <span>거래대금 1위 ETF</span>
+                                <HelpCircle className="w-3.5 h-3.5 text-purple-400/70" />
+                            </span>
+                        </BeginnerTooltip>
                         <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 rounded-md">
                             NO.1 FLOW
                         </span>
@@ -493,10 +564,16 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         : 'bg-gradient-to-br from-cyan-950/40 via-zinc-900/80 to-black border-cyan-500/30'
                 }`}>
                     <div className="flex items-center justify-between text-xs font-black mb-1.5">
-                        <span className="flex items-center gap-1.5 text-zinc-300">
-                            <ShieldAlert className={`w-4 h-4 ${macroStats.gapAlertCount > 0 ? 'text-amber-400' : 'text-cyan-400'}`} />
-                            <span>NAV 할인 · 괴리율 통계</span>
-                        </span>
+                        <BeginnerTooltip
+                            title="NAV 할인 · 괴리율 통계란?"
+                            desc="ETF 안에 담긴 주식들의 실제 원가(NAV)보다 시장 가격이 더 싸게 거래되는 '할인 괴리(-)' 종목 수입니다. 클릭하면 본래 가치보다 저렴하게 거래 중인 순서대로 정렬합니다."
+                        >
+                            <span className="flex items-center gap-1.5 text-zinc-300 cursor-help">
+                                <ShieldAlert className={`w-4 h-4 ${macroStats.gapAlertCount > 0 ? 'text-amber-400' : 'text-cyan-400'}`} />
+                                <span>NAV 할인 · 괴리율 통계</span>
+                                <HelpCircle className="w-3.5 h-3.5 text-cyan-400/70" />
+                            </span>
+                        </BeginnerTooltip>
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border bg-cyan-500/20 text-cyan-300 border-cyan-500/40">
                             할인괴리 {macroStats.discountOpportunityCount}개
                         </span>
@@ -520,10 +597,17 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     className="bg-gradient-to-br from-rose-950/40 via-zinc-900/80 to-black p-4 sm:p-5 rounded-2xl border border-rose-500/30 shadow-lg flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.01]"
                 >
                     <div className="flex items-center justify-between text-xs font-black text-rose-300 mb-1.5">
-                        <span className="flex items-center gap-1.5">
-                            <TrendingUp className="w-4 h-4 text-rose-400" />
-                            <span>당일 최고 급등 ETF</span>
-                        </span>
+                        <BeginnerTooltip
+                            align="right"
+                            title="당일 최고 급등 ETF란?"
+                            desc="오늘 장에서 전일 대비 상승률이 가장 높은 ETF입니다. 클릭하면 상승률이 높은 순서대로 전체 목록을 즉시 정렬해 보여줍니다."
+                        >
+                            <span className="flex items-center gap-1.5 cursor-help">
+                                <TrendingUp className="w-4 h-4 text-rose-400" />
+                                <span>당일 최고 급등 ETF</span>
+                                <HelpCircle className="w-3.5 h-3.5 text-rose-400/70" />
+                            </span>
+                        </BeginnerTooltip>
                         <span className="text-[10px] font-mono font-bold text-rose-300 bg-rose-500/20 border border-rose-500/30 px-2 py-0.5 rounded-md">
                             TOP GAINER
                         </span>
@@ -542,12 +626,19 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 {/* 좌측 5컬럼: 🐂 지수·레버리지형 vs 🐻 인버스형 거래대금 비중 */}
                 <div className="lg:col-span-5 p-5 rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black border border-white/10 shadow-xl flex flex-col justify-between space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="text-base">📊</span>
-                            <h4 className="text-sm sm:text-base font-black text-white">
-                                지수·레버리지형 vs 인버스형 거래대금 비중
-                            </h4>
-                        </div>
+                        <BeginnerTooltip
+                            align="left"
+                            title="지수·레버리지형 vs 인버스형 거래대금 비중이란?"
+                            desc="시장이 오를 때 수익이 나는 상품(지수·레버리지)과 시장이 내릴 때 수익이 나는 청개구리 상품(인버스) 중 어디에 오늘 거래대금이 더 많이 몰렸는지 비교한 줄다리기 지표입니다."
+                        >
+                            <div className="flex items-center gap-2 cursor-help">
+                                <span className="text-base">📊</span>
+                                <h4 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+                                    <span>지수·레버리지형 vs 인버스형 거래대금 비중</span>
+                                    <HelpCircle className="w-3.5 h-3.5 text-blue-400/80 shrink-0" />
+                                </h4>
+                            </div>
+                        </BeginnerTooltip>
                         <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
                             macroStats.bullRatio >= 55
                                 ? 'bg-red-500/20 text-red-300 border-red-500/40'
@@ -595,12 +686,19 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 {/* 우측 7컬럼: 🔥 실시간 6대 핵심 섹터 자금 쏠림 레이더 */}
                 <div className="lg:col-span-7 p-5 rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black border border-white/10 shadow-xl space-y-3">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Flame className="w-4 h-4 text-amber-400" />
-                            <h4 className="text-sm sm:text-base font-black text-white">
-                                섹터별 ETF 실시간 자금 쏠림 레이더 (클릭 시 즉시 필터)
-                            </h4>
-                        </div>
+                        <BeginnerTooltip
+                            align="left"
+                            title="섹터별 ETF 실시간 자금 쏠림 레이더란?"
+                            desc="반도체·AI, 2차전지, 배당, 채권 등 6가지 핵심 분야 중 오늘 어디로 가장 많은 거래대금이 몰리고 평균 몇 % 올랐는지 요약한 표입니다. 원하는 박스를 클릭하면 해당 분야 ETF만 골라 볼 수 있습니다."
+                        >
+                            <div className="flex items-center gap-2 cursor-help">
+                                <Flame className="w-4 h-4 text-amber-400" />
+                                <h4 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+                                    <span>섹터별 ETF 실시간 자금 쏠림 레이더 (클릭 시 즉시 필터)</span>
+                                    <HelpCircle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+                                </h4>
+                            </div>
+                        </BeginnerTooltip>
                         <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
                             SECTOR MONEY FLOW
                         </span>
@@ -643,11 +741,11 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
             </div>
 
             {/* 3. 본체 위젯 카드: 타이틀 + 컨트롤 바 + 뷰 토글 */}
-            <div className="p-5 md:p-8 rounded-3xl bg-zinc-900/70 border border-white/10 backdrop-blur-xl relative overflow-hidden shadow-2xl space-y-6">
+            <div className="p-5 md:p-8 rounded-3xl bg-zinc-900/70 border border-white/10 backdrop-blur-xl relative overflow-visible shadow-2xl space-y-6">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 blur-3xl rounded-full pointer-events-none" />
                 
                 {/* Header Title & View Toggle */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-20">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center gap-2">
@@ -655,6 +753,10 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                             </h2>
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                 TOP {displayLimit}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                <span>🎓</span>
+                                <span>용어에 마우스를 올리면 초보자 설명이 나타납니다</span>
                             </span>
                         </div>
                         <p className="text-zinc-400 font-medium text-xs">
@@ -710,7 +812,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 </div>
 
                 {/* Controls Bar: 실시간 검색 + 정렬 옵션 + 표시 개수 */}
-                <div className="space-y-3 relative z-10 bg-black/50 border border-white/10 p-3.5 md:p-4 rounded-2xl">
+                <div className="space-y-3 relative z-30 bg-black/50 border border-white/10 p-3.5 md:p-4 rounded-2xl">
                     <div className="flex flex-col lg:flex-row items-center gap-3">
                         {/* 실시간 검색창 */}
                         <div className="relative flex-1 w-full">
@@ -732,31 +834,67 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                             )}
                         </div>
 
-                        {/* 정렬 필터 (시총순, 회전율순, 할인매수순 추가!) */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto scrollbar-none pb-1 lg:pb-0">
+                        {/* 정렬 필터 (마우스 오버 시 초보자 설명 표시) */}
+                        <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto pb-1 lg:pb-0">
                             <span className="text-[11px] font-bold text-gray-400 shrink-0 hidden sm:flex items-center gap-1">
                                 <ArrowUpDown className="w-3 h-3 text-blue-400" /> 정렬:
                             </span>
                             {[
-                                { id: 'amount', label: '🔥 거래대금순' },
-                                { id: 'market_sum', label: '🏛️ 순자산(시총)순' },
-                                { id: 'turnover', label: '⚡ 자금회전율순' },
-                                { id: 'discount_best', label: '📉 NAV할인괴리순' },
-                                { id: 'change_high', label: '📈 급등순' },
-                                { id: 'nav_gap', label: '⚠️ 괴리율폭순' },
-                                { id: 'three_month', label: '👑 3M수익률순' }
+                                {
+                                    id: 'amount',
+                                    label: '🔥 거래대금순',
+                                    title: '거래대금순 정렬이란?',
+                                    desc: '오늘 하루 동안 사고팔린 금액(현금 거래량)이 가장 많은 인기 순서대로 보여줍니다.'
+                                },
+                                {
+                                    id: 'market_sum',
+                                    label: '🏛️ 순자산(시총)순',
+                                    title: '순자산(시가총액)순 정렬이란?',
+                                    desc: '이 ETF에 모여 있는 전체 투자금(펀드 덩치·규모)이 가장 큰 순서대로 보여줍니다. 규모가 클수록 거래가 안정적입니다.'
+                                },
+                                {
+                                    id: 'turnover',
+                                    label: '⚡ 자금회전율순',
+                                    title: '자금회전율순 정렬이란?',
+                                    desc: '전체 펀드 덩치 대비 오늘 하루 거래된 금액 비율(거래대금÷순자산)이 높은 순서입니다. 덩치에 비해 오늘 돈이 가장 뜨겁게 몰리는 종목을 찾습니다.'
+                                },
+                                {
+                                    id: 'discount_best',
+                                    label: '📉 NAV할인괴리순',
+                                    title: 'NAV 할인괴리순 정렬이란?',
+                                    desc: 'ETF 바구니 안의 실제 주식 가치(NAV·원가)보다 현재 시장 가격이 더 싸게(할인 상태, -괴리율) 나와 있는 순서대로 보여줍니다.'
+                                },
+                                {
+                                    id: 'change_high',
+                                    label: '📈 급등순',
+                                    title: '급등순 정렬이란?',
+                                    desc: '어제 종가 대비 오늘 상승률(%)이 가장 높은 순서대로 보여줍니다.'
+                                },
+                                {
+                                    id: 'nav_gap',
+                                    label: '⚠️ 괴리율폭순',
+                                    title: '괴리율폭순 정렬이란?',
+                                    desc: '본래 가치(NAV)와 현재 시장 가격의 차이(할증이든 할인이든 절대값)가 가장 크게 벌어진 순서대로 보여줍니다.'
+                                },
+                                {
+                                    id: 'three_month',
+                                    label: '👑 3M수익률순',
+                                    title: '3개월 누적 수익률순이란?',
+                                    desc: '하루 반짝 등락이 아니라 최근 3개월 동안 가장 꾸준히 높은 수익률을 기록한 추세 종목 순서대로 보여줍니다.'
+                                }
                             ].map((s) => (
-                                <button
-                                    key={s.id}
-                                    onClick={() => setSortField(s.id as SortField)}
-                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                                        sortField === s.id
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
-                                    }`}
-                                >
-                                    {s.label}
-                                </button>
+                                <BeginnerTooltip key={s.id} title={s.title} desc={s.desc}>
+                                    <button
+                                        onClick={() => setSortField(s.id as SortField)}
+                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                                            sortField === s.id
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                                        }`}
+                                    >
+                                        {s.label}
+                                    </button>
+                                </BeginnerTooltip>
                             ))}
                         </div>
 
@@ -810,7 +948,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                             href={`/etf-analysis?symbol=${item.symbol}`}
                                             className="block group flex-1"
                                         >
-                                            <article className={`h-full flex flex-col justify-between bg-zinc-900/90 hover:bg-zinc-800/90 border transition-all duration-200 hover:shadow-xl relative overflow-hidden rounded-2xl p-4 md:p-5 ${
+                                            <article className={`h-full flex flex-col justify-between bg-zinc-900/90 hover:bg-zinc-800/90 border transition-all duration-200 hover:shadow-xl relative overflow-visible rounded-2xl p-4 md:p-5 ${
                                                 saved ? 'border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.12)]' : 'border-white/10 hover:border-blue-500/40'
                                             }`}>
                                                 <div>
@@ -821,38 +959,60 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                                 {rank}
                                                             </div>
                                                             {item.brand && (
-                                                                <span className={`text-[11px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 ${brandInfo.color}`}>
-                                                                    <span>{item.brand}</span>
-                                                                    <span className="text-[9px] opacity-75 font-normal hidden sm:inline">({brandInfo.company})</span>
-                                                                </span>
+                                                                <BeginnerTooltip
+                                                                    align="left"
+                                                                    title={`운용사 브랜드: ${item.brand} (${brandInfo.company})`}
+                                                                    desc={`이 ETF 상품을 설계하고 굴리는 자산운용사(${brandInfo.company})의 브랜드 이름입니다. (예: 삼성 KODEX, 미래에셋 TIGER, 블랙록 iShares 등)`}
+                                                                >
+                                                                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 cursor-help ${brandInfo.color}`}>
+                                                                        <span>{item.brand}</span>
+                                                                        <span className="text-[9px] opacity-75 font-normal hidden sm:inline">({brandInfo.company})</span>
+                                                                    </span>
+                                                                </BeginnerTooltip>
                                                             )}
                                                             {item.category_name && (
-                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-300">
-                                                                    {item.category_name}
-                                                                </span>
+                                                                <BeginnerTooltip
+                                                                    title={`상품 유형: ${item.category_name}`}
+                                                                    desc={getCategoryBeginnerDesc(item.category_name, item.name)}
+                                                                >
+                                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-300 flex items-center gap-1 cursor-help">
+                                                                        <span>{item.category_name}</span>
+                                                                        <HelpCircle className="w-2.5 h-2.5 text-gray-400" />
+                                                                    </span>
+                                                                </BeginnerTooltip>
                                                             )}
                                                             {turnover >= 20 && (
-                                                                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/40 text-rose-300 animate-pulse">
-                                                                    🔥 수급폭발 (회전율 {turnover}%)
-                                                                </span>
+                                                                <BeginnerTooltip
+                                                                    title="🔥 수급폭발 (고회전율) 배지란?"
+                                                                    desc={`전체 펀드 규모(시총) 대비 오늘 하루 거래된 금액 비율이 ${turnover}%에 달한다는 뜻입니다. 20% 이상이면 시장 단기 매매 자금이 아주 뜨겁게 몰리고 있는 상태입니다.`}
+                                                                >
+                                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/40 text-rose-300 animate-pulse cursor-help">
+                                                                        🔥 수급폭발 (회전율 {turnover}%)
+                                                                    </span>
+                                                                </BeginnerTooltip>
                                                             )}
                                                         </div>
 
                                                         {/* ⭐ 원터치 내 관심종목(ETF 알림) 등록/해제 버튼 */}
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => toggleWatchlistEtf(e, item)}
-                                                            disabled={togglingSymbol === item.symbol}
-                                                            className={`px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
-                                                                saved
-                                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
-                                                                    : 'bg-white/5 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border-white/10 hover:border-amber-500/40'
-                                                            }`}
-                                                            title="내 관심종목에 추가하여 장시작 시가 및 장마감 결산 알림 받기"
+                                                        <BeginnerTooltip
+                                                            align="right"
+                                                            title="⭐ 관심ETF 알림받기 기능"
+                                                            desc="이 버튼을 누르면 내 관심종목에 저장되어, 매일 아침 장 시작 시가와 장 마감 수익률·괴리율 결산 리포트를 나만의 맞춤 알림으로 받아보실 수 있습니다."
                                                         >
-                                                            <Star className={`w-3.5 h-3.5 ${saved ? 'fill-amber-400 text-amber-400' : 'text-zinc-400'}`} />
-                                                            <span>{saved ? '관심ETF 등록됨' : '+ 관심ETF 알림받기'}</span>
-                                                        </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => toggleWatchlistEtf(e, item)}
+                                                                disabled={togglingSymbol === item.symbol}
+                                                                className={`px-2.5 py-1 rounded-xl text-[11px] font-black border flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
+                                                                    saved
+                                                                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                                                                        : 'bg-white/5 hover:bg-amber-500/20 text-zinc-300 hover:text-amber-300 border-white/10 hover:border-amber-500/40'
+                                                                }`}
+                                                            >
+                                                                <Star className={`w-3.5 h-3.5 ${saved ? 'fill-amber-400 text-amber-400' : 'text-zinc-400'}`} />
+                                                                <span>{saved ? '관심ETF 등록됨' : '+ 관심ETF 알림받기'}</span>
+                                                            </button>
+                                                        </BeginnerTooltip>
                                                     </div>
 
                                                     {/* 종목명 & 현재가 / 등락률 */}
@@ -865,9 +1025,16 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                                 <span className="text-[11px] font-mono text-zinc-400 font-bold">
                                                                     티커: {item.symbol}
                                                                 </span>
-                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${navAnalysis.badgeClass}`}>
-                                                                    {navAnalysis.label}
-                                                                </span>
+                                                                <BeginnerTooltip
+                                                                    align="left"
+                                                                    title={`실시간 괴리율 판독: ${navAnalysis.label}`}
+                                                                    desc={navAnalysis.tooltip}
+                                                                >
+                                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 cursor-help ${navAnalysis.badgeClass}`}>
+                                                                        <span>{navAnalysis.label}</span>
+                                                                        <HelpCircle className="w-2.5 h-2.5 opacity-80" />
+                                                                    </span>
+                                                                </BeginnerTooltip>
                                                             </div>
                                                         </div>
                                                         <div className="text-right shrink-0">
@@ -887,70 +1054,122 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                     </div>
                                                 </div>
 
-                                                {/* 하단 6대 핵심 지표 그리드 (거래대금, 순자산시총, 회전율, 실시간NAV, 괴리율판독, 3M수익률) */}
+                                                {/* 하단 6대 핵심 지표 그리드 (마우스 오버 시 초보자 눈높이 설명 풍선 표시!) */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-3 border-t border-white/5 text-[11px]">
                                                     {/* 1. 거래대금 */}
-                                                    <div className="bg-white/5 rounded-xl p-2">
-                                                        <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
-                                                            <span>당일 거래대금</span>
-                                                            <span className="text-[9px] text-blue-400 font-mono">FLOW</span>
+                                                    <BeginnerTooltip
+                                                        align="left"
+                                                        title="당일 거래대금 (FLOW) 이란?"
+                                                        desc="오늘 하루 동안 이 ETF가 시장에서 사고팔린 총 현금 액수입니다. 거래대금이 많을수록 내가 원할 때 언제든 바로 사고팔기 쉽습니다(유동성 풍부)."
+                                                    >
+                                                        <div className="bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-2 w-full cursor-help">
+                                                            <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
+                                                                <span className="flex items-center gap-1">
+                                                                    <span>당일 거래대금</span>
+                                                                    <HelpCircle className="w-2.5 h-2.5 text-zinc-500" />
+                                                                </span>
+                                                                <span className="text-[9px] text-blue-400 font-mono">FLOW</span>
+                                                            </div>
+                                                            <div className="font-black text-white truncate mt-0.5 font-mono">{item.amount || '-'}</div>
                                                         </div>
-                                                        <div className="font-black text-white truncate mt-0.5 font-mono">{item.amount || '-'}</div>
-                                                    </div>
+                                                    </BeginnerTooltip>
 
                                                     {/* 2. 순자산총액(AUM / 시총) */}
-                                                    <div className="bg-white/5 rounded-xl p-2">
-                                                        <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
-                                                            <span>순자산총액(시총)</span>
-                                                            <span className="text-[9px] text-purple-400 font-mono">AUM</span>
+                                                    <BeginnerTooltip
+                                                        title="순자산총액 (시총 · AUM) 이란?"
+                                                        desc="이 ETF 통장에 모여 있는 전체 투자금(펀드 덩치)입니다. 순자산이 큰 대형 ETF일수록 상장폐지 위험이 없고 운용이 안정적입니다."
+                                                    >
+                                                        <div className="bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-2 w-full cursor-help">
+                                                            <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
+                                                                <span className="flex items-center gap-1">
+                                                                    <span>순자산총액(시총)</span>
+                                                                    <HelpCircle className="w-2.5 h-2.5 text-zinc-500" />
+                                                                </span>
+                                                                <span className="text-[9px] text-purple-400 font-mono">AUM</span>
+                                                            </div>
+                                                            <div className="font-black text-purple-200 truncate mt-0.5 font-mono">
+                                                                {item.market_sum || (market === 'US' ? '대형 글로벌' : '-')}
+                                                            </div>
                                                         </div>
-                                                        <div className="font-black text-purple-200 truncate mt-0.5 font-mono">
-                                                            {item.market_sum || (market === 'US' ? '대형 글로벌' : '-')}
-                                                        </div>
-                                                    </div>
+                                                    </BeginnerTooltip>
 
                                                     {/* 3. 당일 자금 회전율 & 거래량 */}
-                                                    <div className="bg-white/5 rounded-xl p-2">
-                                                        <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
-                                                            <span>자금 회전율 · 거래량</span>
+                                                    <BeginnerTooltip
+                                                        align="right"
+                                                        title="자금 회전율 · 거래량이란?"
+                                                        desc="전체 펀드 덩치(시총) 대비 오늘 하루 거래대금의 비율입니다. 예를 들어 회전율이 30%라면 전체 펀드 자금의 30%만큼 오늘 활발하게 손바뀜이 일어났다는 뜻입니다."
+                                                    >
+                                                        <div className="bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-2 w-full cursor-help">
+                                                            <div className="text-zinc-400 text-[10px] font-bold flex items-center justify-between">
+                                                                <span className="flex items-center gap-1">
+                                                                    <span>자금 회전율 · 거래량</span>
+                                                                    <HelpCircle className="w-2.5 h-2.5 text-zinc-500" />
+                                                                </span>
+                                                            </div>
+                                                            <div className="font-black text-zinc-100 truncate font-mono mt-0.5 flex items-center gap-1">
+                                                                <span className={turnover >= 20 ? 'text-rose-400' : 'text-emerald-300'}>
+                                                                    {turnover > 0 ? `${turnover}%` : '-'}
+                                                                </span>
+                                                                <span className="text-zinc-500 text-[10px]">
+                                                                    ({item.volume ? parseInt(String(item.volume).replace(/,/g, '')).toLocaleString() : '-'}주)
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div className="font-black text-zinc-100 truncate font-mono mt-0.5 flex items-center gap-1">
-                                                            <span className={turnover >= 20 ? 'text-rose-400' : 'text-emerald-300'}>
-                                                                {turnover > 0 ? `${turnover}%` : '-'}
-                                                            </span>
-                                                            <span className="text-zinc-500 text-[10px]">
-                                                                ({item.volume ? parseInt(String(item.volume).replace(/,/g, '')).toLocaleString() : '-'}주)
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                                                    </BeginnerTooltip>
 
                                                     {/* 4. 실시간 NAV (순자산가치) */}
-                                                    <div className="bg-white/5 rounded-xl p-2">
-                                                        <div className="text-zinc-400 text-[10px] font-bold">실시간 NAV (본래가치)</div>
-                                                        <div className="font-black text-zinc-100 truncate font-mono mt-0.5">
-                                                            {item.nav && item.nav !== '-' ? (market === 'US' ? `$${item.nav}` : `${item.nav}원`) : '실시간 연동'}
+                                                    <BeginnerTooltip
+                                                        align="left"
+                                                        title="실시간 NAV (순자산가치 · 본래가치) 란?"
+                                                        desc="ETF 바구니 안에 실제로 들어있는 주식들의 진짜 원가(1주당 본래 가치)입니다. 현재 주가가 이 NAV보다 낮으면 본래 가치보다 싸게(할인) 거래되는 것입니다."
+                                                    >
+                                                        <div className="bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-2 w-full cursor-help">
+                                                            <div className="text-zinc-400 text-[10px] font-bold flex items-center gap-1">
+                                                                <span>실시간 NAV (본래가치)</span>
+                                                                <HelpCircle className="w-2.5 h-2.5 text-zinc-500" />
+                                                            </div>
+                                                            <div className="font-black text-zinc-100 truncate font-mono mt-0.5">
+                                                                {item.nav && item.nav !== '-' ? (market === 'US' ? `$${item.nav}` : `${item.nav}원`) : '실시간 연동'}
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    </BeginnerTooltip>
 
                                                     {/* 5. 괴리율 & 1주당 원화 차익 판독 */}
-                                                    <div className={`rounded-xl p-2 border ${navAnalysis.badgeClass}`}>
-                                                        <div className="text-[10px] font-bold flex items-center justify-between">
-                                                            <span>괴리율 ({item.nav_gap || '0.00%'})</span>
+                                                    <BeginnerTooltip
+                                                        title="괴리율 (할증 · 할인 차이) 이란?"
+                                                        desc="현재 시장 가격과 본래 가치(NAV)의 차이 비율입니다. 마이너스(-)면 본래 가치보다 싸게 파는 '할인 상태'이고, 플러스(+)가 너무 크면 본래 가치보다 비싸게 주고 사는 '고평가 할증 상태'입니다."
+                                                    >
+                                                        <div className={`rounded-xl p-2 border w-full cursor-help ${navAnalysis.badgeClass}`}>
+                                                            <div className="text-[10px] font-bold flex items-center justify-between">
+                                                                <span className="flex items-center gap-1">
+                                                                    <span>괴리율 ({item.nav_gap || '0.00%'})</span>
+                                                                    <HelpCircle className="w-2.5 h-2.5 opacity-80" />
+                                                                </span>
+                                                            </div>
+                                                            <div className={`font-black truncate text-[10px] mt-0.5 ${navAnalysis.textClass}`}>
+                                                                {navAnalysis.subText}
+                                                            </div>
                                                         </div>
-                                                        <div className={`font-black truncate text-[10px] mt-0.5 ${navAnalysis.textClass}`}>
-                                                            {navAnalysis.subText}
-                                                        </div>
-                                                    </div>
+                                                    </BeginnerTooltip>
 
                                                     {/* 6. 3개월 누적 수익률 */}
-                                                    <div className="bg-white/5 rounded-xl p-2">
-                                                        <div className="text-zinc-400 text-[10px] font-bold">3개월 누적 수익률</div>
-                                                        <div className={`font-black font-mono truncate mt-0.5 ${
-                                                            (item.three_month_num || 0) > 0 ? 'text-red-400' : (item.three_month_num || 0) < 0 ? 'text-blue-400' : 'text-gray-400'
-                                                        }`}>
-                                                            {item.three_month_return || '-'}
+                                                    <BeginnerTooltip
+                                                        align="right"
+                                                        title="3개월 누적 수익률이란?"
+                                                        desc="오늘 하루만의 등락이 아니라, 3개월 전부터 오늘까지 이 ETF를 보유했을 때의 중기 누적 성적표입니다. 중장기 추세가 상승장인지 하락장인지 보여줍니다."
+                                                    >
+                                                        <div className="bg-white/5 hover:bg-white/10 transition-colors rounded-xl p-2 w-full cursor-help">
+                                                            <div className="text-zinc-400 text-[10px] font-bold flex items-center gap-1">
+                                                                <span>3개월 누적 수익률</span>
+                                                                <HelpCircle className="w-2.5 h-2.5 text-zinc-500" />
+                                                            </div>
+                                                            <div className={`font-black font-mono truncate mt-0.5 ${
+                                                                (item.three_month_num || 0) > 0 ? 'text-red-400' : (item.three_month_num || 0) < 0 ? 'text-blue-400' : 'text-gray-400'
+                                                            }`}>
+                                                                {item.three_month_return || '-'}
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    </BeginnerTooltip>
                                                 </div>
 
                                                 {/* 카드 하단 액션 바: [구성종목·총보수·배당 요약 즉시 열기] + [심층 차트 이동] */}
@@ -989,12 +1208,25 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                                 <span>{item.name} 핵심 펀드 정보</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-[11px] font-mono">
-                                                                <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-300">
-                                                                    총보수(TER): <strong className="text-amber-300">{quickDetail.expense_ratio || '연 0.15~0.45%'}</strong>
-                                                                </span>
-                                                                <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-300">
-                                                                    배당/분배금: <strong className="text-emerald-300">{quickDetail.dividend_yield || '운용사 기준'}</strong>
-                                                                </span>
+                                                                <BeginnerTooltip
+                                                                    title="총보수 (TER · 운용수수료) 란?"
+                                                                    desc="자산운용사가 ETF를 대신 굴려주는 대가로 1년 동안 펀드 자산에서 매일 아주 조금씩 자동으로 떼어가는 연간 수수료율입니다. 낮을수록 장기 투자에 유리합니다."
+                                                                >
+                                                                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-300 cursor-help flex items-center gap-1">
+                                                                        <span>총보수(TER): <strong className="text-amber-300">{quickDetail.expense_ratio || '연 0.15~0.45%'}</strong></span>
+                                                                        <HelpCircle className="w-2.5 h-2.5 text-zinc-400" />
+                                                                    </span>
+                                                                </BeginnerTooltip>
+                                                                <BeginnerTooltip
+                                                                    align="right"
+                                                                    title="배당/분배금 (Dividend) 이란?"
+                                                                    desc="ETF 바구니 안의 기업들로부터 받은 배당금이나 채권 이자를 투자자들에게 월별·분기별로 현금으로 나눠주는 비율(연환산 배당수익률)입니다."
+                                                                >
+                                                                    <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-300 cursor-help flex items-center gap-1">
+                                                                        <span>배당/분배금: <strong className="text-emerald-300">{quickDetail.dividend_yield || '운용사 기준'}</strong></span>
+                                                                        <HelpCircle className="w-2.5 h-2.5 text-zinc-400" />
+                                                                    </span>
+                                                                </BeginnerTooltip>
                                                             </div>
                                                         </div>
 
