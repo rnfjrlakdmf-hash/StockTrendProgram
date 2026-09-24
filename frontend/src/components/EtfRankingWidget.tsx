@@ -227,7 +227,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         return { color: 'text-zinc-300 bg-white/10 border-white/15', company: '글로벌 운용사' };
     };
 
-    // 괴리율 정밀 해석 헬퍼 (할인/할증/적정 + 1주당 가격 차이)
+    // 괴리율 정밀 통계 판독 헬퍼 (KRX 표준 용어: 할인 괴리 / 할증 괴리 / NAV 수렴 + 1주당 산술 편차)
     const getNavDisparityAnalysis = (item: EtfItem) => {
         const gap = item.nav_gap_num || 0;
         const priceNum = item.price_num || parseFloat(String(item.price || 0).replace(/,/g, '')) || 0;
@@ -237,31 +237,31 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
 
         if (Math.abs(gap) >= 1.0) {
             return {
-                label: gap > 0 ? '⚠️ 과열 할증 주의' : '🔥 대폭 할인(저평가)',
-                subText: diffVal !== 0 ? `NAV 대비 ${diffVal > 0 ? '+' : ''}${diffVal.toLocaleString()}${unit} ${diffVal > 0 ? '비쌈' : '저렴'}` : 'LP 호가 확인 필수',
+                label: gap > 0 ? '⚠️ 할증 확대 (+1%↑)' : '📉 할인 확대 (-1%↓)',
+                subText: diffVal !== 0 ? `NAV 대비 ${diffVal > 0 ? '+' : ''}${diffVal.toLocaleString()}${unit} 편차` : 'LP 호가 스프레드 확대 구간',
                 badgeClass: gap > 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
                 textClass: gap > 0 ? 'text-amber-400' : 'text-cyan-400'
             };
         }
         if (gap <= -0.15) {
             return {
-                label: '💡 저평가 할인',
-                subText: diffVal < 0 ? `실제가치보다 ${Math.abs(diffVal).toLocaleString()}${unit} 저렴` : 'NAV 대비 할인 거래 중',
+                label: '📉 할인 괴리 (NAV 하회)',
+                subText: diffVal < 0 ? `NAV 대비 -${Math.abs(diffVal).toLocaleString()}${unit} 낮음` : '시장가가 NAV 하회 중',
                 badgeClass: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
                 textClass: 'text-cyan-300'
             };
         }
         if (gap >= 0.15) {
             return {
-                label: '🔸 소폭 할증',
-                subText: diffVal > 0 ? `실제가치보다 +${diffVal.toLocaleString()}${unit} 프리미엄` : 'NAV 대비 할증 거래 중',
+                label: '📈 할증 괴리 (NAV 상회)',
+                subText: diffVal > 0 ? `NAV 대비 +${diffVal.toLocaleString()}${unit} 높음` : '시장가가 NAV 상회 중',
                 badgeClass: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
                 textClass: 'text-orange-300'
             };
         }
         return {
-            label: '✅ 적정 가치',
-            subText: 'NAV와 시장가 일치 (안정)',
+            label: '✅ NAV 수렴 (정상 범위)',
+            subText: '시장가·순자산가치 일치 구간',
             badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
             textClass: 'text-emerald-400'
         };
@@ -466,7 +466,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     </div>
                 </div>
 
-                {/* 3. 괴리율 주의 & 저평가 할인 종목 수 */}
+                {/* 3. 괴리율 주의 & 할인 괴리 종목 수 */}
                 <div 
                     onClick={() => setSortField('discount_best')}
                     className={`p-4 sm:p-5 rounded-2xl border shadow-lg flex flex-col justify-between cursor-pointer transition-all hover:scale-[1.01] ${
@@ -477,22 +477,22 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     <div className="flex items-center justify-between text-xs font-black mb-1.5">
                         <span className="flex items-center gap-1.5 text-zinc-300">
                             <ShieldAlert className={`w-4 h-4 ${macroStats.gapAlertCount > 0 ? 'text-amber-400' : 'text-cyan-400'}`} />
-                            <span>저평가 할인 · 괴리율 레이더</span>
+                            <span>NAV 할인 · 괴리율 통계</span>
                         </span>
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border bg-cyan-500/20 text-cyan-300 border-cyan-500/40">
-                            할인 {macroStats.discountOpportunityCount}개
+                            할인괴리 {macroStats.discountOpportunityCount}개
                         </span>
                     </div>
                     <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-xl md:text-2xl font-black font-mono tracking-tight text-cyan-300">
-                            할인 {macroStats.discountOpportunityCount}종목
+                            할인괴리 {macroStats.discountOpportunityCount}종목
                         </span>
                         <span className="text-xs font-bold text-amber-400 font-mono">
-                            (주의 ±1%: {macroStats.gapAlertCount}개)
+                            (±1% 초과: {macroStats.gapAlertCount}개)
                         </span>
                     </div>
                     <div className="text-xs font-medium text-zinc-400 mt-1.5 break-keep">
-                        클릭 시 실제가치(NAV)보다 저렴한 할인순 정렬
+                        클릭 시 순자산가치(NAV) 대비 할인율순 정렬
                     </div>
                 </div>
 
@@ -519,15 +519,15 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 </div>
             </div>
 
-            {/* 2. [NEW 업그레이드] 🐂 상승(레버리지·지수) vs 🐻 하락(인버스·곱버스) 실시간 자금 대결 게이지 & 🔥 6대 섹터 자금 쏠림 히트맵 */}
+            {/* 2. [NEW 업그레이드] 🐂 지수·레버리지형 vs 🐻 인버스형 실시간 거래대금 비중 & 🔥 6대 섹터 자금 유입 통계 */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                {/* 좌측 5컬럼: 🐂 상승 베팅 vs 🐻 하락 헤지 실시간 머니 플로우 */}
+                {/* 좌측 5컬럼: 🐂 지수·레버리지형 vs 🐻 인버스형 거래대금 비중 */}
                 <div className="lg:col-span-5 p-5 rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black border border-white/10 shadow-xl flex flex-col justify-between space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="text-base">⚔️</span>
+                            <span className="text-base">📊</span>
                             <h4 className="text-sm sm:text-base font-black text-white">
-                                실시간 ETF 롱(상승) vs 숏(인버스) 자금 대결
+                                지수·레버리지형 vs 인버스형 거래대금 비중
                             </h4>
                         </div>
                         <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
@@ -537,21 +537,21 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                 ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                                 : 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40'
                         }`}>
-                            {macroStats.bullRatio >= 55 ? '🐂 매수(상승) 우위 장세' : macroStats.bearRatio >= 55 ? '🐻 인버스(하락헤지) 우위' : '⚖️ 롱·숏 팽팽한 균형'}
+                            {macroStats.bullRatio >= 55 ? '📈 정방향(레버리지·지수) 거래 우위' : macroStats.bearRatio >= 55 ? '📉 역방향(인버스) 거래 우위' : '⚖️ 양방향 거래 균형'}
                         </span>
                     </div>
 
                     <div className="space-y-2.5">
                         <div className="flex items-center justify-between text-xs font-black">
                             <span className="text-red-400 flex items-center gap-1">
-                                🐂 상승 베팅 (지수·레버리지) <strong className="font-mono text-sm">{macroStats.bullRatio}%</strong>
+                                📈 지수·레버리지형 <strong className="font-mono text-sm">{macroStats.bullRatio}%</strong>
                             </span>
                             <span className="text-blue-400 flex items-center gap-1">
-                                <strong className="font-mono text-sm">{macroStats.bearRatio}%</strong> 하락 베팅 (인버스·곱버스) 🐻
+                                <strong className="font-mono text-sm">{macroStats.bearRatio}%</strong> 인버스·선물숏형 📉
                             </span>
                         </div>
 
-                        {/* 줄다리기 게이지 바 */}
+                        {/* 거래대금 비율 게이지 바 */}
                         <div className="w-full h-4 rounded-full bg-blue-950/80 overflow-hidden flex border border-white/10 p-0.5">
                             <div 
                                 className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 rounded-l-full transition-all duration-700"
@@ -564,13 +564,13 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                            <span>상승 자금: <strong className="text-zinc-200">{macroStats.bullFormatted}</strong></span>
-                            <span>하락 자금: <strong className="text-zinc-200">{macroStats.bearFormatted}</strong></span>
+                            <span>정방향 거래대금: <strong className="text-zinc-200">{macroStats.bullFormatted}</strong></span>
+                            <span>역방향 거래대금: <strong className="text-zinc-200">{macroStats.bearFormatted}</strong></span>
                         </div>
                     </div>
 
                     <p className="text-[11px] text-zinc-400 leading-relaxed bg-white/5 p-2.5 rounded-xl border border-white/5">
-                        💡 <strong className="text-zinc-200">해석 팁:</strong> 레버리지·대표지수 거래대금 비중이 60% 이상이면 시장 참여자들이 강한 상승 추세에 베팅 중이며, 인버스 비중이 급증하면 기관·개인의 단기 하락 헤지(방어) 수요가 몰리고 있음을 뜻합니다.
+                        💡 <strong className="text-zinc-200">통계 설명:</strong> 당일 거래대금 상위 ETF 중 정방향(대표지수·레버리지) 상품군과 역방향(인버스·선물인버스2X) 상품군 간의 단순 거래대금 합산 비율을 집계한 객관적 시장 통계입니다.
                     </p>
                 </div>
 
@@ -723,7 +723,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                 { id: 'amount', label: '🔥 거래대금순' },
                                 { id: 'market_sum', label: '🏛️ 순자산(시총)순' },
                                 { id: 'turnover', label: '⚡ 자금회전율순' },
-                                { id: 'discount_best', label: '💡 저평가할인순' },
+                                { id: 'discount_best', label: '📉 NAV할인괴리순' },
                                 { id: 'change_high', label: '📈 급등순' },
                                 { id: 'nav_gap', label: '⚠️ 괴리율폭순' },
                                 { id: 'three_month', label: '👑 3M수익률순' }
@@ -1174,10 +1174,10 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed break-keep">
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
                         <div className="font-black text-blue-300 text-sm flex items-center gap-1.5">
-                            <span>1. 할인(-) vs 할증(+) 괴리율 활용법</span>
+                            <span>1. 할인(-) vs 할증(+) 괴리율의 의미</span>
                         </div>
                         <p className="text-zinc-300 text-xs leading-relaxed">
-                            ETF가 담고 있는 실제 주식들의 순가치인 <strong className="text-white">&apos;순자산가치(NAV)&apos;</strong>보다 현재가가 낮으면 <strong className="text-cyan-300">&apos;저평가 할인(-)&apos;</strong> 상태이므로 매수에 유리하고, 반대로 (+)할증이 크면 실제 가치보다 웃돈을 주고 사는 셈이므로 주의가 필요합니다.
+                            ETF가 담고 있는 실제 자산들의 순가치인 <strong className="text-white">&apos;순자산가치(NAV)&apos;</strong>보다 시장 거래가가 낮게 형성된 상태를 <strong className="text-cyan-300">&apos;할인 괴리(-)&apos;</strong>라 부르며, 반대로 시장 거래가가 순자산가치보다 높게 형성된 상태를 <strong className="text-amber-300">&apos;할증 괴리(+)&apos;</strong>라고 정의합니다.
                         </p>
                     </div>
 
