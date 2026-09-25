@@ -515,14 +515,30 @@ def get_stock_pro_insights(symbols: str = Query(...)):
     import concurrent.futures
     import requests, re
 
+    # ETF 랭킹 캐시/데이터에서 실시간 ETF 지표 맵 구성
+    etf_rank_map = {}
+    try:
+        from rank_data import get_etf_ranking
+        for mkt in ("KR", "US"):
+            r_list = get_etf_ranking(mkt) or []
+            for r_item in r_list:
+                s_key = str(r_item.get("symbol", "")).strip().upper()
+                if s_key:
+                    etf_rank_map[s_key] = r_item
+    except Exception as e:
+        print(f"[ProInsights] ETF map load warning: {e}")
+
     def fetch_insight(sym):
         cached = PRO_INSIGHTS_CACHE.get(sym)
-        if cached and (now - cached[0] < PRO_INSIGHTS_TTL):
+        if cached and (now - cached[0] < PRO_INSIGHTS_TTL) and ("is_etf" in cached[1]):
             return sym, cached[1]
 
-        clean_code = re.sub(r'[^0-9A-Z]', '', sym.split('.')[0])
+        clean_code = re.sub(r'[^0-9A-Z]', '', sym.split('.')[0].upper())
+        rank_item = etf_rank_map.get(clean_code) or {}
         insight = {
             "symbol": sym,
+            "is_etf": bool(rank_item),
+            "etf_info": None,
             "target_price": None,
             "target_upside": None,
             "foreign_streak": 0,
@@ -538,16 +554,18 @@ def get_stock_pro_insights(symbols: str = Query(...)):
         }
 
         try:
-            if len(clean_code) == 6 and clean_code.isdigit():
-                # 국내 주식 네이버 금융 공개 데이터
+            if len(clean_code) == 6 and (clean_code.isdigit() or clean_code[0].isdigit()):
+                # 국내 주식/ETF 네이버 금융 공개 데이터
                 url = f"https://m.stock.naver.com/api/stock/{clean_code}/integration"
                 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
                 res = requests.get(url, headers=headers, timeout=4)
                 if res.status_code == 200:
                     rjson = res.json()
+                    stock_name = str(rjson.get('stockName') or '')
                     deal_trends = rjson.get('dealTrendInfos', [])
                     consensus = rjson.get('consensusInfo') or {}
                     total_infos = {info['code']: info.get('value') for info in rjson.get('totalInfos', []) if 'code' in info}
+                    etf_ind = rjson.get('etfKeyIndicator') or {}
 
                     foreign_streak = 0
                     organ_streak = 0
@@ -591,7 +609,87 @@ def get_stock_pro_insights(symbols: str = Query(...)):
                                 tags.append(f"📊 저PER ({clean_per}배)")
                         except: pass
 
+                    # 국내 ETF 판별 및 고밀도 ETF 데이터(etf_info) 구성
+                    etf_brands = ("KODEX", "TIGER", "ACE", "RISE", "SOL", "HANARO", "PLUS", "KIWOOM", "TIMEFOLIO", "WON", "KBSTAR", "ARIRANG", "KOSEF")
+                    is_kr_etf = bool(etf_ind) or bool(rank_item) or any(stock_name.upper().startswith(b) for b in etf_brands)
+                    etf_info_dict = None
+                    if is_kr_etf:
+                        nav_raw = etf_ind.get("nav") or rank_item.get("nav")
+                        try:
+                            nav_float = float(str(nav_raw).replace(",", ""))
+                            nav_str = f"{int(round(nav_float)):,}원"
+                        except Exception:
+                            nav_str = f"{nav_raw}원" if nav_raw else "-"
+
+                        dev_sign = etf_ind.get("deviationSign", "")
+                        dev_rate = etf_ind.get("deviationRate")
+                        if dev_rate is not None:
+                            try:
+                                gap_num = float(str(dev_rate).replace(",", ""))
+                                if dev_sign == "-" and gap_num > 0:
+                                    gap_num = -gap_num
+                                nav_gap_str = f"{gap_num:+.2f}%"
+                            except Exception:
+                                nav_gap_str = rank_item.get("nav_gap") or "0.00%"
+                                gap_num = float(rank_item.get("nav_gap_num") or 0.0)
+                        else:
+                            nav_gap_str = rank_item.get("nav_gap") or "0.00%"
+                            gap_num = float(rank_item.get("nav_gap_num") or 0.0)
+
+                        if gap_num <= -0.15:
+                            nav_status = f"🟢 할인 괴리 ({nav_gap_str} · 본래가치 대비 저가)"
+                        elif gap_num >= 0.50:
+                            nav_status = f"🚨 할증 주의 ({nav_gap_str} · 본래가치 대비 고평가)"
+                        else:
+                            nav_status = f"⚖️ 정가 거래 ({nav_gap_str} · NAV 정상 밀착)"
+
+                        def fmt_ret(key, fallback=None):
+                            val = etf_ind.get(key)
+                            if val is not None:
+                                try:
+                                    fv = float(str(val).replace(",", ""))
+                                    return f"{fv:+.2f}%"
+                                except Exception:
+                                    pass
+                            return fallback
+
+                        total_fee = etf_ind.get("totalFee")
+                        try:
+                            ter_str = f"연 {float(total_fee):.2f}%" if total_fee is not None else "연 0.15%"
+                        except Exception:
+                            ter_str = "연 0.15%"
+
+                        div_yield = etf_ind.get("dividendYieldTtm")
+                        try:
+                            div_str = f"연 {float(div_yield):.2f}%" if div_yield is not None else "분배금 지급"
+                        except Exception:
+                            div_str = "분배금 지급"
+
+                        etf_info_dict = {
+                            "amc": etf_ind.get("issuerName") or rank_item.get("brand") or "국내 자산운용사",
+                            "brand": rank_item.get("brand") or (stock_name.split()[0] if stock_name else "ETF"),
+                            "category": rank_item.get("category_name") or total_infos.get("etfBaseIdx") or "국내 상장 ETF",
+                            "base_index": total_infos.get("etfBaseIdx") or rank_item.get("category_name") or "기초지수 추종",
+                            "nav": nav_str,
+                            "nav_gap": nav_gap_str,
+                            "nav_gap_num": gap_num,
+                            "nav_status": nav_status,
+                            "aum": etf_ind.get("marketValue") or rank_item.get("market_sum") or total_infos.get("marketValue") or "-",
+                            "trading_value": rank_item.get("amount") or total_infos.get("accumulatedTradingValue") or "-",
+                            "turnover_rate": f"{rank_item.get('turnover_rate')}%" if rank_item.get("turnover_rate") else None,
+                            "ter": ter_str,
+                            "dividend_yield": div_str,
+                            "return_1m": fmt_ret("returnRate1m"),
+                            "return_3m": fmt_ret("returnRate3m", rank_item.get("three_month_return")),
+                            "return_6m": fmt_ret("returnRate6m"),
+                            "return_1y": fmt_ret("returnRate1y"),
+                            "high_52w": total_infos.get("highPriceOf52Weeks"),
+                            "low_52w": total_infos.get("lowPriceOf52Weeks"),
+                        }
+
                     insight.update({
+                        "is_etf": is_kr_etf,
+                        "etf_info": etf_info_dict,
                         "target_price": target_price_str,
                         "foreign_streak": foreign_streak,
                         "organ_streak": organ_streak,
@@ -605,20 +703,62 @@ def get_stock_pro_insights(symbols: str = Query(...)):
                         "summary_tags": tags,
                     })
             else:
-                # 해외/미국 주식
+                # 해외/미국 주식 및 미국 ETF
                 import yfinance as yf
                 ticker = yf.Ticker(sym)
                 info = ticker.fast_info
-                target_p = None
+                yf_info = {}
                 try:
-                    target_p = ticker.info.get('targetMeanPrice')
+                    yf_info = ticker.info or {}
                 except: pass
+                target_p = yf_info.get('targetMeanPrice')
                 
                 tags = []
                 if target_p:
                     tags.append(f"🎯 월가 목표가 ${target_p:.2f}")
 
+                is_us_etf = bool(rank_item) or (str(yf_info.get("quoteType", "")).upper() == "ETF")
+                etf_info_dict = None
+                if is_us_etf:
+                    gap_num = float(rank_item.get("nav_gap_num") or 0.0)
+                    nav_gap_str = rank_item.get("nav_gap") or f"{gap_num:+.2f}%"
+                    if gap_num <= -0.10:
+                        nav_status = f"🟢 할인 괴리 ({nav_gap_str} · NAV 대비 저가)"
+                    elif gap_num >= 0.35:
+                        nav_status = f"🚨 할증 주의 ({nav_gap_str} · NAV 대비 고평가)"
+                    else:
+                        nav_status = f"⚖️ 정가 거래 ({nav_gap_str} · NAV 정상 밀착)"
+
+                    er = yf_info.get("annualReportExpenseRatio") or yf_info.get("netExpenseRatio")
+                    ter_str = f"연 {float(er)*100:.2f}%" if er and float(er) < 0.1 else (f"연 {float(er):.2f}%" if er else "연 0.03~0.35%")
+                    dy = yf_info.get("yield") or yf_info.get("trailingAnnualDividendYield")
+                    div_str = f"연 {float(dy)*100:.2f}%" if dy and float(dy) < 1 else "분기/월 배당"
+
+                    etf_info_dict = {
+                        "amc": rank_item.get("brand") or yf_info.get("fundFamily") or "글로벌 자산운용사",
+                        "brand": rank_item.get("brand") or "US ETF",
+                        "category": rank_item.get("category_name") or "미국 상장 ETF",
+                        "base_index": rank_item.get("category_name") or yf_info.get("category") or "글로벌 대표지수",
+                        "nav": f"${rank_item.get('nav')}" if rank_item.get("nav") else (f"${yf_info.get('navPrice'):.2f}" if yf_info.get("navPrice") else "실시간 연동"),
+                        "nav_gap": nav_gap_str,
+                        "nav_gap_num": gap_num,
+                        "nav_status": nav_status,
+                        "aum": rank_item.get("market_sum") or "글로벌 대형",
+                        "trading_value": rank_item.get("amount") or "-",
+                        "turnover_rate": f"{rank_item.get('turnover_rate')}%" if rank_item.get("turnover_rate") else None,
+                        "ter": ter_str,
+                        "dividend_yield": div_str,
+                        "return_1m": None,
+                        "return_3m": rank_item.get("three_month_return") or "-",
+                        "return_6m": None,
+                        "return_1y": f"{float(yf_info.get('threeYearAverageReturn'))*100:+.1f}% (3Y연평균)" if yf_info.get("threeYearAverageReturn") else None,
+                        "high_52w": f"${yf_info.get('fiftyTwoWeekHigh'):.2f}" if yf_info.get("fiftyTwoWeekHigh") else None,
+                        "low_52w": f"${yf_info.get('fiftyTwoWeekLow'):.2f}" if yf_info.get("fiftyTwoWeekLow") else None,
+                    }
+
                 insight.update({
+                    "is_etf": is_us_etf,
+                    "etf_info": etf_info_dict,
                     "target_price": f"${target_p:.2f}" if target_p else None,
                     "per": f"{info.get('trailing_pe', 0):.1f}배" if hasattr(info, 'trailing_pe') and info.trailing_pe else None,
                     "summary_tags": tags,
