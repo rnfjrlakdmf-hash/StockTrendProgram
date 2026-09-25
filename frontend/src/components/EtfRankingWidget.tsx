@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { 
     TrendingUp, TrendingDown, Activity, Globe, Zap, BarChart3, 
@@ -50,7 +51,7 @@ interface EtfRankingWidgetProps {
 
 type SortField = 'amount' | 'market_sum' | 'turnover' | 'volume' | 'change_high' | 'change_low' | 'discount_best' | 'nav_gap' | 'three_month';
 
-// 초보자 눈높이 마우스 오버(Hover) 툴팁 컴포넌트
+// 초보자 눈높이 마우스 오버(Hover) 툴팁 컴포넌트 (Portal + Fixed 좌표로 상단 검색바/버튼 가림 현상 완벽 해결)
 function BeginnerTooltip({
     title,
     desc,
@@ -62,27 +63,87 @@ function BeginnerTooltip({
     children: React.ReactNode;
     align?: 'left' | 'center' | 'right';
 }) {
-    const posClass =
-        align === 'left'
-            ? 'left-0'
-            : align === 'right'
-            ? 'right-0'
-            : 'left-1/2 -translate-x-1/2';
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
+    const [coords, setCoords] = useState<{ top: number; left: number; showBelow: boolean }>({
+        top: 0,
+        left: 0,
+        showBelow: false,
+    });
+
+    const updatePosition = useCallback(() => {
+        if (!triggerRef.current || typeof window === 'undefined') return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const tooltipWidth = 288; // w-72 = 288px
+        const showBelow = rect.top < 190; // 화면 상단이나 검색바 근처면 아래쪽으로 펼침
+
+        let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+        if (align === 'left') left = rect.left;
+        if (align === 'right') left = rect.right - tooltipWidth;
+
+        // 화면 좌우 밖으로 잘리지 않게 안전 여백(12px) 고정
+        left = Math.max(12, Math.min(window.innerWidth - tooltipWidth - 12, left));
+        const top = showBelow ? rect.bottom + 10 : rect.top - 10;
+
+        setCoords({ top, left, showBelow });
+    }, [align]);
+
+    const handleEnter = () => {
+        updatePosition();
+        setOpen(true);
+    };
+
+    const handleLeave = () => {
+        setOpen(false);
+    };
+
+    useEffect(() => {
+        if (!open) return;
+        const handleScrollOrResize = () => updatePosition();
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        window.addEventListener('resize', handleScrollOrResize);
+        return () => {
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, [open, updatePosition]);
 
     return (
-        <div className="relative group/tip inline-flex items-center">
+        <div
+            ref={triggerRef}
+            className="relative inline-flex items-center"
+            onMouseEnter={handleEnter}
+            onMouseLeave={handleLeave}
+            onClick={(e) => {
+                e.stopPropagation();
+                updatePosition();
+                setOpen((prev) => !prev);
+            }}
+        >
             {children}
-            <div
-                className={`pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-all duration-200 z-50 absolute bottom-full mb-2 ${posClass} w-64 sm:w-72 p-3 rounded-2xl bg-[#090d16]/98 border border-blue-400/50 shadow-[0_12px_35px_rgba(0,0,0,0.9)] backdrop-blur-xl text-left`}
-            >
-                <div className="flex items-center gap-1.5 text-[11px] font-black text-blue-300 mb-1 pb-1 border-b border-white/10">
-                    <span>🎓</span>
-                    <span>{title}</span>
-                </div>
-                <p className="text-[11px] text-zinc-200 font-medium leading-relaxed break-keep">
-                    {desc}
-                </p>
-            </div>
+            {open &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: coords.top,
+                            left: coords.left,
+                            transform: coords.showBelow ? 'translateY(0)' : 'translateY(-100%)',
+                            zIndex: 99999,
+                        }}
+                        className="pointer-events-none w-72 p-3.5 rounded-2xl bg-[#090d16] border border-blue-400/60 shadow-[0_16px_45px_rgba(0,0,0,0.95)] text-left animate-in fade-in duration-150"
+                    >
+                        <div className="flex items-center gap-1.5 text-xs font-black text-blue-300 mb-1.5 pb-1.5 border-b border-white/15">
+                            <span>🎓</span>
+                            <span>{title}</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-100 font-medium leading-relaxed break-keep">
+                            {desc}
+                        </p>
+                    </div>,
+                    document.body
+                )}
         </div>
     );
 }

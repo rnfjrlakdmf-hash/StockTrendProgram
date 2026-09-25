@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Minus, ChevronRight, Trash2, Shield, Sparkles, Pencil, TrendingUp, TrendingDown } from 'lucide-react';
 import BlinkingPrice from './BlinkingPrice';
 import { API_BASE_URL } from '@/lib/config';
@@ -94,7 +95,7 @@ interface CleanStockListProps {
     hideLabels?: boolean;
 }
 
-// [Interactive Tooltip Component for PC Hover & Mobile Tap]
+// [Interactive Tooltip Component for PC Hover & Mobile Tap - Portal + Fixed Viewport Positioning]
 function BadgeTooltip({ 
     children, 
     title, 
@@ -106,30 +107,69 @@ function BadgeTooltip({
     desc: string; 
     badgeClass: string; 
 }) {
-    const [isOpen, setIsOpen] = React.useState(false);
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [coords, setCoords] = useState<{ top: number; left: number; showBelow: boolean }>({
+        top: 0,
+        left: 0,
+        showBelow: false,
+    });
+
+    const updatePosition = useCallback(() => {
+        if (!triggerRef.current || typeof window === 'undefined') return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const tooltipWidth = 264;
+        const showBelow = rect.top < 180;
+        const left = Math.max(12, Math.min(window.innerWidth - tooltipWidth - 12, rect.left));
+        const top = showBelow ? rect.bottom + 8 : rect.top - 8;
+        setCoords({ top, left, showBelow });
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleScrollOrResize = () => updatePosition();
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        window.addEventListener('resize', handleScrollOrResize);
+        return () => {
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, [isOpen, updatePosition]);
 
     return (
         <div 
+            ref={triggerRef}
             className="relative inline-flex items-center"
             onClick={(e) => {
                 e.stopPropagation();
+                updatePosition();
                 setIsOpen(!isOpen);
             }}
-            onMouseEnter={() => setIsOpen(true)}
+            onMouseEnter={() => {
+                updatePosition();
+                setIsOpen(true);
+            }}
             onMouseLeave={() => setIsOpen(false)}
         >
             <span className={`${badgeClass} cursor-pointer transition-all hover:scale-105 active:scale-95 select-none`}>
                 {children}
             </span>
 
-            {/* Floating Tooltip Bubble */}
-            {isOpen && (
+            {/* Floating Tooltip Bubble via Portal (Never clipped or overlapped by headers/buttons) */}
+            {isOpen && typeof document !== 'undefined' && createPortal(
                 <div 
-                    className="absolute bottom-full left-0 mb-2 w-56 sm:w-64 p-3 bg-zinc-950/95 border border-white/20 rounded-xl shadow-2xl backdrop-blur-xl z-50 text-left pointer-events-auto animate-in fade-in zoom-in-95 duration-150"
+                    style={{
+                        position: 'fixed',
+                        top: coords.top,
+                        left: coords.left,
+                        transform: coords.showBelow ? 'translateY(0)' : 'translateY(-100%)',
+                        zIndex: 99999,
+                    }}
+                    className="w-64 p-3.5 bg-[#090d16] border border-blue-400/50 rounded-2xl shadow-[0_16px_45px_rgba(0,0,0,0.95)] text-left pointer-events-auto animate-in fade-in duration-150"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-white/10">
-                        <span className="text-[11px] font-black text-white flex items-center gap-1">
+                    <div className="flex items-center justify-between gap-1 mb-1.5 pb-1 border-b border-white/15">
+                        <span className="text-xs font-black text-blue-300 flex items-center gap-1">
                             💡 {title}
                         </span>
                         <button 
@@ -139,11 +179,11 @@ function BadgeTooltip({
                             ✕
                         </button>
                     </div>
-                    <p className="text-[10px] text-gray-300 leading-relaxed font-normal">
+                    <p className="text-[11px] text-zinc-100 leading-relaxed font-normal break-keep">
                         {desc}
                     </p>
-                    <div className="absolute top-full left-4 -mt-1 border-4 border-transparent border-t-zinc-950 pointer-events-none" />
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
