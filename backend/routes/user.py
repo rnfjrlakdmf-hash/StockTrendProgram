@@ -24,7 +24,9 @@ def migrate_watchlist_api(req: MigrateRequest):
 def read_watchlist(response: Response, x_user_id: str = Header(None)):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     from db_manager import get_watchlist
-    user_id = x_user_id or "guest"
+    user_id = (x_user_id or "").strip()
+    if not user_id or user_id.lower().startswith("guest") or user_id.lower() in ("null", "undefined", "none"):
+        return {"status": "success", "data": [], "user_id_echo": "guest"}
     print(f"[Watchlist] Reading for user: {user_id}")
     items = get_watchlist(user_id)
     print(f"[Watchlist] Found {len(items)} items for {user_id}")
@@ -160,7 +162,9 @@ def create_watchlist(req: WatchlistRequest, response: Response, x_user_id: str =
         from db_manager import add_watchlist
         from stock_data import get_simple_quote
         
-        user_id = x_user_id or "guest"
+        user_id = (x_user_id or "").strip()
+        if not user_id or user_id.lower().startswith("guest") or user_id.lower() in ("null", "undefined", "none"):
+            return {"status": "error", "message": "로그인이 필요합니다."}
         
         # 추가 시점의 가격 가져오기 (보다 견고한 파싱)
         current_price = 0

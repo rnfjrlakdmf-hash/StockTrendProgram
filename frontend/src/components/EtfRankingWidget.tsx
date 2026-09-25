@@ -134,10 +134,14 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
     };
 
     const fetchWatchlistSet = useCallback(async () => {
+        const loggedInUserId = user?.id || (user as any)?.uid;
+        if (!loggedInUserId) {
+            setWatchlistSet(new Set());
+            return;
+        }
         try {
-            const currentUserId = user?.id || (user as any)?.uid || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
             const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
-                headers: { 'X-User-ID': currentUserId }
+                headers: { 'X-User-ID': loggedInUserId }
             });
             const json = await res.json();
             if (json.status === 'success' && Array.isArray(json.data)) {
@@ -169,6 +173,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
     }, [fetchWatchlistSet]);
 
     const isSymbolSaved = (sym: string) => {
+        if (!user?.id && !(user as any)?.uid) return false;
         const clean = String(sym).toUpperCase().trim();
         return watchlistSet.has(clean) || Array.from(watchlistSet).some(s => s === clean || s.startsWith(clean + '.'));
     };
@@ -177,9 +182,18 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         e.preventDefault();
         e.stopPropagation();
 
+        const loggedInUserId = user?.id || (user as any)?.uid;
+        if (!loggedInUserId) {
+            showToast('🔒 관심ETF 등록 및 맞춤 알림 수신은 로그인이 필요합니다.');
+            if (typeof window !== 'undefined' && confirm('관심ETF 등록 및 장시작·장마감 맞춤 알림 수신은 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?')) {
+                window.location.href = '/login';
+            }
+            return;
+        }
+
         const sym = String(item.symbol).trim();
         const saved = isSymbolSaved(sym);
-        const currentUserId = user?.id || (user as any)?.uid || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+        const currentUserId = loggedInUserId;
         const numericPrice = item.price_num || parseFloat(String(item.price || '0').replace(/,/g, '')) || 0;
 
         setTogglingSymbol(sym);
@@ -773,7 +787,17 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         {/* ⭐ 내 관심 ETF만 보기 토글 */}
                         <button
-                            onClick={() => setOnlyWatchlist(!onlyWatchlist)}
+                            onClick={() => {
+                                const loggedInUserId = user?.id || (user as any)?.uid;
+                                if (!loggedInUserId) {
+                                    showToast('🔒 내 관심 ETF 모아보기는 로그인이 필요합니다.');
+                                    if (typeof window !== 'undefined' && confirm('내 관심 ETF 모아보기는 로그인이 필요한 기능입니다.\n로그인 페이지로 이동하시겠습니까?')) {
+                                        window.location.href = '/login';
+                                    }
+                                    return;
+                                }
+                                setOnlyWatchlist(!onlyWatchlist);
+                            }}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer ${
                                 onlyWatchlist
                                     ? 'bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/30'
