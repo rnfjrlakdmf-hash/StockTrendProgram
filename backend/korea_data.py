@@ -20,6 +20,51 @@ HEADER = {
     "Referer": "https://stock.naver.com/",
     "Origin": "https://stock.naver.com"}
 
+# 한국거래소(KRX) 휴장일 (양력 고정 공휴일 + 2025~2027 음력 설/추석/부처님오신날/대체공휴일/근로자의날/연말휴장일)
+FIXED_KRX_MMDD = {
+    (1, 1),   # 신정
+    (3, 1),   # 삼일절
+    (5, 1),   # 근로자의 날 (증시 휴장)
+    (5, 5),   # 어린이날
+    (6, 6),   # 현충일
+    (7, 17),  # 제헌절
+    (8, 15),  # 광복절
+    (10, 3),  # 개천절
+    (10, 9),  # 한글날
+    (12, 25), # 성탄절
+    (12, 31), # 연말 증시 폐장일
+}
+
+VARIABLE_KRX_HOLIDAYS = {
+    # 2025년
+    "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30",
+    "2025-03-03", "2025-05-06", "2025-06-03",
+    "2025-10-06", "2025-10-07", "2025-10-08",
+    # 2026년 (설날 연휴, 삼일절 대체, 부처님오신날 대체, 지방선거, 광복절 대체, 추석 연휴, 개천절 대체)
+    "2026-02-16", "2026-02-17", "2026-02-18",
+    "2026-03-02",
+    "2026-05-24", "2026-05-25",
+    "2026-06-03",
+    "2026-08-17",
+    "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-28",
+    "2026-10-05",
+    # 2027년
+    "2027-02-06", "2027-02-07", "2027-02-08", "2027-02-09",
+    "2027-05-13",
+    "2027-08-16",
+    "2027-09-14", "2027-09-15", "2027-09-16",
+    "2027-10-04", "2027-10-11",
+}
+
+def is_krx_holiday(dt_date: datetime.date) -> bool:
+    """한국거래소(KRX) 공휴일 여부 판별"""
+    if (dt_date.month, dt_date.day) in FIXED_KRX_MMDD:
+        return True
+    if dt_date.strftime("%Y-%m-%d") in VARIABLE_KRX_HOLIDAYS:
+        return True
+    return False
+
+
 
 # [Helper] Robust Decoding
 def decode_safe(res: requests.Response) -> str:
@@ -410,14 +455,17 @@ def gather_naver_stock_data(symbol: str):
 
         labeled_change_pct = f"[정규] {reg_change_pct:+.2f}%"
 
-        # 3. 시장 상태 판별 (한국 시간 기준)
+        # 3. 시장 상태 판별 (한국 시간 및 KRX 공휴일/주말 기준)
         kst = pytz.timezone('Asia/Seoul')
         now_kst = datetime.datetime.now(kst)
         is_weekend = now_kst.weekday() >= 5
+        is_holiday = is_krx_holiday(now_kst.date())
         current_time_num = now_kst.hour * 100 + now_kst.minute
 
         if is_weekend:
             market_status = "휴장 (주말)"
+        elif is_holiday:
+            market_status = "휴장 (공휴일)"
         elif 800 <= current_time_num < 850:
             market_status = "프리마켓"
         elif 850 <= current_time_num < 900:
@@ -585,7 +633,7 @@ def gather_naver_stock_data(symbol: str):
                                         "regular_price": f"{float(d_reg_p):,.0f}" if d_reg_p else str(price),
                                         "is_active": (d_ms == 'AFTER_MARKET')
                                     }
-                                    if d_ms == 'AFTER_MARKET':
+                                    if d_ms == 'AFTER_MARKET' and not (is_weekend or is_holiday):
                                         market_status = "시간외단일가"
                         except Exception as e:
                             print(f"[Daum Overtime Fallback] Error for {code}: {e}")
@@ -1433,21 +1481,26 @@ def get_naver_stock_info(symbol: str):
                         kst = pytz.timezone('Asia/Seoul')
                         now_kst = datetime.datetime.now(kst)
                         is_weekend = now_kst.weekday() >= 5
+                        is_holiday = is_krx_holiday(now_kst.date())
                         
                         current_time_num = now_kst.hour * 100 + now_kst.minute
                         is_after_over_hours = current_time_num >= 2000
                         
                         if is_weekend:
                             market_status = "휴장 (주말)"
+                        elif is_holiday:
+                            market_status = "휴장 (공휴일)"
+                        elif reg_status == 'CLOSE' and over_status == 'CLOSE' and (900 <= current_time_num < 1800):
+                            market_status = "휴장 (공휴일)"
                         elif 800 <= current_time_num < 850:
                             market_status = "프리마켓"
                         elif 850 <= current_time_num < 900:
                             market_status = "동시호가"
-                        elif reg_status == 'OPEN' or (900 <= current_time_num < 1520):
+                        elif reg_status == 'OPEN' or (reg_status != 'CLOSE' and 900 <= current_time_num < 1520):
                             market_status = "장중"
-                        elif 1520 <= current_time_num < 1540:
+                        elif reg_status != 'CLOSE' and 1520 <= current_time_num < 1540:
                             market_status = "동시호가"
-                        elif (over_status == 'OPEN' and not is_after_over_hours) or (1540 <= current_time_num < 2000):
+                        elif (over_status == 'OPEN' and not is_after_over_hours) or (over_status != 'CLOSE' and 1540 <= current_time_num < 2000):
                             market_status = "시간외단일가"
                         else:
                             market_status = "장마감"
@@ -1456,7 +1509,7 @@ def get_naver_stock_info(symbol: str):
                             "price": f"{float(m_info.get('overPrice', 0)):,.0f}",
                             "change_pct": float(m_info.get('fluctuationsRatio', 0)),
                             "change_val": float(str(m_info.get('fluctuations', 0)).replace(',', '')) if m_info.get('fluctuations') else None
-                        } if m_info and m_info.get('overPrice') and m_info.get('tradingSessionType') != 'REGULAR_MARKET' else None
+                        } if (not is_weekend and not is_holiday and m_info and m_info.get('overPrice') and m_info.get('tradingSessionType') != 'REGULAR_MARKET') else None
 
                         ext_p = nxt_obj.get("price") if nxt_obj else None
                         ext_c = f"{nxt_obj.get('change_pct', 0):+.2f}%" if nxt_obj and nxt_obj.get('change_pct') is not None else None
