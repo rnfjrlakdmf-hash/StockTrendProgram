@@ -1459,11 +1459,31 @@ function DiscoveryContent() {
                                             {/* 1층: 정규장 실시간 가격 카드 (단정하고 시원한 가로형 시세 바) */}
                                             {(() => {
                                                 const isKrStock = stock.currency === 'KRW' || stock.symbol?.includes('.KS') || stock.symbol?.includes('.KQ') || /^\d{6}$/.test(stock.symbol || '');
+                                                const isKrHolidayOrWeekend = (() => {
+                                                    if (!isKrStock) return false;
+                                                    if (stock.market_status?.includes('휴장')) return true;
+                                                    const nowKst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+                                                    const day = nowKst.getDay();
+                                                    if (day === 0 || day === 6) return true;
+                                                    const yyyy = nowKst.getFullYear();
+                                                    const mm = String(nowKst.getMonth() + 1).padStart(2, '0');
+                                                    const dd = String(nowKst.getDate()).padStart(2, '0');
+                                                    const ymd = `${yyyy}-${mm}-${dd}`;
+                                                    const mmdd = `${mm}-${dd}`;
+                                                    const krxFixed = new Set(['01-01', '03-01', '05-01', '05-05', '06-06', '07-17', '08-15', '10-03', '10-09', '12-25', '12-31']);
+                                                    const krxVar = new Set([
+                                                        '2025-01-27','2025-01-28','2025-01-29','2025-01-30','2025-03-03','2025-05-06','2025-06-03','2025-10-06','2025-10-07','2025-10-08',
+                                                        '2026-02-16','2026-02-17','2026-02-18','2026-03-02','2026-05-24','2026-05-25','2026-06-03','2026-08-17','2026-09-24','2026-09-25','2026-09-26','2026-09-28','2026-10-05',
+                                                        '2027-02-06','2027-02-07','2027-02-08','2027-02-09','2027-05-13','2027-08-16','2027-09-14','2027-09-15','2027-09-16','2027-10-04','2027-10-11'
+                                                    ]);
+                                                    return krxFixed.has(mmdd) || krxVar.has(ymd);
+                                                })();
+
                                                 const isOvertimeSession = (() => {
+                                                    if (isKrHolidayOrWeekend) return false;
                                                     if (stock.market_status?.includes('시간외') || stock.market_status === 'AFTER_MARKET' || stock.is_extended_hours) return true;
                                                     if (stock.after_market_data?.is_active) return true;
                                                     if (extendedHours?.extended?.session === 'AFTER') return true;
-                                                    // 한국 주식 평일 15:40~20:00 KST 시간 기준 판별 (대체거래소 NXT 및 애프터마켓 저녁 8시 연장 반영)
                                                     if (isKrStock) {
                                                         const now = new Date();
                                                         const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -1477,13 +1497,14 @@ function DiscoveryContent() {
                                                     return false;
                                                 })();
 
-                                                const afterData = stock.after_market_data || stock.nxt_data;
-                                                const extP = extendedHours?.extended?.price ? extendedHours.extended.price : 
+                                                const afterData = isKrHolidayOrWeekend ? null : (stock.after_market_data || stock.nxt_data);
+                                                const extP = isKrHolidayOrWeekend ? 0 : (extendedHours?.extended?.price ? extendedHours.extended.price : 
                                                     Number(String(
                                                     stock.is_extended_hours && stock.extended_price ? stock.extended_price :
                                                     (afterData?.price || 0)
-                                                ).replace(/,/g, ''));
-                                                const hasAfterData = Boolean(extP && extP > 0);
+                                                ).replace(/,/g, '')));
+                                                const regPForCompare = Number(String(stock.regular_price || stock.regular_close || stock.price || '0').replace(/,/g, ''));
+                                                const hasAfterData = Boolean(!isKrHolidayOrWeekend && extP && extP > 0 && (isOvertimeSession || extP !== regPForCompare));
 
                                                 return (
                                                     <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-900/90 border border-white/10 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
@@ -1491,7 +1512,9 @@ function DiscoveryContent() {
                                                         <div className="flex flex-col gap-1.5 min-w-0">
                                                             <div className="flex items-center gap-2">
                                                                 <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md border w-fit shrink-0 whitespace-nowrap ${
-                                                                    extendedHours?.regular?.is_active || stock.market_status === '장중' 
+                                                                    isKrHolidayOrWeekend
+                                                                        ? 'text-rose-300 bg-rose-500/15 border-rose-500/30'
+                                                                        : extendedHours?.regular?.is_active || stock.market_status === '장중' 
                                                                         ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' 
                                                                         : isOvertimeSession
                                                                         ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
@@ -1499,7 +1522,8 @@ function DiscoveryContent() {
                                                                         ? 'text-purple-400 bg-purple-500/10 border-purple-500/30'
                                                                         : 'text-zinc-400 bg-white/5 border-white/10'
                                                                 }`}>
-                                                                    {extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
+                                                                    {isKrHolidayOrWeekend ? 'MARKET CLOSED 휴장일 (직전 정규장 종가)' :
+                                                                     extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
                                                                      isOvertimeSession ? 'AFTER-MARKET 시간외 / 애프터마켓' :
                                                                      stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
                                                                      'REGULAR MARKET 정규장 종가'}
@@ -1649,10 +1673,10 @@ function DiscoveryContent() {
 
                                                             {/* 장중 / 시간외 단일가 / 프리마켓 / 동시호가 / 장마감 뱃지 (시간외 카드와 중복 방지) */}
                                                             {(() => {
-                                                                const isRegular = extendedHours?.regular?.is_active || stock.market_status === '장중';
-                                                                const isPreMarket = stock.market_status?.includes('프리') || extendedHours?.extended?.session === 'PRE';
-                                                                const isCallAuction = stock.market_status?.includes('동시호가');
-                                                                const isWeekend = stock.market_status?.includes('휴장');
+                                                                const isRegular = !isKrHolidayOrWeekend && (extendedHours?.regular?.is_active || stock.market_status === '장중');
+                                                                const isPreMarket = !isKrHolidayOrWeekend && (stock.market_status?.includes('프리') || extendedHours?.extended?.session === 'PRE');
+                                                                const isCallAuction = !isKrHolidayOrWeekend && stock.market_status?.includes('동시호가');
+                                                                const isWeekend = isKrHolidayOrWeekend || stock.market_status?.includes('휴장');
 
                                                                 if (isRegular) {
                                                                     return (
@@ -1690,9 +1714,9 @@ function DiscoveryContent() {
                                                                 }
                                                                 if (isWeekend) {
                                                                     return (
-                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-zinc-800 text-zinc-500 border-zinc-700 whitespace-nowrap">
-                                                                            <div className="w-2 h-2 rounded-full bg-zinc-600" />
-                                                                            <span>휴장</span>
+                                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-black bg-rose-500/15 text-rose-300 border-rose-500/30 whitespace-nowrap">
+                                                                            <div className="w-2 h-2 rounded-full bg-rose-400" />
+                                                                            <span>휴장 (공휴일)</span>
                                                                         </div>
                                                                     );
                                                                 }
@@ -1778,39 +1802,59 @@ function DiscoveryContent() {
                                                 />
                                             </div>
 
-                                            {/* 관련 섹터 종목 퀵 위젯 (사용자 화살표 지정 위치 - 기존 모양 그대로 유지) */}
-                                            {stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0 && (
-                                                <div className="w-full p-3 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl flex flex-col min-w-[280px] max-w-sm">
-                                                    <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
-                                                        <span className="flex items-center gap-1.5 text-blue-400">
-                                                            <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
-                                                            <span className="font-extrabold text-white">관련 섹터 종목</span>
-                                                        </span>
-                                                        <span className="text-[10px] text-zinc-400 font-medium">클릭 시 이동</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-3 gap-1.5">
-                                                        {stock.related_stocks.slice(0, 3).map((item, idx) => (
-                                                            <div
-                                                                key={idx}
-                                                                onClick={() => handleSearch(item.symbol)}
-                                                                className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
-                                                            >
-                                                                <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
-                                                                    {item.name}
+                                            {/* 관련 섹터 종목 퀵 위젯 (비슷한 종목 3선 항상 노출 보장) */}
+                                            {(() => {
+                                                const cleanCode = String(stock.symbol || '').split('.')[0].toUpperCase();
+                                                const peerFallbackMap: Record<string, { symbol: string; name: string; price?: string; change?: string; reason?: string }[]> = {
+                                                    '005930': [{ symbol: '000660', name: 'SK하이닉스', reason: '메모리 반도체' }, { symbol: '042700', name: '한미반도체', reason: 'HBM 장비' }, { symbol: '058470', name: '리노공업', reason: '반도체 부품' }],
+                                                    '000660': [{ symbol: '005930', name: '삼성전자', reason: '메모리 반도체' }, { symbol: '042700', name: '한미반도체', reason: 'HBM 장비' }, { symbol: '039030', name: '이오테크닉스', reason: '레이저 장비' }],
+                                                    '010140': [{ symbol: '009540', name: 'HD한국조선해양', reason: '조선 지주' }, { symbol: '042660', name: '한화오션', reason: 'LNG·특수선' }, { symbol: '329180', name: 'HD현대중공업', reason: '대형 상선' }],
+                                                    '005380': [{ symbol: '000270', name: '기아', reason: '글로벌 완성차' }, { symbol: '012330', name: '현대모비스', reason: '전장·모듈' }, { symbol: '204320', name: 'HL만도', reason: '자율주행 부품' }],
+                                                };
+                                                const isKrPeer = stock.currency === 'KRW' || /^\d{6}$/.test(cleanCode);
+                                                const defaultPeers = isKrPeer
+                                                    ? [{ symbol: '005930', name: '삼성전자', reason: '반도체 대표' }, { symbol: '000660', name: 'SK하이닉스', reason: 'HBM 대표' }, { symbol: '005380', name: '현대차', reason: '수출 대표' }].filter(p => p.symbol !== cleanCode)
+                                                    : [{ symbol: 'NVDA', name: '엔비디아', reason: 'AI 반도체' }, { symbol: 'AAPL', name: '애플', reason: '빅테크' }, { symbol: 'MSFT', name: '마이크로소프트', reason: 'AI 클라우드' }].filter(p => p.symbol !== cleanCode);
+
+                                                const displayRelated = (stock.related_stocks && Array.isArray(stock.related_stocks) && stock.related_stocks.length > 0)
+                                                    ? stock.related_stocks
+                                                    : (peerFallbackMap[cleanCode] || defaultPeers);
+
+                                                if (!displayRelated || displayRelated.length === 0) return null;
+
+                                                return (
+                                                    <div className="w-full p-3 rounded-2xl bg-zinc-950/90 border border-indigo-500/30 shadow-xl flex flex-col min-w-[280px] max-w-sm">
+                                                        <div className="flex items-center justify-between text-xs font-bold mb-2 pb-1.5 border-b border-white/10">
+                                                            <span className="flex items-center gap-1.5 text-blue-400">
+                                                                <div className="w-1.5 h-3.5 bg-blue-500 rounded-full"></div>
+                                                                <span className="font-extrabold text-white">{stock.name}와 비슷한 관련 종목</span>
+                                                            </span>
+                                                            <span className="text-[10px] text-zinc-400 font-medium">클릭 시 즉시 진단</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-1.5">
+                                                            {displayRelated.slice(0, 3).map((item, idx) => (
+                                                                <div
+                                                                    key={idx}
+                                                                    onClick={() => handleSearch(item.symbol)}
+                                                                    className="group cursor-pointer flex flex-col justify-between p-2 rounded-xl bg-white/5 hover:bg-blue-600/20 border border-white/10 hover:border-blue-400/50 transition-all shadow-sm"
+                                                                >
+                                                                    <div className="text-xs font-black text-white group-hover:text-blue-300 transition-colors truncate">
+                                                                        {item.name}
+                                                                    </div>
+                                                                    <div className="flex flex-col mt-0.5 font-mono">
+                                                                        <span className="text-zinc-300 font-bold text-[10px] truncate">{item.price || (item as any).reason || item.symbol}</span>
+                                                                        {item.change && (
+                                                                            <span className={`text-[9px] font-black mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
+                                                                                {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex flex-col mt-0.5 font-mono">
-                                                                    <span className="text-zinc-300 font-bold text-[11px] truncate">{item.price || item.symbol}</span>
-                                                                    {item.change && (
-                                                                        <span className={`text-[9px] font-black mt-0.5 ${formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').colorText}`}>
-                                                                            {formatChangeWithAmountDisplay(item.change, item.price, undefined, undefined, 'KRW').text}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))}
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 

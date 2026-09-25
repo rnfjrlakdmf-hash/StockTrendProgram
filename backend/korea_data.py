@@ -640,7 +640,11 @@ def gather_naver_stock_data(symbol: str):
         except Exception as e:
             print(f"[gather_naver_stock_data] Failed to fetch real-time JSON patch: {e}")
 
-        is_ext = (market_status in ("시간외단일가", "장후 시간외", "프리마켓")) or bool(nxt_data and nxt_data.get("is_active"))
+        if is_weekend or is_holiday:
+            nxt_data = None
+            is_ext = False
+        else:
+            is_ext = (market_status in ("시간외단일가", "장후 시간외", "프리마켓")) or bool(nxt_data and nxt_data.get("is_active"))
         ext_p = nxt_data.get("price") if nxt_data else None
         ext_val = nxt_data.get("change_val") if nxt_data else None
         ext_pct = nxt_data.get("change_pct") if nxt_data else None

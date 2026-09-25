@@ -232,7 +232,7 @@ async def read_stock(symbol: str, skip_ai: bool = False):
     symbol = urllib.parse.unquote(symbol).strip()
     symbol = unicodedata.normalize('NFC', symbol)
     from turbo_engine import CACHE_VERSION
-    cache_key = f"{CACHE_VERSION}_stock_full_{symbol}_{skip_ai}"
+    cache_key = f"{CACHE_VERSION}_v2_stock_full_{symbol}_{skip_ai}"
     cached = turbo_engine.get_cache(cache_key)
     if cached: return {"status": "success", "data": cached, "turbo": True}
     
@@ -289,10 +289,43 @@ async def read_stock(symbol: str, skip_ai: bool = False):
             except Exception as e:
                 print(f"[ERROR] AI Analysis in thread failed: {e}")
                 is_ai_error = True
-        
+
+        # [★ 동종업계·비슷한 종목(related_stocks) 100% 보장]
+        # skip_ai=True (초고속 1차 로딩)이거나 AI 캐시에 related_stocks가 비어있을 때도 즉시 동종 섹터 대표 3종목을 채워줌
+        if not data.get("related_stocks"):
+            clean_sym = str(data.get("symbol", symbol)).split(".")[0].upper()
+            peer_map = {
+                "005930": [{"symbol": "000660", "name": "SK하이닉스", "reason": "메모리 반도체 투톱"}, {"symbol": "042700", "name": "한미반도체", "reason": "HBM 반도체 장비"}, {"symbol": "058470", "name": "리노공업", "reason": "반도체 테스트 부품"}],
+                "000660": [{"symbol": "005930", "name": "삼성전자", "reason": "글로벌 메모리 반도체"}, {"symbol": "042700", "name": "한미반도체", "reason": "HBM TC본더 핵심장비"}, {"symbol": "039030", "name": "이오테크닉스", "reason": "반도체 레이저 공정"}],
+                "010140": [{"symbol": "009540", "name": "HD한국조선해양", "reason": "글로벌 조선 지주사"}, {"symbol": "042660", "name": "한화오션", "reason": "LNG선·특수선 건조"}, {"symbol": "329180", "name": "HD현대중공업", "reason": "대형 상선·엔진 대장주"}],
+                "005380": [{"symbol": "000270", "name": "기아", "reason": "완성차 글로벌 파트너"}, {"symbol": "012330", "name": "현대모비스", "reason": "핵심 전장·모듈 부품"}, {"symbol": "204320", "name": "HL만도", "reason": "자율주행·샤시 부품"}],
+                "000270": [{"symbol": "005380", "name": "현대차", "reason": "국내 완성차 대장주"}, {"symbol": "012330", "name": "현대모비스", "reason": "자동차 핵심 부품"}, {"symbol": "086280", "name": "현대글로비스", "reason": "완성차 해상물류"}],
+                "373220": [{"symbol": "006400", "name": "삼성SDI", "reason": "차세대 전고체 배터리"}, {"symbol": "051910", "name": "LG화학", "reason": "양극재·첨단소재"}, {"symbol": "003670", "name": "포스코퓨처엠", "reason": "배터리 양·음극재"}],
+                "035420": [{"symbol": "035720", "name": "카카오", "reason": "국내 대표 빅테크 플랫폼"}, {"symbol": "259960", "name": "크래프톤", "reason": "글로벌 소프트웨어·게임"}, {"symbol": "018260", "name": "삼성에스디에스", "reason": "클라우드·생성형 AI"}],
+                "035720": [{"symbol": "035420", "name": "NAVER", "reason": "국내 대표 검색·AI 플랫폼"}, {"symbol": "323410", "name": "카카오뱅크", "reason": "모바일 금융 플랫폼"}, {"symbol": "377300", "name": "카카오페이", "reason": "테크핀 결제 서비스"}],
+                "207940": [{"symbol": "068270", "name": "셀트리온", "reason": "바이오시밀러·신약 대표주"}, {"symbol": "196170", "name": "알테오젠", "reason": "글로벌 바이오 플랫폼"}, {"symbol": "000100", "name": "유한양행", "reason": "글로벌 신약 기술수출"}],
+                "068270": [{"symbol": "207940", "name": "삼성바이오로직스", "reason": "글로벌 CDMO 대장주"}, {"symbol": "196170", "name": "알테오젠", "reason": "SC제형 변경 플랫폼"}, {"symbol": "128940", "name": "한미약품", "reason": "비만·항암 신약 개발"}],
+                "NVDA": [{"symbol": "AMD", "name": "AMD", "reason": "AI GPU 가속기 경쟁사"}, {"symbol": "AVGO", "name": "브로드컴", "reason": "맞춤형 AI 칩(ASIC)"}, {"symbol": "TSM", "name": "TSMC", "reason": "AI 반도체 파운드리 독점"}],
+                "TSLA": [{"symbol": "RIVN", "name": "리비안", "reason": "미국 전기차 혁신기업"}, {"symbol": "BYDDY", "name": "BYD", "reason": "글로벌 전기차 판매 1위"}, {"symbol": "NVDA", "name": "엔비디아", "reason": "자율주행·로보틱스 AI"}],
+                "AAPL": [{"symbol": "MSFT", "name": "마이크로소프트", "reason": "글로벌 시총 1위 빅테크"}, {"symbol": "GOOGL", "name": "알파벳(구글)", "reason": "모바일 OS 생태계"}, {"symbol": "META", "name": "메타", "reason": "차세대 스마트글래스·AI"}],
+            }
+            is_kr = data.get("currency") == "KRW" or str(data.get("symbol", "")).endswith((".KS", ".KQ")) or clean_sym.isdigit()
+            default_kr = [
+                {"symbol": "005930", "name": "삼성전자", "reason": "코스피 시총 1위 대표주"},
+                {"symbol": "000660", "name": "SK하이닉스", "reason": "AI 반도체 핵심 주도주"},
+                {"symbol": "005380", "name": "현대차", "reason": "글로벌 수출 밸류업 대표주"},
+            ]
+            default_us = [
+                {"symbol": "NVDA", "name": "엔비디아", "reason": "글로벌 AI 반도체 대장주"},
+                {"symbol": "AAPL", "name": "애플", "reason": "글로벌 빅테크 대표주"},
+                {"symbol": "MSFT", "name": "마이크로소프트", "reason": "클라우드·AI 소프트웨어"},
+            ]
+            peers = peer_map.get(clean_sym)
+            if not peers:
+                peers = [p for p in (default_kr if is_kr else default_us) if p["symbol"] != clean_sym][:3]
+            data["related_stocks"] = peers
+
         # [메모리 캐시] TTL 60분 (skip_ai=False), 10분 (skip_ai=True), 에러시 캐시 안함 (0초)
-        # skip_ai=True: Fast Fetch 결과 10분 캐시 → 재검색 시 즉시 반환
-        # skip_ai=False: AI 결과 포함 1시간 캐시 → Gemini 재호출 없음
         mem_ttl = 3600 if not skip_ai else 600
         if not skip_ai and locals().get('is_ai_error', False):
             mem_ttl = 10  # 에러 발생 시 10초만 캐시해서 빠른 재시도 유도
