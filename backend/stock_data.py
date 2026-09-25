@@ -1129,16 +1129,19 @@ def get_simple_quote(symbol: str, broker_client=None, strict=False):
                 except:
                     price_str = str(raw_price)
 
-                # [v4] 한국 시장(KST) 시간 기반 정밀 상태 계산
-                market_status = "장마감"
+                # [v4] 한국 시장(KST) 시간 및 공휴일 기반 정밀 상태 계산
+                market_status = yf_info.get('market_status', '장마감')
                 try:
                     from datetime import datetime
                     import pytz
+                    from korea_data import is_krx_holiday
                     kst = pytz.timezone('Asia/Seoul')
                     now = datetime.now(kst)
                     
                     if now.weekday() >= 5:  # 주말(토,일)
-                        market_status = "장마감"
+                        market_status = "휴장 (주말)"
+                    elif is_krx_holiday(now.date()):
+                        market_status = "휴장 (공휴일)"
                     else:
                         hm = now.strftime("%H%M")
                         if "0800" <= hm < "0850":
