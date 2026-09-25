@@ -238,12 +238,22 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         if (!item.extendedPrice) return null;
                                         const cleanRegular = String(item.price || '').replace(/[^0-9.]/g, '');
                                         const cleanExt = String(item.extendedPrice || '').replace(/[^0-9.]/g, '');
-                                        const extChangeNum = parseFloat(String(item.extendedChange || '0').replace(/[^0-9.-]/g, ''));
+                                        const extChangeNum = parseFloat(String(item.extendedChange ?? '0').replace(/[^0-9.-]/g, ''));
                                         
                                         // 정규장 종가와 시간외 가격이 동일하고 변동률도 0%이면 중복 숫자 노출 생략
                                         if (cleanRegular && cleanExt && cleanRegular === cleanExt && Math.abs(extChangeNum) === 0) {
                                             return null;
                                         }
+
+                                        const extPriceFormatted = typeof item.extendedPrice === 'number'
+                                            ? (item.currency === 'KRW' ? Math.round(item.extendedPrice).toLocaleString() : item.extendedPrice.toFixed(2))
+                                            : String(item.extendedPrice);
+
+                                        const extChangeStr = item.extendedChange !== undefined && item.extendedChange !== null && item.extendedChange !== ''
+                                            ? (typeof item.extendedChange === 'number'
+                                                ? `${item.extendedChange > 0 ? '+' : ''}${item.extendedChange.toFixed(2)}%`
+                                                : String(item.extendedChange))
+                                            : '';
 
                                         return (
                                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 shadow-sm">
@@ -255,10 +265,10 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                     extChangeNum > 0 ? 'text-rose-400' : 
                                                     extChangeNum < 0 ? 'text-sky-400' : 'text-zinc-300'
                                                 }`}>
-                                                    {item.currency === 'KRW' ? `${item.extendedPrice}원` : `$${item.extendedPrice}`}
-                                                    {item.extendedChange && (
+                                                    {item.currency === 'KRW' ? `${extPriceFormatted}원` : `$${extPriceFormatted}`}
+                                                    {extChangeStr && (
                                                         <span className="ml-1 text-[10px] font-bold">
-                                                            {item.extendedChange.includes('(') ? item.extendedChange : `(${item.extendedChange})`}
+                                                            {extChangeStr.includes('(') ? extChangeStr : `(${extChangeStr})`}
                                                         </span>
                                                     )}
                                                 </span>

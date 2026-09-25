@@ -43,6 +43,21 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
     except Exception:
         local_code_to_name = {}
 
+    try:
+        from rank_data import _cache as _etf_cache
+        etf_name_map = {}
+        for ck in ("etf_ranking_KR", "etf_ranking_US"):
+            entry = _etf_cache.get(ck)
+            if entry and isinstance(entry.get("data"), list):
+                for e_item in entry["data"]:
+                    s_code = str(e_item.get("symbol", "")).strip()
+                    s_name = str(e_item.get("name", "")).strip()
+                    if s_code and s_name:
+                        etf_name_map[s_code] = s_name
+                        etf_name_map[s_code.upper()] = s_name
+    except Exception:
+        etf_name_map = {}
+
     data = []
     
     # 1단계: 로컬 맵핑 및 캐시를 통해 최대한 빨리 이름 찾기
@@ -52,7 +67,11 @@ def read_watchlist(response: Response, x_user_id: str = Header(None)):
         base_sym = sym.split(".")[0]
         name = sym
         
-        if sym in GLOBAL_KOREAN_NAMES:
+        if sym in etf_name_map:
+            name = etf_name_map[sym]
+        elif base_sym in etf_name_map:
+            name = etf_name_map[base_sym]
+        elif sym in GLOBAL_KOREAN_NAMES:
             names = GLOBAL_KOREAN_NAMES[sym]
             name = names[0] if isinstance(names, list) else names
         elif sym in US_STOCK_KOREAN_NAMES:

@@ -12,6 +12,21 @@ export default function GlobalError({
 }) {
     useEffect(() => {
         console.error('Global Application Error:', error);
+        // 서버 배포 직후 이전 빌드 청크(ChunkLoadError) 참조 시 1회 자동 새로고침 복구
+        const msg = String(error?.message || '');
+        if (
+            msg.includes('ChunkLoadError') ||
+            msg.includes('Loading chunk') ||
+            msg.includes('Failed to fetch dynamically imported module')
+        ) {
+            try {
+                const reloaded = sessionStorage.getItem('chunk_reload_done');
+                if (!reloaded) {
+                    sessionStorage.setItem('chunk_reload_done', '1');
+                    window.location.reload();
+                }
+            } catch (e) {}
+        }
     }, [error]);
 
     return (
@@ -21,22 +36,23 @@ export default function GlobalError({
             </div>
 
             <h2 className="text-2xl font-black text-white mb-2">
-                앱을 재가동해야 합니다
+                화면을 새로고침합니다
             </h2>
 
             <p className="text-gray-400 mb-8 max-w-xs text-sm leading-relaxed">
-                예상치 못한 문제가 발생하여 안전 프로토콜이 작동했습니다.<br />
-                아래 버튼을 눌러 앱을 새로고침해주세요.
+                최신 업데이트 반영 또는 일시적인 시세 캐시 동기화를 위해<br />
+                아래 버튼을 눌러 화면을 다시 불러와 주세요.
             </p>
 
             <div className="flex flex-col gap-3 w-full max-w-xs">
                 <button
-                    className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-yellow-900/50 flex items-center justify-center gap-2 active:scale-95"
+                    className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-yellow-900/50 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                     onClick={() => {
-                        // [Fix] Clear all client-side state to break error loops
+                        // 로그인 세션은 유지하고 시세 캐시만 초기화
                         try {
-                            localStorage.clear();
-                            sessionStorage.clear();
+                            localStorage.removeItem('cached_watchlist');
+                            localStorage.removeItem('cached_quotes');
+                            sessionStorage.removeItem('chunk_reload_done');
                         } catch(e) {}
                         
                         reset();
@@ -44,7 +60,7 @@ export default function GlobalError({
                     }}
                 >
                     <RefreshCw className="w-4 h-4" />
-                    시스템 재가동
+                    화면 다시 불러오기
                 </button>
 
                 <button

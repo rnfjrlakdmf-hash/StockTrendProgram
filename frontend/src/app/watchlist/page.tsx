@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Star, Trash2, Loader2, RefreshCw, AlertCircle, X, Bell, BellRing, BellOff, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu, ShieldCheck, ShieldAlert, CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, Trash2, Loader2, RefreshCw, AlertCircle, AlertTriangle, X, Bell, BellRing, BellOff, Crosshair, Zap, Settings2, FileWarning, ExternalLink, Check, Calendar, Menu, ShieldCheck, ShieldAlert, CheckCircle2, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import CleanStockList from "@/components/CleanStockList";
@@ -374,14 +374,22 @@ export default function WatchlistPage() {
             if (cachedWatchlist) {
                 try {
                     const parsed = JSON.parse(cachedWatchlist);
-                    setWatchlist(parsed);
-                    // 캐시가 유효하면 초기 로딩 스피너를 건너뜁니다.
-                    setLoading(false);
+                    if (Array.isArray(parsed)) {
+                        const normalized = parsed
+                            .filter(Boolean)
+                            .map((item: any) => typeof item === 'string' ? { symbol: item, name: item } : item)
+                            .filter((item: any) => item && item.symbol);
+                        setWatchlist(normalized);
+                        setLoading(false);
+                    }
                 } catch (e) {}
             }
             if (cachedQuotes) {
                 try {
-                    setQuotes(JSON.parse(cachedQuotes));
+                    const parsedQuotes = JSON.parse(cachedQuotes);
+                    if (parsedQuotes && typeof parsedQuotes === 'object') {
+                        setQuotes(parsedQuotes);
+                    }
                 } catch (e) {}
             }
         }
@@ -783,7 +791,11 @@ export default function WatchlistPage() {
                                             sessionBadge: sessionBadge || undefined,
                                             // [v2] 프리/에프터 및 국내 시간외 가격
                                             extendedPrice: data?.extended_price || (data?.nxt_data ? data.nxt_data.price : (data?.after_market_data ? data.after_market_data.price : null)),
-                                            extendedChange: data?.extended_change || (data?.nxt_data?.change_pct !== undefined ? `${data.nxt_data.change_pct > 0 ? '+' : ''}${data.nxt_data.change_pct}%` : null),
+                                            extendedChange: data?.extended_change !== undefined && data?.extended_change !== null
+                                                ? (typeof data.extended_change === 'number'
+                                                    ? `${data.extended_change > 0 ? '+' : ''}${data.extended_change.toFixed(2)}%`
+                                                    : String(data.extended_change))
+                                                : (data?.nxt_data?.change_pct !== undefined ? `${data.nxt_data.change_pct > 0 ? '+' : ''}${data.nxt_data.change_pct}%` : null),
                                             // [v3] 통화 정보 (해외주식 $ 표시 + 원화 병기)
                                             currency: data?.currency || 'KRW',
                                             price_krw: data?.price_krw || null,

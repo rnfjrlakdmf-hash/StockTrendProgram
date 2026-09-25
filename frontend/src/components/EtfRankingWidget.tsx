@@ -135,7 +135,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
 
     const fetchWatchlistSet = useCallback(async () => {
         try {
-            const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+            const currentUserId = user?.id || (user as any)?.uid || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
             const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
                 headers: { 'X-User-ID': currentUserId }
             });
@@ -156,7 +156,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         } catch (err) {
             console.error('Watchlist fetch error in ETF widget:', err);
         }
-    }, [user?.id]);
+    }, [user]);
 
     useEffect(() => {
         fetchWatchlistSet();
@@ -179,7 +179,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
 
         const sym = String(item.symbol).trim();
         const saved = isSymbolSaved(sym);
-        const currentUserId = user?.id || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
+        const currentUserId = user?.id || (user as any)?.uid || (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null) || 'guest';
         const numericPrice = item.price_num || parseFloat(String(item.price || '0').replace(/,/g, '')) || 0;
 
         setTogglingSymbol(sym);
@@ -198,6 +198,9 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         next.delete(sym.toUpperCase());
                         return next;
                     });
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('cached_watchlist');
+                    }
                     showToast(`⭐️ [${item.name}] 관심종목(ETF 알림)에서 해제되었습니다.`);
                     window.dispatchEvent(new CustomEvent('watchlistChanged'));
                 }
@@ -216,6 +219,9 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                 const json = await res.json();
                 if (json.status === 'success') {
                     setWatchlistSet(prev => new Set(prev).add(sym.toUpperCase()));
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem('cached_watchlist');
+                    }
                     showToast(`🌟 [${item.name}] 내 관심종목에 등록 완료! (장시작 시가 · 장마감 수익률 · 괴리율 알림 자동 수신)`);
                     window.dispatchEvent(new CustomEvent('watchlistChanged'));
                 }
