@@ -2,6 +2,9 @@ import { MetadataRoute } from 'next';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { API_BASE_URL } from '@/lib/config';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
     

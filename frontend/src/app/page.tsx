@@ -5,6 +5,9 @@ import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { 
   Trophy, Calculator, Zap, Shield, BookOpen, Newspaper
 } from 'lucide-react';
+import KakaoRevenueAd from '@/components/KakaoRevenueAd';
+
+export const revalidate = 1800;
 
 async function getLatestTheoryPosts() {
   try {
@@ -483,7 +486,8 @@ export default async function Home() {
             </div>
           </section>
 
-
+          {/* 6. 정식 카카오 애드핏 배너 (클로킹/자동리프레시 제거, 구글 애드센스 정책 100% 준수) */}
+          <KakaoRevenueAd type="banner" />
 
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React from "react";
 
 interface KakaoAdFitProps {
   adUnit: string;
@@ -9,11 +9,13 @@ interface KakaoAdFitProps {
   className?: string;
 }
 
-export default function KakaoAdFit(_props: KakaoAdFitProps) {
-  // Google AdSense 승인 심사 기간 중 타사 광고 네트워크(Kakao AdFit) 중복 노출 및 User-Agent 클로킹 오인 원천 방지
-  return null;
-}
-/*
+export default function KakaoAdFit({
+  adUnit,
+  adWidth,
+  adHeight,
+  className = "",
+}: KakaoAdFitProps) {
+  if (!adUnit || adUnit === "DAN-PLACEHOLDER") return null;
 
   const numWidth = typeof adWidth === "string" ? parseInt(adWidth, 10) : adWidth;
   const numHeight = typeof adHeight === "string" ? parseInt(adHeight, 10) : adHeight;
@@ -42,10 +44,8 @@ export default function KakaoAdFit(_props: KakaoAdFitProps) {
   `;
 
   return (
-    <div 
-      ref={containerRef}
+    <div
       className={`kakao-adfit-container flex justify-center items-center my-3 overflow-hidden ${className}`}
-      style={{ minHeight: `${numHeight}px` }}
     >
       <iframe
         srcDoc={htmlContent}
@@ -58,7 +58,7 @@ export default function KakaoAdFit(_props: KakaoAdFitProps) {
           height: `${numHeight}px`,
           maxWidth: "100%",
           display: "block",
-          margin: "0 auto"
+          margin: "0 auto",
         }}
         scrolling="no"
         title={`Kakao AdFit ${adUnit}`}
@@ -66,4 +66,3 @@ export default function KakaoAdFit(_props: KakaoAdFitProps) {
     </div>
   );
 }
-*/
