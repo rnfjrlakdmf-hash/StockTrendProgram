@@ -7,12 +7,13 @@ import {
 } from 'lucide-react';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 
-export const revalidate = 1800;
+export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 async function getLatestTheoryPosts() {
   try {
     const res = await fetch('https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=6', {
-      next: { revalidate: 1800 }
+      next: { revalidate: 300 }
     });
     if (!res.ok) return [];
     const data = await res.json();
