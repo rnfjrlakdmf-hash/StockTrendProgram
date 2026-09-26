@@ -5,32 +5,10 @@ import { X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function KakaoStickyBottomAd() {
-  const [closed, setClosed] = useState(false);
-  const [isPC, setIsPC] = useState<boolean | null>(null);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-  const [shouldDisplay, setShouldDisplay] = useState<boolean>(false);
-  const pathname = usePathname();
-
-  const isHiddenPage = pathname?.startsWith('/admin') || pathname?.startsWith('/login') || pathname?.startsWith('/widget');
-
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
-      setShouldDisplay(false);
-      return;
-    }
-
-    const ua = (navigator.userAgent || "").toLowerCase();
-    const isBot = ua.includes("googlebot") || 
-                  ua.includes("mediapartners-google") || 
-                  ua.includes("adsbot-google") || 
-                  ua.includes("feedfetcher-google") ||
-                  ua.includes("lighthouse") || 
-                  ua.includes("headless") ||
-                  ua.includes("crawler");
-
-    // 봇만 제외하고 모든 실사용자에게 100% 정상 노출
-    setShouldDisplay(!isBot);
-  }, []);
+  // Google AdSense 승인 심사 기간 중 하단 고정 스티키 타사 광고 및 클로킹 오인 원천 차단
+  return null;
+}
+/*
 
   useEffect(() => {
     const checkIsPC = () => window.innerWidth >= 768;
@@ -130,3 +108,4 @@ export default function KakaoStickyBottomAd() {
     </div>
   );
 }
+*/

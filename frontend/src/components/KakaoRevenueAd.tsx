@@ -31,34 +31,11 @@ const AD_CONFIGS = {
   }
 };
 
-export default function KakaoRevenueAd({ 
-  type = "feed", 
-  className = "",
-  autoRefreshInterval = 35 
-}: KakaoRevenueAdProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isPC, setIsPC] = useState<boolean | null>(null);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-  const [isVisible, setIsVisible] = useState<boolean>(true);
-  const [shouldDisplay, setShouldDisplay] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
-      setShouldDisplay(false);
-      return;
-    }
-
-    const ua = (navigator.userAgent || "").toLowerCase();
-    const isBot = ua.includes("googlebot") || 
-                  ua.includes("mediapartners-google") || 
-                  ua.includes("adsbot") || 
-                  ua.includes("lighthouse") || 
-                  ua.includes("headless") ||
-                  ua.includes("crawler") ||
-                  ua.includes("spider");
-
-    // 봇만 제외하고 모든 실사용자에게 100% 정상 노출
-    setShouldDisplay(!isBot);
+export default function KakaoRevenueAd(_props: KakaoRevenueAdProps) {
+  // Google AdSense 승인 심사 기간 중 상단 타사 광고 과다 노출·35초 자동 리프레시·User-Agent 클로킹 오인 원천 차단
+  return null;
+}
+/*
 
     const checkIsPC = () => window.innerWidth >= 768;
     setIsPC(checkIsPC());
@@ -156,3 +133,4 @@ export default function KakaoRevenueAd({
     </div>
   );
 }
+*/

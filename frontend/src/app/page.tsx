@@ -1,9 +1,23 @@
 import { Metadata } from 'next';
 import HomeClient from './HomeClient';
 import Link from 'next/link';
+import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { 
-  Trophy, Calculator, Zap, Shield
+  Trophy, Calculator, Zap, Shield, BookOpen, Newspaper
 } from 'lucide-react';
+
+async function getLatestTheoryPosts() {
+  try {
+    const res = await fetch('https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=6', {
+      next: { revalidate: 1800 }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.posts) ? data.posts.slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
 
 export const metadata: Metadata = {
   title: '스마트 투자 비서 | AI 주식 분석, 실시간 수급 및 공시 알림',
@@ -56,6 +70,9 @@ const FAQS = [
 ];
 
 export default async function Home() {
+  const latestTheoryPosts = await getLatestTheoryPosts();
+  const featuredBlogPosts = STATIC_POSTS.slice(0, 6);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -98,7 +115,108 @@ export default async function Home() {
 
       {/* 2. 하단 서비스 가이드 & 신뢰성 섹션 (고품격 에디토리얼 레이아웃) */}
       <div className="bg-gradient-to-b from-[#09090b] via-[#06070a] to-[#040406] border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-12">
+
+          {/* [애드센스 핵심 에디토리얼 섹션 1] 최신 1타 강사 차트·주식 스터디 칼럼 (SSR 본문 발췌 노출) */}
+          {latestTheoryPosts.length > 0 && (
+            <section className="bg-zinc-900/60 border border-emerald-500/25 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-emerald-400" /> 최신 연재 · 1타 강사의 매일 차트 &amp; 주식 스터디
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                    실전 캔들 차트(SVG), 수치 비교 그래프, 1,000만 원 실전 계산 시뮬레이션으로 배우는 오리지널 투자 교육 칼럼입니다.
+                  </p>
+                </div>
+                <Link href="/theory" className="text-xs font-black text-emerald-300 hover:text-emerald-200 bg-emerald-500/15 border border-emerald-500/30 px-4 py-2 rounded-xl self-start sm:self-center">
+                  전체 70+편 강의 보기 →
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {latestTheoryPosts.map((post: any) => {
+                  const plainDesc = String(post.summary || post.content || '')
+                    .replace(/<[^>]*>?/gm, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .slice(0, 145);
+                  const slug = post.slug || post.id;
+                  return (
+                    <Link
+                      key={slug}
+                      href={`/theory/${encodeURIComponent(slug)}`}
+                      className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 hover:border-emerald-500/50 transition-all flex flex-col justify-between gap-3 group"
+                    >
+                      <div className="space-y-2">
+                        <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          실전 차트·그래프 스터디
+                        </span>
+                        <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-emerald-300 transition-colors leading-snug">
+                          {post.title}
+                        </h3>
+                        <p className="text-xs text-gray-300 leading-relaxed line-clamp-3">
+                          {plainDesc}...
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-400">
+                        강의 전문 읽기 →
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* [애드센스 핵심 에디토리얼 섹션 2] 전문가 심층 경제·가치투자 리서치 칼럼 (SSR 정적 원고 노출) */}
+          <section className="bg-zinc-900/60 border border-blue-500/25 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                  <Newspaper className="w-5 h-5 text-blue-400" /> 심층 금융 리서치 &amp; 거시경제 분석 칼럼
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  재무제표 독해법, 금리·환율 사이클, 기업 밸류에이션(PER·PBR·ROE), 절세 전략을 깊이 있게 다룬 전문 칼럼입니다.
+                </p>
+              </div>
+              <Link href="/blog" className="text-xs font-black text-blue-300 hover:text-blue-200 bg-blue-500/15 border border-blue-500/30 px-4 py-2 rounded-xl self-start sm:self-center">
+                전체 칼럼 아카이브 →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredBlogPosts.map((post) => {
+                const plainDesc = String(post.excerpt || post.content || '')
+                  .replace(/<[^>]*>?/gm, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .slice(0, 145);
+                return (
+                  <Link
+                    key={post.slug}
+                    href={`/blog/${encodeURIComponent(post.slug)}`}
+                    className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 hover:border-blue-500/50 transition-all flex flex-col justify-between gap-3 group"
+                  >
+                    <div className="space-y-2">
+                      <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                        {post.category || '심층 투자 칼럼'}
+                      </span>
+                      <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-blue-300 transition-colors leading-snug">
+                        {post.title}
+                      </h3>
+                      <p className="text-xs text-gray-300 leading-relaxed line-clamp-3">
+                        {plainDesc}...
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-blue-400">
+                      리서치 전문 읽기 →
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
 
           {/* 실시간 인기 스마트 금융 도구 4선 */}
           <section className="bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-blue-950/20 border border-purple-500/20 rounded-3xl p-6 sm:p-8 space-y-6">

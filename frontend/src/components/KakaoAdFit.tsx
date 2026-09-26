@@ -9,30 +9,11 @@ interface KakaoAdFitProps {
   className?: string;
 }
 
-export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }: KakaoAdFitProps) {
-  const [shouldDisplay, setShouldDisplay] = useState<boolean>(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
-      setShouldDisplay(false);
-      return;
-    }
-
-    const ua = (navigator.userAgent || "").toLowerCase();
-    const isBot = ua.includes("googlebot") || 
-                  ua.includes("mediapartners-google") || 
-                  ua.includes("adsbot-google") || 
-                  ua.includes("feedfetcher-google") ||
-                  ua.includes("lighthouse") || 
-                  ua.includes("headless") ||
-                  ua.includes("crawler");
-
-    // 봇만 제외하고 모든 실사용자에게 100% 정상 노출
-    setShouldDisplay(!isBot);
-  }, []);
-
-  if (!shouldDisplay || !adUnit || adUnit === "DAN-PLACEHOLDER") return null;
+export default function KakaoAdFit(_props: KakaoAdFitProps) {
+  // Google AdSense 승인 심사 기간 중 타사 광고 네트워크(Kakao AdFit) 중복 노출 및 User-Agent 클로킹 오인 원천 방지
+  return null;
+}
+/*
 
   const numWidth = typeof adWidth === "string" ? parseInt(adWidth, 10) : adWidth;
   const numHeight = typeof adHeight === "string" ? parseInt(adHeight, 10) : adHeight;
@@ -85,3 +66,4 @@ export default function KakaoAdFit({ adUnit, adWidth, adHeight, className = "" }
     </div>
   );
 }
+*/

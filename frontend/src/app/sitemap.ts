@@ -175,13 +175,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
     });
 
-    const apiUrl = API_BASE_URL || 'http://127.0.0.1:8000';
+    const backendApiUrl = API_BASE_URL || 'http://127.0.0.1:8000';
+    const frontendApiUrl = baseUrl; // Next.js API Routes (/api/theory/posts, /api/blog/posts, /api/seo_posts)
 
     // 4. 테마별 산업 및 시장 분석 (고품질 테마 분석 콘텐츠)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch(`${apiUrl}/api/seo/themes`, { next: { revalidate: 86400 }, signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`${backendApiUrl}/api/seo/themes`, { next: { revalidate: 86400 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
@@ -200,11 +201,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error("Failed to generate theme sitemap:", e);
     }
 
-    // 5. 전문가 마켓 리포트 & 실시간 브리핑 포스트
+    // 5. 전문가 마켓 리포트 & 실시간 브리핑 포스트 (Next.js API Route)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch(`${apiUrl}/api/blog/posts?page=1&limit=200`, { next: { revalidate: 3600 }, signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`${frontendApiUrl}/api/blog/posts?page=1&limit=200`, { next: { revalidate: 3600 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
@@ -224,11 +225,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error("Failed to generate blog sitemap:", e);
     }
 
-    // 6. 차트 및 기술적 분석 투자 이론 포스트
+    // 6. 차트 및 기술적 분석 투자 이론 포스트 (70+ 고품질 1타 강사 스터디 - Next.js API Route)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch(`${apiUrl}/api/theory/posts?page=1&limit=200`, { next: { revalidate: 3600 }, signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`${frontendApiUrl}/api/theory/posts?page=1&limit=200`, { next: { revalidate: 3600 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();
@@ -239,7 +240,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                         url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
                         lastModified: new Date(post.createdAt || Date.now()),
                         changeFrequency: 'daily',
-                        priority: 0.9,
+                        priority: 0.95,
                     });
                 });
             }
@@ -248,11 +249,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         console.error("Failed to generate theory sitemap:", e);
     }
 
-    // 7. 실시간 핫이슈 & 시장 분석 포스트
+    // 7. 실시간 핫이슈 & 시장 분석 포스트 (Next.js API Route)
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch(`${apiUrl}/api/seo_posts?page=1&limit=500`, { next: { revalidate: 3600 }, signal: controller.signal });
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`${frontendApiUrl}/api/seo_posts?page=1&limit=500`, { next: { revalidate: 3600 }, signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
             const data = await res.json();

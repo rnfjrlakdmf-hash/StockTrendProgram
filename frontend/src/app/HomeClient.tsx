@@ -40,24 +40,29 @@ export default function HomeClient() {
       <Header onSearch={handleSearch} />
       <BloombergLiveTicker />
 
-      {/* SEO 최적화 및 봇 인식용 최상단 콘텐츠 (sr-only: 시각적 공간 0px 완벽 소멸, 구글/네이버/애드센스 봇 100% 색인) */}
-      <div className="sr-only">
-        <h1>스마트 투자 비서 - 퀀트 주식 분석 및 실시간 알림</h1>
-        <p>
-          매일 업데이트되는 전문가 수준의 금융 데이터와 인공지능 분석 리포트를 무료로 제공합니다.
-          실시간 공시와 글로벌 경제 지표를 한눈에 파악하고 합리적인 투자 결정을 내리세요.
-        </p>
+      {/* 정식 에디토리얼 인트로 헤더 (숨김 텍스트 sr-only 정책 위반 제거 -> 실사용자 및 심사관 모두에게 노출) */}
+      <div className="px-4 md:px-8 pt-4">
+        <div className="rounded-2xl bg-gradient-to-r from-blue-950/50 via-zinc-900/80 to-indigo-950/40 border border-white/10 px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+              <span>📚 스마트 투자 비서 · AI 금융 리서치 &amp; 1타 차트 아카데미</span>
+            </h1>
+            <p className="text-xs md:text-sm text-gray-300 mt-1 leading-relaxed">
+              금융감독원 DART·미국 SEC 공시 원천 데이터 분석 리포트와 매일 아침 연재되는 실전 차트·재무 교육 칼럼을 100% 무료로 제공합니다.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/theory" className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-black transition-all">
+              📖 매일 차트 스터디 칼럼 (70+편)
+            </Link>
+            <Link href="/blog" className="px-3.5 py-2 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-black transition-all">
+              📰 심층 마켓 칼럼
+            </Link>
+          </div>
+        </div>
       </div>
 
       <div className="p-4 md:p-8 space-y-8">
-
-        {/* 상단 통합 배너 영역 (모바일: 300x250 고단가 사각 / PC: 728x90, 35초 스마트 리프레시) */}
-        <div className="flex justify-center items-center py-4 mb-2 border-y border-white/[0.05]">
-          <div className="rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-zinc-950/40 border border-white/5 p-2 w-full max-w-[760px] flex justify-center">
-            <KakaoRevenueAd type="feed" autoRefreshInterval={35} />
-          </div>
-        </div>
-        
         {/* Default Dashboard Content */}
         <div className="space-y-10 animate-in fade-in duration-1000">
 
@@ -65,13 +70,6 @@ export default function HomeClient() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
               <FearGreedSpeedometer />
               <LiveMarketHub />
-            </div>
-
-            {/* 🌟 [골든존 1] 공포·탐욕 속도계 및 실시간 허브 하단 (모바일: 300x250 고단가 사각 / PC: 728x90 와이드, 35초 스마트 리프레시) */}
-            <div className="flex justify-center my-2">
-              <div className="rounded-2xl overflow-hidden shadow-lg shadow-black/20 bg-zinc-950/40 border border-white/5 p-2 w-full max-w-[760px] flex justify-center">
-                <KakaoRevenueAd type="feed" autoRefreshInterval={35} />
-              </div>
             </div>
 
             {/* [New] 장마감 수급 퀀트 스캐너 메인 하이라이트 배너 */}
