@@ -102,14 +102,13 @@ CHART_TOPICS = [
     "DMI와 ADX 지표로 상승/하락 추세 강도 수치로 확인하기",
     "윌리엄스 %R 지표로 단기 과매수 과매도 스캘핑 타점 잡기",
     "MFI(머니플로우인덱스) 거래량 동반 자금 유입 유출 감지",
-    "하이킨 아시 차트를 활용한 역추세 매매 피하기",
-    "갭 런어웨이(Runaway Gap) 급등주 따라잡기 매매",
+    "그랜빌의 8법칙 - 이동평균선과 주가의 위치별 4대 매수·4대 매도 급소",
     "역헤드 앤 숄더(Inverse H&S) 강력한 바닥권 상승 반전 패턴",
     "쌍봉(Double Top) 천장 패턴 이탈 시 폭락 회피 전략",
     "원형 바닥형(Rounding Bottom) 긴 횡보 후 대상승 초입 잡기",
     "이동평균선 수렴 후 확산 - 에너지 응축 후 대시세 분출 시그널",
     "캔들 꼬리 길이로 판단하는 매도세와 매수세의 힘겨루기",
-    "갭(Gap) 메우기 이론 - 주가는 왜 빈 공간을 채우려 하는가?",
+    "체결강도와 호가 잔량 비율로 장중 세력의 진짜 매수 의도 간파하기",
     "상승 잉태형(Harami) 캔들 패턴 - 하락세 둔화와 반전 암시",
     "다크 클라우드 커버(흑운형) - 고점에서의 치명적 하락 경고",
     "피어싱 라인(관통형) - 급락 후 나타나는 V자 반등 시그널",
@@ -119,7 +118,50 @@ CHART_TOPICS = [
     "외국인과 기관 매집 단가 추정하는 차트 분석 기법",
     "장중 틱차트 3분봉 5분봉 단타 매매 완벽 가이드",
     "손절선 하향 돌파(휩소) 후 V자 반등(개미털기) 패턴 대응",
-    "전고점 돌파 매매 시 가짜 돌파(Bull Trap) 구분하는 법"
+    "전고점 돌파 매매 시 가짜 돌파(Bull Trap) 구분하는 법",
+    "매집봉(윗꼬리 대량거래 양봉) 포착과 세력 평단가 계산법",
+    "종가베팅(오후 3시 10분 매수)으로 다음날 갭상승 수익 내는 차트 공식",
+    "시가베팅(장 초반 9시~9시 15분) 거래대금 폭발 돌파 타점 잡기",
+    "장대양봉 중심선(50% 라인) 지지 확인 후 안전하게 눌림목 매수하는 법",
+    "240일선(1년 장기 추세선) 돌파로 대세 상승 초입 종목 발굴하기",
+    "볼린저밴드 하단 W자 쌍바닥 패턴으로 폭락장 반등 급소 잡기",
+    "RSI 히든 다이버전스(Hidden Divergence)로 상승 추세 지속 신호 포착하기",
+    "MACD 제로라인(0선) 돌파와 히스토그램 확장으로 대시세 초입 잡기",
+    "거래량 없는 음봉(건조한 조정)과 거래량 터진 음봉(세력 이탈) 완벽 구분법",
+    "피보나치 확장(Fibonacci Extension) 1.618 배율로 신고가 목표주가 계산하기",
+    "일목균형표 선행스팬1·2 양운(구름대) 지지선 스윙 매매 기법",
+    "박스권 상단 3차 돌파 법칙 - 세 번 두드린 저항선이 뚫릴 때 폭등하는 이유",
+    "하락 추세선 돌파 후 리테스트(지지 확인) 타점 - 가장 안전한 변곡점 매매",
+    "주봉·월봉 멀티 타임프레임 분석 - 큰 파동 속에서 일봉 타점 정밀 조준하기",
+    "신고가 돌파 후 첫 번째 10일선 조정(첫 눌림목) 공략 공식",
+    "와이코프 이론(Wyckoff Method) - 거대 자본의 매집(Accumulation)과 분산 4단계 해부",
+    "돈치안 채널(Donchian Channel)과 전설의 터틀 트레이딩 돌파 기법",
+    "켈트너 채널(Keltner Channel)을 활용한 변동성 돌파와 추세 추종",
+    "슈퍼트렌드(Supertrend) 지표로 매수·매도 스위칭 타이밍 자동 포착하기",
+    "하모닉 패턴 입문 - 가틀리(Gartley)와 배트(Bat) 비율로 정밀 반전 구간 예측",
+    "아룬(Aroon) 지표(Aroon Up·Down)로 새로운 추세의 탄생과 소멸 읽기",
+    "엘더 레이(Elder-Ray) 지수 - 황소(Bull)의 힘과 곰(Bear)의 힘 수치 비교법",
+    "샹들리에 엑시트(Chandelier Exit)로 최고점 대비 수익 보존 익절선 설정하기",
+    "윌리엄스 프랙탈(Williams Fractal) 화살표로 단기 스윙 고점·저점 확정하기",
+    "보텍스 지표(Vortex Indicator) 교차로 소용돌이 장세 속 진짜 방향 찾기",
+    "매스 인덱스(Mass Index) 벌지(Bulge) 신호로 과열 추세의 방향 전환 미리 알기",
+    "얼티밋 오실레이터(Ultimate Oscillator) 3중 주기로 단기 속임수 신호 제거하기",
+    "샹드 모멘텀 오실레이터(CMO)로 순수 상승·하락 탄력 강도 측정하기",
+    "마켓 프로파일(Market Profile)과 POC(최대 거래 집중 가격) 핵심 원리",
+    "앤드류스 피치포크(Andrews Pitchfork) 삼지창 중앙선 회귀 법칙",
+    "선형회귀 채널(Linear Regression) 중심선과 표준편차 과열 구간 공략",
+    "렌코 차트(Renko Chart) - 시간과 잔파동을 지우고 순수 가격 추세만 보는 법",
+    "삼선전환도(Three Line Break) - 직전 3개 칸을 깰 때만 매매하는 추세 비법",
+    "포인트 앤 피겨(P&F) 차트 X·O 기호로 세력 목표치 계산하기",
+    "코폭 곡선(Coppock Curve) - 대폭락장 이후 평생의 대바닥을 알려주는 장기 지표",
+    "ADL(등락주선) 시장 폭(Market Breadth) 분석으로 지수 착시 현상 간파하기",
+    "맥클렐란 오실레이터(McClellan Oscillator)로 증시 전체의 단기 호흡 읽기",
+    "암스 인덱스(TRIN) 수치로 패닉셀(투매) 극단적 바닥 타이밍 포착하기",
+    "상대 회전 그래프(RRG) 4분면(선도·약화·후행·개선)으로 주도 업종 갈아타기",
+    "노스(KST, Know Sure Thing) 4중 가중 모멘텀 지표로 중장기 변곡점 잡기",
+    "RVI(Relative Vigor Index, 상대활력지수)로 시가 대비 종가 에너지 측정하기",
+    "간 팬(Gann Fan) 45도 생명 각도선으로 시공간 추세 기울기 진단하기",
+    "지그재그(ZigZag) 필터로 의미 없는 잔파동 걸러내고 핵심 파동만 긋기"
 ]
 
 GENERAL_TOPICS = [
@@ -182,7 +224,17 @@ GENERAL_TOPICS = [
     "미국 연준(Fed) 금리 결정이 한국 증시에 미치는 영향 완전 분석",
     "VIX(공포지수)로 시장의 공포와 탐욕을 수치로 읽는 방법",
     "섹터 로테이션 전략 - 경기 사이클에 따라 강세 업종 선점하기",
-    "달러 인덱스(DXY)와 신흥국 증시의 연관성 이해하기"
+    "달러 인덱스(DXY)와 신흥국 증시의 연관성 이해하기",
+    "ISA(개인종합자산관리계좌)로 배당·매매 세금 아끼는 절세 비법",
+    "미국주식 양도소득세 250만원 기본공제와 연말 손익통산 절세 기술",
+    "유상증자 vs 무상증자 공시 완벽 비교 - 호재와 악재 3초 판별법",
+    "전환사채(CB)와 신주인수권부사채(BW) 오버행 물량 폭탄 피하는 법",
+    "자본잠식과 관리종목·상장폐지 위험 기업을 재무제표로 미리 거르는 법",
+    "FOMC 점도표(Dot Plot)와 파월 의장 성명서로 금리 방향 예측하기",
+    "장단기 금리차 역전(10년물-2년물)이 주식 시장에 주는 경고 시그널",
+    "컨센서스(증권사 전망치)와 어닝 모멘텀으로 실적장세 주도주 찾기",
+    "주주환원율과 밸류업(Value-up) 프로그램 수혜 저PBR 우량주 고르는 법",
+    "보호예수 해제(락업 해제) 일정 확인으로 기관 물량 폭탄 피하는 법"
 ]
 
 THEORY_TOPICS = CHART_TOPICS + GENERAL_TOPICS
@@ -192,95 +244,114 @@ def is_chart_topic(topic: str) -> bool:
     chart_keywords = ["이동평균선", "RSI", "볼린저", "MACD", "캔들", "차트", "패턴", "지지", "저항",
                       "거래량", "OBV", "피보나치", "갭", "채널", "삼각", "헤드앤숄더", "VWAP",
                       "스토캐스틱", "일목균형표", "CCI", "ATR", "골든크로스", "데드크로스",
-                      "쌍바닥", "쌍봉", "엘리어트", "파라볼릭", "도지", "망치형", "잉걸불"]
+                      "쌍바닥", "쌍봉", "엘리어트", "파라볼릭", "도지", "망치형", "잉걸불",
+                      "체결강도", "그랜빌", "매집봉", "종가베팅", "시가베팅", "240일선", "멀티타임프레임"]
     return any(kw in topic for kw in chart_keywords)
 
 def get_topic_today(db=None) -> str:
     """
-    Firestore에서 최근 200개 발행된 강의 주제를 조회하여 겹치지 않는 주제를 선택합니다.
-    - 강력한 서브스트링 체크를 통해 PER, PBR, ROE 등이 한 글에 묶여 나왔을 때도 완벽하게 중복을 방지합니다.
-    - 차트 주제를 70% 확률로 우선 선택합니다.
+    Firestore의 모든 과거 발행 강의(단 1건도 빠짐없이 전체 스캔)를 조회하여
+    지금까지 나왔던 주식/차트 스터디 주제와 단 1%도 겹치지 않는 새로운 주제를 선택합니다.
     """
     import re as _re
     used_titles = set()
-    used_full_titles = [] # For strict substring matching
+    used_full_titles = []
+    used_norm_titles = []
+
+    def _norm(s: str) -> str:
+        return _re.sub(r'[\s\W_]+', '', s.upper()).replace('하이킨아시', '헤이킨아시')
 
     if db:
         try:
-            # 최근 200개 발행 글 조회
-            docs = db.collection("theory_posts").order_by(
-                "createdAt", direction=firestore.Query.DESCENDING
-            ).limit(200).stream()
+            docs = db.collection("theory_posts").stream()
             for doc in docs:
-                data = doc.to_dict()
-                orig = data.get("originalTopic", "")
-                if orig:
-                    used_titles.add(orig.strip())
-                    used_full_titles.append(orig.strip())
-                title = data.get("title", "")
-                if title:
-                    used_titles.add(title.strip())
-                    used_full_titles.append(title.strip())
+                data = doc.to_dict() or {}
+                for field in ("originalTopic", "title"):
+                    val = (data.get(field) or "").strip()
+                    if val:
+                        used_titles.add(val)
+                        used_full_titles.append(val)
+                        used_norm_titles.append(_norm(val))
         except Exception as e:
-            print(f"[Theory Bot] 발행 이력 조회 실패 (폴백 사용): {e}")
+            print(f"[Theory Bot] 발행 이력 조회 실패: {e}")
+
+    STOPWORDS = {
+        "주식", "주가", "주가에", "투자", "매매", "전략", "기법", "활용법", "완벽", "이해", "이해하기",
+        "총정리", "분석", "차트", "가이드", "방법", "원리", "초보자", "초보자가", "미치", "미치는", "영향",
+        "실전", "패턴", "지표", "하는", "무엇인가", "무엇인가요", "완전", "정복", "시장", "기업", "비율",
+        "타점", "잡기", "찾기", "읽는", "보는", "법", "왜", "언제", "어떻게", "거래", "매수", "매도",
+        "통한", "활용한", "이용한", "기반", "핵심", "기초", "개념", "차이점", "특징", "관계", "침체",
+        "상승", "하락", "돌파", "추세", "전환", "시그널", "신호", "포착", "대응", "가치", "수익", "수익성",
+        "비교", "종목", "재무제표", "무엇인", "신고", "단기", "장기", "평균", "계산", "확인", "피하는"
+    }
+
+    def extract_concept_keywords(topic: str) -> tuple:
+        eng_kws = []
+        kor_kws = []
+        for eng in _re.findall(r'[A-Za-z]{2,}', topic.upper()):
+            if eng not in {"VS", "AND", "THE", "IN", "ON", "TO", "OF", "STOP", "LOSS", "STAR", "BOX", "LINE", "GAP", "TOP"}:
+                eng_kws.append(eng)
+        main_part = _re.split(r'\s*-\s*|\s*\?\s*', topic)[0]
+        for tok in _re.findall(r'[가-힣]{2,}', main_part):
+            clean_tok = _re.sub(r'(이란|란|으로|로|에서|의|과|와|을|를|이|가|은|는)$', '', tok)
+            if len(clean_tok) >= 2 and clean_tok not in STOPWORDS:
+                kor_kws.append(_norm(clean_tok))
+        for tok in _re.findall(r'[가-힣]{3,}', topic):
+            clean_tok = _re.sub(r'(이란|란|으로|로|에서|의|과|와|을|를|이|가|은|는)$', '', tok)
+            if len(clean_tok) >= 3 and clean_tok not in STOPWORDS:
+                kor_kws.append(_norm(clean_tok))
+        return list(dict.fromkeys(eng_kws)), list(dict.fromkeys(kor_kws))
 
     def is_topic_used(topic: str) -> bool:
-        """정확 일치 + 강력한 키워드 포함 매칭으로 중복 판별"""
-        if topic in used_titles:
+        if topic in used_titles or _norm(topic) in used_norm_titles:
             return True
-            
-        # 후보 주제에서 핵심 영문 키워드 추출 (예: PER, MACD, ETF)
-        eng_kws = _re.findall(r'[A-Za-z]{2,}', topic.upper())
-        
-        # 후보 주제에서 한글 핵심 단어 추출 (첫 단어 중심)
-        kor_kws = []
-        key = topic.split('(')[0].split('란')[0].split('이란')[0].strip()
-        if len(key) >= 2 and not _re.match(r'^[A-Za-z]+$', key):
-            kor_kws.append(key)
-            
-        candidate_kws = set(eng_kws + kor_kws)
-        
-        # 추출된 핵심 키워드가 과거 발행된 제목 '어디에든' 포함되어 있으면 중복으로 간주
-        for kw in candidate_kws:
-            if len(kw) >= 2:
-                for past_title in used_full_titles:
-                    # 영문은 대소문자 무시 비교
-                    if kw.upper() in past_title.upper():
-                        print(f"[Theory Bot] 강력한 중복 방지 - 키워드 '{kw}'가 과거 글 '{past_title[:20]}...'에 포함됨.")
-                        return True
-                        
+
+        eng_kws, kor_kws = extract_concept_keywords(topic)
+        # 영문 약어는 독립 단어로 일치할 때만 중복 처리 (예: EV가 Evening에 매칭되는 현상 방지)
+        for ekw in eng_kws:
+            pat = _re.compile(r'(?<![A-Za-z])' + _re.escape(ekw) + r'(?![A-Za-z])', _re.IGNORECASE)
+            for past_raw in used_full_titles:
+                if pat.search(past_raw):
+                    return True
+        # 한글 핵심 개념어 매칭
+        for kkw in kor_kws:
+            for past_norm in used_norm_titles:
+                if kkw in past_norm:
+                    return True
         return False
 
-    # 사용되지 않은 주제 후보 필터링
     available_chart = [t for t in CHART_TOPICS if not is_topic_used(t)]
     available_general = [t for t in GENERAL_TOPICS if not is_topic_used(t)]
 
-    print(f"[Theory Bot] 사용 가능: 차트 {len(available_chart)}/{len(CHART_TOPICS)}개, 일반 {len(available_general)}/{len(GENERAL_TOPICS)}개")
+    print(f"[Theory Bot] 전체 누적 발행 글 {len(used_full_titles)//2}건 전수 대조 완료 | 앞으로 겹치지 않는 미출제 주제: 차트 {len(available_chart)}개, 일반 {len(available_general)}개 (총 {len(available_chart)+len(available_general)}개 대기 중)")
 
-    # 한쪽이 소진되면 남은 쪽으로 모두 할당하여 중복 방지
     if not available_chart and available_general:
-        print("[Theory Bot] 차트 주제 소진 - 남은 일반 주제에서 선택합니다.")
         available_chart = available_general
     elif not available_general and available_chart:
-        print("[Theory Bot] 일반 주제 소진 - 남은 차트 주제에서 선택합니다.")
         available_general = available_chart
-        
-    # 둘 다 소진되었을 때만 전체 목록에서 재선택 (90일 보장 이후)
+
     if not available_chart and not available_general:
-        print("[Theory Bot] 모든 주제 소진 - 전체 목록에서 재선택")
-        available_chart = CHART_TOPICS
-        available_general = GENERAL_TOPICS
+        print("[Theory Bot] 기본 커리큘럼 완료 - 과거 글과 겹치지 않는 신규 주제를 AI로 생성합니다.")
+        try:
+            past_list_str = ", ".join(list(used_titles)[:150])
+            new_topic_prompt = (
+                f"다음은 지금까지 발행된 주식 스터디 주제 목록입니다: [{past_list_str}]\n"
+                "위 목록에 나온 주제나 개념과 단 하나도 겹치지 않는, 주식 초보자에게 꼭 필요한 새로운 실전 차트 패턴 또는 주식 투자 핵심 개념 주제를 딱 1줄(40자 이내)로만 출력하세요."
+            )
+            resp = generate_with_retry(new_topic_prompt, json_mode=False, timeout=30)
+            new_topic = resp.text.strip().split("\n")[0].replace('"', '').replace("'", "").strip()
+            if new_topic:
+                return new_topic
+        except Exception as e:
+            print(f"[Theory Bot] AI 신규 주제 생성 오류: {e}")
 
-    # 진짜 랜덤 선택 (날짜 시드 제거 → 재시도 시 다른 주제 가능)
     rand = random.Random()
-
-    # 차트 70%, 일반 30% 가중치 선택
     if rand.random() < 0.7:
         selected = rand.choice(available_chart)
-        print(f"[Theory Bot] 차트 주제 선택 (70%): {selected[:40]}...")
+        print(f"[Theory Bot] 미출제 차트 주제 선택: {selected}")
     else:
         selected = rand.choice(available_general)
-        print(f"[Theory Bot] 일반 주제 선택 (30%): {selected[:40]}...")
+        print(f"[Theory Bot] 미출제 일반 주제 선택: {selected}")
 
     return selected
 
@@ -401,178 +472,126 @@ Dummy = [
     "장기투자 vs 단기매매 - 나에게 맞는 투자 방식 선택하는 법",
 ]
 
-def generate_theory_post(db=None):
-    topic = get_topic_today(db=db)
+def generate_theory_post(db=None, force_topic=None):
+    topic = force_topic or get_topic_today(db=db)
     use_chart = is_chart_topic(topic)
     
-    if use_chart:
-        visual_section = """
-    2. 📊 실전 차트 시각화 (SVG 캔들차트 필수 포함):
-       차트 주제이므로 반드시 아름다운 다크모드 SVG 캔들차트를 그려서 삽입하세요.
-       
-       ✅ SVG 차트 제작 필수 조건:
-       - ⚠️ 짤림 방지 필수: 그림이나 글씨(특히 x축, y축 라벨)가 화면에서 잘리지 않도록 viewBox 여백을 상하좌우 최소 50px 이상 넉넉하게 확보하세요.
-       - 텍스트나 도형이 전체 SVG 크기(820x420 등)의 경계 밖으로 나가지 않도록 x, y 좌표를 신중히 계산하세요.
-       - 최소 15~20개 캔들로 구성된 현실감 있는 주가 흐름을 표현하세요.
-       - 양봉(fill="#ef4444" 빨간색)과 음봉(fill="#3b82f6" 파란색)을 혼합하여 실제 HTS처럼 표현하세요.
-       - 각 캔들에 위아래 꼬리(wick)를 반드시 포함하세요 (line 태그 활용).
-       - 설명 중인 핵심 패턴 구간에는 반드시 형광 노란색 반투명 박스(rect fill="#fbbf24" opacity="0.15")로 하이라이트 처리하세요.
-       - 매수 포인트에는 초록 삼각형 화살표(▲)와 'BUY' 텍스트, 매도 포인트에는 빨간 화살표(▼)와 'SELL' 텍스트를 넉넉한 위치에 명시하세요.
-       - 이동평균선(5일: #f59e0b 노란선, 20일: #60a5fa 파란선)을 polyline으로 표현하세요.
-       - x축(날짜), y축(가격) 라벨을 반드시 포함하되 끝부분이 잘리지 않도록 텍스트 앵커(text-anchor)를 고려하세요. 눈금선(grid)은 회색으로 그리세요.
-       - 차트 우상단 여백에 범례(legend)를 작게 표시하세요 (양봉/음봉/5일선/20일선).
+    visual_section = """
+    2. 📊 [필수 시각화 1] 고해상도 다크모드 SVG 실전 차트 & 구조 모식도 (반드시 포함!):
+       초보자가 글만 읽고 지루해하지 않도록, 반드시 본문 중간에 **실제 HTS 스타일의 다크모드 SVG 차트(캔들차트 + 이동평균선 + 거래량 막대 + 핵심 타점 하이라이트)** 또는 **직관적인 컬러 단계별 비교 SVG 차트**를 직접 그려서 삽입하세요.
 
-       캔들차트 SVG 구조 예시:
-       <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl">
-       <p class="text-gray-400 text-sm mb-3 text-center">📊 [패턴명] 실전 예시 차트</p>
-       <svg viewBox="0 0 820 420" class="w-full h-auto font-sans">
-           <rect width="820" height="420" fill="#0f172a" rx="12"/>
-           <!-- y축 눈금선 (fill="#1e293b") -->
-           <!-- x축/y축 라벨 (fill="#64748b", font-size="11") 외곽 여백 주의! -->
-           <!-- 캔들 몸통(rect)과 꼬리(line), 이평선(polyline) -->
-           <!-- 하이라이트 박스, BUY/SELL 화살표 및 텍스트 -->
-           <!-- 범례 -->
-       </svg>
+       ✅ SVG 차트 제작 필수 조건:
+       - ⚠️ 짤림 방지 필수: `viewBox="0 0 840 440"` 크기를 사용하고, 사방 최소 55px 여백을 확보하여 어떤 글씨나 도형도 잘리지 않게 하세요.
+       - 배경은 고급스러운 다크 네이비(`rect width="840" height="440" fill="#0b1120" rx="16"`), 격자선(`stroke="#1e293b" stroke-dasharray="4 4"`)을 넣으세요.
+       - **차트/패턴/매매 주제는 물론 일반 경제/세금/이론 주제라도** 주가 흐름 예시(상승/하락/배당락/돌파 구간 등 15개 이상의 양봉 `#ef4444` / 음봉 `#3b82f6` 캔들과 꼬리 `line`, 5일선 `#fbbf24` / 20일선 `#38bdf8` `polyline`)와 하단 거래량 바를 함께 그려서 초보자가 실제 주가 차트에서 어떻게 나타나는지 눈으로 보게 하세요!
+       - 핵심 포인트 구간에는 반투명 하이라이트 박스(`rect fill="#fbbf24" opacity="0.14" stroke="#f59e0b" rx="8"`)와 큼직한 한글 설명 라벨(`🟢 핵심 체크 구간`, `🔺 매수/진입 급소`, `🔻 주의/이탈 구간`)을 표시하세요.
+       - 우측 상단에 깔끔한 범례(양봉/음봉/핵심선)를 배치하세요.
+
+       SVG 차트 감싸기 HTML 구조:
+       <div class="overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 border border-blue-500/30 p-5 md:p-7 my-10 shadow-2xl">
+         <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+           <span class="text-blue-400 font-black text-base md:text-lg">📊 한눈에 보는 실전 차트 & 핵심 타점 시뮬레이션</span>
+           <span class="text-xs px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold">초보자 시각 가이드</span>
+         </div>
+         <svg viewBox="0 0 840 440" class="w-full h-auto font-sans">
+           <!-- 여기에 격자선, 캔들/곡선, 하이라이트 박스, 한글 주석 화살표를 정교하게 작성 -->
+         </svg>
+         <p class="text-gray-400 text-sm mt-3 text-center">▲ 위 차트의 노란색 하이라이트 구간과 화살표 포인트를 본문 설명과 함께 비교해 보세요.</p>
        </div>
 
-    3. 📖 단계별 설명 (초보자도 이해할 수 있게):
-       ① 이 패턴/지표가 뭔지 한 줄 정의
-       ② 차트에서 어떻게 생겼는지 특징 묘사 (위 SVG와 연결해서 설명)
-       ③ 왜 이 패턴이 발생하는지 심리적 원인 (매도세 소진, 매수 세력 진입 등)
-       ④ 실전 매수 타이밍과 매도 타이밍을 구체적으로 설명
-       ⑤ 이 패턴과 함께 확인해야 할 보조지표(거래량, RSI 등)도 반드시 언급
-
-    4. ⚠️ 실전 꿀팁 & 함정 주의:
-       - 초보자가 가장 자주 당하는 '가짜 시그널(속임수 패턴)' 사례 설명
-       - 이 패턴을 신뢰할 수 있는 조건 vs 신뢰하면 안 되는 조건
-       - 손절 기준선 설정 방법"""
-    else:
-        visual_section = """
-    2. 시각화 자료 (안전한 SVG 다이어그램/막대그래프): 텍스트로만 설명하면 초보자가 이해하기 어려우므로, 핵심 개념(비율, 흐름, 구조 등)을 설명할 때 **SVG를 활용한 직관적인 모식도(다이어그램)나 가로 막대 그래프**를 반드시 그려서 삽입하세요.
-
-       ⚠️ SVG 다이어그램 필수 규칙 (반드시 지켜야 함):
-       - ⚠️ 짤림 방지 필수: 어떤 글씨나 도형도 SVG 화면 밖으로 잘리지 않도록 viewBox의 width/height를 실제 도형들이 차지하는 공간보다 사방으로 50px 이상 넉넉하게 설정하세요.
-       - 각 rect(사각형) 박스의 너비와 높이는 내부 텍스트가 절대 넘치지 않도록 충분히 크게 설정하세요 (한 줄당 최소 30px, 줄 수에 맞게 높이 계산).
-       - 텍스트가 2줄 이상일 경우, 반드시 <tspan dy="28"> 등을 이용해 줄 바꿈하고, 박스 높이도 그에 맞게 넉넉히 키우세요.
-       - 텍스트는 반드시 박스(rect) 내부 중앙에 위치시키세요. (text x=박스 중앙, y=박스 중앙)
-       - 텍스트 글씨는 font-size 최대 16px 이하로 유지해서 박스 안에 여유 있게 들어오도록 하세요.
-       - 절대로 텍스트가 박스 경계선을 넘거나 다른 도형/글씨와 겹치면 안 됩니다.
-
-       - 다이어그램 SVG 디자인 예시 템플릿:
-         <div class="overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 p-6 my-8 shadow-2xl flex justify-center w-full">
-         <svg viewBox="0 0 800 400" class="w-full max-w-[700px] h-auto font-sans">
-             <!-- 배경 -->
-             <rect width="800" height="400" fill="#111827" rx="16"/>
-             <!-- 화살표, 원(circle), 사각형(rect) 등 도형과 짧은 텍스트(text-anchor="middle", fill="#e5e7eb")를 사용하여 개념의 흐름, 비교, 구조를 아름답게 도식화하세요. 텍스트는 반드시 rect 안에 여유 있게 들어오도록 박스를 충분히 크게 만드세요 -->
-         </svg>
+    3. 📈 [필수 시각화 2] 초보자 눈높이 수치 비교 가로 막대 그래프 (Tailwind CSS 게이지 바 필수 포함!):
+       어려운 숫자·비율·세율·수익률·위험도 차이를 초보자가 1초 만에 직관적으로 비교할 수 있도록 **최소 3~4개 항목의 컬러 가로 막대 그래프(Progress Bar) 카드**를 반드시 삽입하세요.
+       구조 예시:
+       <div class="bg-slate-900/90 border border-slate-700/80 rounded-3xl p-6 md:p-8 my-10 shadow-xl">
+         <h4 class="text-xl font-black text-white mb-6 flex items-center gap-2">📈 핵심 수치 & 체감 효과 한눈에 비교하기</h4>
+         <div class="space-y-5">
+           <div>
+             <div class="flex justify-between text-sm md:text-base font-bold mb-2">
+               <span class="text-gray-200">구분 항목 1 (쉬운 설명 포함)</span>
+               <span class="text-emerald-400 font-black">수치 / 특징 요약</span>
+             </div>
+             <div class="w-full bg-slate-800 h-5 rounded-full overflow-hidden p-0.5">
+               <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: 85%"></div>
+             </div>
+           </div>
+           <!-- 3~4개 비교 바 반복 (emerald, blue, amber, rose 색상 활용) -->
          </div>
-       - 또는 수치 비교 시 Tailwind CSS 가로 막대 그래프 적극 활용:
-         <div class="mb-6"><p class="text-gray-100 font-bold mb-2">상승장 수익률 비교 (레버리지 2X)</p><div class="flex items-center gap-4"><div class="w-full bg-gray-800 h-8 rounded-xl overflow-hidden"><div class="bg-red-500 h-8" style="width: 80%"></div></div><span class="text-red-400 font-bold w-16">+80%</span></div></div>
-    3. 본론: 이 개념이 실제 투자에서 어떻게 활용되는지, 투자 시 팁을 핵심 포인트로 정리.
-    4. 실전 꿀팁 & 주의사항: 초보자가 가장 많이 실수하는 것과 바로 써먹을 수 있는 실전 팁."""
-
-    # 차트 주제일 경우 전문적이고 디테일한 프롬프트, 일반 주제는 기존 프롬프트
-    if use_chart:
-        prompt = f"""
-    당신은 국내 최고 수준의 주식 차트 분석 전문가이자, 초보 투자자들이 가장 좋아하는 1타 강사입니다.
-    오늘의 강의 주제는 '{topic}' 입니다.
-
-    [강의 제작 철학]
-    - 어려운 개념도 '비유'와 '실제 차트 예시'로 누구나 이해할 수 있게 가르칩니다.
-    - 이론만 나열하지 않고, 실전에서 어떻게 쓰는지 구체적인 매수/매도 시점과 함께 설명합니다.
-    - 초보자가 자주 빠지는 '함정(가짜 시그널)'을 꼭 짚어줍니다.
-    - A4 4~5장 분량, 최소 1,500자 이상의 매우 길고 상세한 강의를 작성합니다. (내용이 짧으면 안 됩니다)
-
-    아래 구성으로 강의 콘텐츠를 작성해주세요:
-
-    1. 🎯 도입부 (왜 이걸 알아야 하나?):
-       - 이 패턴/지표를 모르고 투자하면 어떤 손해를 보는지 실감나는 사례로 시작
-       - "저도 처음엔 이걸 몰라서..." 처럼 공감가는 스토리텔링
-       - 이 강의를 다 읽으면 뭘 할 수 있는지 명확히 예고
-
-    {visual_section}
-
-    5. 📌 실전 체크리스트:
-       이 강의를 읽고 나서 실제 종목 차트에서 확인해야 할 체크포인트를 번호로 정리
-       (예: ① 캔들 3개 연속 확인 ② 거래량이 전일 대비 1.5배 이상인지 ③ RSI가 30 이하인지 등)
-
-    6. SEO 메타데이터: 문서 제일 상단에 <title-seo>검색 엔진용 20자 이내 핵심 제목</title-seo>를 포함해주세요.
-
-    **HTML 포맷팅 규칙** (반드시 준수):
-    1. 전체 내용은 HTML 태그로 구성 (Markdown 절대 금지)
-    2. 큰 제목: <h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">
-    3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
-    4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
-    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 break-keep">
-    6. 목록: <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
-    7. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
-    8. 경고 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
-    9. 꿀팁 박스: <div class="bg-green-900/30 border-l-4 border-r-4 border-green-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-green-100 text-xl font-bold leading-loose mb-0">💡 내용</p></div>
-    10. 체크리스트 박스: <div class="bg-gray-800/60 border border-gray-600 rounded-2xl p-8 my-10"><p class="text-yellow-300 text-2xl font-black mb-4">✅ 실전 체크리스트</p>...<p class="text-gray-100 text-xl">내용</p></div>
-    11. SEO 내부 링크: 종목명 링크 외에도, 우리 사이트의 핵심 기능 링크를 글 중간중간에 최소 2회 이상 아주 자연스럽게 삽입하세요.
-        - 링크 예시: <a href="/discovery" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">AI 종목 발굴</a>, <a href="/theme" class="...">실시간 테마 분석</a>, <a href="/ranking" class="...">AI 실시간 랭킹</a>, <a href="/calendar" class="...">주요 증시 캘린더</a>
-    12. 법적 준수: 특정 종목 매수/매도 추천 절대 금지. 마지막에 <p class="text-gray-500 text-sm mt-10">본 자료는 교육 목적으로 제공되며, 투자의 최종 책임은 투자자 본인에게 있습니다.</p>
-    13. 절대 금지: <!DOCTYPE>, <html>, <head>, <style>, <body> 태그. 오직 본문 HTML만 반환.
-
-    순수한 HTML만 반환하고 마크다운 틱(```html)은 사용하지 마세요.
+       </div>
     """
-    else:
-        prompt = f"""
-    당신은 주식 투자를 처음 시작하는 초보자들에게 주식·경제·투자 이론을 아주 쉽고 친절하게, 재미있게 알려주는 1타 강사입니다.
+
+    prompt = f"""
+    당신은 주식 투자를 처음 시작하는 초보자들에게 어려운 주식·차트·세금·경제 원리를 세상에서 가장 쉽고 친절하고 명쾌하게 알려주는 대한민국 1타 주식 강사입니다.
     오늘의 강의 주제는 '{topic}' 입니다.
 
-    아래의 가이드라인에 따라 강의 콘텐츠를 작성해주세요 (A4 4~5장 분량, 최소 1,500자 이상, 상세한 예시와 설명을 아주 충실하게 덧붙여서 길게 작성):
-    1. 도입부: 왜 이것을 알아야 하는지, 모르면 어떤 손해를 보는지 초보자 눈높이에서 흥미롭게 설명. 실제 사례나 비유를 들어주세요.
-    {visual_section}
-    5. SEO 메타데이터: 문서 제일 상단에 <title-seo>검색 엔진용 20자 이내 핵심 제목</title-seo>를 포함해주세요.
-    
-    **HTML 포맷팅 규칙** (반드시 준수, 모바일 가독성 최우선):
-    1. 전체 내용은 HTML 태그로 구성하세요 (Markdown 사용 절대 금지).
-    2. 큰 제목: <h2 class="text-4xl font-black text-white pb-3 border-b-2 border-gray-600 mb-10">
-    3. 소제목: <h3 class="text-3xl font-extrabold text-blue-400 mt-14 mb-6 border-l-8 border-blue-500 pl-5 bg-blue-900/10 py-2 rounded-r-xl">
-    4. 일반 텍스트: <p class="text-gray-100 text-xl leading-loose mb-8 font-medium tracking-wide">
-    5. 중요 강조: <strong class="text-white bg-blue-600/40 px-2 py-0.5 rounded shadow-sm font-bold border-b-2 border-blue-400 break-keep"> (단어가 쪼개지지 않고 줄바꿈 되도록 break-keep 필수)
-    6. 시각화: 주제에 따라 위 가이드라인(visual_section)에 명시된 예쁘고 안전한 SVG 차트(캔들차트)나 CSS 가로 막대 그래프를 적극 활용하세요. 단, 글씨가 겹치는 SVG 표(Table)나 복잡한 레이아웃은 절대 생성 금지.
-    7. 목록(리스트): <ul class="list-none space-y-5 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-xl leading-loose font-medium"><span class="text-blue-400 font-black text-2xl mt-0.5 shrink-0">✓</span><span class="flex-1">내용</span></li>
-    8. 핵심 요약 박스: <div class="bg-blue-900/30 border-l-4 border-r-4 border-blue-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-blue-100 text-xl font-bold leading-loose mb-0">내용</p></div>
-    9. 경고/주의 박스: <div class="bg-red-900/30 border-l-4 border-r-4 border-red-500 rounded-2xl p-8 my-10 shadow-lg"><p class="text-red-100 text-xl font-bold leading-loose mb-0">⚠️ 내용</p></div>
-    10. **SEO 내부 링크**: 종목명(예: <a href="/stock/005930" class="text-blue-300 font-bold hover:text-blue-200 underline decoration-blue-500/50 underline-offset-4">삼성전자</a>) 외에도, 사이트 주요 기능에 대한 내부 링크를 글 내용과 문맥에 맞춰 **최소 2회 이상** 자연스럽게 삽입하세요.
-        - 예: "관련 종목을 찾고 싶다면 👉 <a href="/discovery" class="...">AI 종목 발굴</a>을 활용해보세요", 혹은 <a href="/theme" class="...">실시간 테마 분석</a>, <a href="/ranking" class="...">AI 실시간 랭킹</a>, <a href="/calendar" class="...">증시 캘린더</a>
-    11. **법적 준수 (유사투자자문업 위반 방지)**: **절대로 특정 종목에 대한 매수/매도 추천, 목표가 제시, 종목 리딩, '지금 사야 한다'는 등의 직접적인 투자 권유를 하지 마세요.** 오직 객관적 사실, 차트/경제 이론, 일반적인 지식을 전달하는 '학술적이고 교육적인' 톤앤매너를 철저히 유지해야 합니다. 본문 마지막에는 항상 "본 자료는 교육 목적으로 제공되며, 투자의 최종 책임은 투자자 본인에게 있습니다."라는 문구를 조그맣게(<p class="text-gray-500 text-sm mt-10">) 추가하세요.
-    12. **절대 금지**: <!DOCTYPE>, <html>, <head>, <style>, <body> 태그, CSS 코드 텍스트. 오직 본문 내용(태그)만 반환.
-    
-    순수한 HTML만 반환하고 마크다운 틱(```html)은 사용하지 마세요.
+    [강의 제작 핵심 원칙]
+    1. **초등학생도 이해하는 일상 비유**: 전문 용어가 나오면 반드시 괄호 안에 쉬운 뜻풀이와 일상생활 비유(예: 마트 할인, 아파트 전세, 건강검진 등)를 함께 적어주세요.
+    2. **시각 자료 2종 필수 탑재**: 위에서 제시한 **① 다크모드 SVG 실전 차트/다이어그램**과 **② 컬러 가로 막대 비교 그래프**를 본문 안에 반드시 모두 포함하세요.
+    3. **실제 돈(1,000만 원) 계산 시뮬레이션**: 추상적인 설명 대신 "만약 내가 1,000만 원으로 삼성전자/미국주식을 매매했다면 실제로 얼마가 남고 어떻게 계산될까?"를 구체적인 숫자로 비교해 주세요.
+    4. **풍성하고 깊이 있는 분량**: 최소 2,200자 이상의 탄탄하고 디테일한 구성으로 작성하세요.
+
+    아래 6단계 구성으로 강의 본문(HTML)을 작성해주세요:
+
+    - **상단 [30초 핵심 3줄 요약 박스]**: 바쁜 직장인·초보자가 30초 만에 오늘 배울 핵심 결론 3가지를 파악할 수 있는 요약 카드
+    - **1단계 🎯 왜 이걸 모르면 내 계좌가 손해를 볼까? (공감 사례 & 일상 비유)**
+    - **2단계 📊 실전 차트 & 시각화로 한눈에 이해하기** ({visual_section}의 SVG 차트 + 가로 막대 그래프 모두 포함!)
+    - **3단계 💰 실전 1,000만 원 시뮬레이션 (실제 숫자 예시로 완벽 정복)**
+    - **4단계 🚨 초보자가 가장 많이 당하는 함정 TOP 3 & 1타 강사의 해결책**
+    - **5단계 ✅ 매매 버튼 누르기 전 3초 실전 체크리스트 박스**
+
+    또한 문서 맨 첫 줄에 아래 2개의 메타 태그를 정확히 포함해주세요:
+    <title-seo>검색 엔진용 22자 이내 핵심 제목</title-seo>
+    <summary-push>푸시 알림 및 알림센터 카드에 보여줄 핵심 요약 2문장 (초보자가 가장 궁금해할 핵심 숫자와 꿀팁 포함, 줄바꿈 없이 90자 이내)</summary-push>
+
+    **HTML 포맷팅 규칙** (모바일 및 PC 가독성 최우선):
+    1. 전체 내용은 순수 HTML 태그로만 구성하세요 (Markdown 기호 `**`, `###`, ```html 절대 사용 금지).
+    2. 큰 제목: <h2 class="text-2xl md:text-3xl font-black text-white pb-3 border-b-2 border-blue-500/40 mb-8 mt-14">
+    3. 소제목: <h3 class="text-xl md:text-2xl font-extrabold text-blue-400 mt-10 mb-5 border-l-4 border-blue-500 pl-4 bg-blue-900/15 py-2 rounded-r-xl">
+    4. 일반 문단: <p class="text-gray-100 text-base md:text-lg leading-relaxed mb-6 font-normal tracking-wide break-keep">
+    5. 중요 단어 강조: <strong class="text-amber-200 bg-amber-500/20 px-1.5 py-0.5 rounded font-bold border-b border-amber-400/50 break-keep">
+    6. 목록(리스트): <ul class="list-none space-y-4 mb-8"> + <li class="flex items-start gap-3 text-gray-100 text-base md:text-lg leading-relaxed"><span class="text-blue-400 font-black text-xl mt-0.5 shrink-0">✔</span><span class="flex-1 break-keep">내용</span></li>
+    7. 30초 핵심 요약 박스: <div class="bg-gradient-to-br from-blue-950/80 to-indigo-950/60 border border-blue-500/40 rounded-3xl p-6 md:p-8 my-8 shadow-xl"><p class="text-blue-300 font-black text-lg mb-3">⚡ 바쁜 초보자를 위한 30초 핵심 3줄 요약</p>...</div>
+    8. 경고/함정 박스: <div class="bg-red-950/40 border-l-4 border-red-500 rounded-2xl p-6 my-8 shadow-lg"><p class="text-red-200 text-base md:text-lg font-bold leading-relaxed mb-0">⚠️ 내용</p></div>
+    9. 실전 꿀팁 박스: <div class="bg-emerald-950/40 border-l-4 border-emerald-500 rounded-2xl p-6 my-8 shadow-lg"><p class="text-emerald-200 text-base md:text-lg font-bold leading-relaxed mb-0">💡 내용</p></div>
+    10. SEO 내부 링크: 본문 문맥에 맞춰 <a href="/discovery" class="text-blue-300 font-bold underline underline-offset-4">AI 종목 발굴</a>, <a href="/signals" class="text-blue-300 font-bold underline underline-offset-4">실시간 수급 시그널</a>, <a href="/calendar" class="text-blue-300 font-bold underline underline-offset-4">증시 캘린더</a> 링크를 자연스럽게 2회 이상 포함하세요.
+    11. 법적 준수: 특정 종목 매수/매도 권유 금지. 마지막에 <p class="text-gray-500 text-sm mt-10">본 자료는 교육 목적으로 제공되며, 투자의 최종 책임은 투자자 본인에게 있습니다.</p> 추가.
     """
     
     try:
-        response = generate_with_retry(prompt, json_mode=False, timeout=90)
+        response = generate_with_retry(prompt, json_mode=False, timeout=110)
         content = response.text.replace("```html", "").replace("```", "").strip()
         
-        # 제목 생성
-        seo_match = re.search(r'<title-seo>(.*?)</title-seo>', content)
+        # 제목 추출
+        seo_match = re.search(r'<title-seo>(.*?)</title-seo>', content, re.DOTALL)
         if seo_match:
             title = seo_match.group(1).strip()
-            content = re.sub(r'<title-seo>.*?</title-seo>\s*', '', content).strip()
+            content = re.sub(r'<title-seo>.*?</title-seo>\s*', '', content, flags=re.DOTALL).strip()
         else:
             first_word = topic.split('(')[0].split()[0] if topic else "주식"
             prefix = "[오늘의 차트 스터디]" if use_chart else "[주식 1타 강의]"
             title = f"{prefix} {first_word} 완벽 가이드"
+
+        # 푸시 요약 추출
+        push_summary = ""
+        sum_match = re.search(r'<summary-push>(.*?)</summary-push>', content, re.DOTALL)
+        if sum_match:
+            push_summary = sum_match.group(1).strip()
+            content = re.sub(r'<summary-push>.*?</summary-push>\s*', '', content, flags=re.DOTALL).strip()
             
         # 태그 생성 (주제별 맞춤)
         words = re.findall(r'[가-힣A-Za-z]+', topic)
-        base_tags = ["주식초보", "주식공부", "주식이론"]
+        base_tags = ["주식초보", "주식1타강사", "차트그래프교육"]
         if use_chart:
-            base_tags += ["차트분석", "기술적분석"]
+            base_tags += ["차트분석", "실전매매타점"]
         else:
-            base_tags += ["투자전략", "주식기초"]
+            base_tags += ["투자필수상식", "실전계산예시"]
         tags = base_tags + ([words[0]] if words else [])
         
-        return title, content, tags, topic
+        return title, content, tags, topic, push_summary
     except Exception as e:
         print(f"Gemini API 에러: {e}")
-        return None, None, None, None
+        return None, None, None, None, ""
 
-def post_daily_theory():
+def post_daily_theory(force=False):
     init_firebase()
     try:
         db = firestore.client()
@@ -580,20 +599,23 @@ def post_daily_theory():
         print("Firestore 초기화 실패")
         return False
 
-    # [중복 방지] 오늘 이미 발행된 글이 있으면 중단
+    # [중복 방지] 오늘 이미 발행된 글이 있으면 중단 (force=True일 때는 강제 재생성)
     kst_check = timezone(timedelta(hours=9))
     today_slug = f"theory-{datetime.now(kst_check).strftime('%Y%m%d')}"
-    try:
-        existing_doc = db.collection("theory_posts").document(today_slug).get()
-        if existing_doc.exists:
-            existing_title = existing_doc.to_dict().get("title", "(제목 없음)")
-            print(f"[Theory Bot] 오늘({today_slug}) 이미 발행된 강의가 있습니다: '{existing_title}' - 중복 발행 방지로 건너뜁니다.")
-            return True  # 성공으로 처리하여 재시도 루프 방지
-    except Exception as e:
-        print(f"[Theory Bot] 중복 체크 중 오류: {e}")
+    yesterday_slug = f"theory-{(datetime.now(kst_check) - timedelta(days=1)).strftime('%Y%m%d')}"
+    if not force:
+        try:
+            existing_doc = db.collection("theory_posts").document(today_slug).get()
+            if existing_doc.exists:
+                existing_title = existing_doc.to_dict().get("title", "(제목 없음)")
+                print(f"[Theory Bot] 오늘({today_slug}) 이미 발행된 강의가 있습니다: '{existing_title}' - 중복 발행 방지로 건너뜁니다.")
+                return True  # 성공으로 처리하여 재시도 루프 방지
+        except Exception as e:
+            print(f"[Theory Bot] 중복 체크 중 오류: {e}")
         
     print("오늘의 주식 이론/차트 스터디 콘텐츠 생성 중...")
-    title, content, tags, topic = generate_theory_post(db=db)
+    force_topic = "주식 매매 세금 총정리 (증권거래세, 양도소득세, 배당소득세)" if force else None
+    title, content, tags, topic, push_summary = generate_theory_post(db=db, force_topic=force_topic)
     if not content:
         print("콘텐츠 생성 실패.")
         return False
@@ -606,6 +628,7 @@ def post_daily_theory():
         "title": title,
         "content": content,
         "slug": slug,
+        "summary": push_summary,
         "createdAt": firestore.SERVER_TIMESTAMP,
         "author": "StockTrend 차트 마스터",
         "tags": tags,
@@ -616,20 +639,28 @@ def post_daily_theory():
     try:
         doc_ref = db.collection("theory_posts").document(slug)
         doc_ref.set(post_data)
+        if force:
+            prev_data = dict(post_data)
+            prev_data["slug"] = yesterday_slug
+            db.collection("theory_posts").document(yesterday_slug).set(prev_data)
+            print(f"[SUCCESS] 이전 카드 호환용({yesterday_slug}) 동시 업데이트 완료!")
         
-        print(f"[SUCCESS] 글 작성 완료! (ID: {slug})")
+        print(f"[SUCCESS] 글 작성 완료! (ID: {slug}, SVG 포함 여부: {'<svg' in content})")
         new_url = f"https://stock-trend-program.co.kr/theory/{slug}"
         print(f"URL: {new_url}")
         
-        # User requested no discord notifications
-        # post_to_discord(title, new_url, tags)
-        
-        clean_title = title.replace('[오늘의 차트 스터디]', '').strip()
+        clean_title = title.replace('[오늘의 차트 스터디]', '').replace('[주식 1타 강의]', '').strip()
+        summary_line = push_summary if push_summary else "초보자도 30초 만에 이해하는 핵심 원리와 1,000만 원 실전 시뮬레이션 예시 완벽 정리"
         
         # 텔레그램 발송 (telegram_service 내부에서 FCM 푸시와 알림 센터 등록까지 모두 자동으로 처리함)
         try:
             from telegram_service import send_telegram_teaser
-            teaser_msg = f"📚 <b>[주식 1타 강사] 오늘의 스터디 업로드!</b>\n\n주식 초보 탈출을 위한 필수 이론!\n오늘의 주제: <b>{clean_title}</b>\n\n👉 <a href='{new_url}'>무료 강의 보러가기</a>"
+            teaser_msg = (
+                f"📚 <b>[주식 1타 강사] {clean_title}</b>\n\n"
+                f"📌 핵심 요약: {summary_line}\n"
+                f"📊 수록 자료: <b>실전 차트 그림 · 비교 막대그래프 · 1,000만원 계산 예시</b>\n\n"
+                f"👉 <a href='{new_url}'>차트·그래프 포함 강의 보러가기</a>"
+            )
             send_telegram_teaser(teaser_msg)
             print("[Telegram & FCM] 스터디 알림 통합 발송 완료")
         except Exception as e:
@@ -650,4 +681,13 @@ def post_daily_theory():
         return False
 
 if __name__ == "__main__":
-    post_daily_theory()
+    import sys
+    if "--check-topics" in sys.argv:
+        init_firebase()
+        db = firestore.client()
+        selected = get_topic_today(db=db)
+        print(f"[검증 완료] 다음 자동 선정 후보 예시: {selected}")
+    else:
+        post_daily_theory(force=("--force" in sys.argv))
+
+

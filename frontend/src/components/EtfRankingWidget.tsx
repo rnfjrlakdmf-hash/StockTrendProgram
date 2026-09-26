@@ -433,13 +433,19 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
         }
 
         if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase().trim();
-            list = list.filter(item => 
-                (item.name && item.name.toLowerCase().includes(query)) ||
-                (item.symbol && item.symbol.toLowerCase().includes(query)) ||
-                (item.brand && item.brand.toLowerCase().includes(query)) ||
-                (item.category_name && item.category_name.toLowerCase().includes(query))
-            );
+            const tokens = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+            list = list.filter(item => {
+                const brandCompany = getBrandInfo(item.brand).company || '';
+                const searchableText = [
+                    item.name || '',
+                    (item.name || '').replace(/\s+/g, ''),
+                    item.symbol || '',
+                    item.brand || '',
+                    brandCompany,
+                    item.category_name || ''
+                ].join(' ').toLowerCase();
+                return tokens.every(tok => searchableText.includes(tok));
+            });
         }
 
         list.sort((a, b) => {
@@ -902,33 +908,63 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                     </div>
                 </div>
 
-                {/* Controls Bar: 실시간 검색 + 정렬 옵션 + 표시 개수 */}
-                <div className="space-y-3 relative z-30 bg-black/50 border border-white/10 p-3.5 md:p-4 rounded-2xl">
-                    <div className="flex flex-col lg:flex-row items-center gap-3">
-                        {/* 실시간 검색창 */}
-                        <div className="relative flex-1 w-full">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {/* Controls Bar: 1단(100% 와이드 실시간 검색창 + 추천 태그) / 2단(정렬 옵션 + 표시 개수) */}
+                <div className="space-y-3.5 relative z-30 bg-zinc-950/90 border border-white/15 p-4 md:p-5 rounded-2xl shadow-lg">
+                    {/* 1단: 풀 와이드(100% 폭) 실시간 검색창 (글자 잘림 완벽 방지) */}
+                    <div className="flex flex-col gap-2.5 w-full">
+                        <div className="relative w-full min-w-full">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-blue-400 pointer-events-none z-10" />
                             <input
                                 type="text"
-                                placeholder="ETF 종목명, 브랜드, 코드 검색 (예: KODEX 반도체, TIGER 미국, 배당, SOXL, SCHD...)"
+                                placeholder="ETF 종목명, 운용사(삼성·미래에셋), 티커 코드 검색 (예: KODEX 200, TIGER 반도체, 미국배당, SOXL, SCHD...)"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-16 py-2.5 bg-zinc-900/90 border border-white/10 rounded-xl text-white placeholder-gray-500 text-xs md:text-sm font-medium focus:outline-none focus:border-blue-500/50 transition-all"
+                                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#18181b', minWidth: '100%' }}
+                                className={`block w-full min-w-full pl-11 ${searchQuery ? 'pr-32' : 'pr-4'} py-3.5 bg-zinc-900 border border-blue-500/40 focus:border-blue-400 rounded-xl text-white placeholder-gray-400 text-sm md:text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all shadow-inner`}
                             />
                             {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-white bg-white/10 px-2 py-0.5 rounded cursor-pointer"
-                                >
-                                    초기화
-                                </button>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10">
+                                    <span className="text-[11px] font-bold text-blue-300 bg-blue-500/20 border border-blue-500/30 px-2 py-0.5 rounded-md">
+                                        {processedData.length}건
+                                    </span>
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="text-xs font-bold text-gray-200 hover:text-white bg-white/15 hover:bg-red-500/30 border border-white/10 px-2.5 py-1 rounded-lg cursor-pointer transition-all"
+                                    >
+                                        ✕ 지우기
+                                    </button>
+                                </div>
                             )}
                         </div>
 
+                        {/* 원클릭 빠른 검색 키워드 칩 */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-bold text-gray-400 mr-1">🔥 인기 검색:</span>
+                            {['반도체', '미국', '배당', '2차전지', '레버리지', '인버스', '채권', 'KODEX', 'TIGER'].map((kw) => {
+                                const active = searchQuery.trim().toLowerCase() === kw.toLowerCase();
+                                return (
+                                    <button
+                                        key={kw}
+                                        onClick={() => setSearchQuery(active ? '' : kw)}
+                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                                            active
+                                                ? 'bg-blue-600/30 border-blue-400 text-blue-200 shadow-sm'
+                                                : 'bg-white/5 border-white/10 text-gray-300 hover:text-white hover:bg-white/10'
+                                        }`}
+                                    >
+                                        #{kw}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* 2단: 정렬 필터 + 표시 개수 선택 */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-white/10">
                         {/* 정렬 필터 (마우스 오버 시 초보자 설명 표시) */}
-                        <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto pb-1 lg:pb-0">
-                            <span className="text-[11px] font-bold text-gray-400 shrink-0 hidden sm:flex items-center gap-1">
-                                <ArrowUpDown className="w-3 h-3 text-blue-400" /> 정렬:
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-bold text-gray-400 shrink-0 flex items-center gap-1 mr-1">
+                                <ArrowUpDown className="w-3.5 h-3.5 text-blue-400" /> 정렬:
                             </span>
                             {[
                                 {
@@ -990,12 +1026,12 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                         </div>
 
                         {/* 표시 개수 선택 (20, 50, 100) */}
-                        <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                        <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-white/10 shrink-0 ml-auto">
                             {[20, 50, 100].map((num) => (
                                 <button
                                     key={num}
                                     onClick={() => setDisplayLimit(num)}
-                                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                         displayLimit === num
                                         ? 'bg-blue-600 text-white shadow-sm'
                                         : 'text-gray-400 hover:text-white'

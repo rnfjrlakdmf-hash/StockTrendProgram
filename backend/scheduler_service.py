@@ -222,13 +222,18 @@ def send_opening_notification(market: str):
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT user_id FROM watchlist")
+    cursor.execute("""
+        SELECT DISTINCT user_id FROM watchlist
+        WHERE user_id IS NOT NULL AND user_id != ''
+        UNION
+        SELECT DISTINCT user_id FROM fcm_tokens
+        WHERE user_id IS NOT NULL AND user_id != ''
+    """)
     user_ids = [row[0] for row in cursor.fetchall()]
     conn.close()
     
     for user_id in user_ids:
-        watchlist = get_watchlist(user_id)
-        if not watchlist: continue
+        watchlist = get_watchlist(user_id) or []
         
         items_info = []
         target_symbols = []
@@ -269,7 +274,27 @@ def send_opening_notification(market: str):
                     
                 items_info.append(f"• {name}: {price_str}")
         
-        if not items_info: continue
+        # 해당 국가 관심종목이 없더라도 장시작 대표 지수 시황을 기본 제공하여 장시작 알림이 누락되지 않도록 보장
+        if not items_info:
+            if market == "US":
+                for idx_sym, idx_name in [("^IXIC", "나스닥 종합"), ("^GSPC", "S&P 500"), ("^DJI", "다우존스")]:
+                    q = get_simple_quote(idx_sym)
+                    if q and q.get("price") and q.get("price") != "-":
+                        chg = q.get("change_percent") or q.get("change") or "0.00%"
+                        items_info.append(f"• {idx_name}: {q['price']} ({chg})")
+                items_info.append(f"• 원/달러 환율: {fx_rate:,.1f}원")
+            else:
+                try:
+                    from korea_data import get_korean_market_indices
+                    kr_idx = get_korean_market_indices() or {}
+                    for k_key, k_label in [("kospi", "코스피 지수"), ("kosdaq", "코스닥 지수")]:
+                        info = kr_idx.get(k_key, {})
+                        if info and info.get("value"):
+                            items_info.append(f"• {k_label}: {info.get('value')} ({info.get('percent', '0.00%')})")
+                except Exception:
+                    pass
+                if not items_info:
+                    items_info.append("• 정규장 시가 데이터 집계 완료")
         
         # [실적/배당 일정 탐지 통합]
         event_lines = []
@@ -299,7 +324,8 @@ def send_opening_notification(market: str):
         
         market_name = "국내" if market == "KR" else "해외"
         title = f"☀️ {market_name} 장시작! 시가 알림"
-        body = f"오늘 {market_name} 관심종목 시가입니다.\n\n" + "\n".join(items_info[:10])
+        header_desc = f"오늘 {market_name} 관심종목 시가입니다." if target_symbols else f"오늘 {market_name} 증시 개장 시황입니다."
+        body = f"{header_desc}\n\n" + "\n".join(items_info[:10])
         if len(items_info) > 10:
             body += f"\n외 {len(items_info)-10}개 더 있음"
             
@@ -563,22 +589,28 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
     else:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT user_id FROM watchlist")
+        cursor.execute("""
+            SELECT DISTINCT user_id FROM watchlist
+            WHERE user_id IS NOT NULL AND user_id != ''
+            UNION
+            SELECT DISTINCT user_id FROM fcm_tokens
+            WHERE user_id IS NOT NULL AND user_id != ''
+        """)
         user_ids = [row[0] for row in cursor.fetchall()]
         conn.close()
     
     for user_id in user_ids:
         try:
             perf = calculate_watchlist_performance(user_id, market)
-            if not perf: continue
             
-            symbols = [item['symbol'] for item in perf["items"]]
+            symbols = [item['symbol'] for item in perf["items"]] if perf else []
             clean_symbols = [s.split('.')[0] if '.' in s else s for s in symbols]
             unit = "원" if market == "KR" else "$"
             market_name = "국내" if market == "KR" else "해외"
 
             # -----------------------------------------------------------------
             # 1. [알림 1] 시장 및 내 관심종목 관련 지수 결산 (스마트워치 최적화 슬림형)
+            #    - 관심종목에 해당 국가 주식이 없더라도(perf is None) 시장·섹터 지수 결산은 반드시 발송!
             # -----------------------------------------------------------------
             title_market = f"📊 [시장·섹터 지수 결산] {market_name}"
 
@@ -595,8 +627,9 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                 macro_items = []
 
             # 사용자 관심종목(일반 주식 + ETF 포함) 섹터 기반 연관 매크로/섹터 지표 동적 선별
-            item_names_joined = " ".join(str(it.get("name", "")) for it in perf.get("items", []))
-            is_semi = any(s in ['005930', '000660', '042700', '091160', '396500', 'NVDA', 'AMD', 'TSM', 'SOXL', 'SOXX', 'SMH', 'SOXS'] for s in clean_symbols) or ("반도체" in item_names_joined or "SOX" in item_names_joined.upper())
+            # (해외 관심종목이 없더라도 해외 마감 브리핑에는 핵심 지표인 반도체지수·미금리·유가를 기본 제공)
+            item_names_joined = " ".join(str(it.get("name", "")) for it in (perf.get("items", []) if perf else []))
+            is_semi = (market == "US" and not perf) or any(s in ['005930', '000660', '042700', '091160', '396500', 'NVDA', 'AMD', 'TSM', 'SOXL', 'SOXX', 'SMH', 'SOXS'] for s in clean_symbols) or ("반도체" in item_names_joined or "SOX" in item_names_joined.upper())
             is_battery = any(s in ['373220', '006400', '086520', '247540', '003670', '305720', '305540', 'TSLA', 'TSLL'] for s in clean_symbols) or ("2차전지" in item_names_joined or "배터리" in item_names_joined or "테슬라" in item_names_joined)
             is_tech = any(s in ['AAPL', 'MSFT', 'AMZN', 'GOOGL', '035720', '035420', 'QQQ', 'TQQQ', 'SQQQ', 'SPY', 'SCHD', 'TLT', 'TMF', '360750', '133690'] for s in clean_symbols) or any(k in item_names_joined for k in ["나스닥", "S&P", "빅테크", "AI", "채권", "국채", "금리"]) or market == "US"
             is_heavy = any(s in ['010140', '329180', '042660', '009540', 'XLE'] for s in clean_symbols) or any(k in item_names_joined for k in ["조선", "중공업", "원유", "에너지", "방산"])
@@ -626,120 +659,123 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
             body_market = "\n".join(lines_market)
 
             # -----------------------------------------------------------------
-            # 2. [알림 2] 내 관심종목 결산 (스타일 A: 보기 편한 2줄 카드형)
+            # 2. [알림 2] 내 관심종목 결산 (해당 시장 관심종목이 있을 때만 생성)
             # -----------------------------------------------------------------
-            avg_change = perf["avg_daily_change"]
-            portfolio_return = perf.get("portfolio_return")
-            total_profit = perf.get("total_profit_amt", 0)
+            title_portfolio = ""
+            body_portfolio = ""
+            if perf:
+                avg_change = perf["avg_daily_change"]
+                portfolio_return = perf.get("portfolio_return")
+                total_profit = perf.get("total_profit_amt", 0)
 
-            if portfolio_return is not None:
-                display_return = portfolio_return
-            else:
-                display_return = avg_change
-
-            emoji = "📈" if display_return > 0 else "📉" if display_return < 0 else "➖"
-            title_portfolio = f"👑 [내 관심종목 결산] {market_name} {emoji}"
-
-            # 총 손익금액 헤더
-            if total_profit != 0:
-                if market == "US":
-                    try:
-                        fx_rate_val = float(str(common['FX'].get('price', '1350')).replace(',', ''))
-                    except:
-                        fx_rate_val = 1350.0
-                    profit_krw = total_profit * fx_rate_val
-                    if abs(profit_krw) >= 10000:
-                        profit_str = f"{total_profit:+,.2f}${unit} (약 {profit_krw/10000:+,.1f}만원)"
-                    else:
-                        profit_str = f"{total_profit:+,.2f}${unit} ({profit_krw:+,.0f}원)"
+                if portfolio_return is not None:
+                    display_return = portfolio_return
                 else:
-                    profit_str = f"{total_profit:+,.0f}원"
-                header_line = f"📊 총 평가손익: {profit_str} ({display_return:+.2f}%)"
-            else:
-                header_line = f"📊 당일 평균 등락률: {display_return:+.2f}%"
+                    display_return = avg_change
 
-            divider = "───────────────────────"
+                emoji = "📈" if display_return > 0 else "📉" if display_return < 0 else "➖"
+                title_portfolio = f"👑 [내 관심종목 결산] {market_name} {emoji}"
 
-            # MVP 및 약세 종목 (2개 이상일 때만 노출)
-            mvp_str = ""
-            if len(perf["items"]) >= 2:
-                sorted_items = sorted(perf["items"], key=lambda x: x.get("daily_change", 0), reverse=True)
-                mvp_parts = []
-                if sorted_items and sorted_items[0].get("daily_change", 0) > 0:
-                    best = sorted_items[0]
-                    mvp_parts.append(f"🏆 MVP: {best['name']} ({best['daily_change']:+.1f}%)")
-                if len(sorted_items) > 1 and sorted_items[-1].get("daily_change", 0) < 0:
-                    worst = sorted_items[-1]
-                    mvp_parts.append(f"⚠️ 약세: {worst['name']} ({worst['daily_change']:+.1f}%)")
-                mvp_str = " · ".join(mvp_parts) if mvp_parts else ""
-
-            # 종목별 등락 및 수익 (스타일 A: 2줄 카드형)
-            price_list = []
-            max_disp = 5
-            for item in perf["items"][:max_disp]:
-                change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
-                if market == "US":
-                    curr_price_str = f"${item['current_price']:,.2f}"
-                else:
-                    curr_price_str = f"{item['current_price']:,.0f}원"
-
-                chg_val = item.get('daily_change_val', 0)
-                if chg_val:
-                    try:
-                        chg_val_f = float(chg_val)
-                        chg_val_str = f"{abs(chg_val_f):,.0f}원" if market == "KR" else f"${abs(chg_val_f):,.2f}"
-                    except:
-                        chg_val_str = ""
-                else:
-                    approx = abs(item['current_price'] * item['daily_change'] / (100.0 + item['daily_change'])) if (100.0 + item['daily_change']) != 0 else 0
-                    chg_val_str = f"{approx:,.0f}원" if market == "KR" else f"${approx:,.2f}"
-
-                qty_str = f" ({item['quantity']:g}주)" if item.get('quantity', 1) != 1 else ""
-                stock_header = f"▪ {item['name']}{qty_str}"
-                change_str = f"{change_emoji}{chg_val_str} · {item['daily_change']:+.1f}%" if chg_val_str else f"{item['daily_change']:+.1f}%"
-                price_line = f"  현재가 {curr_price_str} ({change_str})"
-
-                if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
-                    diff = item['price_diff']
-                    added_perf = item.get('added_perf', 0)
+                # 총 손익금액 헤더
+                if total_profit != 0:
                     if market == "US":
                         try:
                             fx_rate_val = float(str(common['FX'].get('price', '1350')).replace(',', ''))
                         except:
                             fx_rate_val = 1350.0
-                        krw_diff = diff * fx_rate_val
-                        sign = "+" if krw_diff > 0 else "-" if krw_diff < 0 else ""
-                        krw_diff_str = f"{sign}{abs(krw_diff)/10000:,.1f}만원" if abs(krw_diff) >= 10000 else f"{sign}{abs(krw_diff):,.0f}원"
-                        diff_str = f"{diff:+,.2f}$ (약 {krw_diff_str})"
+                        profit_krw = total_profit * fx_rate_val
+                        if abs(profit_krw) >= 10000:
+                            profit_str = f"{total_profit:+,.2f}${unit} (약 {profit_krw/10000:+,.1f}만원)"
+                        else:
+                            profit_str = f"{total_profit:+,.2f}${unit} ({profit_krw:+,.0f}원)"
                     else:
-                        diff_str = f"{diff:+,.0f}원"
-                    profit_line = f"  내 손익 {diff_str} ({added_perf:+.1f}%)"
-                    stock_block = f"{stock_header}\n{price_line}\n{profit_line}"
+                        profit_str = f"{total_profit:+,.0f}원"
+                    header_line = f"📊 총 평가손익: {profit_str} ({display_return:+.2f}%)"
                 else:
-                    stock_block = f"{stock_header}\n{price_line}"
+                    header_line = f"📊 당일 평균 등락률: {display_return:+.2f}%"
 
-                price_list.append(stock_block)
+                divider = "───────────────────────"
 
-            body_parts = [header_line, divider]
-            if mvp_str:
-                body_parts.append(mvp_str)
-            body_parts.extend(price_list)
-            if len(perf["items"]) > max_disp:
-                body_parts.append(f"💬 외 {len(perf['items']) - max_disp}개 종목은 앱에서 확인")
+                # MVP 및 약세 종목 (2개 이상일 때만 노출)
+                mvp_str = ""
+                if len(perf["items"]) >= 2:
+                    sorted_items = sorted(perf["items"], key=lambda x: x.get("daily_change", 0), reverse=True)
+                    mvp_parts = []
+                    if sorted_items and sorted_items[0].get("daily_change", 0) > 0:
+                        best = sorted_items[0]
+                        mvp_parts.append(f"🏆 MVP: {best['name']} ({best['daily_change']:+.1f}%)")
+                    if len(sorted_items) > 1 and sorted_items[-1].get("daily_change", 0) < 0:
+                        worst = sorted_items[-1]
+                        mvp_parts.append(f"⚠️ 약세: {worst['name']} ({worst['daily_change']:+.1f}%)")
+                    mvp_str = " · ".join(mvp_parts) if mvp_parts else ""
 
-            body_portfolio = "\n".join(body_parts)
+                # 종목별 등락 및 수익 (스타일 A: 2줄 카드형)
+                price_list = []
+                max_disp = 5
+                for item in perf["items"][:max_disp]:
+                    change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
+                    if market == "US":
+                        curr_price_str = f"${item['current_price']:,.2f}"
+                    else:
+                        curr_price_str = f"{item['current_price']:,.0f}원"
+
+                    chg_val = item.get('daily_change_val', 0)
+                    if chg_val:
+                        try:
+                            chg_val_f = float(chg_val)
+                            chg_val_str = f"{abs(chg_val_f):,.0f}원" if market == "KR" else f"${abs(chg_val_f):,.2f}"
+                        except:
+                            chg_val_str = ""
+                    else:
+                        approx = abs(item['current_price'] * item['daily_change'] / (100.0 + item['daily_change'])) if (100.0 + item['daily_change']) != 0 else 0
+                        chg_val_str = f"{approx:,.0f}원" if market == "KR" else f"${approx:,.2f}"
+
+                    qty_str = f" ({item['quantity']:g}주)" if item.get('quantity', 1) != 1 else ""
+                    stock_header = f"▪ {item['name']}{qty_str}"
+                    change_str = f"{change_emoji}{chg_val_str} · {item['daily_change']:+.1f}%" if chg_val_str else f"{item['daily_change']:+.1f}%"
+                    price_line = f"  현재가 {curr_price_str} ({change_str})"
+
+                    if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
+                        diff = item['price_diff']
+                        added_perf = item.get('added_perf', 0)
+                        if market == "US":
+                            try:
+                                fx_rate_val = float(str(common['FX'].get('price', '1350')).replace(',', ''))
+                            except:
+                                fx_rate_val = 1350.0
+                            krw_diff = diff * fx_rate_val
+                            sign = "+" if krw_diff > 0 else "-" if krw_diff < 0 else ""
+                            krw_diff_str = f"{sign}{abs(krw_diff)/10000:,.1f}만원" if abs(krw_diff) >= 10000 else f"{sign}{abs(krw_diff):,.0f}원"
+                            diff_str = f"{diff:+,.2f}$ (약 {krw_diff_str})"
+                        else:
+                            diff_str = f"{diff:+,.0f}원"
+                        profit_line = f"  내 손익 {diff_str} ({added_perf:+.1f}%)"
+                        stock_block = f"{stock_header}\n{price_line}\n{profit_line}"
+                    else:
+                        stock_block = f"{stock_header}\n{price_line}"
+
+                    price_list.append(stock_block)
+
+                body_parts = [header_line, divider]
+                if mvp_str:
+                    body_parts.append(mvp_str)
+                body_parts.extend(price_list)
+                if len(perf["items"]) > max_disp:
+                    body_parts.append(f"💬 외 {len(perf['items']) - max_disp}개 종목은 앱에서 확인")
+
+                body_portfolio = "\n".join(body_parts)
             
             tokens_data = get_user_fcm_tokens(user_id)
             if tokens_data:
                 tokens = [t['token'] for t in tokens_data if t.get('pref_closing', True)]
                 if tokens:
-                    # 1. 시장 및 내 관심종목 관련 지수 결산 알림 발송
+                    # 1. 시장 및 내 관심종목 관련 지수 결산 알림 발송 (관심종목 유무와 관계없이 발송)
                     k_flow = flow_data.get("kospi", {})
                     kq_flow = flow_data.get("kosdaq", {})
                     market_payload = {
                         "url": "/discovery",
                         "type": "market_summary",
-                        "tag": f"closing-market-{user_id}",
+                        "tag": f"closing-market-{market}-{user_id}",
                         "market": market,
                         "is_global": False,
                         "sentiment": sentiment,
@@ -777,30 +813,30 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                     except Exception as e:
                         print(f"[Scheduler-Error] Failed to save closing market alert to DB: {e}")
                     
-                    # 2초 대기 (스마트폰 및 스마트워치에서 두 개의 푸시가 씹히지 않고 각각 온전한 카드로 뜨도록 보장)
-                    import time
-                    time.sleep(2.0)
-                    
-                    # 2. 내 관심종목 결산 알림 발송
-                    portfolio_payload = {
-                        "url": "/watchlist",
-                        "type": "portfolio_summary",
-                        "is_global": False,
-                        "tag": f"closing-portfolio-{user_id}"
-                    }
-                    send_multicast_notification(tokens, title_portfolio, body_portfolio, portfolio_payload, target_users=[user_id])
-                    
-                    try:
-                        conn = get_db_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("""
-                            INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
-                            VALUES (?, ?, 'portfolio', ?, 0, 0, 0)
-                        """, (user_id, market_name, f"{title_portfolio}\n{body_portfolio}"))
-                        conn.commit()
-                        conn.close()
-                    except Exception as e:
-                        print(f"[Scheduler-Error] Failed to save closing portfolio alert to DB: {e}")
+                    # 2. 내 관심종목 결산 알림 발송 (해당 국가 관심종목이 있을 때만 발송)
+                    if perf and body_portfolio:
+                        import time
+                        time.sleep(2.0)
+                        
+                        portfolio_payload = {
+                            "url": "/watchlist",
+                            "type": "portfolio_summary",
+                            "is_global": False,
+                            "tag": f"closing-portfolio-{market}-{user_id}"
+                        }
+                        send_multicast_notification(tokens, title_portfolio, body_portfolio, portfolio_payload, target_users=[user_id])
+                        
+                        try:
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                                VALUES (?, ?, 'portfolio', ?, 0, 0, 0)
+                            """, (user_id, market_name, f"{title_portfolio}\n{body_portfolio}"))
+                            conn.commit()
+                            conn.close()
+                        except Exception as e:
+                            print(f"[Scheduler-Error] Failed to save closing portfolio alert to DB: {e}")
         except Exception as user_err:
             print(f"[Scheduler-Error] Failed to send closing notification for user {user_id}: {user_err}")
             continue
@@ -1009,7 +1045,7 @@ def send_weekend_theme_report():
         # 모든 유저에게 알림 전송
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != ''")
         tokens = [row[0] for row in cursor.fetchall() if row[0]]
         conn.close()
         
@@ -1051,7 +1087,7 @@ def send_weekend_crypto_report():
         # 모든 유저에게 알림 전송
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != ''")
         tokens = [row[0] for row in cursor.fetchall() if row[0]]
         conn.close()
         
@@ -1136,26 +1172,53 @@ def run_market_scheduler():
     kst = pytz.timezone('Asia/Seoul')
     initialize_firebase()
     
-    last_run_dart_cache = None
-    last_run_daily_report = None
-    last_run_morning_kr = None
-    last_run_morning_us = None
-    last_run_ipo = None
-    last_run_open_kr = ""
-    last_run_close_kr = ""
-    last_run_open_us = ""
-    last_run_close_us = ""
-    last_run_weekend_report = ""
-    last_run_weekend_crypto = ""
-    last_run_analytics = ""
-    last_run_fomo = ""
-    last_run_dormant = ""
+    import os, json
+    state_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scheduler_service_state.json")
+
+    def _load_sched_state() -> dict:
+        if os.path.exists(state_file_path):
+            try:
+                with open(state_file_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {}
+
+    def _save_sched_state(key: str, val: str):
+        try:
+            st = _load_sched_state()
+            st[key] = val
+            with open(state_file_path, "w", encoding="utf-8") as f:
+                json.dump(st, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[Scheduler-State] Save error for {key}: {e}")
+
+    _saved = _load_sched_state()
+    last_run_dart_cache = _saved.get("last_run_dart_cache")
+    last_run_daily_report = _saved.get("last_run_daily_report")
+    last_run_morning_kr = _saved.get("last_run_morning_kr")
+    last_run_morning_us = _saved.get("last_run_morning_us")
+    last_run_ipo = _saved.get("last_run_ipo")
+    last_run_open_kr = _saved.get("last_run_open_kr", "")
+    last_run_close_kr = _saved.get("last_run_close_kr", "")
+    last_run_open_us = _saved.get("last_run_open_us", "")
+    last_run_close_us = _saved.get("last_run_close_us", "")
+    last_run_weekend_report = _saved.get("last_run_weekend_report", "")
+    last_run_weekend_crypto = _saved.get("last_run_weekend_crypto", "")
+    last_run_weekend_report_gen = _saved.get("last_run_weekend_report_gen", "")
+    last_run_analytics = _saved.get("last_run_analytics", "")
+    last_run_fomo = _saved.get("last_run_fomo", "")
+    last_run_dormant = _saved.get("last_run_dormant", "")
     last_run_crypto_surge = ""
-    # [핵심 수정] 서버 재시작 시 오늘 날짜를 기준으로 초기화
-    # Firestore에서 오늘 이미 발행된 글이 있으면 무조건 오늘 날짜로 마킹 → 중복 절대 방지
+    run_market_scheduler.last_run_whale_report_gen = _saved.get("last_run_whale_report_gen")
+    run_market_scheduler.last_run_whale_push = _saved.get("last_run_whale_push")
+
+    # [핵심 수정] 서버 재시작 시 Firestore 실제 발행 여부와 디스크 상태 파일을 함께 확인
+    # 오늘 아직 발행된 글이 없다면(False) 재시작 시각이 08:30 이후라도 절대 스킵하지 않고 즉시 자동 복구 발송!
     _init_kst = pytz.timezone('Asia/Seoul')
     _init_now = datetime.now(_init_kst)
     _init_today = _init_now.strftime('%Y-%m-%d')
+    last_run_daily_theory = _saved.get("last_run_daily_theory", "")
     try:
         from firebase_admin import firestore as _fs
         _db = _fs.client()
@@ -1163,21 +1226,18 @@ def run_market_scheduler():
         _existing = _db.collection("theory_posts").document(_today_slug).get()
         if _existing.exists:
             last_run_daily_theory = _init_today
+            _save_sched_state("last_run_daily_theory", _init_today)
             print(f"[Scheduler] 서버 재시작 감지: 오늘({_init_today}) 이미 강의 발행됨 → 중복 방지 마킹")
-        elif _init_now.hour > 8 or (_init_now.hour == 8 and _init_now.minute >= 30):
-            last_run_daily_theory = _init_today  # 실행 시간 이후지만 글이 없으면 실행 허용 안함(재시작 시 안전)
         else:
-            last_run_daily_theory = ""  # 아직 실행 전이므로 정상 실행 허용
+            if last_run_daily_theory != _init_today:
+                last_run_daily_theory = ""
+                print(f"[Scheduler] 오늘({_init_today}) 주식 스터디 미발행 상태 확인 → 예정 시각(08:30~) 즉시 발송 대기")
     except Exception as _e:
         print(f"[Scheduler] 초기화 중 Firestore 확인 실패: {_e}")
-        if _init_now.hour > 8 or (_init_now.hour == 8 and _init_now.minute >= 30):
-            last_run_daily_theory = _init_today
-        else:
-            last_run_daily_theory = ""
     last_spike_alert_time = None
 
     last_cleanup_date = ""
-    last_run_health_check = None
+    last_run_health_check = _saved.get("last_run_health_check")
     
     while True:
         try:
@@ -1235,7 +1295,7 @@ def run_market_scheduler():
                         print(f"[Scheduler] Watchlist news error: {e}")
                     run_market_scheduler.last_run_watchlist_news = current_time
 
-            # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅 (최대 3회 자동 재시도)
+            # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅 (08:30 ~ 11:59 자가 복구 윈도우 & 최대 3회 자동 재시도)
             # 날짜가 바뀌면 재시도 카운터 초기화
             if getattr(run_market_scheduler, "theory_retry_date", "") != current_date:
                 run_market_scheduler.theory_retry_count = 0
@@ -1244,7 +1304,8 @@ def run_market_scheduler():
             retry_count = getattr(run_market_scheduler, "theory_retry_count", 0)
             theory_is_running = getattr(run_market_scheduler, "theory_is_running", False)
             
-            if now.hour == 8 and now.minute >= 30 and current_date != last_run_daily_theory and retry_count < 3 and not theory_is_running:
+            is_theory_window = (now.hour == 8 and now.minute >= 30) or (9 <= now.hour <= 11)
+            if is_theory_window and current_date != last_run_daily_theory and retry_count < 3 and not theory_is_running:
                 run_market_scheduler.theory_is_running = True  # 동시 실행 방지 락
                 success = False
                 try:
@@ -1257,6 +1318,7 @@ def run_market_scheduler():
                 
                 if success:
                     last_run_daily_theory = current_date
+                    _save_sched_state("last_run_daily_theory", current_date)
                     run_market_scheduler.theory_retry_count = 0
                     print(f"[Scheduler] Daily Theory Bot succeeded on attempt #{retry_count + 1}")
                 else:
@@ -1343,30 +1405,32 @@ def run_market_scheduler():
                     print(f"[Scheduler] SEO Blog Afternoon Bot error: {e}")
                 run_market_scheduler.last_run_seo_blog_afternoon = current_date
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
-            if now.hour == 6 and 30 <= now.minute <= 35 and current_date != last_run_dart_cache:
+            if now.hour == 6 and now.minute >= 30 and current_date != last_run_dart_cache:
                 try:
                     run_dart_daily_cache_update()
                 except Exception as e:
                     print(f"[Scheduler] DART 캐싱 오류: {e}")
                 last_run_dart_cache = current_date
+                _save_sched_state("last_run_dart_cache", current_date)
                 
             # [금요일 실행] 오후 6:00 주말 한정판 세력/외인 매집 리포트 생성
-            if now.weekday() == 4 and now.hour == 18 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_whale_report_gen", None):
+            if now.weekday() == 4 and now.hour >= 18 and current_date != getattr(run_market_scheduler, "last_run_whale_report_gen", None):
                 try:
                     from utils.whale_weekend_report import _generate_whale_report_sync
                     _generate_whale_report_sync()
                 except Exception as e:
                     print(f"[Scheduler] Whale report gen error: {e}")
                 run_market_scheduler.last_run_whale_report_gen = current_date
+                _save_sched_state("last_run_whale_report_gen", current_date)
                 
             # [일요일 실행] 오후 8:00 주말 한정판 리포트 오픈 푸시 알림
-            if now.weekday() == 6 and now.hour == 20 and 0 <= now.minute <= 5 and current_date != getattr(run_market_scheduler, "last_run_whale_push", None):
+            if now.weekday() == 6 and now.hour >= 20 and current_date != getattr(run_market_scheduler, "last_run_whale_push", None):
                 try:
                     title = "🐳 월요일 장 준비 끝!"
                     body = "주말 한정판 세력/외인 매집 TOP 3 리포트가 도착했습니다. 지금 확인하세요!"
                     conn = get_db_connection()
                     cursor = conn.cursor()
-                    cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+                    cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != ''")
                     tokens = [row[0] for row in cursor.fetchall() if row[0]]
                     conn.close()
                     if tokens:
@@ -1374,9 +1438,10 @@ def run_market_scheduler():
                 except Exception as e:
                     print(f"[Scheduler-Error] Failed to send whale report push: {e}")
                 run_market_scheduler.last_run_whale_push = current_date
+                _save_sched_state("last_run_whale_push", current_date)
                 
             # [토요일 실행] 오전 9:55 주말 한정 프리미엄 리포트 생성 (10시 오픈 대비)
-            if now.weekday() == 5 and now.hour == 9 and 55 <= now.minute <= 59 and current_date != last_run_weekend_report_gen:
+            if now.weekday() == 5 and now.hour == 9 and now.minute >= 55 and current_date != last_run_weekend_report_gen:
                 try:
                     from utils.weekend_report import _generate_sync_impl
                     _generate_sync_impl()
@@ -1387,7 +1452,7 @@ def run_market_scheduler():
                         body = "지난주 시장 핵심 요약과 다음 주 필수 체크포인트를 지금 바로 확인하세요."
                         conn = get_db_connection()
                         cursor = conn.cursor()
-                        cursor.execute("SELECT DISTINCT fcm_token FROM fcm_tokens")
+                        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != ''")
                         tokens = [row[0] for row in cursor.fetchall() if row[0]]
                         conn.close()
                         if tokens:
@@ -1398,13 +1463,15 @@ def run_market_scheduler():
                 except Exception as e:
                     print(f"[Scheduler] Weekend report generation error: {e}")
                 last_run_weekend_report_gen = current_date
+                _save_sched_state("last_run_weekend_report_gen", current_date)
 
-            # [매일 발송] 밤 11시 55분 일일 방문자 및 시스템 보고서 발송 (Admins)
+            # [매일 발송] 밤 11시 50분 일일 방문자 및 시스템 보고서 발송 (Admins)
             if now.hour == 23 and now.minute >= 50 and current_date != last_run_daily_report:
                 try:
                     print(f"[Scheduler] 📊 Launching Daily Analytics Report for {current_date}...")
                     send_daily_analytics_report()
                     last_run_daily_report = current_date
+                    _save_sched_state("last_run_daily_report", current_date)
                     print(f"[Scheduler] ✅ Daily Analytics Report sent successfully.")
                 except Exception as dr_e:
                     print(f"[Scheduler-Error] Daily analytics report failed: {dr_e}")
@@ -1419,7 +1486,7 @@ def run_market_scheduler():
                     print(f"[Scheduler] Google Sheets sync error: {e}")
             
             # [매일 실행] 새벽 3시 구글 색인(Indexing) 봇 자동 실행 (최신 종목/테마 페이지 강제 푸시)
-            if now.hour == 3 and 0 <= now.minute <= 10 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
+            if now.hour == 3 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
                 try:
                     from google_indexer import get_urls_from_sitemap, publish_urls_to_google, SITEMAP_URL
                     print("[Scheduler] Running Google Auto-Indexer Bot...")
@@ -1430,52 +1497,57 @@ def run_market_scheduler():
                     print(f"[Scheduler-Error] Failed to run Google Indexer: {e}")
                 run_market_scheduler.last_run_google_indexer = current_date
             
-            # [평일 발송] AI 모닝 브리핑 (KR) - 08시 시간대 미발송 시 무조건 1회 실행 보장
+            # [평일 발송] AI 모닝 브리핑 (KR) - 08:00 ~ 10:59 사이 미발송 시 무조건 1회 실행 보장
             if day_of_week <= 4 and not is_holiday("kor"):
-                if now.hour == 8 and current_date != last_run_morning_kr:
+                if (8 <= now.hour <= 10) and current_date != last_run_morning_kr:
                     try:
                         print(f"[Scheduler] ☀️ Launching Morning Briefing (KR) for {current_date}...")
                         asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
                         last_run_morning_kr = current_date
+                        _save_sched_state("last_run_morning_kr", current_date)
                         print(f"[Scheduler] ✅ Morning Briefing (KR) completed.")
                     except Exception as mb_e:
                         print(f"[Scheduler-Error] Morning briefing KR failed: {mb_e}")
 
-            # [매일 발송] 공모주 청약 일정 알림
+            # [평일 발송] 공모주 청약 일정 알림 (08:15 ~ 10:59)
             if day_of_week <= 4:
-                if now.hour == 8 and 15 <= now.minute <= 25 and current_date != last_run_ipo and not is_market_holiday("KR"):
+                if ((now.hour == 8 and now.minute >= 15) or (9 <= now.hour <= 10)) and current_date != last_run_ipo and not is_market_holiday("KR"):
                     try:
                         from batch_ipo_alerts import send_ipo_alerts
                         send_ipo_alerts()
                         last_run_ipo = current_date
+                        _save_sched_state("last_run_ipo", current_date)
                     except Exception as e:
                         print(f"[Scheduler] IPO 알림 오류: {e}")
             
-            # [평일 발송] AI 모닝 브리핑 (US)
+            # [평일 발송] AI 모닝 브리핑 (US) (21:30 ~ 23:30)
             if day_of_week <= 4 and not is_market_holiday("US"):
-                if now.hour == 21 and 30 <= now.minute <= 40 and current_date != last_run_morning_us:
+                if ((now.hour == 21 and now.minute >= 30) or now.hour == 22 or (now.hour == 23 and now.minute <= 30)) and current_date != last_run_morning_us:
                     try:
                         asyncio.run(morning_briefing_service.run_daily_briefing("US"))
                         last_run_morning_us = current_date
+                        _save_sched_state("last_run_morning_us", current_date)
                     except Exception as us_mb_e:
                         print(f"[Scheduler-Error] Morning briefing US failed: {us_mb_e}")
 
-            # 1. 국내 장시작 시가 알림
+            # 1. 국내 장시작 시가 알림 (09:05 ~ 10:59)
             if day_of_week <= 4:
-                if now.hour == 9 and 5 <= now.minute <= 15 and current_date != last_run_open_kr and not is_market_holiday("KR"):
+                if ((now.hour == 9 and now.minute >= 5) or now.hour == 10) and current_date != last_run_open_kr and not is_market_holiday("KR"):
                     try:
                         send_opening_notification("KR")
                         last_run_open_kr = current_date
+                        _save_sched_state("last_run_open_kr", current_date)
                     except Exception as ok_e:
                         print(f"[Scheduler-Error] Opening notification KR failed: {ok_e}")
 
-            # 2. 국내 장마감 종가 리포트 - 15:40 이후 미발송 시 무조건 1회 실행 보장
+            # 2. 국내 장마감 종가 리포트 - 15:40 ~ 18:59 사이 미발송 시 무조건 1회 실행 보장
             if day_of_week <= 4 and not is_holiday("kor"):
-                if now.hour == 15 and now.minute >= 40 and current_date != last_run_close_kr:
+                if ((now.hour == 15 and now.minute >= 40) or (16 <= now.hour <= 18)) and current_date != last_run_close_kr:
                     try:
                         print(f"[Scheduler] 🌕 Launching Closing Notification (KR) for {current_date}...")
                         send_closing_notification("KR")
                         last_run_close_kr = current_date
+                        _save_sched_state("last_run_close_kr", current_date)
                         print(f"[Scheduler] ✅ Closing Notification (KR) completed.")
                     except Exception as cl_e:
                         print(f"[Scheduler-Error] Closing notification KR failed: {cl_e}")
@@ -1491,44 +1563,45 @@ def run_market_scheduler():
             us_open_hour = 22 if is_dst else 23
             us_close_hour = 5 if is_dst else 6
 
-            # 3. 미국 장시작 시가 알림
-            # - 서머타임/표준시 무관하게 KST 22:35 / 23:35는 미국 09:35이므로 KST 월~금(0~4)에만 발송
+            # 3. 미국 장시작 시가 알림 (개장 시각 이후 ~ 23:59 미발송 시 무조건 1회 실행 보장)
             us_open_days = list(range(0, 5))
             if day_of_week in us_open_days:
-                if now.hour == us_open_hour and 35 <= now.minute <= 45 and current_date != last_run_open_us and not is_market_holiday("US"):
+                if ((now.hour == us_open_hour and now.minute >= 35) or (now.hour > us_open_hour)) and current_date != last_run_open_us and not is_market_holiday("US"):
                     try:
                         send_opening_notification("US")
                         last_run_open_us = current_date
+                        _save_sched_state("last_run_open_us", current_date)
                     except Exception as ous_e:
                         print(f"[Scheduler-Error] Opening notification US failed: {ous_e}")
 
-            # 4. 미국 장마감 종가 리포트
-            # - KST 새벽 4~5시는 미국 전날입니다
-            # - ny_date(미국 날짜)를 기준으로 중복 발송 방지
+            # 4. 미국 장마감 종가 리포트 (05:10/06:10 ~ 07:59 미발송 시 무조건 1회 실행 보장)
             us_close_days = list(range(1, 6)) if is_dst else list(range(1, 6))
             if day_of_week in us_close_days:
-                if now.hour == us_close_hour and 10 <= now.minute <= 20 and ny_date != last_run_close_us and not is_market_holiday("US"):
+                if ((now.hour == us_close_hour and now.minute >= 10) or (us_close_hour < now.hour <= 7)) and ny_date != last_run_close_us and not is_market_holiday("US"):
                     try:
                         send_closing_notification("US")
                         last_run_close_us = ny_date
+                        _save_sched_state("last_run_close_us", ny_date)
                     except Exception as cus_e:
                         print(f"[Scheduler-Error] Closing notification US failed: {cus_e}")
                     
-            # 5. 주말 테마 리포트 (일요일 18:00)
+            # 5. 주말 테마 리포트 (일요일 18:00 ~ 21:59)
             if day_of_week == 6: # 일요일 (0:월, ..., 6:일)
-                if now.hour == 18 and 0 <= now.minute <= 10 and current_date != last_run_weekend_report:
+                if (18 <= now.hour <= 21) and current_date != last_run_weekend_report:
                     try:
                         send_weekend_theme_report()
                         last_run_weekend_report = current_date
+                        _save_sched_state("last_run_weekend_report", current_date)
                     except Exception as wtr_e:
                         print(f"[Scheduler-Error] Weekend theme report failed: {wtr_e}")
                     
-            # 6. 주말 코인 리포트 (토요일 18:00)
+            # 6. 주말 코인 리포트 (토요일 18:00 ~ 21:59)
             if day_of_week == 5: # 토요일
-                if now.hour == 18 and 0 <= now.minute <= 10 and current_date != last_run_weekend_crypto:
+                if (18 <= now.hour <= 21) and current_date != last_run_weekend_crypto:
                     try:
                         send_weekend_crypto_report()
                         last_run_weekend_crypto = current_date
+                        _save_sched_state("last_run_weekend_crypto", current_date)
                     except Exception as wcr_e:
                         print(f"[Scheduler-Error] Weekend crypto report failed: {wcr_e}")
             

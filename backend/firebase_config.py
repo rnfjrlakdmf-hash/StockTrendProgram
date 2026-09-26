@@ -700,6 +700,7 @@ def send_push_notification(
     title, body = beautify_notification(title, body, data)
     
     try:
+        import time
         # 알림 메시지 구성
         notification = messaging.Notification(
             title=title,
@@ -719,6 +720,16 @@ def send_push_notification(
                 'Urgency': 'high',
                 'TTL': '86400'
             },
+            notification=messaging.WebpushNotification(
+                title=title,
+                body=body,
+                icon='https://stock-trend-program.co.kr/icon.png',
+                badge='https://stock-trend-program.co.kr/badge.png',
+                vibrate=[200, 100, 200],
+                tag=f"{fcm_tag}-{int(time.time() * 1000)}",
+                renotify=True,
+                actions=webpush_actions
+            ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
             )
@@ -736,7 +747,7 @@ def send_push_notification(
                 channel_id='price_alerts',
                 priority='high',
                 default_vibrate_timings=True,
-                tag=fcm_tag
+                tag=f"{fcm_tag}-{int(time.time() * 1000)}"
             )
         )
         
@@ -752,14 +763,15 @@ def send_push_notification(
             )
         )
         
-        # 메시지 생성 (WebPush에서 SW의 if(payload.notification) return 차단을 우회하기 위해 top-level notification 제거)
+        # 메시지 생성
         safe_data = {k: str(v) for k, v in (data or {}).items()}
         safe_data['title'] = title
         safe_data['body'] = body
         safe_data['url'] = click_url
-        safe_data['tag'] = fcm_tag
+        safe_data['tag'] = f"{fcm_tag}-{int(time.time())}"
 
         message = messaging.Message(
+            notification=notification,
             data=safe_data,
             token=token,
             android=android_config,
@@ -854,8 +866,9 @@ def send_multicast_notification(
             else:
                 is_global = False if target_users else True
             
-            # Firestore에 알림 데이터 저장 (정확한 click_url 사전 계산 저장)
+            # Firestore에 알림 데이터 저장 (정확한 click_url 및 결정론적 tag 사전 계산 저장)
             resolved_url = resolve_click_url(title, data)
+            det_tag = generate_deterministic_tag(title, data)
             alert_doc = {
                 "title": title,
                 "body": body,
@@ -863,7 +876,8 @@ def send_multicast_notification(
                 "timestamp": firestore.SERVER_TIMESTAMP,
                 "is_global": is_global,
                 "target_users": target_users or [],
-                "url": resolved_url
+                "url": resolved_url,
+                "tag": det_tag
             }
             
             if data:
@@ -920,11 +934,22 @@ def send_multicast_notification(
         fcm_tag = generate_deterministic_tag(title, data)
         webpush_actions = get_webpush_actions(title, data)
             
+        unique_fcm_tag = f"{fcm_tag}-{int(_time.time() * 1000)}"
         webpush_config = messaging.WebpushConfig(
             headers={
                 'Urgency': 'high',
                 'TTL': '86400'
             },
+            notification=messaging.WebpushNotification(
+                title=title,
+                body=body,
+                icon='https://stock-trend-program.co.kr/icon.png',
+                badge='https://stock-trend-program.co.kr/badge.png',
+                vibrate=[200, 100, 200],
+                tag=unique_fcm_tag,
+                renotify=True,
+                actions=webpush_actions
+            ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
             )
@@ -943,7 +968,7 @@ def send_multicast_notification(
                 channel_id='price_alerts',
                 priority='high',
                 default_vibrate_timings=True,
-                tag=fcm_tag
+                tag=unique_fcm_tag
             )
         )
         
@@ -969,9 +994,10 @@ def send_multicast_notification(
                 safe_data['title'] = title
                 safe_data['body'] = body
                 safe_data['url'] = click_url
-                safe_data['tag'] = fcm_tag
+                safe_data['tag'] = unique_fcm_tag
 
                 msg = messaging.Message(
+                    notification=notification,
                     data=safe_data,
                     token=token,
                     android=android_config,

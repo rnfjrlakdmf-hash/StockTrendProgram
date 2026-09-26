@@ -1987,8 +1987,8 @@ function formatUsdToKrwInText(text: string): string {
                         if (bodyText.includes('관심종목 시가입니다') || bodyText.includes('시가입니다') || t.includes('시가 알림')) {
                             return '☀️ [국내 장시작] 관심종목 시가 알림';
                         }
-                        // 앞머리 이모지 중복 정리
-                        t = t.replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨🐜🎤🗳️🔒🔄💸🔬🧬📋])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨🐜🎤🗳️🔒🔄💸🔬🧬📋])/, '$2');
+                        // 앞머리 이모지 중복 정리 (Unicode /u 플래그 필수로 서로게이트 페어 이모지 반쪽 깨짐 완벽 방지)
+                        t = t.replace(/^([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨🐜🎤🗳️🔒🔄💸🔬🧬📋])\s*([👥🐋🚨🔔👤🏛️📈📉⚡🔥💰⚠️📊🎉✨🐜🎤🗳️🔒🔄💸🔬🧬📋])/u, '$2');
                         // 이모지가 없거나 제거된 경우 깔끔한 기본 이모지 부여
                         if (t.startsWith('[')) {
                             if (t.includes('투자 유의') || t.includes('관리종목') || t.includes('거래정지') || t.includes('법적 리스크') || t.includes('상장폐지')) {
