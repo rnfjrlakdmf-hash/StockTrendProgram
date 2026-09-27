@@ -40,6 +40,8 @@ export default function AdminAutoTradePage() {
   const [orderAmountKrw, setOrderAmountKrw] = useState(2000000);
   const [maxPositions, setMaxPositions] = useState(5);
   const [takeProfitPct, setTakeProfitPct] = useState(4.0);
+  const [useStopLoss, setUseStopLoss] = useState(false);
+  const [autoAveragingDown, setAutoAveragingDown] = useState(true);
   const [stopLossPct, setStopLossPct] = useState(2.5);
   const [trailingStopPct, setTrailingStopPct] = useState(1.2);
   const [kisAppKey, setKisAppKey] = useState("");
@@ -68,6 +70,8 @@ export default function AdminAutoTradePage() {
     setOrderAmountKrw(Number(cfg.order_amount_krw || 2000000));
     setMaxPositions(Number(cfg.max_positions || 5));
     setTakeProfitPct(Number(cfg.take_profit_pct || 4.0));
+    setUseStopLoss(Boolean(cfg.use_stop_loss ?? false));
+    setAutoAveragingDown(Boolean(cfg.auto_averaging_down ?? true));
     setStopLossPct(Number(cfg.stop_loss_pct || 2.5));
     setTrailingStopPct(Number(cfg.trailing_stop_pct || 1.2));
     setKisAppKey(cfg.kis_app_key || "");
@@ -132,6 +136,8 @@ export default function AdminAutoTradePage() {
           order_amount_krw: Number(orderAmountKrw),
           max_positions: Number(maxPositions),
           take_profit_pct: Number(takeProfitPct),
+          use_stop_loss: Boolean(useStopLoss),
+          auto_averaging_down: Boolean(autoAveragingDown),
           stop_loss_pct: Number(stopLossPct),
           trailing_stop_pct: Number(trailingStopPct),
           kis_app_key: kisAppKey,
@@ -495,6 +501,64 @@ export default function AdminAutoTradePage() {
                 </div>
               </div>
 
+              {/* 무손절(익절 전용) vs 단타 칼손절 모드 선택 */}
+              <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                      🛡️ 손절(손해 확정) 작동 방식 선택
+                    </div>
+                    <p className="text-[11px] text-gray-300 mt-0.5 leading-snug">
+                      {!useStopLoss
+                        ? "✅ 현재 [무손절 · 익절 전용 모드]: 주가가 일시 하락해도 절대 손해 보고 팔지 않으며, 반등하여 목표 수익률에 도달했을 때만 매도합니다."
+                        : `⚠️ 현재 [단타 칼손절 모드]: 주가가 -${stopLossPct}% 하락하면 즉시 시장가로 손절 매도하고 다른 종목으로 교체합니다.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUseStopLoss(false)}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      !useStopLoss
+                        ? "bg-emerald-500/20 border-emerald-400 text-white shadow-lg shadow-emerald-950/50"
+                        : "bg-zinc-950/70 border-white/10 text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs font-black text-emerald-300">🛡️ 무손절 · 익절 전용 (추천)</div>
+                    <div className="text-[10px] text-gray-300 mt-0.5">손해 보고는 절대 안 팦! 기다렸다가 수익 날 때만 익절</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUseStopLoss(true)}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      useStopLoss
+                        ? "bg-blue-500/20 border-blue-400 text-white"
+                        : "bg-zinc-950/70 border-white/10 text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs font-black text-blue-300">⚡ 단타 칼손절 회전 모드</div>
+                    <div className="text-[10px] text-gray-300 mt-0.5">-{stopLossPct}% 도달 시 즉시 던지고 다른 종목 교체</div>
+                  </button>
+                </div>
+
+                {!useStopLoss && (
+                  <label className="flex items-center justify-between gap-2 pt-2 border-t border-emerald-500/20 cursor-pointer">
+                    <span className="text-[11px] font-bold text-emerald-200">
+                      💧 -5% 이상 일시 하락 시 여유 현금으로 1회 자동 물타기 (평단가 낮춰서 빠른 익절 유도)
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={autoAveragingDown}
+                      onChange={(e) => setAutoAveragingDown(e.target.checked)}
+                      className="w-4 h-4 accent-emerald-500 rounded"
+                    />
+                  </label>
+                )}
+              </div>
+
               <div className="grid grid-cols-3 gap-2.5">
                 <div>
                   <label className="text-[11px] font-bold text-rose-300 block mb-1">🎯 자동 익절률 (%)</label>
@@ -507,13 +571,18 @@ export default function AdminAutoTradePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-blue-300 block mb-1">🛡️ 자동 칼손절 (%)</label>
+                  <label className="text-[11px] font-bold text-blue-300 block mb-1">
+                    {useStopLoss ? "🛡️ 자동 칼손절 (%)" : "🛡️ 손절 (현재 꺼짐)"}
+                  </label>
                   <input
                     type="number"
                     step="0.5"
+                    disabled={!useStopLoss}
                     value={stopLossPct}
                     onChange={(e) => setStopLossPct(Number(e.target.value))}
-                    className="w-full bg-zinc-950 border border-blue-500/30 rounded-xl px-3 py-2 text-xs font-mono font-bold text-blue-300"
+                    className={`w-full bg-zinc-950 border rounded-xl px-3 py-2 text-xs font-mono font-bold ${
+                      useStopLoss ? "border-blue-500/30 text-blue-300" : "border-white/10 text-gray-600 opacity-50"
+                    }`}
                   />
                 </div>
                 <div>

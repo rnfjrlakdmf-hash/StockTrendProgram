@@ -47,6 +47,8 @@ def _default_state() -> Dict[str, Any]:
             "order_amount_krw": 2000000,
             "max_positions": 5,
             "take_profit_pct": 4.0,
+            "use_stop_loss": False,  # False = 무손절 모드 (손해 보고는 절대 안 팔고 수익 날 때만 익절!)
+            "auto_averaging_down": True,  # True = -5% 하락 시 1회 자동 물타기(평단가 낮추기)
             "stop_loss_pct": 2.5,
             "trailing_stop_pct": 1.2,
             "min_ai_score": 68,
@@ -354,13 +356,49 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         tp_pct = float(cfg.get("take_profit_pct", 4.0))
         sl_pct = float(cfg.get("stop_loss_pct", 2.5))
         ts_pct = float(cfg.get("trailing_stop_pct", 1.2))
+        use_sl = bool(cfg.get("use_stop_loss", False))
+        auto_avg = bool(cfg.get("auto_averaging_down", True))
+
+        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도
+        if not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
+            add_budget = min(int(cfg.get("order_amount_krw", 2000000) * 0.5), int(acct.get("cash_krw", 0)))
+            add_qty = int(add_budget // (live_price * unit_mult)) if (live_price * unit_mult) > 0 else 0
+            if add_qty >= 1:
+                add_cost = int(round(add_qty * live_price * unit_mult))
+                old_qty = pos["qty"]
+                new_qty = old_qty + add_qty
+                new_avg = round(((avg_p * old_qty) + (live_price * add_qty)) / new_qty, 2 if pos.get("is_us") else 0)
+                acct["cash_krw"] = int(acct.get("cash_krw", 0) - add_cost)
+                pos["qty"] = new_qty
+                pos["avg_price"] = new_avg
+                pos["target_price"] = round(new_avg * (1.0 + tp_pct / 100.0), 2 if pos.get("is_us") else 0)
+                pos["averaged_down"] = True
+                avg_p = new_avg
+                pnl_pct = round(((live_price - avg_p) / avg_p) * 100, 2) if avg_p > 0 else 0.0
+                pos["pnl_pct"] = pnl_pct
+                pos["pnl_krw"] = int(round((live_price - avg_p) * new_qty * unit_mult))
+                state["trade_logs"].insert(0, {
+                    "id": f"TRD-{int(time.time()*1000)}",
+                    "timestamp": now_str,
+                    "action": "BUY",
+                    "symbol": sym,
+                    "name": pos["name"],
+                    "qty": add_qty,
+                    "price": live_price,
+                    "amount_krw": add_cost,
+                    "pnl_krw": 0,
+                    "pnl_pct": 0.0,
+                    "reason": f"💧 [자동 물타기] 평단가 인하 ({pos['name']} 신평단 {new_avg:,}) → 반등 시 조기 익절 준비",
+                    "mode": cfg.get("mode", "AI_PAPER"),
+                })
+                actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤)")
 
         sell_reason = None
         if pnl_pct >= tp_pct:
             sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}% >= +{tp_pct}%)"
         elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
             sell_reason = f"트레일링 스탑 수익 보존 (고점 +{peak_pct:.2f}% 대비 -{drop_from_peak:.2f}% 반락)"
-        elif pnl_pct <= -abs(sl_pct):
+        elif use_sl and pnl_pct <= -abs(sl_pct):
             sell_reason = f"기계적 손절선 작동 ({pnl_pct:.2f}% <= -{abs(sl_pct)}%)"
 
         if sell_reason and (cfg.get("enabled") or force_buy):
