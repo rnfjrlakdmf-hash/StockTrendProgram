@@ -1228,6 +1228,7 @@ def run_market_scheduler():
     _init_today = _init_now.strftime('%Y-%m-%d')
     last_run_daily_theory = _saved.get("last_run_daily_theory", "")
     try:
+        from datetime import timedelta
         from firebase_admin import firestore as _fs
         _db = _fs.client()
         _today_slug = f"theory-{_init_now.strftime('%Y%m%d')}"
