@@ -608,14 +608,18 @@ def post_daily_theory(force=False):
             existing_doc = db.collection("theory_posts").document(today_slug).get()
             if existing_doc.exists:
                 existing_title = existing_doc.to_dict().get("title", "(제목 없음)")
-                print(f"[Theory Bot] 오늘({today_slug}) 이미 발행된 강의가 있습니다: '{existing_title}' - 중복 발행 방지로 건너뜁니다.")
-                return True  # 성공으로 처리하여 재시도 루프 방지
+                yesterday_doc = db.collection("theory_posts").document(yesterday_slug).get()
+                yesterday_title = yesterday_doc.to_dict().get("title", "") if yesterday_doc.exists else ""
+                if existing_title and existing_title != yesterday_title:
+                    print(f"[Theory Bot] 오늘({today_slug}) 이미 발행된 강의가 있습니다: '{existing_title}' - 중복 발행 방지로 건너뜁니다.")
+                    return True  # 성공으로 처리하여 재시도 루프 방지
+                else:
+                    print(f"[Theory Bot] 오늘({today_slug}) 문서가 어제({yesterday_slug}) 제목과 동일하여 신규 주제로 재발행합니다.")
         except Exception as e:
             print(f"[Theory Bot] 중복 체크 중 오류: {e}")
-        
+
     print("오늘의 주식 이론/차트 스터디 콘텐츠 생성 중...")
-    force_topic = "주식 매매 세금 총정리 (증권거래세, 양도소득세, 배당소득세)" if force else None
-    title, content, tags, topic, push_summary = generate_theory_post(db=db, force_topic=force_topic)
+    title, content, tags, topic, push_summary = generate_theory_post(db=db, force_topic=None)
     if not content:
         print("콘텐츠 생성 실패.")
         return False
@@ -633,18 +637,13 @@ def post_daily_theory(force=False):
         "author": "StockTrend 차트 마스터",
         "tags": tags,
         "originalTopic": topic,
+        "morningPushSent": True,
         "viewCount": random.randint(100, 300)
     }
     
     try:
         doc_ref = db.collection("theory_posts").document(slug)
         doc_ref.set(post_data)
-        if force:
-            prev_data = dict(post_data)
-            prev_data["slug"] = yesterday_slug
-            db.collection("theory_posts").document(yesterday_slug).set(prev_data)
-            print(f"[SUCCESS] 이전 카드 호환용({yesterday_slug}) 동시 업데이트 완료!")
-        
         print(f"[SUCCESS] 글 작성 완료! (ID: {slug}, SVG 포함 여부: {'<svg' in content})")
         new_url = f"https://stock-trend-program.co.kr/theory/{slug}"
         print(f"URL: {new_url}")

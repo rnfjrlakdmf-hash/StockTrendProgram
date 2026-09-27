@@ -165,12 +165,12 @@ def calculate_watchlist_performance(user_id: str, market: str):
 
             etf_meta = _resolve_etf_info(sym)
             resolved_name = (etf_meta.get("name") if etf_meta else None) or get_korean_stock_name(sym) or quote.get('name', sym)
-            if etf_meta and etf_meta.get("nav_gap") and etf_meta.get("nav_gap") != "+0.00%":
-                resolved_name = f"{resolved_name} [괴리율 {etf_meta['nav_gap']}]"
+            nav_gap_str = etf_meta.get("nav_gap") if (etf_meta and etf_meta.get("nav_gap") and etf_meta.get("nav_gap") != "+0.00%") else ""
 
             item = {
                 "symbol": sym,
                 "name": resolved_name,
+                "nav_gap": nav_gap_str,
                 "current_price": curr_p,
                 "daily_change": change_p,
                 "added_price": (total_item_buy_value / total_item_qty) if total_item_qty > 0 else added_price,
@@ -609,25 +609,29 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
             market_name = "국내" if market == "KR" else "해외"
 
             # -----------------------------------------------------------------
-            # 1. [알림 1] 시장 및 내 관심종목 관련 지수 결산 (스마트워치 최적화 슬림형)
-            #    - 관심종목에 해당 국가 주식이 없더라도(perf is None) 시장·섹터 지수 결산은 반드시 발송!
+            # 1. [알림 1] 시장 및 내 관심종목 관련 지수 결산 (줄바꿈 꼬임 없는 1줄 정렬형)
             # -----------------------------------------------------------------
-            title_market = f"📊 [시장·섹터 지수 결산] {market_name}"
+            title_market = f"📊 [시장·지수 결산] {market_name}"
 
             if market == "KR":
                 kospi_clean = common['KOSPI'].replace("코스피: ", "").strip()
                 kosdaq_clean = common['KOSDAQ'].replace("코스닥: ", "").strip()
-                idx_line = f"📈 코스피 {kospi_clean} · 코스닥 {kosdaq_clean}"
+                idx_lines = [
+                    f"📈 코스피 {kospi_clean}",
+                    f"📈 코스닥 {kosdaq_clean}"
+                ]
                 fx_val = common['FX'].get('price', '1,350')
                 macro_items = [f"💵 환율 {fx_val}원"]
             else:
                 nasdaq_clean = common['NASDAQ'].replace("나스닥: ", "").strip()
                 sp500_clean = common['SP500'].replace("S&P500: ", "").strip()
-                idx_line = f"🇺🇸 나스닥 {nasdaq_clean} · S&P500 {sp500_clean}"
+                idx_lines = [
+                    f"🇺🇸 나스닥 {nasdaq_clean}",
+                    f"🇺🇸 S&P500 {sp500_clean}"
+                ]
                 macro_items = []
 
             # 사용자 관심종목(일반 주식 + ETF 포함) 섹터 기반 연관 매크로/섹터 지표 동적 선별
-            # (해외 관심종목이 없더라도 해외 마감 브리핑에는 핵심 지표인 반도체지수·미금리·유가를 기본 제공)
             item_names_joined = " ".join(str(it.get("name", "")) for it in (perf.get("items", []) if perf else []))
             is_semi = (market == "US" and not perf) or any(s in ['005930', '000660', '042700', '091160', '396500', 'NVDA', 'AMD', 'TSM', 'SOXL', 'SOXX', 'SMH', 'SOXS'] for s in clean_symbols) or ("반도체" in item_names_joined or "SOX" in item_names_joined.upper())
             is_battery = any(s in ['373220', '006400', '086520', '247540', '003670', '305720', '305540', 'TSLA', 'TSLL'] for s in clean_symbols) or ("2차전지" in item_names_joined or "배터리" in item_names_joined or "테슬라" in item_names_joined)
@@ -641,7 +645,7 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
             if is_tech and common['TNX'].get('price'):
                 macro_items.append(f"美금리 {common['TNX'].get('price')}%")
             if (is_heavy or len(macro_items) < 2) and common['OIL'].get('change'):
-                macro_items.append(f"유가 {common['OIL'].get('change')}")
+                macro_items.append(f"🛢️ 유가 {common['OIL'].get('change')}")
 
             supply_market_line = ""
             if market == "KR":
@@ -649,17 +653,17 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                 frgn_str = format_krw_amount_korean(k_flow.get("foreign", 0))
                 inst_str = format_krw_amount_korean(k_flow.get("institution", 0))
                 retail_str = format_krw_amount_korean(k_flow.get("personal", 0))
-                supply_market_line = f"🌊 코스피 수급: 외인 {frgn_str} · 기관 {inst_str} (개인 {retail_str})"
+                supply_market_line = f"🌊 수급: 외인 {frgn_str} · 기관 {inst_str} · 개인 {retail_str}"
 
-            lines_market = [idx_line]
+            lines_market = list(idx_lines)
             if macro_items:
-                lines_market.append(" · ".join(macro_items[:2]))
+                lines_market.append(" ｜ ".join(macro_items[:2]))
             if supply_market_line:
                 lines_market.append(supply_market_line)
             body_market = "\n".join(lines_market)
 
             # -----------------------------------------------------------------
-            # 2. [알림 2] 내 관심종목 결산 (해당 시장 관심종목이 있을 때만 생성)
+            # 2. [알림 2] 내 관심종목 결산 (깔끔한 2줄 계층형 · 가로선 깨짐 제거)
             # -----------------------------------------------------------------
             title_portfolio = ""
             body_portfolio = ""
@@ -674,7 +678,7 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                     display_return = avg_change
 
                 emoji = "📈" if display_return > 0 else "📉" if display_return < 0 else "➖"
-                title_portfolio = f"👑 [내 관심종목 결산] {market_name} {emoji}"
+                title_portfolio = f"👑 [관심종목 결산] {market_name} {emoji}"
 
                 # 총 손익금액 헤더
                 if total_profit != 0:
@@ -690,30 +694,29 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                             profit_str = f"{total_profit:+,.2f}${unit} ({profit_krw:+,.0f}원)"
                     else:
                         profit_str = f"{total_profit:+,.0f}원"
-                    header_line = f"📊 총 평가손익: {profit_str} ({display_return:+.2f}%)"
+                    header_line = f"💰 총 평가손익: {profit_str} ({display_return:+.2f}%)"
                 else:
-                    header_line = f"📊 당일 평균 등락률: {display_return:+.2f}%"
+                    header_line = f"💰 당일 평균 등락률: {display_return:+.2f}%"
 
-                divider = "───────────────────────"
-
-                # MVP 및 약세 종목 (2개 이상일 때만 노출)
+                # 강세 및 약세 종목 요약 (깨끗한 종목명만 사용하여 줄바꿈 꼬임 방지)
                 mvp_str = ""
                 if len(perf["items"]) >= 2:
                     sorted_items = sorted(perf["items"], key=lambda x: x.get("daily_change", 0), reverse=True)
                     mvp_parts = []
                     if sorted_items and sorted_items[0].get("daily_change", 0) > 0:
                         best = sorted_items[0]
-                        mvp_parts.append(f"🏆 MVP: {best['name']} ({best['daily_change']:+.1f}%)")
+                        mvp_parts.append(f"🏆 강세: {best['name']} ({best['daily_change']:+.1f}%)")
                     if len(sorted_items) > 1 and sorted_items[-1].get("daily_change", 0) < 0:
                         worst = sorted_items[-1]
                         mvp_parts.append(f"⚠️ 약세: {worst['name']} ({worst['daily_change']:+.1f}%)")
-                    mvp_str = " · ".join(mvp_parts) if mvp_parts else ""
+                    mvp_str = " ｜ ".join(mvp_parts) if mvp_parts else ""
 
-                # 종목별 등락 및 수익 (스타일 A: 2줄 카드형)
+                # 종목별 등락 및 수익 (깔끔한 1~2줄 계층 구조: 🔹/🔸 종목 + └ 내 손익/괴리율)
                 price_list = []
                 max_disp = 5
                 for item in perf["items"][:max_disp]:
                     change_emoji = "▲" if item['daily_change'] > 0 else "▼" if item['daily_change'] < 0 else "-"
+                    bullet = "🔸" if item['daily_change'] > 0 else "🔹" if item['daily_change'] < 0 else "▪️"
                     if market == "US":
                         curr_price_str = f"${item['current_price']:,.2f}"
                     else:
@@ -730,11 +733,11 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                         approx = abs(item['current_price'] * item['daily_change'] / (100.0 + item['daily_change'])) if (100.0 + item['daily_change']) != 0 else 0
                         chg_val_str = f"{approx:,.0f}원" if market == "KR" else f"${approx:,.2f}"
 
-                    qty_str = f" ({item['quantity']:g}주)" if item.get('quantity', 1) != 1 else ""
-                    stock_header = f"▪ {item['name']}{qty_str}"
+                    qty_str = f"({item['quantity']:g}주)" if item.get('quantity', 1) != 1 else ""
                     change_str = f"{change_emoji}{chg_val_str} · {item['daily_change']:+.1f}%" if chg_val_str else f"{item['daily_change']:+.1f}%"
-                    price_line = f"  현재가 {curr_price_str} ({change_str})"
+                    stock_line = f"{bullet} {item['name']}{qty_str} : {curr_price_str} ({change_str})"
 
+                    sub_parts = []
                     if item.get('price_diff') is not None and item.get('added_price', 0) > 0:
                         diff = item['price_diff']
                         added_perf = item.get('added_perf', 0)
@@ -749,14 +752,19 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
                             diff_str = f"{diff:+,.2f}$ (약 {krw_diff_str})"
                         else:
                             diff_str = f"{diff:+,.0f}원"
-                        profit_line = f"  내 손익 {diff_str} ({added_perf:+.1f}%)"
-                        stock_block = f"{stock_header}\n{price_line}\n{profit_line}"
+                        sub_parts.append(f"내 손익 {diff_str} ({added_perf:+.1f}%)")
+
+                    if item.get('nav_gap'):
+                        sub_parts.append(f"ETF 괴리율 {item['nav_gap']}")
+
+                    if sub_parts:
+                        stock_block = f"{stock_line}\n   └ {' ｜ '.join(sub_parts)}"
                     else:
-                        stock_block = f"{stock_header}\n{price_line}"
+                        stock_block = stock_line
 
                     price_list.append(stock_block)
 
-                body_parts = [header_line, divider]
+                body_parts = [header_line]
                 if mvp_str:
                     body_parts.append(mvp_str)
                 body_parts.extend(price_list)
@@ -1223,15 +1231,19 @@ def run_market_scheduler():
         from firebase_admin import firestore as _fs
         _db = _fs.client()
         _today_slug = f"theory-{_init_now.strftime('%Y%m%d')}"
+        _yesterday_slug = f"theory-{(_init_now - timedelta(days=1)).strftime('%Y%m%d')}"
         _existing = _db.collection("theory_posts").document(_today_slug).get()
-        if _existing.exists:
+        _yesterday_doc = _db.collection("theory_posts").document(_yesterday_slug).get()
+        _existing_title = (_existing.to_dict() or {}).get("title", "") if _existing.exists else ""
+        _yesterday_title = (_yesterday_doc.to_dict() or {}).get("title", "") if _yesterday_doc.exists else ""
+        if _existing.exists and _existing_title and _existing_title != _yesterday_title:
             last_run_daily_theory = _init_today
             _save_sched_state("last_run_daily_theory", _init_today)
             print(f"[Scheduler] 서버 재시작 감지: 오늘({_init_today}) 이미 강의 발행됨 → 중복 방지 마킹")
         else:
-            if last_run_daily_theory != _init_today:
-                last_run_daily_theory = ""
-                print(f"[Scheduler] 오늘({_init_today}) 주식 스터디 미발행 상태 확인 → 예정 시각(08:30~) 즉시 발송 대기")
+            last_run_daily_theory = ""
+            _save_sched_state("last_run_daily_theory", "")
+            print(f"[Scheduler] 오늘({_init_today}) 주식 스터디 미발행(또는 어제와 중복) 상태 확인 → 예정 시각(08:30~) 즉시 발송 대기")
     except Exception as _e:
         print(f"[Scheduler] 초기화 중 Firestore 확인 실패: {_e}")
     last_spike_alert_time = None
@@ -1670,3 +1682,10 @@ def delete_old_alerts():
             
     except Exception as e:
         print(f"[Cleanup] Failed to delete old alerts: {e}")
+
+
+if __name__ == "__main__":
+    import sys
+    if "--test-closing" in sys.argv:
+        send_closing_notification("KR")
+
