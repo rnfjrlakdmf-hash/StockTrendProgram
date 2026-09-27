@@ -10,7 +10,7 @@ except Exception:
 import os
 import time
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import Dict, Optional
@@ -428,7 +428,7 @@ async def startup_event():
                     print(f"[Turbo] Cache Warmer Critical Error: {e}")
                 
                 # 다음 주기까지 대기 (주기 2분 유지)
-                    await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
+                await asyncio.sleep(max(30, 120 - (time.time() - start_time)))
 
         # [v6.5.0] Safe Mode로 개선되어 활성화
         asyncio.create_task(ranking_cache_warmer())
@@ -818,3 +818,63 @@ def get_seo_posts_list(page: int = 1, limit: int = 10):
     except Exception as e:
         print(f"[SEO Posts API] Error: {e}")
         return {"status": "error", "message": str(e), "posts": [], "total": 0, "totalPages": 0}
+
+
+# ============================================================
+# [ADMIN-ONLY] 대표님 전용 24시간 무인 AI 자동매매 사령부 API
+# 일반 유저 접근 시 403 차단 (X-Admin-Key 필수)
+# ============================================================
+def _verify_admin_key(x_admin_key: Optional[str]) -> bool:
+    return x_admin_key == "StockTrendSecretAdmin2026!"
+
+
+@app.get("/api/system/admin/auto-trader/status")
+def api_admin_auto_trader_status(x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import get_dashboard_summary
+    return {"status": "success", "data": get_dashboard_summary()}
+
+
+@app.post("/api/system/admin/auto-trader/config")
+def api_admin_auto_trader_config(payload: dict = Body(...), x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import update_auto_trader_config
+    return {"status": "success", "data": update_auto_trader_config(payload)}
+
+
+@app.post("/api/system/admin/auto-trader/run-cycle")
+def api_admin_auto_trader_run_cycle(payload: dict = Body(default={}), x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import run_auto_trader_cycle
+    force_buy = bool(payload.get("force_buy", True))
+    return {"status": "success", "data": run_auto_trader_cycle(force_buy=force_buy)}
+
+
+@app.post("/api/system/admin/auto-trader/close-position")
+def api_admin_auto_trader_close_pos(payload: dict = Body(...), x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import manual_close_position
+    symbol = str(payload.get("symbol", "")).strip()
+    return {"status": "success", "data": manual_close_position(symbol)}
+
+
+@app.post("/api/system/admin/auto-trader/panic-sell")
+def api_admin_auto_trader_panic_sell(x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import panic_sell_all
+    return {"status": "success", "data": panic_sell_all()}
+
+
+@app.post("/api/system/admin/auto-trader/reset-paper")
+def api_admin_auto_trader_reset_paper(payload: dict = Body(default={}), x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import reset_paper_account
+    cap = int(payload.get("initial_capital_krw", 10000000))
+    return {"status": "success", "data": reset_paper_account(cap)}
+

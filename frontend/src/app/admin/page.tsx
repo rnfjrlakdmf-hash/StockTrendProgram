@@ -494,6 +494,40 @@ export default function AdminPage() {
             <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 {/* ============================================================ */}
+                {/* 0. 대표님 전용 24시간 무인 AI 자동매매 사령부 바로가기 배너 */}
+                {/* ============================================================ */}
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-zinc-950 border border-emerald-500/40 p-5 md:p-6 shadow-2xl shadow-emerald-950/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-start md:items-center gap-4">
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 shrink-0 shadow-lg shadow-emerald-500/10">
+                            <Bot className="w-7 h-7 animate-pulse" />
+                        </div>
+                        <div>
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 uppercase tracking-wider">
+                                    REPRESENTATIVE ONLY · 100% 무인 가동
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
+                                    AI 모의투자 & 한국투자증권 KIS REST API 연동
+                                </span>
+                            </div>
+                            <h2 className="text-lg md:text-xl font-black text-white tracking-tight">
+                                🤖 24시간 무인 AI 주식 자동매매 사령부
+                            </h2>
+                            <p className="text-xs text-zinc-300 mt-0.5">
+                                서버가 24시간 알아서 급등 유망 종목을 발굴·매수하고, 목표익절(+5%)·트레일링 스탑·칼손절(-3%)까지 무인으로 수행합니다.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => router.push('/admin/auto-trade')}
+                        className="w-full md:w-auto shrink-0 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-black text-sm shadow-xl shadow-emerald-500/25 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Bot className="w-4 h-4" />
+                        자동매매 사령부 입장하기 →
+                    </button>
+                </div>
+
+                {/* ============================================================ */}
                 {/* 1. 상단 핵심 5대 프리미엄 지표 카드 (대칭 & 디테일 수치) */}
                 {/* ============================================================ */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
@@ -1350,6 +1384,30 @@ export default function AdminPage() {
                 {/* 3x2 Grid for Standard Tools */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
+                    {/* 24/7 AI Auto-Trading Command Center */}
+                    <div className="p-8 rounded-[2rem] bg-gradient-to-br from-emerald-600/20 via-teal-600/10 to-transparent border border-emerald-500/30 flex flex-col h-full group hover:border-emerald-400/50 transition-all shadow-lg shadow-emerald-950/30">
+                        <div className="flex-grow">
+                            <div className="flex items-center justify-between mb-6">
+                                <Bot className="w-10 h-10 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    대표님 단독 전용
+                                </span>
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">24시간 무인 AI 자동매매 사령부</h3>
+                            <p className="text-sm text-gray-300 leading-relaxed mb-6">
+                                PC를 켜두지 않아도 리눅스 서버가 24시간 급등 유망주를 자동 선정·매수하고 칼손절/익절까지 수행합니다. (AI 모의투자 & 한국투자증권 KIS 연동)
+                            </p>
+                        </div>
+                        <div className="pt-4 border-t border-emerald-500/20 mt-auto">
+                            <button
+                                onClick={() => router.push('/admin/auto-trade')}
+                                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-black py-3.5 px-6 rounded-2xl transition-all shadow-lg text-sm"
+                            >
+                                <Bot className="w-4 h-4" />
+                                자동매매 사령부 열기
+                            </button>
+                        </div>
+                    </div>
 
                     {/* SNS Marketing Bot */}
                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-orange-600/10 to-transparent border border-orange-500/10 flex flex-col h-full group hover:border-orange-500/30 transition-all">

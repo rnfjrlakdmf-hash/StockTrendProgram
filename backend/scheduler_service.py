@@ -1286,6 +1286,19 @@ def run_market_scheduler():
             except Exception as e:
                 print(f"[Scheduler] Spike alert error: {e}")
             
+            # [관리자 전용 AI 자동매매 엔진] 3분 간격 무인 종목 발굴 및 자동 매수/익절/손절 수행
+            if now.minute % 3 == 0:
+                _at_time = now.strftime('%H:%M')
+                if getattr(run_market_scheduler, "last_auto_trader_min", "") != _at_time:
+                    run_market_scheduler.last_auto_trader_min = _at_time
+                    try:
+                        from auto_trader_service import load_state, run_auto_trader_cycle
+                        _st = load_state()
+                        if _st.get("config", {}).get("enabled", False):
+                            run_auto_trader_cycle(force_buy=False)
+                    except Exception as _ate:
+                        print(f"[Scheduler] AutoTrader cycle error: {_ate}")
+
             # [주말 실행] 크립토 실시간 불장 감지 (15분 간격)
             if now.minute % 15 == 0 and is_holiday("kor"):
                 current_time = now.strftime('%H:%M')
