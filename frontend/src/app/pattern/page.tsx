@@ -26,9 +26,13 @@ export default function PatternPage() {
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
-    const [chartType, setChartType] = useState<"line" | "candle">("line");
-    const [linePeriod, setLinePeriod] = useState<string>("1y");
+    const [chartType, setChartType] = useState<"line" | "candle">("candle");
+    const [linePeriod, setLinePeriod] = useState<string>("3개월");
     const [candleInterval, setCandleInterval] = useState<string>("1d");
+    const [candleZoomCount, setCandleZoomCount] = useState<number>(45);
+    const [isMobile, setIsMobile] = useState<boolean>(false);
+    const [isChartExpanded, setIsChartExpanded] = useState<boolean>(false);
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [showDocent, setShowDocent] = useState(true);
     const [showSupportResistance, setShowSupportResistance] = useState(true);
@@ -51,10 +55,18 @@ export default function PatternPage() {
 
     useEffect(() => {
         setIsMounted(true);
+        const checkMobile = () => {
+            const mob = window.innerWidth < 768;
+            setIsMobile(mob);
+            setCandleZoomCount((prev) => (prev === 45 && !mob ? 90 : prev));
+        };
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
         const stored = localStorage.getItem("showDocent");
         if (stored !== null) setShowDocent(stored === "true");
         const storedSR = localStorage.getItem("showSupportResistance");
         if (storedSR !== null) setShowSupportResistance(storedSR === "true");
+        return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
     // [v4] 일일 횟수 제한 시스템 완전 제거 - checkReward/isFreeModeEnabled 기반으로 교체
@@ -213,7 +225,18 @@ export default function PatternPage() {
         }
     };
 
-    // Moving Averages
+    const formatCompactAxisPrice = (val: number | string | undefined | null) => {
+        if (val === undefined || val === null || isNaN(Number(val))) return '0';
+        const num = Number(val);
+        if (!isMobile) return formatPrice(num);
+        if (isUS) {
+            return num >= 1000 ? `$${(num / 1000).toFixed(1)}k` : `$${num.toFixed(0)}`;
+        }
+        if (num >= 100000) return `${(num / 10000).toFixed(1)}만`;
+        return Math.round(num).toLocaleString();
+    };
+
+    // Moving Averages (calculated on full history so MA60/MA120 are accurate from day 1 of zoomed slice)
     const movingAverages = useMemo(() => {
         if (!result?.history || result.history.length === 0) return { ma5: [], ma20: [], ma60: [], ma120: [] };
         const calculateMA = (data: number[], window: number) => {
@@ -234,17 +257,47 @@ export default function PatternPage() {
         };
     }, [result?.history]);
 
+    const displayStartIdx = useMemo(() => {
+        const fullLen = result?.history?.length || 0;
+        if (!fullLen) return 0;
+        if (chartType === 'candle' && candleZoomCount > 0 && fullLen > candleZoomCount) {
+            return fullLen - candleZoomCount;
+        }
+        return 0;
+    }, [result?.history, chartType, candleZoomCount]);
+
+    const displayHistory = useMemo(() => {
+        if (!result?.history) return [];
+        return result.history.slice(displayStartIdx);
+    }, [result?.history, displayStartIdx]);
+
+    const activeBarInfo = useMemo(() => {
+        if (!displayHistory.length) return null;
+        const localIdx = (hoveredIndex !== null && hoveredIndex >= 0 && hoveredIndex < displayHistory.length)
+            ? hoveredIndex
+            : displayHistory.length - 1;
+        const globalIdx = displayStartIdx + localIdx;
+        const item = displayHistory[localIdx];
+        if (!item) return null;
+        return {
+            item,
+            ma5: movingAverages.ma5[globalIdx],
+            ma20: movingAverages.ma20[globalIdx],
+            ma60: movingAverages.ma60[globalIdx],
+            ma120: movingAverages.ma120[globalIdx],
+        };
+    }, [displayHistory, hoveredIndex, displayStartIdx, movingAverages]);
+
     // ApexCharts Configurations
     const chartSeries = useMemo(() => {
-        if (!result?.history) return [];
-        const history = result.history;
+        if (!displayHistory.length) return [];
 
         if (chartType === 'line') {
             return [
                 {
                     name: 'Price',
                     type: 'area',
-                    data: history.map((d: any) => ({
+                    data: displayHistory.map((d: any) => ({
                         x: new Date(d.date).getTime(),
                         y: d.close
                     }))
@@ -255,39 +308,66 @@ export default function PatternPage() {
                 {
                     name: 'Candle',
                     type: 'candlestick',
-                    data: history.map((d: any) => ({
+                    data: displayHistory.map((d: any) => ({
                         x: new Date(d.date).getTime(),
                         y: [d.open, d.high, d.low, d.close]
                     }))
                 },
-                { name: '5일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma5[i] })) },
-                { name: '20일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma20[i] })) },
-                { name: '60일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma60[i] })) },
-                { name: '120일선', type: 'line', data: history.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma120[i] })) }
+                { name: '5일선', type: 'line', data: displayHistory.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma5[displayStartIdx + i] })) },
+                { name: '20일선', type: 'line', data: displayHistory.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma20[displayStartIdx + i] })) },
+                { name: '60일선', type: 'line', data: displayHistory.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma60[displayStartIdx + i] })) },
+                { name: '120일선', type: 'line', data: displayHistory.map((d: any, i: number) => ({ x: new Date(d.date).getTime(), y: movingAverages.ma120[displayStartIdx + i] })) }
             ];
         }
-    }, [result?.history, chartType, movingAverages]);
+    }, [displayHistory, displayStartIdx, chartType, movingAverages]);
 
     const volumeSeries = useMemo(() => {
-        if (!result?.history) return [];
+        if (!displayHistory.length) return [];
         return [{
             name: '거래량',
             type: 'bar',
-            data: result.history.map((d: any) => ({
+            data: displayHistory.map((d: any) => ({
                 x: new Date(d.date).getTime(),
-                y: d.volume
+                y: d.volume,
+                fillColor: Number(d.close) >= Number(d.open) ? '#ef444475' : '#3b82f675'
             }))
         }];
-    }, [result?.history]);
+    }, [displayHistory]);
+
+    const chartHeight = isChartExpanded ? (isMobile ? 480 : 560) : (isMobile ? 360 : 420);
 
     const chartOptions: any = {
         chart: {
             type: chartType === 'line' ? 'area' : 'candlestick',
-            height: 400,
+            height: chartHeight,
             id: 'candles',
-            toolbar: { show: false },
+            toolbar: {
+                show: true,
+                tools: {
+                    download: false,
+                    selection: true,
+                    zoom: true,
+                    zoomin: true,
+                    zoomout: true,
+                    pan: true,
+                    reset: true
+                }
+            },
+            zoom: { enabled: true, type: 'x', autoScaleYaxis: true },
             background: 'transparent',
             foreColor: '#9ca3af',
+            events: {
+                mouseMove: (_event: any, _chartContext: any, config: any) => {
+                    if (typeof config?.dataPointIndex === 'number' && config.dataPointIndex >= 0) {
+                        setHoveredIndex(config.dataPointIndex);
+                    }
+                },
+                click: (_event: any, _chartContext: any, config: any) => {
+                    if (typeof config?.dataPointIndex === 'number' && config.dataPointIndex >= 0) {
+                        setHoveredIndex(config.dataPointIndex);
+                    }
+                }
+            },
             locales: [{
                 name: 'ko',
                 options: {
@@ -312,10 +392,10 @@ export default function PatternPage() {
         },
         dataLabels: { enabled: false },
         theme: { mode: 'dark' },
-        stroke: { width: chartType === 'line' ? [2] : [1, 2, 2, 2, 2], curve: 'smooth' },
+        stroke: { width: chartType === 'line' ? [2.2] : [1.2, 1.8, 1.8, 1.8, 1.8], curve: 'smooth' },
         fill: {
             type: chartType === 'line' ? 'gradient' : 'solid',
-            gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1, stops: [0, 90, 100] }
+            gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.08, stops: [0, 90, 100] }
         },
         plotOptions: {
             candlestick: {
@@ -327,27 +407,39 @@ export default function PatternPage() {
             type: 'datetime', 
             axisBorder: { show: false }, 
             axisTicks: { show: false },
-            // [NEW] Fix timezone offset (UTC to Local Time)
+            tickAmount: isMobile ? 4 : 8,
             labels: {
                 datetimeUTC: false,
+                style: { fontSize: isMobile ? '10px' : '11px', colors: '#9ca3af' },
                 datetimeFormatter: {
-                    year: 'yyyy년',
-                    month: 'yyyy년 MM월',
-                    day: 'MM월 dd일',
+                    year: 'yy년',
+                    month: 'yy.MM',
+                    day: 'M/d',
                     hour: 'HH:mm'
                 }
             }
         },
-        yaxis: { opposite: true, labels: { formatter: (val: number) => formatPrice(val) } },
-        grid: { borderColor: '#ffffff08', strokeDashArray: 4, padding: { left: 10, right: 10 } },
+        yaxis: {
+            opposite: true,
+            tickAmount: isMobile ? 5 : 7,
+            labels: {
+                style: { fontSize: isMobile ? '10px' : '11px', colors: '#d1d5db', fontWeight: 700 },
+                formatter: (val: number) => formatCompactAxisPrice(val)
+            }
+        },
+        grid: {
+            borderColor: '#ffffff10',
+            strokeDashArray: 3,
+            padding: { left: isMobile ? 2 : 10, right: isMobile ? 2 : 10, top: 6, bottom: 0 }
+        },
         tooltip: {
             shared: true,
             x: { format: ['1m','5m','30m','60m'].includes(candleInterval) ? 'yyyy년 MM월 dd일 HH:mm' : 'yyyy년 MM월 dd일' },
             y: { formatter: (val: number) => formatPrice(val) },
-            custom: function({ seriesIndex, dataPointIndex, w }: any) {
-                const history = result?.history || [];
-                const item = history[dataPointIndex];
+            custom: function({ dataPointIndex }: any) {
+                const item = displayHistory[dataPointIndex];
                 if (!item) return "";
+                const globalIdx = displayStartIdx + dataPointIndex;
 
                 const rawDate = new Date(item.date);
                 const yyyy = rawDate.getFullYear();
@@ -358,43 +450,42 @@ export default function PatternPage() {
 
                 const isIntraday = ['1m','5m','30m','60m'].includes(candleInterval);
                 const dateHeader = isIntraday 
-                    ? `${yyyy}. ${mm}. ${dd}. ${hh}:${mins}`
-                    : `${yyyy}. ${mm}. ${dd}.`;
+                    ? `${yyyy}.${mm}.${dd} ${hh}:${mins}`
+                    : `${yyyy}.${mm}.${dd}`;
 
-                const ma5 = movingAverages.ma5[dataPointIndex];
-                const ma20 = movingAverages.ma20[dataPointIndex];
-                const ma60 = movingAverages.ma60[dataPointIndex];
-                const ma120 = movingAverages.ma120[dataPointIndex];
+                const ma5 = movingAverages.ma5[globalIdx];
+                const ma20 = movingAverages.ma20[globalIdx];
+                const ma60 = movingAverages.ma60[globalIdx];
+                const ma120 = movingAverages.ma120[globalIdx];
 
                 const volumeStr = item.volume?.toLocaleString() || "0";
                 
                 let priceSection = "";
                 if (chartType === 'candle') {
                     priceSection = `
-                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${formatPrice(item.open)}</span></div>
-                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${formatPrice(item.high)}</span></div>
-                        <div class="flex gap-10 justify-between mb-1 text-[11px]"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${formatPrice(item.low)}</span></div>
-                        <div class="flex gap-10 justify-between mb-2 text-[11px] font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-white">${formatPrice(item.close)}</span></div>
+                        <div class="flex gap-4 justify-between mb-0.5 text-[11px]"><span class="text-gray-400">시가</span> <span class="font-mono font-medium text-white">${formatPrice(item.open)}</span></div>
+                        <div class="flex gap-4 justify-between mb-0.5 text-[11px]"><span class="text-gray-400">고가</span> <span class="font-mono font-semibold text-red-400">${formatPrice(item.high)}</span></div>
+                        <div class="flex gap-4 justify-between mb-0.5 text-[11px]"><span class="text-gray-400">저가</span> <span class="font-mono font-semibold text-blue-400">${formatPrice(item.low)}</span></div>
+                        <div class="flex gap-4 justify-between mb-1.5 text-[11px] font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-white">${formatPrice(item.close)}</span></div>
                     `;
                 } else {
                     priceSection = `
-                        <div class="flex gap-10 justify-between mb-2 text-sm font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-emerald-400">${formatPrice(item.close)}</span></div>
+                        <div class="flex gap-4 justify-between mb-1.5 text-xs font-bold border-b border-gray-700/30 pb-1"><span class="text-gray-300">종가</span> <span class="font-mono font-black text-emerald-400">${formatPrice(item.close)}</span></div>
                     `;
                 }
 
                 return `
-                    <div class="bg-gray-900/95 backdrop-blur-md border border-gray-700/50 p-3 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.6)] text-white whitespace-nowrap z-50 pointer-events-none min-w-[200px]">
-                        <div class="text-[11px] font-black text-gray-400 border-b border-gray-700/50 pb-2 mb-2 tracking-tighter">
+                    <div class="bg-gray-900/95 backdrop-blur-md border border-gray-700/60 p-2.5 rounded-xl shadow-2xl text-white whitespace-nowrap z-50 pointer-events-none min-w-[165px]">
+                        <div class="text-[10px] font-black text-gray-300 border-b border-gray-700/50 pb-1 mb-1.5">
                             📅 ${dateHeader}
                         </div>
                         ${priceSection}
-                        <div class="flex gap-10 justify-between mb-2 text-[11px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
-                        
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 pt-2 border-t border-gray-700/50">
-                            <div class="flex justify-between text-[10px]"><span class="text-emerald-500/80 font-bold">5일선</span> <span class="font-mono text-gray-300">${ma5 ? formatPrice(ma5) : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-red-500/80 font-bold">20일선</span> <span class="font-mono text-gray-300">${ma20 ? formatPrice(ma20) : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-orange-500/80 font-bold">60일선</span> <span class="font-mono text-gray-300">${ma60 ? formatPrice(ma60) : '-'}</span></div>
-                            <div class="flex justify-between text-[10px]"><span class="text-purple-500/80 font-bold">120일선</span> <span class="font-mono text-gray-300">${ma120 ? formatPrice(ma120) : '-'}</span></div>
+                        <div class="flex gap-4 justify-between mb-1 text-[10px]"><span class="text-gray-400">거래량</span> <span class="font-mono font-bold text-blue-300">${volumeStr}</span></div>
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1.5 pt-1.5 border-t border-gray-700/50">
+                            <div class="flex justify-between text-[9px]"><span class="text-emerald-400 font-bold">MA5</span> <span class="font-mono text-gray-200">${ma5 ? formatCompactAxisPrice(ma5) : '-'}</span></div>
+                            <div class="flex justify-between text-[9px]"><span class="text-red-400 font-bold">MA20</span> <span class="font-mono text-gray-200">${ma20 ? formatCompactAxisPrice(ma20) : '-'}</span></div>
+                            <div class="flex justify-between text-[9px]"><span class="text-orange-400 font-bold">MA60</span> <span class="font-mono text-gray-200">${ma60 ? formatCompactAxisPrice(ma60) : '-'}</span></div>
+                            <div class="flex justify-between text-[9px]"><span class="text-purple-400 font-bold">MA120</span> <span class="font-mono text-gray-200">${ma120 ? formatCompactAxisPrice(ma120) : '-'}</span></div>
                         </div>
                     </div>
                 `;
@@ -405,60 +496,59 @@ export default function PatternPage() {
                 {
                     y: result.support_resistance.support1,
                     borderColor: '#10b981',
-                    strokeDashArray: 5,
+                    strokeDashArray: 4,
                     borderWidth: 1.5,
                     label: {
                         borderColor: '#10b981',
                         style: {
                             color: '#ffffff',
-                            background: '#10b981',
-                            fontSize: '11px',
-                            fontWeight: 700
+                            background: '#059669',
+                            fontSize: isMobile ? '9px' : '11px',
+                            fontWeight: 700,
+                            padding: { left: 4, right: 4, top: 2, bottom: 2 }
                         },
-                        text: `1차 지지선 ${formatPrice(result.support_resistance.support1)} (${result.support_resistance.support1_pct > 0 ? '+' : ''}${result.support_resistance.support1_pct}%)`,
+                        text: isMobile
+                            ? `지지 ${formatCompactAxisPrice(result.support_resistance.support1)}`
+                            : `1차 지지선 ${formatPrice(result.support_resistance.support1)} (${result.support_resistance.support1_pct > 0 ? '+' : ''}${result.support_resistance.support1_pct}%)`,
                         position: 'left',
                         textAnchor: 'start',
-                        offsetX: 5
+                        offsetX: 4
                     }
                 },
                 {
                     y: result.support_resistance.resistance1,
                     borderColor: '#f43f5e',
-                    strokeDashArray: 5,
+                    strokeDashArray: 4,
                     borderWidth: 1.5,
                     label: {
                         borderColor: '#f43f5e',
                         style: {
                             color: '#ffffff',
-                            background: '#f43f5e',
-                            fontSize: '11px',
-                            fontWeight: 700
+                            background: '#e11d48',
+                            fontSize: isMobile ? '9px' : '11px',
+                            fontWeight: 700,
+                            padding: { left: 4, right: 4, top: 2, bottom: 2 }
                         },
-                        text: `1차 저항선 ${formatPrice(result.support_resistance.resistance1)} (+${result.support_resistance.resistance1_pct}%)`,
+                        text: isMobile
+                            ? `저항 ${formatCompactAxisPrice(result.support_resistance.resistance1)}`
+                            : `1차 저항선 ${formatPrice(result.support_resistance.resistance1)} (+${result.support_resistance.resistance1_pct}%)`,
                         position: 'left',
                         textAnchor: 'start',
-                        offsetX: 5
+                        offsetX: 4
                     }
                 }
             ] : [],
             points: [
-                ...(result?.stories || []).map((s: any) => ({
-                    x: new Date(s.date).getTime(),
-                    y: s.price,
-                    marker: { size: 6, fillColor: s.impact === 'positive' ? '#ef4444' : s.impact === 'negative' ? '#3b82f6' : '#6b7280', strokeColor: '#fff', radius: 2 },
-                    label: { borderColor: '#ffffff20', offsetY: -30, style: { color: '#fff', background: '#1f2937', fontSize: '10px' }, text: s.icon }
-                })),
-                // [NEW] Highest/Lowest Price Annotations
-                ...(result?.history && result.history.length > 0 ? [
+                ...(displayHistory.length > 0 ? [
                     (() => {
                         const isLine = chartType === 'line';
-                        const highest = [...result.history].sort((a, b) => isLine ? (b.close - a.close) : (b.high - a.high))[0];
-                        const idx = result.history.indexOf(highest);
-                        const n = result.history.length;
-                        const isStart = idx < n * 0.15;
-                        const isEnd = idx > n * 0.85;
+                        const highest = [...displayHistory].sort((a, b) => isLine ? (b.close - a.close) : (b.high - a.high))[0];
+                        const idx = displayHistory.indexOf(highest);
+                        const n = displayHistory.length;
+                        const isStart = idx < n * 0.2;
+                        const isEnd = idx > n * 0.8;
                         const d = new Date(highest.date);
-                        const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+                        const dateStr = isMobile ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
                         const targetVal = isLine ? highest.close : highest.high;
                         return {
                             x: new Date(highest.date).getTime(),
@@ -468,20 +558,20 @@ export default function PatternPage() {
                                 text: `최고 ${formatPrice(targetVal)} (${dateStr}) ↓`,
                                 borderColor: '#ef4444',
                                 textAnchor: isStart ? 'start' : (isEnd ? 'end' : 'middle'),
-                                offsetX: isStart ? 10 : (isEnd ? -10 : 0),
-                                style: { color: '#fff', background: '#ef4444', fontSize: '11px', fontWeight: 600 }
+                                offsetX: isStart ? 6 : (isEnd ? -6 : 0),
+                                style: { color: '#fff', background: '#ef4444', fontSize: isMobile ? '9px' : '11px', fontWeight: 700 }
                             }
                         };
                     })(),
                     (() => {
                         const isLine = chartType === 'line';
-                        const lowest = [...result.history].sort((a, b) => isLine ? (a.close - b.close) : (a.low - b.low))[0];
-                        const idx = result.history.indexOf(lowest);
-                        const n = result.history.length;
-                        const isStart = idx < n * 0.15;
-                        const isEnd = idx > n * 0.85;
+                        const lowest = [...displayHistory].sort((a, b) => isLine ? (a.close - b.close) : (a.low - b.low))[0];
+                        const idx = displayHistory.indexOf(lowest);
+                        const n = displayHistory.length;
+                        const isStart = idx < n * 0.2;
+                        const isEnd = idx > n * 0.8;
                         const d = new Date(lowest.date);
-                        const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+                        const dateStr = isMobile ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
                         const targetVal = isLine ? lowest.close : lowest.low;
                         return {
                             x: new Date(lowest.date).getTime(),
@@ -490,10 +580,10 @@ export default function PatternPage() {
                             label: {
                                 text: `↑ 최저 ${formatPrice(targetVal)} (${dateStr})`,
                                 borderColor: '#3b82f6',
-                                offsetY: 40,
+                                offsetY: 34,
                                 textAnchor: isStart ? 'start' : (isEnd ? 'end' : 'middle'),
-                                offsetX: isStart ? 10 : (isEnd ? -10 : 0),
-                                style: { color: '#fff', background: '#3b82f6', fontSize: '11px', fontWeight: 600 }
+                                offsetX: isStart ? 6 : (isEnd ? -6 : 0),
+                                style: { color: '#fff', background: '#3b82f6', fontSize: isMobile ? '9px' : '11px', fontWeight: 700 }
                             }
                         };
                     })()
@@ -501,41 +591,44 @@ export default function PatternPage() {
             ]
         },
         colors: chartType === 'line' ? ['#10b981'] : ['#ef4444', '#22c55e', '#ef4444', '#f97316', '#a855f7'],
-        legend: { position: 'top', horizontalAlign: 'left' }
+        legend: { show: false }
     };
 
     const volumeOptions: any = {
-        chart: { height: 120, type: 'bar', toolbar: { show: false }, background: 'transparent', foreColor: '#9ca3af' },
+        chart: { height: isMobile ? 95 : 120, type: 'bar', toolbar: { show: false }, background: 'transparent', foreColor: '#9ca3af' },
         theme: { mode: 'dark' },
-        plotOptions: { bar: { columnWidth: '80%', colors: { ranges: [{ from: 0, to: 9999999999999, color: '#60a5fa30' }] } } },
+        plotOptions: { bar: { columnWidth: '75%' } },
         dataLabels: { enabled: false },
         xaxis: { 
             type: 'datetime', 
             axisBorder: { show: false }, 
             axisTicks: { show: false }, 
+            tickAmount: isMobile ? 4 : 8,
             labels: { 
-                datetimeUTC: false, // [NEW] Fix timezone offset
+                datetimeUTC: false,
                 show: true,
-                style: { colors: '#6b7280', fontSize: '10px' },
+                style: { colors: '#6b7280', fontSize: isMobile ? '9px' : '10px' },
                 datetimeFormatter: {
-                    year: 'yyyy년',
+                    year: 'yy년',
                     month: 'M월',
-                    day: 'd일',
+                    day: 'M/d',
                     hour: 'HH:mm'
                 }
             }
         },
         yaxis: { 
+            opposite: true,
+            tickAmount: 3,
             labels: { 
-                style: { colors: '#6b7280', fontSize: '10px' },
+                style: { colors: '#6b7280', fontSize: isMobile ? '9px' : '10px' },
                 formatter: (val: number) => {
                     if (val >= 100000000) return (val / 100000000).toFixed(1) + '억';
-                    if (val >= 10000) return (val / 10000).toLocaleString() + '만';
-                    return val.toLocaleString();
+                    if (val >= 10000) return Math.round(val / 10000).toLocaleString() + '만';
+                    return Math.round(val).toLocaleString();
                 }
             } 
         },
-        grid: { show: true, borderColor: '#ffffff05', strokeDashArray: 2 }
+        grid: { show: true, borderColor: '#ffffff08', strokeDashArray: 2, padding: { left: isMobile ? 2 : 10, right: isMobile ? 2 : 10 } }
     };
 
     const formatDate = (dateStr: string) => {
@@ -549,29 +642,29 @@ export default function PatternPage() {
 
             <AdRewardModal isOpen={showAdModal} onClose={() => setShowAdModal(false)} onReward={handleAdReward} featureName="PatternAnalytics" />
 
-            <div className="p-6 max-w-5xl mx-auto space-y-8">
+            <div className="px-2.5 py-4 sm:p-6 max-w-5xl mx-auto space-y-5 sm:space-y-8">
                 {/* Search Bar & Title */}
-                <div className="text-center space-y-4 pt-4">
+                <div className="text-center space-y-3 sm:space-y-4 pt-2 sm:pt-4">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black tracking-widest uppercase">
                         PRO QUANT ANALYTICS
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-white flex items-center justify-center gap-3">
-                        <LineChart className="w-10 h-10 md:w-12 md:h-12 text-emerald-400" />
-                        프로 퀀트 차트 분석 <span className="text-emerald-400">고급</span>
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white flex items-center justify-center gap-2 sm:gap-3">
+                        <LineChart className="w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 text-emerald-400 shrink-0" />
+                        <span>프로 퀀트 차트 분석 <span className="text-emerald-400">고급</span></span>
                     </h1>
-                    <p className="text-gray-400 text-sm md:text-base font-medium">
+                    <p className="text-gray-400 text-xs sm:text-sm md:text-base font-medium">
                         과거 5개년 패턴 통계 알고리즘 및 기관·외국인 수급 정밀 퀀트 리포트
                     </p>
                     
                     {/* 기술적 지표 브리핑 토글 스위치 */}
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mt-2 sm:mt-4">
                         <button 
                             onClick={() => {
                                 const next = !showDocent;
                                 setShowDocent(next);
                                 localStorage.setItem("showDocent", String(next));
                             }}
-                            className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl border transition-all duration-300 ${showDocent ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                            className={`flex items-center gap-3 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl border transition-all duration-300 ${showDocent ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-white/5 border-white/10 text-gray-500'}`}
                         >
                             <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${showDocent ? 'bg-emerald-500' : 'bg-gray-700'}`}>
                                 <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300 ${showDocent ? 'left-4.5' : 'left-0.5'}`} />
@@ -581,7 +674,7 @@ export default function PatternPage() {
                     </div>
 
                     {/* 인기 검색 퀵 칩 */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-1 sm:pt-2">
                         <span className="text-xs text-gray-500 font-bold">인기 분석:</span>
                         {[
                             { label: "삼성전자", sym: "005930" },
@@ -599,14 +692,14 @@ export default function PatternPage() {
                                     setSearchInput(t.sym);
                                     handleSearch(t.sym);
                                 }}
-                                className="px-3 py-1 rounded-xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/30 text-gray-300 hover:text-emerald-300 text-xs font-bold transition-all"
+                                className="px-2.5 sm:px-3 py-1 rounded-xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-500/30 text-gray-300 hover:text-emerald-300 text-xs font-bold transition-all"
                             >
                                 #{t.label}
                             </button>
                         ))}
                     </div>
 
-                    <div className="relative max-w-xl mx-auto z-20 mt-4">
+                    <div className="relative max-w-xl mx-auto z-20 mt-3 sm:mt-4">
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl opacity-30 group-hover:opacity-100 transition duration-500 blur"></div>
                             <input
@@ -620,7 +713,7 @@ export default function PatternPage() {
                                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 placeholder="종목명 또는 티커 입력 (예: 삼성전자, 005930, AAPL)"
-                                className="relative w-full bg-zinc-950 border border-white/10 rounded-2xl py-4 md:py-5 pl-14 pr-32 text-white text-base md:text-lg font-bold focus:outline-none transition-colors"
+                                className="relative w-full bg-zinc-950 border border-white/10 rounded-2xl py-3.5 sm:py-4 md:py-5 pl-11 sm:pl-14 pr-24 sm:pr-32 text-white text-sm sm:text-base md:text-lg font-bold focus:outline-none transition-colors"
                                 disabled={loading || isLocked}
                             />
                             
@@ -647,8 +740,8 @@ export default function PatternPage() {
                                 </div>
                             )}
 
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 md:w-6 md:h-6 z-10" />
-                            <button onClick={() => handleSearch()} disabled={loading || isLocked} className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 md:py-2.5 rounded-xl text-sm md:text-base font-black transition-all disabled:opacity-50 z-10 shadow-lg shadow-emerald-600/30">
+                            <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 z-10" />
+                            <button onClick={() => handleSearch()} disabled={loading || isLocked} className="absolute right-2 top-1/2 -translate-y-1/2 bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 sm:px-5 py-2 md:py-2.5 rounded-xl text-xs sm:text-sm md:text-base font-black transition-all disabled:opacity-50 z-10 shadow-lg shadow-emerald-600/30">
                                 {isLocked ? <Lock className="w-5 h-5" /> : "분석하기"}
                             </button>
                         </div>
@@ -656,38 +749,297 @@ export default function PatternPage() {
                 </div>
 
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-28 text-emerald-400 space-y-5">
-                        <Loader2 className="w-14 h-14 animate-spin text-emerald-400" />
+                    <div className="flex flex-col items-center justify-center py-20 sm:py-28 text-emerald-400 space-y-5">
+                        <Loader2 className="w-12 h-12 sm:w-14 sm:h-14 animate-spin text-emerald-400" />
                         <div className="text-center space-y-1">
-                            <h3 className="text-xl md:text-2xl font-black text-white animate-pulse">빅데이터 차트 패턴 및 수급 분석 중...</h3>
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-black text-white animate-pulse">빅데이터 차트 패턴 및 수급 분석 중...</h3>
                             <p className="text-xs text-gray-400">과거 5개년 캔들 통계와 메이저 수급을 대조하고 있습니다.</p>
                         </div>
                     </div>
                 )}
 
                 {result && (
-                    <div id="capture-area" className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-6 bg-black pb-6 rounded-3xl">
+                    <div id="capture-area" className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-5 sm:space-y-6 bg-black pb-6 rounded-3xl">
                         
                         {/* 액션 버튼 */}
-                        <div className="flex gap-2.5 justify-end hide-on-capture mt-2">
+                        <div className="flex gap-2 justify-end hide-on-capture mt-1">
                             <button
                                 onClick={handleDownloadImage}
-                                className="bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md"
+                                className="bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-md"
                             >
-                                <Download className="w-4 h-4 text-emerald-400" />
-                                차트 분석 결과 저장
+                                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                                차트 저장
                             </button>
                             <KakaoShareButton 
                                 title={`${result?.stock_info?.symbol || '종목'} 프로 퀀트 차트 분석`} 
                                 description={result.weather?.comment || "과거 5개년 캔들 통계와 메이저 수급 분석 리포트를 확인해보세요."}
                                 url={`https://stock-trend-program.co.kr/pattern?q=${result?.stock_info?.symbol || ''}`}
-                                className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md"
-                                buttonText="카카오톡 공유"
+                                className="bg-[#FEE500] hover:bg-[#FEE500]/90 text-black px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-md"
+                                buttonText="카톡 공유"
                             />
                         </div>
 
-                        {/* 1. 패턴 분석 결과 & 4대 퀀트 통표 그리드 */}
-                        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-6 md:p-8 space-y-6 shadow-2xl">
+                        {/* 1. 프로페셔널 차트 & 거래량 섹션 (모바일 최상단 배치 + 확대/축소 + 터치 시세 전광판) */}
+                        <div className="rounded-3xl bg-zinc-900/95 border border-emerald-500/25 p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-5 shadow-2xl">
+                            {/* 상단 차트 컨트롤 */}
+                            <div className="flex flex-col gap-3 border-b border-white/10 pb-3.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1.5 bg-zinc-800/90 p-1 rounded-xl border border-white/10">
+                                        <button 
+                                            onClick={() => setChartType('candle')} 
+                                            className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartType === 'candle' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-gray-400 hover:text-white'}`}
+                                        >
+                                            🕯️ 캔들스틱
+                                        </button>
+                                        <button 
+                                            onClick={() => setChartType('line')} 
+                                            className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartType === 'line' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-gray-400 hover:text-white'}`}
+                                        >
+                                            📈 영역 라인
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                        {/* 지지·저항선 토글 버튼 */}
+                                        <button 
+                                            onClick={() => {
+                                                const next = !showSupportResistance;
+                                                setShowSupportResistance(next);
+                                                localStorage.setItem("showSupportResistance", String(next));
+                                            }}
+                                            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-black border transition-all ${
+                                                showSupportResistance 
+                                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-md shadow-emerald-500/10' 
+                                                    : 'bg-zinc-800/50 border-white/5 text-gray-400 hover:text-white'
+                                            }`}
+                                        >
+                                            <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span>지지·저항</span>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                                showSupportResistance ? 'bg-emerald-500 text-black' : 'bg-zinc-700 text-gray-400'
+                                            }`}>
+                                                {showSupportResistance ? 'ON' : 'OFF'}
+                                            </span>
+                                        </button>
+
+                                        {/* 모바일 차트 크게 보기 토글 */}
+                                        <button
+                                            onClick={() => setIsChartExpanded(!isChartExpanded)}
+                                            className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-black border transition-all ${
+                                                isChartExpanded
+                                                    ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
+                                                    : 'bg-zinc-800/60 border-white/10 text-gray-300 hover:text-white'
+                                            }`}
+                                        >
+                                            {isChartExpanded ? '⛶ 기본 크기' : '⛶ 크게 보기'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 봉 주기 & 모바일 봉 개수(확대 배율) 컨트롤 */}
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        {chartType === 'line' ? (
+                                            [
+                                                { label: '1일', value: '1d' },
+                                                { label: '1주일', value: '1주일' },
+                                                { label: '3개월', value: '3개월' },
+                                                { label: '1년', value: '1년' },
+                                                { label: '3년', value: '3년' },
+                                                { label: '5년', value: '5년' }
+                                            ].map((p) => (
+                                                <button 
+                                                    key={p.value} 
+                                                    onClick={() => setLinePeriod(p.value)} 
+                                                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition-all ${linePeriod === p.value ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'}`}
+                                                >
+                                                    {p.label}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <div className="relative">
+                                                    <select
+                                                        value={['1m','5m','30m','60m'].includes(candleInterval) ? candleInterval : 'default'}
+                                                        onChange={(e) => setCandleInterval(e.target.value as any)}
+                                                        className={`appearance-none px-2.5 sm:px-3.5 py-1.5 pr-6 rounded-lg text-xs font-black transition-all outline-none cursor-pointer ${
+                                                            ['1m','5m','30m','60m'].includes(candleInterval) 
+                                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border border-blue-500' 
+                                                            : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'
+                                                        }`}
+                                                    >
+                                                        <option value="default" disabled className="bg-zinc-900 text-gray-500">분봉 ▾</option>
+                                                        <option value="1m" className="bg-zinc-800 text-white">1분봉</option>
+                                                        <option value="5m" className="bg-zinc-800 text-white">5분봉</option>
+                                                        <option value="30m" className="bg-zinc-800 text-white">30분봉</option>
+                                                        <option value="60m" className="bg-zinc-800 text-white">1시간봉</option>
+                                                    </select>
+                                                    <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2">
+                                                        <svg className={`w-3 h-3 ${['1m','5m','30m','60m'].includes(candleInterval) ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                    </div>
+                                                </div>
+
+                                                {[
+                                                    { label: '일봉', value: '1d' },
+                                                    { label: '주봉', value: '1wk' },
+                                                    { label: '월봉', value: '1mo' }
+                                                ].map((i) => (
+                                                    <button 
+                                                        key={i.value} 
+                                                        onClick={() => setCandleInterval(i.value as any)} 
+                                                        className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition-all ${candleInterval === i.value ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'}`}
+                                                    >
+                                                        {i.label}
+                                                    </button>
+                                                ))}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* 캔들 확대 배율 버튼 (모바일 가독성 핵심) */}
+                                    {chartType === 'candle' && (
+                                        <div className="flex items-center gap-1 bg-zinc-950/90 p-1 rounded-xl border border-emerald-500/20 w-full sm:w-auto justify-between sm:justify-start">
+                                            <span className="text-[10px] font-extrabold text-emerald-400 px-2 shrink-0">🔍 화면 배율</span>
+                                            <div className="flex items-center gap-1">
+                                                {[
+                                                    { label: '30봉(확대)', count: 30 },
+                                                    { label: '45봉(추천)', count: 45 },
+                                                    { label: '90봉', count: 90 },
+                                                    { label: '전체', count: 0 },
+                                                ].map((z) => (
+                                                    <button
+                                                        key={z.count}
+                                                        onClick={() => setCandleZoomCount(z.count)}
+                                                        className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] font-black transition-all ${
+                                                            candleZoomCount === z.count
+                                                                ? 'bg-emerald-500 text-black shadow-sm'
+                                                                : 'text-gray-400 hover:text-white'
+                                                        }`}
+                                                    >
+                                                        {z.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 실시간 터치 봉 시세 · 이동평균선 HTS 전광판 (모바일에서 손가락에 가리지 않고 선명하게 확인) */}
+                            {activeBarInfo && (
+                                <div className="bg-zinc-950/90 border border-white/10 rounded-2xl p-2.5 sm:p-3.5 space-y-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 font-black text-[11px] font-mono">
+                                                📅 {new Date(activeBarInfo.item.date).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}
+                                            </span>
+                                            <span className="text-white font-black text-sm sm:text-base font-mono">
+                                                종가 {formatPrice(activeBarInfo.item.close)}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-mono">
+                                            <span><span className="text-gray-500 font-sans">시가</span> <b className="text-gray-200">{formatCompactAxisPrice(activeBarInfo.item.open)}</b></span>
+                                            <span><span className="text-gray-500 font-sans">고가</span> <b className="text-rose-400">{formatCompactAxisPrice(activeBarInfo.item.high)}</b></span>
+                                            <span><span className="text-gray-500 font-sans">저가</span> <b className="text-blue-400">{formatCompactAxisPrice(activeBarInfo.item.low)}</b></span>
+                                            <span><span className="text-gray-500 font-sans">거래량</span> <b className="text-amber-300">{(activeBarInfo.item.volume || 0).toLocaleString()}</b></span>
+                                        </div>
+                                    </div>
+                                    {chartType === 'candle' && (
+                                        <div className="grid grid-cols-4 gap-1.5 pt-1.5 border-t border-white/5 text-[10px] sm:text-xs font-mono">
+                                            <div className="flex items-center justify-between bg-zinc-900/80 px-2 py-1 rounded-lg">
+                                                <span className="text-[#22c55e] font-bold font-sans">5일</span>
+                                                <span className="text-white font-bold">{activeBarInfo.ma5 ? formatCompactAxisPrice(activeBarInfo.ma5) : '-'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-zinc-900/80 px-2 py-1 rounded-lg">
+                                                <span className="text-[#ef4444] font-bold font-sans">20일</span>
+                                                <span className="text-white font-bold">{activeBarInfo.ma20 ? formatCompactAxisPrice(activeBarInfo.ma20) : '-'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-zinc-900/80 px-2 py-1 rounded-lg">
+                                                <span className="text-[#f97316] font-bold font-sans">60일</span>
+                                                <span className="text-white font-bold">{activeBarInfo.ma60 ? formatCompactAxisPrice(activeBarInfo.ma60) : '-'}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-zinc-900/80 px-2 py-1 rounded-lg">
+                                                <span className="text-[#a855f7] font-bold font-sans">120일</span>
+                                                <span className="text-white font-bold">{activeBarInfo.ma120 ? formatCompactAxisPrice(activeBarInfo.ma120) : '-'}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 차트 렌더링 컨테이너 (모바일 가로 100% 풀폭 확장) */}
+                            <div className="space-y-2.5 relative -mx-1.5 sm:mx-0">
+                                {updating && (
+                                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 rounded-2xl flex items-center justify-center">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+                                            <span className="text-xs font-bold text-white">동기화 중...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="bg-zinc-950/90 rounded-2xl px-0.5 py-2 sm:p-4 border border-white/10" style={{ minHeight: `${chartHeight}px` }}>
+                                    {isMounted && (
+                                        <Chart
+                                            key={`chart-${chartType}-${candleInterval}-${candleZoomCount}-${showSupportResistance}-${isChartExpanded}-${isMobile}`}
+                                            options={chartOptions}
+                                            series={chartSeries}
+                                            type={chartType === 'line' ? 'area' : 'candlestick'}
+                                            height={chartHeight}
+                                        />
+                                    )}
+                                </div>
+                                <div className="bg-zinc-950/90 rounded-2xl px-0.5 py-1.5 sm:p-3 border border-white/10">
+                                    {isMounted && (
+                                        <Chart
+                                            key={`vol-${chartType}-${candleInterval}-${candleZoomCount}-${isMobile}`}
+                                            options={volumeOptions}
+                                            series={volumeSeries}
+                                            type="bar"
+                                            height={isMobile ? 95 : 120}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 지지·저항선 요약 카드 (초보자용 보기 편한 스냅샷) */}
+                            {result?.support_resistance && showSupportResistance && (
+                                <div className="bg-zinc-950/70 border border-white/5 rounded-2xl p-3.5 sm:p-5 space-y-3 shadow-inner">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+                                                <Shield className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-black text-white flex items-center gap-1.5">
+                                                    <span>기술적 지지 · 저항 구간</span>
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-gray-400 font-semibold">과거 60일 통계 기준</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
+                                                    과거 매물대와 캔들 패턴상 주가가 반등하거나 저항받았던 핵심 가격대입니다.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+                                            <div className="flex items-center justify-between sm:justify-start gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                                                <span className="text-[11px] text-gray-300 font-bold">지지선</span>
+                                                <span className="text-xs sm:text-sm font-black font-mono text-emerald-400">
+                                                    {formatPrice(result.support_resistance.support1)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between sm:justify-start gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/25">
+                                                <span className="text-[11px] text-gray-300 font-bold">저항선</span>
+                                                <span className="text-xs sm:text-sm font-black font-mono text-rose-400">
+                                                    {formatPrice(result.support_resistance.resistance1)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2. 패턴 분석 결과 & 4대 퀀트 지표 스냅샷 */}
+                        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-5 md:p-8 space-y-6 shadow-2xl">
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-white/5 pb-6">
                                 <div className="flex items-center gap-4">
                                     <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl shrink-0">
@@ -762,9 +1114,9 @@ export default function PatternPage() {
                             </div>
                         </div>
 
-                        {/* 2. 기술적 지표 종합 분석 브리핑 */}
+                        {/* 3. 기술적 지표 종합 분석 브리핑 */}
                         {showDocent && result.beginner_insight && (
-                            <div className="rounded-3xl p-6 md:p-8 bg-zinc-900/90 border border-white/10 space-y-6 shadow-2xl">
+                            <div className="rounded-3xl p-5 md:p-8 bg-zinc-900/90 border border-white/10 space-y-6 shadow-2xl">
                                 <div className="flex items-center gap-3 border-b border-white/5 pb-4">
                                     <div className="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
                                         <TrendingUp className="w-5 h-5 text-emerald-400" />
@@ -779,7 +1131,7 @@ export default function PatternPage() {
                                     </div>
                                 </div>
                                 
-                                <div className="bg-zinc-950/70 backdrop-blur-xl rounded-2xl p-6 border border-white/5 shadow-inner">
+                                <div className="bg-zinc-950/70 backdrop-blur-xl rounded-2xl p-5 md:p-6 border border-white/5 shadow-inner">
                                     <div 
                                         className="text-sm md:text-base text-gray-200 leading-relaxed font-medium" 
                                         dangerouslySetInnerHTML={{ 
@@ -804,9 +1156,9 @@ export default function PatternPage() {
                             </div>
                         )}
 
-                        {/* 3. 투자자별 메이저 수급 및 추정 평단가 */}
+                        {/* 4. 투자자별 메이저 수급 및 추정 평단가 */}
                         {result.whale && (
-                            <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-6 md:p-8 space-y-6 shadow-2xl">
+                            <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-5 md:p-8 space-y-6 shadow-2xl">
                                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
                                     <div className="flex items-center gap-2.5">
                                         <div className="p-2.5 bg-blue-500/20 rounded-xl border border-blue-500/30">
@@ -888,222 +1240,6 @@ export default function PatternPage() {
                                 </div>
                             </div>
                         )}
-
-                        {/* 4. 프로페셔널 차트 & 거래량 섹션 */}
-                        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-5 md:p-8 space-y-6 shadow-2xl">
-                            {/* 상단 차트 컨트롤 */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <div className="flex items-center gap-2 bg-zinc-800/80 p-1 rounded-xl border border-white/5">
-                                        <button 
-                                            onClick={() => setChartType('line')} 
-                                            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartType === 'line' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-gray-400 hover:text-white'}`}
-                                        >
-                                            📈 영역 라인
-                                        </button>
-                                        <button 
-                                            onClick={() => setChartType('candle')} 
-                                            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${chartType === 'candle' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-gray-400 hover:text-white'}`}
-                                        >
-                                            🕯️ 캔들스틱
-                                        </button>
-                                    </div>
-
-                                    {/* 지지·저항선 토글 버튼 */}
-                                    <button 
-                                        onClick={() => {
-                                            const next = !showSupportResistance;
-                                            setShowSupportResistance(next);
-                                            localStorage.setItem("showSupportResistance", String(next));
-                                        }}
-                                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black border transition-all ${
-                                            showSupportResistance 
-                                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-md shadow-emerald-500/10' 
-                                                : 'bg-zinc-800/50 border-white/5 text-gray-400 hover:text-white'
-                                        }`}
-                                    >
-                                        <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                                        <span>지지 · 저항선</span>
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
-                                            showSupportResistance ? 'bg-emerald-500 text-black' : 'bg-zinc-700 text-gray-400'
-                                        }`}>
-                                            {showSupportResistance ? 'ON' : 'OFF'}
-                                        </span>
-                                    </button>
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                    {chartType === 'line' ? (
-                                        [
-                                            { label: '1일', value: '1d' },
-                                            { label: '1주일', value: '1주일' },
-                                            { label: '3개월', value: '3개월' },
-                                            { label: '1년', value: '1년' },
-                                            { label: '3년', value: '3년' },
-                                            { label: '5년', value: '5년' }
-                                        ].map((p) => (
-                                            <button 
-                                                key={p.value} 
-                                                onClick={() => setLinePeriod(p.value)} 
-                                                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${linePeriod === p.value ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'}`}
-                                            >
-                                                {p.label}
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <div className="relative">
-                                                <select
-                                                    value={['1m','5m','30m','60m'].includes(candleInterval) ? candleInterval : 'default'}
-                                                    onChange={(e) => setCandleInterval(e.target.value as any)}
-                                                    className={`appearance-none px-3.5 py-1.5 pr-7 rounded-lg text-xs font-black transition-all outline-none cursor-pointer ${
-                                                        ['1m','5m','30m','60m'].includes(candleInterval) 
-                                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 border border-blue-500' 
-                                                        : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'
-                                                    }`}
-                                                >
-                                                    <option value="default" disabled className="bg-zinc-900 text-gray-500">분봉 ▾</option>
-                                                    <option value="1m" className="bg-zinc-800 text-white">1분봉</option>
-                                                    <option value="5m" className="bg-zinc-800 text-white">5분봉</option>
-                                                    <option value="30m" className="bg-zinc-800 text-white">30분봉</option>
-                                                    <option value="60m" className="bg-zinc-800 text-white">1시간봉</option>
-                                                </select>
-                                                <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                                                    <svg className={`w-3 h-3 ${['1m','5m','30m','60m'].includes(candleInterval) ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                </div>
-                                            </div>
-
-                                            {[
-                                                { label: '일봉', value: '1d' },
-                                                { label: '주봉', value: '1wk' },
-                                                { label: '월봉', value: '1mo' }
-                                            ].map((i) => (
-                                                <button 
-                                                    key={i.value} 
-                                                    onClick={() => setCandleInterval(i.value as any)} 
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${candleInterval === i.value ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-zinc-800/50 text-gray-400 hover:text-white border border-white/5'}`}
-                                                >
-                                                    {i.label}
-                                                </button>
-                                            ))}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 범례 */}
-                            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-400">
-                                {chartType === 'candle' ? (
-                                    <>
-                                        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#ef4444]" /><span>양봉</span></div>
-                                        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#3b82f6]" /><span>음봉</span></div>
-                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#22c55e]" /><span>5일선 (MA5)</span></div>
-                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#ef4444]" /><span>20일선 (MA20)</span></div>
-                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#f97316]" /><span>60일선 (MA60)</span></div>
-                                        <div className="flex items-center gap-1.5"><span className="h-1 w-3 rounded-full bg-[#a855f7]" /><span>120일선 (MA120)</span></div>
-                                    </>
-                                ) : (
-                                    <div className="flex items-center gap-1.5"><span className="w-3 h-1 rounded-full bg-emerald-400" /><span>종가 추세선</span></div>
-                                )}
-                                {showSupportResistance && result?.support_resistance && (
-                                    <>
-                                        <div className="flex items-center gap-1.5"><span className="h-0.5 w-3 border-b-2 border-dashed border-[#10b981]" /><span className="text-emerald-400">1차 지지선</span></div>
-                                        <div className="flex items-center gap-1.5"><span className="h-0.5 w-3 border-b-2 border-dashed border-[#f43f5e]" /><span className="text-rose-400">1차 저항선</span></div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* 지지·저항선 요약 카드 (초보자용 보기 편한 스냅샷) */}
-                            {result?.support_resistance && showSupportResistance && (
-                                <div className="bg-zinc-950/70 border border-white/5 rounded-2xl p-4 md:p-5 space-y-3 shadow-inner">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-                                                <Shield className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-black text-white flex items-center gap-1.5">
-                                                    <span>기술적 지지 · 저항 구간</span>
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-gray-400 font-semibold">과거 60일 통계 기준</span>
-                                                </div>
-                                                <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                                                    과거 매물대와 캔들 패턴상 주가가 반등하거나 저항받았던 핵심 가격대입니다.
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-                                            {/* 1차 지지선 카드 */}
-                                            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 shadow-sm">
-                                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                                <span className="text-[11px] text-gray-300 font-bold">1차 지지선</span>
-                                                <span className="text-xs md:text-sm font-black font-mono text-emerald-400">
-                                                    {formatPrice(result.support_resistance.support1)}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded">
-                                                    {result.support_resistance.support1_pct > 0 ? `+${result.support_resistance.support1_pct}%` : `${result.support_resistance.support1_pct}%`}
-                                                </span>
-                                            </div>
-                                            {/* 1차 저항선 카드 */}
-                                            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-500/10 border border-rose-500/25 shadow-sm">
-                                                <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                                                <span className="text-[11px] text-gray-300 font-bold">1차 저항선</span>
-                                                <span className="text-xs md:text-sm font-black font-mono text-rose-400">
-                                                    {formatPrice(result.support_resistance.resistance1)}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded">
-                                                    +{result.support_resistance.resistance1_pct}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {/* 초보자를 위한 1분 쉬운 개념 가이드 */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                                        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
-                                            <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                <span>🟢 지지선(Support) = 주가의 '바닥'</span>
-                                            </div>
-                                            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
-                                                주가가 내려올 때 <strong className="text-white font-bold">&quot;이 가격이면 싸다&quot;</strong>며 사려는 힘이 모여 튕겨 올라가는 <strong className="text-emerald-400 font-bold">바닥(트램펄린)</strong> 역할을 합니다.
-                                            </p>
-                                        </div>
-                                        <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/15">
-                                            <div className="flex items-center gap-1.5 text-xs font-black text-rose-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                                                <span>🔴 저항선(Resistance) = 주가의 '천장'</span>
-                                            </div>
-                                            <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
-                                                주가가 올라갈 때 과거에 샀던 사람들의 본전 매도 물량이 쏟아져 더 오르지 못하고 막히는 <strong className="text-rose-400 font-bold">천장(벽)</strong> 역할을 합니다.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* 법적 준수 안내문구 */}
-                                    <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-medium pt-1">
-                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
-                                        <span>본 지표는 수학적 알고리즘으로 산출된 기술적 보조선일 뿐이며, 특정 가격의 매수/매도 권유가 아닙니다.</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 차트 렌더링 컨테이너 */}
-                            <div className="space-y-4 relative">
-                                {updating && (
-                                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 rounded-2xl flex items-center justify-center">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-                                            <span className="text-xs font-bold text-white">동기화 중...</span>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="bg-zinc-950/80 rounded-2xl p-2 md:p-4 border border-white/5 min-h-[400px]">
-                                    {isMounted && <Chart key={`chart-${chartType}-${candleInterval}-${showSupportResistance}`} options={chartOptions} series={chartSeries} type={chartType === 'line' ? 'area' : 'candlestick'} height={400} />}
-                                </div>
-                                <div className="bg-zinc-950/80 rounded-2xl p-2 md:p-4 border border-white/5">
-                                    {isMounted && <Chart key={`vol-${chartType}-${candleInterval}`} options={volumeOptions} series={volumeSeries} type="bar" height={120} />}
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Kakao AdFit In-Feed Banner */}
                         <KakaoRevenueAd type="feed" />
