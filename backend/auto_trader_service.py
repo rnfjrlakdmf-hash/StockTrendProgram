@@ -40,14 +40,27 @@ KR_UNIVERSE = [
 ]
 
 US_UNIVERSE = [
-    {"symbol": "SOXL", "name": "SOXL (미국 반도체 3배 ETF)", "sector": "미국 AI 반도체 ETF ($30대)", "tier": "ETF_FAST"},
-    {"symbol": "TQQQ", "name": "TQQQ (미국 나스닥100 3배 ETF)", "sector": "미국 나스닥 고탄력 ETF ($70대)", "tier": "ETF_FAST"},
-    {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "미국 AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM"},
-    {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "미국 AI 반도체 대장 ($120대)", "tier": "BLUECHIP"},
-    {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "미국 자율주행/로봇", "tier": "BLUECHIP"},
-    {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "미국 온디바이스 AI", "tier": "BLUECHIP"},
-    {"symbol": "MSFT", "name": "마이크로소프트", "sector": "미국 클라우드 AI", "tier": "BLUECHIP"},
-    {"symbol": "META", "name": "메타 (Meta)", "sector": "미국 AI 광고/플랫폼", "tier": "BLUECHIP"},
+    # [1] 미국 고탄력 핵심 ETF ($30~$70대 · 빠른 익절 회전)
+    {"symbol": "SOXL", "name": "SOXL (미국 반도체 3배 ETF)", "sector": "미국 AI 반도체 ETF ($30대)", "tier": "ETF_FAST", "exchange": "AMEX"},
+    {"symbol": "TQQQ", "name": "TQQQ (미국 나스닥100 3배 ETF)", "sector": "미국 나스닥 고탄력 ETF ($70대)", "tier": "ETF_FAST", "exchange": "NASD"},
+    # [2] 🚀 해외 유망 신생·차세대 혁신 성장주 ($3~$30대 · 양자컴퓨터/우주항공/소형원전/AI로봇 · 1만~4만원대 소액 매입 & 폭등 탄력!)
+    {"symbol": "IONQ", "name": "아이온큐 (IonQ · 양자컴퓨팅)", "sector": "🚀 해외신생 · 양자컴퓨터 대장 ($10~$30대)", "tier": "US_EMERGING", "exchange": "NYSE"},
+    {"symbol": "RKLB", "name": "로켓랩 (Rocket Lab · 우주발사체)", "sector": "🚀 해외신생 · 민간 우주로켓 ($10~$20대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "OKLO", "name": "오클로 (Oklo · 오픈AI 소형원전)", "sector": "🚀 해외신생 · AI 차세대 SMR 원전 ($15~$25대)", "tier": "US_EMERGING", "exchange": "NYSE"},
+    {"symbol": "SOUN", "name": "사운드하운드 AI (음성인식 AI)", "sector": "🚀 해외신생 · 엔비디아 투자 음성AI ($5~$15대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "ASTS", "name": "AST 스페이스모바일 (우주통신)", "sector": "🚀 해외신생 · 위성 스마트폰 직결 ($20대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "JOBY", "name": "조비 에비에이션 (UAM 에어택시)", "sector": "🚀 해외신생 · 도심항공 모빌리티 ($6~$10대)", "tier": "US_EMERGING", "exchange": "NYSE"},
+    {"symbol": "SERV", "name": "서브 로보틱스 (자율주행 배달로봇)", "sector": "🚀 해외신생 · 엔비디아 자율주행 로봇 ($10대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "LUNR", "name": "인튜이티브 머신스 (NASA 달탐사)", "sector": "🚀 해외신생 · NASA 달 착륙선 ($8~$15대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "RGTI", "name": "리게티 컴퓨팅 (초전도 양자칩)", "sector": "🚀 해외신생 · 초전도 양자컴퓨터 ($3~$10대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "BBAI", "name": "빅베어 AI (미 국방 AI 솔루션)", "sector": "🚀 해외신생 · 국방 비전 AI ($3~$8대)", "tier": "US_EMERGING", "exchange": "NYSE"},
+    # [3] 미국 나스닥/뉴욕 대표 빅테크 주도주
+    {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "미국 AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM", "exchange": "NYSE"},
+    {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "미국 AI 반도체 대장 ($120대)", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "미국 자율주행/로봇", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "미국 온디바이스 AI", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "MSFT", "name": "마이크로소프트", "sector": "미국 클라우드 AI", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "META", "name": "메타 (Meta)", "sector": "미국 AI 광고/플랫폼", "tier": "BLUECHIP", "exchange": "NASD"},
 ]
 
 
@@ -192,13 +205,16 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
         base += 5.0
         reasons.append("바닥권 거래량 유입 포착")
 
-    # 2) 섹터 모멘텀 및 1만~5만 원대 고탄력 알짜주 가산점 (빠른 익절 회전율 & 소액 매수 호환성)
+    # 2) 섹터 모멘텀 및 1만~5만 원대 고탄력 알짜주 · 해외 유망 신생기업 가산점
     sector = item.get("sector", "")
     tier = item.get("tier", "BLUECHIP")
-    if any(k in sector for k in ["AI", "HBM", "방산", "전력", "로봇", "밸류업", "원전", "수출", "레버리지"]):
+    if any(k in sector for k in ["AI", "HBM", "방산", "전력", "로봇", "밸류업", "원전", "수출", "레버리지", "양자", "우주", "해외신생"]):
         base += 8.5
         reasons.append(f"[{sector}] 주도 섹터 스마트머니 집중")
-    if tier in ("MID_MOMENTUM", "SMALL_STRONG", "ETF_FAST"):
+    if tier == "US_EMERGING":
+        base += 6.5
+        reasons.append("🚀 해외 유망 신생·혁신 성장주 급등 시그널 포착")
+    elif tier in ("MID_MOMENTUM", "SMALL_STRONG", "ETF_FAST"):
         base += 4.5
         reasons.append("1만~5만원대 고탄력 빠른 회전 종목")
 
@@ -312,7 +328,8 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool,
             tr_id = "TTTT1002U" if is_buy else "TTTT1006U"
         else:
             tr_id = "VTTT1002U" if is_buy else "VTTT1006U"
-        excg_cd = "AMEX" if symbol in ("SOXL",) else "NASD"
+        nyse_symbols = {"IONQ", "OKLO", "JOBY", "ACHR", "BBAI", "PLTR", "RDW", "PL", "AI"}
+        excg_cd = "NYSE" if symbol in nyse_symbols else ("AMEX" if symbol in ("SOXL",) else "NASD")
         headers = {
             "content-type": "application/json; charset=utf-8",
             "authorization": f"Bearer {token}",
