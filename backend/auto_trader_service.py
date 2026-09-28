@@ -112,10 +112,31 @@ def load_state() -> Dict[str, Any]:
                     state["config"].update(saved.get("config", {}))
                     state["account"].update(saved.get("account", {}))
                     state["positions"] = saved.get("positions", [])
+                    state["paper_positions_backup"] = saved.get("paper_positions_backup", [])
                     state["trade_logs"] = saved.get("trade_logs", [])[:100]
                     state["candidates"] = saved.get("candidates", [])
                     state["last_cycle_at"] = saved.get("last_cycle_at", "")
                     state["kis_token"] = saved.get("kis_token", {"access_token": "", "expires_at": 0})
+                    # KIS_REAL 모드일 때 실제 한투 주문 확인(kis_order_confirmed / [한투주문 완료])이 없는 가상 매수분이 섞여 있으면 즉시 분리 및 예수금 복원
+                    if state["config"].get("mode") == "KIS_REAL":
+                        real_only = [
+                            p for p in state["positions"]
+                            if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+                        ]
+                        unconfirmed = [
+                            p for p in state["positions"]
+                            if not (p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", "")))
+                        ]
+                        if unconfirmed:
+                            existing_paper_syms = {bp.get("symbol") for bp in state["paper_positions_backup"]}
+                            for up in unconfirmed:
+                                up["trade_mode"] = "AI_PAPER"
+                                if up.get("symbol") not in existing_paper_syms:
+                                    state["paper_positions_backup"].append(up)
+                            state["positions"] = real_only
+                            cap = int(state["config"].get("max_total_invest_krw", 100000) or 100000)
+                            if not real_only:
+                                state["account"]["cash_krw"] = cap
     except Exception as e:
         print(f"[AutoTrader] load_state error: {e}")
     return state
