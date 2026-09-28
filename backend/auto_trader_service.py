@@ -828,6 +828,12 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
     scored_candidates = []
     held_symbols = {p["symbol"] for p in state["positions"]}
+    max_pos = int(cfg.get("max_positions", 5))
+    order_budget = int(cfg.get("order_amount_krw", 2000000))
+    max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
+    min_score = int(cfg.get("min_ai_score", 68))
+    effective_single_limit = min(order_budget, max_invest_cap) if max_invest_cap > 0 else order_budget
+
     for item in universe:
         q = _fetch_live_quote(item["symbol"])
         scored = _compute_ai_quant_score(item, q)
@@ -839,16 +845,21 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             buyer = scan_hit.get("majorBuyer", "외인·기관")
             scored["ai_score"] = min(99, scored["ai_score"] + 10)
             scored["reason"] = f"🔥[장마감 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
+
+        # [소액 한도 맞춤 최적화] 10만~30만 원 등 소액 한도 설정 시, 1주 가격이 한도 안에 들어오는 알짜 주도주/ETF에 가산점 부여
+        unit_krw = scored["price"] * (fx_rate if scored["is_us"] else 1.0)
+        if 0 < effective_single_limit <= 300000:
+            if 0 < unit_krw <= effective_single_limit:
+                scored["ai_score"] = min(99, scored["ai_score"] + 8)
+                scored["reason"] = f"💰[소액한도 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
+            elif max_invest_cap > 0 and unit_krw > max_invest_cap:
+                # 총 한도(예: 10만원)보다 1주 가격이 비싼 종목은 후보 후순위로 배치
+                scored["ai_score"] = max(10, scored["ai_score"] - 25)
+
         scored_candidates.append(scored)
 
     scored_candidates.sort(key=lambda x: x["ai_score"], reverse=True)
     state["candidates"] = scored_candidates[:8]
-
-    # 3. 빈 슬롯이 있고 예산이 충분하면 1순위 주도주 자동 매수 실행
-    max_pos = int(cfg.get("max_positions", 5))
-    order_budget = int(cfg.get("order_amount_krw", 2000000))
-    max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
-    min_score = int(cfg.get("min_ai_score", 68))
 
     # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
     avg_market_chg = (

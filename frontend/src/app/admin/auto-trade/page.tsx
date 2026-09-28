@@ -660,20 +660,23 @@ export default function AdminAutoTradePage() {
                 {/* 빠른 한도 금액 프리셋 버튼 */}
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { label: "100만원", val: 1000000 },
-                    { label: "300만원", val: 3000000 },
-                    { label: "500만원", val: 5000000 },
-                    { label: "1,000만원", val: 10000000 },
-                    { label: "2,000만원", val: 20000000 },
-                    { label: "한도 제한 없음", val: 0 },
+                    { label: "🔥 10만원 (소액 시작)", val: 100000, pos: 2, order: 50000 },
+                    { label: "30만원", val: 300000, pos: 3, order: 100000 },
+                    { label: "50만원", val: 500000, pos: 3, order: 160000 },
+                    { label: "100만원", val: 1000000, pos: 4, order: 250000 },
+                    { label: "300만원", val: 3000000, pos: 5, order: 600000 },
+                    { label: "500만원", val: 5000000, pos: 5, order: 1000000 },
+                    { label: "1,000만원", val: 10000000, pos: 5, order: 2000000 },
+                    { label: "한도 제한 없음", val: 0, pos: 5, order: 2000000 },
                   ].map((preset) => (
                     <button
                       key={preset.val}
                       type="button"
                       onClick={() => {
                         setMaxTotalInvestKrw(preset.val);
-                        if (preset.val > 0 && maxPositions > 0) {
-                          setOrderAmountKrw(Math.floor(preset.val / maxPositions));
+                        if (preset.val > 0) {
+                          setMaxPositions(preset.pos);
+                          setOrderAmountKrw(preset.order);
                         }
                       }}
                       className={`px-2.5 py-1.5 rounded-xl text-[11px] font-black border transition-all ${
@@ -696,7 +699,7 @@ export default function AdminAutoTradePage() {
                       type="number"
                       value={maxTotalInvestKrw}
                       onChange={(e) => setMaxTotalInvestKrw(Math.max(0, Number(e.target.value)))}
-                      step={500000}
+                      step={50000}
                       className="w-full bg-zinc-950 border border-blue-500/40 rounded-xl px-3 py-2 text-xs font-mono font-black text-blue-300"
                     />
                   </div>
