@@ -9,31 +9,44 @@ from typing import Dict, Any, List, Optional
 KST = timezone(timedelta(hours=9))
 STATE_FILE = os.path.join(os.path.dirname(__file__), "auto_trader_state.json")
 
-# 우량 유동성 주도주 유니버스 (동전주/관리종목 원천 배제)
+# 전 가격대 맞춤 AI 주도주 유니버스 (1만~5만 원대 고탄력 알짜주/ETF + 대형 주도주 완비)
 KR_UNIVERSE = [
-    {"symbol": "005930", "name": "삼성전자", "sector": "반도체"},
-    {"symbol": "000660", "name": "SK하이닉스", "sector": "AI HBM 반도체"},
-    {"symbol": "012450", "name": "한화에어로스페이스", "sector": "K-방산/우주"},
-    {"symbol": "267260", "name": "HD현대일렉트릭", "sector": "AI 전력기기"},
-    {"symbol": "196170", "name": "알테오젠", "sector": "바이오 플랫폼"},
-    {"symbol": "005380", "name": "현대차", "sector": "모빌리티/로봇"},
-    {"symbol": "000270", "name": "기아", "sector": "모빌리티/밸류업"},
-    {"symbol": "035420", "name": "NAVER", "sector": "AI 소프트웨어"},
-    {"symbol": "034020", "name": "두산에너빌리티", "sector": "SMR 원전"},
-    {"symbol": "042700", "name": "한미반도체", "sector": "HBM 장비"},
-    {"symbol": "007660", "name": "이수페타시스", "sector": "AI 가속기 기판"},
-    {"symbol": "105560", "name": "KB금융", "sector": "금융 밸류업"},
-    {"symbol": "068270", "name": "셀트리온", "sector": "바이오시밀러"},
-    {"symbol": "277810", "name": "레인보우로보틱스", "sector": "휴머노이드 로봇"},
+    # [1] 1만~5만 원대 탄력 좋은 알짜 주도주 & 강소 대장주 (소액으로도 다수 매입 가능 & 하루 +4%~10% 빠른 익절 탄력)
+    {"symbol": "034020", "name": "두산에너빌리티", "sector": "SMR 원전 대장 (2만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "007660", "name": "이수페타시스", "sector": "AI 가속기 기판 (4만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "005930", "name": "삼성전자", "sector": "AI 메모리 반도체 (6만원대)", "tier": "BLUECHIP"},
+    {"symbol": "011200", "name": "HMM", "sector": "글로벌 해운/물류 (1만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "015760", "name": "한국전력", "sector": "AI 데이터센터 전력망 (2만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "035720", "name": "카카오", "sector": "AI 플랫폼/메신저 (3만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "003490", "name": "대한항공", "sector": "항공/방산 우주 (2만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "214150", "name": "클래시스", "sector": "K-미용의료기기 수출 (4만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "035900", "name": "JYP Ent.", "sector": "글로벌 K-팝 엔터 (5만원대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "047040", "name": "대우건설", "sector": "원전/해외플랜트 (4천원대)", "tier": "SMALL_STRONG"},
+    # [2] 1만~2만 원대 고탄력 핵심 테마 ETF (단돈 1~2만 원 자투리 예수금으로도 즉시 매입 가능!)
+    {"symbol": "395160", "name": "TIGER AI반도체핵심공정", "sector": "AI 반도체 소부장 ETF (1만원대)", "tier": "ETF_FAST"},
+    {"symbol": "122630", "name": "KODEX 레버리지", "sector": "코스피200 2배 탄력 (1만원대)", "tier": "ETF_FAST"},
+    {"symbol": "381170", "name": "TIGER 미국테크TOP10", "sector": "미국 빅테크 묶음 (2만원대)", "tier": "ETF_FAST"},
+    # [3] 10만 원 이상 대형 주도주 (시드머니가 넉넉할 때 함께 편입)
+    {"symbol": "000270", "name": "기아", "sector": "모빌리티/밸류업 (10만원대)", "tier": "BLUECHIP"},
+    {"symbol": "105560", "name": "KB금융", "sector": "금융 밸류업 대장 (9만원대)", "tier": "BLUECHIP"},
+    {"symbol": "042700", "name": "한미반도체", "sector": "HBM 핵심장비 (10만원대)", "tier": "BLUECHIP"},
+    {"symbol": "000660", "name": "SK하이닉스", "sector": "AI HBM 반도체", "tier": "BLUECHIP"},
+    {"symbol": "005380", "name": "현대차", "sector": "모빌리티/로봇", "tier": "BLUECHIP"},
+    {"symbol": "035420", "name": "NAVER", "sector": "AI 소프트웨어", "tier": "BLUECHIP"},
+    {"symbol": "068270", "name": "셀트리온", "sector": "바이오시밀러", "tier": "BLUECHIP"},
+    {"symbol": "012450", "name": "한화에어로스페이스", "sector": "K-방산/우주", "tier": "BLUECHIP"},
+    {"symbol": "267260", "name": "HD현대일렉트릭", "sector": "AI 변압기/전력", "tier": "BLUECHIP"},
+    {"symbol": "196170", "name": "알테오젠", "sector": "바이오 플랫폼", "tier": "BLUECHIP"},
 ]
 
 US_UNIVERSE = [
-    {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "AI 반도체"},
-    {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "자율주행/로봇"},
-    {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "온디바이스 AI"},
-    {"symbol": "MSFT", "name": "마이크로소프트", "sector": "클라우드 AI"},
-    {"symbol": "META", "name": "메타 (Meta)", "sector": "AI 광고/플랫폼"},
-    {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 국방 소프트웨어"},
+    {"symbol": "SOXL", "name": "SOXL (미국 반도체 3배)", "sector": "AI 반도체 고탄력 ($30대)", "tier": "ETF_FAST"},
+    {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "AI 반도체 대장 ($120대)", "tier": "BLUECHIP"},
+    {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "자율주행/로봇", "tier": "BLUECHIP"},
+    {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "온디바이스 AI", "tier": "BLUECHIP"},
+    {"symbol": "MSFT", "name": "마이크로소프트", "sector": "클라우드 AI", "tier": "BLUECHIP"},
+    {"symbol": "META", "name": "메타 (Meta)", "sector": "AI 광고/플랫폼", "tier": "BLUECHIP"},
 ]
 
 
@@ -178,22 +191,27 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
         base += 5.0
         reasons.append("바닥권 거래량 유입 포착")
 
-    # 2) 섹터 모멘텀 가산점
+    # 2) 섹터 모멘텀 및 1만~5만 원대 고탄력 알짜주 가산점 (빠른 익절 회전율 & 소액 매수 호환성)
     sector = item.get("sector", "")
-    if any(k in sector for k in ["AI", "HBM", "방산", "전력", "로봇", "밸류업"]):
+    tier = item.get("tier", "BLUECHIP")
+    if any(k in sector for k in ["AI", "HBM", "방산", "전력", "로봇", "밸류업", "원전", "수출", "레버리지"]):
         base += 8.5
         reasons.append(f"[{sector}] 주도 섹터 스마트머니 집중")
+    if tier in ("MID_MOMENTUM", "SMALL_STRONG", "ETF_FAST"):
+        base += 4.5
+        reasons.append("1만~5만원대 고탄력 빠른 회전 종목")
 
     # 3) 시간대별 결정론적 미세 가중치 (매 사이클마다 자연스러운 순위 갱신)
     now_min = int(time.time() // 60)
     symbol_hash = sum(ord(c) for c in item["symbol"])
     jitter = ((now_min + symbol_hash) % 9) - 3
-    final_score = int(max(45, min(96, round(base + jitter))))
+    final_score = int(max(45, min(97, round(base + jitter))))
 
     return {
         "symbol": item["symbol"],
         "name": item["name"],
         "sector": sector,
+        "tier": tier,
         "price": price,
         "change_pct": round(chg, 2),
         "ai_score": final_score,
@@ -464,7 +482,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     order_budget = int(cfg.get("order_amount_krw", 2000000))
     min_score = int(cfg.get("min_ai_score", 68))
 
-    if (cfg.get("enabled") or force_buy) and len(state["positions"]) < max_pos and acct["cash_krw"] >= 100000:
+    if (cfg.get("enabled") or force_buy) and len(state["positions"]) < max_pos and acct["cash_krw"] >= 5000:
         for cand in scored_candidates:
             if len(state["positions"]) >= max_pos:
                 break
