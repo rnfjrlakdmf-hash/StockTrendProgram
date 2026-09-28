@@ -260,29 +260,51 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
         print(f"[AutoTrader] Telegram alert error: {e}")
 
     # 2. 대표님 관리자 계정(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 전용 FCM 토큰 조회 및 실시간 푸시 발송
-    admin_uids = ["110418985320259217419", "108559801745912003405"]
+    admin_uids = ["110418985320259217419", "108559801745912003405", "rnfjr@gmail.com", "rnfjrlakdmf@gmail.com"]
     admin_tokens = []
     fcm_sent_count = 0
     try:
         from db_manager import get_db_connection, get_user_fcm_tokens
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id FROM users WHERE lower(email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com') OR is_admin = 1"
-        )
-        for row in cur.fetchall():
-            uid_val = str(row[0])
-            if uid_val and uid_val not in admin_uids:
-                admin_uids.append(uid_val)
-        conn.close()
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT DISTINCT user_id FROM fcm_tokens WHERE user_id IN ('110418985320259217419', '108559801745912003405', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')"
+            )
+            for row in cur.fetchall():
+                uid_val = str(row[0])
+                if uid_val and uid_val not in admin_uids:
+                    admin_uids.append(uid_val)
+            conn.close()
+        except Exception:
+            pass
 
         for uid in admin_uids:
-            for t_obj in get_user_fcm_tokens(uid):
-                tok = t_obj.get("token") if isinstance(t_obj, dict) else str(t_obj)
-                if tok and tok not in admin_tokens:
-                    admin_tokens.append(tok)
+            try:
+                for t_obj in get_user_fcm_tokens(uid):
+                    tok = t_obj.get("token") if isinstance(t_obj, dict) else str(t_obj)
+                    if tok and tok not in admin_tokens:
+                        admin_tokens.append(tok)
+            except Exception:
+                pass
     except Exception as e:
-        print(f"[AutoTrader] Admin FCM token lookup warning: {e}")
+        print(f"[AutoTrader] SQLite FCM token lookup warning: {e}")
+
+    # Firestore fcm_tokens / users 컬렉션에서도 관리자 토큰 보강 조회
+    try:
+        from firebase_admin import firestore
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        db = firestore.client()
+        for uid in admin_uids:
+            doc = db.collection("fcm_tokens").document(uid).get()
+            if doc.exists:
+                d = doc.to_dict() or {}
+                for t in (d.get("tokens") or ([d.get("token")] if d.get("token") else [])):
+                    if t and t not in admin_tokens:
+                        admin_tokens.append(t)
+    except Exception:
+        pass
 
     # 3. Firebase FCM 멀티캐스트 실시간 푸시 전송 (클릭 시 /alerts?tab=auto_trade 이동)
     if admin_tokens:
