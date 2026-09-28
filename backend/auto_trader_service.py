@@ -584,14 +584,18 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool,
             "ORD_SVR_DVSN_CD": "0",
             "ORD_DVSN": "00",
         }
-        try:
-            r = requests.post(f"{base_url}/uapi/overseas-stock/v1/trading/order", headers=headers, json=body, timeout=8)
-            data = r.json()
-            if data.get("rt_cd") == "0":
-                return {"ok": True, "msg": data.get("msg1", "KIS 해외주식/ETF 주문 성공")}
-            return {"ok": False, "msg": data.get("msg1", "KIS 해외주문 응답 오류")}
-        except Exception as e:
-            return {"ok": False, "msg": f"KIS 해외주문 통신 에러: {e}"}
+        last_err = "KIS 해외주문 응답 오류"
+        for prdt_cd in ([acnt_prdt_cd, "01"] if acnt_prdt_cd != "01" else ["01"]):
+            body["ACNT_PRDT_CD"] = prdt_cd
+            try:
+                r = requests.post(f"{base_url}/uapi/overseas-stock/v1/trading/order", headers=headers, json=body, timeout=8)
+                data = r.json()
+                if data.get("rt_cd") == "0":
+                    return {"ok": True, "msg": data.get("msg1", f"KIS 해외주식/ETF 주문 성공 ({cano}-{prdt_cd})")}
+                last_err = data.get("msg1", "KIS 해외주문 응답 오류")
+            except Exception as e:
+                last_err = f"KIS 해외주문 통신 에러: {e}"
+        return {"ok": False, "msg": last_err}
 
     # [B] 한국 국내주식 & 국내 상장 ETF (코스피/코스닥) 주문
     if mode == "KIS_REAL":
@@ -614,14 +618,18 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool,
         "ORD_UNPR": "0",
         "ORD_QTY": str(qty),
     }
-    try:
-        r = requests.post(f"{base_url}/uapi/domestic-stock/v1/trading/order-cash", headers=headers, json=body, timeout=8)
-        data = r.json()
-        if data.get("rt_cd") == "0":
-            return {"ok": True, "msg": data.get("msg1", "KIS 국내주문 성공")}
-        return {"ok": False, "msg": data.get("msg1", "KIS 국내주문 응답 오류")}
-    except Exception as e:
-        return {"ok": False, "msg": f"KIS 국내주문 통신 에러: {e}"}
+    last_err = "KIS 국내주문 응답 오류"
+    for prdt_cd in ([acnt_prdt_cd, "01"] if acnt_prdt_cd != "01" else ["01"]):
+        body["ACNT_PRDT_CD"] = prdt_cd
+        try:
+            r = requests.post(f"{base_url}/uapi/domestic-stock/v1/trading/order-cash", headers=headers, json=body, timeout=8)
+            data = r.json()
+            if data.get("rt_cd") == "0":
+                return {"ok": True, "msg": data.get("msg1", f"KIS 국내주문 성공 ({cano}-{prdt_cd})")}
+            last_err = data.get("msg1", "KIS 국내주문 응답 오류")
+        except Exception as e:
+            last_err = f"KIS 국내주문 통신 에러: {e}"
+    return {"ok": False, "msg": last_err}
 
 
 # ─────────────────────────────────────────────────────────────
