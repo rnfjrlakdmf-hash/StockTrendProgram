@@ -40,13 +40,14 @@ KR_UNIVERSE = [
 ]
 
 US_UNIVERSE = [
-    {"symbol": "SOXL", "name": "SOXL (미국 반도체 3배)", "sector": "AI 반도체 고탄력 ($30대)", "tier": "ETF_FAST"},
-    {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM"},
-    {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "AI 반도체 대장 ($120대)", "tier": "BLUECHIP"},
-    {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "자율주행/로봇", "tier": "BLUECHIP"},
-    {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "온디바이스 AI", "tier": "BLUECHIP"},
-    {"symbol": "MSFT", "name": "마이크로소프트", "sector": "클라우드 AI", "tier": "BLUECHIP"},
-    {"symbol": "META", "name": "메타 (Meta)", "sector": "AI 광고/플랫폼", "tier": "BLUECHIP"},
+    {"symbol": "SOXL", "name": "SOXL (미국 반도체 3배 ETF)", "sector": "미국 AI 반도체 ETF ($30대)", "tier": "ETF_FAST"},
+    {"symbol": "TQQQ", "name": "TQQQ (미국 나스닥100 3배 ETF)", "sector": "미국 나스닥 고탄력 ETF ($70대)", "tier": "ETF_FAST"},
+    {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "미국 AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM"},
+    {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "미국 AI 반도체 대장 ($120대)", "tier": "BLUECHIP"},
+    {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "미국 자율주행/로봇", "tier": "BLUECHIP"},
+    {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "미국 온디바이스 AI", "tier": "BLUECHIP"},
+    {"symbol": "MSFT", "name": "마이크로소프트", "sector": "미국 클라우드 AI", "tier": "BLUECHIP"},
+    {"symbol": "META", "name": "메타 (Meta)", "sector": "미국 AI 광고/플랫폼", "tier": "BLUECHIP"},
 ]
 
 
@@ -55,7 +56,7 @@ def _default_state() -> Dict[str, Any]:
         "config": {
             "enabled": True,
             "mode": "AI_PAPER",  # AI_PAPER | KIS_VIRTUAL | KIS_REAL
-            "market_target": "KR",  # KR | US | ALL
+            "market_target": "ALL",  # ALL(국내주식+해외주식+국내외ETF 24시간 풀가동) | KR | US
             "initial_capital_krw": 10000000,
             "order_amount_krw": 2000000,
             "max_positions": 5,
@@ -291,8 +292,8 @@ def _get_kis_token(state: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool) -> Dict[str, Any]:
-    """한국투자증권 국내주식 현금 시장가 주문 (모의/실전 자동 분기)"""
+def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool, price: float = 0.0) -> Dict[str, Any]:
+    """한국투자증권 국내주식/ETF 및 해외(미국)주식/ETF 현금 자동 주문 (모의/실전 자동 분기)"""
     cfg = state.get("config", {})
     mode = cfg.get("mode", "KIS_VIRTUAL")
     token = _get_kis_token(state)
@@ -303,6 +304,42 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool)
     cano = acct_raw[:8]
     acnt_prdt_cd = acct_raw[8:10] if len(acct_raw) >= 10 else "01"
     base_url = _get_kis_base_url(mode)
+    is_us = not symbol.isdigit()
+
+    # [A] 미국 해외주식 & 미국 ETF (NVDA, SOXL, TQQQ, PLTR, TSLA 등) 주문
+    if is_us:
+        if mode == "KIS_REAL":
+            tr_id = "TTTT1002U" if is_buy else "TTTT1006U"
+        else:
+            tr_id = "VTTT1002U" if is_buy else "VTTT1006U"
+        excg_cd = "AMEX" if symbol in ("SOXL",) else "NASD"
+        headers = {
+            "content-type": "application/json; charset=utf-8",
+            "authorization": f"Bearer {token}",
+            "appkey": (cfg.get("kis_app_key") or os.environ.get("KIS_APP_KEY", "")).strip(),
+            "appsecret": (cfg.get("kis_app_secret") or os.environ.get("KIS_APP_SECRET", "")).strip(),
+            "tr_id": tr_id,
+        }
+        body = {
+            "CANO": cano,
+            "ACNT_PRDT_CD": acnt_prdt_cd,
+            "OVRS_EXCG_CD": excg_cd,
+            "PDNO": symbol,
+            "ORD_QTY": str(qty),
+            "OVRS_ORD_UNPR": str(round(price, 2) if price > 0 else "0"),
+            "ORD_SVR_DVSN_CD": "0",
+            "ORD_DVSN": "00",
+        }
+        try:
+            r = requests.post(f"{base_url}/uapi/overseas-stock/v1/trading/order", headers=headers, json=body, timeout=8)
+            data = r.json()
+            if data.get("rt_cd") == "0":
+                return {"ok": True, "msg": data.get("msg1", "KIS 해외주식/ETF 주문 성공")}
+            return {"ok": False, "msg": data.get("msg1", "KIS 해외주문 응답 오류")}
+        except Exception as e:
+            return {"ok": False, "msg": f"KIS 해외주문 통신 에러: {e}"}
+
+    # [B] 한국 국내주식 & 국내 상장 ETF (코스피/코스닥) 주문
     if mode == "KIS_REAL":
         tr_id = "TTTC0802U" if is_buy else "TTTC0801U"
     else:
@@ -327,10 +364,10 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool)
         r = requests.post(f"{base_url}/uapi/domestic-stock/v1/trading/order-cash", headers=headers, json=body, timeout=8)
         data = r.json()
         if data.get("rt_cd") == "0":
-            return {"ok": True, "msg": data.get("msg1", "KIS 주문 성공")}
-        return {"ok": False, "msg": data.get("msg1", "KIS 주문 응답 오류")}
+            return {"ok": True, "msg": data.get("msg1", "KIS 국내주문 성공")}
+        return {"ok": False, "msg": data.get("msg1", "KIS 국내주문 응답 오류")}
     except Exception as e:
-        return {"ok": False, "msg": f"KIS 주문 통신 에러: {e}"}
+        return {"ok": False, "msg": f"KIS 국내주문 통신 에러: {e}"}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -420,9 +457,9 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             sell_reason = f"기계적 손절선 작동 ({pnl_pct:.2f}% <= -{abs(sl_pct)}%)"
 
         if sell_reason and (cfg.get("enabled") or force_buy):
-            # 자동 매도 체결!
-            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and not pos.get("is_us"):
-                _place_kis_order(state, sym, pos["qty"], is_buy=False)
+            # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
+            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
+                _place_kis_order(state, sym, pos["qty"], is_buy=False, price=live_price)
 
             proceeds_krw = int(round(live_price * pos["qty"] * unit_mult))
             acct["cash_krw"] = int(acct.get("cash_krw", 0) + proceeds_krw)
@@ -539,9 +576,9 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             if buy_amount_krw > acct["cash_krw"]:
                 continue
 
-            # 한국투자증권 API 모드일 경우 실제 KIS 주문 전송
-            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and not cand["is_us"]:
-                _place_kis_order(state, cand["symbol"], qty, is_buy=True)
+            # 한국투자증권 API 모드일 경우 실제 KIS 주문 전송 (국내주식/ETF 및 해외주식/ETF 통합 지원)
+            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
+                _place_kis_order(state, cand["symbol"], qty, is_buy=True, price=cand["price"])
 
             acct["cash_krw"] -= buy_amount_krw
             tp_pct = float(cfg.get("take_profit_pct", 4.0))
