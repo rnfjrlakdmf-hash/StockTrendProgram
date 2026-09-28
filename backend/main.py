@@ -824,29 +824,43 @@ def get_seo_posts_list(page: int = 1, limit: int = 10):
 # [ADMIN-ONLY] 대표님 전용 24시간 무인 AI 자동매매 사령부 API
 # 일반 유저 접근 시 403 차단 (X-Admin-Key 필수)
 # ============================================================
-def _verify_admin_key(x_admin_key: Optional[str]) -> bool:
-    return x_admin_key == "StockTrendSecretAdmin2026!"
+def _verify_admin_key(x_admin_key: Optional[str], authorization: Optional[str] = None) -> bool:
+    if x_admin_key != "StockTrendSecretAdmin2026!":
+        return False
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.replace("Bearer ", "").strip()
+        if token:
+            try:
+                from firebase_admin import auth as fb_auth
+                from firebase_config import initialize_firebase
+                initialize_firebase()
+                decoded = fb_auth.verify_id_token(token)
+                email = (decoded.get("email") or "").lower().strip()
+                return email in ("rnfjr@gmail.com", "rnfjrlakdmf@gmail.com")
+            except Exception:
+                return False
+    return True
 
 
 @app.get("/api/system/admin/auto-trader/status")
-def api_admin_auto_trader_status(x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
+def api_admin_auto_trader_status(x_admin_key: Optional[str] = Header(None), authorization: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key, authorization):
         raise HTTPException(status_code=403, detail="Admin access only")
     from auto_trader_service import get_dashboard_summary
     return {"status": "success", "data": get_dashboard_summary()}
 
 
 @app.post("/api/system/admin/auto-trader/config")
-def api_admin_auto_trader_config(payload: dict = Body(...), x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
+def api_admin_auto_trader_config(payload: dict = Body(...), x_admin_key: Optional[str] = Header(None), authorization: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key, authorization):
         raise HTTPException(status_code=403, detail="Admin access only")
     from auto_trader_service import update_auto_trader_config
     return {"status": "success", "data": update_auto_trader_config(payload)}
 
 
 @app.post("/api/system/admin/auto-trader/run-cycle")
-def api_admin_auto_trader_run_cycle(payload: dict = Body(default={}), x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
+def api_admin_auto_trader_run_cycle(payload: dict = Body(default={}), x_admin_key: Optional[str] = Header(None), authorization: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key, authorization):
         raise HTTPException(status_code=403, detail="Admin access only")
     from auto_trader_service import run_auto_trader_cycle
     force_buy = bool(payload.get("force_buy", True))
@@ -854,8 +868,8 @@ def api_admin_auto_trader_run_cycle(payload: dict = Body(default={}), x_admin_ke
 
 
 @app.post("/api/system/admin/auto-trader/close-position")
-def api_admin_auto_trader_close_pos(payload: dict = Body(...), x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
+def api_admin_auto_trader_close_pos(payload: dict = Body(...), x_admin_key: Optional[str] = Header(None), authorization: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key, authorization):
         raise HTTPException(status_code=403, detail="Admin access only")
     from auto_trader_service import manual_close_position
     symbol = str(payload.get("symbol", "")).strip()
@@ -863,16 +877,16 @@ def api_admin_auto_trader_close_pos(payload: dict = Body(...), x_admin_key: Opti
 
 
 @app.post("/api/system/admin/auto-trader/panic-sell")
-def api_admin_auto_trader_panic_sell(x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
+def api_admin_auto_trader_panic_sell(x_admin_key: Optional[str] = Header(None), authorization: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key, authorization):
         raise HTTPException(status_code=403, detail="Admin access only")
     from auto_trader_service import panic_sell_all
     return {"status": "success", "data": panic_sell_all()}
 
 
 @app.post("/api/system/admin/auto-trader/reset-paper")
-def api_admin_auto_trader_reset_paper(payload: dict = Body(default={}), x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
+def api_admin_auto_trader_reset_paper(payload: dict = Body(default={}), x_admin_key: Optional[str] = Header(None), authorization: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key, authorization):
         raise HTTPException(status_code=403, detail="Admin access only")
     from auto_trader_service import reset_paper_account
     cap = int(payload.get("initial_capital_krw", 10000000))

@@ -126,17 +126,25 @@ def save_state(state: Dict[str, Any]) -> None:
         state["trade_logs"] = state.get("trade_logs", [])[:100]
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
+        try:
+            os.chmod(STATE_FILE, 0o600)  # 리눅스 서버 소유자(ubuntu) 외 읽기/쓰기 완전 차단
+        except Exception:
+            pass
     except Exception as e:
         print(f"[AutoTrader] save_state error: {e}")
 
-    # Firestore 백업 동기화 (관리자 전용 컬렉션)
+    # Firestore 백업 동기화 (관리자 전용 컬렉션 - 실제 KIS API 키/시크릿/토큰은 외부 DB에 절대 평문 저장하지 않고 완전 마스킹!)
     try:
         from firebase_admin import firestore
         db = firestore.client()
         safe_copy = json.loads(json.dumps(state))
-        # 민감 시크릿 마스킹 후 백업
-        if safe_copy.get("config", {}).get("kis_app_secret"):
-            safe_copy["config"]["kis_app_secret_masked"] = "********"
+        if "config" in safe_copy:
+            if safe_copy["config"].get("kis_app_secret"):
+                safe_copy["config"]["kis_app_secret"] = "********"
+            if safe_copy["config"].get("kis_app_key"):
+                raw_k = str(safe_copy["config"]["kis_app_key"])
+                safe_copy["config"]["kis_app_key"] = f"{raw_k[:4]}********{raw_k[-3:]}" if len(raw_k) > 8 else "********"
+        safe_copy["kis_token"] = {"access_token": "", "expires_at": 0}
         db.collection("admin_auto_trader").document("current_state").set(safe_copy)
     except Exception:
         pass
@@ -1115,7 +1123,7 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     state = load_state()
     for k, v in new_cfg.items():
         if k in state["config"] and v is not None:
-            if k in ("kis_app_secret",) and str(v).startswith("****"):
+            if k in ("kis_app_secret", "kis_app_key") and "*" in str(v):
                 continue
             state["config"][k] = v
     save_state(state)
@@ -1186,10 +1194,13 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     win_trades = int(acct.get("win_trades", 0))
     win_rate = round((win_trades / total_trades) * 100, 1) if total_trades > 0 else 100.0
 
-    # 마스킹 처리하여 프론트엔드에 안전하게 반환
+    # 마스킹 처리하여 프론트엔드 및 네트워크상에 원본 API 키/시크릿이 절대 노출되지 않도록 철통 보호
     kis_configured = bool(cfg.get("kis_app_key") and cfg.get("kis_account_no"))
     if cfg.get("kis_app_secret"):
         cfg["kis_app_secret"] = "********"
+    if cfg.get("kis_app_key"):
+        raw_k = str(cfg["kis_app_key"])
+        cfg["kis_app_key"] = f"{raw_k[:4]}********{raw_k[-3:]}" if len(raw_k) > 8 else "********"
 
     return {
         "config": cfg,

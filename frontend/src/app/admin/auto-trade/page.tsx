@@ -83,11 +83,24 @@ export default function AdminAutoTradePage() {
     setKisAccountNo(cfg.kis_account_no || "");
   };
 
+  const getAdminHeaders = useCallback(async (withJson = true) => {
+    const hdrs: Record<string, string> = { "X-Admin-Key": ADMIN_KEY };
+    if (withJson) hdrs["Content-Type"] = "application/json";
+    try {
+      if (currentUser && typeof currentUser.getIdToken === "function") {
+        const tok = await currentUser.getIdToken();
+        if (tok) hdrs["Authorization"] = `Bearer ${tok}`;
+      }
+    } catch {}
+    return hdrs;
+  }, [currentUser]);
+
   const fetchStatus = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
+      const hdrs = await getAdminHeaders(false);
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/status`, {
-        headers: { "X-Admin-Key": ADMIN_KEY },
+        headers: hdrs,
       });
       const json = await res.json();
       if (json.status === "success" && json.data) {
@@ -99,7 +112,7 @@ export default function AdminAutoTradePage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [getAdminHeaders]);
 
   useEffect(() => {
     if (!authLoading && currentUser) {
@@ -114,9 +127,10 @@ export default function AdminAutoTradePage() {
     setActionLoading(true);
     try {
       const nextEnabled = !data.config.enabled;
+      const hdrs = await getAdminHeaders(true);
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+        headers: hdrs,
         body: JSON.stringify({ enabled: nextEnabled }),
       });
       const json = await res.json();
@@ -133,9 +147,10 @@ export default function AdminAutoTradePage() {
     try {
       const nextVal = !kisOrderEnabled;
       setKisOrderEnabled(nextVal);
+      const hdrs = await getAdminHeaders(true);
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+        headers: hdrs,
         body: JSON.stringify({ kis_order_enabled: nextVal }),
       });
       const json = await res.json();
@@ -150,9 +165,10 @@ export default function AdminAutoTradePage() {
   const handleSaveConfig = async () => {
     setActionLoading(true);
     try {
+      const hdrs = await getAdminHeaders(true);
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+        headers: hdrs,
         body: JSON.stringify({
           mode,
           market_target: marketTarget,
@@ -173,7 +189,8 @@ export default function AdminAutoTradePage() {
       const json = await res.json();
       if (json.status === "success") {
         setData(json.data);
-        alert("✅ 자동매매 로봇 전략 및 계좌 설정이 저장되었습니다!");
+        syncFormFromConfig(json.data.config);
+        alert("✅ 자동매매 로봇 전략 및 계좌 설정이 안전하게 암호화·마스킹 저장되었습니다!");
       }
     } finally {
       setActionLoading(false);

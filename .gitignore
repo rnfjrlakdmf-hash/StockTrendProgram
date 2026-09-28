@@ -95,6 +95,8 @@ venv/
 backend/.env
 *.pem
 firebase-adminsdk.json
+auto_trader_state.json
+backend/auto_trader_state.json
 
 # ===== Node =====
 node_modules/
