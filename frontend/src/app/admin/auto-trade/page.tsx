@@ -45,6 +45,7 @@ export default function AdminAutoTradePage() {
   const [autoAveragingDown, setAutoAveragingDown] = useState(true);
   const [stopLossPct, setStopLossPct] = useState(2.5);
   const [trailingStopPct, setTrailingStopPct] = useState(1.2);
+  const [kisOrderEnabled, setKisOrderEnabled] = useState(true);
   const [kisAppKey, setKisAppKey] = useState("");
   const [kisAppSecret, setKisAppSecret] = useState("");
   const [kisAccountNo, setKisAccountNo] = useState("");
@@ -76,6 +77,7 @@ export default function AdminAutoTradePage() {
     setAutoAveragingDown(Boolean(cfg.auto_averaging_down ?? true));
     setStopLossPct(Number(cfg.stop_loss_pct || 2.5));
     setTrailingStopPct(Number(cfg.trailing_stop_pct || 1.2));
+    setKisOrderEnabled(Boolean(cfg.kis_order_enabled ?? true));
     setKisAppKey(cfg.kis_app_key || "");
     setKisAppSecret(cfg.kis_app_secret || "");
     setKisAccountNo(cfg.kis_account_no || "");
@@ -126,6 +128,25 @@ export default function AdminAutoTradePage() {
     }
   };
 
+  const handleToggleKisOrder = async () => {
+    setActionLoading(true);
+    try {
+      const nextVal = !kisOrderEnabled;
+      setKisOrderEnabled(nextVal);
+      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+        body: JSON.stringify({ kis_order_enabled: nextVal }),
+      });
+      const json = await res.json();
+      if (json.status === "success") {
+        setData(json.data);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSaveConfig = async () => {
     setActionLoading(true);
     try {
@@ -143,6 +164,7 @@ export default function AdminAutoTradePage() {
           auto_averaging_down: Boolean(autoAveragingDown),
           stop_loss_pct: Number(stopLossPct),
           trailing_stop_pct: Number(trailingStopPct),
+          kis_order_enabled: Boolean(kisOrderEnabled),
           kis_app_key: kisAppKey,
           kis_app_secret: kisAppSecret,
           kis_account_no: kisAccountNo,
@@ -500,10 +522,98 @@ export default function AdminAutoTradePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 좌측: 자동매매 운전 모드 & 손익비 설정 */}
           <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
-            <h2 className="text-lg font-black text-white flex items-center gap-2">
-              <Settings className="w-5 h-5 text-blue-400" />
-              자동매매 전략 &amp; 계좌 연동 설정
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-400" />
+                자동매매 전략 &amp; 계좌 연동 설정
+              </h2>
+              <span
+                className={`px-3 py-1 rounded-full text-[11px] font-black border ${
+                  cfg.enabled
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                    : "bg-rose-500/20 border-rose-500/40 text-rose-300"
+                }`}
+              >
+                {cfg.enabled ? "🟢 현재 자동매매 켜짐 (ON)" : "🛑 현재 자동매매 꺼짐 (OFF)"}
+              </span>
+            </div>
+
+            {/* 🎛️ 계좌가 연동되어 있어도 언제든 1초 만에 켰다 껐다 하는 전용 ON/OFF 스위치 박스 */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border border-emerald-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-black text-white flex items-center gap-1.5">
+                    <Power className="w-4 h-4 text-emerald-400" />
+                    계좌 연동 중에도 언제든 즉시 ON / OFF 제어 스위치
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">
+                    실제 계좌(App Key·계좌번호)를 등록해 두셨더라도 삭제할 필요 없이, 아래 버튼 하나로 언제든 자동매매와 실전 계좌 주문을 켰다 껐다 하실 수 있습니다.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* 버튼 1: AI 자동매매 전체 마스터 전원 ON/OFF */}
+                <button
+                  type="button"
+                  onClick={handleToggleBot}
+                  disabled={actionLoading}
+                  className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between gap-2 ${
+                    cfg.enabled
+                      ? "bg-emerald-500/20 border-emerald-400 text-white shadow-lg shadow-emerald-500/15"
+                      : "bg-rose-950/40 border-rose-500/40 text-rose-200 hover:bg-rose-950/60"
+                  }`}
+                >
+                  <div>
+                    <div className="text-xs font-black flex items-center gap-1.5">
+                      {cfg.enabled ? "🟢 AI 자동매매 가동 중 (켜짐)" : "🛑 AI 자동매매 일시정지 (꺼짐)"}
+                    </div>
+                    <div className="text-[10px] text-gray-300 mt-0.5">
+                      {cfg.enabled
+                        ? "클릭 시 모든 자동 매수·매도를 즉시 멈춥니다 (OFF)"
+                        : "클릭 시 설정된 전략으로 자동매매를 다시 시작합니다 (ON)"}
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black shrink-0 ${
+                      cfg.enabled ? "bg-emerald-400 text-black" : "bg-rose-500 text-white"
+                    }`}
+                  >
+                    {cfg.enabled ? "ON (끄기)" : "OFF (켜기)"}
+                  </span>
+                </button>
+
+                {/* 버튼 2: 연동 계좌(KIS) 실제 주문 전송 잠금/해제 스위치 */}
+                <button
+                  type="button"
+                  onClick={handleToggleKisOrder}
+                  disabled={actionLoading}
+                  className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between gap-2 ${
+                    kisOrderEnabled
+                      ? "bg-blue-500/20 border-blue-400 text-white shadow-lg shadow-blue-500/15"
+                      : "bg-amber-950/40 border-amber-500/40 text-amber-200 hover:bg-amber-950/60"
+                  }`}
+                >
+                  <div>
+                    <div className="text-xs font-black flex items-center gap-1.5">
+                      {kisOrderEnabled ? "🔓 실전·연동 계좌 주문 전송 (켜짐)" : "🔒 실전·연동 계좌 주문 잠금 (꺼짐)"}
+                    </div>
+                    <div className="text-[10px] text-gray-300 mt-0.5">
+                      {kisOrderEnabled
+                        ? "한투 모드 선택 시 연동된 실제 계좌로 주문을 넣습니다"
+                        : "계좌 정보는 그대로 보관하고 실제 계좌 주문만 차단합니다"}
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black shrink-0 ${
+                      kisOrderEnabled ? "bg-blue-400 text-black" : "bg-amber-500 text-black"
+                    }`}
+                  >
+                    {kisOrderEnabled ? "연동 ON" : "잠금 OFF"}
+                  </span>
+                </button>
+              </div>
+            </div>
 
             <div className="space-y-3">
               <div>

@@ -82,6 +82,7 @@ def _default_state() -> Dict[str, Any]:
             "min_ai_score": 68,
             "allow_off_hours_sim": True,
             "telegram_notify": True,
+            "kis_order_enabled": True,  # 계좌를 연동해 두었더라도 실제 증권사 주문 전송을 ON/OFF 할 수 있는 안전 스위치
             "kis_app_key": "",
             "kis_app_secret": "",
             "kis_account_no": "",  # 예: 50123456-01
@@ -545,6 +546,8 @@ def _get_kis_token(state: Dict[str, Any]) -> Optional[str]:
 def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool, price: float = 0.0) -> Dict[str, Any]:
     """한국투자증권 국내주식/ETF 및 해외(미국)주식/ETF 현금 자동 주문 (모의/실전 자동 분기)"""
     cfg = state.get("config", {})
+    if not cfg.get("kis_order_enabled", True):
+        return {"ok": False, "msg": "계좌 연동 주문 스위치가 OFF(잠금) 상태이므로 증권사 주문을 전송하지 않았습니다."}
     mode = cfg.get("mode", "KIS_VIRTUAL")
     token = _get_kis_token(state)
     acct_raw = (cfg.get("kis_account_no") or os.environ.get("KIS_ACCOUNT_NO", "")).replace("-", "").strip()
@@ -666,7 +669,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         auto_avg = bool(cfg.get("auto_averaging_down", True))
 
         # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도
-        if not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
+        if (cfg.get("enabled") or force_buy) and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
             max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
             curr_invested_krw = sum(
                 int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
@@ -676,6 +679,8 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             add_budget = min(int(cfg.get("order_amount_krw", 2000000) * 0.5), int(acct.get("cash_krw", 0)), rem_cap)
             add_qty = int(add_budget // (live_price * unit_mult)) if (live_price * unit_mult) > 0 else 0
             if add_qty >= 1:
+                if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
+                    _place_kis_order(state, sym, add_qty, is_buy=True, price=live_price)
                 add_cost = int(round(add_qty * live_price * unit_mult))
                 old_qty = pos["qty"]
                 new_qty = old_qty + add_qty
