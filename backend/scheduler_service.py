@@ -471,6 +471,46 @@ def generate_market_closing_diagnosis(market, kospi_info, kosdaq_info, flow_data
 def send_closing_notification(market: str, target_user_id: Optional[str] = None):
     """시장 마감 리포트 발송 로직 (1. 시장·섹터 지수 결산 / 2. 내 관심종목 결산 2분할 발송)"""
     initialize_firebase()
+    import os, json
+    kst_now = datetime.now(pytz.timezone('Asia/Seoul'))
+    today_kst = kst_now.strftime('%Y-%m-%d')
+    market_kr_label = "국내" if market == "KR" else "해외"
+
+    if target_user_id is None:
+        try:
+            conn_chk = get_db_connection()
+            cur_chk = conn_chk.cursor()
+            cur_chk.execute(
+                """
+                SELECT COUNT(*) FROM alert_history
+                WHERE date(triggered_at, '+9 hours') = ?
+                  AND type = 'market'
+                  AND message LIKE ?
+                """,
+                (today_kst, f"%[시장·지수 결산] {market_kr_label}%"),
+            )
+            already_cnt = cur_chk.fetchone()[0]
+            conn_chk.close()
+            if already_cnt and already_cnt > 0:
+                print(f"[Scheduler] ⏭️ {today_kst} {market} 장마감 결산 알림이 이미 발송 완료(DB {already_cnt}건)되어 중복 발송을 건너뜁니다.")
+                return
+        except Exception as chk_e:
+            print(f"[Scheduler-Warn] Closing notification DB dedupe check error: {chk_e}")
+
+        # 상태 파일에도 즉시 기록하여 재시작 시 중복/누락 완벽 제어
+        try:
+            st_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scheduler_service_state.json")
+            st_data = {}
+            if os.path.exists(st_path):
+                with open(st_path, "r", encoding="utf-8") as f:
+                    st_data = json.load(f)
+            st_key = "last_run_close_kr" if market == "KR" else "last_run_close_us"
+            st_data[st_key] = today_kst
+            with open(st_path, "w", encoding="utf-8") as f:
+                json.dump(st_data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
     print(f"[Scheduler] Generating hybrid {market} market closing report (target_user_id={target_user_id})...")
     
     # 공통 기본 지표 캐싱
@@ -1252,22 +1292,129 @@ def run_market_scheduler():
     last_cleanup_date = ""
     last_run_health_check = _saved.get("last_run_health_check")
     
+    _bg_locks: Dict[str, bool] = {}
+
+    def _run_bg_job(job_key: str, fn):
+        if _bg_locks.get(job_key, False):
+            return
+        _bg_locks[job_key] = True
+
+        def _worker():
+            try:
+                fn()
+            except Exception as _je:
+                print(f"[Scheduler-BG] {job_key} error: {_je}")
+            finally:
+                _bg_locks[job_key] = False
+
+        threading.Thread(target=_worker, daemon=True).start()
+
     while True:
         try:
             update_heartbeat("Main_Alert_Scheduler")
             now = datetime.now(kst)
             day_of_week = now.weekday()
             current_date = now.strftime('%Y-%m-%d')
-            
+
+            # ═══════════════════════════════════════════════════════════════════
+            # [최우선 순위 #1] 핵심 장시작·장마감·모닝브리핑 정각 발송 블록 (절대 지연/누락 금지)
+            # ═══════════════════════════════════════════════════════════════════
+
+            # [평일 발송] AI 모닝 브리핑 (KR) - 08:00 ~ 10:59 사이 미발송 시 무조건 1회 실행 보장
+            if day_of_week <= 4 and not is_holiday("kor"):
+                if (8 <= now.hour <= 10) and current_date != last_run_morning_kr:
+                    try:
+                        last_run_morning_kr = current_date
+                        _save_sched_state("last_run_morning_kr", current_date)
+                        print(f"[Scheduler] ☀️ Launching Morning Briefing (KR) for {current_date}...")
+                        asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
+                        print(f"[Scheduler] ✅ Morning Briefing (KR) completed.")
+                    except Exception as mb_e:
+                        print(f"[Scheduler-Error] Morning briefing KR failed: {mb_e}")
+
+            # [평일 발송] 공모주 청약 일정 알림 (08:15 ~ 10:59)
+            if day_of_week <= 4:
+                if ((now.hour == 8 and now.minute >= 15) or (9 <= now.hour <= 10)) and current_date != last_run_ipo and not is_market_holiday("KR"):
+                    try:
+                        last_run_ipo = current_date
+                        _save_sched_state("last_run_ipo", current_date)
+                        from batch_ipo_alerts import send_ipo_alerts
+                        send_ipo_alerts()
+                    except Exception as e:
+                        print(f"[Scheduler] IPO 알림 오류: {e}")
+
+            # 1. 국내 장시작 시가 알림 (09:05 ~ 10:59)
+            if day_of_week <= 4:
+                if ((now.hour == 9 and now.minute >= 5) or now.hour == 10) and current_date != last_run_open_kr and not is_market_holiday("KR"):
+                    try:
+                        last_run_open_kr = current_date
+                        _save_sched_state("last_run_open_kr", current_date)
+                        send_opening_notification("KR")
+                    except Exception as ok_e:
+                        print(f"[Scheduler-Error] Opening notification KR failed: {ok_e}")
+
+            # 2. 국내 장마감 종가 리포트 (시장·지수 결산 + 관심종목 결산) - 15:35 ~ 20:59 사이 미발송 시 무조건 1회 즉시 실행 보장
+            if day_of_week <= 4 and not is_holiday("kor"):
+                if ((now.hour == 15 and now.minute >= 35) or (16 <= now.hour <= 20)) and current_date != last_run_close_kr:
+                    try:
+                        last_run_close_kr = current_date
+                        _save_sched_state("last_run_close_kr", current_date)
+                        print(f"[Scheduler] 🌕 Launching Closing Notification (KR) for {current_date}...")
+                        send_closing_notification("KR")
+                        print(f"[Scheduler] ✅ Closing Notification (KR) completed.")
+                    except Exception as cl_e:
+                        print(f"[Scheduler-Error] Closing notification KR failed: {cl_e}")
+
+            # [평일 발송] AI 모닝 브리핑 (US) (21:30 ~ 23:30)
+            if day_of_week <= 4 and not is_market_holiday("US"):
+                if ((now.hour == 21 and now.minute >= 30) or now.hour == 22 or (now.hour == 23 and now.minute <= 30)) and current_date != last_run_morning_us:
+                    try:
+                        last_run_morning_us = current_date
+                        _save_sched_state("last_run_morning_us", current_date)
+                        asyncio.run(morning_briefing_service.run_daily_briefing("US"))
+                    except Exception as us_mb_e:
+                        print(f"[Scheduler-Error] Morning briefing US failed: {us_mb_e}")
+
+            # 미국 서머타임(DST) 적용 여부 확인 (미국 동부 시간 기준)
+            ny_tz = pytz.timezone('America/New_York')
+            ny_time = datetime.now(ny_tz)
+            is_dst = ny_time.dst().total_seconds() != 0
+            ny_date = ny_time.strftime('%Y-%m-%d')
+
+            us_open_hour = 22 if is_dst else 23
+            us_close_hour = 5 if is_dst else 6
+
+            # 3. 미국 장시작 시가 알림 (개장 시각 이후 ~ 23:59 미발송 시 무조건 1회 실행 보장)
+            us_open_days = list(range(0, 5))
+            if day_of_week in us_open_days:
+                if ((now.hour == us_open_hour and now.minute >= 35) or (now.hour > us_open_hour)) and current_date != last_run_open_us and not is_market_holiday("US"):
+                    try:
+                        last_run_open_us = current_date
+                        _save_sched_state("last_run_open_us", current_date)
+                        send_opening_notification("US")
+                    except Exception as ous_e:
+                        print(f"[Scheduler-Error] Opening notification US failed: {ous_e}")
+
+            # 4. 미국 장마감 종가 리포트 (05:10/06:10 ~ 07:59 미발송 시 무조건 1회 실행 보장)
+            us_close_days = list(range(1, 6))
+            if day_of_week in us_close_days:
+                if ((now.hour == us_close_hour and now.minute >= 10) or (us_close_hour < now.hour <= 7)) and ny_date != last_run_close_us and not is_market_holiday("US"):
+                    try:
+                        last_run_close_us = ny_date
+                        _save_sched_state("last_run_close_us", ny_date)
+                        send_closing_notification("US")
+                    except Exception as cus_e:
+                        print(f"[Scheduler-Error] Closing notification US failed: {cus_e}")
+
+            # ═══════════════════════════════════════════════════════════════════
+            # [2순위] 백그라운드 상시 모니터링 & 자동매매 & SEO 봇 (비동기 스레드 실행으로 메인 시계 블로킹 원천 차단)
+            # ═══════════════════════════════════════════════════════════════════
+
             # [매일 실행] 자정 ~ 새벽 1시 사이 시스템 헬스체크 (1회 발송, 비동기 스레드 실행)
             if now.hour == 0 and current_date != last_run_health_check:
-                try:
-                    import threading
-                    from system_health_check import run_system_health_check
-                    threading.Thread(target=run_system_health_check, daemon=True).start()
-                except Exception as e:
-                    print(f"[Scheduler] System health check error: {e}")
                 last_run_health_check = current_date
+                from system_health_check import run_system_health_check
+                _run_bg_job("system_health_check", run_system_health_check)
                 
             # [실시간] 트래픽 급등 감지 (1분 주기)
             try:
@@ -1275,54 +1422,44 @@ def run_market_scheduler():
                 active_count = get_realtime_active_count(minutes=5)
                 if active_count >= 30:
                     if not last_spike_alert_time or (now - last_spike_alert_time).total_seconds() >= 1800:
-                        # 30분(1800초) 쿨타임
                         from system_watchdog import send_admin_alert
                         send_admin_alert(
                             module_name="📈 트래픽 급등 경고!",
                             error_msg=f"현재 실시간 동시 접속자가 {active_count}명을 돌파했습니다! 사람들이 떼거지로 몰려오고 있습니다."
                         )
                         last_spike_alert_time = now
-                        print(f"[Analytics] Spike alert sent: {active_count} users")
             except Exception as e:
                 print(f"[Scheduler] Spike alert error: {e}")
             
-            # [관리자 전용 AI 자동매매 엔진] 3분 간격 무인 종목 발굴 및 자동 매수/익절/손절 수행
+            # [관리자 전용 AI 자동매매 엔진] 3분 간격 무인 종목 발굴 및 자동 매수/익절/손절 수행 (비동기 스레드)
             if now.minute % 3 == 0:
                 _at_time = now.strftime('%H:%M')
                 if getattr(run_market_scheduler, "last_auto_trader_min", "") != _at_time:
                     run_market_scheduler.last_auto_trader_min = _at_time
-                    try:
+                    def _auto_trade_task():
                         from auto_trader_service import load_state, run_auto_trader_cycle
                         _st = load_state()
                         if _st.get("config", {}).get("enabled", False):
                             run_auto_trader_cycle(force_buy=False)
-                    except Exception as _ate:
-                        print(f"[Scheduler] AutoTrader cycle error: {_ate}")
+                    _run_bg_job("auto_trader_cycle", _auto_trade_task)
 
             # [주말 실행] 크립토 실시간 불장 감지 (15분 간격)
             if now.minute % 15 == 0 and is_holiday("kor"):
                 current_time = now.strftime('%H:%M')
                 if last_run_crypto_surge != current_time:
-                    try:
-                        from crypto_alerts import check_crypto_surge
-                        check_crypto_surge()
-                    except Exception as e:
-                        print(f"[Scheduler] Crypto surge error: {e}")
                     last_run_crypto_surge = current_time
+                    from crypto_alerts import check_crypto_surge
+                    _run_bg_job("crypto_surge", check_crypto_surge)
                     
-            # [실시간] 관심종목 뉴스 속보 감시 (5분 간격)
+            # [실시간] 관심종목 뉴스 속보 감시 (5분 간격, 비동기 스레드)
             if now.minute % 5 == 0:
                 current_time = now.strftime('%H:%M')
                 if getattr(run_market_scheduler, "last_run_watchlist_news", None) != current_time:
-                    try:
-                        from watchlist_monitor import run_watchlist_news_monitor
-                        run_watchlist_news_monitor()
-                    except Exception as e:
-                        print(f"[Scheduler] Watchlist news error: {e}")
                     run_market_scheduler.last_run_watchlist_news = current_time
+                    from watchlist_monitor import run_watchlist_news_monitor
+                    _run_bg_job("watchlist_news", run_watchlist_news_monitor)
 
             # [매일 실행] 오전 8:30 주식 기초 스터디 자동 포스팅 (08:30 ~ 11:59 자가 복구 윈도우 & 최대 3회 자동 재시도)
-            # 날짜가 바뀌면 재시도 카운터 초기화
             if getattr(run_market_scheduler, "theory_retry_date", "") != current_date:
                 run_market_scheduler.theory_retry_count = 0
                 run_market_scheduler.theory_retry_date = current_date
@@ -1332,7 +1469,7 @@ def run_market_scheduler():
             
             is_theory_window = (now.hour == 8 and now.minute >= 30) or (9 <= now.hour <= 11)
             if is_theory_window and current_date != last_run_daily_theory and retry_count < 3 and not theory_is_running:
-                run_market_scheduler.theory_is_running = True  # 동시 실행 방지 락
+                run_market_scheduler.theory_is_running = True
                 success = False
                 try:
                     from daily_theory_bot import post_daily_theory
@@ -1340,114 +1477,83 @@ def run_market_scheduler():
                 except Exception as e:
                     print(f"[Scheduler] Daily Theory Bot error: {e}")
                 finally:
-                    run_market_scheduler.theory_is_running = False  # 락 해제
+                    run_market_scheduler.theory_is_running = False
                 
                 if success:
                     last_run_daily_theory = current_date
                     _save_sched_state("last_run_daily_theory", current_date)
                     run_market_scheduler.theory_retry_count = 0
-                    print(f"[Scheduler] Daily Theory Bot succeeded on attempt #{retry_count + 1}")
                 else:
                     run_market_scheduler.theory_retry_count = retry_count + 1
-                    print(f"[Scheduler] Daily Theory Bot failed attempt #{retry_count + 1}")
-                    
-                    if run_market_scheduler.theory_retry_count >= 3:
-                        try:
-                            import os, requests as _req
-                            _bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-                            _chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-                            if _bot_token and _chat_id:
-                                _msg = f"⚠️ [에러 경고]\n오늘({current_date}) 주식 이론 강의 자동 작성이 3회 연속 실패했습니다. 서버 로그를 확인해주세요."
-                                _req.post(f"https://api.telegram.org/bot{_bot_token}/sendMessage", json={"chat_id": _chat_id, "text": _msg}, timeout=10)
-                        except Exception as te:
-                            print(f"[Scheduler] Telegram alert error: {te}")
 
-            # [장중+애프터마켓] 관심종목 가격 급등락 감시 (5분 간격, 20:00까지 연장)
+            # [장중+애프터마켓] 관심종목 가격 급등락 감시 (5분 간격, 20:00까지 연장, 비동기 스레드)
             if not is_holiday("kor") and 9 <= now.hour <= 19 and now.minute % 5 == 0:
                 current_time = now.strftime('%H:%M')
                 if getattr(run_market_scheduler, "last_run_watchlist_price", None) != current_time:
-                    try:
-                        from watchlist_monitor import run_watchlist_price_monitor
-                        run_watchlist_price_monitor()
-                    except Exception as e:
-                        print(f"[Scheduler] Watchlist price error: {e}")
                     run_market_scheduler.last_run_watchlist_price = current_time
+                    from watchlist_monitor import run_watchlist_price_monitor
+                    _run_bg_job("watchlist_price", run_watchlist_price_monitor)
 
-            # [평일 장중 실행] 고래/세력 매집 실시간 알림 (30분 간격)
+            # [평일 장중 실행] 고래/세력 매집 실시간 알림 (30분 간격, 비동기 스레드)
             if not is_holiday("kor") and 9 <= now.hour <= 15 and now.minute % 30 == 0:
                 current_time = now.strftime('%H:%M')
                 if getattr(run_market_scheduler, "last_run_whale_alert", None) != current_time:
-                    try:
-                        from whale_alerts import check_whale_alerts
-                        check_whale_alerts()
-                    except Exception as e:
-                        print(f"[Scheduler] Whale alert error: {e}")
                     run_market_scheduler.last_run_whale_alert = current_time
-            
-            # 중복된 예전 스케줄러 블록 제거됨
+                    from whale_alerts import check_whale_alerts
+                    _run_bg_job("whale_alerts", check_whale_alerts)
                 
-            # [평일 실행] 오후 4:30 초대량 롱테일 키워드 SEO 공장 (수해전술 봇)
+            # [평일 실행] 오후 4:30 초대량 롱테일 키워드 SEO 공장 (비동기 스레드)
             if not is_holiday("kor") and now.hour == 16 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_mass_seo", None):
-                try:
+                run_market_scheduler.last_run_mass_seo = current_date
+                def _mass_seo():
                     import mass_seo_bot
                     mass_seo_bot.main()
-                except Exception as e:
-                    print(f"[Scheduler] Mass SEO Bot error: {e}")
-                run_market_scheduler.last_run_mass_seo = current_date
+                _run_bg_job("mass_seo", _mass_seo)
 
-            # [매일 실행] 오후 1:30 주식 기초 Q&A 롱테일 봇
+            # [매일 실행] 오후 1:30 주식 기초 Q&A 롱테일 봇 (비동기 스레드)
             if now.hour == 13 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_qa_seo", None):
-                try:
+                run_market_scheduler.last_run_qa_seo = current_date
+                def _qa_seo():
                     import qa_seo_bot
                     qa_seo_bot.main()
-                except Exception as e:
-                    print(f"[Scheduler] QA SEO Bot error: {e}")
-                run_market_scheduler.last_run_qa_seo = current_date
+                _run_bg_job("qa_seo", _qa_seo)
 
-            # [평일 실행] 오후 5:30 오늘의 테마주 싹쓸이 봇
+            # [평일 실행] 오후 5:30 오늘의 테마주 싹쓸이 봇 (비동기 스레드)
             if not is_holiday("kor") and now.hour == 17 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_theme_seo", None):
-                try:
+                run_market_scheduler.last_run_theme_seo = current_date
+                def _theme_seo():
                     import theme_seo_bot
                     theme_seo_bot.main()
-                except Exception as e:
-                    print(f"[Scheduler] Theme SEO Bot error: {e}")
-                run_market_scheduler.last_run_theme_seo = current_date
+                _run_bg_job("theme_seo", _theme_seo)
 
             # [매일 실행] 오전 8:45 SEO 자동 블로그 포스팅 (조간)
             if now.hour == 8 and 45 <= now.minute <= 50 and current_date != getattr(run_market_scheduler, "last_run_seo_blog_morning", None):
-                try:
+                run_market_scheduler.last_run_seo_blog_morning = current_date
+                def _blog_am():
                     import seo_blog_bot
                     seo_blog_bot.post_seo_blog()
-                except Exception as e:
-                    print(f"[Scheduler] SEO Blog Morning Bot error: {e}")
-                run_market_scheduler.last_run_seo_blog_morning = current_date
+                _run_bg_job("seo_blog_am", _blog_am)
 
             # [매일 실행] 오후 4:30 SEO 자동 블로그 포스팅 (장마감)
             if now.hour == 16 and 30 <= now.minute <= 35 and current_date != getattr(run_market_scheduler, "last_run_seo_blog_afternoon", None):
-                try:
+                run_market_scheduler.last_run_seo_blog_afternoon = current_date
+                def _blog_pm():
                     import seo_blog_bot
                     seo_blog_bot.post_seo_blog()
-                except Exception as e:
-                    print(f"[Scheduler] SEO Blog Afternoon Bot error: {e}")
-                run_market_scheduler.last_run_seo_blog_afternoon = current_date
+                _run_bg_job("seo_blog_pm", _blog_pm)
+
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱
             if now.hour == 6 and now.minute >= 30 and current_date != last_run_dart_cache:
-                try:
-                    run_dart_daily_cache_update()
-                except Exception as e:
-                    print(f"[Scheduler] DART 캐싱 오류: {e}")
                 last_run_dart_cache = current_date
                 _save_sched_state("last_run_dart_cache", current_date)
+                _run_bg_job("dart_cache", run_dart_daily_cache_update)
                 
             # [금요일 실행] 오후 6:00 주말 한정판 세력/외인 매집 리포트 생성
             if now.weekday() == 4 and now.hour >= 18 and current_date != getattr(run_market_scheduler, "last_run_whale_report_gen", None):
-                try:
-                    from utils.whale_weekend_report import _generate_whale_report_sync
-                    _generate_whale_report_sync()
-                except Exception as e:
-                    print(f"[Scheduler] Whale report gen error: {e}")
                 run_market_scheduler.last_run_whale_report_gen = current_date
                 _save_sched_state("last_run_whale_report_gen", current_date)
+                from utils.whale_weekend_report import _generate_whale_report_sync
+                _run_bg_job("whale_report_gen", _generate_whale_report_sync)
                 
             # [일요일 실행] 오후 8:00 주말 한정판 리포트 오픈 푸시 알림
             if now.weekday() == 6 and now.hour >= 20 and current_date != getattr(run_market_scheduler, "last_run_whale_push", None):
@@ -1471,8 +1577,6 @@ def run_market_scheduler():
                 try:
                     from utils.weekend_report import _generate_sync_impl
                     _generate_sync_impl()
-                    
-                    # 푸시 알림 발송
                     try:
                         title = "🔓 주말 프리미엄 인사이트 오픈!"
                         body = "지난주 시장 핵심 요약과 다음 주 필수 체크포인트를 지금 바로 확인하세요."
@@ -1485,7 +1589,6 @@ def run_market_scheduler():
                             send_multicast_notification(tokens, title, body, {"url": "/weekend-report"})
                     except Exception as e:
                         print(f"[Scheduler-Error] Failed to send weekend report push: {e}")
-                        
                 except Exception as e:
                     print(f"[Scheduler] Weekend report generation error: {e}")
                 last_run_weekend_report_gen = current_date
@@ -1493,124 +1596,25 @@ def run_market_scheduler():
 
             # [매일 발송] 밤 11시 50분 일일 방문자 및 시스템 보고서 발송 (Admins)
             if now.hour == 23 and now.minute >= 50 and current_date != last_run_daily_report:
-                try:
-                    print(f"[Scheduler] 📊 Launching Daily Analytics Report for {current_date}...")
-                    send_daily_analytics_report()
-                    last_run_daily_report = current_date
-                    _save_sched_state("last_run_daily_report", current_date)
-                    print(f"[Scheduler] ✅ Daily Analytics Report sent successfully.")
-                except Exception as dr_e:
-                    print(f"[Scheduler-Error] Daily analytics report failed: {dr_e}")
+                last_run_daily_report = current_date
+                _save_sched_state("last_run_daily_report", current_date)
+                _run_bg_job("daily_analytics_report", send_daily_analytics_report)
                 
             # [매시간 실행] 구글 시트 통계 동기화 (불사조 모드: 누락 방지)
             if now.minute == 0 and getattr(run_market_scheduler, "last_run_sheets_sync_hour", None) != now.hour:
-                try:
-                    from google_sheets_sync import sync_analytics_to_sheet
-                    sync_analytics_to_sheet()
-                    run_market_scheduler.last_run_sheets_sync_hour = now.hour
-                except Exception as e:
-                    print(f"[Scheduler] Google Sheets sync error: {e}")
+                run_market_scheduler.last_run_sheets_sync_hour = now.hour
+                from google_sheets_sync import sync_analytics_to_sheet
+                _run_bg_job("sheets_sync", sync_analytics_to_sheet)
             
             # [매일 실행] 새벽 3시 구글 색인(Indexing) 봇 자동 실행 (최신 종목/테마 페이지 강제 푸시)
             if now.hour == 3 and current_date != getattr(run_market_scheduler, "last_run_google_indexer", None):
-                try:
+                run_market_scheduler.last_run_google_indexer = current_date
+                def _g_idx():
                     from google_indexer import get_urls_from_sitemap, publish_urls_to_google, SITEMAP_URL
-                    print("[Scheduler] Running Google Auto-Indexer Bot...")
                     urls = get_urls_from_sitemap(SITEMAP_URL)
                     if urls:
                         publish_urls_to_google(urls)
-                except Exception as e:
-                    print(f"[Scheduler-Error] Failed to run Google Indexer: {e}")
-                run_market_scheduler.last_run_google_indexer = current_date
-            
-            # [평일 발송] AI 모닝 브리핑 (KR) - 08:00 ~ 10:59 사이 미발송 시 무조건 1회 실행 보장
-            if day_of_week <= 4 and not is_holiday("kor"):
-                if (8 <= now.hour <= 10) and current_date != last_run_morning_kr:
-                    try:
-                        # ✅ 중복 발송 원천 차단을 위해 실행 직전에 상태 선점 저장
-                        last_run_morning_kr = current_date
-                        _save_sched_state("last_run_morning_kr", current_date)
-                        print(f"[Scheduler] ☀️ Launching Morning Briefing (KR) for {current_date}...")
-                        asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
-                        print(f"[Scheduler] ✅ Morning Briefing (KR) completed.")
-                    except Exception as mb_e:
-                        print(f"[Scheduler-Error] Morning briefing KR failed: {mb_e}")
-
-            # [평일 발송] 공모주 청약 일정 알림 (08:15 ~ 10:59)
-            if day_of_week <= 4:
-                if ((now.hour == 8 and now.minute >= 15) or (9 <= now.hour <= 10)) and current_date != last_run_ipo and not is_market_holiday("KR"):
-                    try:
-                        last_run_ipo = current_date
-                        _save_sched_state("last_run_ipo", current_date)
-                        from batch_ipo_alerts import send_ipo_alerts
-                        send_ipo_alerts()
-                    except Exception as e:
-                        print(f"[Scheduler] IPO 알림 오류: {e}")
-            
-            # [평일 발송] AI 모닝 브리핑 (US) (21:30 ~ 23:30)
-            if day_of_week <= 4 and not is_market_holiday("US"):
-                if ((now.hour == 21 and now.minute >= 30) or now.hour == 22 or (now.hour == 23 and now.minute <= 30)) and current_date != last_run_morning_us:
-                    try:
-                        last_run_morning_us = current_date
-                        _save_sched_state("last_run_morning_us", current_date)
-                        asyncio.run(morning_briefing_service.run_daily_briefing("US"))
-                    except Exception as us_mb_e:
-                        print(f"[Scheduler-Error] Morning briefing US failed: {us_mb_e}")
-
-            # 1. 국내 장시작 시가 알림 (09:05 ~ 10:59)
-            if day_of_week <= 4:
-                if ((now.hour == 9 and now.minute >= 5) or now.hour == 10) and current_date != last_run_open_kr and not is_market_holiday("KR"):
-                    try:
-                        last_run_open_kr = current_date
-                        _save_sched_state("last_run_open_kr", current_date)
-                        send_opening_notification("KR")
-                    except Exception as ok_e:
-                        print(f"[Scheduler-Error] Opening notification KR failed: {ok_e}")
-
-            # 2. 국내 장마감 종가 리포트 - 15:40 ~ 18:59 사이 미발송 시 무조건 1회 실행 보장
-            if day_of_week <= 4 and not is_holiday("kor"):
-                if ((now.hour == 15 and now.minute >= 40) or (16 <= now.hour <= 18)) and current_date != last_run_close_kr:
-                    try:
-                        last_run_close_kr = current_date
-                        _save_sched_state("last_run_close_kr", current_date)
-                        print(f"[Scheduler] 🌕 Launching Closing Notification (KR) for {current_date}...")
-                        send_closing_notification("KR")
-                        print(f"[Scheduler] ✅ Closing Notification (KR) completed.")
-                    except Exception as cl_e:
-                        print(f"[Scheduler-Error] Closing notification KR failed: {cl_e}")
-            
-            # 미국 서머타임(DST) 적용 여부 확인 (미국 동부 시간 기준)
-            ny_tz = pytz.timezone('America/New_York')
-            ny_time = datetime.now(ny_tz)
-            is_dst = ny_time.dst().total_seconds() != 0
-            ny_date = ny_time.strftime('%Y-%m-%d')  # 미국 날짜 (장마감 다음날다룼 계산용)
-
-            # 서머타임 시: KST 22:35 개장 알림 / KST 05:10 마감 알림
-            # 표준시간 시: KST 23:35 개장 알림 / KST 06:10 마감 알림
-            us_open_hour = 22 if is_dst else 23
-            us_close_hour = 5 if is_dst else 6
-
-            # 3. 미국 장시작 시가 알림 (개장 시각 이후 ~ 23:59 미발송 시 무조건 1회 실행 보장)
-            us_open_days = list(range(0, 5))
-            if day_of_week in us_open_days:
-                if ((now.hour == us_open_hour and now.minute >= 35) or (now.hour > us_open_hour)) and current_date != last_run_open_us and not is_market_holiday("US"):
-                    try:
-                        send_opening_notification("US")
-                        last_run_open_us = current_date
-                        _save_sched_state("last_run_open_us", current_date)
-                    except Exception as ous_e:
-                        print(f"[Scheduler-Error] Opening notification US failed: {ous_e}")
-
-            # 4. 미국 장마감 종가 리포트 (05:10/06:10 ~ 07:59 미발송 시 무조건 1회 실행 보장)
-            us_close_days = list(range(1, 6)) if is_dst else list(range(1, 6))
-            if day_of_week in us_close_days:
-                if ((now.hour == us_close_hour and now.minute >= 10) or (us_close_hour < now.hour <= 7)) and ny_date != last_run_close_us and not is_market_holiday("US"):
-                    try:
-                        send_closing_notification("US")
-                        last_run_close_us = ny_date
-                        _save_sched_state("last_run_close_us", ny_date)
-                    except Exception as cus_e:
-                        print(f"[Scheduler-Error] Closing notification US failed: {cus_e}")
+                _run_bg_job("google_indexer", _g_idx)
                     
             # 5. 주말 테마 리포트 (일요일 18:00 ~ 21:59)
             if day_of_week == 6: # 일요일 (0:월, ..., 6:일)
@@ -1632,7 +1636,7 @@ def run_market_scheduler():
                     except Exception as wcr_e:
                         print(f"[Scheduler-Error] Weekend crypto report failed: {wcr_e}")
             
-            time.sleep(30)
+            time.sleep(10)
             
         except Exception as e:
             print(f"[Scheduler] Error: {e}")
