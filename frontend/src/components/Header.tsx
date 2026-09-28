@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing, Star, Briefcase, ChevronRight, LogOut, LogIn, Coins, ShieldCheck, CheckCircle2, Flame, ExternalLink, Menu } from "lucide-react";
+import { Search, Bell, User, BarChart2, ShieldAlert, Sparkles, LineChart, UserCheck, Users, HelpCircle, Send, BellRing, Star, Briefcase, ChevronRight, LogOut, LogIn, Coins, ShieldCheck, CheckCircle2, Flame, ExternalLink, Menu, Bot, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from 'react';
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
@@ -667,19 +667,46 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                     </a>
                                 </div>
 
-                                {/* 5. 관리자 시스템 링크 (관리자 이메일 로그인 시만 노출) */}
+                                {/* 5. 관리자 시스템 & 무인 자동매매 사령부 링크 (오직 관리자 이메일 로그인 시에만 노출) */}
                                 {user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') && (
-                                    <Link 
-                                        href="/admin" 
-                                        onClick={() => setIsProfileMenuOpen(false)} 
-                                        className="flex items-center justify-between p-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 transition-all font-bold text-xs"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <Users className="w-4 h-4 text-purple-400" />
-                                            <span>👑 관리자 전용 관제 센터</span>
-                                        </span>
-                                        <ChevronRight className="w-3.5 h-3.5 text-purple-400" />
-                                    </Link>
+                                    <div className="space-y-2 pt-1">
+                                        <Link 
+                                            href="/admin/auto-trade" 
+                                            onClick={() => setIsProfileMenuOpen(false)} 
+                                            className="flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/20 hover:from-emerald-500/30 hover:to-cyan-500/30 text-emerald-200 border border-emerald-400/50 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all font-black text-xs group"
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="p-1.5 rounded-lg bg-emerald-500/25 text-emerald-300 relative">
+                                                    <Bot className="w-4 h-4" />
+                                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-black text-xs text-emerald-200 flex items-center gap-1.5">
+                                                        🤖 24시간 무인 자동매매 사령부
+                                                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-400 text-black">
+                                                            ADMIN
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-emerald-300/80 font-semibold">
+                                                        실전·모의 계좌 연동 &amp; ON/OFF 제어
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-3.5 h-3.5 text-emerald-300 group-hover:translate-x-0.5 transition-transform" />
+                                        </Link>
+
+                                        <Link 
+                                            href="/admin" 
+                                            onClick={() => setIsProfileMenuOpen(false)} 
+                                            className="flex items-center justify-between p-2.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 transition-all font-bold text-xs"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-purple-400" />
+                                                <span>👑 관리자 전용 관제 센터</span>
+                                            </span>
+                                            <ChevronRight className="w-3.5 h-3.5 text-purple-400" />
+                                        </Link>
+                                    </div>
                                 )}
                             </div>
                         )}
