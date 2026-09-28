@@ -271,6 +271,32 @@ export default function AlertCenterPage() {
                     }
                 }
 
+                // [실시간 DART 공시 연동] Firestore 알림과 함께 백엔드 OpenDART 실시간 공시 피드(/api/disclosures/realtime)도 병합하여 DART 공시 속보 누락 원천 차단
+                try {
+                    const dartRes = await fetch(`${API_BASE_URL}/api/disclosures/realtime?days_ago=3`);
+                    if (dartRes.ok) {
+                        const dartJson = await dartRes.json();
+                        const liveDartList = dartJson?.data || [];
+                        const existingDartUrls = new Set(
+                            deduplicatedAlerts
+                                .map((a: any) => String(a.dart_url || a.rcept_no || ""))
+                                .filter(Boolean)
+                        );
+                        liveDartList.forEach((dItem: any) => {
+                            const dKey = String(dItem.dart_url || dItem.rcept_no || "");
+                            const rcpMatch = dKey.match(/rcpNo=(\d+)/);
+                            const rcpNo = rcpMatch ? rcpMatch[1] : String(dItem.rcept_no || "");
+                            const alreadyHasRcp = rcpNo && Array.from(existingDartUrls).some(u => u.includes(rcpNo));
+                            if (!alreadyHasRcp) {
+                                if (dKey) existingDartUrls.add(dKey);
+                                deduplicatedAlerts.push(dItem);
+                            }
+                        });
+                    }
+                } catch (dartErr) {
+                    console.error("Live DART disclosures merge warning:", dartErr);
+                }
+
                 let sortedAlerts = deduplicatedAlerts;
                 sortedAlerts.sort((a, b) => {
                     const timeA = a.timestamp?.seconds || 0;

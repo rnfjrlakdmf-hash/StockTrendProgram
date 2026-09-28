@@ -214,6 +214,7 @@ async def check_and_notify_disclosures():
     logger.info("[공시Monitor] DART 공시 체크 시작...")
 
     import pytz
+    import urllib.parse
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
     # 1. 주말(토/일)은 국내 증시 휴장이므로 공시 알림 발송 스킵
@@ -256,11 +257,6 @@ async def check_and_notify_disclosures():
                 continue
 
             try:
-                new_count += 1
-                # ✅ [핵심 수정] Gemini API 호출 전에 먼저 ID를 파일에 저장
-                # 서버가 API 호출 도중 죽어도 재시작 시 중복 호출 완전 차단
-                mark_processed_and_save(state, processed_ids, doc_id)
-
                 raw_code = item.get('stock_code')
                 corp = item.get('corp_name', '알 수 없음')
                 report_title = re.sub(r'\s{2,}', ' ', item.get('report_nm', '공시')).strip()
@@ -268,10 +264,12 @@ async def check_and_notify_disclosures():
                 rcept_dt = item.get('rcept_dt', '')
                 flr_nm = item.get('flr_nm', '')
 
-                # 비상장 법인(stock_code 없음)은 스킵
+                # 비상장 법인(stock_code 없음)은 즉시 처리 완료 마킹 후 스킵
                 if not raw_code:
+                    mark_processed_and_save(state, processed_ids, doc_id)
                     continue
-                    
+
+                new_count += 1
                 from market_tag_helper import get_stock_market_tag
                 market_tag = get_stock_market_tag(raw_code)
                     
@@ -521,7 +519,23 @@ async def check_and_notify_disclosures():
 
                 # 알림 센터 저장 및 관심종목 유저 추가 푸시 발송
                 if is_whale and not skip_whale_alert:
-                    # 핵심 공시(대주주/내부자, 슈퍼개미 5%, 공시팩트, 초특급)는 위에서 글로벌 푸시 및 알림센터 글로벌 저장이 완료됨
+                    # 핵심 공시도 혹시 whale_users가 비어있어 저장이 누락된 경우를 대비해 알림센터 글로벌 저장 보장
+                    if not whale_alerted_uids:
+                        try:
+                            from firebase_config import save_alert_to_firestore
+                            save_alert_to_firestore(
+                                title=noti_title,
+                                body=noti_body,
+                                alert_type="disclosure_alert",
+                                url=data_payload["url"],
+                                is_global=True,
+                                target_users=target_uids,
+                                symbol=data_payload["symbol"],
+                                dart_url=data_payload["dart_url"],
+                                rcept_no=doc_id
+                            )
+                        except Exception as save_e:
+                            logger.error(f"[공시Monitor] Whale 폴백 DB 저장 오류: {save_e}")
                     if tokens:
                         data_payload["skip_db_save"] = True
                         send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
@@ -538,7 +552,8 @@ async def check_and_notify_disclosures():
                             is_global=True,
                             target_users=target_uids,
                             symbol=data_payload["symbol"],
-                            dart_url=data_payload["dart_url"]
+                            dart_url=data_payload["dart_url"],
+                            rcept_no=doc_id
                         )
                         logger.info(f"[공시Monitor] 알림센터 글로벌 저장 완료: {corp} ({noti_title})")
                     except Exception as save_e:
@@ -550,6 +565,9 @@ async def check_and_notify_disclosures():
                         send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
                         sent_count += 1
                         await asyncio.sleep(0.5)
+
+                # ✅ 모든 처리가 에러 없이 완료된 직후에 ID를 파일에 저장
+                mark_processed_and_save(state, processed_ids, doc_id)
 
             except Exception as item_e:
                 logger.error(f"[공시Monitor] Error processing item {doc_id}: {item_e}")
@@ -1032,17 +1050,14 @@ async def disclosure_scheduler_loop():
     """
     logger.info("[공시Monitor] 공시 실시간 감시 루프 시작 (5분 주기)")
 
-    # ✅ [크래시 루프 방지] 서버 시작 직후 5분간 공시 체크를 하지 않음
-    # systemd가 5~10초 단위로 재시작할 때 Gemini API를 호출하지 않도록 방어
-    logger.info("[공시Monitor] 서버 안정화를 위해 5분 대기 후 첫 공시 체크 시작...")
-    await asyncio.sleep(300)
+    # 서버 시작 직후 15초 대기 후 즉시 첫 공시 체크 실행
+    await asyncio.sleep(15)
 
     ipo_check_counter = 0  # 5분 * 6 = 30분마다 IPO 체크
 
     while True:
         try:
             update_heartbeat("Disclosure_Monitor")
-            await asyncio.sleep(300)  # 5분 간격
 
             # 국내 DART 공시 체크
             await check_and_notify_disclosures()
@@ -1055,6 +1070,8 @@ async def disclosure_scheduler_loop():
             if ipo_check_counter >= 6:
                 await check_and_notify_ipos()
                 ipo_check_counter = 0
+
+            await asyncio.sleep(300)  # 5분 간격
 
         except asyncio.CancelledError:
             logger.info("[공시Monitor] 공시 감시 루프 종료")
@@ -1594,6 +1611,7 @@ async def calendar_alerts_scheduler_loop():
             pass
 
     while True:
+        import asyncio
         try:
             now = datetime.now(kst)
             weekday = now.weekday()
@@ -1607,7 +1625,6 @@ async def calendar_alerts_scheduler_loop():
                 if last_run != current_date:
                     logger.info("[Calendar D-Day Alert] Triggering daily D-Day schedule scan...")
                     try:
-                        import asyncio
                         from calendar_alerts import check_and_send_calendar_dday_alerts
                         await asyncio.to_thread(check_and_send_calendar_dday_alerts)
 

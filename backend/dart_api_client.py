@@ -3,6 +3,9 @@ import json
 import requests
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 class DartApiClient:
     """
@@ -21,6 +24,9 @@ class DartApiClient:
 
     def is_available(self) -> bool:
         """API 키가 설정되어 작동 가능한 상태인지 확인"""
+        if not self.api_key:
+            load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+            self.api_key = os.getenv("DART_API_KEY", "").strip()
         return len(self.api_key) > 0
 
     def _load_corp_code(self, stock_code: str) -> Optional[str]:

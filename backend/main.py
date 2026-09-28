@@ -886,3 +886,59 @@ def api_admin_auto_trader_test_fcm():
     return {"status": "success", "message": "✅ 대표님 스마트폰(FCM) 및 [🤖 자동매매 알림] 탭으로 실시간 체결 알림이 발송되었습니다!", "data": res}
 
 
+@app.get("/api/disclosures/realtime")
+def api_get_realtime_dart_disclosures(days_ago: int = 3):
+    """알림센터 [⚡ DART 공시 속보] 탭용 실시간 금융감독원 DART 상장사 공시 피드"""
+    try:
+        import urllib.parse
+        import re
+        from datetime import datetime
+        from dart_api_client import dart_api_client
+        from market_tag_helper import get_stock_market_tag
+        from scheduler import generate_smart_disclosure_alert
+
+        raw_items = dart_api_client.get_realtime_disclosures(days_ago=days_ago) or []
+        formatted = []
+        for idx, item in enumerate(raw_items):
+            raw_code = str(item.get("stock_code") or "").strip()
+            if not raw_code:
+                continue
+            doc_id = str(item.get("rcept_no") or "")
+            corp = str(item.get("corp_name") or "상장법인").strip()
+            report_title = re.sub(r"\s{2,}", " ", str(item.get("report_nm") or "공시")).strip()
+            dart_link = str(item.get("link") or f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={doc_id}")
+            rcept_dt = str(item.get("rcept_dt") or "")
+
+            market_tag = get_stock_market_tag(raw_code)
+            title, body = generate_smart_disclosure_alert(market_tag, corp, report_title, rcept_dt)
+
+            # rcept_no 앞 8자리(YYYYMMDD) + 순번으로 타임스탬프 추정
+            ts_sec = int(datetime.now().timestamp()) - (idx * 45)
+            if len(rcept_dt) == 8 and rcept_dt.isdigit():
+                try:
+                    dt_obj = datetime.strptime(rcept_dt, "%Y%m%d")
+                    today_str = datetime.now().strftime("%Y%m%d")
+                    if rcept_dt != today_str:
+                        ts_sec = int(dt_obj.replace(hour=16, minute=0).timestamp()) - (idx * 30)
+                except Exception:
+                    pass
+
+            formatted.append({
+                "id": f"dart-live-{doc_id}",
+                "rcept_no": doc_id,
+                "title": title,
+                "body": body,
+                "type": "disclosure_alert",
+                "symbol": raw_code,
+                "corp": corp,
+                "url": f"/discovery?q={raw_code}",
+                "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
+                "is_global": True,
+                "timestamp": {"seconds": ts_sec}
+            })
+        return {"status": "success", "count": len(formatted), "data": formatted}
+    except Exception as e:
+        return {"status": "error", "message": str(e), "data": []}
+
+
+
