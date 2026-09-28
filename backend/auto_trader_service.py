@@ -419,7 +419,7 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
 
 
 def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> Dict[str, Any]:
-    """관리자(대표님) 전용 실시간 FCM 푸시 알림 + 알림센터(🤖 자동매매 알림 탭) + 텔레그램 발송 (일반 유저 노출 100% 차단)"""
+    """관리자(대표님: rnfjrlakdmf@gmail.com / UID 110418985320259217419) 전용 실시간 FCM 푸시 알림 + 알림센터(🤖 자동매매 알림 탭) 단독 발송 (일반 회원 및 공개 채널 발송 100% 차단)"""
     clean_body = (
         body.replace("<b>", "")
         .replace("</b>", "")
@@ -427,20 +427,7 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
         .strip()
     )
 
-    # 1. 텔레그램 발송
-    try:
-        bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-        chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
-        if bot_token and chat_id:
-            requests.post(
-                f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={"chat_id": chat_id, "text": f"{title}\n\n{body}", "parse_mode": "HTML"},
-                timeout=6,
-            )
-    except Exception as e:
-        print(f"[AutoTrader] Telegram alert error: {e}")
-
-    # 2. 오직 대표님 관리자 계정(rnfjrlakdmf@gmail.com / rnfjr@gmail.com, UID: 110418985320259217419)으로만 단독 발송! (타 유저 발송 0% 원천 차단)
+    # 1. 오직 대표님 관리자 계정(rnfjrlakdmf@gmail.com / rnfjr@gmail.com, UID: 110418985320259217419)으로만 단독 발송! (타 유저·공개채널 발송 0% 원천 차단)
     admin_uids = ["110418985320259217419", "rnfjrlakdmf@gmail.com", "rnfjr@gmail.com"]
     admin_tokens = []
     fcm_sent_count = 0
