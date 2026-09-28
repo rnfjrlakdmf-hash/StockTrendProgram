@@ -1459,12 +1459,12 @@ function DiscoveryContent() {
                                             {/* 1층: 정규장 실시간 가격 카드 (단정하고 시원한 가로형 시세 바) */}
                                             {(() => {
                                                 const isKrStock = stock.currency === 'KRW' || stock.symbol?.includes('.KS') || stock.symbol?.includes('.KQ') || /^\d{6}$/.test(stock.symbol || '');
+                                                const nowKst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+                                                const kstDay = nowKst.getDay();
+                                                const kstCurMin = nowKst.getHours() * 60 + nowKst.getMinutes();
                                                 const isKrHolidayOrWeekend = (() => {
                                                     if (!isKrStock) return false;
-                                                    if (stock.market_status?.includes('휴장')) return true;
-                                                    const nowKst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-                                                    const day = nowKst.getDay();
-                                                    if (day === 0 || day === 6) return true;
+                                                    if (kstDay === 0 || kstDay === 6) return true;
                                                     const yyyy = nowKst.getFullYear();
                                                     const mm = String(nowKst.getMonth() + 1).padStart(2, '0');
                                                     const dd = String(nowKst.getDate()).padStart(2, '0');
@@ -1473,24 +1473,21 @@ function DiscoveryContent() {
                                                     const krxFixed = new Set(['01-01', '03-01', '05-01', '05-05', '06-06', '07-17', '08-15', '10-03', '10-09', '12-25', '12-31']);
                                                     const krxVar = new Set([
                                                         '2025-01-27','2025-01-28','2025-01-29','2025-01-30','2025-03-03','2025-05-06','2025-06-03','2025-10-06','2025-10-07','2025-10-08',
-                                                        '2026-02-16','2026-02-17','2026-02-18','2026-03-02','2026-05-24','2026-05-25','2026-06-03','2026-08-17','2026-09-24','2026-09-25','2026-09-26','2026-09-28','2026-10-05',
+                                                        '2026-02-16','2026-02-17','2026-02-18','2026-03-02','2026-05-24','2026-05-25','2026-06-03','2026-08-17','2026-09-24','2026-09-25','2026-09-26','2026-10-05',
                                                         '2027-02-06','2027-02-07','2027-02-08','2027-02-09','2027-05-13','2027-08-16','2027-09-14','2027-09-15','2027-09-16','2027-10-04','2027-10-11'
                                                     ]);
                                                     return krxFixed.has(mmdd) || krxVar.has(ymd);
                                                 })();
+                                                const isKrRegularOpenNow = isKrStock && !isKrHolidayOrWeekend && kstCurMin >= 540 && kstCurMin <= 930;
 
                                                 const isOvertimeSession = (() => {
-                                                    if (isKrHolidayOrWeekend) return false;
+                                                    if (isKrHolidayOrWeekend || isKrRegularOpenNow) return false;
                                                     if (stock.market_status?.includes('시간외') || stock.market_status === 'AFTER_MARKET' || stock.is_extended_hours) return true;
                                                     if (stock.after_market_data?.is_active) return true;
                                                     if (extendedHours?.extended?.session === 'AFTER') return true;
                                                     if (isKrStock) {
-                                                        const now = new Date();
-                                                        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-                                                        const kstDate = new Date(utc + (9 * 3600000));
-                                                        const day = kstDate.getDay();
-                                                        const timeNum = kstDate.getHours() * 100 + kstDate.getMinutes();
-                                                        if (day >= 1 && day <= 5 && timeNum >= 1540 && timeNum < 2000) {
+                                                        const timeNum = nowKst.getHours() * 100 + nowKst.getMinutes();
+                                                        if (kstDay >= 1 && kstDay <= 5 && timeNum >= 1540 && timeNum < 2000) {
                                                             return true;
                                                         }
                                                     }
@@ -1514,7 +1511,7 @@ function DiscoveryContent() {
                                                                 <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md border w-fit shrink-0 whitespace-nowrap ${
                                                                     isKrHolidayOrWeekend
                                                                         ? 'text-rose-300 bg-rose-500/15 border-rose-500/30'
-                                                                        : extendedHours?.regular?.is_active || stock.market_status === '장중' 
+                                                                        : isKrRegularOpenNow || extendedHours?.regular?.is_active || stock.market_status === '장중' 
                                                                         ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' 
                                                                         : isOvertimeSession
                                                                         ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
@@ -1523,7 +1520,7 @@ function DiscoveryContent() {
                                                                         : 'text-zinc-400 bg-white/5 border-white/10'
                                                                 }`}>
                                                                     {isKrHolidayOrWeekend ? 'MARKET CLOSED 휴장일 (직전 정규장 종가)' :
-                                                                     extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
+                                                                     isKrRegularOpenNow || extendedHours?.regular?.is_active || stock.market_status === '장중' ? 'LIVE MARKET 실시간 현재가' :
                                                                      isOvertimeSession ? 'AFTER-MARKET 시간외 / 애프터마켓' :
                                                                      stock.market_status?.includes('동시호가') ? 'CALL AUCTION 예상 체결가' :
                                                                      'REGULAR MARKET 정규장 종가'}
@@ -1673,10 +1670,10 @@ function DiscoveryContent() {
 
                                                             {/* 장중 / 시간외 단일가 / 프리마켓 / 동시호가 / 장마감 뱃지 (시간외 카드와 중복 방지) */}
                                                             {(() => {
-                                                                const isRegular = !isKrHolidayOrWeekend && (extendedHours?.regular?.is_active || stock.market_status === '장중');
-                                                                const isPreMarket = !isKrHolidayOrWeekend && (stock.market_status?.includes('프리') || extendedHours?.extended?.session === 'PRE');
-                                                                const isCallAuction = !isKrHolidayOrWeekend && stock.market_status?.includes('동시호가');
-                                                                const isWeekend = isKrHolidayOrWeekend || stock.market_status?.includes('휴장');
+                                                                const isRegular = !isKrHolidayOrWeekend && (isKrRegularOpenNow || extendedHours?.regular?.is_active || stock.market_status === '장중');
+                                                                const isPreMarket = !isKrHolidayOrWeekend && !isRegular && (stock.market_status?.includes('프리') || extendedHours?.extended?.session === 'PRE');
+                                                                const isCallAuction = !isKrHolidayOrWeekend && !isRegular && stock.market_status?.includes('동시호가');
+                                                                const isWeekend = isKrHolidayOrWeekend;
 
                                                                 if (isRegular) {
                                                                     return (

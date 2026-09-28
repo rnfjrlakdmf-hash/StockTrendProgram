@@ -323,18 +323,25 @@ export default function WatchlistPage() {
             const krxFixedHolidays = new Set(['01-01', '03-01', '05-01', '05-05', '06-06', '07-17', '08-15', '10-03', '10-09', '12-25', '12-31']);
             const krxVarHolidays = new Set([
                 '2025-01-27','2025-01-28','2025-01-29','2025-01-30','2025-03-03','2025-05-06','2025-06-03','2025-10-06','2025-10-07','2025-10-08',
-                '2026-02-16','2026-02-17','2026-02-18','2026-03-02','2026-05-24','2026-05-25','2026-06-03','2026-08-17','2026-09-24','2026-09-25','2026-09-26','2026-09-28','2026-10-05',
+                '2026-02-16','2026-02-17','2026-02-18','2026-03-02','2026-05-24','2026-05-25','2026-06-03','2026-08-17','2026-09-24','2026-09-25','2026-09-26','2026-10-05',
                 '2027-02-06','2027-02-07','2027-02-08','2027-02-09','2027-05-13','2027-08-16','2027-09-14','2027-09-15','2027-09-16','2027-10-04','2027-10-11'
             ]);
+            const isTrueKrxHoliday = krxFixedHolidays.has(mmdd) || krxVarHolidays.has(ymd);
+            const isKrxWeekend = day === 0 || day === 6;
+            const curMin = nowKst.getHours() * 60 + nowKst.getMinutes();
 
-            if (ms.includes('공휴일') || krxFixedHolidays.has(mmdd) || krxVarHolidays.has(ymd)) {
+            if (isTrueKrxHoliday) {
                 return { label: '휴장 (공휴일)', color: 'bg-rose-500/15 text-rose-300 border border-rose-500/30', dot: 'bg-rose-400' };
             }
-            if (ms.includes('휴장') || day === 0 || day === 6) {
+            if (isKrxWeekend) {
                 return { label: '휴장', color: 'bg-zinc-800 text-zinc-400 border border-white/10', dot: 'bg-zinc-500' };
             }
+            // 평일 정규장 시간(09:00 ~ 15:30)에는 캐시된 이전 상태와 무관하게 즉시 '장중'으로 표시
+            if (curMin >= 540 && curMin <= 930) {
+                return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
+            }
             if (ms.includes('시간외') || ms.includes('야간') || ms.includes('애프터') || ms.includes('nxt') || ms.includes('after')) return { label: '시간외', color: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30', dot: 'bg-indigo-400 animate-pulse' };
-            if (ms.includes('프리') || ms.includes('pre')) return { label: '프리', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', dot: 'bg-amber-400 animate-pulse' };
+            if (ms.includes('프리') || ms.includes('pre') || (curMin >= 480 && curMin < 540)) return { label: '프리', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', dot: 'bg-amber-400 animate-pulse' };
             if (ms.includes('장중') || ms === '거래중' || ms === 'open') return { label: '장중', color: 'bg-green-500/20 text-green-400 border border-green-500/30', dot: 'bg-green-500 animate-pulse' };
             if (ms.includes('동시호가')) return { label: '동시호가', color: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', dot: 'bg-amber-400 animate-pulse' };
             return { label: '장마감', color: 'bg-gray-500/15 text-gray-500 border border-gray-500/20', dot: 'bg-gray-600' };

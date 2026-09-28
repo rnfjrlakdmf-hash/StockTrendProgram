@@ -463,15 +463,51 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
     state["positions"] = remaining_positions
 
-    # 2. 전체 유니버스 스캔 후 상위 AI 매수 후보(Candidates) 산출
+    # 2. 전체 유니버스 + [장마감 수급스캐너(/scanner)] 실시간 포착 종목 통합 스캔
     market_target = cfg.get("market_target", "KR")
-    universe = KR_UNIVERSE if market_target == "KR" else (US_UNIVERSE if market_target == "US" else KR_UNIVERSE + US_UNIVERSE)
+    universe = list(KR_UNIVERSE if market_target == "KR" else (US_UNIVERSE if market_target == "US" else KR_UNIVERSE + US_UNIVERSE))
+
+    # [핵심 시너지] 우리 사이트의 '장마감 수급스캐너(closing_scanner)' 포착 종목(CVD 매수우위 + OBV 우상향) 실시간 연동
+    closing_scanner_map: Dict[str, Dict[str, Any]] = {}
+    if market_target in ("KR", "ALL"):
+        try:
+            from routes.closing_scanner import generate_closing_scanner_data
+            scanner_data = generate_closing_scanner_data() or {}
+            existing_syms = {u["symbol"] for u in universe}
+            for d_key in (0, 1):
+                day_bucket = scanner_data.get(d_key, {})
+                for s_item in day_bucket.get("items", []):
+                    code = s_item.get("code")
+                    if not code:
+                        continue
+                    cvd_bull = s_item.get("cvd", {}).get("isBullish", False)
+                    obv_bull = s_item.get("obv", {}).get("isBullish", False)
+                    if cvd_bull or obv_bull:
+                        closing_scanner_map[code] = s_item
+                        if code not in existing_syms:
+                            universe.append({
+                                "symbol": code,
+                                "name": s_item.get("name", code),
+                                "sector": f"장마감 수급포착 ({s_item.get('majorBuyer', '기관·외인')})",
+                                "tier": "MID_MOMENTUM",
+                            })
+                            existing_syms.add(code)
+        except Exception as e:
+            print(f"[AutoTrader] Closing scanner synergy load warning: {e}")
 
     scored_candidates = []
     held_symbols = {p["symbol"] for p in state["positions"]}
     for item in universe:
         q = _fetch_live_quote(item["symbol"])
         scored = _compute_ai_quant_score(item, q)
+        # 장마감 수급스캐너(CVD 매수우위 + OBV 누적 매집) 동시 포착 시 +10점 가산점 부여!
+        scan_hit = closing_scanner_map.get(item["symbol"])
+        if scan_hit:
+            cvd_lbl = scan_hit.get("cvd", {}).get("label", "CVD 매수우위")
+            obv_lbl = scan_hit.get("obv", {}).get("label", "OBV 매집")
+            buyer = scan_hit.get("majorBuyer", "외인·기관")
+            scored["ai_score"] = min(99, scored["ai_score"] + 10)
+            scored["reason"] = f"🔥[장마감 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
         scored_candidates.append(scored)
 
     scored_candidates.sort(key=lambda x: x["ai_score"], reverse=True)
