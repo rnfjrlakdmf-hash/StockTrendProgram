@@ -540,19 +540,12 @@ async def check_and_notify_disclosures():
                 except Exception as save_e:
                     logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
 
-                # ✅ 2. 일반 공시라도 누락 없이 푸시 알림을 받을 수 있도록: 관심종목 유저 + 아직 받지 않은 공시/세력 알림 수신 활성 유저에게 발송!
-                if not is_whale and not tokens:
-                    try:
-                        from db_manager import get_all_fcm_tokens_with_user
-                        fallback_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
-                        if fallback_users:
-                            tokens = [u[1] for u in fallback_users if u[0] not in whale_alerted_uids]
-                            target_uids = [u[0] for u in fallback_users if u[0] not in whale_alerted_uids]
-                    except Exception:
-                        pass
-
+                # ✅ 2. 스마트폰/워치 FCM 푸시 발송:
+                # - 핵심/세력/주요 팩트 공시(is_whale)는 위에서 이미 전량 FCM 푸시 발송 완료!
+                # - 단순 일반 [공시 속보](증권사 일괄신고서 등)는 알림센터 DB에는 100% 저장하되,
+                #   휴대폰 푸시 소음 방지를 위해 '내 관심종목(tokens)'에 등록된 종목일 때만 푸시 발송!
                 if tokens:
-                    logger.info(f"[공시Monitor] [공시 FCM 발송] {corp} ({raw_code}) -> {len(tokens)}명: {report_title}")
+                    logger.info(f"[공시Monitor] [관심종목 맞춤 FCM 발송] {corp} ({raw_code}) -> {len(tokens)}명: {report_title}")
                     send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids, skip_db_save=True)
                     sent_count += 1
                     await asyncio.sleep(0.3)
