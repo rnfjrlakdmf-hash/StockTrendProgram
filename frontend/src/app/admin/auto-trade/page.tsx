@@ -100,7 +100,7 @@ export default function AdminAutoTradePage() {
   useEffect(() => {
     if (!authLoading && currentUser) {
       fetchStatus(false);
-      const timer = setInterval(() => fetchStatus(true), 10000);
+      const timer = setInterval(() => fetchStatus(true), 5000);
       return () => clearInterval(timer);
     }
   }, [authLoading, currentUser, fetchStatus]);
@@ -380,20 +380,52 @@ export default function AdminAutoTradePage() {
         <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
             <div>
-              <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                <Activity className="w-5 h-5 text-emerald-400" />
-                현재 로봇이 보유·감시 중인 종목 ({positions.length} / {cfg.max_positions || 5})
-              </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                목표 익절가(+{cfg.take_profit_pct}%) 또는 손절가(-{cfg.stop_loss_pct}%)에 도달하면 대표님이 안 보셔도 0.1초 만에 자동 매도합니다.
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-400" />
+                  현재 로봇이 보유·감시 중인 종목 ({positions.length} / {cfg.max_positions || 5})
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  5초마다 실시간 현재가·수익률 자동 새로고침 중 ({data?.last_quote_refresh_at || "실시간"})
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                목표 익절가(+{cfg.take_profit_pct}%) 도달 시 0.1초 만에 자동 익절 매도하고, 확보된 현금으로 즉시 새 유망주를 매수합니다.
               </p>
             </div>
-            <button
-              onClick={handleResetPaper}
-              className="text-xs font-bold text-gray-400 hover:text-white bg-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-1"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 시드 초기화 &amp; 재매수
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {(cfg.max_positions || 5) < 10 && (
+                <button
+                  onClick={async () => {
+                    setActionLoading(true);
+                    try {
+                      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+                        body: JSON.stringify({ max_positions: 10, order_amount_krw: 1000000 }),
+                      });
+                      const json = await res.json();
+                      if (json.status === "success") {
+                        setData(json.data);
+                        syncFormFromConfig(json.data.config);
+                      }
+                    } finally {
+                      setActionLoading(false);
+                    }
+                  }}
+                  className="text-xs font-black text-indigo-200 hover:text-white bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 px-3 py-1.5 rounded-xl flex items-center gap-1"
+                >
+                  ➕ 보유 한도 10종목(종목당 100만원)으로 늘리기
+                </button>
+              )}
+              <button
+                onClick={handleResetPaper}
+                className="text-xs font-bold text-gray-400 hover:text-white bg-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 시드 초기화 &amp; 재매수
+              </button>
+            </div>
           </div>
 
           {positions.length === 0 ? (

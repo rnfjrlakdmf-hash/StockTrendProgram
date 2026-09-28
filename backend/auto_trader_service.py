@@ -902,6 +902,34 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         state = load_state()
         if not state.get("candidates"):
             return run_auto_trader_cycle(force_buy=False)
+        # 보유 중인 종목들의 실시간 현재가·수익률·평가손익을 조회할 때마다 실시간 갱신!
+        fx_rate_live = 1355.0
+        cfg_live = state.get("config", {})
+        tp_pct_live = float(cfg_live.get("take_profit_pct", 4.0))
+        sl_pct_live = float(cfg_live.get("stop_loss_pct", 2.5))
+        use_sl_live = bool(cfg_live.get("use_stop_loss", False))
+        need_cycle_trigger = False
+        for pos in state.get("positions", []):
+            sym = pos.get("symbol")
+            if not sym:
+                continue
+            q = _fetch_live_quote(sym)
+            if q.get("price", 0) > 0:
+                live_p = q["price"]
+                avg_p = float(pos.get("avg_price", live_p) or live_p)
+                unit_m = fx_rate_live if pos.get("is_us") else 1.0
+                pos["current_price"] = live_p
+                pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
+                pnl_pct = round(((live_p - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
+                pnl_krw = int(round((live_p - avg_p) * pos.get("qty", 0) * unit_m))
+                pos["pnl_pct"] = pnl_pct
+                pos["pnl_krw"] = pnl_krw
+                if pnl_pct >= tp_pct_live or (use_sl_live and pnl_pct <= -abs(sl_pct_live)):
+                    need_cycle_trigger = True
+        state["last_quote_refresh_at"] = datetime.now(KST).strftime("%H:%M:%S")
+        save_state(state)
+        if need_cycle_trigger and cfg_live.get("enabled"):
+            return run_auto_trader_cycle(force_buy=False)
 
     cfg = dict(state.get("config", {}))
     acct = dict(state.get("account", {}))
@@ -949,4 +977,5 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         "trade_logs": state.get("trade_logs", [])[:40],
         "candidates": state.get("candidates", [])[:8],
         "last_cycle_at": state.get("last_cycle_at", ""),
+        "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),
     }
