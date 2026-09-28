@@ -427,24 +427,68 @@ export default function AdminAutoTradePage() {
                   <Activity className="w-5 h-5 text-emerald-400" />
                   현재 로봇이 보유·감시 중인 종목 ({positions.length} / {cfg.max_positions || 5})
                 </h2>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border flex items-center gap-1 ${
+                    cfg.mode === "KIS_REAL"
+                      ? "bg-blue-500/20 border-blue-400/50 text-blue-200"
+                      : cfg.mode === "KIS_VIRTUAL"
+                      ? "bg-purple-500/20 border-purple-400/50 text-purple-200"
+                      : "bg-amber-500/20 border-amber-400/50 text-amber-200"
+                  }`}
+                >
+                  {cfg.mode === "KIS_REAL"
+                    ? "🏦 한투 실전계좌 보유목록"
+                    : cfg.mode === "KIS_VIRTUAL"
+                    ? "🧪 한투 모의계좌 보유목록"
+                    : "🎮 AI 가상 모의투자 (가상 시드머니 보유분)"}
+                </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   5초마다 실시간 현재가·수익률 자동 새로고침 중 ({data?.last_quote_refresh_at || "실시간"})
                 </span>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                목표 익절가(+{cfg.take_profit_pct}%) 도달 시 0.1초 만에 자동 익절 매도하고, 확보된 현금으로 즉시 새 유망주를 매수합니다.
+                {cfg.mode === "KIS_REAL"
+                  ? "🏦 실전투자 모드: 한국투자증권 실제 계좌에서 매수·체결된 종목만 이곳에 표시되며, 목표 익절가 도달 시 실제 계좌에서 자동 매도됩니다."
+                  : "🎮 현재 표시된 종목들은 실제 계좌 돈이 아닌 'AI 가상 모의투자(1,000만원 가상 시드)'로 매수된 테스트 종목입니다. 실전투자 모드로 전환 후 저장하시면 실전 전용 빈 슬롯(0주)으로 자동 분리됩니다."}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {positions.length > 0 && (
+                <button
+                  onClick={async () => {
+                    if (!confirm("현재 표시된 가상 모의투자 보유 종목을 모두 비우고 실전투자 대기 상태(0주)로 전환하시겠습니까?")) return;
+                    setActionLoading(true);
+                    try {
+                      const hdrs = await getAdminHeaders(true);
+                      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
+                        method: "POST",
+                        headers: hdrs,
+                        body: JSON.stringify({ mode: "KIS_REAL" }),
+                      });
+                      const json = await res.json();
+                      if (json.status === "success") {
+                        setData(json.data);
+                        syncFormFromConfig(json.data.config);
+                      }
+                    } finally {
+                      setActionLoading(false);
+                    }
+                  }}
+                  className="text-xs font-black text-blue-200 hover:text-white bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 px-3 py-1.5 rounded-xl flex items-center gap-1"
+                >
+                  🧹 가상 모의투자 비우기 &amp; 실전 0주 대기
+                </button>
+              )}
               {(cfg.max_positions || 5) < 10 && (
                 <button
                   onClick={async () => {
                     setActionLoading(true);
                     try {
+                      const hdrs = await getAdminHeaders(true);
                       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+                        headers: hdrs,
                         body: JSON.stringify({ max_positions: 10, order_amount_krw: 1000000 }),
                       });
                       const json = await res.json();
@@ -465,25 +509,30 @@ export default function AdminAutoTradePage() {
                 onClick={handleResetPaper}
                 className="text-xs font-bold text-gray-400 hover:text-white bg-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-1"
               >
-                <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 시드 초기화 &amp; 재매수
+                <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 가상시드 초기화 &amp; 재매수
               </button>
             </div>
           </div>
 
           {positions.length === 0 ? (
             <div className="py-10 text-center space-y-3 bg-zinc-950/60 rounded-2xl border border-white/5">
-              <p className="text-sm font-bold text-gray-300">현재 보유 중인 종목이 없습니다.</p>
+              <p className="text-sm font-bold text-gray-300">
+                {cfg.mode === "KIS_REAL"
+                  ? "🏦 현재 실전 계좌로 자동매수된 보유 종목이 없습니다 (0주 · 다음 정규장 개장 시 설정 한도 내에서 자동 매수 대기 중)"
+                  : "현재 보유 중인 종목이 없습니다."}
+              </p>
               <button
                 onClick={handleRunCycleNow}
                 className="px-4 py-2 rounded-xl bg-emerald-500 text-black font-black text-xs hover:bg-emerald-400"
               >
-                ⚡ 지금 즉시 AI 1순위 종목 자동 매수하기
+                ⚡ 지금 즉시 AI 1순위 종목 스캔 &amp; 매수 시도하기
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {positions.map((pos: any) => {
                 const isPlus = (pos.pnl_pct || 0) >= 0;
+                const isRealPos = pos.trade_mode === "KIS_REAL" || String(pos.reason || "").includes("[한투주문 완료");
                 return (
                   <div
                     key={pos.symbol}
@@ -491,7 +540,16 @@ export default function AdminAutoTradePage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-black border ${
+                              isRealPos
+                                ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                                : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                            }`}
+                          >
+                            {isRealPos ? "🏦 실전계좌 보유" : "🎮 가상 모의투자"}
+                          </span>
                           <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[10px] font-black">
                             {pos.sector || "주도주"}
                           </span>

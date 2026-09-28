@@ -945,6 +945,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "bought_at": now_str,
                 "reason": f"AI 퀀트 {cand['ai_score']}점 · {cand['reason']}{kis_buy_tag}",
                 "is_us": cand["is_us"],
+                "trade_mode": cfg.get("mode", "AI_PAPER"),
             }
             state["positions"].append(new_pos)
             held_symbols.add(cand["symbol"])
@@ -1121,11 +1122,30 @@ def reset_paper_account(initial_capital_krw: int = 10000000) -> Dict[str, Any]:
 
 def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     state = load_state()
+    old_mode = state["config"].get("mode", "AI_PAPER")
     for k, v in new_cfg.items():
         if k in state["config"] and v is not None:
             if k in ("kis_app_secret", "kis_app_key") and "*" in str(v):
                 continue
             state["config"][k] = v
+
+    new_mode = state["config"].get("mode", "AI_PAPER")
+    # [모의투자 <-> 실전투자 완전 분리]
+    # 가상 모의투자(AI_PAPER)로 산 1,000만원어치 가상 종목들이 실전투자(KIS_REAL) 한도와 슬롯을 막지 않도록 자동 분리!
+    if new_mode == "KIS_REAL":
+        paper_only = [p for p in state.get("positions", []) if p.get("trade_mode", "AI_PAPER") != "KIS_REAL" and "[한투주문 완료" not in str(p.get("reason", ""))]
+        real_only = [p for p in state.get("positions", []) if p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", ""))]
+        if paper_only:
+            state["paper_positions_backup"] = paper_only
+            state["positions"] = real_only
+        target_budget = int(state["config"].get("max_total_invest_krw", 0) or state["config"].get("initial_capital_krw", 10000000))
+        if target_budget > 0 and not real_only:
+            state["account"]["cash_krw"] = target_budget
+            state["config"]["initial_capital_krw"] = target_budget
+    elif new_mode == "AI_PAPER" and old_mode != "AI_PAPER":
+        if not state.get("positions") and state.get("paper_positions_backup"):
+            state["positions"] = state.get("paper_positions_backup", [])
+
     save_state(state)
     return get_dashboard_summary(state)
 
