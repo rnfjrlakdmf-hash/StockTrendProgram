@@ -812,13 +812,33 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     order_budget = int(cfg.get("order_amount_krw", 2000000))
     min_score = int(cfg.get("min_ai_score", 68))
 
-    if (cfg.get("enabled") or force_buy) and len(state["positions"]) < max_pos and acct["cash_krw"] >= 5000:
+    # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
+    avg_market_chg = (
+        sum(c.get("change_pct", 0.0) for c in scored_candidates) / len(scored_candidates)
+        if scored_candidates
+        else 0.0
+    )
+    market_crash_brake = (avg_market_chg <= -3.0) and not force_buy
+    state["risk_guard_status"] = (
+        f"🚨 시장 급락 서킷브레이커 작동 중 (평균 {avg_market_chg:+.2f}%) — 신규 매수 보류·현금 보호"
+        if market_crash_brake
+        else f"🛡️ 5중 리스크 방어 정상 가동 중 (시장 평균 {avg_market_chg:+.2f}% · 고점과열 차단 · 섹터분산 · 무손절 물타기 대기)"
+    )
+
+    if (cfg.get("enabled") or force_buy) and not market_crash_brake and len(state["positions"]) < max_pos and acct["cash_krw"] >= 5000:
         for cand in scored_candidates:
             if len(state["positions"]) >= max_pos:
                 break
             if cand["symbol"] in held_symbols:
                 continue
             if cand["ai_score"] < min_score and not force_buy:
+                continue
+            # [리스크 방어 ②] 동일 섹터 편중(몰빵) 방지: 같은 섹터 종목은 최대 2개까지만 편입 허용
+            cand_sec_prefix = (cand.get("sector") or "")[:4]
+            same_sector_cnt = sum(
+                1 for p in state["positions"] if cand_sec_prefix and (p.get("sector") or "").startswith(cand_sec_prefix)
+            )
+            if same_sector_cnt >= 2 and not force_buy:
                 continue
 
             unit_price_krw = cand["price"] * (fx_rate if cand["is_us"] else 1.0)
