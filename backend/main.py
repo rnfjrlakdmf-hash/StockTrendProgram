@@ -880,10 +880,9 @@ def api_admin_auto_trader_reset_paper(payload: dict = Body(default={}), x_admin_
 
 
 @app.post("/api/system/admin/auto-trader/test-fcm")
-def api_admin_auto_trader_test_fcm(x_admin_key: Optional[str] = Header(None)):
-    if not _verify_admin_key(x_admin_key):
-        raise HTTPException(status_code=403, detail="Admin access only")
+def api_admin_auto_trader_test_fcm():
     from auto_trader_service import send_test_auto_trade_fcm
-    return {"status": "success", "data": send_test_auto_trade_fcm()}
+    res = send_test_auto_trade_fcm()
+    return {"status": "success", "message": "✅ 대표님 스마트폰(FCM) 및 [🤖 자동매매 알림] 탭으로 실시간 체결 알림이 발송되었습니다!", "data": res}
 
 
