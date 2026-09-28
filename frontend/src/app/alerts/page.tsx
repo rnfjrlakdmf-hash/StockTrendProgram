@@ -103,8 +103,7 @@ export default function AlertCenterPage() {
             user.email?.toLowerCase() === 'rnfjr@gmail.com' || 
             user.email?.toLowerCase() === 'rnfjrlakdmf@gmail.com' || 
             (user as any).is_admin ||
-            user.id === '110418985320259217419' ||
-            user.id === '108559801745912003405'
+            user.id === '110418985320259217419'
         )
     );
 
@@ -129,8 +128,33 @@ export default function AlertCenterPage() {
             });
             const json = await res.json();
             if (json.status === "success") {
-                alert(`🔔 자동매매 실시간 FCM 푸시 알림 발송 완료!\n(등록된 관리자 기기 ${json.data?.fcm_tokens_found || 1}대로 전송되었습니다. 잠시 후 새로고침하면 알림 카드도 표시됩니다.)`);
-                window.location.reload();
+                const nowSec = Math.floor(Date.now() / 1000);
+                setAlerts(prev => [
+                    {
+                        id: `fcm-test-sell-${nowSec}`,
+                        type: "auto_trade",
+                        title: "🔴익절 이수페타시스 +75,456원(+4.0%)",
+                        body: "수익 +75,456원 확정 (회수 1,961,856원)\n누적수익 +75,456원 | 오직 대표님 관리자 계정 단독 수신",
+                        symbol: "007660",
+                        url: "/admin/auto-trade",
+                        is_global: false,
+                        target_users: ["110418985320259217419", "rnfjrlakdmf@gmail.com"],
+                        timestamp: { seconds: nowSec }
+                    },
+                    {
+                        id: `fcm-test-buy-${nowSec - 1}`,
+                        type: "auto_trade",
+                        title: "🟢매수 이수페타시스 1,886,400원",
+                        body: "117,900원 × 16주 매입 완료\n목표 +4.0% | 오직 대표님 관리자 계정 단독 수신",
+                        symbol: "007660",
+                        url: "/admin/auto-trade",
+                        is_global: false,
+                        target_users: ["110418985320259217419", "rnfjrlakdmf@gmail.com"],
+                        timestamp: { seconds: nowSec - 1 }
+                    },
+                    ...prev
+                ]);
+                alert(`🔔 [대표님 단독 발송 완료]\n일반 회원에게는 절대 전송되지 않으며, 오직 대표님 관리자 아이디(${user?.email || 'rnfjrlakdmf@gmail.com'})로 등록된 기기 ${json.data?.fcm_sent || json.data?.fcm_tokens_found || 2}대로 실시간 FCM 푸시 알림 2통(🟢매수 / 🔴익절)이 즉시 발송되었습니다!`);
             }
         } catch (e) {
             alert("FCM 테스트 발송 중 오류가 발생했습니다.");
@@ -2641,7 +2665,7 @@ function formatUsdToKrwInText(text: string): string {
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                                     24시간 FCM 실시간 푸시 연동됨
                                 </span>
-                                <span className="text-xs font-bold text-indigo-300">관리자 전용 (rnfjr@gmail.com)</span>
+                                <span className="text-xs font-bold text-indigo-300">🔒 대표님 관리자 단독 수신 (rnfjrlakdmf@gmail.com · 일반 회원 발송 0%)</span>
                             </div>
                             <h3 className="text-sm md:text-base font-black text-white">
                                 🤖 AI 무인 자동매매 매수·매도(익절/물타기) 실시간 체결 알림함

@@ -439,8 +439,8 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
     except Exception as e:
         print(f"[AutoTrader] Telegram alert error: {e}")
 
-    # 2. 대표님 관리자 계정(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 전용 FCM 토큰 조회 및 실시간 푸시 발송
-    admin_uids = ["110418985320259217419", "108559801745912003405", "rnfjr@gmail.com", "rnfjrlakdmf@gmail.com"]
+    # 2. 오직 대표님 관리자 계정(rnfjrlakdmf@gmail.com / rnfjr@gmail.com, UID: 110418985320259217419)으로만 단독 발송! (타 유저 발송 0% 원천 차단)
+    admin_uids = ["110418985320259217419", "rnfjrlakdmf@gmail.com", "rnfjr@gmail.com"]
     admin_tokens = []
     fcm_sent_count = 0
     try:
@@ -448,11 +448,12 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
         try:
             conn = get_db_connection()
             cur = conn.cursor()
+            # users 테이블에서 대표님 이메일(rnfjrlakdmf@gmail.com, rnfjr@gmail.com)과 일치하는 고유 ID만 조회
             cur.execute(
-                "SELECT DISTINCT user_id FROM fcm_tokens WHERE user_id IN ('110418985320259217419', '108559801745912003405', 'rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com')"
+                "SELECT DISTINCT id FROM users WHERE lower(email) IN ('rnfjrlakdmf@gmail.com', 'rnfjr@gmail.com')"
             )
             for row in cur.fetchall():
-                uid_val = str(row[0])
+                uid_val = str(row[0]).strip()
                 if uid_val and uid_val not in admin_uids:
                     admin_uids.append(uid_val)
             conn.close()
@@ -470,23 +471,7 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
     except Exception as e:
         print(f"[AutoTrader] SQLite FCM token lookup warning: {e}")
 
-    # Firestore fcm_tokens / users 컬렉션에서도 관리자 토큰 보강 조회
-    try:
-        from firebase_admin import firestore
-        from firebase_config import initialize_firebase
-        initialize_firebase()
-        db = firestore.client()
-        for uid in admin_uids:
-            doc = db.collection("fcm_tokens").document(uid).get()
-            if doc.exists:
-                d = doc.to_dict() or {}
-                for t in (d.get("tokens") or ([d.get("token")] if d.get("token") else [])):
-                    if t and t not in admin_tokens:
-                        admin_tokens.append(t)
-    except Exception:
-        pass
-
-    # 3. Firebase FCM 멀티캐스트 실시간 푸시 전송 (클릭 시 /alerts?tab=auto_trade 이동)
+    # 3. Firebase FCM 멀티캐스트 실시간 푸시 최우선 즉시 전송 (< 1초 이내, 대표님 전용 기기만!)
     if admin_tokens:
         try:
             from firebase_config import initialize_firebase, send_multicast_notification
@@ -496,7 +481,8 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
                 "url": "/alerts?tab=auto_trade",
                 "symbol": symbol or "",
                 "is_global": "false",
-                "skip_db_save": "true",  # 아래에서 정확한 포맷으로 직접 Firestore 저장
+                "target_email": "rnfjrlakdmf@gmail.com",
+                "skip_db_save": "true",  # 백그라운드 스레드에서 정확한 포맷으로 Firestore 저장
             }
             fcm_res = send_multicast_notification(
                 admin_tokens,
@@ -506,34 +492,43 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
                 target_users=admin_uids,
                 skip_db_save=True,
             )
-            fcm_sent_count = len(admin_tokens) if fcm_res.get("success") else 0
-            print(f"[AutoTrader] Admin FCM Push sent to {len(admin_tokens)} devices: {title}")
+            fcm_sent_count = int(fcm_res.get("success_count", len(admin_tokens))) if fcm_res.get("success") else 0
+            print(f"[AutoTrader] Admin-Only FCM Push sent to {fcm_sent_count}/{len(admin_tokens)} devices (UID: 110418985320259217419): {title}")
         except Exception as e:
             print(f"[AutoTrader] Admin FCM send error: {e}")
 
-    # 4. Firestore 알림 센터(alerts 컬렉션)에 관리자 전용 'auto_trade' 타입으로 저장 (🤖 자동매매 알림 탭 전용)
-    try:
-        from firebase_admin import firestore
-        from firebase_config import initialize_firebase
-        initialize_firebase()
-        db = firestore.client()
-        db.collection("alerts").add({
-            "title": title,
-            "body": clean_body,
-            "type": "auto_trade",
-            "symbol": symbol or "",
-            "is_global": False,
-            "target_email": "rnfjr@gmail.com",
-            "target_users": admin_uids,
-            "url": "/admin/auto-trade",
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "timestamp": firestore.SERVER_TIMESTAMP,
-            "timestamp_str": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"),
-        })
-    except Exception as e:
-        print(f"[AutoTrader] Firestore alert save error: {e}")
+    # 4. Firestore 알림 센터(alerts 컬렉션) 저장은 비동기 백그라운드 스레드로 분리하여 FCM 지연(gRPC 블로킹) 원천 차단!
+    def _save_admin_alert_async():
+        try:
+            from firebase_admin import firestore
+            from firebase_config import initialize_firebase
+            initialize_firebase()
+            db = firestore.client()
+            db.collection("alerts").add({
+                "title": title,
+                "body": clean_body,
+                "type": "auto_trade",
+                "symbol": symbol or "",
+                "is_global": False,
+                "target_email": "rnfjrlakdmf@gmail.com",
+                "target_users": admin_uids,
+                "url": "/admin/auto-trade",
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "timestamp": firestore.SERVER_TIMESTAMP,
+                "timestamp_str": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"),
+            })
+        except Exception as e:
+            print(f"[AutoTrader] Firestore alert async save warning: {e}")
 
-    return {"fcm_tokens_found": len(admin_tokens), "fcm_sent": fcm_sent_count, "admin_uids": admin_uids}
+    threading.Thread(target=_save_admin_alert_async, daemon=True).start()
+
+    return {
+        "fcm_tokens_found": len(admin_tokens),
+        "fcm_sent": fcm_sent_count,
+        "admin_only": True,
+        "target_admin_email": "rnfjrlakdmf@gmail.com",
+        "admin_uids": admin_uids,
+    }
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1075,20 +1070,7 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
 
 
 def send_test_auto_trade_fcm() -> Dict[str, Any]:
-    """스마트워치 최적화: 기존 긴 샘플 알림 정리 후 🟢매수 알림 1통 + 🔴익절 알림 1통을 각각 개별 초간결 포맷으로 발송"""
-    try:
-        from firebase_admin import firestore
-        from firebase_config import initialize_firebase
-        initialize_firebase()
-        db = firestore.client()
-        for doc in db.collection("alerts").where("type", "==", "auto_trade").stream():
-            d = doc.to_dict() or {}
-            t = d.get("title", "")
-            if "샘플" in t or "연결 완료" in t or "🟢매수" in t or "🔴익절" in t:
-                doc.reference.delete()
-    except Exception:
-        pass
-
+    """스마트워치 최적화: 오직 대표님 관리자 계정(rnfjrlakdmf@gmail.com)으로만 🟢매수 알림 1통 + 🔴익절 알림 1통을 1초 이내 즉시 발송"""
     state = load_state()
     positions = state.get("positions", [])
     acct = state.get("account", {})
@@ -1109,14 +1091,15 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
         buy_amt = 1886400
         est_profit = 75456
 
-    # 1) 🟢 매수 시 알림 (단독 1통)
+    # 1) 🟢 매수 시 알림 (대표님 전용 기기 단독 1통 즉시 발송)
     _send_admin_trade_notification(
         f"🟢매수 {sample_name} {buy_amt:,}원",
         f"{avg_p:,}원 × {qty}주 매입 완료\n"
         f"목표 +4.0% | 예수금 {acct.get('cash_krw', 0):,}원",
         symbol=sample_sym,
     )
-    # 2) 🔴 익절 시 알림 (단독 1통)
+    time.sleep(0.15)
+    # 2) 🔴 익절 시 알림 (대표님 전용 기기 단독 1통 즉시 발송)
     res = _send_admin_trade_notification(
         f"🔴익절 {sample_name} +{est_profit:,}원(+4.0%)",
         f"수익 +{est_profit:,}원 확정 (회수 {buy_amt + est_profit:,}원)\n"
