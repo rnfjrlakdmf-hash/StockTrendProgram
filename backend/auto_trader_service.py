@@ -687,43 +687,50 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             add_budget = min(int(cfg.get("order_amount_krw", 2000000) * 0.5), int(acct.get("cash_krw", 0)), rem_cap)
             add_qty = int(add_budget // (live_price * unit_mult)) if (live_price * unit_mult) > 0 else 0
             if add_qty >= 1:
-                if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
-                    _place_kis_order(state, sym, add_qty, is_buy=True, price=live_price)
-                add_cost = int(round(add_qty * live_price * unit_mult))
-                old_qty = pos["qty"]
-                new_qty = old_qty + add_qty
-                new_avg = round(((avg_p * old_qty) + (live_price * add_qty)) / new_qty, 2 if pos.get("is_us") else 0)
-                acct["cash_krw"] = int(acct.get("cash_krw", 0) - add_cost)
-                pos["qty"] = new_qty
-                pos["avg_price"] = new_avg
-                pos["target_price"] = round(new_avg * (1.0 + tp_pct / 100.0), 2 if pos.get("is_us") else 0)
-                pos["averaged_down"] = True
-                avg_p = new_avg
-                pnl_pct = round(((live_price - avg_p) / avg_p) * 100, 2) if avg_p > 0 else 0.0
-                pos["pnl_pct"] = pnl_pct
-                pos["pnl_krw"] = int(round((live_price - avg_p) * new_qty * unit_mult))
-                state["trade_logs"].insert(0, {
-                    "id": f"TRD-{int(time.time()*1000)}",
-                    "timestamp": now_str,
-                    "action": "BUY",
-                    "symbol": sym,
-                    "name": pos["name"],
-                    "qty": add_qty,
-                    "price": live_price,
-                    "amount_krw": add_cost,
-                    "pnl_krw": 0,
-                    "pnl_pct": 0.0,
-                    "reason": f"💧 [자동 물타기] 평단가 인하 ({pos['name']} 신평단 {new_avg:,}) → 반등 시 조기 익절 준비",
-                    "mode": cfg.get("mode", "AI_PAPER"),
-                })
-                actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤)")
-                if cfg.get("telegram_notify", True):
-                    _send_admin_trade_notification(
-                        f"💧추매 {pos['name']} {add_cost:,}원",
-                        f"+{add_qty}주 추매 (신평단 {new_avg:,}원)\n"
-                        f"남은 예수금 {acct.get('cash_krw', 0):,}원",
-                        symbol=sym,
-                    )
+                kis_tag = ""
+                if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and cfg.get("kis_order_enabled", True):
+                    kis_res = _place_kis_order(state, sym, add_qty, is_buy=True, price=live_price)
+                    if not kis_res.get("ok"):
+                        state["last_kis_order_msg"] = f"⚠️ 한투 추매 주문 대기 ({pos['name']}): {kis_res.get('msg')}"
+                        add_qty = 0
+                    else:
+                        kis_tag = f" [한투주문 완료: {kis_res.get('msg')}]"
+                if add_qty >= 1:
+                    add_cost = int(round(add_qty * live_price * unit_mult))
+                    old_qty = pos["qty"]
+                    new_qty = old_qty + add_qty
+                    new_avg = round(((avg_p * old_qty) + (live_price * add_qty)) / new_qty, 2 if pos.get("is_us") else 0)
+                    acct["cash_krw"] = int(acct.get("cash_krw", 0) - add_cost)
+                    pos["qty"] = new_qty
+                    pos["avg_price"] = new_avg
+                    pos["target_price"] = round(new_avg * (1.0 + tp_pct / 100.0), 2 if pos.get("is_us") else 0)
+                    pos["averaged_down"] = True
+                    avg_p = new_avg
+                    pnl_pct = round(((live_price - avg_p) / avg_p) * 100, 2) if avg_p > 0 else 0.0
+                    pos["pnl_pct"] = pnl_pct
+                    pos["pnl_krw"] = int(round((live_price - avg_p) * new_qty * unit_mult))
+                    state["trade_logs"].insert(0, {
+                        "id": f"TRD-{int(time.time()*1000)}",
+                        "timestamp": now_str,
+                        "action": "BUY",
+                        "symbol": sym,
+                        "name": pos["name"],
+                        "qty": add_qty,
+                        "price": live_price,
+                        "amount_krw": add_cost,
+                        "pnl_krw": 0,
+                        "pnl_pct": 0.0,
+                        "reason": f"💧 [자동 물타기] 평단가 인하 ({pos['name']} 신평단 {new_avg:,}) → 반등 시 조기 익절 준비{kis_tag}",
+                        "mode": cfg.get("mode", "AI_PAPER"),
+                    })
+                    actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤){kis_tag}")
+                    if cfg.get("telegram_notify", True):
+                        _send_admin_trade_notification(
+                            f"💧추매 {pos['name']} {add_cost:,}원",
+                            f"+{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
+                            f"남은 예수금 {acct.get('cash_krw', 0):,}원",
+                            symbol=sym,
+                        )
 
         sell_reason = None
         if pnl_pct >= tp_pct:
@@ -735,43 +742,53 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
         if sell_reason and (cfg.get("enabled") or force_buy):
             # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
-            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
-                _place_kis_order(state, sym, pos["qty"], is_buy=False, price=live_price)
+            kis_sell_ok = True
+            kis_sell_tag = ""
+            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and cfg.get("kis_order_enabled", True):
+                kis_res = _place_kis_order(state, sym, pos["qty"], is_buy=False, price=live_price)
+                if not kis_res.get("ok"):
+                    kis_sell_ok = False
+                    state["last_kis_order_msg"] = f"⚠️ 한투 매도 주문 대기 ({pos['name']}): {kis_res.get('msg')}"
+                else:
+                    kis_sell_tag = f" [한투주문 완료: {kis_res.get('msg')}]"
 
-            proceeds_krw = int(round(live_price * pos["qty"] * unit_mult))
-            acct["cash_krw"] = int(acct.get("cash_krw", 0) + proceeds_krw)
-            acct["realized_pnl_krw"] = int(acct.get("realized_pnl_krw", 0) + pnl_krw)
-            acct["total_trades"] = int(acct.get("total_trades", 0) + 1)
-            if pnl_krw >= 0:
-                acct["win_trades"] = int(acct.get("win_trades", 0) + 1)
+            if kis_sell_ok:
+                proceeds_krw = int(round(live_price * pos["qty"] * unit_mult))
+                acct["cash_krw"] = int(acct.get("cash_krw", 0) + proceeds_krw)
+                acct["realized_pnl_krw"] = int(acct.get("realized_pnl_krw", 0) + pnl_krw)
+                acct["total_trades"] = int(acct.get("total_trades", 0) + 1)
+                if pnl_krw >= 0:
+                    acct["win_trades"] = int(acct.get("win_trades", 0) + 1)
+                else:
+                    acct["loss_trades"] = int(acct.get("loss_trades", 0) + 1)
+
+                log_entry = {
+                    "id": f"TRD-{int(time.time()*1000)}",
+                    "timestamp": now_str,
+                    "action": "SELL",
+                    "symbol": sym,
+                    "name": pos["name"],
+                    "qty": pos["qty"],
+                    "price": live_price,
+                    "amount_krw": proceeds_krw,
+                    "pnl_krw": pnl_krw,
+                    "pnl_pct": pnl_pct,
+                    "reason": f"{sell_reason}{kis_sell_tag}",
+                    "mode": cfg.get("mode", "AI_PAPER"),
+                }
+                state["trade_logs"].insert(0, log_entry)
+                actions_taken.append(f"🔴 [매도] {pos['name']} ({pnl_pct:+.2f}% / {pnl_krw:+,}원){kis_sell_tag}")
+
+                if cfg.get("telegram_notify", True):
+                    tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
+                    _send_admin_trade_notification(
+                        f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
+                        f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원){kis_sell_tag}\n"
+                        f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | 예수금 {acct.get('cash_krw', 0):,}원",
+                        symbol=sym,
+                    )
             else:
-                acct["loss_trades"] = int(acct.get("loss_trades", 0) + 1)
-
-            log_entry = {
-                "id": f"TRD-{int(time.time()*1000)}",
-                "timestamp": now_str,
-                "action": "SELL",
-                "symbol": sym,
-                "name": pos["name"],
-                "qty": pos["qty"],
-                "price": live_price,
-                "amount_krw": proceeds_krw,
-                "pnl_krw": pnl_krw,
-                "pnl_pct": pnl_pct,
-                "reason": sell_reason,
-                "mode": cfg.get("mode", "AI_PAPER"),
-            }
-            state["trade_logs"].insert(0, log_entry)
-            actions_taken.append(f"🔴 [매도] {pos['name']} ({pnl_pct:+.2f}% / {pnl_krw:+,}원)")
-
-            if cfg.get("telegram_notify", True):
-                tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
-                _send_admin_trade_notification(
-                    f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                    f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
-                    f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | 예수금 {acct.get('cash_krw', 0):,}원",
-                    symbol=sym,
-                )
+                remaining_positions.append(pos)
         else:
             remaining_positions.append(pos)
 
@@ -881,9 +898,14 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             if buy_amount_krw > acct["cash_krw"] or (max_invest_cap > 0 and buy_amount_krw > rem_cap):
                 continue
 
-            # 한국투자증권 API 모드일 경우 실제 KIS 주문 전송 (국내주식/ETF 및 해외주식/ETF 통합 지원)
-            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
-                _place_kis_order(state, cand["symbol"], qty, is_buy=True, price=cand["price"])
+            # 한국투자증권 API 모드일 경우 실제 KIS 주문 전송 및 체결 검증 (장마감/주문거부 시 가짜 보유 생성 방지)
+            kis_buy_tag = ""
+            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and cfg.get("kis_order_enabled", True):
+                kis_res = _place_kis_order(state, cand["symbol"], qty, is_buy=True, price=cand["price"])
+                if not kis_res.get("ok"):
+                    state["last_kis_order_msg"] = f"⚠️ 한투 매수 주문 대기 ({cand['name']} {qty}주): {kis_res.get('msg')}"
+                    continue
+                kis_buy_tag = f" [한투주문 완료: {kis_res.get('msg')}]"
 
             acct["cash_krw"] -= buy_amount_krw
             tp_pct = float(cfg.get("take_profit_pct", 4.0))
@@ -902,7 +924,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "pnl_pct": 0.0,
                 "pnl_krw": 0,
                 "bought_at": now_str,
-                "reason": f"AI 퀀트 {cand['ai_score']}점 · {cand['reason']}",
+                "reason": f"AI 퀀트 {cand['ai_score']}점 · {cand['reason']}{kis_buy_tag}",
                 "is_us": cand["is_us"],
             }
             state["positions"].append(new_pos)
@@ -923,7 +945,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "mode": cfg.get("mode", "AI_PAPER"),
             }
             state["trade_logs"].insert(0, log_entry)
-            actions_taken.append(f"🟢 [자동 매수] {cand['name']} {qty}주 ({buy_amount_krw:,}원)")
+            actions_taken.append(f"🟢 [자동 매수] {cand['name']} {qty}주 ({buy_amount_krw:,}원){kis_buy_tag}")
 
             if cfg.get("telegram_notify", True):
                 unit_lbl = f"${cand['price']:,}" if cand["is_us"] else f"{cand['price']:,}원"
