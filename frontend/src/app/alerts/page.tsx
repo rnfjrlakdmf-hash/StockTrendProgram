@@ -236,14 +236,19 @@ export default function AlertCenterPage() {
                         const tLogs = trJson?.data?.trade_logs || [];
                         tLogs.forEach((lg: any) => {
                             const isBuy = lg.action === "BUY";
+                            const amtStr = Number(lg.amount_krw || 0).toLocaleString();
+                            const priceStr = Number(lg.price || 0).toLocaleString();
+                            const pnlKrw = Number(lg.pnl_krw || 0);
+                            const pnlPct = Number(lg.pnl_pct || 0);
+                            const pnlSign = pnlKrw >= 0 ? "+" : "";
                             const synTitle = isBuy
-                                ? `🟢 [AI 자동매수 체결] ${lg.name} (${lg.symbol})`
-                                : `🔴 [AI 자동익절/매도 체결] ${lg.name} (${lg.symbol})`;
+                                ? `🟢 [AI 매수 체결 · 총 ${amtStr}원] ${lg.name} ${lg.qty}주 매입 (${lg.symbol})`
+                                : `🔴 [AI 익절/매도 완료 · ${pnlSign}${pnlKrw.toLocaleString()}원 수익 💰] ${lg.name} (${pnlSign}${pnlPct}%)`;
                             const synBody = isBuy
-                                ? `• 매수가: ${Number(lg.price || 0).toLocaleString()} (${lg.qty}주 / 총 ${Number(lg.amount_krw || 0).toLocaleString()}원)\n• 선정 사유: ${lg.reason || 'AI 퀀트 수급 돌파'}`
-                                : `• 매도가: ${Number(lg.price || 0).toLocaleString()} (${lg.qty}주 / 총 ${Number(lg.amount_krw || 0).toLocaleString()}원)\n• 실현 손익: ${Number(lg.pnl_krw || 0).toLocaleString()}원 (${lg.pnl_pct >= 0 ? '+' : ''}${lg.pnl_pct}%)\n• 사유: ${lg.reason || '목표 익절가 도달'}`;
+                                ? `💰 총 매수 금액: ${amtStr}원 (1주당 ${priceStr} × ${lg.qty}주)\n🤖 AI 선정 사유: ${lg.reason || 'AI 퀀트 수급 돌파'}`
+                                : `🎉 이번 매도 확정 수익금: ${pnlSign}${pnlKrw.toLocaleString()}원 (수익률 ${pnlSign}${pnlPct}%)\n💰 총 매도 회수 금액: ${amtStr}원 (매도가 ${priceStr} × ${lg.qty}주)\n📌 매도 사유: ${lg.reason || '목표 익절가 도달'}`;
                             const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
-                            const key = `${synTitle.toLowerCase()}::${lg.symbol}`;
+                            const key = `${lg.id || synTitle.toLowerCase()}::${lg.symbol}`;
                             if (!seenContentKeys.has(key)) {
                                 seenContentKeys.add(key);
                                 deduplicatedAlerts.push({

@@ -553,6 +553,14 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                     "mode": cfg.get("mode", "AI_PAPER"),
                 })
                 actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤)")
+                if cfg.get("telegram_notify", True):
+                    _send_admin_trade_notification(
+                        f"💧 [AI 자동물타기] {pos['name']} +{add_qty}주 추매 (총 {add_cost:,}원 투입)",
+                        f"💰 추매 매수 금액: {add_cost:,}원 (1주당 {live_price:,} × {add_qty}주)\n"
+                        f"📉 평단가 인하 완료: 신평단 {new_avg:,} (총 {new_qty}주 보유)\n"
+                        f"💵 매수 후 남은 예수금: {acct.get('cash_krw', 0):,}원",
+                        symbol=sym,
+                    )
 
         sell_reason = None
         if pnl_pct >= tp_pct:
@@ -594,12 +602,18 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             actions_taken.append(f"🔴 [매도] {pos['name']} ({pnl_pct:+.2f}% / {pnl_krw:+,}원)")
 
             if cfg.get("telegram_notify", True):
-                emoji = "🔴 [AI 자동 익절 완료 💰]" if pnl_krw >= 0 else "🛡️ [AI 자동 칼손절 체결]"
+                header_tag = (
+                    f"🔴 [AI 익절완료 {pnl_krw:+,}원 수익 💰]"
+                    if pnl_krw >= 0
+                    else f"🛡️ [AI 매도 체결 {pnl_krw:+,}원]"
+                )
                 _send_admin_trade_notification(
-                    f"{emoji} {pos['name']} ({sym})",
-                    f"• 매도가: {live_price:,} ({pos['qty']}주)\n"
-                    f"• 실현 손익: <b>{pnl_krw:+,}원 ({pnl_pct:+.2f}%)</b>\n"
-                    f"• 매도 사유: {sell_reason}",
+                    f"{header_tag} {pos['name']} ({pnl_pct:+.2f}%)",
+                    f"🎉 이번 매도 확정 수익금: {pnl_krw:+,}원 (수익률 {pnl_pct:+.2f}%)\n"
+                    f"💰 총 매도 회수 금액: {proceeds_krw:,}원 (평단 {pos['avg_price']:,} → 매도가 {live_price:,} × {pos['qty']}주)\n"
+                    f"📈 계좌 누적 총 실현수익: {acct.get('realized_pnl_krw', 0):+,}원 (현재 예수금: {acct.get('cash_krw', 0):,}원)\n"
+                    f"📌 매도 사유: {sell_reason}",
+                    symbol=sym,
                 )
         else:
             remaining_positions.append(pos)
@@ -728,11 +742,13 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
             if cfg.get("telegram_notify", True):
                 sl_info = f"손절가: {new_pos['stop_price']:,} (-{sl_pct}%)" if cfg.get("use_stop_loss", False) else "🛡️ 무손절·익절전용 모드 (수익 시에만 매도)"
+                unit_lbl = f"${cand['price']:,}" if cand["is_us"] else f"{cand['price']:,}원"
                 _send_admin_trade_notification(
-                    f"🟢 [AI 자동매수 체결] {cand['name']} ({cand['symbol']})",
-                    f"• 매수가: <b>{cand['price']:,} ({qty}주 / 총 {buy_amount_krw:,}원)</b>\n"
-                    f"• 선정 사유: {new_pos['reason']}\n"
-                    f"• 목표 익절가: {new_pos['target_price']:,} (+{tp_pct}%) / {sl_info}",
+                    f"🟢 [AI 매수 체결 · 총 {buy_amount_krw:,}원] {cand['name']} {qty}주 매입",
+                    f"💰 총 매수 금액: {buy_amount_krw:,}원 (1주당 {unit_lbl} × {qty}주)\n"
+                    f"💵 매수 후 남은 예수금: {acct.get('cash_krw', 0):,}원\n"
+                    f"🎯 목표 익절가: {new_pos['target_price']:,} (+{tp_pct}% 도달 시 자동 익절) / {sl_info}\n"
+                    f"🤖 AI 선정 사유: {new_pos['reason']}",
                     symbol=cand["symbol"],
                 )
 
@@ -786,11 +802,17 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
                 "reason": reason,
                 "mode": cfg.get("mode", "AI_PAPER"),
             })
+            header_tag = (
+                f"🔴 [AI 매도완료 {pnl_krw:+,}원 수익 💰]"
+                if pnl_krw >= 0
+                else f"🔴 [AI 매도 체결 {pnl_krw:+,}원]"
+            )
             _send_admin_trade_notification(
-                f"🔴 [AI 매도 체결] {pos['name']} ({symbol})",
-                f"• 매도가: {sell_price:,} ({pos['qty']}주 / 총 {proceeds_krw:,}원)\n"
-                f"• 실현 손익: <b>{pnl_krw:+,}원 ({pnl_pct:+.2f}%)</b>\n"
-                f"• 매도 사유: {reason}",
+                f"{header_tag} {pos['name']} ({pnl_pct:+.2f}%)",
+                f"🎉 이번 매도 확정 손익: {pnl_krw:+,}원 (수익률 {pnl_pct:+.2f}%)\n"
+                f"💰 총 매도 회수 금액: {proceeds_krw:,}원 (평단 {pos['avg_price']:,} → 매도가 {sell_price:,} × {pos['qty']}주)\n"
+                f"📈 계좌 누적 총 실현수익: {acct.get('realized_pnl_krw', 0):+,}원 (현재 예수금: {acct.get('cash_krw', 0):,}원)\n"
+                f"📌 매도 사유: {reason}",
                 symbol=symbol,
             )
         else:
@@ -802,15 +824,30 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
 
 
 def send_test_auto_trade_fcm() -> Dict[str, Any]:
-    """대표님 관리자 계정으로 자동매매 매수/익절 FCM 푸시 및 알림탭 테스트 발송"""
+    """대표님 관리자 계정으로 자동매매 매수금액 및 매도수익금 포함 FCM 푸시 테스트 발송"""
     state = load_state()
     positions = state.get("positions", [])
-    sample_name = positions[0]["name"] if positions else "두산에너빌리티"
-    sample_sym = positions[0]["symbol"] if positions else "034020"
+    acct = state.get("account", {})
+    if positions:
+        p = positions[0]
+        unit_mult = 1355.0 if p.get("is_us") else 1.0
+        buy_amt = int(round(p.get("avg_price", 0) * p.get("qty", 1) * unit_mult))
+        est_profit = int(round(buy_amt * 0.04))
+        sample_name = p["name"]
+        sample_sym = p["symbol"]
+        qty = p.get("qty", 1)
+    else:
+        sample_name = "두산에너빌리티"
+        sample_sym = "034020"
+        qty = 50
+        buy_amt = 1075000
+        est_profit = 43000
+
     res = _send_admin_trade_notification(
-        f"🤖 [자동매매 FCM 알림 연결 완료] {sample_name} ({sample_sym})",
-        f"• 대표님 전용 24시간 무인 AI 자동매매 매수·익절 실시간 FCM 푸시 알림이 정상 연동되었습니다.\n"
-        f"• 매수 체결 시 [🟢 AI 자동매수 체결], 목표가 도달 시 [🔴 AI 자동익절 완료] 푸시가 즉시 도착합니다.",
+        f"🤖 [자동매매 알림 샘플] 매수 {buy_amt:,}원 / 익절 시 +{est_profit:,}원 수익 알림 연동됨",
+        f"🟢 [매수 체결 시 알림 예시] {sample_name} {qty}주 (💰 총 매수금액: {buy_amt:,}원 / 남은 예수금: {acct.get('cash_krw', 0):,}원)\n"
+        f"🔴 [익절 매도 시 알림 예시] {sample_name} 매도 완료 (🎉 확정 수익금: +{est_profit:,}원 [+4.00%] / 총 회수금: {buy_amt + est_profit:,}원)\n"
+        f"👑 대표님 관리자 계정(rnfjr@gmail.com)으로만 단독 발송됩니다.",
         symbol=sample_sym,
     )
     return res
