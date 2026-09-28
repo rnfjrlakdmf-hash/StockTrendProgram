@@ -286,10 +286,11 @@ async def check_and_notify_disclosures():
                     "무상증자", "자기주식소각", "주식소각", "공개매수", "경영권변경"
                 ]
 
-                # 2. 📊 기업 개별 스마트 팩트 공시 (단일판매 공급계약, 임원 매매, 슈퍼개미, 유상증자, 자사주 취득 등)
-                # -> 하루에 수십 개씩 나오므로 전체 글로벌 푸시 금지! 오직 '내 관심종목' 등록 유저에게만 타겟팅 발송
+                # 2. 📊 기업 개별 스마트 팩트 공시 (단일판매 공급계약, 임원 매매, 슈퍼개미, 유상증자, 자사주 취득, 소송, 실적, 배당 등)
                 FACT_ALERT_KEYWORDS = [
-                    "단일판매", "공급계약", "유상증자", "자기주식취득", "전환사채", "신주인수권", "주요사항보고서"
+                    "단일판매", "공급계약", "유상증자", "자기주식", "신탁계약", "전환사채", "신주인수권", "교환사채", "리픽싱",
+                    "소송", "경영권분쟁", "매매거래정지", "거래정지", "불성실공시", "잠정실적", "매출액또는손익구조", "배당",
+                    "합병", "분할", "타법인주식", "양수", "양도", "임상", "품목허가", "특허", "채무보증", "단기차입금", "주식담보", "주요사항보고서"
                 ]
                 
                 clean_title = report_title.replace(" ", "")
@@ -391,9 +392,9 @@ async def check_and_notify_disclosures():
                             fact_str = f"신주 발행(유상증자) 결정 공시!\n💡 [시장해석] 자금 조달 목적 확인 필요 · 주식 희석 가능성 주의"
                         elif "무상증자" in clean:
                             fact_str = f"무상증자 결정 공시! 기존 주주에게 신주 무상 배정\n💡 [시장해석] 대표적 주주친화 정책 · 유통 주식수 확대 호재"
-                        elif "자기주식취득" in clean:
+                        elif "자기주식취득" in clean or "신탁계약" in clean:
                             fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식 직접 매수\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
-                        elif "자기주식소각" in clean:
+                        elif "자기주식소각" in clean or "주식소각" in clean:
                             fact_str = f"자사주 소각 결정 공시! 발행 주식수 영구 감축\n💡 [시장해석] 주당 가치 상승을 이끄는 가장 강력한 주주환원 호재"
                         elif "공개매수" in clean:
                             fact_str = f"공개매수 결정 공시! 프리미엄 매수 제안\n💡 [시장해석] 경영권 분쟁 또는 지분 확대를 위한 주가 부양 요인"
@@ -420,7 +421,6 @@ async def check_and_notify_disclosures():
                     if is_super_global and not skip_whale_alert:
                         try:
                             from telegram_service import send_telegram_teaser
-                            import urllib.parse
                             teaser_msg = f"🚨 <b>[{corp}] 초특급 공시 포착!</b>\n\n[{prefix_title}]\n{report_title}\n\n👉 <a href='https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}'>원문 바로가기</a>"
                             send_telegram_teaser(teaser_msg, skip_db_save=True)
                         except Exception as e:
@@ -464,9 +464,12 @@ async def check_and_notify_disclosures():
                                     "url": f"/stock/{raw_code}",
                                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
                                     "symbol": raw_code,
-                                    "is_global": "true"
+                                    "rcept_no": doc_id,
+                                    "is_global": "true",
+                                    "skip_db_save": "true"
                                 }
-                                send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids)
+                                send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids, skip_db_save=True)
+                                sent_count += 1
                                 logger.info(f"[WhaleSiren] [글로벌 핵심공시/지분변동 푸시] Sent FCM to {len(w_tokens)} users for {corp}: {w_title}")
                         except Exception as push_e:
                             logger.error(f"[WhaleSiren] Global FCM error: {push_e}")
@@ -513,58 +516,46 @@ async def check_and_notify_disclosures():
                 data_payload = {
                     "type": "disclosure_alert",
                     "symbol": matched_symbol or raw_code,
+                    "rcept_no": doc_id,
                     "url": f"/discovery?q={raw_code}",
                     "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(dart_link)}",
+                    "skip_db_save": "true"
                 }
 
-                # 알림 센터 저장 및 관심종목 유저 추가 푸시 발송
-                if is_whale and not skip_whale_alert:
-                    # 핵심 공시도 혹시 whale_users가 비어있어 저장이 누락된 경우를 대비해 알림센터 글로벌 저장 보장
-                    if not whale_alerted_uids:
-                        try:
-                            from firebase_config import save_alert_to_firestore
-                            save_alert_to_firestore(
-                                title=noti_title,
-                                body=noti_body,
-                                alert_type="disclosure_alert",
-                                url=data_payload["url"],
-                                is_global=True,
-                                target_users=target_uids,
-                                symbol=data_payload["symbol"],
-                                dart_url=data_payload["dart_url"],
-                                rcept_no=doc_id
-                            )
-                        except Exception as save_e:
-                            logger.error(f"[공시Monitor] Whale 폴백 DB 저장 오류: {save_e}")
-                    if tokens:
-                        data_payload["skip_db_save"] = True
-                        send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
-                        sent_count += 1
-                else:
-                    # 일반 공시도 알림센터(DART 공시 속보 탭)에는 무조건 글로벌(is_global=True)로 저장하여 언제든 볼 수 있게 보장!
-                    try:
-                        from firebase_config import save_alert_to_firestore
-                        save_alert_to_firestore(
-                            title=noti_title,
-                            body=noti_body,
-                            alert_type="disclosure_alert",
-                            url=data_payload["url"],
-                            is_global=True,
-                            target_users=target_uids,
-                            symbol=data_payload["symbol"],
-                            dart_url=data_payload["dart_url"],
-                            rcept_no=doc_id
-                        )
-                        logger.info(f"[공시Monitor] 알림센터 글로벌 저장 완료: {corp} ({noti_title})")
-                    except Exception as save_e:
-                        logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
+                # ✅ 1. 모든 상장사 공시(Whale 공시 + 일반 공시 100% 전량)는 예외 없이 Firestore 알림센터에 글로벌(is_global=True)로 무조건 저장!
+                try:
+                    from firebase_config import save_alert_to_firestore
+                    save_alert_to_firestore(
+                        title=noti_title,
+                        body=noti_body,
+                        alert_type="disclosure_alert",
+                        url=data_payload["url"],
+                        is_global=True,
+                        target_users=target_uids,
+                        symbol=data_payload["symbol"],
+                        dart_url=data_payload["dart_url"],
+                        rcept_no=doc_id
+                    )
+                    logger.info(f"[공시Monitor] 알림센터 글로벌 100% 저장 완료: {corp} ({noti_title})")
+                except Exception as save_e:
+                    logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
 
-                    if tokens:
-                        data_payload["skip_db_save"] = True
-                        logger.info(f"[공시Monitor] [관심종목 맞춤 알림] {corp} ({matched_symbol}) -> {len(tokens)}명: {report_title}")
-                        send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids)
-                        sent_count += 1
-                        await asyncio.sleep(0.5)
+                # ✅ 2. 일반 공시라도 누락 없이 푸시 알림을 받을 수 있도록: 관심종목 유저 + 아직 받지 않은 공시/세력 알림 수신 활성 유저에게 발송!
+                if not is_whale and not tokens:
+                    try:
+                        from db_manager import get_all_fcm_tokens_with_user
+                        fallback_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
+                        if fallback_users:
+                            tokens = [u[1] for u in fallback_users if u[0] not in whale_alerted_uids]
+                            target_uids = [u[0] for u in fallback_users if u[0] not in whale_alerted_uids]
+                    except Exception:
+                        pass
+
+                if tokens:
+                    logger.info(f"[공시Monitor] [공시 FCM 발송] {corp} ({raw_code}) -> {len(tokens)}명: {report_title}")
+                    send_multicast_notification(tokens, noti_title, noti_body, data_payload, target_users=target_uids, skip_db_save=True)
+                    sent_count += 1
+                    await asyncio.sleep(0.3)
 
                 # ✅ 모든 처리가 에러 없이 완료된 직후에 ID를 파일에 저장
                 mark_processed_and_save(state, processed_ids, doc_id)
@@ -664,7 +655,7 @@ async def check_and_notify_sec_disclosures():
 
     try:
         state = load_state()
-        sec_processed = set(state.get("sec_processed_ids", []))
+        sec_processed = dict.fromkeys(state.get("sec_processed_ids", []))
 
         # 모든 사용자의 해외 관심종목 수집 (중복 제거)
         users = get_all_users()
@@ -718,11 +709,6 @@ async def check_and_notify_sec_disclosures():
                         if not entry_id or entry_id in sec_processed:
                             continue
 
-                        sec_processed.add(entry_id)
-                        # ✅ [핵심 수정] SEC 공시도 즉시 상태 파일에 저장
-                        state["sec_processed_ids"] = list(sec_processed)[-2000:]
-                        save_state(state)
-                        
                         title_el = entry.findtext("atom:title", default="New Filing", namespaces=ns)
                         link_el = entry.find("atom:link", ns)
                         filing_url = link_el.get("href", "") if link_el is not None else ""
@@ -803,6 +789,7 @@ async def check_and_notify_sec_disclosures():
                             try:
                                 dt = datetime.fromisoformat(updated[:10])
                                 if (datetime.now() - dt).days > 7:
+                                    sec_processed[entry_id] = None
                                     continue
                                 noti_body += f" 📅 {dt.strftime('%m월 %d일')}"
                             except Exception:
@@ -811,6 +798,7 @@ async def check_and_notify_sec_disclosures():
                         data_payload = {
                             "type": "sec_disclosure",
                             "symbol": ticker,
+                            "rcept_no": entry_id,
                             "url": f"/discovery?q={ticker}",
                             "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}",
                         }
@@ -825,20 +813,23 @@ async def check_and_notify_sec_disclosures():
                                 url=data_payload["url"],
                                 is_global=True,
                                 symbol=data_payload["symbol"],
-                                dart_url=data_payload["dart_url"]
+                                dart_url=data_payload["dart_url"],
+                                rcept_no=entry_id
                             )
                         except Exception as save_e:
                             logger.error(f"[SEC Monitor] DB 저장 오류: {save_e}")
 
-                        if not all_tokens:
-                            continue
+                        if all_tokens:
+                            data_payload["skip_db_save"] = True
+                            logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
+                            send_multicast_notification(all_tokens, noti_title, noti_body, data_payload, target_users=list(target_uids), skip_db_save=True)
+                            sent_count += 1
+                            await asyncio.sleep(0.5)
 
-                        data_payload["skip_db_save"] = True
-
-                        logger.info(f"[SEC Monitor] {ticker} -> {len(all_tokens)}명: {title_el}")
-                        send_multicast_notification(all_tokens, noti_title, noti_body, data_payload, target_users=list(target_uids))
-                        sent_count += 1
-                        await asyncio.sleep(0.5)
+                        # ✅ 모든 저장 및 발송이 성공한 직후에만 처리 완료 기록
+                        sec_processed[entry_id] = None
+                        state["sec_processed_ids"] = list(sec_processed.keys())[-2000:]
+                        save_state(state)
                     except Exception as entry_e:
                         logger.error(f"[SEC Monitor] Error processing entry {entry_id} for {ticker}: {entry_e}")
                         continue
@@ -850,7 +841,7 @@ async def check_and_notify_sec_disclosures():
 
         logger.info(f"[SEC Monitor] 완료: {sent_count}건 SEC 공시 알림 발송")
 
-        state["sec_processed_ids"] = list(sec_processed)[-2000:]
+        state["sec_processed_ids"] = list(sec_processed.keys())[-2000:]
         save_state(state)
 
     except Exception as e:

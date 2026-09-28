@@ -183,10 +183,15 @@ def extract_and_strip_interpretations(body: str) -> tuple:
         if any(l.startswith(x) for x in ['※', '👉', '🔍']) or '투자 권유가 아닙니다' in l or '알림을 누르면' in l or '터치하여' in l:
             continue
             
-        # 앞머리 지저분한 특수문자 및 접두사 정리 (📌 ▪️ 📊 수급: 등)
-        l = re.sub(r'^(?:📌|▪️|▪|📊|📋|\s)+', '', l).strip()
-        l = re.sub(r'^수급:\s*', '', l).strip()
-        l = re.sub(r'^공시:\s*', '', l).strip()
+        # 앞머리 불필요한 접두사 정리 (단, 결산/브리핑 카드의 구조적 아이콘 📊 💰 🔹 🔸 ▪ └ 는 보존)
+        if not any(k in body for k in ["총 평가손익", "당일 평균 등락률", "코스피", "나스닥", "└", "🔹", "🔸"]):
+            l = re.sub(r'^(?:📌|▪️|▪|📊|📋|\s)+', '', l).strip()
+            l = re.sub(r'^수급:\s*', '', l).strip()
+            l = re.sub(r'^공시:\s*', '', l).strip()
+        else:
+            # 결산/브리핑 카드는 들여쓰기(└ 앞 공백) 보존
+            if line.lstrip().startswith("└"):
+                l = "   " + line.lstrip()
         
         if l:
             cleaned_lines.append(l)
@@ -504,9 +509,9 @@ def sanitize_notification_text(title: str, body: str):
         market_name = "국내" if "국내" in clean_title else "해외" if ("해외" in clean_title or "미국" in clean_title) else ""
         emoji = "📈" if "📈" in clean_title else "📉" if "📉" in clean_title else ""
         if "관심종목" in clean_title:
-            clean_title = f"👑 [내 관심종목 결산] {market_name} {emoji}".strip()
+            clean_title = f"👑 [관심종목 결산] {market_name} {emoji}".strip()
         elif "지수" in clean_title or "시황" in clean_title:
-            clean_title = f"📊 [시장·섹터 지수 결산] {market_name}".strip()
+            clean_title = f"📊 [시장·지수 결산] {market_name}".strip()
         else:
             clean_title = f"🌕 장마감: {market_name} {emoji}".strip()
         
@@ -639,7 +644,8 @@ def generate_deterministic_tag(title: str, data: dict = None) -> str:
     elif alert_type == 'quant_scanner' or sub_type.startswith('quant_') or '퀀트' in title:
         return f"st-quant-{symbol}-{today_str}" if symbol else f"st-quant-{today_str}"
     elif alert_type in ('news_alert', 'disclosure_alert') or '공시' in title or '뉴스' in title:
-        title_hash = hashlib.md5(title.encode('utf-8')).hexdigest()[:8]
+        unique_ref = str(data.get("rcept_no") or data.get("dart_url") or data.get("news_url") or "")
+        title_hash = hashlib.md5(f"{title}::{unique_ref}".encode('utf-8')).hexdigest()[:10]
         return f"st-{alert_type}-{symbol}-{title_hash}" if symbol else f"st-{alert_type}-{title_hash}"
     elif alert_type == 'price_alert':
         price_sub = sub_type or "price"
@@ -845,14 +851,15 @@ def send_multicast_notification(
     
     import time as _time
     _now = _time.time()
-    # 공백 정규화 후 디듀프 키 생성
+    # 공백 정규화 후 디듀프 키 생성 (rcept_no / dart_url 포함하여 동일 기업의 연속 공시 누락 원천 차단)
     import re
-    _norm_body = re.sub(r'\s+', ' ', str(body).strip())[:50]
+    _norm_body = re.sub(r'\s+', ' ', str(body).strip())[:120]
+    _unique_doc_ref = str((data or {}).get("rcept_no") or (data or {}).get("dart_url") or (data or {}).get("news_url") or "")
     _target_str = ",".join(sorted(target_users)) if target_users else "global"
-    _dedupe_key = f"{str(title).strip()}::{_norm_body}::{_target_str}"
-    if _now - send_multicast_notification._recent_saved_cache.get(_dedupe_key, 0) < 180:
+    _dedupe_key = f"{str(title).strip()}::{_norm_body}::{_unique_doc_ref}::{_target_str}"
+    if _now - send_multicast_notification._recent_saved_cache.get(_dedupe_key, 0) < 60:
         should_skip = True
-        print(f"[Firebase-Dedupe] Suppressed duplicate Firestore save within 3m: {title}")
+        print(f"[Firebase-Dedupe] Suppressed exact duplicate Firestore save within 60s: {title}")
     else:
         send_multicast_notification._recent_saved_cache[_dedupe_key] = _now
 
@@ -887,6 +894,8 @@ def send_multicast_notification(
                     alert_doc["symbol"] = data["symbol"]
                 if "dart_url" in data:
                     alert_doc["dart_url"] = data["dart_url"]
+                if "rcept_no" in data:
+                    alert_doc["rcept_no"] = data["rcept_no"]
                     
             db.collection("alerts").add(alert_doc)
             print(f"[Firestore] Alert saved to center: {title}")
