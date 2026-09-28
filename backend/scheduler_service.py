@@ -389,10 +389,15 @@ def get_market_major_investor_trend():
             with urllib.request.urlopen(req, timeout=3) as res:
                 if res.status == 200:
                     d = json.loads(res.read().decode('utf-8'))
+                    f_val = _parse_val(d.get("foreignValue"))
+                    i_val = _parse_val(d.get("institutionalValue"))
+                    p_val = _parse_val(d.get("personalValue"))
+                    if p_val == 0 and (f_val != 0 or i_val != 0):
+                        p_val = -(f_val + i_val)
                     flow_data[m_key] = {
-                        "foreign": _parse_val(d.get("foreignValue")),
-                        "institution": _parse_val(d.get("institutionalValue")),
-                        "personal": _parse_val(d.get("personalValue"))
+                        "foreign": f_val,
+                        "institution": i_val,
+                        "personal": p_val
                     }
         except Exception as e:
             print(f"[Scheduler-Trend] Failed to fetch {m_code} trend: {e}")
@@ -697,9 +702,11 @@ def send_closing_notification(market: str, target_user_id: Optional[str] = None)
 
             lines_market = list(idx_lines)
             if macro_items:
-                lines_market.append(" ｜ ".join(macro_items[:2]))
+                lines_market.append(" ｜ ".join(macro_items[:4]))
             if supply_market_line:
                 lines_market.append(supply_market_line)
+            if diagnosis:
+                lines_market.append(f"💡 [마켓 진단] {diagnosis}")
             body_market = "\n".join(lines_market)
 
             # -----------------------------------------------------------------

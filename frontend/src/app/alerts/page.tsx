@@ -1579,12 +1579,38 @@ function formatUsdToKrwInText(text: string): string {
         let frgnFlow = alert.frgn_kospi || '';
         let instFlow = alert.inst_kospi || '';
         let retailFlow = alert.retail_kospi || '';
-        if (!frgnFlow) {
-            const supplyMatch = text.match(/외인\s*([-+0-9,.]+조?억?원?)\s*·\s*기관\s*([-+0-9,.]+조?억?원?)(?:\s*\(개인\s*([-+0-9,.]+조?억?원?)\))?/);
-            if (supplyMatch) {
-                frgnFlow = supplyMatch[1];
-                instFlow = supplyMatch[2];
-                retailFlow = supplyMatch[3] || '';
+
+        const fMatch = text.match(/외인\s*([-+0-9,.]+조?억?원?)/);
+        const iMatch = text.match(/기관\s*([-+0-9,.]+조?억?원?)/);
+        const rMatch = text.match(/개인\s*([-+0-9,.]+조?억?원?)/);
+        if (!frgnFlow && fMatch) frgnFlow = fMatch[1].trim();
+        if (!instFlow && iMatch) instFlow = iMatch[1].trim();
+        if ((!retailFlow || retailFlow === '-' || retailFlow === '0원') && rMatch) {
+            retailFlow = rMatch[1].trim();
+        }
+
+        // 만약 개인 수급이 '0원'이거나 누락된 경우, 시장 수급 보존 법칙(개인 ≈ -(외국인 + 기관))으로 정밀 자동 산출
+        const parseKoreanFlowEok = (s: string): number => {
+            if (!s) return 0;
+            const sign = s.includes('-') ? -1 : 1;
+            const num = parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+            if (s.includes('조')) return sign * num * 10000;
+            if (s.includes('억')) return sign * num;
+            return 0;
+        };
+        const formatEokToKorean = (eok: number): string => {
+            if (eok === 0) return '보합(0원)';
+            const sign = eok > 0 ? '+' : '-';
+            const absV = Math.abs(eok);
+            if (absV >= 10000) return `${sign}${(absV / 10000).toFixed(1)}조원`;
+            return `${sign}${Math.round(absV).toLocaleString()}억원`;
+        };
+
+        if ((!retailFlow || retailFlow === '-' || retailFlow === '0원') && (frgnFlow || instFlow)) {
+            const fEok = parseKoreanFlowEok(frgnFlow);
+            const iEok = parseKoreanFlowEok(instFlow);
+            if (fEok !== 0 || iEok !== 0) {
+                retailFlow = formatEokToKorean(-(fEok + iEok));
             }
         }
 
@@ -1593,6 +1619,17 @@ function formatUsdToKrwInText(text: string): string {
         if (!diagnosis) {
             const diagMatch = text.match(/💡\s*\[마켓\s*진단\]\s*([^\n]+)/);
             if (diagMatch) diagnosis = diagMatch[1].trim();
+        }
+        if (!diagnosis && (frgnFlow || instFlow)) {
+            if (frgnFlow.startsWith('-') && instFlow.startsWith('-')) {
+                diagnosis = `외국인(${frgnFlow})·기관(${instFlow}) 동반 차익실현 매물을 개인(${retailFlow || '매수세'})이 흡수하며 하방 지지력을 테스트한 수급 공방 장세입니다.`;
+            } else if (frgnFlow.startsWith('+') && instFlow.startsWith('+')) {
+                diagnosis = `외국인(${frgnFlow})·기관(${instFlow}) 메이저 쌍끌이 순매수가 유입되며 주도 섹터 중심의 상승 모멘텀이 강화된 장세입니다.`;
+            } else if (frgnFlow.startsWith('+')) {
+                diagnosis = `외국인 스마트머니(${frgnFlow}) 순매수 유입이 지수 하방을 지지하며 실적 우량주 중심의 차별화 흐름이 나타났습니다.`;
+            } else {
+                diagnosis = `메이저 수급(외인 ${frgnFlow || '보합'} · 기관 ${instFlow || '보합'} · 개인 ${retailFlow || '보합'}) 간 공방 속 업종별 순환매가 전개되었습니다.`;
+            }
         }
 
         const isKospiUp = kospiDir === 'Up' || kospiPct.startsWith('+') || kospiChg.includes('▲') || kospiChg.includes('+');
@@ -1728,9 +1765,15 @@ function formatUsdToKrwInText(text: string): string {
                                 <p className="text-xs md:text-sm font-black font-mono tracking-tight">{instFlow || '-'}</p>
                             </div>
                             {/* 개인 */}
-                            <div className="p-2.5 rounded-xl border bg-zinc-800/50 border-white/5 text-gray-300">
+                            <div className={`p-2.5 rounded-xl border ${
+                                retailFlow.startsWith('+')
+                                    ? 'bg-red-500/10 border-red-500/25 text-red-300'
+                                    : retailFlow.startsWith('-')
+                                        ? 'bg-blue-500/10 border-blue-500/25 text-blue-300'
+                                        : 'bg-zinc-800/50 border-white/5 text-gray-300'
+                            }`}>
                                 <p className="text-[10px] text-gray-400 font-bold mb-0.5">개인</p>
-                                <p className="text-xs md:text-sm font-black font-mono tracking-tight">{retailFlow || '-'}</p>
+                                <p className="text-xs md:text-sm font-black font-mono tracking-tight">{retailFlow || '보합'}</p>
                             </div>
                         </div>
                     </div>
