@@ -71,6 +71,7 @@ def _default_state() -> Dict[str, Any]:
             "mode": "AI_PAPER",  # AI_PAPER | KIS_VIRTUAL | KIS_REAL
             "market_target": "ALL",  # ALL(국내주식+해외주식+국내외ETF 24시간 풀가동) | KR | US
             "initial_capital_krw": 10000000,
+            "max_total_invest_krw": 10000000,  # 실전/연동 계좌에서 AI 자동매매가 사용할 수 있는 최대 총 투자 한도 금액 (원)
             "order_amount_krw": 2000000,
             "max_positions": 5,
             "take_profit_pct": 4.0,
@@ -666,7 +667,13 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
         # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도
         if not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
-            add_budget = min(int(cfg.get("order_amount_krw", 2000000) * 0.5), int(acct.get("cash_krw", 0)))
+            max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
+            curr_invested_krw = sum(
+                int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
+                for p in state["positions"]
+            )
+            rem_cap = max(0, max_invest_cap - curr_invested_krw) if max_invest_cap > 0 else int(acct.get("cash_krw", 0))
+            add_budget = min(int(cfg.get("order_amount_krw", 2000000) * 0.5), int(acct.get("cash_krw", 0)), rem_cap)
             add_qty = int(add_budget // (live_price * unit_mult)) if (live_price * unit_mult) > 0 else 0
             if add_qty >= 1:
                 add_cost = int(round(add_qty * live_price * unit_mult))
@@ -810,6 +817,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     # 3. 빈 슬롯이 있고 예산이 충분하면 1순위 주도주 자동 매수 실행
     max_pos = int(cfg.get("max_positions", 5))
     order_budget = int(cfg.get("order_amount_krw", 2000000))
+    max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
     min_score = int(cfg.get("min_ai_score", 68))
 
     # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
@@ -829,6 +837,13 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         for cand in scored_candidates:
             if len(state["positions"]) >= max_pos:
                 break
+            curr_invested_krw = sum(
+                int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
+                for p in state["positions"]
+            )
+            rem_cap = max(0, max_invest_cap - curr_invested_krw) if max_invest_cap > 0 else acct["cash_krw"]
+            if max_invest_cap > 0 and rem_cap < 5000:
+                break
             if cand["symbol"] in held_symbols:
                 continue
             if cand["ai_score"] < min_score and not force_buy:
@@ -842,15 +857,15 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 continue
 
             unit_price_krw = cand["price"] * (fx_rate if cand["is_us"] else 1.0)
-            alloc_krw = min(order_budget, acct["cash_krw"])
+            alloc_krw = min(order_budget, acct["cash_krw"], rem_cap)
             qty = int(alloc_krw // unit_price_krw)
-            if qty <= 0 and acct["cash_krw"] >= unit_price_krw:
+            if qty <= 0 and acct["cash_krw"] >= unit_price_krw and rem_cap >= unit_price_krw:
                 qty = 1
             if qty <= 0:
                 continue
 
             buy_amount_krw = int(round(qty * unit_price_krw))
-            if buy_amount_krw > acct["cash_krw"]:
+            if buy_amount_krw > acct["cash_krw"] or (max_invest_cap > 0 and buy_amount_krw > rem_cap):
                 continue
 
             # 한국투자증권 API 모드일 경우 실제 KIS 주문 전송 (국내주식/ETF 및 해외주식/ETF 통합 지원)
@@ -1101,11 +1116,20 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     fx_rate = 1355.0
 
     eval_amount_krw = 0
+    invested_principal_krw = 0
     unrealized_pnl_krw = 0
     for pos in positions:
         unit_mult = fx_rate if pos.get("is_us") else 1.0
         eval_amount_krw += int(round(pos.get("current_price", 0) * pos.get("qty", 0) * unit_mult))
+        invested_principal_krw += int(round(pos.get("avg_price", 0) * pos.get("qty", 0) * unit_mult))
         unrealized_pnl_krw += int(pos.get("pnl_krw", 0))
+
+    max_total_invest_krw = int(cfg.get("max_total_invest_krw", 10000000) or 0)
+    remaining_invest_limit_krw = (
+        max(0, max_total_invest_krw - invested_principal_krw)
+        if max_total_invest_krw > 0
+        else int(acct.get("cash_krw", 0))
+    )
 
     total_equity_krw = int(acct.get("cash_krw", 0) + eval_amount_krw)
     initial_cap = int(cfg.get("initial_capital_krw", 10000000) or 10000000)
@@ -1127,6 +1151,9 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             "total_equity_krw": total_equity_krw,
             "cash_krw": int(acct.get("cash_krw", 0)),
             "eval_amount_krw": eval_amount_krw,
+            "invested_principal_krw": invested_principal_krw,
+            "max_total_invest_krw": max_total_invest_krw,
+            "remaining_invest_limit_krw": remaining_invest_limit_krw,
             "unrealized_pnl_krw": unrealized_pnl_krw,
             "realized_pnl_krw": int(acct.get("realized_pnl_krw", 0)),
             "total_return_krw": total_return_krw,

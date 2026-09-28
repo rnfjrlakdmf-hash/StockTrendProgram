@@ -37,6 +37,7 @@ export default function AdminAutoTradePage() {
   // 설정 폼 상태
   const [mode, setMode] = useState("AI_PAPER");
   const [marketTarget, setMarketTarget] = useState("KR");
+  const [maxTotalInvestKrw, setMaxTotalInvestKrw] = useState(10000000);
   const [orderAmountKrw, setOrderAmountKrw] = useState(2000000);
   const [maxPositions, setMaxPositions] = useState(5);
   const [takeProfitPct, setTakeProfitPct] = useState(4.0);
@@ -67,6 +68,7 @@ export default function AdminAutoTradePage() {
     if (!cfg) return;
     setMode(cfg.mode || "AI_PAPER");
     setMarketTarget(cfg.market_target || "KR");
+    setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 10000000));
     setOrderAmountKrw(Number(cfg.order_amount_krw || 2000000));
     setMaxPositions(Number(cfg.max_positions || 5));
     setTakeProfitPct(Number(cfg.take_profit_pct || 4.0));
@@ -133,6 +135,7 @@ export default function AdminAutoTradePage() {
         body: JSON.stringify({
           mode,
           market_target: marketTarget,
+          max_total_invest_krw: Number(maxTotalInvestKrw),
           order_amount_krw: Number(orderAmountKrw),
           max_positions: Number(maxPositions),
           take_profit_pct: Number(takeProfitPct),
@@ -525,6 +528,118 @@ export default function AdminAutoTradePage() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* 💰 실제/연동 계좌 자동매매 총 투자 한도 금액 설정 (안전 예산 보호캡) */}
+              <div className="p-3.5 rounded-2xl bg-blue-950/35 border border-blue-500/35 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-black text-blue-300 flex items-center gap-1.5">
+                      💰 실제·연동 계좌 자동매매 최대 총 투자 한도 설정 (안전 예산 보호캡)
+                    </div>
+                    <p className="text-[11px] text-gray-300 mt-0.5 leading-snug">
+                      실제 증권사 계좌에 큰 금액(예: 5,000만원)이 들어있어도, 여기서 설정한{" "}
+                      <span className="text-blue-300 font-bold">
+                        {maxTotalInvestKrw > 0 ? `${maxTotalInvestKrw.toLocaleString()}원` : "계좌 전체 잔고(무제한)"}
+                      </span>{" "}
+                      한도 내에서만 AI가 자동매매(신규 매수·물타기)를 진행하며 나머지 계좌 예수금은 절대 건드리지 않습니다.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 빠른 한도 금액 프리셋 버튼 */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "100만원", val: 1000000 },
+                    { label: "300만원", val: 3000000 },
+                    { label: "500만원", val: 5000000 },
+                    { label: "1,000만원", val: 10000000 },
+                    { label: "2,000만원", val: 20000000 },
+                    { label: "한도 제한 없음", val: 0 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.val}
+                      type="button"
+                      onClick={() => {
+                        setMaxTotalInvestKrw(preset.val);
+                        if (preset.val > 0 && maxPositions > 0) {
+                          setOrderAmountKrw(Math.floor(preset.val / maxPositions));
+                        }
+                      }}
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-black border transition-all ${
+                        maxTotalInvestKrw === preset.val
+                          ? "bg-blue-500 text-white border-blue-400 shadow-md shadow-blue-500/20"
+                          : "bg-zinc-950/80 text-gray-300 border-white/15 hover:border-blue-400/50 hover:text-white"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div>
+                    <label className="text-[11px] font-bold text-blue-200 block mb-1">
+                      AI 자동매매 총 운용 한도 금액 (원, 0=무제한)
+                    </label>
+                    <input
+                      type="number"
+                      value={maxTotalInvestKrw}
+                      onChange={(e) => setMaxTotalInvestKrw(Math.max(0, Number(e.target.value)))}
+                      step={500000}
+                      className="w-full bg-zinc-950 border border-blue-500/40 rounded-xl px-3 py-2 text-xs font-mono font-black text-blue-300"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (maxTotalInvestKrw > 0 && maxPositions > 0) {
+                          setOrderAmountKrw(Math.floor(maxTotalInvestKrw / maxPositions));
+                        }
+                      }}
+                      disabled={maxTotalInvestKrw <= 0}
+                      className="w-full py-2 px-3 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 disabled:opacity-40 border border-blue-500/40 text-blue-200 text-[11px] font-black transition-all"
+                    >
+                      ⚡ 한도를 {maxPositions}종목으로 자동 균등 분할 (1종목당{" "}
+                      {maxTotalInvestKrw > 0
+                        ? `${Math.floor(maxTotalInvestKrw / Math.max(1, maxPositions)).toLocaleString()}원`
+                        : "-"}
+                      )
+                    </button>
+                  </div>
+                </div>
+
+                {/* 실시간 한도 소진율 게이지 */}
+                {maxTotalInvestKrw > 0 && (
+                  <div className="pt-1 space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-gray-400">
+                        현재 AI 자동매매 투입 원금:{" "}
+                        <strong className="text-white">
+                          {Number(summary?.invested_principal_krw || 0).toLocaleString()}원
+                        </strong>
+                      </span>
+                      <span className="text-emerald-300">
+                        남은 매수 가능 한도:{" "}
+                        <strong>
+                          {Math.max(0, maxTotalInvestKrw - Number(summary?.invested_principal_krw || 0)).toLocaleString()}원
+                        </strong>
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden border border-white/10">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-300"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round((Number(summary?.invested_principal_krw || 0) / Math.max(1, maxTotalInvestKrw)) * 100)
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
