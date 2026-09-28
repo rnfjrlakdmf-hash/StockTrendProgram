@@ -867,7 +867,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         scored_candidates.append(scored)
 
     scored_candidates.sort(key=lambda x: x["ai_score"], reverse=True)
-    state["candidates"] = scored_candidates[:8]
+    state["candidates"] = scored_candidates[:10]
 
     # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
     avg_market_chg = (
@@ -1153,7 +1153,7 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
 def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     if state is None:
         state = load_state()
-        if not state.get("candidates"):
+        if len(state.get("candidates", [])) < 10:
             return run_auto_trader_cycle(force_buy=False)
         # 보유 중인 종목들의 실시간 현재가·수익률·평가손익을 조회할 때마다 실시간 갱신!
         fx_rate_live = 1355.0
@@ -1297,7 +1297,7 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         "trade_logs": all_logs[:40],
         "paper_trade_logs": paper_trade_logs,
         "real_trade_logs": real_trade_logs,
-        "candidates": state.get("candidates", [])[:8],
+        "candidates": state.get("candidates", [])[:10],
         "last_cycle_at": state.get("last_cycle_at", ""),
         "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),
     }

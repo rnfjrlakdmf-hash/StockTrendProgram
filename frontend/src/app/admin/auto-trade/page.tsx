@@ -1061,23 +1061,23 @@ export default function AdminAutoTradePage() {
             </div>
           </div>
 
-          {/* 우측: AI 실시간 종목 발굴 레이더 Top 6 */}
+          {/* 우측: AI 실시간 종목 발굴 레이더 Top 10 */}
           <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-400" />
-                  AI 로봇 실시간 매수 타점 레이더 Top 6
+                  AI 로봇 실시간 매수 타점 레이더 Top 10
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  수급·차트 지지선·섹터 모멘텀 점수가 가장 높은 최우선 매수 대기 종목입니다.
+                  수급·차트 지지선·섹터 모멘텀 점수가 가장 높은 최우선 매수 대기 10대 종목입니다.
                 </p>
               </div>
               <span className="text-[11px] font-mono text-gray-500">최근 스캔: {data?.last_cycle_at?.slice(11) || "방금 전"}</span>
             </div>
 
             <div className="space-y-2.5">
-              {candidates.slice(0, 6).map((cand: any, idx: number) => (
+              {candidates.slice(0, 10).map((cand: any, idx: number) => (
                 <div
                   key={cand.symbol}
                   className="p-3 rounded-2xl bg-zinc-950/80 border border-white/5 flex items-center justify-between gap-3"
