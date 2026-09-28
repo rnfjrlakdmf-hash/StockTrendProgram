@@ -917,14 +917,20 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             if buy_amount_krw > acct["cash_krw"] or (max_invest_cap > 0 and buy_amount_krw > rem_cap):
                 continue
 
-            # 한국투자증권 API 모드일 경우 실제 KIS 주문 전송 및 체결 검증 (장마감/주문거부 시 가짜 보유 생성 방지)
+            # 한국투자증권 API 모드일 경우: 반드시 실제 KIS 주문 전송 및 체결(rt_cd=0)이 성공했을 때만 실전 보유 종목에 추가!
+            # (주문 잠금 상태이거나 장 마감 시간이라 KIS가 접수하지 않은 경우 절대 가짜 실전 보유를 만들지 않음)
             kis_buy_tag = ""
-            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and cfg.get("kis_order_enabled", True):
+            kis_confirmed = False
+            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
+                if not cfg.get("kis_order_enabled", True):
+                    state["last_kis_order_msg"] = "🔒 [실전·연동 계좌 주문 잠금(OFF)] 상태이므로 실제 계좌 주문을 넣지 않고 대기 중입니다."
+                    continue
                 kis_res = _place_kis_order(state, cand["symbol"], qty, is_buy=True, price=cand["price"])
                 if not kis_res.get("ok"):
-                    state["last_kis_order_msg"] = f"⚠️ 한투 매수 주문 대기 ({cand['name']} {qty}주): {kis_res.get('msg')}"
+                    state["last_kis_order_msg"] = f"⏳ 한투 실전 주문 대기 ({cand['name']} {qty}주): {kis_res.get('msg')}"
                     continue
                 kis_buy_tag = f" [한투주문 완료: {kis_res.get('msg')}]"
+                kis_confirmed = True
 
             acct["cash_krw"] -= buy_amount_krw
             tp_pct = float(cfg.get("take_profit_pct", 4.0))
@@ -945,7 +951,8 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "bought_at": now_str,
                 "reason": f"AI 퀀트 {cand['ai_score']}점 · {cand['reason']}{kis_buy_tag}",
                 "is_us": cand["is_us"],
-                "trade_mode": cfg.get("mode", "AI_PAPER"),
+                "trade_mode": "KIS_REAL" if (cfg.get("mode") == "KIS_REAL" and kis_confirmed) else "AI_PAPER",
+                "kis_order_confirmed": kis_confirmed,
             }
             state["positions"].append(new_pos)
             held_symbols.add(cand["symbol"])
@@ -1222,11 +1229,11 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
 
     real_positions = [
         p for p in all_stored_positions
-        if p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", ""))
+        if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
     ]
     paper_positions = [
         p for p in all_stored_positions
-        if not (p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", "")))
+        if not (p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", "")))
     ]
 
     def _calc_group_metrics(pos_list: List[Dict[str, Any]], cap_krw: int, cash_override: Optional[int] = None) -> Dict[str, Any]:
