@@ -137,6 +137,11 @@ def load_state() -> Dict[str, Any]:
                             cap = int(state["config"].get("max_total_invest_krw", 100000) or 100000)
                             if not real_only:
                                 state["account"]["cash_krw"] = cap
+                            try:
+                                with open(STATE_FILE, "w", encoding="utf-8") as fw:
+                                    json.dump(state, fw, ensure_ascii=False, indent=2)
+                            except Exception:
+                                pass
     except Exception as e:
         print(f"[AutoTrader] load_state error: {e}")
     return state
@@ -1287,8 +1292,8 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     real_summary = _calc_group_metrics(real_positions, real_cap)
 
     all_logs = state.get("trade_logs", [])[:60]
-    real_trade_logs = [lg for lg in all_logs if lg.get("mode") == "KIS_REAL" or "[한투주문 완료" in str(lg.get("reason", ""))][:40]
-    paper_trade_logs = [lg for lg in all_logs if not (lg.get("mode") == "KIS_REAL" or "[한투주문 완료" in str(lg.get("reason", "")))][:40]
+    real_trade_logs = [lg for lg in all_logs if "[한투주문 완료" in str(lg.get("reason", ""))][:40]
+    paper_trade_logs = [lg for lg in all_logs if "[한투주문 완료" not in str(lg.get("reason", ""))][:40]
 
     # 마스킹 처리하여 프론트엔드 및 네트워크상에 원본 API 키/시크릿이 절대 노출되지 않도록 철통 보호
     kis_configured = bool(cfg.get("kis_app_key") and cfg.get("kis_account_no"))
