@@ -1214,6 +1214,54 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     win_trades = int(acct.get("win_trades", 0))
     win_rate = round((win_trades / total_trades) * 100, 1) if total_trades > 0 else 100.0
 
+    # [모의투자 창 vs 실전계좌 창 완전 분리 데이터 집계]
+    all_stored_positions = list(state.get("positions", []))
+    for bp in state.get("paper_positions_backup", []):
+        if bp.get("symbol") not in {p.get("symbol") for p in all_stored_positions}:
+            all_stored_positions.append(bp)
+
+    real_positions = [
+        p for p in all_stored_positions
+        if p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", ""))
+    ]
+    paper_positions = [
+        p for p in all_stored_positions
+        if not (p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", "")))
+    ]
+
+    def _calc_group_metrics(pos_list: List[Dict[str, Any]], cap_krw: int, cash_override: Optional[int] = None) -> Dict[str, Any]:
+        ev_krw = 0
+        inv_krw = 0
+        unr_krw = 0
+        for p in pos_list:
+            um = fx_rate if p.get("is_us") else 1.0
+            ev_krw += int(round(p.get("current_price", 0) * p.get("qty", 0) * um))
+            inv_krw += int(round(p.get("avg_price", 0) * p.get("qty", 0) * um))
+            unr_krw += int(p.get("pnl_krw", 0))
+        c_krw = cash_override if cash_override is not None else max(0, cap_krw - inv_krw)
+        eq_krw = c_krw + ev_krw
+        ret_krw = eq_krw - cap_krw
+        ret_pct = round((ret_krw / cap_krw) * 100, 2) if cap_krw > 0 else 0.0
+        return {
+            "total_equity_krw": eq_krw,
+            "cash_krw": c_krw,
+            "eval_amount_krw": ev_krw,
+            "invested_principal_krw": inv_krw,
+            "max_total_invest_krw": cap_krw,
+            "remaining_invest_limit_krw": max(0, cap_krw - inv_krw),
+            "unrealized_pnl_krw": unr_krw,
+            "total_return_krw": ret_krw,
+            "total_return_pct": ret_pct,
+        }
+
+    paper_summary = _calc_group_metrics(paper_positions, 10000000)
+    real_cap = max_total_invest_krw if max_total_invest_krw > 0 else int(cfg.get("initial_capital_krw", 10000000) or 10000000)
+    real_summary = _calc_group_metrics(real_positions, real_cap)
+
+    all_logs = state.get("trade_logs", [])[:60]
+    real_trade_logs = [lg for lg in all_logs if lg.get("mode") == "KIS_REAL" or "[한투주문 완료" in str(lg.get("reason", ""))][:40]
+    paper_trade_logs = [lg for lg in all_logs if not (lg.get("mode") == "KIS_REAL" or "[한투주문 완료" in str(lg.get("reason", "")))][:40]
+
     # 마스킹 처리하여 프론트엔드 및 네트워크상에 원본 API 키/시크릿이 절대 노출되지 않도록 철통 보호
     kis_configured = bool(cfg.get("kis_app_key") and cfg.get("kis_account_no"))
     if cfg.get("kis_app_secret"):
@@ -1241,8 +1289,14 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             "win_rate": win_rate,
             "kis_configured": kis_configured,
         },
+        "paper_summary": paper_summary,
+        "real_summary": real_summary,
         "positions": positions,
-        "trade_logs": state.get("trade_logs", [])[:40],
+        "paper_positions": paper_positions,
+        "real_positions": real_positions,
+        "trade_logs": all_logs[:40],
+        "paper_trade_logs": paper_trade_logs,
+        "real_trade_logs": real_trade_logs,
         "candidates": state.get("candidates", [])[:8],
         "last_cycle_at": state.get("last_cycle_at", ""),
         "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),

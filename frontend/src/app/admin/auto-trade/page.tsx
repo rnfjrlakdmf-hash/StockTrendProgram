@@ -261,6 +261,14 @@ export default function AdminAutoTradePage() {
     }
   };
 
+  const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("REAL");
+
+  useEffect(() => {
+    if (data?.config?.mode) {
+      setViewWindow(data.config.mode === "KIS_REAL" ? "REAL" : "PAPER");
+    }
+  }, [data?.config?.mode]);
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -272,11 +280,19 @@ export default function AdminAutoTradePage() {
     );
   }
 
-  const summary = data?.summary || {};
   const cfg = data?.config || {};
-  const positions = data?.positions || [];
+  const realPositions = data?.real_positions || [];
+  const paperPositions = data?.paper_positions || [];
+  const isRealView = viewWindow === "REAL";
+
+  const summary = isRealView
+    ? { ...(data?.summary || {}), ...(data?.real_summary || {}) }
+    : { ...(data?.summary || {}), ...(data?.paper_summary || {}) };
+  const positions = isRealView ? realPositions : paperPositions;
   const candidates = data?.candidates || [];
-  const tradeLogs = data?.trade_logs || [];
+  const tradeLogs = isRealView
+    ? (data?.real_trade_logs || [])
+    : (data?.paper_trade_logs || data?.trade_logs || []);
 
   return (
     <div className="min-h-screen bg-[#06070a] text-white pb-24">
@@ -362,10 +378,73 @@ export default function AdminAutoTradePage() {
             </div>
           </div>
 
-          {/* 5대 핵심 계좌 자산 전광판 */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+          {/* 🔀 [실전 계좌 보유 창] vs [가상 모의투자 창] 대형 2분할 전환 버튼 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setViewWindow("REAL")}
+              className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                isRealView
+                  ? "bg-gradient-to-r from-blue-600/30 via-indigo-600/25 to-emerald-600/20 border-blue-400 text-white shadow-[0_0_25px_rgba(59,130,246,0.3)]"
+                  : "bg-zinc-950/70 border-white/10 text-gray-400 hover:border-blue-400/40 hover:text-gray-200"
+              }`}
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm sm:text-base font-black">🏦 실전 계좌 보유 · 운용 창</span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-blue-500 text-white">
+                    {realPositions.length}종목 보유
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-300">
+                  한국투자증권 실제 계좌(한도 ₩{(cfg.max_total_invest_krw || 0).toLocaleString()})에서 체결된 실전 보유 종목만 단독 표시
+                </p>
+              </div>
+              <span
+                className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 ${
+                  isRealView ? "bg-blue-400 text-black" : "bg-zinc-800 text-gray-400"
+                }`}
+              >
+                {isRealView ? "현재 열림 ✓" : "창 열기"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewWindow("PAPER")}
+              className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                !isRealView
+                  ? "bg-gradient-to-r from-amber-500/25 via-orange-500/20 to-zinc-900 border-amber-400 text-white shadow-[0_0_25px_rgba(245,158,11,0.25)]"
+                  : "bg-zinc-950/70 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-gray-200"
+              }`}
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm sm:text-base font-black">🎮 AI 가상 모의투자 창</span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-500 text-black">
+                    {paperPositions.length}종목 보유
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-300">
+                  1,000만 원 가상 시드머니로 AI가 테스트 매수·감시 중인 모의투자 전용 보유 창
+                </p>
+              </div>
+              <span
+                className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 ${
+                  !isRealView ? "bg-amber-400 text-black" : "bg-zinc-800 text-gray-400"
+                }`}
+              >
+                {!isRealView ? "현재 열림 ✓" : "창 열기"}
+              </span>
+            </button>
+          </div>
+
+          {/* 5대 핵심 계좌 자산 전광판 (선택된 창 기준) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">총 운용 자산 (평가액+현금)</div>
+              <div className="text-[11px] text-gray-400 font-bold">
+                {isRealView ? "🏦 실전 설정 한도 (총 운용액)" : "🎮 가상 총 운용 자산"}
+              </div>
               <div className="text-lg sm:text-xl font-black text-white font-mono mt-1">
                 ₩{(summary.total_equity_krw || 0).toLocaleString()}
               </div>
@@ -377,22 +456,26 @@ export default function AdminAutoTradePage() {
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">주문 가능 현금 (예수금)</div>
+              <div className="text-[11px] text-gray-400 font-bold">
+                {isRealView ? "🏦 남은 실전 매수 가능 한도" : "🎮 가상 주문 가능 예수금"}
+              </div>
               <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono mt-1">
                 ₩{(summary.cash_krw || 0).toLocaleString()}
               </div>
               <div className="text-[11px] text-gray-500 mt-1">
-                주식 매입액: ₩{(summary.eval_amount_krw || 0).toLocaleString()}
+                주식 평가액: ₩{(summary.eval_amount_krw || 0).toLocaleString()}
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">현재 보유종목 평가손익</div>
+              <div className="text-[11px] text-gray-400 font-bold">
+                {isRealView ? "🏦 실전 보유종목 평가손익" : "🎮 가상 보유종목 평가손익"}
+              </div>
               <div className={`text-lg sm:text-xl font-black font-mono mt-1 ${(summary.unrealized_pnl_krw || 0) >= 0 ? "text-rose-400" : "text-blue-400"}`}>
                 {(summary.unrealized_pnl_krw || 0) >= 0 ? "+" : ""}₩{(summary.unrealized_pnl_krw || 0).toLocaleString()}
               </div>
               <div className="text-[11px] text-gray-500 mt-1">
-                보유 {positions.length}종목 / 최대 {cfg.max_positions || 5}종목
+                {isRealView ? `실전 보유 ${realPositions.length}종목` : `가상 보유 ${paperPositions.length}종목`} / 최대 {cfg.max_positions || 5}종목
               </div>
             </div>
 
@@ -407,110 +490,80 @@ export default function AdminAutoTradePage() {
             </div>
 
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10 col-span-2 sm:col-span-1">
-              <div className="text-[11px] text-gray-400 font-bold">AI 매매 승률 &amp; 운전 모드</div>
-              <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">
-                승률 {summary.win_rate ?? 100}% ({summary.win_trades || 0}승 {summary.loss_trades || 0}패)
+              <div className="text-[11px] text-gray-400 font-bold">현재 보고 있는 창 &amp; 운전 모드</div>
+              <div className="text-base sm:text-lg font-black text-amber-300 mt-1">
+                {isRealView ? "🏦 실전 계좌 전용 창" : "🎮 가상 모의투자 창"}
               </div>
               <div className="text-[11px] text-emerald-400 font-bold mt-1">
-                모드: {cfg.mode === "KIS_REAL" ? "🔥 한국투자증권 실전계좌" : cfg.mode === "KIS_VIRTUAL" ? "🧪 한국투자증권 모의계좌" : "⚡ 서버 실시간 AI 가상계좌"}
+                가동 모드: {cfg.mode === "KIS_REAL" ? "🔥 한국투자증권 실전계좌" : cfg.mode === "KIS_VIRTUAL" ? "🧪 한국투자증권 모의계좌" : "⚡ 서버 실시간 AI 가상계좌"}
               </div>
             </div>
           </div>
         </div>
 
-        {/* 1. 현재 보유 종목 실시간 감시 & 자동 익절/손절 현황판 */}
-        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+        {/* 1. 현재 보유 종목 실시간 감시 & 자동 익절/손절 현황판 (선택된 창 전용) */}
+        <div
+          className={`rounded-3xl border p-4 sm:p-6 space-y-4 ${
+            isRealView
+              ? "bg-gradient-to-b from-blue-950/25 via-zinc-900/90 to-zinc-900/90 border-blue-500/40"
+              : "bg-gradient-to-b from-amber-950/20 via-zinc-900/90 to-zinc-900/90 border-amber-500/40"
+          }`}
+        >
+          {/* 창 내부 상단 빠른 전환 탭 바 */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewWindow("REAL")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+                  isRealView
+                    ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
+                    : "bg-zinc-950/80 text-gray-400 border border-white/10 hover:text-white"
+                }`}
+              >
+                🏦 실전 계좌 보유 종목 ({realPositions.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewWindow("PAPER")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+                  !isRealView
+                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/25"
+                    : "bg-zinc-950/80 text-gray-400 border border-white/10 hover:text-white"
+                }`}
+              >
+                🎮 가상 모의투자 보유 종목 ({paperPositions.length})
+              </button>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              5초마다 실시간 현재가·수익률 자동 새로고침 중 ({data?.last_quote_refresh_at || "실시간"})
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-emerald-400" />
-                  현재 로봇이 보유·감시 중인 종목 ({positions.length} / {cfg.max_positions || 5})
-                </h2>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border flex items-center gap-1 ${
-                    cfg.mode === "KIS_REAL"
-                      ? "bg-blue-500/20 border-blue-400/50 text-blue-200"
-                      : cfg.mode === "KIS_VIRTUAL"
-                      ? "bg-purple-500/20 border-purple-400/50 text-purple-200"
-                      : "bg-amber-500/20 border-amber-400/50 text-amber-200"
-                  }`}
-                >
-                  {cfg.mode === "KIS_REAL"
-                    ? "🏦 한투 실전계좌 보유목록"
-                    : cfg.mode === "KIS_VIRTUAL"
-                    ? "🧪 한투 모의계좌 보유목록"
-                    : "🎮 AI 가상 모의투자 (가상 시드머니 보유분)"}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  5초마다 실시간 현재가·수익률 자동 새로고침 중 ({data?.last_quote_refresh_at || "실시간"})
-                </span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {cfg.mode === "KIS_REAL"
-                  ? "🏦 실전투자 모드: 한국투자증권 실제 계좌에서 매수·체결된 종목만 이곳에 표시되며, 목표 익절가 도달 시 실제 계좌에서 자동 매도됩니다."
-                  : "🎮 현재 표시된 종목들은 실제 계좌 돈이 아닌 'AI 가상 모의투자(1,000만원 가상 시드)'로 매수된 테스트 종목입니다. 실전투자 모드로 전환 후 저장하시면 실전 전용 빈 슬롯(0주)으로 자동 분리됩니다."}
+              <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
+                {isRealView
+                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || 5})`
+                  : `🎮 AI 가상 모의투자(1,000만원 시드) 보유·감시 종목 (${paperPositions.length} / 5)`}
+              </h2>
+              <p className="text-xs text-gray-300 mt-1">
+                {isRealView
+                  ? "한국투자증권 실제 계좌(43880949-22)에서 매수 체결된 종목만 이곳에 표시됩니다. (가상 모의투자 종목과 100% 분리됨)"
+                  : "실제 계좌 돈이 아닌 1,000만 원 가상 시드머니로 AI가 매매 연습·검증 중인 가상 종목 목록입니다."}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {positions.length > 0 && (
+              {!isRealView && (
                 <button
-                  onClick={async () => {
-                    if (!confirm("현재 표시된 가상 모의투자 보유 종목을 모두 비우고 실전투자 대기 상태(0주)로 전환하시겠습니까?")) return;
-                    setActionLoading(true);
-                    try {
-                      const hdrs = await getAdminHeaders(true);
-                      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
-                        method: "POST",
-                        headers: hdrs,
-                        body: JSON.stringify({ mode: "KIS_REAL" }),
-                      });
-                      const json = await res.json();
-                      if (json.status === "success") {
-                        setData(json.data);
-                        syncFormFromConfig(json.data.config);
-                      }
-                    } finally {
-                      setActionLoading(false);
-                    }
-                  }}
-                  className="text-xs font-black text-blue-200 hover:text-white bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/40 px-3 py-1.5 rounded-xl flex items-center gap-1"
+                  onClick={handleResetPaper}
+                  className="text-xs font-bold text-amber-200 hover:text-white bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 rounded-xl flex items-center gap-1"
                 >
-                  🧹 가상 모의투자 비우기 &amp; 실전 0주 대기
+                  <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 가상시드 초기화 &amp; 재매수
                 </button>
               )}
-              {(cfg.max_positions || 5) < 10 && (
-                <button
-                  onClick={async () => {
-                    setActionLoading(true);
-                    try {
-                      const hdrs = await getAdminHeaders(true);
-                      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
-                        method: "POST",
-                        headers: hdrs,
-                        body: JSON.stringify({ max_positions: 10, order_amount_krw: 1000000 }),
-                      });
-                      const json = await res.json();
-                      if (json.status === "success") {
-                        setData(json.data);
-                        syncFormFromConfig(json.data.config);
-                      }
-                    } finally {
-                      setActionLoading(false);
-                    }
-                  }}
-                  className="text-xs font-black text-indigo-200 hover:text-white bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 px-3 py-1.5 rounded-xl flex items-center gap-1"
-                >
-                  ➕ 보유 한도 10종목(종목당 100만원)으로 늘리기
-                </button>
-              )}
-              <button
-                onClick={handleResetPaper}
-                className="text-xs font-bold text-gray-400 hover:text-white bg-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-1"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 가상시드 초기화 &amp; 재매수
-              </button>
             </div>
           </div>
 
