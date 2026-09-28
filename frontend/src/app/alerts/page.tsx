@@ -744,10 +744,19 @@ function formatUsdToKrwInText(text: string): string {
                 return;
             }
 
-            // 5. [신규 포맷 A / 구형 B] 내 손익 라인 (예: "내 손익 -55,650원 (-27.8%)" or "↳ 💰수익: -55,650원 (-27.8%)")
-            if (cleanLine.startsWith('내 손익') || cleanLine.startsWith('▪ 내 손익') || cleanLine.startsWith('↳') || cleanLine.includes('총 수익:')) {
+            // 5. [신규 포맷 A / 구형 B / 계층형 └] 내 손익 라인 (예: "└ 내 손익 -59,150원 (-29.6%)" or "↳ 💰수익: -55,650원 (-27.8%)")
+            if (
+                cleanLine.startsWith('내 손익') ||
+                cleanLine.startsWith('▪ 내 손익') ||
+                cleanLine.startsWith('└') ||
+                cleanLine.startsWith('↳') ||
+                cleanLine.includes('내 손익') ||
+                cleanLine.includes('총 수익:')
+            ) {
                 if (currentItem) {
-                    const profitPart = cleanLine.replace(/^.*?(?:내\s*손익|총\s*수익|수익)[:\s]*/, '').trim();
+                    // ' ｜ ETF 괴리율 ...' 등 부가 항목이 뒤에 붙어 있는 경우 앞쪽 내 손익 파트만 분리
+                    const mainSubPart = cleanLine.split(/[\|｜]/)[0].trim();
+                    const profitPart = mainSubPart.replace(/^.*?(?:내\s*손익|총\s*수익|수익)[:\s]*/, '').trim();
                     const pctMatch = profitPart.match(/\((.*?)\)/);
                     if (pctMatch) {
                         currentItem.profitPctStr = pctMatch[1].trim();
@@ -797,11 +806,11 @@ function formatUsdToKrwInText(text: string): string {
                 return;
             }
 
-            // 6. [구형 포맷 B] 인라인 종목 행 (예: • 삼성중공업(7주): 20,600원 (▼200원 / ▼1.0%))
-            if (cleanLine.startsWith('•') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.includes('['))) {
+            // 6. [구형 포맷 B / 하이브리드 계층형] 인라인 종목 행 (예: 🔹 삼성중공업(7주): 20,100원 (▼150원 · -0.7%))
+            if (cleanLine.startsWith('•') || cleanLine.startsWith('🔹') || cleanLine.startsWith('🔸') || cleanLine.startsWith('▪️') || (cleanLine.includes(':') && !cleanLine.startsWith('↳') && !cleanLine.startsWith('└') && !cleanLine.includes('['))) {
                 const parts = cleanLine.split(':');
-                const nameWithQty = parts[0].replace('•', '').replace('▪', '').trim();
-                if (/^(코스피|코스닥|나스닥|환율|총|등락|평가|손익|수익)/i.test(nameWithQty)) return;
+                const nameWithQty = parts[0].replace(/^[•▪🔹🔸▪️\-\*]\s*/, '').trim();
+                if (/^(코스피|코스닥|나스닥|환율|총|등락|평가|손익|수익|🏆|⚠️|🌊|💰)/i.test(nameWithQty)) return;
 
                 let stockName = nameWithQty;
                 let stockQty = "";
@@ -809,7 +818,7 @@ function formatUsdToKrwInText(text: string): string {
                 const qtyMatch = nameWithQty.match(/\(([\d\.]+주)\)/);
                 if (qtyMatch) {
                     stockQty = qtyMatch[1];
-                    stockName = nameWithQty.replace(/\([\d\.]+주\)/, '').trim();
+                    stockName = nameWithQty.replace(/\([\d\.]+주\)/, '').replace(/^[•▪🔹🔸▪️\-\*]\s*/, '').trim();
                     const qn = parseFloat(stockQty.replace('주', ''));
                     if (!isNaN(qn) && qn > 0) qtyNum = qn;
                 }
@@ -822,6 +831,7 @@ function formatUsdToKrwInText(text: string): string {
                 } else {
                     priceStr = detailPart.split('(')[0].trim();
                 }
+                const priceNum = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
 
                 const chgMatch = detailPart.match(/\((.*?)\)/);
                 const dayChangeStr = chgMatch ? chgMatch[1] : "";
@@ -834,11 +844,24 @@ function formatUsdToKrwInText(text: string): string {
                     isDayUp = dayChangePct >= 0;
                 }
 
+                let dayChangeVal = 0;
+                const valMatch = dayChangeStr.match(/([▲▼\-+]?[\d,]+)원/);
+                if (valMatch) {
+                    const isDownVal = valMatch[1].includes('▼') || valMatch[1].includes('-') || dayChangePct < 0;
+                    const rawChgVal = parseFloat(valMatch[1].replace(/[^0-9.]/g, '')) || 0;
+                    dayChangeVal = isDownVal ? -rawChgVal : rawChgVal;
+                } else if (priceNum > 0 && dayChangePct !== 0 && (100 + dayChangePct) !== 0) {
+                    dayChangeVal = Math.round(priceNum * (dayChangePct / (100 + dayChangePct)));
+                }
+
                 let cleanSym = "";
                 const sIdx = watchlistNames.findIndex(n => n === stockName);
                 if (sIdx !== -1 && watchlistSymbols[sIdx]) {
                     cleanSym = watchlistSymbols[sIdx].split('.')[0];
                 }
+
+                const initEval = priceNum > 0 && qtyNum > 0 ? Math.round(priceNum * qtyNum) : 0;
+                const initTodayPnL = dayChangeVal !== 0 && qtyNum > 0 ? Math.round(dayChangeVal * qtyNum) : 0;
 
                 currentItem = {
                     name: stockName,
@@ -846,9 +869,9 @@ function formatUsdToKrwInText(text: string): string {
                     qty: stockQty,
                     qtyNum: qtyNum,
                     price: priceStr,
-                    priceNum: parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0,
+                    priceNum: priceNum,
                     dayChangeStr: dayChangeStr,
-                    dayChangeVal: 0,
+                    dayChangeVal: dayChangeVal,
                     dayChangePct: dayChangePct,
                     isDayUp: isDayUp,
                     profitStr: "",
@@ -856,10 +879,10 @@ function formatUsdToKrwInText(text: string): string {
                     profitPctStr: "",
                     profitPct: 0,
                     isProfitUp: false,
-                    avgBuyPrice: 0,
-                    evalAmount: 0,
-                    investAmount: 0,
-                    todayProfitVal: 0,
+                    avgBuyPrice: priceNum,
+                    evalAmount: initEval,
+                    investAmount: initEval,
+                    todayProfitVal: initTodayPnL,
                     subPurchases: [],
                     insight: ""
                 };
@@ -868,8 +891,8 @@ function formatUsdToKrwInText(text: string): string {
             }
 
             // 7. [신규 포맷 A] 종목명 단독 라인 (예: "삼성중공업 (7주)" or "▪ 삼성중공업 (7주)" or "카카오")
-            const cleanStockHeader = cleanLine.replace(/^[▪•\-\*]\s*/, '').trim();
-            if (!/^(코스피|코스닥|나스닥|환율|총|등락|평가|손익|수익|오늘|외인|기관|수급|⚠️|🏆|🌊|📊|💰|💬)/.test(cleanStockHeader) && cleanStockHeader.length < 35) {
+            const cleanStockHeader = cleanLine.replace(/^[▪•🔹🔸▪️\-\*]\s*/, '').trim();
+            if (!/^(코스피|코스닥|나스닥|환율|총|등락|평가|손익|수익|오늘|외인|기관|수급|내\s*손익|└|↳|⚠️|🏆|🌊|📊|💰|💬)/.test(cleanStockHeader) && cleanStockHeader.length < 35) {
                 let sName = cleanStockHeader;
                 let sQty = "";
                 let qNum = 1;
