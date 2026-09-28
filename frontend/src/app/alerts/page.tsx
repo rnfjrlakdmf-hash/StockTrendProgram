@@ -160,6 +160,10 @@ export default function AlertCenterPage() {
                     const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
                     
                     const isAutoTradeType = data.type === 'auto_trade' ||
+                        (data.title || '').includes('🟢매수') ||
+                        (data.title || '').includes('🔴익절') ||
+                        (data.title || '').includes('🔴매도') ||
+                        (data.title || '').includes('💧추매') ||
                         (data.title || '').includes('[AI 자동매수') ||
                         (data.title || '').includes('[AI 매도') ||
                         (data.title || '').includes('[자동매매') ||
@@ -239,14 +243,14 @@ export default function AlertCenterPage() {
                             const amtStr = Number(lg.amount_krw || 0).toLocaleString();
                             const priceStr = Number(lg.price || 0).toLocaleString();
                             const pnlKrw = Number(lg.pnl_krw || 0);
-                            const pnlPct = Number(lg.pnl_pct || 0);
+                            const pnlPct = Number(lg.pnl_pct || 0).toFixed(1);
                             const pnlSign = pnlKrw >= 0 ? "+" : "";
                             const synTitle = isBuy
-                                ? `🟢 [AI 매수 체결 · 총 ${amtStr}원] ${lg.name} ${lg.qty}주 매입 (${lg.symbol})`
-                                : `🔴 [AI 익절/매도 완료 · ${pnlSign}${pnlKrw.toLocaleString()}원 수익 💰] ${lg.name} (${pnlSign}${pnlPct}%)`;
+                                ? `🟢매수 ${lg.name} ${amtStr}원`
+                                : `🔴익절 ${lg.name} ${pnlSign}${pnlKrw.toLocaleString()}원(${pnlSign}${pnlPct}%)`;
                             const synBody = isBuy
-                                ? `💰 총 매수 금액: ${amtStr}원 (1주당 ${priceStr} × ${lg.qty}주)\n🤖 AI 선정 사유: ${lg.reason || 'AI 퀀트 수급 돌파'}`
-                                : `🎉 이번 매도 확정 수익금: ${pnlSign}${pnlKrw.toLocaleString()}원 (수익률 ${pnlSign}${pnlPct}%)\n💰 총 매도 회수 금액: ${amtStr}원 (매도가 ${priceStr} × ${lg.qty}주)\n📌 매도 사유: ${lg.reason || '목표 익절가 도달'}`;
+                                ? `${priceStr}원 × ${lg.qty}주 매입 완료\n목표 +4.0% | ${lg.reason || 'AI 퀀트 수급 돌파'}`
+                                : `수익 ${pnlSign}${pnlKrw.toLocaleString()}원 확정 (회수 ${amtStr}원)\n사유: ${lg.reason || '목표 익절가 도달'}`;
                             const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
                             const key = `${lg.id || synTitle.toLowerCase()}::${lg.symbol}`;
                             if (!seenContentKeys.has(key)) {
@@ -2231,8 +2235,9 @@ function formatUsdToKrwInText(text: string): string {
 
     const tabs = isAdmin 
         ? [
-            ...baseTabs, 
+            baseTabs[0], // 전체 브리핑
             { id: "auto_trade", label: "🤖 자동매매 알림", icon: Zap },
+            ...baseTabs.slice(1),
             { id: "admin", label: "👑 관리자 알림", icon: ShieldAlert }
           ]
         : baseTabs;
@@ -2240,6 +2245,8 @@ function formatUsdToKrwInText(text: string): string {
     const filteredAlerts = alerts.filter(alert => {
         const titleText = (alert.title || '').trim();
         const isAutoTradeAlert = alert.type === 'auto_trade' || 
+            titleText.includes('🟢매수') || titleText.includes('🔴익절') || 
+            titleText.includes('🔴매도') || titleText.includes('💧추매') ||
             titleText.includes('[AI 자동매수') || titleText.includes('[AI 자동익절') || 
             titleText.includes('[AI 매도') || titleText.includes('[자동매매');
         const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 

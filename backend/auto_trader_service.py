@@ -555,20 +555,19 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤)")
                 if cfg.get("telegram_notify", True):
                     _send_admin_trade_notification(
-                        f"💧 [AI 자동물타기] {pos['name']} +{add_qty}주 추매 (총 {add_cost:,}원 투입)",
-                        f"💰 추매 매수 금액: {add_cost:,}원 (1주당 {live_price:,} × {add_qty}주)\n"
-                        f"📉 평단가 인하 완료: 신평단 {new_avg:,} (총 {new_qty}주 보유)\n"
-                        f"💵 매수 후 남은 예수금: {acct.get('cash_krw', 0):,}원",
+                        f"💧추매 {pos['name']} {add_cost:,}원",
+                        f"+{add_qty}주 추매 (신평단 {new_avg:,}원)\n"
+                        f"남은 예수금 {acct.get('cash_krw', 0):,}원",
                         symbol=sym,
                     )
 
         sell_reason = None
         if pnl_pct >= tp_pct:
-            sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}% >= +{tp_pct}%)"
+            sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}%)"
         elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
-            sell_reason = f"트레일링 스탑 수익 보존 (고점 +{peak_pct:.2f}% 대비 -{drop_from_peak:.2f}% 반락)"
+            sell_reason = f"트레일링 수익 보존 (+{pnl_pct:.2f}%)"
         elif use_sl and pnl_pct <= -abs(sl_pct):
-            sell_reason = f"기계적 손절선 작동 ({pnl_pct:.2f}% <= -{abs(sl_pct)}%)"
+            sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
 
         if sell_reason and (cfg.get("enabled") or force_buy):
             # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
@@ -602,17 +601,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             actions_taken.append(f"🔴 [매도] {pos['name']} ({pnl_pct:+.2f}% / {pnl_krw:+,}원)")
 
             if cfg.get("telegram_notify", True):
-                header_tag = (
-                    f"🔴 [AI 익절완료 {pnl_krw:+,}원 수익 💰]"
-                    if pnl_krw >= 0
-                    else f"🛡️ [AI 매도 체결 {pnl_krw:+,}원]"
-                )
+                tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
                 _send_admin_trade_notification(
-                    f"{header_tag} {pos['name']} ({pnl_pct:+.2f}%)",
-                    f"🎉 이번 매도 확정 수익금: {pnl_krw:+,}원 (수익률 {pnl_pct:+.2f}%)\n"
-                    f"💰 총 매도 회수 금액: {proceeds_krw:,}원 (평단 {pos['avg_price']:,} → 매도가 {live_price:,} × {pos['qty']}주)\n"
-                    f"📈 계좌 누적 총 실현수익: {acct.get('realized_pnl_krw', 0):+,}원 (현재 예수금: {acct.get('cash_krw', 0):,}원)\n"
-                    f"📌 매도 사유: {sell_reason}",
+                    f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
+                    f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
+                    f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | 예수금 {acct.get('cash_krw', 0):,}원",
                     symbol=sym,
                 )
         else:
@@ -741,14 +734,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             actions_taken.append(f"🟢 [자동 매수] {cand['name']} {qty}주 ({buy_amount_krw:,}원)")
 
             if cfg.get("telegram_notify", True):
-                sl_info = f"손절가: {new_pos['stop_price']:,} (-{sl_pct}%)" if cfg.get("use_stop_loss", False) else "🛡️ 무손절·익절전용 모드 (수익 시에만 매도)"
                 unit_lbl = f"${cand['price']:,}" if cand["is_us"] else f"{cand['price']:,}원"
                 _send_admin_trade_notification(
-                    f"🟢 [AI 매수 체결 · 총 {buy_amount_krw:,}원] {cand['name']} {qty}주 매입",
-                    f"💰 총 매수 금액: {buy_amount_krw:,}원 (1주당 {unit_lbl} × {qty}주)\n"
-                    f"💵 매수 후 남은 예수금: {acct.get('cash_krw', 0):,}원\n"
-                    f"🎯 목표 익절가: {new_pos['target_price']:,} (+{tp_pct}% 도달 시 자동 익절) / {sl_info}\n"
-                    f"🤖 AI 선정 사유: {new_pos['reason']}",
+                    f"🟢매수 {cand['name']} {buy_amount_krw:,}원",
+                    f"{unit_lbl} × {qty}주 매입 완료\n"
+                    f"목표 +{tp_pct}% | 예수금 {acct.get('cash_krw', 0):,}원",
                     symbol=cand["symbol"],
                 )
 
@@ -802,17 +792,11 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
                 "reason": reason,
                 "mode": cfg.get("mode", "AI_PAPER"),
             })
-            header_tag = (
-                f"🔴 [AI 매도완료 {pnl_krw:+,}원 수익 💰]"
-                if pnl_krw >= 0
-                else f"🔴 [AI 매도 체결 {pnl_krw:+,}원]"
-            )
+            tag = "🔴익절" if pnl_krw >= 0 else "🔴매도"
             _send_admin_trade_notification(
-                f"{header_tag} {pos['name']} ({pnl_pct:+.2f}%)",
-                f"🎉 이번 매도 확정 손익: {pnl_krw:+,}원 (수익률 {pnl_pct:+.2f}%)\n"
-                f"💰 총 매도 회수 금액: {proceeds_krw:,}원 (평단 {pos['avg_price']:,} → 매도가 {sell_price:,} × {pos['qty']}주)\n"
-                f"📈 계좌 누적 총 실현수익: {acct.get('realized_pnl_krw', 0):+,}원 (현재 예수금: {acct.get('cash_krw', 0):,}원)\n"
-                f"📌 매도 사유: {reason}",
+                f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
+                f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
+                f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | 예수금 {acct.get('cash_krw', 0):,}원",
                 symbol=symbol,
             )
         else:
@@ -824,7 +808,20 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
 
 
 def send_test_auto_trade_fcm() -> Dict[str, Any]:
-    """대표님 관리자 계정으로 자동매매 매수금액 및 매도수익금 포함 FCM 푸시 테스트 발송"""
+    """스마트워치 최적화: 기존 긴 샘플 알림 정리 후 🟢매수 알림 1통 + 🔴익절 알림 1통을 각각 개별 초간결 포맷으로 발송"""
+    try:
+        from firebase_admin import firestore
+        from firebase_config import initialize_firebase
+        initialize_firebase()
+        db = firestore.client()
+        for doc in db.collection("alerts").where("type", "==", "auto_trade").stream():
+            d = doc.to_dict() or {}
+            t = d.get("title", "")
+            if "샘플" in t or "연결 완료" in t or "🟢매수" in t or "🔴익절" in t:
+                doc.reference.delete()
+    except Exception:
+        pass
+
     state = load_state()
     positions = state.get("positions", [])
     acct = state.get("account", {})
@@ -836,18 +833,27 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
         sample_name = p["name"]
         sample_sym = p["symbol"]
         qty = p.get("qty", 1)
+        avg_p = int(p.get("avg_price", 117900))
     else:
-        sample_name = "두산에너빌리티"
-        sample_sym = "034020"
-        qty = 50
-        buy_amt = 1075000
-        est_profit = 43000
+        sample_name = "이수페타시스"
+        sample_sym = "007660"
+        qty = 16
+        avg_p = 117900
+        buy_amt = 1886400
+        est_profit = 75456
 
+    # 1) 🟢 매수 시 알림 (단독 1통)
+    _send_admin_trade_notification(
+        f"🟢매수 {sample_name} {buy_amt:,}원",
+        f"{avg_p:,}원 × {qty}주 매입 완료\n"
+        f"목표 +4.0% | 예수금 {acct.get('cash_krw', 0):,}원",
+        symbol=sample_sym,
+    )
+    # 2) 🔴 익절 시 알림 (단독 1통)
     res = _send_admin_trade_notification(
-        f"🤖 [자동매매 알림 샘플] 매수 {buy_amt:,}원 / 익절 시 +{est_profit:,}원 수익 알림 연동됨",
-        f"🟢 [매수 체결 시 알림 예시] {sample_name} {qty}주 (💰 총 매수금액: {buy_amt:,}원 / 남은 예수금: {acct.get('cash_krw', 0):,}원)\n"
-        f"🔴 [익절 매도 시 알림 예시] {sample_name} 매도 완료 (🎉 확정 수익금: +{est_profit:,}원 [+4.00%] / 총 회수금: {buy_amt + est_profit:,}원)\n"
-        f"👑 대표님 관리자 계정(rnfjr@gmail.com)으로만 단독 발송됩니다.",
+        f"🔴익절 {sample_name} +{est_profit:,}원(+4.0%)",
+        f"수익 +{est_profit:,}원 확정 (회수 {buy_amt + est_profit:,}원)\n"
+        f"누적수익 +{est_profit:,}원 | 예수금 {acct.get('cash_krw', 0) + buy_amt + est_profit:,}원",
         symbol=sample_sym,
     )
     return res
