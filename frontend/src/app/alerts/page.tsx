@@ -218,10 +218,18 @@ export default function AlertCenterPage() {
                     
                     if (isPublicMarketInfo || isGlobal || isTargeted || (isAdmin && isAdminType)) {
                         const sec = data.timestamp?.seconds || Math.floor(Date.now() / 1000);
+                        const kstDayBucket = new Date((sec + 9 * 3600) * 1000).toISOString().slice(0, 10);
                         const timeBucket = Math.floor(sec / 1800);
                         const cleanTitle = (data.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
                         const cleanBody = (data.body || '').replace(/\s+/g, ' ').trim().substring(0, 60).toLowerCase();
-                        const contentKey = `${cleanTitle}::${cleanBody}::${timeBucket}`;
+                        const isDailyOnceType = ['morning_briefing', 'market_open', 'market_summary', 'portfolio_summary', 'quant_scanner'].includes(data.type) ||
+                            cleanTitle.includes('간추린 모닝 팩트') ||
+                            cleanTitle.includes('장시작:') ||
+                            cleanTitle.includes('관심종목 시가');
+                        const uniqueDocRef = String(data.rcept_no || data.dart_url || '');
+                        const contentKey = isDailyOnceType
+                            ? `daily::${data.type || ''}::${cleanTitle}::${kstDayBucket}`
+                            : `${cleanTitle}::${uniqueDocRef || cleanBody}::${timeBucket}`;
                         
                         if (!seenContentKeys.has(contentKey)) {
                             seenContentKeys.add(contentKey);

@@ -221,6 +221,32 @@ class MorningBriefingService:
             
         body = "\n".join(body_parts)
 
+        # === [중복 발송 원천 차단] 오늘 이미 해당 유저(user_id)에게 동일 종목(stock_name) 모닝팩트가 발송되었는지 DB 확인 ===
+        try:
+            import pytz
+            from datetime import datetime
+            kst_today = datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d')
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) FROM alert_history
+                WHERE user_id = ? AND symbol = ? AND type = 'morning_briefing'
+                  AND triggered_at >= ?
+            """, (user_id, stock_name, f"{kst_today} 00:00:00"))
+            already_sent_cnt = cursor.fetchone()[0]
+            if already_sent_cnt and already_sent_cnt > 0:
+                conn.close()
+                print(f"[MorningBriefing] Already sent today ({kst_today}) for {stock_name} to {user_id}. Skipping duplicate.")
+                return
+            cursor.execute("""
+                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                VALUES (?, ?, 'morning_briefing', ?, ?, 0, 0)
+            """, (user_id, stock_name, f"{title}\n{body}", close_price))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[MorningBriefing] DB check/save warning: {e}")
+
         send_multicast_notification(
             tokens=tokens,
             title=title,
@@ -238,18 +264,6 @@ class MorningBriefingService:
             },
             target_users=[user_id]
         )
-        
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
-                VALUES (?, ?, 'morning_briefing', ?, ?, 0, 0)
-            """, (user_id, stock_name, f"{title}\n{body}", close_price))
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            print(f"[MorningBriefing] Failed to save alert to DB: {e}")
             
         print(f"[MorningBriefing] Sent briefing for {stock_name} to {user_id}")
 

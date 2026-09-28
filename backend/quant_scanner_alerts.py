@@ -228,7 +228,7 @@ class QuantScannerAlertMonitor:
                 f"📊 <a href='https://stock-trend-program.co.kr/signals?tab=scanner'>장마감 수급 퀀트 스캐너 전체보기 바로가기</a>\n"
                 f"🔍 <a href='https://stock-trend-program.co.kr/discovery?q={clean_code}'>{name} 실시간 차트 & AI 진단</a>"
             )
-            await asyncio.to_thread(send_telegram_teaser, tg_text, alert_type="quant_scanner")
+            await asyncio.to_thread(send_telegram_teaser, tg_text, alert_type="quant_scanner", skip_db_save=True)
         except Exception as e:
             logger.debug(f"[QuantAlert] Telegram teaser error: {e}")
 

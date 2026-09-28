@@ -1527,10 +1527,11 @@ def run_market_scheduler():
             if day_of_week <= 4 and not is_holiday("kor"):
                 if (8 <= now.hour <= 10) and current_date != last_run_morning_kr:
                     try:
-                        print(f"[Scheduler] ☀️ Launching Morning Briefing (KR) for {current_date}...")
-                        asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
+                        # ✅ 중복 발송 원천 차단을 위해 실행 직전에 상태 선점 저장
                         last_run_morning_kr = current_date
                         _save_sched_state("last_run_morning_kr", current_date)
+                        print(f"[Scheduler] ☀️ Launching Morning Briefing (KR) for {current_date}...")
+                        asyncio.run(morning_briefing_service.run_daily_briefing("KR"))
                         print(f"[Scheduler] ✅ Morning Briefing (KR) completed.")
                     except Exception as mb_e:
                         print(f"[Scheduler-Error] Morning briefing KR failed: {mb_e}")
@@ -1539,10 +1540,10 @@ def run_market_scheduler():
             if day_of_week <= 4:
                 if ((now.hour == 8 and now.minute >= 15) or (9 <= now.hour <= 10)) and current_date != last_run_ipo and not is_market_holiday("KR"):
                     try:
-                        from batch_ipo_alerts import send_ipo_alerts
-                        send_ipo_alerts()
                         last_run_ipo = current_date
                         _save_sched_state("last_run_ipo", current_date)
+                        from batch_ipo_alerts import send_ipo_alerts
+                        send_ipo_alerts()
                     except Exception as e:
                         print(f"[Scheduler] IPO 알림 오류: {e}")
             
@@ -1550,9 +1551,9 @@ def run_market_scheduler():
             if day_of_week <= 4 and not is_market_holiday("US"):
                 if ((now.hour == 21 and now.minute >= 30) or now.hour == 22 or (now.hour == 23 and now.minute <= 30)) and current_date != last_run_morning_us:
                     try:
-                        asyncio.run(morning_briefing_service.run_daily_briefing("US"))
                         last_run_morning_us = current_date
                         _save_sched_state("last_run_morning_us", current_date)
+                        asyncio.run(morning_briefing_service.run_daily_briefing("US"))
                     except Exception as us_mb_e:
                         print(f"[Scheduler-Error] Morning briefing US failed: {us_mb_e}")
 
@@ -1560,9 +1561,9 @@ def run_market_scheduler():
             if day_of_week <= 4:
                 if ((now.hour == 9 and now.minute >= 5) or now.hour == 10) and current_date != last_run_open_kr and not is_market_holiday("KR"):
                     try:
-                        send_opening_notification("KR")
                         last_run_open_kr = current_date
                         _save_sched_state("last_run_open_kr", current_date)
+                        send_opening_notification("KR")
                     except Exception as ok_e:
                         print(f"[Scheduler-Error] Opening notification KR failed: {ok_e}")
 
@@ -1570,10 +1571,10 @@ def run_market_scheduler():
             if day_of_week <= 4 and not is_holiday("kor"):
                 if ((now.hour == 15 and now.minute >= 40) or (16 <= now.hour <= 18)) and current_date != last_run_close_kr:
                     try:
-                        print(f"[Scheduler] 🌕 Launching Closing Notification (KR) for {current_date}...")
-                        send_closing_notification("KR")
                         last_run_close_kr = current_date
                         _save_sched_state("last_run_close_kr", current_date)
+                        print(f"[Scheduler] 🌕 Launching Closing Notification (KR) for {current_date}...")
+                        send_closing_notification("KR")
                         print(f"[Scheduler] ✅ Closing Notification (KR) completed.")
                     except Exception as cl_e:
                         print(f"[Scheduler-Error] Closing notification KR failed: {cl_e}")
