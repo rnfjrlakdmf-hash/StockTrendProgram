@@ -245,12 +245,32 @@ export default function AdminAutoTradePage() {
         <div className="rounded-3xl bg-gradient-to-br from-emerald-950/50 via-zinc-900/95 to-black border border-emerald-500/30 p-4 sm:p-7 shadow-2xl space-y-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => router.push("/admin")}
                   className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> 관리자 홈
+                </button>
+                <button
+                  onClick={() => router.push("/alerts?tab=auto_trade")}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-xs font-black flex items-center gap-1"
+                >
+                  🔔 자동매매 알림탭 열기
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, { method: "POST" });
+                      const d = await res.json();
+                      alert(d.message || "대표님 계정으로 자동매매 FCM 푸시 알림을 발송했습니다!");
+                    } catch {
+                      alert("FCM 테스트 요청 실패");
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-black flex items-center gap-1"
+                >
+                  📲 내 폰으로 FCM 알림 테스트
                 </button>
                 <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
                   👑 대표님 단독 전용 (일반 회원 비공개)

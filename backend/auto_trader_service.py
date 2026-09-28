@@ -237,8 +237,16 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
     }
 
 
-def _send_admin_trade_notification(title: str, body: str) -> None:
-    """관리자(대표님) 전용 텔레그램 및 앱 알림 발송 (일반 유저 노출 차단)"""
+def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> Dict[str, Any]:
+    """관리자(대표님) 전용 실시간 FCM 푸시 알림 + 알림센터(🤖 자동매매 알림 탭) + 텔레그램 발송 (일반 유저 노출 100% 차단)"""
+    clean_body = (
+        body.replace("<b>", "")
+        .replace("</b>", "")
+        .replace("<br/>", "\n")
+        .strip()
+    )
+
+    # 1. 텔레그램 발송
     try:
         bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
         chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -251,20 +259,79 @@ def _send_admin_trade_notification(title: str, body: str) -> None:
     except Exception as e:
         print(f"[AutoTrader] Telegram alert error: {e}")
 
+    # 2. 대표님 관리자 계정(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 전용 FCM 토큰 조회 및 실시간 푸시 발송
+    admin_uids = ["110418985320259217419", "108559801745912003405"]
+    admin_tokens = []
+    fcm_sent_count = 0
+    try:
+        from db_manager import get_db_connection, get_user_fcm_tokens
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id FROM users WHERE lower(email) IN ('rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com') OR is_admin = 1"
+        )
+        for row in cur.fetchall():
+            uid_val = str(row[0])
+            if uid_val and uid_val not in admin_uids:
+                admin_uids.append(uid_val)
+        conn.close()
+
+        for uid in admin_uids:
+            for t_obj in get_user_fcm_tokens(uid):
+                tok = t_obj.get("token") if isinstance(t_obj, dict) else str(t_obj)
+                if tok and tok not in admin_tokens:
+                    admin_tokens.append(tok)
+    except Exception as e:
+        print(f"[AutoTrader] Admin FCM token lookup warning: {e}")
+
+    # 3. Firebase FCM 멀티캐스트 실시간 푸시 전송 (클릭 시 /alerts?tab=auto_trade 이동)
+    if admin_tokens:
+        try:
+            from firebase_config import initialize_firebase, send_multicast_notification
+            initialize_firebase()
+            push_data = {
+                "type": "auto_trade",
+                "url": "/alerts?tab=auto_trade",
+                "symbol": symbol or "",
+                "is_global": "false",
+                "skip_db_save": "true",  # 아래에서 정확한 포맷으로 직접 Firestore 저장
+            }
+            fcm_res = send_multicast_notification(
+                admin_tokens,
+                title,
+                clean_body,
+                data=push_data,
+                target_users=admin_uids,
+                skip_db_save=True,
+            )
+            fcm_sent_count = len(admin_tokens) if fcm_res.get("success") else 0
+            print(f"[AutoTrader] Admin FCM Push sent to {len(admin_tokens)} devices: {title}")
+        except Exception as e:
+            print(f"[AutoTrader] Admin FCM send error: {e}")
+
+    # 4. Firestore 알림 센터(alerts 컬렉션)에 관리자 전용 'auto_trade' 타입으로 저장 (🤖 자동매매 알림 탭 전용)
     try:
         from firebase_admin import firestore
+        from firebase_config import initialize_firebase
+        initialize_firebase()
         db = firestore.client()
         db.collection("alerts").add({
             "title": title,
-            "body": body,
-            "type": "admin_report",
+            "body": clean_body,
+            "type": "auto_trade",
+            "symbol": symbol or "",
+            "is_global": False,
             "target_email": "rnfjr@gmail.com",
+            "target_users": admin_uids,
             "url": "/admin/auto-trade",
             "createdAt": firestore.SERVER_TIMESTAMP,
-            "timestamp": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": firestore.SERVER_TIMESTAMP,
+            "timestamp_str": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S"),
         })
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[AutoTrader] Firestore alert save error: {e}")
+
+    return {"fcm_tokens_found": len(admin_tokens), "fcm_sent": fcm_sent_count, "admin_uids": admin_uids}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -638,11 +705,13 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             actions_taken.append(f"🟢 [자동 매수] {cand['name']} {qty}주 ({buy_amount_krw:,}원)")
 
             if cfg.get("telegram_notify", True):
+                sl_info = f"손절가: {new_pos['stop_price']:,} (-{sl_pct}%)" if cfg.get("use_stop_loss", False) else "🛡️ 무손절·익절전용 모드 (수익 시에만 매도)"
                 _send_admin_trade_notification(
-                    f"🟢 [AI 자동 매수 체결] {cand['name']} ({cand['symbol']})",
+                    f"🟢 [AI 자동매수 체결] {cand['name']} ({cand['symbol']})",
                     f"• 매수가: <b>{cand['price']:,} ({qty}주 / 총 {buy_amount_krw:,}원)</b>\n"
                     f"• 선정 사유: {new_pos['reason']}\n"
-                    f"• 목표 익절가: {new_pos['target_price']:,} (+{tp_pct}%) / 손절가: {new_pos['stop_price']:,} (-{sl_pct}%)",
+                    f"• 목표 익절가: {new_pos['target_price']:,} (+{tp_pct}%) / {sl_info}",
+                    symbol=cand["symbol"],
                 )
 
             # 1회 사이클당 최대 2종목씩 순차 진입하여 리스크 분산
@@ -670,8 +739,8 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
             pnl_krw = int(round((sell_price - pos["avg_price"]) * pos["qty"] * unit_mult))
             pnl_pct = round(((sell_price - pos["avg_price"]) / pos["avg_price"]) * 100, 2) if pos["avg_price"] > 0 else 0.0
 
-            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL") and not pos.get("is_us"):
-                _place_kis_order(state, symbol, pos["qty"], is_buy=False)
+            if cfg.get("mode") in ("KIS_VIRTUAL", "KIS_REAL"):
+                _place_kis_order(state, symbol, pos["qty"], is_buy=False, price=sell_price)
 
             acct["cash_krw"] = int(acct.get("cash_krw", 0) + proceeds_krw)
             acct["realized_pnl_krw"] = int(acct.get("realized_pnl_krw", 0) + pnl_krw)
@@ -695,12 +764,34 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
                 "reason": reason,
                 "mode": cfg.get("mode", "AI_PAPER"),
             })
+            _send_admin_trade_notification(
+                f"🔴 [AI 매도 체결] {pos['name']} ({symbol})",
+                f"• 매도가: {sell_price:,} ({pos['qty']}주 / 총 {proceeds_krw:,}원)\n"
+                f"• 실현 손익: <b>{pnl_krw:+,}원 ({pnl_pct:+.2f}%)</b>\n"
+                f"• 매도 사유: {reason}",
+                symbol=symbol,
+            )
         else:
             remaining.append(pos)
 
     state["positions"] = remaining
     save_state(state)
     return get_dashboard_summary(state)
+
+
+def send_test_auto_trade_fcm() -> Dict[str, Any]:
+    """대표님 관리자 계정으로 자동매매 매수/익절 FCM 푸시 및 알림탭 테스트 발송"""
+    state = load_state()
+    positions = state.get("positions", [])
+    sample_name = positions[0]["name"] if positions else "두산에너빌리티"
+    sample_sym = positions[0]["symbol"] if positions else "034020"
+    res = _send_admin_trade_notification(
+        f"🤖 [자동매매 FCM 알림 연결 완료] {sample_name} ({sample_sym})",
+        f"• 대표님 전용 24시간 무인 AI 자동매매 매수·익절 실시간 FCM 푸시 알림이 정상 연동되었습니다.\n"
+        f"• 매수 체결 시 [🟢 AI 자동매수 체결], 목표가 도달 시 [🔴 AI 자동익절 완료] 푸시가 즉시 도착합니다.",
+        symbol=sample_sym,
+    )
+    return res
 
 
 def panic_sell_all() -> Dict[str, Any]:

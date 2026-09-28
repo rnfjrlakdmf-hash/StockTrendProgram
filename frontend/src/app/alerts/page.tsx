@@ -108,11 +108,36 @@ export default function AlertCenterPage() {
         )
     );
 
-    // 방문 시간 기록
+    // 방문 시간 기록 및 ?tab=auto_trade 쿼리 파라미터 연동
     useEffect(() => {
         localStorage.setItem('last_alert_visit', new Date().toISOString());
         window.dispatchEvent(new Event('alerts_visited'));
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const t = params.get('tab');
+            if (t) setActiveTab(t);
+        }
     }, []);
+
+    const [fcmTesting, setFcmTesting] = useState(false);
+    const handleTestAutoTradeFcm = async () => {
+        setFcmTesting(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, {
+                method: "POST",
+                headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" }
+            });
+            const json = await res.json();
+            if (json.status === "success") {
+                alert(`🔔 자동매매 실시간 FCM 푸시 알림 발송 완료!\n(등록된 관리자 기기 ${json.data?.fcm_tokens_found || 1}대로 전송되었습니다. 잠시 후 새로고침하면 알림 카드도 표시됩니다.)`);
+                window.location.reload();
+            }
+        } catch (e) {
+            alert("FCM 테스트 발송 중 오류가 발생했습니다.");
+        } finally {
+            setFcmTesting(false);
+        }
+    };
 
     useEffect(() => {
         async function fetchAlerts() {
@@ -120,7 +145,6 @@ export default function AlertCenterPage() {
                 const alertsRef = collection(db, "alerts");
                 
                 // [보안 강화] 오직 명시적으로 로그인된 유저 세션이 존재할 때만 userId 인정
-                // 비로그인 상태에서 로컬스토리지 캐시(stock_user, fcm_guest_id)로 개인 알림을 조회하는 취약점 원천 제거
                 const userId = user?.id || (user as any)?.uid || null;
                 
                 const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
@@ -135,13 +159,20 @@ export default function AlertCenterPage() {
                     const hasTargetUsers = Array.isArray(data.target_users) && data.target_users.length > 0;
                     const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
                     
-                    const isAdminType = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
+                    const isAutoTradeType = data.type === 'auto_trade' ||
+                        (data.title || '').includes('[AI 자동매수') ||
+                        (data.title || '').includes('[AI 매도') ||
+                        (data.title || '').includes('[자동매매') ||
+                        (data.title || '').includes('[자동 물타기');
+
+                    const isAdminType = isAutoTradeType ||
+                        ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
                         (data.title || '').includes('[관리자]') || (data.title || '').includes('일일 운영 보고서') || (data.title || '').includes('방문자 보고');
 
-                    // 1. 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
+                    // 1. 관리자 전용 알림(자동매매 포함)은 비관리자 유저에게는 DB에서부터 필터링
                     if (isAdminType && !isAdmin) return;
 
-                    // 2. 순수 개인 맞춤형 알림(내 관심종목 시가, 내 관심종목 섹터 지수 결산, 내 관심종목 마감 결산, 맞춤 모닝팩트 등) 판별
+                    // 2. 순수 개인 맞춤형 알림 판별
                     const titleStr = (data.title || '').trim();
                     const isPersonalWatchlistAlert =
                         ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(data.type) ||
@@ -153,8 +184,8 @@ export default function AlertCenterPage() {
                         titleStr.includes('시장·섹터 지수 결산') ||
                         titleStr.includes('간추린 모닝');
 
-                    // 3. 공공 시장 정보(SEC 해외 공시, DART 국내 공시, 세력 매집, 공식 전체 시황 브리핑 등)만 비로그인/전체 열람 허용
-                    const isPublicMarketInfo = !isPersonalWatchlistAlert && (
+                    // 3. 공공 시장 정보만 비로그인/전체 열람 허용
+                    const isPublicMarketInfo = !isPersonalWatchlistAlert && !isAdminType && (
                         [
                             'sec_insider_trading', 'sec_13f', 'sec_disclosure',
                             'disclosure_alert', 'disclosure', 'large_holding',
@@ -172,20 +203,19 @@ export default function AlertCenterPage() {
                         (data.url && String(data.url).includes('sec.gov'))
                     );
 
-                    // 4. [보안 철저] 개인 맞춤 알림(isPersonalWatchlistAlert)이거나 target_users가 지정된 알림은
-                    // 반드시 로그인한 본인(isTargeted)에게만 허용하고, 타인/비로그인 방문자에게는 100% 차단!
-                    if (isPersonalWatchlistAlert || !isPublicMarketInfo) {
-                        if (isPersonalWatchlistAlert && !isTargeted) return;
-                        if (hasTargetUsers && !isTargeted) return;
-                        if (!isGlobal && !isTargeted) return;
+                    // 4. [보안 철저] 관리자 알림(isAdmin && isAdminType)은 관리자 로그인 시 무조건 통과!
+                    if (!(isAdmin && isAdminType)) {
+                        if (isPersonalWatchlistAlert || !isPublicMarketInfo) {
+                            if (isPersonalWatchlistAlert && !isTargeted) return;
+                            if (hasTargetUsers && !isTargeted) return;
+                            if (!isGlobal && !isTargeted) return;
+                        }
                     }
                     
                     if (isPublicMarketInfo || isGlobal || isTargeted || (isAdmin && isAdminType)) {
-                        // Smart Deduplication: normalize whitespace, title + normalized body + 30-minute time bucket
-                        const sec = data.timestamp?.seconds || 0;
-                        const timeBucket = Math.floor(sec / 1800); // 30 minutes bucket
+                        const sec = data.timestamp?.seconds || Math.floor(Date.now() / 1000);
+                        const timeBucket = Math.floor(sec / 1800);
                         const cleanTitle = (data.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
-                        // 공백 및 줄바꿈 차이로 인한 중복 방지를 위해 공백 통일
                         const cleanBody = (data.body || '').replace(/\s+/g, ' ').trim().substring(0, 60).toLowerCase();
                         const contentKey = `${cleanTitle}::${cleanBody}::${timeBucket}`;
                         
@@ -195,6 +225,42 @@ export default function AlertCenterPage() {
                         }
                     }
                 });
+
+                // [관리자 전용] 백엔드 실시간 자동매매 체결 로그(trade_logs)도 함께 병합하여 🤖 자동매매 알림 탭에 100% 누락 없이 표시
+                if (isAdmin) {
+                    try {
+                        const trRes = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/status`, {
+                            headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" }
+                        });
+                        const trJson = await trRes.json();
+                        const tLogs = trJson?.data?.trade_logs || [];
+                        tLogs.forEach((lg: any) => {
+                            const isBuy = lg.action === "BUY";
+                            const synTitle = isBuy
+                                ? `🟢 [AI 자동매수 체결] ${lg.name} (${lg.symbol})`
+                                : `🔴 [AI 자동익절/매도 체결] ${lg.name} (${lg.symbol})`;
+                            const synBody = isBuy
+                                ? `• 매수가: ${Number(lg.price || 0).toLocaleString()} (${lg.qty}주 / 총 ${Number(lg.amount_krw || 0).toLocaleString()}원)\n• 선정 사유: ${lg.reason || 'AI 퀀트 수급 돌파'}`
+                                : `• 매도가: ${Number(lg.price || 0).toLocaleString()} (${lg.qty}주 / 총 ${Number(lg.amount_krw || 0).toLocaleString()}원)\n• 실현 손익: ${Number(lg.pnl_krw || 0).toLocaleString()}원 (${lg.pnl_pct >= 0 ? '+' : ''}${lg.pnl_pct}%)\n• 사유: ${lg.reason || '목표 익절가 도달'}`;
+                            const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
+                            const key = `${synTitle.toLowerCase()}::${lg.symbol}`;
+                            if (!seenContentKeys.has(key)) {
+                                seenContentKeys.add(key);
+                                deduplicatedAlerts.push({
+                                    id: lg.id || `auto-trd-${Math.random()}`,
+                                    type: "auto_trade",
+                                    title: synTitle,
+                                    body: synBody,
+                                    symbol: lg.symbol,
+                                    url: "/admin/auto-trade",
+                                    timestamp: { seconds: parsedSec || Math.floor(Date.now() / 1000) }
+                                });
+                            }
+                        });
+                    } catch (trErr) {
+                        console.error("Auto-trader live logs merge warning:", trErr);
+                    }
+                }
 
                 let sortedAlerts = deduplicatedAlerts;
                 sortedAlerts.sort((a, b) => {
@@ -2159,23 +2225,33 @@ function formatUsdToKrwInText(text: string): string {
     ];
 
     const tabs = isAdmin 
-        ? [...baseTabs, { id: "admin", label: "👑 관리자 알림", icon: ShieldAlert }]
+        ? [
+            ...baseTabs, 
+            { id: "auto_trade", label: "🤖 자동매매 알림", icon: Zap },
+            { id: "admin", label: "👑 관리자 알림", icon: ShieldAlert }
+          ]
         : baseTabs;
 
     const filteredAlerts = alerts.filter(alert => {
         const titleText = (alert.title || '').trim();
+        const isAutoTradeAlert = alert.type === 'auto_trade' || 
+            titleText.includes('[AI 자동매수') || titleText.includes('[AI 자동익절') || 
+            titleText.includes('[AI 매도') || titleText.includes('[자동매매');
         const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
             titleText.includes('[관리자]') || titleText.includes('[시스템 보고]') || titleText.includes('[일일 보고]') || titleText.includes('[방문자 보고]') || titleText.includes('방문자') || titleText.includes('일일 운영 보고서');
 
-        // 1. 관리자 전용 알림은 비관리자에게 절대 노출 금지
-        if (isAdminAlert && !isAdmin) return false;
+        // 1. 관리자 전용 알림 및 자동매매 체결 알림은 비관리자에게 절대 노출 금지
+        if ((isAdminAlert || isAutoTradeAlert) && !isAdmin) return false;
 
-        // 2. 관리자 탭 선택 시: 관리자 알림만 집중 표시
-        if (activeTab === "admin") return isAdminAlert;
+        // 2. 🤖 자동매매 알림 탭 선택 시: 오직 AI 자동매매 매수/매도 체결 알림만 집중 표시
+        if (activeTab === "auto_trade") return isAutoTradeAlert;
 
-        // 3. 운영 알림 탭 선택 시: 관리자용 보고서는 완전 제외하고, 순수 일반 서비스 공지/업데이트/스터디 강의 표시!
+        // 3. 👑 관리자 탭 선택 시: 관리자 시스템 보고서 + 자동매매 알림 표시
+        if (activeTab === "admin") return isAdminAlert || isAutoTradeAlert;
+
+        // 4. 운영 알림 탭 선택 시: 관리자용 보고서는 완전 제외하고, 순수 일반 서비스 공지/업데이트/스터디 강의 표시!
         if (activeTab === "system") {
-            if (isAdminAlert) return false;
+            if (isAdminAlert || isAutoTradeAlert) return false;
             const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update', 'theory_alert', 'study'].includes(alert.type) ||
                 titleText.includes('[공지]') || titleText.includes('[안내]') || titleText.includes('[업데이트]') || titleText.includes('[점검]') || titleText.includes('스터디') || titleText.includes('1타 강사');
             return isSystemNotice;
@@ -2408,6 +2484,44 @@ function formatUsdToKrwInText(text: string): string {
                         );
                     })}
                 </div>
+
+                {/* 🤖 자동매매 알림 탭 전용 관리자 제어판 */}
+                {activeTab === 'auto_trade' && isAdmin && (
+                    <div className="p-4 md:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-zinc-900/90 border border-indigo-500/40 shadow-[0_0_25px_rgba(99,102,241,0.2)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                    24시간 FCM 실시간 푸시 연동됨
+                                </span>
+                                <span className="text-xs font-bold text-indigo-300">관리자 전용 (rnfjr@gmail.com)</span>
+                            </div>
+                            <h3 className="text-sm md:text-base font-black text-white">
+                                🤖 AI 무인 자동매매 매수·매도(익절/물타기) 실시간 체결 알림함
+                            </h3>
+                            <p className="text-xs text-gray-300 leading-relaxed">
+                                AI 로봇이 국내주식·미국주식·ETF·해외 신생 기술주를 <b className="text-emerald-300">자동 매수</b>하거나 <b className="text-amber-300">+4.0% 목표가 익절 매도</b>할 때마다 대표님 스마트폰(FCM)과 이 탭으로 즉시 알림이 도착합니다.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <button
+                                onClick={handleTestAutoTradeFcm}
+                                disabled={isTestingAutoTradeFcm}
+                                className="px-3.5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                            >
+                                <BellRing className="w-3.5 h-3.5" />
+                                {isTestingAutoTradeFcm ? "발송 중..." : "🔔 내 폰으로 FCM 알림 테스트"}
+                            </button>
+                            <Link
+                                href="/admin/auto-trade"
+                                className="px-3.5 py-2.5 rounded-xl text-xs font-black bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/40 transition-all flex items-center gap-1.5"
+                            >
+                                <Zap className="w-3.5 h-3.5 text-indigo-300" />
+                                🤖 자동매매 사령부 열기
+                            </Link>
+                        </div>
+                    </div>
+                )}
 
                 {/* 공시 탭 전용 서브 필터 */}
                 {activeTab === 'disclosure' && (

@@ -878,3 +878,12 @@ def api_admin_auto_trader_reset_paper(payload: dict = Body(default={}), x_admin_
     cap = int(payload.get("initial_capital_krw", 10000000))
     return {"status": "success", "data": reset_paper_account(cap)}
 
+
+@app.post("/api/system/admin/auto-trader/test-fcm")
+def api_admin_auto_trader_test_fcm(x_admin_key: Optional[str] = Header(None)):
+    if not _verify_admin_key(x_admin_key):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import send_test_auto_trade_fcm
+    return {"status": "success", "data": send_test_auto_trade_fcm()}
+
+
