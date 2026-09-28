@@ -26,7 +26,7 @@ import {
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
 
 export default function AdminAutoTradePage() {
-  const { user: currentUser, loading: authLoading } = useAuth();
+  const { user: currentUser, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   const [data, setData] = useState<any>(null);
