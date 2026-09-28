@@ -2060,13 +2060,35 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-sky-400";
             defaultCta = { href: alert.url || (alert.symbol ? `/discovery?q=${alert.symbol}` : "/discovery"), label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
         }
+        // [4-0순위: 🎓 주식 1타 강사 실전 매매법 특강 / 투자 아카데미]
+        else if (
+            titleText.includes("1타 강사") ||
+            titleText.includes("1타강사") ||
+            alert.type === 'theory_alert' ||
+            alert.type === 'study' ||
+            (alert.url && String(alert.url).includes('/study'))
+        ) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "🎓 주식 1타 강사 실전 특강";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+            defaultCta = { href: alert.url || "/study", label: "📚 1타 강사 실전 매매법 강의 보러가기", icon: Sparkles, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
+        }
         // [4-1순위: 스톡 트렌드 공식 시황 브리핑 / 텔레그램 연동 브리핑]
-        else if (alert.type === 'system_alert' || titleText.includes('[스톡 트렌드]') || titleText.includes('시황 브리핑 업데이트')) {
+        else if (titleText.includes('[스톡 트렌드]') || titleText.includes('시황 브리핑') || titleText.includes('장마감 시황')) {
             typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
             typeBadgeLabel = "🌕 공식 장마감 시황 브리핑";
             cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
             accentBorder = "border-l-4 border-l-indigo-400";
             defaultCta = { href: alert.url || "/signals", label: "오늘의 시장 수급 & 퀀트 시그널 보러가기", icon: TrendingUp, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
+        }
+        // [4-2순위: 일반 시스템 공지 / 서비스 안내]
+        else if (alert.type === 'system_alert') {
+            typeBadgeStyle = "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.2)]";
+            typeBadgeLabel = "📢 서비스 공식 공지·안내";
+            cardBorderHover = "hover:border-indigo-500/40 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]";
+            accentBorder = "border-l-4 border-l-indigo-400";
+            defaultCta = { href: alert.url || "/alerts", label: "상세 안내 확인하기", icon: ShieldCheck, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
         }
         // [5순위: 주도 테마 레이더]
         else if (combinedText.includes("테마") || combinedText.includes("지역화폐") || combinedText.includes("뜨거운 테마") || combinedText.includes("대장주") || combinedText.includes("급등주")) {
