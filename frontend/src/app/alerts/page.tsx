@@ -238,7 +238,7 @@ export default function AlertCenterPage() {
                         });
                         const trJson = await trRes.json();
                         const tLogs = trJson?.data?.trade_logs || [];
-                        tLogs.forEach((lg: any) => {
+                        tLogs.forEach((lg: any, logIdx: number) => {
                             const isBuy = lg.action === "BUY";
                             const amtStr = Number(lg.amount_krw || 0).toLocaleString();
                             const priceStr = Number(lg.price || 0).toLocaleString();
@@ -252,11 +252,11 @@ export default function AlertCenterPage() {
                                 ? `${priceStr}원 × ${lg.qty}주 매입 완료\n목표 +4.0% | ${lg.reason || 'AI 퀀트 수급 돌파'}`
                                 : `수익 ${pnlSign}${pnlKrw.toLocaleString()}원 확정 (회수 ${amtStr}원)\n사유: ${lg.reason || '목표 익절가 도달'}`;
                             const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
-                            const key = `${lg.id || synTitle.toLowerCase()}::${lg.symbol}`;
+                            const key = `auto-log-${lg.id || logIdx}-${lg.symbol}`;
                             if (!seenContentKeys.has(key)) {
                                 seenContentKeys.add(key);
                                 deduplicatedAlerts.push({
-                                    id: lg.id || `auto-trd-${Math.random()}`,
+                                    id: `auto-trd-${lg.id || logIdx}-${lg.symbol}-${logIdx}`,
                                     type: "auto_trade",
                                     title: synTitle,
                                     body: synBody,
@@ -1764,8 +1764,9 @@ function formatUsdToKrwInText(text: string): string {
             (alert as any).dart_url || 
             (alert.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
         );
-        const isWhale = !hasDisclosureKey && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
-        const isDisclosure = hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type);
+        const isAutoTradeCard = alert.type === 'auto_trade' || titleText.includes('🟢매수') || titleText.includes('🔴익절') || titleText.includes('💧추매');
+        const isWhale = !isAutoTradeCard && !hasDisclosureKey && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
+        const isDisclosure = !isAutoTradeCard && (hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type));
         const rawSymbol = alert.symbol || alert.code || '';
         const cleanSymbol = rawSymbol ? (rawSymbol.split('.')[0] || rawSymbol) : '';
         const marketBadge = getMarketBadge(alert);
@@ -1821,17 +1822,29 @@ function formatUsdToKrwInText(text: string): string {
         let accentBorder = "border-l-4 border-l-cyan-400";
         let defaultCta = { href: "/discovery", label: "스마트 종목 발굴 레이더 바로가기", icon: Sparkles, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
 
-        const isPortfolio = alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산');
-        const isMarketSummary = alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황') || titleText.includes('지수 결산') || titleText.includes('시장·섹터 지수');
-        const isMorningBriefing = Boolean(
+        const isPortfolio = !isAutoTradeCard && (alert.type === 'portfolio_summary' || alert.type === 'portfolio' || titleText.includes('관심종목 결산'));
+        const isMarketSummary = !isAutoTradeCard && (alert.type === 'market_summary' || alert.type === 'market' || titleText.includes('장마감 시황') || titleText.includes('지수 결산') || titleText.includes('시장·섹터 지수'));
+        const isMorningBriefing = !isAutoTradeCard && Boolean(
             alert.type === 'morning_briefing' ||
             titleText.includes('모닝 팩트') ||
             titleText.includes('간추린 모닝') ||
             ((alert.body || '').includes('전날 수급') && (alert.body || '').includes('🤖'))
         );
 
+        // [0-0순위: 🤖 AI 자동매매 실시간 체결 알림]
+        if (isAutoTradeCard) {
+            const isProfitSell = titleText.includes('🔴익절');
+            typeBadgeStyle = isProfitSell
+                ? "bg-rose-500/25 text-rose-300 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+                : "bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
+            typeBadgeLabel = isProfitSell ? "🔴 AI 자동익절 수익 확정" : "🟢 AI 자동매수 실시간 체결";
+            cardBorderHover = "hover:border-emerald-500/50 hover:shadow-[0_0_25px_rgba(16,185,129,0.25)]";
+            accentBorder = isProfitSell ? "border-l-4 border-l-rose-400" : "border-l-4 border-l-emerald-400";
+            targetUrl = "/admin/auto-trade";
+            defaultCta = { href: "/admin/auto-trade", label: "🤖 24시간 무인 자동매매 사령부 열기", icon: Zap, style: "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40" };
+        }
         // [0순위: 관리자 운영 및 시스템 보고서]
-        if (isAdminAlert) {
+        else if (isAdminAlert) {
             typeBadgeStyle = "bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]";
             typeBadgeLabel = "👑 🛡️ 관리자 전용 운영 보고";
             cardBorderHover = "hover:border-purple-500/50 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]";
@@ -2518,11 +2531,11 @@ function formatUsdToKrwInText(text: string): string {
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                             <button
                                 onClick={handleTestAutoTradeFcm}
-                                disabled={isTestingAutoTradeFcm}
+                                disabled={fcmTesting}
                                 className="px-3.5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                             >
                                 <BellRing className="w-3.5 h-3.5" />
-                                {isTestingAutoTradeFcm ? "발송 중..." : "🔔 내 폰으로 FCM 알림 테스트"}
+                                {fcmTesting ? "발송 중..." : "🔔 내 폰으로 FCM 알림 테스트"}
                             </button>
                             <Link
                                 href="/admin/auto-trade"
