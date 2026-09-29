@@ -55,6 +55,9 @@ US_UNIVERSE = [
     {"symbol": "LUNR", "name": "인튜이티브 머신스 (NASA 달탐사)", "sector": "🚀 해외신생 · NASA 달 착륙선 ($8~$15대)", "tier": "US_EMERGING", "exchange": "NASD"},
     {"symbol": "RGTI", "name": "리게티 컴퓨팅 (초전도 양자칩)", "sector": "🚀 해외신생 · 초전도 양자컴퓨터 ($3~$10대)", "tier": "US_EMERGING", "exchange": "NASD"},
     {"symbol": "BBAI", "name": "빅베어 AI (미 국방 AI 솔루션)", "sector": "🚀 해외신생 · 국방 비전 AI ($3~$8대)", "tier": "US_EMERGING", "exchange": "NYSE"},
+    {"symbol": "SOFI", "name": "소파이 테크놀로지스 (미국 AI 핀테크)", "sector": "🚀 해외신생 · 미국 디지털금융 대장 ($10~$15대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "MARA", "name": "마라 홀딩스 (북미 비트코인 AI 데이터센터)", "sector": "🚀 해외신생 · 가상자산/AI 전력 인프라 ($15~$20대)", "tier": "US_EMERGING", "exchange": "NASD"},
+    {"symbol": "NVDL", "name": "NVDL (엔비디아 2배 레버리지 ETF)", "sector": "미국 AI 반도체 2배 ETF ($50~$60대)", "tier": "ETF_FAST", "exchange": "NASD"},
     # [3] 미국 나스닥/뉴욕 대표 빅테크 주도주
     {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "미국 AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM", "exchange": "NYSE"},
     {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "미국 AI 반도체 대장 ($120대)", "tier": "BLUECHIP", "exchange": "NASD"},
@@ -63,6 +66,41 @@ US_UNIVERSE = [
     {"symbol": "MSFT", "name": "마이크로소프트", "sector": "미국 클라우드 AI", "tier": "BLUECHIP", "exchange": "NASD"},
     {"symbol": "META", "name": "메타 (Meta)", "sector": "미국 AI 광고/플랫폼", "tier": "BLUECHIP", "exchange": "NASD"},
 ]
+
+
+def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    한국시간(KST) 기준으로 현재 열리는 주식시장 세션을 자동 판별하여
+    주간(08:00~16:59 KST)에는 🇰🇷 국내주식 후보군을, 야간(17:00~07:59 KST)에는 🇺🇸 해외(미국)주식 후보군을 자동 배치합니다.
+    """
+    now_kst = datetime.now(KST)
+    hour = now_kst.hour
+    is_kr_hours = 8 <= hour < 17  # 08:00 ~ 16:59 KST (한국 정규장 + 장전/장후 시간외)
+    target_cfg = str(cfg.get("market_target", "ALL")).upper()
+
+    if target_cfg == "KR_ONLY":
+        active_market = "KR"
+    elif target_cfg == "US_ONLY":
+        active_market = "US"
+    else:
+        # ALL 또는 기존 KR/US 설정 시 시간대별 자동 스위칭 가동!
+        active_market = "KR" if is_kr_hours else "US"
+
+    if active_market == "KR":
+        return {
+            "active_market": "KR",
+            "is_kr_hours": is_kr_hours,
+            "current_kst": now_kst.strftime("%H:%M:%S"),
+            "session_badge": "🇰🇷 주간 국내증시 타임 (08:00~17:00 KST · 국내주식 집중 매매)",
+            "session_desc": "현재 한국거래소(코스피·코스닥) 개장 시간대에 맞춰 [🇰🇷 국내 주도주·수급 포착주 Top 10]이 후보군에 배치되어 AI가 자동 매수·익절 매도합니다.",
+        }
+    return {
+        "active_market": "US",
+        "is_kr_hours": is_kr_hours,
+        "current_kst": now_kst.strftime("%H:%M:%S"),
+        "session_badge": "🇺🇸 야간 미국증시 타임 (17:00~08:00 KST · 해외주식 집중 매매)",
+        "session_desc": "현재 미국(나스닥·NYSE·AMEX) 프리마켓·정규장·애프터마켓 개장 시간대에 맞춰 [🇺🇸 해외 급등 기술주·미국 ETF Top 10]이 후보군에 배치되어 AI가 자동 매수·익절 매도합니다.",
+    }
 
 
 def _default_state() -> Dict[str, Any]:
@@ -207,16 +245,20 @@ def _fetch_live_quote(symbol: str) -> Dict[str, Any]:
     except Exception as e:
         print(f"[AutoTrader] quote error for {symbol}: {e}")
 
-    # 폴백 기본가 (네트워크 지연 시 안전망)
+    # 폴백 기본가 (네트워크 지연 시 안전망 — 국내 원화 및 미국 달러 실제 시세 반영)
+    is_us_sym = bool(any(c.isalpha() for c in symbol))
     fallback_prices = {
         "005930": 74500, "000660": 182000, "012450": 345000, "267260": 328000,
         "196170": 315000, "005380": 248000, "000270": 104500, "035420": 176000,
         "034020": 21800, "042700": 118000, "007660": 41500, "105560": 88500,
-        "068270": 192000, "277810": 158000, "NVDA": 128.5, "TSLA": 254.0,
-        "AAPL": 227.5, "MSFT": 432.0, "META": 565.0, "PLTR": 37.8
+        "068270": 192000, "277810": 158000,
+        "SOXL": 36.5, "TQQQ": 72.4, "IONQ": 14.8, "RKLB": 11.2, "OKLO": 18.5,
+        "SOUN": 6.4, "ASTS": 24.5, "JOBY": 6.8, "SERV": 9.4, "LUNR": 10.6,
+        "RGTI": 4.2, "BBAI": 3.8, "SOFI": 11.4, "MARA": 16.8, "NVDL": 58.0,
+        "NVDA": 128.5, "TSLA": 254.0, "AAPL": 227.5, "MSFT": 432.0, "META": 565.0, "PLTR": 37.8
     }
-    p = fallback_prices.get(symbol, 50000)
-    return {"price": p, "change_pct": 1.25, "volume": 1250000, "is_us": bool(any(c.isalpha() for c in symbol))}
+    p = fallback_prices.get(symbol, 15.5 if is_us_sym else 35000)
+    return {"price": p, "change_pct": 1.85 if is_us_sym else 1.25, "volume": 1250000, "is_us": is_us_sym}
 
 
 _CHART_CACHE: Dict[str, Dict[str, Any]] = {}
@@ -650,6 +692,77 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool,
 
 
 # ─────────────────────────────────────────────────────────────
+# 시간대별 맞춤 후보군(Top 10) 스캔 및 채점 빌더 (주간 KR / 야간 US)
+# ─────────────────────────────────────────────────────────────
+def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List[Dict[str, Any]]:
+    cfg = state.get("config", {})
+    fx_rate = 1355.0
+    order_budget = int(cfg.get("order_amount_krw", 2000000))
+    max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
+    effective_single_limit = min(order_budget, max_invest_cap) if max_invest_cap > 0 else order_budget
+
+    universe = list(KR_UNIVERSE if active_market == "KR" else US_UNIVERSE)
+    closing_scanner_map: Dict[str, Dict[str, Any]] = {}
+
+    if active_market == "KR":
+        try:
+            from routes.closing_scanner import generate_closing_scanner_data
+            scanner_data = generate_closing_scanner_data() or {}
+            existing_syms = {u["symbol"] for u in universe}
+            for d_key in (0, 1):
+                day_bucket = scanner_data.get(d_key, {})
+                for s_item in day_bucket.get("items", []):
+                    code = s_item.get("code")
+                    if not code:
+                        continue
+                    cvd_bull = s_item.get("cvd", {}).get("isBullish", False)
+                    obv_bull = s_item.get("obv", {}).get("isBullish", False)
+                    if cvd_bull or obv_bull:
+                        closing_scanner_map[code] = s_item
+                        if code not in existing_syms:
+                            universe.append({
+                                "symbol": code,
+                                "name": s_item.get("name", code),
+                                "sector": f"장마감 수급포착 ({s_item.get('majorBuyer', '기관·외인')})",
+                                "tier": "MID_MOMENTUM",
+                            })
+                            existing_syms.add(code)
+        except Exception as e:
+            print(f"[AutoTrader] Closing scanner synergy load warning: {e}")
+
+    scored_candidates: List[Dict[str, Any]] = []
+    for item in universe:
+        q = _fetch_live_quote(item["symbol"])
+        scored = _compute_ai_quant_score(item, q)
+        if active_market == "KR":
+            scan_hit = closing_scanner_map.get(item["symbol"])
+            if scan_hit:
+                cvd_lbl = scan_hit.get("cvd", {}).get("label", "CVD 매수우위")
+                obv_lbl = scan_hit.get("obv", {}).get("label", "OBV 매집")
+                buyer = scan_hit.get("majorBuyer", "외인·기관")
+                scored["ai_score"] = min(99, scored["ai_score"] + 10)
+                scored["reason"] = f"🔥[장마감 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
+            scored["reason"] = "🇰🇷[주간 한국장 실시간 타점] · " + scored["reason"]
+        else:
+            # 야간 미국장 세션: 해외 유망 기술주 및 3배 레버리지 ETF 실시간 모멘텀 가산점
+            scored["ai_score"] = min(99, scored["ai_score"] + 8)
+            scored["reason"] = "🇺🇸[야간 미국장 실시간 타점] · " + scored["reason"]
+
+        unit_krw = scored["price"] * (fx_rate if scored["is_us"] else 1.0)
+        if 0 < effective_single_limit <= 300000:
+            if 0 < unit_krw <= effective_single_limit:
+                scored["ai_score"] = min(99, scored["ai_score"] + 8)
+                scored["reason"] = f"💰[소액한도 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
+            elif max_invest_cap > 0 and unit_krw > max_invest_cap:
+                scored["ai_score"] = max(10, scored["ai_score"] - 25)
+
+        scored_candidates.append(scored)
+
+    scored_candidates.sort(key=lambda x: x["ai_score"], reverse=True)
+    return scored_candidates
+
+
+# ─────────────────────────────────────────────────────────────
 # 핵심 AI 자동매매 실행 사이클 (1. 보유종목 익절/손절 -> 2. 신규 주도주 발굴 & 매수)
 # ─────────────────────────────────────────────────────────────
 def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
@@ -661,6 +774,9 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
     fx_rate = 1355.0  # USD/KRW 기준환율
     actions_taken = []
+    session_info = _get_time_based_session_info(cfg)
+    active_market = session_info["active_market"]  # "KR" (08:00~17:00) | "US" (17:00~08:00)
+    state["active_session"] = session_info
 
     # 1. 현재 보유 종목 실시간 시세 갱신 및 자동 익절 / 트레일링 스탑 / 자동 손절 체크
     remaining_positions = []
@@ -811,72 +927,25 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
     state["positions"] = remaining_positions
 
-    # 2. 전체 유니버스 + [장마감 수급스캐너(/scanner)] 실시간 포착 종목 통합 스캔
-    market_target = cfg.get("market_target", "KR")
-    universe = list(KR_UNIVERSE if market_target == "KR" else (US_UNIVERSE if market_target == "US" else KR_UNIVERSE + US_UNIVERSE))
+    # 2. [시간대별 국내장·미국장 자동 후보군 스위칭 엔진]
+    # - 주간(08:00~16:59 KST): 🇰🇷 한국증시 개장 시간 -> 국내주식 후보군 Top 10 배치 & 국내종목 자동 매수·익절
+    # - 야간(17:00~07:59 KST): 🇺🇸 해외(미국)증시 개장 시간 -> 해외주식 후보군 Top 10 배치 & 해외종목 자동 매수·익절
+    session_info = _get_time_based_session_info(cfg)
+    active_market = session_info["active_market"]  # "KR" 또는 "US"
+    state["active_session"] = session_info
 
-    # [핵심 시너지] 우리 사이트의 '장마감 수급스캐너(closing_scanner)' 포착 종목(CVD 매수우위 + OBV 우상향) 실시간 연동
-    closing_scanner_map: Dict[str, Dict[str, Any]] = {}
-    if market_target in ("KR", "ALL"):
-        try:
-            from routes.closing_scanner import generate_closing_scanner_data
-            scanner_data = generate_closing_scanner_data() or {}
-            existing_syms = {u["symbol"] for u in universe}
-            for d_key in (0, 1):
-                day_bucket = scanner_data.get(d_key, {})
-                for s_item in day_bucket.get("items", []):
-                    code = s_item.get("code")
-                    if not code:
-                        continue
-                    cvd_bull = s_item.get("cvd", {}).get("isBullish", False)
-                    obv_bull = s_item.get("obv", {}).get("isBullish", False)
-                    if cvd_bull or obv_bull:
-                        closing_scanner_map[code] = s_item
-                        if code not in existing_syms:
-                            universe.append({
-                                "symbol": code,
-                                "name": s_item.get("name", code),
-                                "sector": f"장마감 수급포착 ({s_item.get('majorBuyer', '기관·외인')})",
-                                "tier": "MID_MOMENTUM",
-                            })
-                            existing_syms.add(code)
-        except Exception as e:
-            print(f"[AutoTrader] Closing scanner synergy load warning: {e}")
+    scored_candidates = _build_session_candidates(state, active_market)
+    state["candidates"] = scored_candidates[:10]
+    if active_market == "KR":
+        state["kr_candidates"] = scored_candidates[:10]
+    else:
+        state["us_candidates"] = scored_candidates[:10]
 
-    scored_candidates = []
     held_symbols = {p["symbol"] for p in state["positions"]}
     max_pos = int(cfg.get("max_positions", 5))
     order_budget = int(cfg.get("order_amount_krw", 2000000))
     max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
     min_score = int(cfg.get("min_ai_score", 68))
-    effective_single_limit = min(order_budget, max_invest_cap) if max_invest_cap > 0 else order_budget
-
-    for item in universe:
-        q = _fetch_live_quote(item["symbol"])
-        scored = _compute_ai_quant_score(item, q)
-        # 장마감 수급스캐너(CVD 매수우위 + OBV 누적 매집) 동시 포착 시 +10점 가산점 부여!
-        scan_hit = closing_scanner_map.get(item["symbol"])
-        if scan_hit:
-            cvd_lbl = scan_hit.get("cvd", {}).get("label", "CVD 매수우위")
-            obv_lbl = scan_hit.get("obv", {}).get("label", "OBV 매집")
-            buyer = scan_hit.get("majorBuyer", "외인·기관")
-            scored["ai_score"] = min(99, scored["ai_score"] + 10)
-            scored["reason"] = f"🔥[장마감 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
-
-        # [소액 한도 맞춤 최적화] 10만~30만 원 등 소액 한도 설정 시, 1주 가격이 한도 안에 들어오는 알짜 주도주/ETF에 가산점 부여
-        unit_krw = scored["price"] * (fx_rate if scored["is_us"] else 1.0)
-        if 0 < effective_single_limit <= 300000:
-            if 0 < unit_krw <= effective_single_limit:
-                scored["ai_score"] = min(99, scored["ai_score"] + 8)
-                scored["reason"] = f"💰[소액한도 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
-            elif max_invest_cap > 0 and unit_krw > max_invest_cap:
-                # 총 한도(예: 10만원)보다 1주 가격이 비싼 종목은 후보 후순위로 배치
-                scored["ai_score"] = max(10, scored["ai_score"] - 25)
-
-        scored_candidates.append(scored)
-
-    scored_candidates.sort(key=lambda x: x["ai_score"], reverse=True)
-    state["candidates"] = scored_candidates[:10]
 
     # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
     avg_market_chg = (
@@ -1266,6 +1335,24 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     real_trade_logs = [lg for lg in all_logs if "[한투주문 완료" in str(lg.get("reason", ""))][:40]
     paper_trade_logs = [lg for lg in all_logs if "[한투주문 완료" not in str(lg.get("reason", ""))][:40]
 
+    # [시간대별 후보군 실시간 동기화] 현재 KST 시간대의 활성 시장(주간 KR / 야간 US)과 후보군이 다르면 즉시 스위칭!
+    session_info = _get_time_based_session_info(cfg)
+    active_mkt = session_info["active_market"]
+    want_us = active_mkt == "US"
+    curr_cands = state.get("candidates", [])
+    if not curr_cands or any(bool(c.get("is_us")) != want_us for c in curr_cands[:3]):
+        try:
+            fresh_cands = _build_session_candidates(state, active_mkt)[:10]
+            state["candidates"] = fresh_cands
+            if active_mkt == "KR":
+                state["kr_candidates"] = fresh_cands
+            else:
+                state["us_candidates"] = fresh_cands
+            curr_cands = fresh_cands
+            save_state(state)
+        except Exception as e:
+            print(f"[AutoTrader] Auto session candidate refresh warning: {e}")
+
     # 마스킹 처리하여 프론트엔드 및 네트워크상에 원본 API 키/시크릿이 절대 노출되지 않도록 철통 보호
     kis_configured = bool(cfg.get("kis_app_key") and cfg.get("kis_account_no"))
     if cfg.get("kis_app_secret"):
@@ -1276,6 +1363,7 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
 
     return {
         "config": cfg,
+        "session_info": session_info,
         "summary": {
             "total_equity_krw": total_equity_krw,
             "cash_krw": int(acct.get("cash_krw", 0)),
@@ -1301,7 +1389,9 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         "trade_logs": all_logs[:40],
         "paper_trade_logs": paper_trade_logs,
         "real_trade_logs": real_trade_logs,
-        "candidates": state.get("candidates", [])[:10],
+        "candidates": curr_cands[:10],
+        "kr_candidates": state.get("kr_candidates", curr_cands if active_mkt == "KR" else [])[:10],
+        "us_candidates": state.get("us_candidates", curr_cands if active_mkt == "US" else [])[:10],
         "last_cycle_at": state.get("last_cycle_at", ""),
         "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),
     }

@@ -36,7 +36,7 @@ export default function AdminAutoTradePage() {
 
   // 설정 폼 상태
   const [mode, setMode] = useState("AI_PAPER");
-  const [marketTarget, setMarketTarget] = useState("KR");
+  const [marketTarget, setMarketTarget] = useState("ALL");
   const [maxTotalInvestKrw, setMaxTotalInvestKrw] = useState(10000000);
   const [orderAmountKrw, setOrderAmountKrw] = useState(2000000);
   const [maxPositions, setMaxPositions] = useState(5);
@@ -68,7 +68,7 @@ export default function AdminAutoTradePage() {
   const syncFormFromConfig = (cfg: any) => {
     if (!cfg) return;
     setMode(cfg.mode || "AI_PAPER");
-    setMarketTarget(cfg.market_target || "KR");
+    setMarketTarget(cfg.market_target === "KR_ONLY" || cfg.market_target === "US_ONLY" ? cfg.market_target : "ALL");
     setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 10000000));
     setOrderAmountKrw(Number(cfg.order_amount_krw || 2000000));
     setMaxPositions(Number(cfg.max_positions || 5));
@@ -885,15 +885,15 @@ export default function AdminAutoTradePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-gray-300 block mb-1">매매 대상 시장</label>
+                  <label className="text-xs font-bold text-gray-300 block mb-1">매매 대상 시장 (시간대별 자동 스위칭)</label>
                   <select
                     value={marketTarget}
                     onChange={(e) => setMarketTarget(e.target.value)}
-                    className="w-full bg-zinc-950 border border-white/15 rounded-xl px-3 py-2.5 text-xs font-bold text-white"
+                    className="w-full bg-zinc-950 border border-emerald-500/40 rounded-xl px-3 py-2.5 text-xs font-bold text-white"
                   >
-                    <option value="KR">🇰🇷 국내 주식 (코스피·코스닥 우량주)</option>
-                    <option value="US">🇺🇸 미국 주식 (엔비디아·테슬라 등 야간)</option>
-                    <option value="ALL">🌍 국내(주간) + 미국(야간) 24시간 풀가동</option>
+                    <option value="ALL">🌍 시간대별 자동 (주간 08~17시 🇰🇷국내장 / 야간 17~08시 🇺🇸미국장)</option>
+                    <option value="KR_ONLY">🇰🇷 국내 주식만 고정 (코스피·코스닥 전용)</option>
+                    <option value="US_ONLY">🇺🇸 미국 주식만 고정 (나스닥·뉴욕 전용)</option>
                   </select>
                 </div>
 
@@ -1061,52 +1061,95 @@ export default function AdminAutoTradePage() {
             </div>
           </div>
 
-          {/* 우측: AI 실시간 종목 발굴 레이더 Top 10 */}
+          {/* 우측: AI 실시간 종목 발굴 레이더 Top 10 (시간대별 국내장·미국장 자동 스위칭) */}
           <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-400" />
                   AI 로봇 실시간 매수 타점 레이더 Top 10
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  수급·차트 지지선·섹터 모멘텀 점수가 가장 높은 최우선 매수 대기 10대 종목입니다.
+                  현재 열리는 주식시장 시간대에 맞춰 AI가 즉시 매수·익절할 최우선 10대 종목을 자동 배치합니다.
                 </p>
               </div>
-              <span className="text-[11px] font-mono text-gray-500">최근 스캔: {data?.last_cycle_at?.slice(11) || "방금 전"}</span>
+              <span className="text-[11px] font-mono text-gray-500 shrink-0">
+                최근 스캔: {data?.last_cycle_at?.slice(11) || "방금 전"}
+              </span>
+            </div>
+
+            {/* 🕒 시간대별 자동 스위칭 세션 상태 배너 */}
+            <div
+              className={`p-3 rounded-2xl border flex flex-col gap-1 ${
+                data?.session_info?.active_market === "US"
+                  ? "bg-indigo-950/50 border-indigo-500/40 text-indigo-200"
+                  : "bg-emerald-950/50 border-emerald-500/40 text-emerald-200"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-black flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  {data?.session_info?.session_badge ||
+                    "🕒 시간대별 국내장(08~17시) · 미국장(17~08시) 자동 스위칭 가동 중"}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/10 text-white font-mono">
+                  주간 08~17시 🇰🇷한국장 / 야간 17~08시 🇺🇸미국장
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-snug">
+                {data?.session_info?.session_desc ||
+                  "주간(08:00~17:00)에는 국내 주도주 Top 10을, 야간(17:00~08:00)에는 해외·미국 급등주 Top 10을 후보군에 올려 24시간 쉬지 않고 자동 매수·익절 매도합니다."}
+              </p>
             </div>
 
             <div className="space-y-2.5">
-              {candidates.slice(0, 10).map((cand: any, idx: number) => (
-                <div
-                  key={cand.symbol}
-                  className="p-3 rounded-2xl bg-zinc-950/80 border border-white/5 flex items-center justify-between gap-3"
-                >
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-black flex items-center justify-center">
-                        {idx + 1}
-                      </span>
-                      <span className="font-black text-white text-sm">{cand.name}</span>
-                      <span className="text-[11px] text-gray-500 font-mono">{cand.symbol}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[10px] font-black">
-                        AI {cand.ai_score}점
-                      </span>
+              {candidates.slice(0, 10).map((cand: any, idx: number) => {
+                const krwEquiv = cand.is_us ? Math.round((cand.price || 0) * 1355) : cand.price;
+                return (
+                  <div
+                    key={cand.symbol}
+                    className="p-3 rounded-2xl bg-zinc-950/80 border border-white/5 flex items-center justify-between gap-3"
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-black flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                            cand.is_us
+                              ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                              : "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                          }`}
+                        >
+                          {cand.is_us ? "🇺🇸 미국장" : "🇰🇷 국내장"}
+                        </span>
+                        <span className="font-black text-white text-sm">{cand.name}</span>
+                        <span className="text-[11px] text-gray-500 font-mono">{cand.symbol}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[10px] font-black">
+                          AI {cand.ai_score}점
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 pl-7">{cand.reason}</p>
                     </div>
-                    <p className="text-[11px] text-gray-400 pl-7">{cand.reason}</p>
-                  </div>
 
-                  <div className="text-right shrink-0 font-mono">
-                    <div className="text-sm font-black text-white">
-                      {cand.is_us ? `$${cand.price}` : `₩${cand.price?.toLocaleString()}`}
-                    </div>
-                    <div className={`text-xs font-bold ${cand.change_pct >= 0 ? "text-rose-400" : "text-blue-400"}`}>
-                      {cand.change_pct >= 0 ? "+" : ""}
-                      {cand.change_pct}%
+                    <div className="text-right shrink-0 font-mono">
+                      <div className="text-sm font-black text-white">
+                        {cand.is_us ? `$${cand.price}` : `₩${cand.price?.toLocaleString()}`}
+                      </div>
+                      {cand.is_us && (
+                        <div className="text-[10px] text-gray-400 font-bold">
+                          ≈ ₩{krwEquiv?.toLocaleString()}
+                        </div>
+                      )}
+                      <div className={`text-xs font-bold ${cand.change_pct >= 0 ? "text-rose-400" : "text-blue-400"}`}>
+                        {cand.change_pct >= 0 ? "+" : ""}
+                        {cand.change_pct}%
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
