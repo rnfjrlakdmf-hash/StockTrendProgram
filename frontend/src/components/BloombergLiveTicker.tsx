@@ -10,6 +10,7 @@ import Link from "next/link";
 import { API_BASE_URL } from "@/lib/config";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
 
 interface TickerItem {
   id: string;
@@ -77,6 +78,16 @@ const DEFAULT_ITEMS: TickerItem[] = [
 ];
 
 export default function BloombergLiveTicker() {
+  const { user } = useAuth();
+  const isAdmin = Boolean(
+    user && (
+      user.email?.toLowerCase() === "rnfjr@gmail.com" ||
+      user.email?.toLowerCase() === "rnfjrlakdmf@gmail.com" ||
+      user.id === "110418985320259217419" ||
+      (user as any).uid === "110418985320259217419"
+    )
+  );
+
   const [items, setItems] = useState<TickerItem[]>(DEFAULT_ITEMS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -91,7 +102,7 @@ export default function BloombergLiveTicker() {
         // 1. Firebase Firestore alerts 조회 및 풍부한 정보 추출
         try {
           const alertsRef = collection(db, "alerts");
-          const q = query(alertsRef, orderBy("timestamp", "desc"), limit(12));
+          const q = query(alertsRef, orderBy("timestamp", "desc"), limit(20));
           const snap = await getDocs(q);
 
           snap.forEach((doc) => {
@@ -99,15 +110,49 @@ export default function BloombergLiveTicker() {
             const rawTitle = (d.title || "").trim();
             const rawBody = (d.body || "").trim();
             const fullText = `${rawTitle} ${rawBody}`;
-            
+
+            // [철통 보안] 자동매매 관련 모든 알림(매수가/매도가/익절/자동매매 등) 판별
+            const isAutoTradeAlert =
+              d.type === "auto_trade" ||
+              d.url === "/admin/auto-trade" ||
+              String(d.url || "").includes("auto-trade") ||
+              String(d.url || "").includes("auto_trade") ||
+              rawTitle.includes("🟢매수") ||
+              rawTitle.includes("🔴익절") ||
+              rawTitle.includes("🔴매도") ||
+              rawTitle.includes("자동매매") ||
+              fullText.includes("매도가:") ||
+              fullText.includes("매수가:") ||
+              fullText.includes("매입 완료") ||
+              fullText.includes("익절 매도") ||
+              fullText.includes("물타기");
+
+            // 1) 일반 회원 및 비로그인 상태에서는 자동매매 내용 및 비공개 알림 100% 원천 차단!
+            if (isAutoTradeAlert && !isAdmin) {
+              return;
+            }
+            if (d.is_global === false && !isAdmin) {
+              return;
+            }
+
             let badge = "실시간 속보";
             let badgeColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
             let type: TickerItem["type"] = "news";
             let headline = "";
             let summary = "";
 
+            // 0. 관리자 전용 AI 자동매매 속보 (오직 대표님 관리자 로그인 시에만 노출!)
+            if (isAutoTradeAlert && isAdmin) {
+              badge = "🤖 자동매매 (ADMIN)";
+              badgeColor = "bg-indigo-500/25 text-indigo-300 border-indigo-500/40";
+              type = "surge";
+              headline = rawTitle.replace(/\[.*?\]/g, "").trim() || "AI 자동매매 체결";
+              summary = rawBody
+                ? rawBody.split("\n").map((s: string) => s.trim()).filter(Boolean).slice(0, 2).join(" · ")
+                : "대표님 전용 무인 자동매매 실시간 체결";
+            }
             // A. 포트폴리오 / 관심종목 결산 알림
-            if (fullText.includes("관심종목 결산") || fullText.includes("포트폴리오") || d.type === "portfolio_summary") {
+            else if (fullText.includes("관심종목 결산") || fullText.includes("포트폴리오") || d.type === "portfolio_summary") {
               badge = "장마감 결산";
               badgeColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
               type = "portfolio";
@@ -169,7 +214,11 @@ export default function BloombergLiveTicker() {
             }
 
             const symbol = d.symbol ? String(d.symbol).trim() : undefined;
-            const targetUrl = symbol ? `/stock/${symbol}` : d.url || d.dart_url || "/alerts";
+            const targetUrl = isAutoTradeAlert
+              ? "/admin/auto-trade"
+              : symbol
+              ? `/stock/${symbol}`
+              : d.url || d.dart_url || "/alerts";
 
             if (!summary || summary === headline) {
               summary = rawBody ? rawBody.split("\n")[0] : "실시간 시장 데이터 동기화 완료";
@@ -251,7 +300,7 @@ export default function BloombergLiveTicker() {
       isMounted = false;
       clearInterval(refreshTimer);
     };
-  }, []);
+  }, [isAdmin]);
 
   // 5초마다 부드러운 롤링
   useEffect(() => {

@@ -69,16 +69,25 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                 const snapshot = await getDocs(q);
                 
                 let unreadCount = 0;
+                const isCurrentUserAdmin = Boolean(user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? ''));
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const alertTime = data.timestamp?.seconds ? data.timestamp.seconds * 1000 : 0;
+                    const fullTxt = `${data.title || ''} ${data.body || ''} ${data.url || ''}`;
+                    const isAutoTrade = data.type === 'auto_trade' ||
+                        fullTxt.includes('auto-trade') ||
+                        fullTxt.includes('🟢매수') ||
+                        fullTxt.includes('🔴익절') ||
+                        fullTxt.includes('매도가:') ||
+                        fullTxt.includes('매수가:');
+                    if (isAutoTrade && !isCurrentUserAdmin) return;
                     
                     if (alertTime > lastVisitTime) {
-                        const isGlobal = data.is_global === true || data.is_global === undefined;
+                        const isGlobal = data.is_global === true;
                         const isTargetedToMe = user && data.target_users && Array.isArray(data.target_users) && data.target_users.includes((user as any).uid || (user as any).id);
                         
                         if (user) {
-                            if (isGlobal || isTargetedToMe) unreadCount++;
+                            if (isGlobal || isTargetedToMe || (isAutoTrade && isCurrentUserAdmin)) unreadCount++;
                         } else {
                             if (isGlobal) unreadCount++;
                         }
