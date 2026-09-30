@@ -181,15 +181,15 @@ export default function AlertCenterPage() {
                 snapLatest.forEach(doc => {
                     const data = doc.data();
                     
-                    // [철통 필터링] 단순 정기 보고서(분기/반기/사업보고서) 및 의례적 주주총회 소집/결과는 브라우저 캐시가 남아있더라도 화면에서 100% 원천 차단
+                    // [철통 필터링] 단순 정기 서류(분기/반기/사업/감사보고서), 주주총회 소집/결과, 명의개서정지, 투자설명서 등은 화면에서 100% 원천 차단
                     const cleanT = (data.title || '').replace(/\s+/g, '');
                     const cleanB = (data.body || '').replace(/\s+/g, '');
-                    if (
-                        cleanT.includes('사업보고서') || cleanT.includes('분기보고서') || cleanT.includes('반기보고서') ||
-                        cleanT.includes('주주총회') || cleanT.includes('주총소집') || cleanT.includes('주총결과') ||
-                        cleanB.includes('사업보고서') || cleanB.includes('분기보고서') || cleanB.includes('반기보고서') ||
-                        cleanB.includes('주주총회소집') || cleanB.includes('주주총회결과') || cleanB.includes('주총소집')
-                    ) {
+                    const noisyKeywords = [
+                        '사업보고서', '분기보고서', '반기보고서', '감사보고서', '검토보고서',
+                        '주주총회', '주총소집', '주총결과', '주주총회소집', '주주총회결과',
+                        '주주명부폐쇄', '명의개서정지', '기준일설정', '증권발행실적보고서', '일괄신고추가서류', '투자설명서'
+                    ];
+                    if (noisyKeywords.some(kw => cleanT.includes(kw) || cleanB.includes(kw))) {
                         return;
                     }
 

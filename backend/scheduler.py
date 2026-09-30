@@ -273,11 +273,15 @@ async def check_and_notify_disclosures():
                     continue
 
                 # [대표님 요청 반영] 단순 정기 서류 제출(분기/반기/사업/감사/검토보고서) 및
-                # 통상적인 의례적 안내 공고인 '주주총회(소집·결과·임시주총)'는 투자 실시간 매매에 불필요한 잡음이므로
-                # 알림센터(DB) 저장 및 푸시 발송에서 100% 완전 제외!
+                # 통상적인 의례적 안내 공고인 '주주총회(소집·결과·임시주총)', 명의개서정지, 투자설명서 등은
+                # 투자 실시간 매매에 불필요한 잡음이므로 알림센터(DB) 저장 및 푸시 발송에서 100% 완전 제외!
                 clean_check = report_title.replace(" ", "")
-                if any(skip_kw in clean_check for skip_kw in ["분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서", "주주총회", "주총"]):
-                    logger.debug(f"[공시Monitor] 단순 정기/주총 공시 DB 저장/알림 제외: {corp} ({report_title})")
+                if any(skip_kw in clean_check for skip_kw in [
+                    "분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서",
+                    "주주총회", "주총", "주주명부폐쇄", "명의개서정지", "기준일설정",
+                    "증권발행실적보고서", "일괄신고추가서류", "투자설명서"
+                ]):
+                    logger.debug(f"[공시Monitor] 단순 정기/의례 공시 DB 저장/알림 제외: {corp} ({report_title})")
                     continue
 
                 new_count += 1
