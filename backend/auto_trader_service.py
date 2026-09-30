@@ -184,10 +184,58 @@ def load_state() -> Dict[str, Any]:
                                 pass
     except Exception as e:
         print(f"[AutoTrader] load_state error: {e}")
+
+    # [KIS API 키 영구 금고(Vault) 자동 복원] 어떤 이유로든 state 파일이 초기화되어도 금고 파일에서 즉시 복구!
+    vault_file = os.path.join(os.path.dirname(__file__), "kis_credentials_vault.json")
+    try:
+        if os.path.exists(vault_file):
+            with open(vault_file, "r", encoding="utf-8") as vf:
+                vdata = json.load(vf)
+                for vk in ("kis_account_no", "kis_app_key", "kis_app_secret"):
+                    cur_val = str(state["config"].get(vk, "") or "").strip()
+                    vault_val = str(vdata.get(vk, "") or "").strip()
+                    if (not cur_val or "*" in cur_val) and vault_val and "*" not in vault_val:
+                        state["config"][vk] = vault_val
+    except Exception:
+        pass
+    if not str(state["config"].get("kis_account_no", "") or "").strip():
+        state["config"]["kis_account_no"] = "43880949-22"
+
     return state
 
 
 def save_state(state: Dict[str, Any]) -> None:
+    # [KIS API 키 영구 금고(Vault) 별도 보관] 유효한 키가 들어오면 별도 보안 금고 파일에 영구 백업
+    vault_file = os.path.join(os.path.dirname(__file__), "kis_credentials_vault.json")
+    try:
+        cfg = state.get("config", {})
+        existing_vault = {}
+        if os.path.exists(vault_file):
+            try:
+                with open(vault_file, "r", encoding="utf-8") as vf:
+                    existing_vault = json.load(vf)
+            except Exception:
+                existing_vault = {}
+        updated_vault = False
+        for vk in ("kis_account_no", "kis_app_key", "kis_app_secret"):
+            val = str(cfg.get(vk, "") or "").strip()
+            if val and "*" not in val:
+                if existing_vault.get(vk) != val:
+                    existing_vault[vk] = val
+                    updated_vault = True
+            elif existing_vault.get(vk):
+                # 만약 메모리에 빈 값이나 마스킹 값이 있으면 금고 원본으로 복원
+                cfg[vk] = existing_vault[vk]
+        if updated_vault:
+            with open(vault_file, "w", encoding="utf-8") as vf:
+                json.dump(existing_vault, vf, ensure_ascii=False, indent=2)
+            try:
+                os.chmod(vault_file, 0o600)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     try:
         state["trade_logs"] = state.get("trade_logs", [])[:100]
         with open(STATE_FILE, "w", encoding="utf-8") as f:

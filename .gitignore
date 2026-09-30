@@ -99,6 +99,8 @@ auto_trader_state.json
 backend/auto_trader_state.json
 disclosure_state.json
 backend/disclosure_state.json
+kis_credentials_vault.json
+backend/kis_credentials_vault.json
 
 # ===== Node =====
 node_modules/

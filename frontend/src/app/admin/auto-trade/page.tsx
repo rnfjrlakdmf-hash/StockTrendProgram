@@ -1098,41 +1098,60 @@ export default function AdminAutoTradePage() {
 
               {/* 한국투자증권 OpenAPI 키 입력 슬롯 */}
               <div className="p-3.5 rounded-2xl bg-zinc-950 border border-white/10 space-y-2.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-black text-amber-300 flex items-center gap-1.5">
-                    <KeyRound className="w-4 h-4" /> 한국투자증권(KIS) 24시간 무인 주문 API 키 (선택)
+                    <KeyRound className="w-4 h-4" /> 한국투자증권(KIS) 24시간 무인 주문 API 키
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowKisModal(!showKisModal)}
-                    className="text-[11px] font-bold text-blue-400 underline"
-                  >
-                    {showKisModal ? "접기" : "API 키 입력 / 3분 발급 안내 열기"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
+                        summary.kis_configured
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/50"
+                          : "bg-rose-500/20 text-rose-300 border-rose-400/50"
+                      }`}
+                    >
+                      {summary.kis_configured
+                        ? "🟢 서버 금고 영구 보관됨 (재입력 불필요 ✓)"
+                        : "⚠️ APP KEY / SECRET 1회 입력 필요"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowKisModal(!showKisModal)}
+                      className="text-[11px] font-bold text-blue-400 underline"
+                    >
+                      {showKisModal ? "접기" : "열기"}
+                    </button>
+                  </div>
                 </div>
 
                 {showKisModal && (
                   <div className="space-y-2 pt-2 border-t border-white/10">
-                    <p className="text-[11px] text-gray-400 leading-relaxed">
-                      • 스마트폰으로 <b>한국투자증권 앱(뱅키스)</b> 비대면 계좌 개설 후, <b>KIS Developers</b>에서 무료 발급받은 APP KEY / SECRET / 계좌번호(8자리-01)를 입력하면 집 PC를 켜두지 않아도 우리 리눅스 서버가 24시간 실제 주문을 체결합니다.
-                    </p>
+                    {summary.kis_configured ? (
+                      <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-[11px] text-emerald-200 font-bold">
+                        ✅ 현재 서버 보안 금고(`kis_credentials_vault`)에 대표님의 계좌번호(`{kisAccountNo || "43880949-22"}`)와 API 키가 영구 저장되어 있습니다. 다시 입력하지 않으셔도 24시간 자동 유지됩니다!
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-[11px] text-amber-200 font-bold">
+                        💡 계좌번호(`43880949-22`)는 자동 입력되어 있습니다. 아래 <b>APP KEY</b>와 <b>APP SECRET</b>을 딱 한 번만 붙여넣고 <b>[💾 저장하기]</b>를 눌러주시면, 영구 금고 파일(`kis_credentials_vault`)에 잠금 보관되어 다시는 지워지지 않습니다!
+                      </div>
+                    )}
                     <input
                       type="text"
-                      placeholder="KIS 계좌번호 (예: 50123456-01)"
-                      value={kisAccountNo}
+                      placeholder="KIS 계좌번호 (예: 43880949-22)"
+                      value={kisAccountNo || "43880949-22"}
                       onChange={(e) => setKisAccountNo(e.target.value)}
                       className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white"
                     />
                     <input
                       type="text"
-                      placeholder="KIS APP KEY 입력"
+                      placeholder={summary.kis_configured ? "🟢 서버 금고에 APP KEY 보관 중 (변경 시에만 새 키 입력)" : "KIS APP KEY 붙여넣기 (최초 1회)"}
                       value={kisAppKey}
                       onChange={(e) => setKisAppKey(e.target.value)}
                       className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white"
                     />
                     <input
                       type="password"
-                      placeholder="KIS APP SECRET 입력"
+                      placeholder={summary.kis_configured ? "🟢 서버 금고에 APP SECRET 보관 중 (변경 시에만 새 키 입력)" : "KIS APP SECRET 붙여넣기 (최초 1회)"}
                       value={kisAppSecret}
                       onChange={(e) => setKisAppSecret(e.target.value)}
                       className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white"
