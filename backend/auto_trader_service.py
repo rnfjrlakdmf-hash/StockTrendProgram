@@ -1186,23 +1186,37 @@ def panic_sell_all() -> Dict[str, Any]:
 
 def reset_paper_account(initial_capital_krw: int = 10000000) -> Dict[str, Any]:
     state = load_state()
-    state["config"]["initial_capital_krw"] = int(initial_capital_krw)
-    state["account"] = {
-        "cash_krw": int(initial_capital_krw),
-        "realized_pnl_krw": 0,
-        "total_trades": 0,
-        "win_trades": 0,
-        "loss_trades": 0,
-    }
-    state["positions"] = []
-    state["trade_logs"] = []
+    seed_krw = max(50000, int(initial_capital_krw or 10000000))
+    state["config"]["paper_seed_krw"] = seed_krw
+    if state["config"].get("mode") != "KIS_REAL":
+        state["config"]["initial_capital_krw"] = seed_krw
+        state["account"] = {
+            "cash_krw": seed_krw,
+            "realized_pnl_krw": 0,
+            "total_trades": 0,
+            "win_trades": 0,
+            "loss_trades": 0,
+        }
+    # 실전 포지션은 그대로 보존하고 가상 모의투자 포지션만 새 시드머니 기준으로 즉시 재편성
+    real_only = [
+        p for p in state.get("positions", [])
+        if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+    ]
+    state["positions"] = real_only
+    state["paper_positions_backup"] = []
+    state["trade_logs"] = [
+        lg for lg in state.get("trade_logs", [])
+        if "[한투주문 완료" in str(lg.get("reason", ""))
+    ]
     save_state(state)
-    return run_auto_trader_cycle(force_buy=True)
+    return get_dashboard_summary(state)
 
 
 def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     state = load_state()
     old_mode = state["config"].get("mode", "AI_PAPER")
+    if "paper_seed_krw" in new_cfg and new_cfg["paper_seed_krw"] is not None:
+        state["config"]["paper_seed_krw"] = max(50000, int(new_cfg["paper_seed_krw"]))
     for k, v in new_cfg.items():
         if k in state["config"] and v is not None:
             if k in ("kis_app_secret", "kis_app_key", "kis_account_no"):
@@ -1212,7 +1226,7 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     new_mode = state["config"].get("mode", "AI_PAPER")
     # [모의투자 <-> 실전투자 완전 분리]
-    # 가상 모의투자(AI_PAPER)로 산 1,000만원어치 가상 종목들이 실전투자(KIS_REAL) 한도와 슬롯을 막지 않도록 자동 분리!
+    # 가상 모의투자(AI_PAPER)로 산 가상 종목들이 실전투자(KIS_REAL) 한도와 슬롯을 막지 않도록 자동 분리!
     if new_mode == "KIS_REAL":
         paper_only = [p for p in state.get("positions", []) if p.get("trade_mode", "AI_PAPER") != "KIS_REAL" and "[한투주문 완료" not in str(p.get("reason", ""))]
         real_only = [p for p in state.get("positions", []) if p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", ""))]
@@ -1233,27 +1247,30 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    [🎮 AI 가상 모의투자(1,000만원 시드) — 장 운영시간 엄격 준수 & 국내·해외 시드 분리 엔진]
-    - 장이 열려 있지 않은 시장의 종목은 절대 미리 매수하거나 장외 매도하지 않습니다!
-    - 주간 (08:00~16:59 KST, 🇰🇷 국내장 오픈):
-      * 오직 열려 있는 [🇰🇷 국내주식]만 최대 3종목(종목당 약 135만 원, 총 약 400만 원) 한도로 실시간 분석·매수·익절 매도합니다.
-      * 나머지 약 600만 원의 예수금은 밤(17:00 KST~)에 미국장이 실제로 열렸을 때 미국주식을 매수하기 위해 현금으로 반드시 남겨둡니다.
-    - 야간 (17:00~07:59 KST, 🇺🇸 미국장 오픈):
-      * 실제로 열린 [🇺🇸 해외(미국)주식]만 실시간 호가를 분석해 남겨둔 시드(최대 2종목, 약 270만~300만 원)로 매수·익절 매도합니다.
-      * 마감된 국내주식은 밤 시간 동안 억지로 매매하지 않고 다음 날 아침 개장까지 안전하게 보유합니다.
+    [🎮 AI 가상 모의투자(사용자 설정 시드머니) — 장 운영시간 엄격 준수 & 국내·해외 시드 분리 엔진]
+    - 대표님께서 설정하신 모의투자 시드머니(paper_seed_krw: 10만원 ~ 1억원 등 자유 설정) 한도에 맞춰
+      종목당 배분 금액(약 13.5%씩, 소액 시드일 경우 약 35%씩)을 자동으로 계산하여 매수·매도합니다.
     """
     fx_rate = 1355.0
-    paper_seed_krw = 10000000
-    paper_max_pos = 5
-    target_kr_slots = 3
-    target_us_slots = 2
-    per_stock_budget_krw = 1350000  # 종목당 약 135만원 소액 분산
     cfg = state.get("config", {})
+    paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+    if paper_seed_krw <= 300000:
+        paper_max_pos = 3
+        target_kr_slots = 2
+        target_us_slots = 1
+        per_stock_budget_krw = max(35000, int(paper_seed_krw * 0.35))
+    else:
+        paper_max_pos = 5
+        target_kr_slots = 3
+        target_us_slots = 2
+        per_stock_budget_krw = max(65000, int(paper_seed_krw * 0.135))
+
     tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
     ts_pct = float(cfg.get("trailing_stop_pct", 1.2) or 1.2)
     use_sl = bool(cfg.get("use_stop_loss", False))
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+    seed_label_man = f"{paper_seed_krw // 10000:,}만원" if paper_seed_krw >= 10000 else f"{paper_seed_krw:,}원"
 
     session_info = _get_time_based_session_info(cfg)
     active_mkt = session_info.get("active_market", "KR")  # "KR" (08:00~16:59 KST) or "US" (17:00~07:59 KST)
@@ -1269,7 +1286,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 raw_paper.append(dict(p))
                 seen_syms.add(sym)
 
-    # 1.2 [장외 체결 보정] 낮 시간(국내장 세션, 미국장 휴장)인데 오늘 낮(08:00~16:59)에 잘못 가매수된 미국주식이 있다면 즉시 주문 취소(현금 환원)
+    # 1.2 [장외 체결 보정 & 시드머니 한도 초과 종목 정리]
     kr_held_count = 0
     balanced_raw: List[Dict[str, Any]] = []
     changed = False
@@ -1284,13 +1301,20 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             except Exception:
                 bought_hour = -1
 
-        # 미국장이 닫혀 있는 낮 시간대(08:00~16:59 KST)에 매수된 해외주식은 장외 허수 체결이므로 즉시 취소하여 예수금 복구
+        # 미국장이 닫혀 있는 낮 시간대(08:00~16:59 KST)에 매수된 해외주식은 장외 허수 체결이므로 즉시 취소
         if is_us_p and (8 <= bought_hour < 17):
             seen_syms.discard(sym)
             state["trade_logs"] = [
                 lg for lg in state.get("trade_logs", [])
                 if not (lg.get("symbol") == sym and lg.get("mode") == "AI_PAPER")
             ]
+            changed = True
+            continue
+
+        # 만약 설정된 시드머니가 소액(예: 10만원)인데 1주 가격이 종목당 한도(예: 3.5만원*1.3)보다 비싼 종목(예: 두산에너빌리티 8만원)이면 정리
+        unit_p_krw = float(p.get("avg_price", 0) or 0) * (fx_rate if is_us_p else 1.0)
+        if unit_p_krw > per_stock_budget_krw * 1.35:
+            seen_syms.discard(sym)
             changed = True
             continue
 
@@ -1314,7 +1338,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             for s_code, q_res in ex.map(lambda item: _q_worker(item["symbol"]), raw_paper):
                 quote_map[s_code] = q_res
 
-    # 2. 보유 종목 관리 (장이 열려 있는 시장의 종목만 실시간 가격 갱신 & 익절/손절 매도 수행!)
+    # 2. 보유 종목 관리 (사용자 설정 시드머니에 맞춰 수량 자동 리밸런싱 & 실시간 익절/손절 매도)
     for pos in raw_paper:
         sym = pos["symbol"]
         is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
@@ -1327,13 +1351,13 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
 
-        # 종목당 투자금이 너무 적거나(50만원 미만) 너무 크면(150만원 초과) -> 종목당 135만원 황금 분산 비중으로 수량 자동 조정!
+        # 사용자가 모의투자 시드머니를 변경했으면 새로운 종목당 배분액(per_stock_budget_krw)에 맞춰 보유 수량을 즉시 자동 조정!
         curr_inv = avg_p * int(pos.get("qty", 1)) * unit_m
-        if (curr_inv < 500000 or curr_inv > 1500000) and (avg_p * unit_m) <= per_stock_budget_krw:
+        if (curr_inv < per_stock_budget_krw * 0.65 or curr_inv > per_stock_budget_krw * 1.2) and (avg_p * unit_m) <= per_stock_budget_krw * 1.3:
             target_qty = max(1, int(per_stock_budget_krw // (avg_p * unit_m)))
             if target_qty != int(pos.get("qty", 1)):
                 pos["qty"] = target_qty
-                pos["reason"] = f"AI 퀀트 99점 · [{'🇺🇸해외' if is_us else '🇰🇷국내'} 분산배분 {int(round(target_qty * avg_p * unit_m)):,}원] · 기관·외인 수급 돌파"
+                pos["reason"] = f"AI 퀀트 99점 · [{seed_label_man} 시드 맞춤 {int(round(target_qty * avg_p * unit_m)):,}원 배분] · 기관·외인 수급 돌파"
                 changed = True
 
         if is_market_open_for_pos:
@@ -1600,7 +1624,9 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             "total_return_pct": ret_pct,
         }
 
-    paper_summary = _calc_group_metrics(paper_positions, 10000000)
+    paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+    cfg["paper_seed_krw"] = paper_seed_krw
+    paper_summary = _calc_group_metrics(paper_positions, paper_seed_krw)
     real_cap = max_total_invest_krw if max_total_invest_krw > 0 else int(cfg.get("initial_capital_krw", 10000000) or 10000000)
     real_summary = _calc_group_metrics(real_positions, real_cap)
 

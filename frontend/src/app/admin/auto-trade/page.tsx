@@ -49,6 +49,7 @@ export default function AdminAutoTradePage() {
   const [kisAppKey, setKisAppKey] = useState("");
   const [kisAppSecret, setKisAppSecret] = useState("");
   const [kisAccountNo, setKisAccountNo] = useState("");
+  const [paperSeedKrw, setPaperSeedKrw] = useState<number>(10000000);
 
   // [철통 보안] 대표님 관리자 이메일(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 외 접근 원천 차단
   useEffect(() => {
@@ -81,6 +82,7 @@ export default function AdminAutoTradePage() {
     setKisAppKey(cfg.kis_app_key || "");
     setKisAppSecret(cfg.kis_app_secret || "");
     setKisAccountNo(cfg.kis_account_no || "");
+    if (cfg.paper_seed_krw) setPaperSeedKrw(Number(cfg.paper_seed_krw));
   };
 
   const getAdminHeaders = useCallback(async (withJson = true) => {
@@ -245,14 +247,38 @@ export default function AdminAutoTradePage() {
     }
   };
 
-  const handleResetPaper = async () => {
-    if (!confirm("가상 계좌 시드머니를 1,000만 원으로 초기화하고 즉시 새 포트폴리오 매수를 시작하시겠습니까?")) return;
+  const handleApplyPaperSeed = async (targetSeed?: number) => {
+    const seedVal = Math.max(50000, Number(targetSeed ?? paperSeedKrw) || 10000000);
+    setPaperSeedKrw(seedVal);
+    setActionLoading(true);
+    try {
+      const hdrs = await getAdminHeaders(true);
+      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
+        method: "POST",
+        headers: hdrs,
+        body: JSON.stringify({ paper_seed_krw: seedVal }),
+      });
+      const json = await res.json();
+      if (json.status === "success") {
+        setData(json.data);
+        syncFormFromConfig(json.data.config);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetPaper = async (customSeed?: number) => {
+    const seedVal = Math.max(50000, Number(customSeed ?? paperSeedKrw) || 10000000);
+    const seedText = seedVal >= 10000 ? `${(seedVal / 10000).toLocaleString()}만 원` : `${seedVal.toLocaleString()}원`;
+    if (!confirm(`가상 계좌 시드머니를 [${seedText}]으로 초기화하고 즉시 새 포트폴리오 매수를 시작하시겠습니까?`)) return;
+    setPaperSeedKrw(seedVal);
     setActionLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/reset-paper`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
-        body: JSON.stringify({ initial_capital_krw: 10000000 }),
+        body: JSON.stringify({ initial_capital_krw: seedVal }),
       });
       const json = await res.json();
       if (json.status === "success") setData(json.data);
@@ -281,6 +307,8 @@ export default function AdminAutoTradePage() {
   }
 
   const cfg = data?.config || {};
+  const activePaperSeed = Number(cfg.paper_seed_krw || paperSeedKrw || 10000000);
+  const paperSeedLabel = activePaperSeed >= 10000 ? `${(activePaperSeed / 10000).toLocaleString()}만원` : `${activePaperSeed.toLocaleString()}원`;
   const realPositions = data?.real_positions || [];
   const paperPositions = data?.paper_positions || [];
   const isRealView = viewWindow === "REAL";
@@ -420,13 +448,13 @@ export default function AdminAutoTradePage() {
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black">🎮 AI 가상 모의투자 창</span>
+                  <span className="text-sm sm:text-base font-black">🎮 AI 가상 모의투자 창 ({paperSeedLabel} 시드)</span>
                   <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-500 text-black">
                     {paperPositions.length}종목 보유
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-300">
-                  1,000만 원 가상 시드머니로 AI가 테스트 매수·감시 중인 모의투자 전용 보유 창
+                  {paperSeedLabel} 가상 시드머니(내 마음대로 금액 설정 가능)로 AI가 테스트 매수·감시 중인 모의투자 전용 창
                 </p>
               </div>
               <span
@@ -541,29 +569,91 @@ export default function AdminAutoTradePage() {
             </span>
           </div>
 
+          {/* 💰 [신규] AI 가상 모의투자 시드머니 직접 설정 & 원클릭 즉시 적용 바 */}
+          {!isRealView && (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-400/40 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
+                    💰 모의투자 시드머니(가상 원금) 내 마음대로 설정
+                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-black text-[11px] font-black">
+                      현재 설정: ₩{activePaperSeed.toLocaleString()} ({paperSeedLabel})
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-300 mt-0.5">
+                    원하시는 모의투자 시드머니를 선택하거나 직접 입력하시면, AI가 해당 금액 한도에 맞춰 보유 주식 수량과 예수금을 즉시 자동 재배분합니다!
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleResetPaper(paperSeedKrw)}
+                  disabled={actionLoading}
+                  className="text-xs font-black text-amber-200 hover:text-white bg-amber-500/20 border border-amber-400/50 px-3 py-1.5 rounded-xl flex items-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> 현재 시드({paperSeedLabel})로 처음부터 초기화 &amp; 재매수
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { label: "🔥 10만 원", val: 100000 },
+                  { label: "50만 원", val: 500000 },
+                  { label: "100만 원", val: 1000000 },
+                  { label: "300만 원", val: 3000000 },
+                  { label: "500만 원", val: 5000000 },
+                  { label: "💎 1,000만 원", val: 10000000 },
+                  { label: "5,000만 원", val: 50000000 },
+                ].map((preset) => (
+                  <button
+                    key={preset.val}
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() => handleApplyPaperSeed(preset.val)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      activePaperSeed === preset.val
+                        ? "bg-amber-400 text-black shadow-md shadow-amber-400/30"
+                        : "bg-zinc-900 text-gray-300 border border-white/10 hover:border-amber-400/60 hover:text-white"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+
+                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-1 sm:mt-0">
+                  <input
+                    type="number"
+                    min={50000}
+                    step={100000}
+                    value={paperSeedKrw}
+                    onChange={(e) => setPaperSeedKrw(Number(e.target.value))}
+                    placeholder="원하는 시드머니(원)"
+                    className="w-40 px-3 py-1.5 rounded-xl bg-black/80 border border-amber-400/40 text-amber-200 font-mono text-xs font-bold focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() => handleApplyPaperSeed(paperSeedKrw)}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs shrink-0 cursor-pointer"
+                  >
+                    🚀 시드머니 즉시 적용
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
                 {isRealView
                   ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || 5})`
-                  : `🎮 AI 가상 모의투자(1,000만원 시드) 보유·감시 종목 (${paperPositions.length} / 5)`}
+                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${activePaperSeed <= 300000 ? 3 : 5})`}
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
                   ? "한국투자증권 실제 계좌(43880949-22)에서 매수 체결된 종목만 이곳에 표시됩니다. (가상 모의투자 종목과 100% 분리됨)"
-                  : "실제 계좌 돈이 아닌 1,000만 원 가상 시드머니로 AI가 매매 연습·검증 중인 가상 종목 목록입니다."}
+                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 연습·검증 중인 가상 종목 목록입니다.`}
               </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {!isRealView && (
-                <button
-                  onClick={handleResetPaper}
-                  className="text-xs font-bold text-amber-200 hover:text-white bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 rounded-xl flex items-center gap-1"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" /> 1,000만 원 가상시드 초기화 &amp; 재매수
-                </button>
-              )}
             </div>
           </div>
 
