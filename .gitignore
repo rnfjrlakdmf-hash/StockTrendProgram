@@ -97,6 +97,8 @@ backend/.env
 firebase-adminsdk.json
 auto_trader_state.json
 backend/auto_trader_state.json
+disclosure_state.json
+backend/disclosure_state.json
 
 # ===== Node =====
 node_modules/

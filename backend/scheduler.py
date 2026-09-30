@@ -696,6 +696,21 @@ async def check_and_notify_sec_disclosures():
                 ns = {"atom": "http://www.w3.org/2005/Atom"}
                 entries = root.findall("atom:entry", ns)
 
+                # [폭탄 방지 1] 해당 티커의 과거 공시 5건 중 단 1건도 sec_processed에 없다면(초기화/신규등록 상태),
+                # 과거 공시 5건이 한꺼번에 폭탄 발송되지 않도록 전부 조용히 읽음 처리(베이스라인 등록)만 하고 스킵!
+                entry_ids_in_feed = [
+                    e.findtext("atom:id", default="", namespaces=ns)
+                    for e in entries
+                    if e.findtext("atom:id", default="", namespaces=ns)
+                ]
+                if entry_ids_in_feed and not any(eid in sec_processed for eid in entry_ids_in_feed):
+                    for eid in entry_ids_in_feed:
+                        sec_processed[eid] = None
+                    state["sec_processed_ids"] = list(sec_processed.keys())[-2000:]
+                    save_state(state)
+                    logger.info(f"[SEC Monitor] Baseline registered {len(entry_ids_in_feed)} existing filings for {ticker} (no spam sent)")
+                    continue
+
                 for entry in entries:
                     try:
                         entry_id = entry.findtext("atom:id", default="", namespaces=ns)
@@ -706,6 +721,26 @@ async def check_and_notify_sec_disclosures():
                         link_el = entry.find("atom:link", ns)
                         filing_url = link_el.get("href", "") if link_el is not None else ""
                         updated = entry.findtext("atom:updated", default="", namespaces=ns)
+
+                        # [폭탄 방지 2] 공시 발표 시각(updated)이 최근 3시간 이내가 아니면(과거 공시이면) 발송하지 않고 즉시 읽음 처리!
+                        is_fresh_filing = False
+                        if updated:
+                            try:
+                                from datetime import timezone
+                                upd_dt = datetime.fromisoformat(updated.replace("Z", "+00:00"))
+                                age_hours = (datetime.now(timezone.utc) - upd_dt).total_seconds() / 3600.0
+                                if age_hours <= 3.0:
+                                    is_fresh_filing = True
+                            except Exception:
+                                is_fresh_filing = False
+
+                        # 발송 전에 먼저 처리 완료로 저장하여 어떠한 경우에도 중복/폭탄 발송 원천 차단
+                        sec_processed[entry_id] = None
+                        state["sec_processed_ids"] = list(sec_processed.keys())[-2000:]
+                        save_state(state)
+
+                        if not is_fresh_filing or sent_count >= 2:
+                            continue
 
                         is_sec_whale = False
                         is_13f = "13F" in title_el
