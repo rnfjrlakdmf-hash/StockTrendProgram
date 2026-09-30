@@ -250,11 +250,15 @@ async def check_and_notify_disclosures():
 
         new_count = 0
         sent_count = 0
+        global_whale_push_count = 0
 
         for item in results:
             doc_id = str(item.get('rcept_no', ''))
             if not doc_id or doc_id in processed_ids:
                 continue
+
+            # 발송/API 호출 전 즉시 읽음 처리하여 서버 재시작 시 중복 폭탄 발송 원천 차단
+            mark_processed_and_save(state, processed_ids, doc_id)
 
             try:
                 raw_code = item.get('stock_code')
@@ -264,9 +268,8 @@ async def check_and_notify_disclosures():
                 rcept_dt = item.get('rcept_dt', '')
                 flr_nm = item.get('flr_nm', '')
 
-                # 비상장 법인(stock_code 없음)은 즉시 처리 완료 마킹 후 스킵
+                # 비상장 법인(stock_code 없음)은 즉시 스킵
                 if not raw_code:
-                    mark_processed_and_save(state, processed_ids, doc_id)
                     continue
 
                 new_count += 1
@@ -445,8 +448,11 @@ async def check_and_notify_disclosures():
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Firestore error: {e}")
 
-                    # ✅ [글로벌 푸시 발송: 대주주/내부자 지분변동, 슈퍼개미 5% 대량보유, 주요 공시 팩트 알림, 초특급 공시]
-                    if is_whale and not skip_whale_alert:
+                    # ✅ [글로벌 푸시 발송: 우루루 폭탄 방지]
+                    # 알림센터 DB에는 100% 전량 저장하되, 내 관심종목이 아닌 타 종목 글로벌 푸시는
+                    # 초특급 공시(is_super_global)이거나 1분 주기당 최대 1건(global_whale_push_count < 1)만 발송하여
+                    # 장 마감 직후(16시~17시) 수십 개 종목 공시가 한꺼번에 우루루 울리는 현상을 원천 차단!
+                    if is_whale and not skip_whale_alert and (is_super_global or global_whale_push_count < 1):
                         try:
                             from db_manager import get_all_fcm_tokens_with_user
                             whale_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
@@ -470,6 +476,7 @@ async def check_and_notify_disclosures():
                                 }
                                 send_multicast_notification(w_tokens, w_title, w_body, w_data, target_users=w_uids, skip_db_save=True)
                                 sent_count += 1
+                                global_whale_push_count += 1
                                 logger.info(f"[WhaleSiren] [글로벌 핵심공시/지분변동 푸시] Sent FCM to {len(w_tokens)} users for {corp}: {w_title}")
                         except Exception as push_e:
                             logger.error(f"[WhaleSiren] Global FCM error: {push_e}")
@@ -582,10 +589,12 @@ async def check_and_notify_sec_disclosures():
     weekday = now.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
     hour = now.hour
 
-    # KST 기준 평일 및 토요일 오전(미국 금요일 장마감/애프터마켓 공시 접수 시간)까지 상시 감시
-    is_us_trading_window = (weekday < 5) or (weekday == 5 and hour < 12)
+    # [미국장/SEC 운영시간 엄격 적용] 한국 주간/오후 시간대(08:31 ~ 16:59 KST)는 미국장 및 SEC 공시 접수 마감 시간이므로
+    # 오후 2시·4시 등 낮 시간에 SEC 공시가 발송되는 현상을 원천 차단하고, 미국 프리장~애프터장(17:00 ~ 익일 08:30 KST)에만 감시!
+    is_us_hours_kst = (hour >= 17) or (hour < 8) or (hour == 8 and now.minute <= 30)
+    is_us_trading_window = ((weekday < 5) and is_us_hours_kst) or (weekday == 5 and (hour < 8 or (hour == 8 and now.minute <= 30)))
     if not is_us_trading_window:
-        logger.debug(f"[SEC Monitor] 주말/미국 휴장 시간 ({now.strftime('%a %H:%M')} KST), 해외 공시 알림 스킵.")
+        logger.debug(f"[SEC Monitor] 미국 휴장/주간 시간 ({now.strftime('%a %H:%M')} KST), 해외 공시 알림 스킵.")
         return
 
     from db_manager import get_all_users, get_watchlist, get_user_fcm_tokens
@@ -1067,30 +1076,30 @@ async def disclosure_scheduler_loop():
     - SEC 해외 공시: 5분마다 체크 (DART와 동시)
     - IPO 공모주: 30분마다 체크
     """
-    logger.info("[공시Monitor] 공시 실시간 감시 루프 시작 (5분 주기)")
+    logger.info("[공시Monitor] 공시 실시간 감시 루프 시작 (1분 실시간 주기)")
 
     # 서버 시작 직후 15초 대기 후 즉시 첫 공시 체크 실행
     await asyncio.sleep(15)
 
-    ipo_check_counter = 0  # 5분 * 6 = 30분마다 IPO 체크
+    ipo_check_counter = 0  # 1분 * 30 = 30분마다 IPO 체크
 
     while True:
         try:
             update_heartbeat("Disclosure_Monitor")
 
-            # 국내 DART 공시 체크
+            # 국내 DART 공시 체크 (1분 주기 실시간)
             await check_and_notify_disclosures()
 
-            # 해외 SEC 공시 체크
+            # 해외 SEC 공시 체크 (미국장/프리장/애프터장 17:00~08:30 KST 전용)
             await check_and_notify_sec_disclosures()
 
-            # IPO는 30분마다 (5분 * 6 = 30분)
+            # IPO는 30분마다 (1분 * 30 = 30분)
             ipo_check_counter += 1
-            if ipo_check_counter >= 6:
+            if ipo_check_counter >= 30:
                 await check_and_notify_ipos()
                 ipo_check_counter = 0
 
-            await asyncio.sleep(300)  # 5분 간격
+            await asyncio.sleep(60)  # 1분 간격 실시간 조회
 
         except asyncio.CancelledError:
             logger.info("[공시Monitor] 공시 감시 루프 종료")
@@ -1517,8 +1526,10 @@ async def sec_whale_scheduler_loop():
             weekday = now.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
             hour = now.hour
 
-            # KST 기준 평일 및 토요일 오전(미국 금요일 장마감/애프터마켓 공시 접수 시간)까지 상시 감시
-            is_us_trading_window = (weekday < 5) or (weekday == 5 and hour < 12)
+            # [미국장/SEC 운영시간 엄격 적용] 한국 낮/오후 시간대(08:31 ~ 16:59 KST)에는 절대 실행하지 않고,
+            # 미국 프리장~본장~애프터장(17:00 ~ 익일 08:30 KST)에만 SEC Form 4 / 13F를 감시!
+            is_us_hours_kst = (hour >= 17) or (hour < 8) or (hour == 8 and now.minute <= 30)
+            is_us_trading_window = ((weekday < 5) and is_us_hours_kst) or (weekday == 5 and (hour < 8 or (hour == 8 and now.minute <= 30)))
 
             if is_us_trading_window:
                 logger.info("[Whale SEC] Checking SEC Form4 & 13F filings...")

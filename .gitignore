@@ -186,3 +186,5 @@ backend/stock_app.db
 backend/google-seo-key.json
 backend/google_sheets_key.json
 backend/data/*.json
+backend/*state*.json
+backend/kis_credentials_vault.json

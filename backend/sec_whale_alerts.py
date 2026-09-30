@@ -253,11 +253,28 @@ def check_sec_form4_alerts():
         return
 
     state = _load_state()
-    sent_form4 = set(state.get("sent_form4", []))
+    # [버그 수정] set() 대신 dict.fromkeys()를 사용하여 삽입 순서를 100% 보존 (기존 set 슬라이싱으로 인한 무작위 삭제·재발송 폭탄 원천 차단)
+    sent_form4 = dict.fromkeys(state.get("sent_form4", []))
 
     filings = _edgar_filings_search("4", days_back=1)
     if not filings:
         print("[SEC Whale Form4] No Form 4 filings found")
+        return
+
+    # [미국장/SEC 운영시간 엄격 체크] 한국 낮/오후 시간대(08:30 ~ 18:59 KST)는 미국 SEC EDGAR 접수 마감 및 미국 본장 휴장 시간이므로
+    # 절대 푸시 알림을 발송하지 않고 조용히 읽음 처리(베이스라인 등록)만 수행!
+    import pytz
+    kst_now = datetime.now(pytz.timezone("Asia/Seoul"))
+    is_us_active_hours = (kst_now.hour >= 19) or (kst_now.hour < 8) or (kst_now.hour == 8 and kst_now.minute <= 30)
+
+    filing_accs = [f.get("accession_no", "") for f in filings if f.get("accession_no", "")]
+    # 베이스라인 방어: 현재 피드의 공시 중 이미 처리된 내역이 단 1건도 없거나, 한국 주간 시간대(08:30~18:59 KST)인 경우 전부 조용히 읽음 처리만 하고 종료!
+    if (filing_accs and not any(acc in sent_form4 for acc in filing_accs)) or (not is_us_active_hours):
+        for acc in filing_accs:
+            sent_form4[acc] = None
+        state["sent_form4"] = list(sent_form4.keys())[-1500:]
+        _save_state(state)
+        print(f"[SEC Whale Form4] Silent baseline sync ({len(filing_accs)} filings, is_us_active_hours={is_us_active_hours})")
         return
 
     new_count = 0
@@ -266,8 +283,19 @@ def check_sec_form4_alerts():
         if not accession or accession in sent_form4:
             continue
 
+        # 발송 전 먼저 읽음 처리하여 중복·폭탄 발송 원천 차단
+        sent_form4[accession] = None
+        state["sent_form4"] = list(sent_form4.keys())[-1500:]
+        _save_state(state)
+
+        # 1회 주기(5분)당 최대 1건만 발송하여 우루루 폭탄 알림 방지
+        if new_count >= 1:
+            continue
+
         entity_name = filing.get("entity_name", "Unknown")
         ticker = filing.get("ticker", "")
+        if not ticker:
+            continue
         display_name = f"{ticker} ({entity_name})" if ticker else entity_name
 
         xml_url = filing.get("xml_url")
@@ -332,12 +360,7 @@ def check_sec_form4_alerts():
         except Exception as e:
             print(f"[SEC Whale Form4] Send error: {e}")
 
-        sent_form4.add(accession)
-        # 최대 500개만 보관 (무한 증가 방지)
-        if len(sent_form4) > 500:
-            sent_form4 = set(list(sent_form4)[-400:])
-
-    state["sent_form4"] = list(sent_form4)
+    state["sent_form4"] = list(sent_form4.keys())[-1500:]
     _save_state(state)
     print(f"[SEC Whale Form4] Done. New alerts sent: {new_count}")
 
@@ -463,17 +486,37 @@ def check_sec_13f_alerts():
         return
 
     state = _load_state()
-    sent_13f = set(state.get("sent_13f", []))
+    sent_13f = dict.fromkeys(state.get("sent_13f", []))
 
     filings = _edgar_filings_search("13F-HR", days_back=2)
     if not filings:
         print("[SEC Whale 13F] No 13F-HR filings found")
         return
 
+    import pytz
+    kst_now = datetime.now(pytz.timezone("Asia/Seoul"))
+    is_us_active_hours = (kst_now.hour >= 19) or (kst_now.hour < 8) or (kst_now.hour == 8 and kst_now.minute <= 30)
+
+    filing_accs = [f.get("accession_no", "") for f in filings if f.get("accession_no", "")]
+    if (filing_accs and not any(acc in sent_13f for acc in filing_accs)) or (not is_us_active_hours):
+        for acc in filing_accs:
+            sent_13f[acc] = None
+        state["sent_13f"] = list(sent_13f.keys())[-500:]
+        _save_state(state)
+        print(f"[SEC Whale 13F] Silent baseline sync ({len(filing_accs)} filings, is_us_active_hours={is_us_active_hours})")
+        return
+
     new_count = 0
-    for filing in filings[:10]:  # 13F는 한꺼번에 너무 많으면 스팸 — 최대 10건
+    for filing in filings[:10]:
         accession = filing.get("accession_no", "")
         if not accession or accession in sent_13f:
+            continue
+
+        sent_13f[accession] = None
+        state["sent_13f"] = list(sent_13f.keys())[-500:]
+        _save_state(state)
+
+        if new_count >= 1:
             continue
 
         entity_name = filing.get("entity_name", "Unknown")
@@ -526,11 +569,7 @@ def check_sec_13f_alerts():
         except Exception as e:
             print(f"[SEC Whale 13F] Send error: {e}")
 
-        sent_13f.add(accession)
-        if len(sent_13f) > 200:
-            sent_13f = set(list(sent_13f)[-150:])
-
-    state["sent_13f"] = list(sent_13f)
+    state["sent_13f"] = list(sent_13f.keys())[-500:]
     _save_state(state)
     print(f"[SEC Whale 13F] Done. New alerts sent: {new_count}")
 
