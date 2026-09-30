@@ -268,6 +268,55 @@ export default function AdminAutoTradePage() {
     }
   };
 
+  const handleApplyRealLimit = async (targetLimit?: number, startRealNow: boolean = false) => {
+    const limitVal = Math.max(30000, Number(targetLimit ?? maxTotalInvestKrw) || 100000);
+    const autoMaxPos = limitVal <= 200000 ? 2 : limitVal <= 600000 ? 3 : 5;
+    const autoOrderAmt = Math.max(25000, Math.floor(limitVal / Math.max(2, autoMaxPos)));
+    setMaxTotalInvestKrw(limitVal);
+    setMaxPositions(autoMaxPos);
+    setOrderAmount(autoOrderAmt);
+    setActionLoading(true);
+    try {
+      const hdrs = await getAdminHeaders(true);
+      const payload: Record<string, unknown> = {
+        max_total_invest_krw: limitVal,
+        max_positions: autoMaxPos,
+        order_amount_krw: autoOrderAmt,
+      };
+      if (startRealNow) {
+        payload.mode = "KIS_REAL";
+        payload.kis_order_enabled = true;
+        payload.enabled = true;
+        setMode("KIS_REAL");
+        setKisOrderEnabled(true);
+        setEnabled(true);
+      }
+      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
+        method: "POST",
+        headers: hdrs,
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.status === "success") {
+        setData(json.data);
+        syncFormFromConfig(json.data.config);
+        if (startRealNow) {
+          await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/run-cycle?force_buy=true`, {
+            method: "POST",
+            headers: hdrs,
+          })
+            .then((r) => r.json())
+            .then((j) => {
+              if (j.status === "success") setData(j.data);
+            })
+            .catch(() => {});
+        }
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleResetPaper = async (customSeed?: number) => {
     const seedVal = Math.max(50000, Number(customSeed ?? paperSeedKrw) || 10000000);
     const seedText = seedVal >= 10000 ? `${(seedVal / 10000).toLocaleString()}만 원` : `${seedVal.toLocaleString()}원`;
@@ -568,6 +617,89 @@ export default function AdminAutoTradePage() {
               5초마다 실시간 현재가·수익률 자동 새로고침 중 ({data?.last_quote_refresh_at || "실시간"})
             </span>
           </div>
+
+          {/* 🏦 [신규] 한국투자증권 실전 계좌 투자 한도(내가 정한 금액) 직접 설정 & 원클릭 실전 매매 시작 바 */}
+          {isRealView && (
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/10 border border-blue-400/40 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs sm:text-sm font-black text-blue-300 flex flex-wrap items-center gap-1.5">
+                    🏦 한국투자증권(43880949-22) 실전 계좌 최대 투자 한도 설정
+                    <span className="px-2 py-0.5 rounded-full bg-blue-400 text-black text-[11px] font-black">
+                      현재 내가 정한 한도: ₩{(cfg.max_total_invest_krw || maxTotalInvestKrw || 100000).toLocaleString()}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                        cfg.mode === "KIS_REAL" && cfg.kis_order_enabled
+                          ? "bg-emerald-400 text-black"
+                          : "bg-zinc-800 text-amber-300 border border-amber-400/40"
+                      }`}
+                    >
+                      {cfg.mode === "KIS_REAL" && cfg.kis_order_enabled ? "🟢 실전 주문 ON (가동 중)" : "🔒 실전 주문 대기 중 (모의투자 전용 가동 중)"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-300 mt-0.5">
+                    대표님 계좌에 예수금이 아무리 많아도, <strong className="text-blue-200">아래에서 직접 정하신 투자 한도 금액(예: 10만 원, 50만 원, 100만 원 등) 안에서만</strong> AI가 종목당 예산을 자동 분할하여 매수·익절·리스크 관리를 수행하며, 한도를 1원도 초과하지 않습니다!
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={actionLoading}
+                  onClick={() => handleApplyRealLimit(maxTotalInvestKrw, true)}
+                  className="text-xs font-black text-black bg-emerald-400 hover:bg-emerald-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 shrink-0 cursor-pointer shadow-lg shadow-emerald-500/20"
+                >
+                  🚀 이 한도(₩{(maxTotalInvestKrw || 100000).toLocaleString()})로 실전 자동매매 시작
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { label: "🛡️ 5만 원", val: 50000 },
+                  { label: "🔥 10만 원", val: 100000 },
+                  { label: "30만 원", val: 300000 },
+                  { label: "50만 원", val: 500000 },
+                  { label: "💎 100만 원", val: 1000000 },
+                  { label: "300만 원", val: 3000000 },
+                  { label: "500만 원", val: 5000000 },
+                  { label: "1,000만 원", val: 10000000 },
+                ].map((preset) => (
+                  <button
+                    key={preset.val}
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() => handleApplyRealLimit(preset.val, false)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      (cfg.max_total_invest_krw || maxTotalInvestKrw) === preset.val
+                        ? "bg-blue-400 text-black shadow-md shadow-blue-400/30"
+                        : "bg-zinc-900 text-gray-300 border border-white/10 hover:border-blue-400/60 hover:text-white"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+
+                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-1 sm:mt-0">
+                  <input
+                    type="number"
+                    min={30000}
+                    step={50000}
+                    value={maxTotalInvestKrw}
+                    onChange={(e) => setMaxTotalInvestKrw(Number(e.target.value))}
+                    placeholder="실전 한도 금액(원)"
+                    className="w-40 px-3 py-1.5 rounded-xl bg-black/80 border border-blue-400/40 text-blue-200 font-mono text-xs font-bold focus:outline-none focus:border-blue-400"
+                  />
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() => handleApplyRealLimit(maxTotalInvestKrw, false)}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shrink-0 cursor-pointer"
+                  >
+                    💾 한도만 저장
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 💰 [신규] AI 가상 모의투자 시드머니 직접 설정 & 원클릭 즉시 적용 바 */}
           {!isRealView && (

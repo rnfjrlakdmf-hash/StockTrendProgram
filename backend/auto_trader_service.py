@@ -1273,6 +1273,16 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
                     continue
             state["config"][k] = v
 
+    if "max_total_invest_krw" in new_cfg and new_cfg["max_total_invest_krw"] is not None:
+        real_limit = max(30000, int(new_cfg["max_total_invest_krw"]))
+        state["config"]["max_total_invest_krw"] = real_limit
+        # 설정된 실전 한도에 맞춰 최대 종목 수와 1회 매수 금액을 자동 최적화
+        auto_max_pos = 2 if real_limit <= 200000 else (3 if real_limit <= 600000 else 5)
+        if "max_positions" not in new_cfg:
+            state["config"]["max_positions"] = auto_max_pos
+        if "order_amount_krw" not in new_cfg:
+            state["config"]["order_amount_krw"] = max(25000, int(real_limit // max(2, state["config"].get("max_positions", auto_max_pos))))
+
     new_mode = state["config"].get("mode", "AI_PAPER")
     # [모의투자 <-> 실전투자 완전 분리]
     # 가상 모의투자(AI_PAPER)로 산 가상 종목들이 실전투자(KIS_REAL) 한도와 슬롯을 막지 않도록 자동 분리!
@@ -1283,8 +1293,9 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
             state["paper_positions_backup"] = paper_only
             state["positions"] = real_only
         target_budget = int(state["config"].get("max_total_invest_krw", 0) or state["config"].get("initial_capital_krw", 10000000))
-        if target_budget > 0 and not real_only:
-            state["account"]["cash_krw"] = target_budget
+        if target_budget > 0:
+            real_inv = sum(int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (1355.0 if p.get("is_us") else 1.0))) for p in real_only)
+            state["account"]["cash_krw"] = max(0, target_budget + int(state["account"].get("realized_pnl_krw", 0)) - real_inv)
             state["config"]["initial_capital_krw"] = target_budget
     elif new_mode == "AI_PAPER" and old_mode != "AI_PAPER":
         if not state.get("positions") and state.get("paper_positions_backup"):
