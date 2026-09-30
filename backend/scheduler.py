@@ -423,6 +423,15 @@ async def check_and_notify_disclosures():
                             fact_str = f"⚠️ 영업정지 공시!\n💡 [시장해석] 본업 차질 발생 · 실적 타격 리스크"
                         elif "부도발생" in clean or "파산신청" in clean:
                             fact_str = f"⚠️ 부도·파산 공시!\n💡 [시장해석] 기업 존속 위험 최고 수준 위험"
+                        elif "불성실공시" in clean:
+                            prefix_title = "🚨 [불성실공시법인 지정]"
+                            fact_str = f"한국거래소 불성실공시법인 지정 공시 접수!\n💡 [시장해석] 공시번복·번복 등에 따른 거래소 징계 처분 · 누적 벌점 초과 시 관리종목 및 매매거래정지 위험 주의!"
+                        elif "주식담보" in clean or "담보제공" in clean:
+                            prefix_title = "🚨 [주식담보제공 계약]"
+                            fact_str = f"최대주주/오너 주식 담보 대출 계약 공시 접수!\n💡 [시장해석] 대주주 지분 담보 대출 · 주가 하락 시 사채/금융기관 반대매매(강제매도 폭탄) 및 경영권 변동 위험 주의!"
+                        elif "최대주주변경" in clean:
+                            prefix_title = "🚨 [최대주주 변경]"
+                            fact_str = f"회사의 최대주주(오너) 변경 공시 접수!\n💡 [시장해석] 지배구조 및 실질 경영권 변동 · 신규 오너 자금 출처 및 경영 불확실성 점검 필요"
                         elif "단일판매" in clean or "공급계약" in clean:
                             fact_str = f"대규모 공급계약 체결 공시!\n💡 [시장해석] 대형 수주 확보로 향후 매출 및 실적 성장 기대"
                         else:
