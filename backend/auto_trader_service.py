@@ -6,6 +6,7 @@ import threading
 import requests
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
+from concurrent.futures import ThreadPoolExecutor
 
 KST = timezone(timedelta(hours=9))
 STATE_FILE = os.path.join(os.path.dirname(__file__), "auto_trader_state.json")
@@ -198,21 +199,24 @@ def save_state(state: Dict[str, Any]) -> None:
     except Exception as e:
         print(f"[AutoTrader] save_state error: {e}")
 
-    # Firestore 백업 동기화 (관리자 전용 컬렉션 - 실제 KIS API 키/시크릿/토큰은 외부 DB에 절대 평문 저장하지 않고 완전 마스킹!)
-    try:
-        from firebase_admin import firestore
-        db = firestore.client()
-        safe_copy = json.loads(json.dumps(state))
-        if "config" in safe_copy:
-            if safe_copy["config"].get("kis_app_secret"):
-                safe_copy["config"]["kis_app_secret"] = "********"
-            if safe_copy["config"].get("kis_app_key"):
-                raw_k = str(safe_copy["config"]["kis_app_key"])
-                safe_copy["config"]["kis_app_key"] = f"{raw_k[:4]}********{raw_k[-3:]}" if len(raw_k) > 8 else "********"
-        safe_copy["kis_token"] = {"access_token": "", "expires_at": 0}
-        db.collection("admin_auto_trader").document("current_state").set(safe_copy)
-    except Exception:
-        pass
+    # Firestore 백업 동기화 (비동기 백그라운드 스레드 — API 응답 지연 원천 차단 & API 키 완전 마스킹)
+    def _async_fs_backup():
+        try:
+            from firebase_admin import firestore
+            db = firestore.client()
+            safe_copy = json.loads(json.dumps(state))
+            if "config" in safe_copy:
+                if safe_copy["config"].get("kis_app_secret"):
+                    safe_copy["config"]["kis_app_secret"] = "********"
+                if safe_copy["config"].get("kis_app_key"):
+                    raw_k = str(safe_copy["config"]["kis_app_key"])
+                    safe_copy["config"]["kis_app_key"] = f"{raw_k[:4]}********{raw_k[-3:]}" if len(raw_k) > 8 else "********"
+            safe_copy["kis_token"] = {"access_token": "", "expires_at": 0}
+            db.collection("admin_auto_trader").document("current_state").set(safe_copy)
+        except Exception:
+            pass
+
+    threading.Thread(target=_async_fs_backup, daemon=True).start()
 
 
 def _parse_num(val: Any) -> float:
