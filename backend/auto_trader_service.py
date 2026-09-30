@@ -1205,8 +1205,9 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     old_mode = state["config"].get("mode", "AI_PAPER")
     for k, v in new_cfg.items():
         if k in state["config"] and v is not None:
-            if k in ("kis_app_secret", "kis_app_key") and "*" in str(v):
-                continue
+            if k in ("kis_app_secret", "kis_app_key", "kis_account_no"):
+                if not str(v).strip() or "*" in str(v):
+                    continue
             state["config"][k] = v
 
     new_mode = state["config"].get("mode", "AI_PAPER")
