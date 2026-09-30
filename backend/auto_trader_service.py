@@ -730,8 +730,9 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
         except Exception as e:
             print(f"[AutoTrader] Closing scanner synergy load warning: {e}")
 
-    scored_candidates: List[Dict[str, Any]] = []
-    for item in universe:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _score_one_item(item: Dict[str, Any]) -> Dict[str, Any]:
         q = _fetch_live_quote(item["symbol"])
         scored = _compute_ai_quant_score(item, q)
         if active_market == "KR":
@@ -755,8 +756,10 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
                 scored["reason"] = f"💰[소액한도 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
             elif max_invest_cap > 0 and unit_krw > max_invest_cap:
                 scored["ai_score"] = max(10, scored["ai_score"] - 25)
+        return scored
 
-        scored_candidates.append(scored)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        scored_candidates = list(pool.map(_score_one_item, universe))
 
     scored_candidates.sort(key=lambda x: x["ai_score"], reverse=True)
     return scored_candidates
