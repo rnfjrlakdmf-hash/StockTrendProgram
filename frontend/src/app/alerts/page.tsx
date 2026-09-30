@@ -2549,31 +2549,9 @@ function formatUsdToKrwInText(text: string): string {
             }
         }
 
-        // [사용자 요청] 일반 DART 공시 속보는 메인 피드(전체 브리핑)에서 싹 빼서 '⚡ DART·SEC 공시 속보' 탭으로 완전 분리!
-        // 전체 브리핑(전체 알림)에는 모닝 브리핑, 마켓 시황, 퀀트 시세, 포트폴리오 요약, 슈퍼개미/내부자/대량보유 등 세력 수급, 주요 뉴스, 내 관심종목 공시, 그리고 전체 알림인 미국 SEC 공시를 100% 노출!
+        // [사용자 요청] 해외 공시처럼 국내 공시(DART)도 전체 알림으로서 전체 브리핑 메인 피드에 100% 함께 노출!
+        // 불필요한 단순 정기보고서(분기/반기/사업보고서) 및 주주총회 소집 등은 이미 상단 필터에서 원천 차단되었으므로, 유의미한 국내외 공시가 첫 화면(전체 브리핑)에 시원하게 표시됩니다.
         if (activeTab === "all") {
-            const isWhaleAlert = titleText.includes("슈퍼개미") || 
-                titleText.includes("큰손") || 
-                titleText.includes("내부자") || 
-                titleText.includes("5% 이상") || 
-                titleText.includes("대량 보유") || 
-                ['whale_accumulation', 'whale_alert', 'large_holding', 'insider_trading', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
-
-            const isSecAlert = ['sec_disclosure', 'sec_insider_trading', 'sec_13f'].includes(alert.type) ||
-                titleText.includes('[SEC]') ||
-                (alert.url && String(alert.url).includes('sec.gov'));
-
-            // SEC 공시는 전체 알림으로 설정되어 전체 브리핑 메인 피드에 무조건 노출!
-            if (isSecAlert) {
-                return true;
-            }
-
-            const isGeneralDisclosure = (alert.type === 'disclosure_alert' || alert.type === 'disclosure') && !isWhaleAlert;
-
-            // 내 관심종목이 아닌 일반 국내 DART 공시 속보는 피드 클린화를 위해 '전체 브리핑'에서 제외!
-            if (isGeneralDisclosure && !symbolMatch) {
-                return false;
-            }
             return true;
         }
 
@@ -2779,7 +2757,7 @@ function formatUsdToKrwInText(text: string): string {
                         </div>
                         <p className="text-[11px] text-gray-500 px-1 font-medium flex items-center gap-1.5">
                             <span>💡</span>
-                            <span>한국거래소 및 DART·SEC 실시간 공시 속보 모아보기입니다. (메인 피드인 &apos;전체 브리핑&apos;에서는 피로도를 낮추기 위해 일반 공시를 제외하고 핵심 브리핑만 노출합니다.)</span>
+                            <span>한국거래소 및 DART·SEC 실시간 공시 속보 모아보기입니다. 상단 필터로 국내(DART), 해외(SEC), 내 관심종목 공시를 즉시 분리하여 보실 수 있습니다.</span>
                         </p>
                     </div>
                 )}
