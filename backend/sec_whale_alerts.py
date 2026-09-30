@@ -91,8 +91,69 @@ def _edgar_search(form_type: str, date_from: str, date_to: str) -> List[Dict]:
 
 def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
     """
-    SEC EDGAR Recent Filings RSS를 사용하여 최신 공시 조회 (더 안정적)
+    SEC EDGAR Recent Filings Atom RSS를 사용하여 최신 공시 실시간 조회
+    (실시간 초 단위 최신 공시 반영 및 EFTS 폴백 지원)
     """
+    results = []
+    seen_accs = set()
+
+    # 1. SEC 공식 실시간 getcurrent RSS 스트림 조회 (초 단위 실시간)
+    try:
+        owner_param = "only" if form_type == "4" else "include"
+        rss_url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={form_type}&company=&dateb=&owner={owner_param}&count=50&output=atom"
+        res = requests.get(rss_url, headers=HEADERS, timeout=10)
+        if res.status_code == 200:
+            root = ET.fromstring(res.content)
+            ns = {"atom": "http://www.w3.org/2005/Atom"}
+            entries = root.findall("atom:entry", ns)
+            for e in entries:
+                eid = e.findtext("atom:id", default="", namespaces=ns)
+                acc_num = eid.split("=")[-1] if "=" in eid else eid
+                if not acc_num or acc_num in seen_accs:
+                    continue
+                seen_accs.add(acc_num)
+                
+                title_text = e.findtext("atom:title", default="", namespaces=ns)
+                link_el = e.find("atom:link", ns)
+                sec_link = link_el.attrib.get("href") if link_el is not None else ""
+                if not sec_link:
+                    continue
+                    
+                base_dir = sec_link.rsplit("/", 1)[0] + "/"
+                xml_url = ""
+                try:
+                    r_dir = requests.get(f"{base_dir}index.json", headers=HEADERS, timeout=4)
+                    if r_dir.status_code == 200:
+                        dir_items = r_dir.json().get("directory", {}).get("item", [])
+                        xml_file = next((it["name"] for it in dir_items if it.get("name", "").endswith(".xml")), None)
+                        if xml_file:
+                            xml_url = f"{base_dir}{xml_file}"
+                except Exception:
+                    pass
+
+                entity = "Unknown"
+                if " - " in title_text:
+                    after_dash = title_text.split(" - ", 1)[1]
+                    entity = after_dash.split("(")[0].strip()
+
+                results.append({
+                    "accession_no": acc_num,
+                    "entity_name": entity,
+                    "ticker": "",
+                    "form_type": form_type,
+                    "file_date": e.findtext("atom:updated", default="", namespaces=ns)[:10],
+                    "period": "",
+                    "link": sec_link,
+                    "xml_url": xml_url,
+                })
+                if len(results) >= 30:
+                    break
+            if results:
+                return results
+    except Exception as rss_e:
+        print(f"[SEC Whale] RSS live stream error: {rss_e}")
+
+    # 2. 폴백: EFTS Full-Text Search
     try:
         today = datetime.utcnow()
         date_from = (today - timedelta(days=days_back)).strftime("%Y-%m-%d")
@@ -113,12 +174,10 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
 
         data = res.json()
         hits = data.get("hits", {}).get("hits", [])
-        results = []
         for hit in hits[:50]:  # 최대 50건만
             src = hit.get("_source", {})
             raw_id = hit.get("_id", "")
             
-            # _id format example: "0001768476-26-000007:wkform4_1782852344.xml"
             acc_num = raw_id.split(":")[0] if raw_id else ""
             acc_no_dashes = acc_num.replace("-", "")
             
@@ -126,7 +185,6 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
             ciks = src.get("ciks", [])
             issuer_cik = None
             try:
-                # EDGAR ciks: usually [reporter_cik, issuer_cik] or [issuer_cik]
                 issuer_cik = ciks[1] if len(ciks) > 1 else (ciks[0] if ciks else None)
                 cik_int = str(int(ciks[0])) if ciks else str(int(acc_num.split("-")[0]))
                 sec_link = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/{acc_num}-index.htm"
@@ -140,7 +198,6 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
             if "entity_name" in src and src.get("entity_name"):
                 entity = src.get("entity_name")
             elif display_names:
-                # EDGAR returns reporter and issuer in display_names. The issuer is usually the last one.
                 entity = display_names[-1].split("(CIK")[0].strip()
             else:
                 entity = "Unknown"
@@ -333,12 +390,17 @@ def check_sec_form4_alerts():
             sent_form4[accession] = None
             continue
 
+        # 주식 수량이 0인 행정성 단순 보고는 투자 가치가 낮으므로 스킵하고 실제 매수/매도 수량이 있는 알짜 거래 우선 전송
+        if not parsed or parsed.get("total_shares", 0) <= 0:
+            sent_form4[accession] = None
+            continue
+
         # 발송 전 먼저 읽음 처리하여 중복·폭탄 발송 원천 차단
         sent_form4[accession] = None
         state["sent_form4"] = list(sent_form4.keys())[-1500:]
         _save_state(state)
 
-        # 1회 주기(5분)당 최대 2건까지 발송하여 우루루 폭탄 알림 방지 + 적절한 실시간성 확보
+        # 1회 주기(1분)당 최대 2건까지 발송하여 우루루 폭탄 알림 방지 + 적절한 실시간성 확보
         if new_count >= 2:
             continue
 
@@ -359,30 +421,23 @@ def check_sec_form4_alerts():
             kor_name = None
         short_display = f"{kor_name}({ticker})" if (kor_name and ticker) else (f"{ticker} ({clean_name})" if ticker else clean_name)
 
-        if parsed and parsed.get("total_shares", 0) > 0:
-            trans_short = parsed['trans_type'][:2]
-            title = f"🚨 [SEC 내부자 {trans_short}] {market_tag} {short_display}"
-            
-            owner_short = parsed['owner_name']
-            if len(owner_short) > 20:
-                owner_short = owner_short[:18] + ".."
-            val_str = f" ({parsed['total_value']})" if parsed['has_value'] else ""
-            p1 = f"▪️ 📊 수급: {owner_short} | {parsed['trans_type']} {parsed['total_shares']:,}주{val_str}"
-            
-            if "매수" in parsed["trans_type"]:
-                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
-            elif "매도" in parsed["trans_type"]:
-                p2 = "▪️ 💡 해석: 임원 지분 매도에 따른 차익실현 · 단기 주가 고점 부담 점검 권장"
-            else:
-                p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
-                
-            body = f"{p1}\n{p2}"
+        trans_short = parsed['trans_type'][:2]
+        title = f"🚨 [SEC 내부자 {trans_short}] {market_tag} {short_display}"
+        
+        owner_short = parsed['owner_name']
+        if len(owner_short) > 20:
+            owner_short = owner_short[:18] + ".."
+        val_str = f" ({parsed['total_value']})" if parsed['has_value'] else ""
+        p1 = f"▪️ 📊 수급: {owner_short} | {parsed['trans_type']} {parsed['total_shares']:,}주{val_str}"
+        
+        if "매수" in parsed["trans_type"]:
+            p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
+        elif "매도" in parsed["trans_type"]:
+            p2 = "▪️ 💡 해석: 임원 지분 매도에 따른 차익실현 · 단기 주가 고점 부담 점검 권장"
         else:
-            title = f"🚨 [SEC 내부자 거래] {market_tag} {short_display}"
-            body = (
-                f"▪️ 📊 수급: {short_display} 핵심 임원의 자사주 지분 변동 보고서(Form 4) 접수\n"
-                f"▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
-            )
+            p2 = "▪️ 💡 해석: 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
+            
+        body = f"{p1}\n{p2}"
 
         print(f"[SEC Whale Form4] New filing: {title}")
 
@@ -395,7 +450,7 @@ def check_sec_form4_alerts():
                 push_data = {
                     "type": "sec_insider_trading",
                     "symbol": ticker or entity_name,
-                    "url": filing.get("link", "/discovery"),
+                    "url": f"/discovery?q={ticker}" if ticker else filing.get("link", "/discovery"),
                     "market": "US",
                     "is_global": "true",
                 }

@@ -1742,7 +1742,7 @@ async def sec_whale_scheduler_loop():
             else:
                 logger.debug(f"[Whale SEC] 주말/미국 휴장 시간 ({now.strftime('%a %H:%M')} KST), 고래 알림 스킵.")
 
-            await asyncio.sleep(60 * 5)  # 5분마다 체크
+            await asyncio.sleep(60)  # 1분마다 실시간 체크 (DART와 동일한 1분 주기 실시간 반영)
         except Exception as e:
             logger.error(f"[Whale SEC] Loop error: {e}")
             await asyncio.sleep(60)
