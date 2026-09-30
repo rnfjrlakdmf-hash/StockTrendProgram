@@ -180,51 +180,60 @@ def format_sec_intelligence(market_tag: str, ticker: str, raw_title: str) -> tup
     is_10q = "10-q" in t
     is_10k = "10-k" in t
     
+    clean_ticker = (ticker or "").upper().split('.')[0].strip()
+    try:
+        from routes.seo import US_STOCK_KOREAN_NAMES
+        korean_name = US_STOCK_KOREAN_NAMES.get(clean_ticker)
+    except Exception:
+        korean_name = None
+
+    display_name = f"{korean_name}({clean_ticker})" if korean_name else clean_ticker
+
     if is_form4:
-        title = f"🚨 [SEC 내부자 매수] {market_tag} {ticker}"
+        title = f"🚨 [SEC 내부자 거래] {market_tag} {display_name}"
         body = (
-            f"▪️ 📊 수급: 미국 경영진/이사의 자사주 지분 변동 보고서(Form 4) 접수\n"
+            f"▪️ 📊 수급: {display_name} 핵심 임원/이사의 자사주 지분 변동 보고서(Form 4) 접수\n"
             f"▪️ 💡 해석: 내부 핵심 임원의 지분 매매는 기업 미래 실적에 대한 직접적인 스마트머니 시그널"
         )
         return title, body, True
     elif is_13f:
-        title = f"🐳 [SEC 월가 헤지펀드] {market_tag} {ticker}"
+        title = f"🐳 [SEC 월가 헤지펀드] {market_tag} {display_name}"
         body = (
             f"▪️ 📊 수급: 글로벌 탑티어 기관투자자의 13F 분기 보유 포트폴리오 공시\n"
             f"▪️ 💡 해석: 월가 슈퍼 기관들의 분기별 포트폴리오 비중 조절 및 섹터 로테이션 파악"
         )
         return title, body, True
     elif is_13d:
-        title = f"👑 [SEC 경영참여 지분신고] {market_tag} {ticker}"
+        title = f"👑 [SEC 경영참여 지분신고] {market_tag} {display_name}"
         body = (
             f"▪️ 📊 수급: 5%+ 대량 취득 및 경영 참여 목적 Schedule 13D 접수\n"
             f"▪️ 💡 해석: 행동주의 펀드 또는 전략적 투자자(SI)의 경영 개입 및 주주가치 제고 요구"
         )
         return title, body, True
     elif is_13g:
-        title = f"💎 [SEC 5%+ 대량보유] {market_tag} {ticker}"
+        title = f"💎 [SEC 5%+ 대량보유] {market_tag} {display_name}"
         body = (
             f"▪️ 📊 수급: 단순 투자 목적의 5%+ 대량 지분 취득 Schedule 13G 접수\n"
             f"▪️ 💡 해석: 글로벌 대형 기관의 장기 펀더멘털 투자 유입으로 수급 안정성 확보"
         )
         return title, body, True
     elif is_8k:
-        title = f"📢 [SEC 수시공시 8-K] {market_tag} {ticker}"
+        title = f"📢 [SEC 수시공시 8-K] {market_tag} {display_name}"
         body = (
-            f"▪️ 📋 공시: M&A, 주요 계약, 경영진 교체 등 중대 수시 사안 보고\n"
+            f"▪️ 📋 공시: {display_name} M&A, 주요 계약, 경영진 교체 등 중대 수시 사안 보고\n"
             f"▪️ 💡 해석: 주가에 즉각적인 영향을 미치는 실시간 경영 이벤트"
         )
         return title, body, False
     elif is_10q or is_10k:
         report_type = "분기 실적(10-Q)" if is_10q else "연간 실적(10-K)"
-        title = f"📊 [SEC {report_type}] {market_tag} {ticker}"
+        title = f"📊 [SEC {report_type}] {market_tag} {display_name}"
         body = (
-            f"▪️ 📊 실적: 미국 SEC 공식 {report_type} 성적표 및 재무제표 공시\n"
+            f"▪️ 📊 실적: {display_name} 미국 SEC 공식 {report_type} 성적표 및 재무제표 공시\n"
             f"▪️ 💡 해석: 매출, 영업이익 및 가이던스 확인을 통한 밸류에이션 재평가 국면"
         )
         return title, body, False
     else:
-        title = f"📢 {market_tag} {ticker} SEC 공시"
+        title = f"📢 {market_tag} {display_name} SEC 공시"
         body = (
             f"▪️ 📋 공시: {raw_title}\n"
             f"▪️ 💡 해석: 미국 증권거래위원회 공식 공시 접수 · 원문 확인 권장"

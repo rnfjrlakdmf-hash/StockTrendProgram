@@ -306,11 +306,17 @@ def check_sec_form4_alerts():
         from market_tag_helper import get_stock_market_tag
         market_tag = get_stock_market_tag(ticker) if ticker else "[미국]"
         
-        # Clean entity name to avoid mobile title cutoff
         clean_name = entity_name.replace("Inc.", "").replace("Corp.", "").replace("Co.", "").replace("Trust", "").strip()
         if len(clean_name) > 16:
             clean_name = clean_name[:14] + ".."
-        short_display = f"{ticker} ({clean_name})" if ticker else clean_name
+
+        try:
+            from routes.seo import US_STOCK_KOREAN_NAMES
+            clean_tkr = ticker.upper().split('.')[0] if ticker else ""
+            kor_name = US_STOCK_KOREAN_NAMES.get(clean_tkr)
+        except Exception:
+            kor_name = None
+        short_display = f"{kor_name}({ticker})" if (kor_name and ticker) else (f"{ticker} ({clean_name})" if ticker else clean_name)
 
         if parsed and parsed.get("total_shares", 0) > 0:
             trans_short = parsed['trans_type'][:2]
@@ -521,7 +527,13 @@ def check_sec_13f_alerts():
 
         entity_name = filing.get("entity_name", "Unknown")
         ticker = filing.get("ticker", "")
-        display_name = f"{ticker} ({entity_name})" if ticker else entity_name
+        try:
+            from routes.seo import US_STOCK_KOREAN_NAMES
+            clean_tkr = ticker.upper().split('.')[0] if ticker else ""
+            kor_name = US_STOCK_KOREAN_NAMES.get(clean_tkr)
+        except Exception:
+            kor_name = None
+        display_name = f"{kor_name}({ticker})" if (kor_name and ticker) else (f"{ticker} ({entity_name})" if ticker else entity_name)
 
         period_str = filing.get("period", "")
         period_label = ""

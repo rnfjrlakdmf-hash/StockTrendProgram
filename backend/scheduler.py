@@ -831,14 +831,15 @@ async def check_and_notify_sec_disclosures():
                             except Exception as e:
                                 logger.error(f"[SEC WhaleSiren] Global FCM tokens error: {e}")
 
-                        if not target_uids:
+                        # [사용자 요청] SEC 공시는 전체 알림으로 설정
+                        # 미국 증시 핵심 공시(Form 4, Form 8-K 등)는 모든 회원 대상 '전체 알림'으로 FCM 푸시 발송!
+                        try:
                             from db_manager import get_all_fcm_tokens_with_user
-                            all_tokens.extend([u[1] for u in get_all_fcm_tokens_with_user()])
-                        else:
-                            for uid in list(target_uids):
-                                for t in get_user_fcm_tokens(uid):
-                                    if t.get("pref_news", True) and t.get("token"):
-                                        all_tokens.append(t["token"])
+                            all_users = get_all_fcm_tokens_with_user()
+                            for u in all_users:
+                                all_tokens.append(u[1])
+                        except Exception as e:
+                            logger.error(f"[SEC Monitor] Global FCM tokens error: {e}")
                         
                         # 중복 토큰 제거
                         all_tokens = list(set(all_tokens))
@@ -872,7 +873,7 @@ async def check_and_notify_sec_disclosures():
                             "dart_url": f"https://stock-trend-program.co.kr/disclosure/redirect?url={urllib.parse.quote(filing_url)}",
                         }
 
-                        # 1. 글로벌 알림 센터 무조건 저장
+                        # 1. 글로벌 알림 센터 무조건 저장 (is_global=True & target_users에 관심종목 등록 유저 보존)
                         try:
                             from firebase_config import save_alert_to_firestore
                             save_alert_to_firestore(
@@ -881,6 +882,7 @@ async def check_and_notify_sec_disclosures():
                                 alert_type="sec_disclosure",
                                 url=data_payload["url"],
                                 is_global=True,
+                                target_users=list(target_uids),
                                 symbol=data_payload["symbol"],
                                 dart_url=data_payload["dart_url"],
                                 rcept_no=entry_id

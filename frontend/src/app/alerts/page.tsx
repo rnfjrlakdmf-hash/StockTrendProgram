@@ -28,6 +28,7 @@ interface AlertItem {
     url?: string;
     is_global?: boolean;
     target_users?: string[];
+    sub_type?: string;
 }
 
 // Market Badge Resolver (국내 코스피·코스닥 및 미국 나스닥·NYSE·S&P500 완벽 구분)
@@ -2399,7 +2400,7 @@ function formatUsdToKrwInText(text: string): string {
     // Filter Navigation Tabs (마켓뉴스 탭 제거 -> 4개 탭으로 슬림화 및 내 관심종목으로 뉴스 통합)
     const baseTabs = [
         { id: "all", label: "전체 브리핑", icon: Layers },
-        { id: "disclosure", label: "⚡ DART 공시 속보", icon: Zap },
+        { id: "disclosure", label: "⚡ DART·SEC 공시 속보", icon: Zap },
         { id: "quant", label: "📊 퀀트 시세", icon: TrendingUp },
         { id: "portfolio", label: "내 관심종목", icon: Crown },
         { id: "system", label: "서비스 공지/운영", icon: ShieldCheck }
@@ -2449,7 +2450,7 @@ function formatUsdToKrwInText(text: string): string {
         // [보안 강화] 개인 맞춤 알림(장시작 관심종목 시가, 내 관심섹터·지수 결산, 내 관심종목 결산 등)은
         // 비로그인 상태(!user) 또는 타인 계정에서는 어떤 탭(전체 브리핑 포함)에서도 일절 노출 금지!
         const hasTargetUsers = Array.isArray(alert.target_users) && alert.target_users.length > 0;
-        const isTargetedToMe = Boolean(user && !user.is_guest && hasTargetUsers && alert.target_users.includes(user.id));
+        const isTargetedToMe = Boolean(user && !user.is_guest && alert.target_users && alert.target_users.includes(user.id));
 
         const isPersonalWatchlistAlert =
             ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(alert.type) ||
@@ -2517,25 +2518,39 @@ function formatUsdToKrwInText(text: string): string {
             ((alert.body || '').includes('전날 수급') && (alert.body || '').includes('🤖'))
         );
 
+        // [관심종목 완벽 매칭] 국내/해외 티커 및 한글 사명 대소문자/거래소접미사 무관 완벽 감지
         let symbolMatch = false;
-        const alertSymbol = (alert.symbol || '').trim();
-        const cleanAlertSymbol = alertSymbol.split('.')[0];
-        const safeSymbols = (watchlistSymbols || []).map(s => s.split('.')[0]);
-        const safeNames = watchlistNames || [];
+        const alertSymbolUpper = (alert.symbol || '').trim().toUpperCase();
+        const cleanAlertSymbol = alertSymbolUpper.split('.')[0];
+        const safeSymbolsUpper = (watchlistSymbols || []).map(s => (s || '').trim().toUpperCase().split('.')[0]).filter(Boolean);
+        const safeNames = (watchlistNames || []).map(n => (n || '').trim()).filter(Boolean);
 
-        if (cleanAlertSymbol && safeSymbols.includes(cleanAlertSymbol)) {
+        if (cleanAlertSymbol && safeSymbolsUpper.includes(cleanAlertSymbol)) {
+            symbolMatch = true;
+        } else if (isTargetedToMe) {
             symbolMatch = true;
         } else {
-            for (const name of safeNames) {
-                if (name && (titleText.includes(name) || (alert.body || '').includes(name))) {
-                    symbolMatch = true;
-                    break;
+            for (const sym of safeSymbolsUpper) {
+                if (sym && sym.length >= 2) {
+                    const regex = new RegExp(`(^|[^a-zA-Z0-9])${sym}([^a-zA-Z0-9]|$)`, 'i');
+                    if (regex.test(titleText) || regex.test(alert.body || '')) {
+                        symbolMatch = true;
+                        break;
+                    }
+                }
+            }
+            if (!symbolMatch) {
+                for (const name of safeNames) {
+                    if (name && name.length >= 2 && (titleText.includes(name) || (alert.body || '').includes(name))) {
+                        symbolMatch = true;
+                        break;
+                    }
                 }
             }
         }
 
-        // [사용자 요청] 일반 DART 공시 속보는 메인 피드(전체 브리핑)에서 싹 빼서 '⚡ DART 공시 속보' 탭으로 완전 분리!
-        // 전체 브리핑에는 모닝 브리핑, 마켓 시황, 퀀트 시세, 포트폴리오 요약, 슈퍼개미/내부자/대량보유 등 세력 수급, 주요 뉴스, 내 관심종목 공시만 노출!
+        // [사용자 요청] 일반 DART 공시 속보는 메인 피드(전체 브리핑)에서 싹 빼서 '⚡ DART·SEC 공시 속보' 탭으로 완전 분리!
+        // 전체 브리핑(전체 알림)에는 모닝 브리핑, 마켓 시황, 퀀트 시세, 포트폴리오 요약, 슈퍼개미/내부자/대량보유 등 세력 수급, 주요 뉴스, 내 관심종목 공시, 그리고 전체 알림인 미국 SEC 공시를 100% 노출!
         if (activeTab === "all") {
             const isWhaleAlert = titleText.includes("슈퍼개미") || 
                 titleText.includes("큰손") || 
@@ -2544,9 +2559,18 @@ function formatUsdToKrwInText(text: string): string {
                 titleText.includes("대량 보유") || 
                 ['whale_accumulation', 'whale_alert', 'large_holding', 'insider_trading', 'sec_insider_trading', 'sec_13f'].includes(alert.type);
 
+            const isSecAlert = ['sec_disclosure', 'sec_insider_trading', 'sec_13f'].includes(alert.type) ||
+                titleText.includes('[SEC]') ||
+                (alert.url && String(alert.url).includes('sec.gov'));
+
+            // SEC 공시는 전체 알림으로 설정되어 전체 브리핑 메인 피드에 무조건 노출!
+            if (isSecAlert) {
+                return true;
+            }
+
             const isGeneralDisclosure = (alert.type === 'disclosure_alert' || alert.type === 'disclosure') && !isWhaleAlert;
 
-            // 내 관심종목이 아닌 일반 공시 속보는 '전체 브리핑'에서 완전 제외하여 피드 클린화!
+            // 내 관심종목이 아닌 일반 국내 DART 공시 속보는 피드 클린화를 위해 '전체 브리핑'에서 제외!
             if (isGeneralDisclosure && !symbolMatch) {
                 return false;
             }
