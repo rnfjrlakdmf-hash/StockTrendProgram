@@ -1232,25 +1232,30 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    [🎮 AI 가상 모의투자(1,000만원 시드) 전용 국내·해외 황금 분산 & 자율 매수·매도 엔진]
-    1,000만 원 시드머니가 한쪽 시장에 몰빵되어 돈이 묶이지 않도록:
-    - 🇰🇷 국내 주도주 3종목 (종목당 약 135만 원 × 3 = 약 400만 원)
-    - 🇺🇸 해외(미국) 주도주 2종목 (종목당 약 135만 원 × 2 = 약 270만 원)
-    - 💰 상시 회전용 여유 예수금 (약 330만 원 현금 보유)
-    으로 조금씩 알차게 분산 배분하여, 낮(국내장)과 밤(미국장) 언제든 막힘없이 매수·익절 매도 회전이 돌아가도록 운용합니다.
+    [🎮 AI 가상 모의투자(1,000만원 시드) — 장 운영시간 엄격 준수 & 국내·해외 시드 분리 엔진]
+    - 장이 열려 있지 않은 시장의 종목은 절대 미리 매수하거나 장외 매도하지 않습니다!
+    - 주간 (08:00~16:59 KST, 🇰🇷 국내장 오픈):
+      * 오직 열려 있는 [🇰🇷 국내주식]만 최대 3종목(종목당 약 135만 원, 총 약 400만 원) 한도로 실시간 분석·매수·익절 매도합니다.
+      * 나머지 약 600만 원의 예수금은 밤(17:00 KST~)에 미국장이 실제로 열렸을 때 미국주식을 매수하기 위해 현금으로 반드시 남겨둡니다.
+    - 야간 (17:00~07:59 KST, 🇺🇸 미국장 오픈):
+      * 실제로 열린 [🇺🇸 해외(미국)주식]만 실시간 호가를 분석해 남겨둔 시드(최대 2종목, 약 270만~300만 원)로 매수·익절 매도합니다.
+      * 마감된 국내주식은 밤 시간 동안 억지로 매매하지 않고 다음 날 아침 개장까지 안전하게 보유합니다.
     """
     fx_rate = 1355.0
     paper_seed_krw = 10000000
     paper_max_pos = 5
     target_kr_slots = 3
     target_us_slots = 2
-    per_stock_budget_krw = 1350000  # 종목당 약 135만원 소액 분산 (5종목 합계 약 670만원 + 여유 현금 330만원 유지)
+    per_stock_budget_krw = 1350000  # 종목당 약 135만원 소액 분산
     cfg = state.get("config", {})
     tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
     ts_pct = float(cfg.get("trailing_stop_pct", 1.2) or 1.2)
     use_sl = bool(cfg.get("use_stop_loss", False))
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+
+    session_info = _get_time_based_session_info(cfg)
+    active_mkt = session_info.get("active_market", "KR")  # "KR" (08:00~16:59 KST) or "US" (17:00~07:59 KST)
 
     # 1. 기존 가상 모의투자 포지션 통합 수집 (중복 제거)
     raw_paper: List[Dict[str, Any]] = []
@@ -1263,31 +1268,35 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 raw_paper.append(dict(p))
                 seen_syms.add(sym)
 
-    # 1.2 국내주식 몰빵 방지: 만약 국내주식만 3종목을 초과해 들고 있다면, 초과 국내 슬롯은 해외주식 분산 시드 확보를 위해 자동 정리
+    # 1.2 [장외 체결 보정] 낮 시간(국내장 세션, 미국장 휴장)인데 오늘 낮(08:00~16:59)에 잘못 가매수된 미국주식이 있다면 즉시 주문 취소(현금 환원)
     kr_held_count = 0
     balanced_raw: List[Dict[str, Any]] = []
     changed = False
     for p in raw_paper:
         sym = p["symbol"]
         is_us_p = bool(p.get("is_us") or any(c.isalpha() for c in sym))
+        bought_at_str = str(p.get("bought_at", ""))
+        bought_hour = -1
+        if len(bought_at_str) >= 13 and ":" in bought_at_str:
+            try:
+                bought_hour = int(bought_at_str[11:13])
+            except Exception:
+                bought_hour = -1
+
+        # 미국장이 닫혀 있는 낮 시간대(08:00~16:59 KST)에 매수된 해외주식은 장외 허수 체결이므로 즉시 취소하여 예수금 복구
+        if is_us_p and (8 <= bought_hour < 17):
+            seen_syms.discard(sym)
+            state["trade_logs"] = [
+                lg for lg in state.get("trade_logs", [])
+                if not (lg.get("symbol") == sym and lg.get("mode") == "AI_PAPER")
+            ]
+            changed = True
+            continue
+
         if not is_us_p:
             kr_held_count += 1
             if kr_held_count > target_kr_slots:
                 seen_syms.discard(sym)
-                state.setdefault("trade_logs", []).insert(0, {
-                    "id": f"TRD-PAPER-REBAL-{int(time.time()*1000)}-{sym}",
-                    "timestamp": now_str,
-                    "action": "SELL",
-                    "symbol": sym,
-                    "name": p.get("name", sym),
-                    "qty": p.get("qty", 1),
-                    "price": p.get("current_price", p.get("avg_price", 0)),
-                    "amount_krw": int(round(float(p.get("current_price", p.get("avg_price", 0))) * int(p.get("qty", 1)))),
-                    "pnl_krw": int(p.get("pnl_krw", 0)),
-                    "pnl_pct": float(p.get("pnl_pct", 0.0)),
-                    "reason": "🌐 [국내·해외 황금분산] 해외주식(미국장) 동시 운용 및 회전용 예수금 확보를 위한 비중 리밸런싱 매도",
-                    "mode": "AI_PAPER",
-                })
                 changed = True
                 continue
         balanced_raw.append(p)
@@ -1295,7 +1304,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
 
     updated_paper: List[Dict[str, Any]] = []
 
-    # 1.5 실시간 호가 병렬 조회 (응답 속도 0.4초 이내 단축)
+    # 1.5 실시간 호가 병렬 조회 (현재 장이 열려 있는 시장 종목만 실시간 조회)
     quote_map: Dict[str, Dict[str, Any]] = {}
     if raw_paper:
         def _q_worker(s: str):
@@ -1304,14 +1313,16 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             for s_code, q_res in ex.map(lambda item: _q_worker(item["symbol"]), raw_paper):
                 quote_map[s_code] = q_res
 
-    # 2. 실시간 현재가 갱신 + 종목당 135만원 적정 분산 비중 맞춤 + 목표가 도달 시 자동 익절 매도
+    # 2. 보유 종목 관리 (장이 열려 있는 시장의 종목만 실시간 가격 갱신 & 익절/손절 매도 수행!)
     for pos in raw_paper:
         sym = pos["symbol"]
+        is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
+        is_market_open_for_pos = (is_us and active_mkt == "US") or ((not is_us) and active_mkt == "KR")
+
         q = quote_map.get(sym) or {}
         live_p = float(q.get("price", 0) or pos.get("current_price", 0) or pos.get("avg_price", 0))
         if live_p <= 0:
             continue
-        is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
 
@@ -1324,30 +1335,34 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 pos["reason"] = f"AI 퀀트 99점 · [{'🇺🇸해외' if is_us else '🇰🇷국내'} 분산배분 {int(round(target_qty * avg_p * unit_m)):,}원] · 기관·외인 수급 돌파"
                 changed = True
 
-        pos["current_price"] = live_p
-        pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
+        if is_market_open_for_pos:
+            pos["current_price"] = live_p
+            pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
         pos["target_price"] = round(avg_p * (1.0 + tp_pct / 100.0), 2 if is_us else 0)
         pos["stop_price"] = round(avg_p * (1.0 - sl_pct / 100.0), 2 if is_us else 0)
 
-        pnl_pct = round(((live_p - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
-        peak_pct = round(((pos["highest_price"] - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
+        cur_p_calc = float(pos.get("current_price", avg_p))
+        pnl_pct = round(((cur_p_calc - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
+        peak_pct = round(((float(pos.get("highest_price", cur_p_calc)) - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
         drop_from_peak = round(peak_pct - pnl_pct, 2)
-        pnl_krw = int(round((live_p - avg_p) * int(pos.get("qty", 1)) * unit_m))
+        pnl_krw = int(round((cur_p_calc - avg_p) * int(pos.get("qty", 1)) * unit_m))
         pos["pnl_pct"] = pnl_pct
         pos["pnl_krw"] = pnl_krw
         pos["trade_mode"] = "AI_PAPER"
         pos["kis_order_confirmed"] = False
 
+        # [핵심] 해당 종목의 주식시장이 현재 열려 있을 때만 익절/손절 매도 체결! (휴장 시간에는 매도 불가 원칙 준수)
         sell_reason = None
-        if pnl_pct >= tp_pct:
-            sell_reason = f"🎯 가상 모의투자 목표 익절가 도달 (+{pnl_pct:.2f}%)"
-        elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
-            sell_reason = f"📈 가상 모의투자 트레일링 수익 보존 (+{pnl_pct:.2f}%)"
-        elif use_sl and pnl_pct <= -abs(sl_pct):
-            sell_reason = f"🛡️ 가상 모의투자 손절선 작동 ({pnl_pct:.2f}%)"
+        if is_market_open_for_pos:
+            if pnl_pct >= tp_pct:
+                sell_reason = f"🎯 가상 모의투자 목표 익절가 도달 (+{pnl_pct:.2f}%)"
+            elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
+                sell_reason = f"📈 가상 모의투자 트레일링 수익 보존 (+{pnl_pct:.2f}%)"
+            elif use_sl and pnl_pct <= -abs(sl_pct):
+                sell_reason = f"🛡️ 가상 모의투자 손절선 작동 ({pnl_pct:.2f}%)"
 
         if sell_reason:
-            proceeds_krw = int(round(live_p * int(pos.get("qty", 1)) * unit_m))
+            proceeds_krw = int(round(cur_p_calc * int(pos.get("qty", 1)) * unit_m))
             acct = state.setdefault("account", {})
             acct["realized_pnl_krw"] = int(acct.get("realized_pnl_krw", 0) + pnl_krw)
             acct["total_trades"] = int(acct.get("total_trades", 0) + 1)
@@ -1362,7 +1377,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "symbol": sym,
                 "name": pos.get("name", sym),
                 "qty": pos.get("qty", 1),
-                "price": live_p,
+                "price": cur_p_calc,
                 "amount_krw": proceeds_krw,
                 "pnl_krw": pnl_krw,
                 "pnl_pct": pnl_pct,
@@ -1374,19 +1389,12 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         else:
             updated_paper.append(pos)
 
-    # 3. 🇰🇷 국내주식(3종목) + 🇺🇸 해외주식(2종목) 빈 슬롯 자동 충원 (항상 ~330만원 회전용 여유 예수금 유지!)
+    # 3. [장 운영시간 엄격 준수 신규 매수]
+    # - 주간(active_mkt == "KR", 08:00~16:59 KST)에는 오직 🇰🇷 국내주식만 최대 3종목(약 400만원)까지 매수하고,
+    #   나머지 약 600만원은 저녁 17:00 KST 미국장 개장 시 해외주식을 매수하기 위해 현금(가용 예수금)으로 남겨둡니다!
+    # - 야간(active_mkt == "US", 17:00~07:59 KST)에는 실제로 미국장이 열려 있으므로 🇺🇸 해외주식을 최대 2종목(약 270만원) 매수합니다!
     curr_kr = [p for p in updated_paper if not p.get("is_us")]
     curr_us = [p for p in updated_paper if p.get("is_us")]
-
-    kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
-    if not kr_pool:
-        kr_pool = _build_session_candidates(state, "KR")[:10]
-        state["kr_candidates"] = kr_pool
-
-    us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
-    if not us_pool:
-        us_pool = _build_session_candidates(state, "US")[:10]
-        state["us_candidates"] = us_pool
 
     def _fill_market_slots(pool: List[Dict[str, Any]], need_count: int, market_label: str):
         nonlocal changed
@@ -1419,7 +1427,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "pnl_pct": 0.0,
                 "pnl_krw": 0,
                 "bought_at": now_str,
-                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} 분산배분 {buy_amt_krw:,}원] · {cand.get('reason', '')}",
+                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} 정규장 실시간 포착 · {buy_amt_krw:,}원 배분] · {cand.get('reason', '')}",
                 "is_us": c_is_us,
                 "trade_mode": "AI_PAPER",
                 "kis_order_confirmed": False,
@@ -1443,10 +1451,22 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             })
             changed = True
 
-    if len(curr_kr) < target_kr_slots:
-        _fill_market_slots(kr_pool, target_kr_slots - len(curr_kr), "🇰🇷국내")
-    if len(curr_us) < target_us_slots:
-        _fill_market_slots(us_pool, target_us_slots - len(curr_us), "🇺🇸해외")
+    if active_mkt == "KR":
+        # 현재 국내장 오픈 시간 -> 오직 국내주식(최대 3종목, 약 400만원)만 실시간 분석·매수! (미국주식은 저녁 17시 개장 전까지 절대 선매수 금지)
+        if len(curr_kr) < target_kr_slots:
+            kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
+            if not kr_pool:
+                kr_pool = _build_session_candidates(state, "KR")[:10]
+                state["kr_candidates"] = kr_pool
+            _fill_market_slots(kr_pool, target_kr_slots - len(curr_kr), "🇰🇷국내")
+    elif active_mkt == "US":
+        # 현재 미국장 오픈 시간(17:00~07:59 KST) -> 실제로 열린 해외주식(최대 2종목, 약 270만원)을 아껴둔 예수금으로 실시간 분석·매수!
+        if len(curr_us) < target_us_slots:
+            us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
+            if not us_pool:
+                us_pool = _build_session_candidates(state, "US")[:10]
+                state["us_candidates"] = us_pool
+            _fill_market_slots(us_pool, target_us_slots - len(curr_us), "🇺🇸해외")
 
     state["paper_positions_backup"] = updated_paper
     real_only = [
