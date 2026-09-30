@@ -123,8 +123,11 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
             acc_no_dashes = acc_num.replace("-", "")
             
             xml_url = ""
+            ciks = src.get("ciks", [])
+            issuer_cik = None
             try:
-                ciks = src.get("ciks", [])
+                # EDGAR ciks: usually [reporter_cik, issuer_cik] or [issuer_cik]
+                issuer_cik = ciks[1] if len(ciks) > 1 else (ciks[0] if ciks else None)
                 cik_int = str(int(ciks[0])) if ciks else str(int(acc_num.split("-")[0]))
                 sec_link = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_no_dashes}/{acc_num}-index.htm"
                 xml_filename = raw_id.split(":")[1] if ":" in raw_id else ""
@@ -134,7 +137,7 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
                 sec_link = f"https://www.sec.gov/Archives/edgar/data/0/{acc_no_dashes}/"
 
             display_names = src.get("display_names", [])
-            if "entity_name" in src:
+            if "entity_name" in src and src.get("entity_name"):
                 entity = src.get("entity_name")
             elif display_names:
                 # EDGAR returns reporter and issuer in display_names. The issuer is usually the last one.
@@ -143,15 +146,29 @@ def _edgar_filings_search(form_type: str, days_back: int = 1) -> List[Dict]:
                 entity = "Unknown"
                 
             ticker = src.get("tickers", "")
+            if isinstance(ticker, list):
+                ticker = ticker[0] if ticker else ""
+            elif not isinstance(ticker, str):
+                ticker = ""
+                
+            if not ticker and issuer_cik:
+                try:
+                    from sec_api_client import get_ticker_by_cik
+                    ticker = get_ticker_by_cik(issuer_cik) or ""
+                except Exception:
+                    pass
+
             results.append({
                 "accession_no": acc_num,
                 "entity_name": entity,
-                "ticker": ticker if isinstance(ticker, str) else (ticker[0] if ticker else ""),
+                "ticker": ticker,
                 "form_type": src.get("form_type", form_type),
                 "file_date": src.get("file_date", ""),
                 "period": src.get("period_of_report", ""),
                 "link": sec_link,
                 "xml_url": xml_url,
+                "ciks": ciks,
+                "issuer_cik": issuer_cik,
             })
         return results
     except Exception as e:
@@ -168,6 +185,14 @@ def parse_form4_xml(xml_url: str) -> dict:
             
         root = ET.fromstring(res.text)
         
+        # 티커 및 발행사 사명 추출
+        sym_el = root.find('.//issuerTradingSymbol')
+        iss_el = root.find('.//issuerName')
+        ticker = sym_el.text.strip().upper() if (sym_el is not None and sym_el.text) else ""
+        if ticker in ["NONE", "N/A", "0"]:
+            ticker = ""
+        issuer_name = iss_el.text.strip() if (iss_el is not None and iss_el.text) else ""
+
         owner = root.find('.//rptOwnerName')
         owner_name = owner.text if owner is not None else '내부자'
         
@@ -228,6 +253,8 @@ def parse_form4_xml(xml_url: str) -> dict:
             return f"{krw_str} ({usd_kor})" 
                 
         return {
+            'ticker': ticker,
+            'issuer_name': issuer_name,
             'owner_name': owner_name,
             'title': title_str,
             'trans_type': trans_type,
@@ -283,26 +310,40 @@ def check_sec_form4_alerts():
         if not accession or accession in sent_form4:
             continue
 
+        xml_url = filing.get("xml_url")
+        parsed = {}
+        if xml_url:
+            parsed = parse_form4_xml(xml_url)
+
+        ticker = parsed.get("ticker") or filing.get("ticker", "")
+        entity_name = parsed.get("issuer_name") or filing.get("entity_name", "Unknown")
+
+        if not ticker:
+            # CIK 역조회 폴백
+            issuer_cik = filing.get("issuer_cik")
+            if issuer_cik:
+                try:
+                    from sec_api_client import get_ticker_by_cik
+                    ticker = get_ticker_by_cik(issuer_cik) or ""
+                except Exception:
+                    pass
+
+        if not ticker:
+            # 티커를 끝내 찾을 수 없는 경우에만 스킵
+            sent_form4[accession] = None
+            continue
+
         # 발송 전 먼저 읽음 처리하여 중복·폭탄 발송 원천 차단
         sent_form4[accession] = None
         state["sent_form4"] = list(sent_form4.keys())[-1500:]
         _save_state(state)
 
-        # 1회 주기(5분)당 최대 1건만 발송하여 우루루 폭탄 알림 방지
-        if new_count >= 1:
+        # 1회 주기(5분)당 최대 2건까지 발송하여 우루루 폭탄 알림 방지 + 적절한 실시간성 확보
+        if new_count >= 2:
             continue
 
-        entity_name = filing.get("entity_name", "Unknown")
-        ticker = filing.get("ticker", "")
-        if not ticker:
-            continue
         display_name = f"{ticker} ({entity_name})" if ticker else entity_name
 
-        xml_url = filing.get("xml_url")
-        parsed = {}
-        if xml_url:
-            parsed = parse_form4_xml(xml_url)
-            
         from market_tag_helper import get_stock_market_tag
         market_tag = get_stock_market_tag(ticker) if ticker else "[미국]"
         

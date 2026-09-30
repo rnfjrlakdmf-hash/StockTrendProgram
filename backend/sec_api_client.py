@@ -1,4 +1,4 @@
-﻿import os
+import os
 import time
 import json
 import requests
@@ -69,19 +69,48 @@ def _load_cik_mapping() -> Dict[str, int]:
     return {}
 
 
+_REV_CIK_CACHE = {}
+
+
 def get_cik_by_ticker(ticker: str) -> Optional[str]:
     """
-    주식 티커(예: AAPL)를 10자리 문자열 CIK(예: 0000320193)로 변환합니다.
+    주식 티커(예: AAPL, BRK.B, NVDA.O)를 10자리 문자열 CIK(예: 0000320193)로 변환합니다.
     """
+    if not ticker:
+        return None
     ticker_clean = ticker.upper().strip()
     # 거래소 접미사 제거 (예: NVDA.O -> NVDA, AAPL.O -> AAPL)
-    ticker_clean = ticker_clean.split('.')[0]
+    for sfx in ['.O', '.K', '.A', '.N', '.KS', '.KQ']:
+        if ticker_clean.endswith(sfx):
+            ticker_clean = ticker_clean[:-len(sfx)]
+            break
+    # SEC 티커 표기법 정규화 (예: BRK.B -> BRK-B)
+    ticker_clean = ticker_clean.replace('.', '-')
     
     mapping = _load_cik_mapping()
     cik = mapping.get(ticker_clean)
     if cik is not None:
         return str(cik).zfill(10)
     return None
+
+
+def get_ticker_by_cik(cik: Any) -> Optional[str]:
+    """
+    CIK(예: 0000825542, 825542)를 티커(예: SMG)로 역변환합니다.
+    """
+    global _REV_CIK_CACHE
+    if not cik:
+        return None
+    try:
+        cik_int = int(str(cik).strip().lstrip('0') or 0)
+    except Exception:
+        return None
+        
+    mapping = _load_cik_mapping()
+    if not _REV_CIK_CACHE and mapping:
+        _REV_CIK_CACHE = {int(c): tkr for tkr, c in mapping.items() if c is not None}
+        
+    return _REV_CIK_CACHE.get(cik_int)
 
 
 def fetch_company_facts(cik_10_digits: str) -> Optional[Dict[str, Any]]:

@@ -861,8 +861,11 @@ async def check_and_notify_sec_disclosures():
         # 사용자 개인 관심종목뿐만 아니라, 미국장을 주도하는 빅테크 및 자동매매 편입 종목들을 기본 감시 대상에 포함하여
         # 미국장 운영 시간 동안 실시간 SEC Form 4(내부자 매수/매도), Form 8-K(수시공시) 등이 실시간 포착되도록 확장
         CORE_US_WATCHLIST = [
+            # 🇺🇸 뉴욕증권거래소 (NYSE) / S&P500 핵심 우량주
+            "BRK-B", "JPM", "LLY", "WMT", "XOM", "V", "UNH", "DIS", "BA", "IBM", "GE", "KO", "MCD", "NKE",
+            # 🇺🇸 나스닥 (NASDAQ) 빅테크 & 혁신 성장주
             "NVDA", "TSLA", "AAPL", "MSFT", "AMZN", "PLTR", "GOOGL", "META", "AMD",
-            "ASTS", "SOFI", "SERV", "IONQ"
+            "ASTS", "SOFI", "SERV", "IONQ", "COIN", "ARM", "CRWD"
         ]
         for c_tkr in CORE_US_WATCHLIST:
             if c_tkr not in foreign_watchlist:
