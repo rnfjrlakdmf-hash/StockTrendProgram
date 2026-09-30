@@ -920,13 +920,14 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                             symbol=sym,
                         )
 
-        sell_reason = None
-        if pnl_pct >= tp_pct:
-            sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}%)"
-        elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
-            sell_reason = f"트레일링 수익 보존 (+{pnl_pct:.2f}%)"
-        elif use_sl and pnl_pct <= -abs(sl_pct):
-            sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
+        sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct)
+        if not sell_reason:
+            if pnl_pct >= tp_pct:
+                sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}%)"
+            elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
+                sell_reason = f"트레일링 수익 보존 (+{pnl_pct:.2f}%)"
+            elif use_sl and pnl_pct <= -abs(sl_pct):
+                sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
 
         if sell_reason and (cfg.get("enabled") or force_buy):
             # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
@@ -1293,32 +1294,86 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     return get_dashboard_summary(state)
 
 
+def _evaluate_ai_smart_exit(
+    pos: Dict[str, Any],
+    quote: Dict[str, Any],
+    tp_pct: float,
+    sl_pct: float,
+    ts_pct: float,
+) -> Optional[str]:
+    """
+    [🧠 AI 실시간 상승탄력 둔화 감지 & 자율 리스크 관리 매도 판단 엔진]
+    굳이 +4.0% 목표가까지 가지 않더라도:
+    1) 수익권(+0.35% ~ +3.9%)에서 고점 대비 밀리거나 당일 상승 탄력이 둔화되면 '더 오르기 어렵다'고 스스로 판단해 즉시 조기 익절!
+    2) 반대로 상승 동력이 죽고 하락(-1.0% 이하 & 수급 약세)하여 더 들고 있으면 손실만 커질 것으로 판단되면,
+       -2.5%까지 방치하지 않고 선제적으로 리스크 관리 커트(교체 매도) 후 수급이 살아있는 신규 급등주로 즉시 갈아탑니다.
+    """
+    avg_p = float(pos.get("avg_price", 0) or 0)
+    cur_p = float(pos.get("current_price", avg_p) or avg_p)
+    high_p = max(float(pos.get("highest_price", cur_p) or cur_p), cur_p)
+    if avg_p <= 0 or cur_p <= 0:
+        return None
+
+    pnl_pct = round(((cur_p - avg_p) / avg_p) * 100.0, 2)
+    peak_pct = round(((high_p - avg_p) / avg_p) * 100.0, 2)
+    drop_from_peak = round(peak_pct - pnl_pct, 2)
+    intraday_chg = float((quote or {}).get("change_pct", 0.0) or 0.0)
+
+    # 1. 목표 익절가(+4%) 달성 시 칼익절
+    if pnl_pct >= tp_pct:
+        return f"🎯 [AI 목표돌파 익절] 목표 수익률(+{pnl_pct:.2f}%) 달성 전량 수익 확정"
+
+    # 2. 굳이 +4%가 아니어도 +1.0% 이상 수익권에서 고점 대비 0.35%p 이상 밀리면 -> 탄력 둔화로 판단해 즉시 조기 익절!
+    if pnl_pct >= 1.0 and drop_from_peak >= 0.35:
+        return f"🧠 [AI 탄력둔화 조기익절] 고점(+{peak_pct:.2f}%) 저항 후 상승세 둔화 감지 → +{pnl_pct:.2f}% 수익 선제 확정"
+
+    # 3. 소폭 수익권(+0.35% ~ +0.99%)이라도 고점 대비 0.25%p 이상 밀리거나 당일 호가 탄력이 약해지면 -> 마이너스 전환 전 알짜 조기 익절!
+    if 0.35 <= pnl_pct < 1.0 and (drop_from_peak >= 0.25 or intraday_chg < 0.3):
+        return f"🧠 [AI 자율판단 조기익절] 추가 상승 여력 약화 감지 → 꺾이기 전 +{pnl_pct:.2f}% 수익 조기 챙김"
+
+    # 4. 실시간 리스크 관리: 상승 동력이 소멸되어 -1.0% 이하로 밀리면서 반등 탄력이 없을 때 -> 더 떨어지기 전에 선제 정리 후 강세주로 교체!
+    if pnl_pct <= -1.0 and (intraday_chg <= 0.2 or drop_from_peak >= 1.0):
+        return f"🛡️ [AI 리스크관리 교체매도] 상승탄력 소멸·추가하락 방어 ({pnl_pct:+.2f}%) → 강세 주도주로 시드 즉시 교체"
+
+    # 5. 긴급 손절선 도달 시 방어
+    if pnl_pct <= -abs(sl_pct):
+        return f"🛡️ [AI 리스크 방어선 작동] 손실 제한 기준 도달 ({pnl_pct:+.2f}%) 즉시 현금화"
+
+    return None
+
+
 def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    [🎮 AI 가상 모의투자(사용자 설정 시드머니) — 장 운영시간 엄격 준수 & 국내·해외 시드 분리 엔진]
-    - 대표님께서 설정하신 모의투자 시드머니(paper_seed_krw: 10만원 ~ 1억원 등 자유 설정) 한도에 맞춰
-      종목당 배분 금액(약 13.5%씩, 소액 시드일 경우 약 35%씩)을 자동으로 계산하여 매수·매도합니다.
+    [🎮 AI 가상 모의투자(사용자 설정 시드머니 + 실시간 변동 자산) — 자율 리스크 관리 & 국내·해외 자동 배분 엔진]
+    - 설정된 모의투자 시드머니(paper_seed_krw)와 누적 실현손익(realized_pnl_krw)이 합산된 실시간 총 운용자산(effective_seed_krw)이
+      변동될 때마다 그 금액에 맞춰 국내주식(약 40%)·해외주식(약 27%)·여유 예수금(약 33%)을 자동으로 계산해 매수·매도합니다.
+    - 굳이 +4% 수익이 아니더라도 _evaluate_ai_smart_exit()을 통해 더 오르기 어렵다고 판단되면 조기 익절하고,
+      수급이 죽은 종목은 선제 리스크 관리 매도 후 더 강한 종목으로 알아서 교체합니다.
     """
     fx_rate = 1355.0
     cfg = state.get("config", {})
-    paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
-    if paper_seed_krw <= 300000:
+    acct = state.setdefault("account", {})
+    base_paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+    realized_pnl = int(acct.get("realized_pnl_krw", 0) or 0)
+    # 시드머니 변경 또는 매매 손익으로 총 운용 금액이 변동되면 변동된 총금액(effective_seed_krw)에 맞춰 자동 스케일링!
+    effective_seed_krw = max(50000, base_paper_seed_krw + realized_pnl)
+
+    if effective_seed_krw <= 300000:
         paper_max_pos = 3
         target_kr_slots = 2
         target_us_slots = 1
-        per_stock_budget_krw = max(35000, int(paper_seed_krw * 0.35))
+        per_stock_budget_krw = max(35000, int(effective_seed_krw * 0.35))
     else:
         paper_max_pos = 5
         target_kr_slots = 3
         target_us_slots = 2
-        per_stock_budget_krw = max(65000, int(paper_seed_krw * 0.135))
+        per_stock_budget_krw = max(65000, int(effective_seed_krw * 0.135))
 
     tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
     ts_pct = float(cfg.get("trailing_stop_pct", 1.2) or 1.2)
-    use_sl = bool(cfg.get("use_stop_loss", False))
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
-    seed_label_man = f"{paper_seed_krw // 10000:,}만원" if paper_seed_krw >= 10000 else f"{paper_seed_krw:,}원"
+    seed_label_man = f"{effective_seed_krw // 10000:,}만원" if effective_seed_krw >= 10000 else f"{effective_seed_krw:,}원"
 
     session_info = _get_time_based_session_info(cfg)
     active_mkt = session_info.get("active_market", "KR")  # "KR" (08:00~16:59 KST) or "US" (17:00~07:59 KST)
@@ -1359,7 +1414,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             changed = True
             continue
 
-        # 만약 설정된 시드머니가 소액(예: 10만원)인데 1주 가격이 종목당 한도(예: 3.5만원*1.3)보다 비싼 종목(예: 두산에너빌리티 8만원)이면 정리
         unit_p_krw = float(p.get("avg_price", 0) or 0) * (fx_rate if is_us_p else 1.0)
         if unit_p_krw > per_stock_budget_krw * 1.35:
             seen_syms.discard(sym)
@@ -1376,8 +1430,9 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     raw_paper = balanced_raw
 
     updated_paper: List[Dict[str, Any]] = []
+    recently_exited_syms = set()
 
-    # 1.5 실시간 호가 병렬 조회 (현재 장이 열려 있는 시장 종목만 실시간 조회)
+    # 1.5 실시간 호가 병렬 조회
     quote_map: Dict[str, Dict[str, Any]] = {}
     if raw_paper:
         def _q_worker(s: str):
@@ -1386,7 +1441,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             for s_code, q_res in ex.map(lambda item: _q_worker(item["symbol"]), raw_paper):
                 quote_map[s_code] = q_res
 
-    # 2. 보유 종목 관리 (사용자 설정 시드머니에 맞춰 수량 자동 리밸런싱 & 실시간 익절/손절 매도)
+    # 2. 보유 종목 관리 (변동된 시드머니에 맞춰 수량 자동 리밸런싱 & AI 스마트 조기익절/리스크관리 매도)
     for pos in raw_paper:
         sym = pos["symbol"]
         is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
@@ -1399,44 +1454,36 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
 
-        # 사용자가 모의투자 시드머니를 변경했으면 새로운 종목당 배분액(per_stock_budget_krw)에 맞춰 보유 수량을 즉시 자동 조정!
+        # 시드머니 또는 누적 자산이 변동되었으면 새로운 종목당 배분액(per_stock_budget_krw)에 맞춰 보유 수량을 즉시 자동 조정!
         curr_inv = avg_p * int(pos.get("qty", 1)) * unit_m
         if (curr_inv < per_stock_budget_krw * 0.65 or curr_inv > per_stock_budget_krw * 1.2) and (avg_p * unit_m) <= per_stock_budget_krw * 1.3:
             target_qty = max(1, int(per_stock_budget_krw // (avg_p * unit_m)))
             if target_qty != int(pos.get("qty", 1)):
                 pos["qty"] = target_qty
-                pos["reason"] = f"AI 퀀트 99점 · [{seed_label_man} 시드 맞춤 {int(round(target_qty * avg_p * unit_m)):,}원 배분] · 기관·외인 수급 돌파"
+                pos["reason"] = f"AI 퀀트 99점 · [{seed_label_man} 자산 맞춤 {int(round(target_qty * avg_p * unit_m)):,}원 배분] · 기관·외인 수급 돌파"
                 changed = True
 
         if is_market_open_for_pos:
             pos["current_price"] = live_p
             pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
         pos["target_price"] = round(avg_p * (1.0 + tp_pct / 100.0), 2 if is_us else 0)
-        pos["stop_price"] = round(avg_p * (1.0 - sl_pct / 100.0), 2 if is_us else 0)
+        pos["stop_price"] = round(avg_p * (1.0 - 1.0 / 100.0), 2 if is_us else 0)  # AI 스마트 리스크 컷 기준선(-1.0%)
 
         cur_p_calc = float(pos.get("current_price", avg_p))
         pnl_pct = round(((cur_p_calc - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
-        peak_pct = round(((float(pos.get("highest_price", cur_p_calc)) - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
-        drop_from_peak = round(peak_pct - pnl_pct, 2)
         pnl_krw = int(round((cur_p_calc - avg_p) * int(pos.get("qty", 1)) * unit_m))
         pos["pnl_pct"] = pnl_pct
         pos["pnl_krw"] = pnl_krw
         pos["trade_mode"] = "AI_PAPER"
         pos["kis_order_confirmed"] = False
 
-        # [핵심] 해당 종목의 주식시장이 현재 열려 있을 때만 익절/손절 매도 체결! (휴장 시간에는 매도 불가 원칙 준수)
+        # [핵심] 장이 열려 있을 때 AI 스마트 탄력·리스크 판단 엔진(_evaluate_ai_smart_exit) 가동!
         sell_reason = None
         if is_market_open_for_pos:
-            if pnl_pct >= tp_pct:
-                sell_reason = f"🎯 가상 모의투자 목표 익절가 도달 (+{pnl_pct:.2f}%)"
-            elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
-                sell_reason = f"📈 가상 모의투자 트레일링 수익 보존 (+{pnl_pct:.2f}%)"
-            elif use_sl and pnl_pct <= -abs(sl_pct):
-                sell_reason = f"🛡️ 가상 모의투자 손절선 작동 ({pnl_pct:.2f}%)"
+            sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct)
 
         if sell_reason:
             proceeds_krw = int(round(cur_p_calc * int(pos.get("qty", 1)) * unit_m))
-            acct = state.setdefault("account", {})
             acct["realized_pnl_krw"] = int(acct.get("realized_pnl_krw", 0) + pnl_krw)
             acct["total_trades"] = int(acct.get("total_trades", 0) + 1)
             if pnl_krw >= 0:
@@ -1458,6 +1505,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "mode": "AI_PAPER",
             })
             seen_syms.discard(sym)
+            recently_exited_syms.add(sym)
             changed = True
         else:
             updated_paper.append(pos)
@@ -1472,11 +1520,17 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     def _fill_market_slots(pool: List[Dict[str, Any]], need_count: int, market_label: str):
         nonlocal changed
         added = 0
-        for cand in pool:
+        # 당일 상승 탄력이 강한 순서대로 우선 배치하여 약세 종목 교체 후 강세 주도주로 즉시 순환매!
+        sorted_pool = sorted(
+            pool,
+            key=lambda x: (1 if float(x.get("change_pct", 0)) > 0 else 0, float(x.get("ai_score", 0)), float(x.get("change_pct", 0))),
+            reverse=True,
+        )
+        for cand in sorted_pool:
             if added >= need_count or len(updated_paper) >= paper_max_pos:
                 break
             c_sym = cand.get("symbol")
-            if not c_sym or c_sym in seen_syms:
+            if not c_sym or c_sym in seen_syms or c_sym in recently_exited_syms:
                 continue
             c_price = float(cand.get("price", 0))
             if c_price <= 0:
@@ -1647,7 +1701,7 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
     ]
 
-    def _calc_group_metrics(pos_list: List[Dict[str, Any]], cap_krw: int, cash_override: Optional[int] = None) -> Dict[str, Any]:
+    def _calc_group_metrics(pos_list: List[Dict[str, Any]], cap_krw: int, cash_override: Optional[int] = None, realized_krw: int = 0) -> Dict[str, Any]:
         ev_krw = 0
         inv_krw = 0
         unr_krw = 0
@@ -1656,7 +1710,8 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             ev_krw += int(round(p.get("current_price", 0) * p.get("qty", 0) * um))
             inv_krw += int(round(p.get("avg_price", 0) * p.get("qty", 0) * um))
             unr_krw += int(p.get("pnl_krw", 0))
-        c_krw = cash_override if cash_override is not None else max(0, cap_krw - inv_krw)
+        effective_cap_krw = max(50000, cap_krw + realized_krw)
+        c_krw = cash_override if cash_override is not None else max(0, effective_cap_krw - inv_krw)
         eq_krw = c_krw + ev_krw
         ret_krw = eq_krw - cap_krw
         ret_pct = round((ret_krw / cap_krw) * 100, 2) if cap_krw > 0 else 0.0
@@ -1665,16 +1720,17 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             "cash_krw": c_krw,
             "eval_amount_krw": ev_krw,
             "invested_principal_krw": inv_krw,
-            "max_total_invest_krw": cap_krw,
-            "remaining_invest_limit_krw": max(0, cap_krw - inv_krw),
+            "max_total_invest_krw": effective_cap_krw,
+            "remaining_invest_limit_krw": max(0, effective_cap_krw - inv_krw),
             "unrealized_pnl_krw": unr_krw,
+            "realized_pnl_krw": realized_krw,
             "total_return_krw": ret_krw,
             "total_return_pct": ret_pct,
         }
 
     paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
     cfg["paper_seed_krw"] = paper_seed_krw
-    paper_summary = _calc_group_metrics(paper_positions, paper_seed_krw)
+    paper_summary = _calc_group_metrics(paper_positions, paper_seed_krw, realized_krw=int(acct.get("realized_pnl_krw", 0)))
     real_cap = max_total_invest_krw if max_total_invest_krw > 0 else int(cfg.get("initial_capital_krw", 10000000) or 10000000)
     real_summary = _calc_group_metrics(real_positions, real_cap)
 

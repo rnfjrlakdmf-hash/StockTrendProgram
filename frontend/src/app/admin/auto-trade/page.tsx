@@ -581,7 +581,7 @@ export default function AdminAutoTradePage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-300 mt-0.5">
-                    원하시는 모의투자 시드머니를 선택하거나 직접 입력하시면, AI가 해당 금액 한도에 맞춰 보유 주식 수량과 예수금을 즉시 자동 재배분합니다!
+                    시드머니나 누적 자산이 변동되면 AI가 국내주식(약 40%)·해외주식(약 27%) 비중을 알아서 자동 조절하며, <strong className="text-emerald-300">굳이 +4%가 아니더라도 상승 탄력이 둔화되면(+0.4%~+3.9%) 알아서 조기 익절</strong>하고 <strong className="text-amber-300">약세 종목(-1.0% 이하)은 강세 주도주로 실시간 교체 매매</strong>합니다!
                   </p>
                 </div>
                 <button
@@ -601,6 +601,7 @@ export default function AdminAutoTradePage() {
                   { label: "300만 원", val: 3000000 },
                   { label: "500만 원", val: 5000000 },
                   { label: "💎 1,000만 원", val: 10000000 },
+                  { label: "🚀 2,000만 원", val: 20000000 },
                   { label: "5,000만 원", val: 50000000 },
                 ].map((preset) => (
                   <button
