@@ -169,6 +169,12 @@ async def startup_event():
             asyncio.create_task(background_indexer.run_forever())
         except: pass
         
+        try:
+            from auto_trader_service import start_auto_trader_daemon
+            start_auto_trader_daemon(45)
+        except Exception as e:
+            print(f"[Background] AutoTrader daemon init warning: {e}")
+
         await asyncio.sleep(5)
         try:
             print("[Background] Starting price alerts & batch news...")

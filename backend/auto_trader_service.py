@@ -1591,3 +1591,40 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         "last_cycle_at": state.get("last_cycle_at", ""),
         "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),
     }
+
+
+_DAEMON_STARTED = False
+_DAEMON_LOCK = threading.Lock()
+
+
+def start_auto_trader_daemon(interval_sec: int = 45) -> None:
+    """
+    [24시간 365일 무인 자율매매 백그라운드 데몬]
+    대표님께서 PC나 스마트폰 브라우저를 완전히 꺼두셔도 EC2 서버 백그라운드에서
+    매 45초마다 시간대별(국내장/미국장) 후보군 갱신, 목표가(+4%)/트레일링 익절 매도,
+    신규 주도주 매수(가상 모의투자 1,000만 원 시드 5종목 + 한투 실전계좌 연동 시 실전 주문) 및
+    대표님 스마트폰 FCM 푸시 알림 발송을 자동으로 수행합니다.
+    """
+    global _DAEMON_STARTED
+    with _DAEMON_LOCK:
+        if _DAEMON_STARTED:
+            return
+        _DAEMON_STARTED = True
+
+    def _loop():
+        print(f"[AutoTrader-Daemon] 24/7 Autonomous AI Trading Daemon started (interval={interval_sec}s)")
+        while True:
+            try:
+                st = load_state()
+                if st.get("config", {}).get("is_running", True):
+                    run_auto_trader_cycle(force_buy=False)
+            except Exception as e:
+                print(f"[AutoTrader-Daemon] cycle warning: {e}")
+            time.sleep(interval_sec)
+
+    threading.Thread(target=_loop, daemon=True, name="AutoTrader24x7Daemon").start()
+
+
+# 모듈 로드 시 백그라운드 데몬 즉시 가동 보장
+start_auto_trader_daemon(45)
+
