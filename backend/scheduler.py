@@ -694,6 +694,17 @@ async def check_and_notify_sec_disclosures():
                         foreign_watchlist[sym] = []
                     foreign_watchlist[sym].append(uid)
 
+        # [미국장 정규시간 핵심 주도주 및 포트폴리오 상시 모니터링 풀]
+        # 사용자 개인 관심종목뿐만 아니라, 미국장을 주도하는 빅테크 및 자동매매 편입 종목들을 기본 감시 대상에 포함하여
+        # 미국장 운영 시간 동안 실시간 SEC Form 4(내부자 매수/매도), Form 8-K(수시공시) 등이 실시간 포착되도록 확장
+        CORE_US_WATCHLIST = [
+            "NVDA", "TSLA", "AAPL", "MSFT", "AMZN", "PLTR", "GOOGL", "META", "AMD",
+            "ASTS", "SOFI", "SERV", "IONQ"
+        ]
+        for c_tkr in CORE_US_WATCHLIST:
+            if c_tkr not in foreign_watchlist:
+                foreign_watchlist[c_tkr] = []
+
         if not foreign_watchlist:
             logger.info("[SEC Monitor] 관심 해외종목 없음")
             return
@@ -820,10 +831,14 @@ async def check_and_notify_sec_disclosures():
                             except Exception as e:
                                 logger.error(f"[SEC WhaleSiren] Global FCM tokens error: {e}")
 
-                        for uid in list(target_uids):
-                            for t in get_user_fcm_tokens(uid):
-                                if t.get("pref_news", True) and t.get("token"):
-                                    all_tokens.append(t["token"])
+                        if not target_uids:
+                            from db_manager import get_all_fcm_tokens_with_user
+                            all_tokens.extend([u[1] for u in get_all_fcm_tokens_with_user()])
+                        else:
+                            for uid in list(target_uids):
+                                for t in get_user_fcm_tokens(uid):
+                                    if t.get("pref_news", True) and t.get("token"):
+                                        all_tokens.append(t["token"])
                         
                         # 중복 토큰 제거
                         all_tokens = list(set(all_tokens))
