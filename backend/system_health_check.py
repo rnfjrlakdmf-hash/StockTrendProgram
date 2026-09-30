@@ -127,7 +127,7 @@ def run_system_health_check():
     for attempt in range(1, 5):
         try:
             t0 = time.time()
-            res_fe = requests.get('http://127.0.0.1:3000/discovery', timeout=10)
+            res_fe = requests.get('http://127.0.0.1:3000/', timeout=10)
             fe_time = (time.time() - t0) * 1000
             if res_fe.status_code in [200, 307, 308]:
                 fe_success = True
@@ -140,16 +140,16 @@ def run_system_health_check():
             fe_err_detail = f"포트 3000 연결 대기 (시도 {attempt}/4)"
         except Exception as fe_e:
             fe_err_detail = str(fe_e)
-        time.sleep(2.5)
+        time.sleep(3)
 
     if not fe_success:
         # 프론트엔드가 다운된 경우: PM2 프로세스 자동 재기동(Self-Healing) 시도
         try:
             print("[HealthSentinel] Frontend Down detected. Attempting self-healing restart via PM2...")
             subprocess.run(["bash", "-l", "-c", "pm2 restart stocktrend-frontend || pm2 restart 0"], check=False, timeout=15)
-            time.sleep(5)  # Next.js 웜업 대기
+            time.sleep(10)  # Next.js 웜업 대기 (EC2 vCPU 환경 고려)
             # 재확인
-            res_heal_fe = requests.get('http://127.0.0.1:3000/discovery', timeout=10)
+            res_heal_fe = requests.get('http://127.0.0.1:3000/', timeout=10)
             if res_heal_fe.status_code in [200, 307, 308]:
                 diagnostics.append("🛠️ [자가 치유 성공] 프론트엔드 웹 일시 지연 발생 후 PM2 자동 재기동을 통해 정상 복구 완료")
                 fe_success = True
@@ -252,7 +252,7 @@ def run_system_health_check():
                     body=body,
                     data={"url": "/", "is_global": "false", "type": "admin_report"},
                     target_users=admin_uids,
-                    skip_db_save=False
+                    skip_db_save=True
                 )
                 print(f"[HealthSentinel] Sent alert to {len(tokens)} admin tokens.")
         except Exception as e:
