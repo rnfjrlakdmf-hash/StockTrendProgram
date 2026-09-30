@@ -1226,12 +1226,207 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     return get_dashboard_summary(state)
 
 
+def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    [🎮 AI 가상 모의투자(1,000만원 시드) 전용 자율 매수·매도 엔진]
+    실전 계좌(KIS_REAL)의 소액 한도(예: 10만원)나 주문 잠금 상태에 영향받지 않고,
+    언제나 1,000만 원 가상 시드머니 한도(종목당 약 200만 원 × 5종목 = 최대 1,000만 원)에 맞춰
+    실시간 호가 갱신, 1주 소액 포지션 자동 비중 확대(Top-up), 목표가(+4%) 자동 익절 매도 및 신규 종목 자동 매수를 수행합니다.
+    """
+    fx_rate = 1355.0
+    paper_seed_krw = 10000000
+    paper_max_pos = 5
+    per_stock_budget_krw = 2000000  # 1,000만원 ÷ 5종목 = 종목당 200만원 한도 맞춤 배분
+    cfg = state.get("config", {})
+    tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
+    sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
+    ts_pct = float(cfg.get("trailing_stop_pct", 1.2) or 1.2)
+    use_sl = bool(cfg.get("use_stop_loss", False))
+    now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+
+    # 1. 기존 가상 모의투자 포지션 통합 수집 (중복 제거)
+    raw_paper: List[Dict[str, Any]] = []
+    seen_syms = set()
+    for src in (state.get("positions", []), state.get("paper_positions_backup", [])):
+        for p in src:
+            is_real = p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+            sym = p.get("symbol")
+            if not is_real and sym and sym not in seen_syms:
+                raw_paper.append(dict(p))
+                seen_syms.add(sym)
+
+    updated_paper: List[Dict[str, Any]] = []
+    changed = False
+
+    # 1.5 실시간 호가 병렬 조회 (5종목 동시 조회로 응답 속도 0.4초 이내 단축)
+    quote_map: Dict[str, Dict[str, Any]] = {}
+    if raw_paper:
+        def _q_worker(s: str):
+            return s, _fetch_live_quote(s)
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            for s_code, q_res in ex.map(lambda item: _q_worker(item["symbol"]), raw_paper):
+                quote_map[s_code] = q_res
+
+    session_info = _get_time_based_session_info(cfg)
+    want_us_session = (session_info.get("active_market") == "US")
+
+    # 2. 실시간 현재가 갱신 + 소액(1주) 포지션 200만원 한도 자동 보정 + 목표가 도달 시 자동 익절 매도
+    for pos in raw_paper:
+        sym = pos["symbol"]
+        q = quote_map.get(sym) or {}
+        live_p = float(q.get("price", 0) or pos.get("current_price", 0) or pos.get("avg_price", 0))
+        if live_p <= 0:
+            continue
+        is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
+        unit_m = fx_rate if is_us else 1.0
+        avg_p = float(pos.get("avg_price", live_p) or live_p)
+
+        # 만약 이전에 10만원 소액 테스트 등으로 1주만 매수되어 투자금이 50만원 미만이면 -> 200만원 한도에 맞춰 자동 수량 증액!
+        curr_inv = avg_p * int(pos.get("qty", 1)) * unit_m
+        if curr_inv < 500000 and (avg_p * unit_m) <= per_stock_budget_krw:
+            target_qty = max(1, int(per_stock_budget_krw // (avg_p * unit_m)))
+            if target_qty > int(pos.get("qty", 1)):
+                pos["qty"] = target_qty
+                pos["reason"] = f"AI 퀀트 99점 · [1,000만원 시드 한도 배분 {int(round(target_qty * avg_p * unit_m)):,}원] · 기관·외인 수급 돌파"
+                changed = True
+
+        pos["current_price"] = live_p
+        pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
+        pos["target_price"] = round(avg_p * (1.0 + tp_pct / 100.0), 2 if is_us else 0)
+        pos["stop_price"] = round(avg_p * (1.0 - sl_pct / 100.0), 2 if is_us else 0)
+
+        pnl_pct = round(((live_p - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
+        peak_pct = round(((pos["highest_price"] - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
+        drop_from_peak = round(peak_pct - pnl_pct, 2)
+        pnl_krw = int(round((live_p - avg_p) * int(pos.get("qty", 1)) * unit_m))
+        pos["pnl_pct"] = pnl_pct
+        pos["pnl_krw"] = pnl_krw
+        pos["trade_mode"] = "AI_PAPER"
+        pos["kis_order_confirmed"] = False
+
+        sell_reason = None
+        if pnl_pct >= tp_pct:
+            sell_reason = f"🎯 가상 모의투자 목표 익절가 도달 (+{pnl_pct:.2f}%)"
+        elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
+            sell_reason = f"📈 가상 모의투자 트레일링 수익 보존 (+{pnl_pct:.2f}%)"
+        elif use_sl and pnl_pct <= -abs(sl_pct):
+            sell_reason = f"🛡️ 가상 모의투자 손절선 작동 ({pnl_pct:.2f}%)"
+        elif is_us != want_us_session and candidates:
+            sell_reason = f"🔄 시간대 세션 전환 자동 매도 ({'미국장→국내장' if is_us else '국내장→미국장'} 시드 재배치)"
+
+        if sell_reason:
+            proceeds_krw = int(round(live_p * int(pos.get("qty", 1)) * unit_m))
+            acct = state.setdefault("account", {})
+            acct["realized_pnl_krw"] = int(acct.get("realized_pnl_krw", 0) + pnl_krw)
+            acct["total_trades"] = int(acct.get("total_trades", 0) + 1)
+            if pnl_krw >= 0:
+                acct["win_trades"] = int(acct.get("win_trades", 0) + 1)
+            else:
+                acct["loss_trades"] = int(acct.get("loss_trades", 0) + 1)
+            state.setdefault("trade_logs", []).insert(0, {
+                "id": f"TRD-PAPER-SELL-{int(time.time()*1000)}-{sym}",
+                "timestamp": now_str,
+                "action": "SELL",
+                "symbol": sym,
+                "name": pos.get("name", sym),
+                "qty": pos.get("qty", 1),
+                "price": live_p,
+                "amount_krw": proceeds_krw,
+                "pnl_krw": pnl_krw,
+                "pnl_pct": pnl_pct,
+                "reason": sell_reason,
+                "mode": "AI_PAPER",
+            })
+            seen_syms.discard(sym)
+            changed = True
+        else:
+            updated_paper.append(pos)
+
+    # 3. 빈 슬롯(5종목 미만)이 있으면 1,000만 원 시드머니 한도에 맞춰 Top 10 후보군에서 즉시 자동 매수!
+    curr_invested_krw = sum(
+        int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (fx_rate if p.get("is_us") else 1.0)))
+        for p in updated_paper
+    )
+    rem_paper_cash = max(0, paper_seed_krw - curr_invested_krw)
+
+    if len(updated_paper) < paper_max_pos and rem_paper_cash >= 100000 and candidates:
+        for cand in candidates:
+            if len(updated_paper) >= paper_max_pos:
+                break
+            c_sym = cand.get("symbol")
+            if not c_sym or c_sym in seen_syms:
+                continue
+            c_price = float(cand.get("price", 0))
+            if c_price <= 0:
+                continue
+            c_is_us = bool(cand.get("is_us"))
+            unit_krw = c_price * (fx_rate if c_is_us else 1.0)
+            alloc_krw = min(per_stock_budget_krw, rem_paper_cash)
+            qty = int(alloc_krw // unit_krw)
+            if qty <= 0:
+                continue
+            buy_amt_krw = int(round(qty * unit_krw))
+            if buy_amt_krw > rem_paper_cash:
+                continue
+
+            new_paper_pos = {
+                "symbol": c_sym,
+                "name": cand.get("name", c_sym),
+                "sector": cand.get("sector", "AI 주도주"),
+                "qty": qty,
+                "avg_price": c_price,
+                "current_price": c_price,
+                "highest_price": c_price,
+                "target_price": round(c_price * (1.0 + tp_pct / 100.0), 2 if c_is_us else 0),
+                "stop_price": round(c_price * (1.0 - sl_pct / 100.0), 2 if c_is_us else 0),
+                "pnl_pct": 0.0,
+                "pnl_krw": 0,
+                "bought_at": now_str,
+                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [1,000만원 시드 한도 배분 {buy_amt_krw:,}원] · {cand.get('reason', '')}",
+                "is_us": c_is_us,
+                "trade_mode": "AI_PAPER",
+                "kis_order_confirmed": False,
+            }
+            updated_paper.append(new_paper_pos)
+            seen_syms.add(c_sym)
+            rem_paper_cash -= buy_amt_krw
+            state.setdefault("trade_logs", []).insert(0, {
+                "id": f"TRD-PAPER-BUY-{int(time.time()*1000)}-{c_sym}",
+                "timestamp": now_str,
+                "action": "BUY",
+                "symbol": c_sym,
+                "name": cand.get("name", c_sym),
+                "qty": qty,
+                "price": c_price,
+                "amount_krw": buy_amt_krw,
+                "pnl_krw": 0,
+                "pnl_pct": 0.0,
+                "reason": new_paper_pos["reason"],
+                "mode": "AI_PAPER",
+            })
+            changed = True
+
+    state["paper_positions_backup"] = updated_paper
+    real_only = [
+        p for p in state.get("positions", [])
+        if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+    ]
+    if cfg.get("mode") == "KIS_REAL":
+        state["positions"] = real_only
+    else:
+        state["positions"] = real_only + updated_paper
+
+    if changed:
+        save_state(state)
+    return updated_paper
+
+
 def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     if state is None:
         state = load_state()
         if len(state.get("candidates", [])) < 10:
             return run_auto_trader_cycle(force_buy=False)
-        # 보유 중인 종목들의 실시간 현재가·수익률·평가손익을 조회할 때마다 실시간 갱신!
+        # 보유 중인 실전 종목들의 실시간 현재가·수익률·평가손익을 조회할 때마다 실시간 갱신!
         fx_rate_live = 1355.0
         cfg_live = state.get("config", {})
         tp_pct_live = float(cfg_live.get("take_profit_pct", 4.0))
@@ -1290,19 +1485,31 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     win_trades = int(acct.get("win_trades", 0))
     win_rate = round((win_trades / total_trades) * 100, 1) if total_trades > 0 else 100.0
 
-    # [모의투자 창 vs 실전계좌 창 완전 분리 데이터 집계]
-    all_stored_positions = list(state.get("positions", []))
-    for bp in state.get("paper_positions_backup", []):
-        if bp.get("symbol") not in {p.get("symbol") for p in all_stored_positions}:
-            all_stored_positions.append(bp)
+    # [시간대별 후보군 실시간 동기화] 현재 KST 시간대의 활성 시장(주간 KR / 야간 US)과 후보군이 다르면 즉시 스위칭!
+    session_info = _get_time_based_session_info(cfg)
+    active_mkt = session_info["active_market"]
+    want_us = active_mkt == "US"
+    curr_cands = state.get("candidates", [])
+    if not curr_cands or any(bool(c.get("is_us")) != want_us for c in curr_cands[:3]):
+        try:
+            fresh_cands = _build_session_candidates(state, active_mkt)[:10]
+            state["candidates"] = fresh_cands
+            if active_mkt == "KR":
+                state["kr_candidates"] = fresh_cands
+            else:
+                state["us_candidates"] = fresh_cands
+            curr_cands = fresh_cands
+            save_state(state)
+        except Exception as e:
+            print(f"[AutoTrader] Auto session candidate refresh warning: {e}")
 
+    # [모의투자 창 vs 실전계좌 창 완전 분리 데이터 집계 + 1,000만원 시드 자율 매수·매도 엔진 가동]
+    paper_positions = _sync_and_trade_paper_portfolio(state, curr_cands)
+
+    all_stored_positions = list(state.get("positions", []))
     real_positions = [
         p for p in all_stored_positions
         if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
-    ]
-    paper_positions = [
-        p for p in all_stored_positions
-        if not (p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", "")))
     ]
 
     def _calc_group_metrics(pos_list: List[Dict[str, Any]], cap_krw: int, cash_override: Optional[int] = None) -> Dict[str, Any]:
@@ -1337,24 +1544,6 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     all_logs = state.get("trade_logs", [])[:60]
     real_trade_logs = [lg for lg in all_logs if "[한투주문 완료" in str(lg.get("reason", ""))][:40]
     paper_trade_logs = [lg for lg in all_logs if "[한투주문 완료" not in str(lg.get("reason", ""))][:40]
-
-    # [시간대별 후보군 실시간 동기화] 현재 KST 시간대의 활성 시장(주간 KR / 야간 US)과 후보군이 다르면 즉시 스위칭!
-    session_info = _get_time_based_session_info(cfg)
-    active_mkt = session_info["active_market"]
-    want_us = active_mkt == "US"
-    curr_cands = state.get("candidates", [])
-    if not curr_cands or any(bool(c.get("is_us")) != want_us for c in curr_cands[:3]):
-        try:
-            fresh_cands = _build_session_candidates(state, active_mkt)[:10]
-            state["candidates"] = fresh_cands
-            if active_mkt == "KR":
-                state["kr_candidates"] = fresh_cands
-            else:
-                state["us_candidates"] = fresh_cands
-            curr_cands = fresh_cands
-            save_state(state)
-        except Exception as e:
-            print(f"[AutoTrader] Auto session candidate refresh warning: {e}")
 
     # 마스킹 처리하여 프론트엔드 및 네트워크상에 원본 API 키/시크릿이 절대 노출되지 않도록 철통 보호
     kis_configured = bool(cfg.get("kis_app_key") and cfg.get("kis_account_no"))
