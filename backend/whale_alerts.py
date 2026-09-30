@@ -237,29 +237,31 @@ def check_large_holding_alerts():
                 sent_nos.add(rcept_no)
                 continue
             
-            # ✅ [업그레이드] majorstock 상세 파싱
+            # ✅ [업그레이드] majorstock + XML 상세 파싱
             ant_details = None
             if corp_code and rcept_no:
                 try:
-                    ant_details = dart_api_client.get_super_ant_details(corp_code, rcept_no)
+                    ant_details = dart_api_client.get_super_ant_details(corp_code, rcept_no, stock_code=filing.get("stock_code"), flr_nm=flr_nm)
                 except Exception as ant_e:
                     print(f"[Whale Large] 상세 파싱 실패: {ant_e}")
 
-            if ant_details:
+            if ant_details and (ant_details.get("irds_qty", 0) > 0 or ant_details.get("final_qty", 0) > 0):
                 reporter = ant_details.get("reporter", flr_nm or "대량보유자")
                 direction = ant_details.get("direction", "변동")
+                trans_type = ant_details.get("trans_type", "지분 변동")
                 irds_qty = ant_details.get("irds_qty", 0)
                 final_qty = ant_details.get("final_qty", 0)
                 final_rate = ant_details.get("final_rate", 0.0)
                 rate_irds = ant_details.get("rate_irds", 0.0)
                 reason = ant_details.get("reason", "")
+                amt_str = ant_details.get("amount_str", "")
 
-                title = f"🐜 [슈퍼개미 {direction}] {corp_name}"
-                body_text = f"{reporter} | 지분 {direction}"
-                if irds_qty > 0:
-                    body_text += f" {irds_qty:,}주"
-                if rate_irds != 0:
-                    body_text += f" ({rate_irds:+.2f}%p)"
+                title = f"🐜 [슈퍼개미 {trans_type[:2]}] {corp_name}"
+                val_str = f" ({amt_str})" if amt_str else ""
+                rate_str = f" ({rate_irds:+.2f}%p)" if rate_irds != 0 else ""
+                qty_str = f" {irds_qty:,}주" if irds_qty > 0 else ""
+                
+                body_text = f"{reporter} | {trans_type}{qty_str}{rate_str}{val_str}".strip()
                 if final_qty > 0:
                     body_text += f"\n보유: {final_qty:,}주"
                     if final_rate > 0:
@@ -272,7 +274,7 @@ def check_large_holding_alerts():
                 elif "처분" in direction or "매도" in direction:
                     body_text += "\n💡 [시장해석] 대량보유자 지분 축소 · 차익실현 물량 주의"
                 else:
-                    body_text += "\n💡 [시장해석] 지분 구조 및 담보 계약 변동"
+                    body_text += "\n💡 [시장해석] 큰손 지분 구조 변화 · 포트폴리오 재편"
             else:
                 title = f"🚨 [슈퍼개미 포착] {corp_name}"
                 body_text = f"{flr_nm} | 대량보유 지분 변동 발생\n💡 [시장해석] 큰손의 지분 구조 변화 · 세부 내역 확인 필요" if flr_nm else "대량보유자의 지분 보유상황 변동이 발생했습니다.\n💡 [시장해석] 큰손의 지분 구조 변화 · 세부 내역 확인 필요"
@@ -378,36 +380,36 @@ def check_insider_trading_alerts():
                 sent_nos.add(rcept_no)
                 continue
             
-            # ✅ [업그레이드] elestock 상세 파싱
+            # ✅ [업그레이드] elestock + XML 상세 파싱
             insider_details = None
             if corp_code and rcept_no:
                 try:
-                    insider_details = dart_api_client.get_insider_trading_details(corp_code, rcept_no)
+                    insider_details = dart_api_client.get_insider_trading_details(corp_code, rcept_no, stock_code=filing.get("stock_code"), flr_nm=flr_nm)
                 except Exception as ins_e:
                     print(f"[Whale Insider] 상세 파싱 실패: {ins_e}")
 
             if insider_details and insider_details.get("qty", 0) > 0:
-                t_type = insider_details.get("trans_type", "변동")
-                reporter = insider_details.get("reporter", flr_nm or "임원")
+                trans_type = insider_details.get("trans_type", "매매")
+                reporter = insider_details.get("reporter", flr_nm or "임원/주요주주")
                 title_ofcps = insider_details.get("title", "")
                 qty = insider_details.get("qty", 0)
                 remain = insider_details.get("remain_qty", 0)
                 rate = insider_details.get("hold_rate", "")
+                amt_str = insider_details.get("amount_str", "")
 
-                title = f"🚨 [내부자 {t_type}] {corp_name}"
-                body_text = f"{reporter}"
-                if title_ofcps and title_ofcps != "-":
-                    body_text += f" ({title_ofcps})"
-                body_text += f" | {t_type} {qty:,}주"
+                title = f"🚨 [내부자 {trans_type[:2]}] {corp_name}"
+                rep_info = f"{reporter} ({title_ofcps})" if (title_ofcps and title_ofcps != "-") else reporter
+                val_str = f" ({amt_str})" if amt_str else ""
+                body_text = f"{rep_info} | {trans_type} {qty:,}주{val_str}"
                 if remain > 0:
                     body_text += f"\n변동 후 보유: {remain:,}주"
                     if rate:
                         body_text += f" ({rate}%)"
 
-                if t_type == "매수":
+                if "매수" in trans_type or "취득" in trans_type:
                     body_text += "\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
                 else:
-                    body_text += "\n💡 [시장해석] 임원 지분 매도로 차익실현 매물 출회 · 단기 변동성 주의"
+                    body_text += "\n💡 [시장해석] 임원 지분 매도에 따른 차익실현 · 단기 주가 고점 부담 점검 권장"
             else:
                 title = f"🚨 [내부자 거래 포착] {corp_name}"
                 body_text = f"회사 임원 및 주요주주의 주식 보유상황(매수/매도) 변동 발생\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"

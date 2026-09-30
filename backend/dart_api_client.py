@@ -1,11 +1,69 @@
 import os
 import json
 import requests
+import re
+import zipfile
+import io
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+def format_krw_amount(val: float) -> str:
+    """원화 금액을 사람이 읽기 편한 한국어 단위(억, 만, 원)로 변환 (미국 SEC 알림과 동일한 포맷)"""
+    if not val or val <= 0:
+        return ""
+    if val >= 100_000_000_000:
+        return f"약 {val / 100_000_000_000:.1f}천억원"
+    elif val >= 100_000_000:
+        val_eok = val / 100_000_000
+        if val_eok >= 10:
+            return f"약 {val_eok:.0f}억원"
+        else:
+            return f"약 {val_eok:.1f}억원"
+    elif val >= 10_000:
+        return f"약 {val / 10_000:,.0f}만원"
+    else:
+        return f"약 {val:,.0f}원"
+
+_STOCK_PRICE_CACHE = {}
+
+def _get_price_for_stock(stock_code: str) -> float:
+    """종목코드(6자리)의 현재가 초고속 조회 (네이버 모바일 10ms + 인메모리 캐시)"""
+    if not stock_code:
+        return 0.0
+    clean = str(stock_code).strip().split('.')[0]
+    if clean in _STOCK_PRICE_CACHE:
+        return _STOCK_PRICE_CACHE[clean]
+
+    # 1. 네이버 모바일 증권 API (초고속 10ms, 레이트리밋 없음)
+    try:
+        url = f"https://m.stock.naver.com/api/stock/{clean}/basic"
+        res = requests.get(url, timeout=2)
+        if res.status_code == 200:
+            data = res.json()
+            p_str = str(data.get("nowPrice", "0")).replace(",", "")
+            p_val = float(p_str)
+            if p_val > 0:
+                _STOCK_PRICE_CACHE[clean] = p_val
+                return p_val
+    except Exception:
+        pass
+
+    # 2. 폴백: get_simple_quote
+    try:
+        from stock_data import get_simple_quote
+        q = get_simple_quote(clean)
+        if q and q.get("raw_price"):
+            val = float(q["raw_price"])
+            _STOCK_PRICE_CACHE[clean] = val
+            return val
+    except Exception:
+        pass
+    return 0.0
+
+
 
 class DartApiClient:
     """
@@ -121,79 +179,273 @@ class DartApiClient:
 
         return []
 
-    def get_insider_trading_details(self, corp_code: str, rcept_no: str) -> Optional[Dict]:
+    def _fetch_document_xml(self, rcept_no: str) -> Optional[str]:
+        """OpenDART document.xml 다운로드 및 압축 해제하여 원본 XML 문자열 반환"""
+        if not self.is_available() or not rcept_no:
+            return None
+        url = f"{self.BASE_URL}/document.xml"
+        params = {
+            "crtfc_key": self.api_key,
+            "rcept_no": rcept_no
+        }
+        try:
+            res = requests.get(url, params=params, timeout=12)
+            if res.status_code == 200 and res.content.startswith(b'PK'):
+                with zipfile.ZipFile(io.BytesIO(res.content)) as z:
+                    for fname in z.namelist():
+                        if fname.endswith('.xml'):
+                            xml_bytes = z.read(fname)
+                            try:
+                                return xml_bytes.decode('utf-8')
+                            except UnicodeDecodeError:
+                                return xml_bytes.decode('euc-kr', errors='ignore')
+        except Exception as e:
+            print(f"[DART-API] document.xml 다운로드 실패 ({rcept_no}): {e}")
+        return None
+
+    def _parse_large_holding_xml(self, xml_content: str, default_flr: str = "") -> Optional[Dict]:
+        """DART 대량보유상황보고서 XML 직접 파싱 (ACODE 추출)"""
+        try:
+            acodes = {}
+            for m in re.finditer(r'<TE[^>]*ACODE="([^"]+)"[^>]*>(.*?)</TE>', xml_content, re.DOTALL):
+                k = m.group(1).strip()
+                v = m.group(2).strip().replace('\n', ' ')
+                if k not in acodes or acodes[k] in ('-', ''):
+                    acodes[k] = v
+
+            irds_raw = acodes.get('MDF_STK_CNT') or acodes.get('MDF_CMT_CNT') or '0'
+            irds_raw = irds_raw.replace(',', '').replace(' ', '')
+            try:
+                irds_qty = abs(int(irds_raw))
+            except Exception:
+                irds_qty = 0
+
+            rate_irds_raw = acodes.get('MDF_STK_RT') or acodes.get('MDF_CMT_RT') or '0'
+            rate_irds_raw = rate_irds_raw.replace(',', '').replace(' ', '').replace('+', '')
+            try:
+                rate_irds = float(rate_irds_raw)
+            except Exception:
+                rate_irds = 0.0
+
+            final_qty_raw = acodes.get('THS_STK_CNT') or acodes.get('SUM_TMT_CNT') or '0'
+            final_qty_raw = final_qty_raw.replace(',', '').replace(' ', '')
+            try:
+                final_qty = int(final_qty_raw)
+            except Exception:
+                final_qty = 0
+
+            final_rate_raw = acodes.get('THS_STK_RT') or acodes.get('SUM_TMT_RT') or '0'
+            final_rate_raw = final_rate_raw.replace(',', '').replace(' ', '')
+            try:
+                final_rate = float(final_rate_raw)
+            except Exception:
+                final_rate = 0.0
+
+            reporter = acodes.get('THS_IFR') or acodes.get('BFR_IFR') or default_flr or '대량보유자'
+            reporter = re.sub(r'\(.*?\)', '', reporter).strip()
+            if not reporter:
+                reporter = default_flr or '대량보유자'
+
+            reason = acodes.get('CHN_HOW') or acodes.get('CHN_RSN') or ''
+            reason = re.sub(r'^[-\s·]+', '', reason).strip()
+
+            bfr_qty_raw = (acodes.get('BFR_STK_CNT') or acodes.get('SUM_BMT_CNT') or '0').replace(',', '')
+            try:
+                bfr_qty = int(bfr_qty_raw)
+            except Exception:
+                bfr_qty = 0
+
+            if final_qty > bfr_qty:
+                direction = "취득"
+                trans_type = "매수(취득)"
+            elif final_qty < bfr_qty and bfr_qty > 0:
+                direction = "처분"
+                trans_type = "매도(처분)"
+            elif "매수" in reason or "취득" in reason:
+                direction = "취득"
+                trans_type = "매수(취득)"
+            elif "매도" in reason or "처분" in reason:
+                direction = "처분"
+                trans_type = "매도(처분)"
+            else:
+                direction = "변동"
+                trans_type = "지분 변동"
+
+            prh_sum_raw = acodes.get('PRH_SUM', '0').replace(',', '')
+            try:
+                amount_krw = int(prh_sum_raw)
+            except Exception:
+                amount_krw = 0
+
+            return {
+                "reporter": reporter,
+                "direction": direction,
+                "trans_type": trans_type,
+                "irds_qty": irds_qty,
+                "final_qty": final_qty,
+                "final_rate": final_rate,
+                "rate_irds": rate_irds,
+                "reason": reason,
+                "amount_krw": amount_krw
+            }
+        except Exception as e:
+            print(f"[DART-API] 대량보유 XML 파싱 실패: {e}")
+            return None
+
+    def _parse_insider_xml(self, xml_content: str, default_flr: str = "") -> Optional[Dict]:
+        """DART 임원/주요주주소유상황보고서 XML 직접 파싱 (ACODE 추출)"""
+        try:
+            acodes = {}
+            for m in re.finditer(r'<TE[^>]*ACODE="([^"]+)"[^>]*>(.*?)</TE>', xml_content, re.DOTALL):
+                k = m.group(1).strip()
+                v = m.group(2).strip().replace('\n', ' ')
+                if k not in acodes or acodes[k] in ('-', ''):
+                    acodes[k] = v
+
+            qty_raw = acodes.get('MDF_STK_CNT') or acodes.get('MDF_STK_SUM') or acodes.get('MDF_UN_CNT') or '0'
+            qty_raw = qty_raw.replace(',', '').replace(' ', '').replace('+', '')
+            try:
+                qty_signed = int(qty_raw)
+                qty = abs(qty_signed)
+            except Exception:
+                qty_signed = 0
+                qty = 0
+
+            remain_raw = acodes.get('AFR_STK_CNT') or acodes.get('AFR_STK_SUM') or acodes.get('AFR_UN_CNT') or '0'
+            remain_raw = remain_raw.replace(',', '').replace(' ', '')
+            try:
+                remain_qty = int(remain_raw)
+            except Exception:
+                remain_qty = 0
+
+            hold_rate = acodes.get('AFR_UN_RT') or acodes.get('HLD_STK_RT') or acodes.get('STK_RT') or '0.00'
+
+            reporter = acodes.get('REP_NM') or default_flr or '임원/주요주주'
+            title = acodes.get('REP_OFC') or ''
+
+            bfr_raw = (acodes.get('BFR_STK_CNT') or acodes.get('BFR_STK_SUM') or acodes.get('BFR_UN_CNT') or '0').replace(',', '')
+            try:
+                bfr_qty = int(bfr_raw)
+            except Exception:
+                bfr_qty = 0
+
+            if qty_signed < 0 or (remain_qty < bfr_qty and bfr_qty > 0):
+                trans_type = "매도(처분)"
+            elif qty_signed > 0 or remain_qty > bfr_qty:
+                trans_type = "매수(취득)"
+            else:
+                trans_type = "매수(취득)"
+
+            return {
+                "reporter": reporter,
+                "title": title,
+                "trans_type": trans_type,
+                "qty": qty,
+                "remain_qty": remain_qty,
+                "hold_rate": hold_rate,
+                "irds_rate": acodes.get('MDF_UN_RT', '0.00'),
+                "amount_krw": 0
+            }
+        except Exception as e:
+            print(f"[DART-API] 내부자 XML 파싱 실패: {e}")
+            return None
+
+    def get_insider_trading_details(self, corp_code: str, rcept_no: str, stock_code: str = None, flr_nm: str = None) -> Optional[Dict]:
         """
         🕵️ 지분공시(elestock.json)를 호출하여 특정 공시(rcept_no)의 변동 내역 파싱
-        업그레이드: 변동 후 잔여 보유주식 수 + 보유비율 추가
+        - 1단계: elestock.json API 우선 조회
+        - 2단계: 신규 공시 인덱싱 지연 시 document.xml 직접 다운로드 및 ACODE 파싱
+        - 3단계: 거래 금액(amount_str, 약 O억원/O만원) 및 매수/매도 방향 정밀 계산
         """
         if not self.is_available():
             return None
 
+        result = None
         url = f"{self.BASE_URL}/elestock.json"
         params = {
             "crtfc_key": self.api_key,
             "corp_code": corp_code
         }
-        
+
         try:
             res = requests.get(url, params=params, timeout=10)
             if res.status_code == 200:
                 data = res.json()
                 if data.get("status") == "000":
                     items = data.get("list", [])
-                    # rcept_no와 일치하는 가장 최신 변동 1건을 찾음
                     for item in items:
                         if item.get("rcept_no") == rcept_no:
                             qty_str = item.get("sp_stock_lmp_irds_cnt", "0").replace(",", "").replace("+", "")
                             try:
                                 qty = abs(int(qty_str))
-                            except:
+                            except Exception:
                                 qty = 0
-                            
-                            # 변동 후 잔여 보유주식 (sp_stock_lmp_cnt)
+
                             remain_str = item.get("sp_stock_lmp_cnt", "0").replace(",", "")
                             try:
                                 remain_qty = int(remain_str)
-                            except:
+                            except Exception:
                                 remain_qty = 0
 
-                            # 보유비율 (sp_stock_lmp_rate)
                             hold_rate = item.get("sp_stock_lmp_rate", "")
 
-                            # 증감비율 (sp_stock_lmp_irds_rate) 로 매수/매도 판별
                             irds_rate_str = item.get("sp_stock_lmp_irds_rate", "0").replace(",", "")
                             if irds_rate_str.startswith("-"):
-                                trans_type = "매도"
+                                trans_type = "매도(처분)"
                             elif irds_rate_str.startswith("+"):
-                                trans_type = "매수"
+                                trans_type = "매수(취득)"
                             else:
-                                trans_type = "매수" if int(qty_str) >= 0 else "매도"
-                            
+                                trans_type = "매수(취득)" if int(qty_str) >= 0 else "매도(처분)"
+
                             title_val = item.get("isu_exctv_ofcps", "")
                             if title_val == "-":
                                 title_val = ""
 
                             result = {
-                                "reporter": item.get("repror", "알 수 없음"),
+                                "reporter": item.get("repror", flr_nm or "임원/주요주주"),
                                 "title": title_val,
                                 "trans_type": trans_type,
                                 "qty": qty,
                                 "remain_qty": remain_qty,
                                 "hold_rate": hold_rate,
                                 "irds_rate": irds_rate_str,
+                                "amount_krw": 0
                             }
-                            return result
+                            break
         except Exception as e:
             print(f"[DART-API] elestock 예외 발생: {e}")
-        return None
 
-    def get_super_ant_details(self, corp_code: str, rcept_no: str) -> Optional[Dict]:
+        # 2. elestock에서 못 찾았을 경우 document.xml 다운로드 파싱으로 폴백!
+        if not result or result.get("qty", 0) == 0:
+            xml_str = self._fetch_document_xml(rcept_no)
+            if xml_str:
+                parsed_xml = self._parse_insider_xml(xml_str, default_flr=flr_nm or "")
+                if parsed_xml and parsed_xml.get("qty", 0) > 0:
+                    result = parsed_xml
+
+        # 3. 거래 금액 계산 (주가 × 수량)
+        if result:
+            amt = result.get("amount_krw", 0)
+            if amt <= 0 and stock_code and result.get("qty", 0) > 0:
+                price = _get_price_for_stock(stock_code)
+                if price > 0:
+                    amt = int(result["qty"] * price)
+                    result["amount_krw"] = amt
+            result["amount_str"] = format_krw_amount(amt) if amt > 0 else ""
+
+        return result
+
+    def get_super_ant_details(self, corp_code: str, rcept_no: str, stock_code: str = None, flr_nm: str = None) -> Optional[Dict]:
         """
         🐜 대량보유상황보고(majorstock.json)를 파싱하여 슈퍼개미 지분 변동 상세 추출
-        - 보유비율 변동 (전→후), 보유주식 수, 보고 사유 반환
+        - 1단계: majorstock.json API 우선 조회
+        - 2단계: 신규 공시 인덱싱 지연 시 document.xml 직접 다운로드 및 ACODE 파싱
+        - 3단계: 취득/처분 금액(amount_str, 약 O억원/O만원) 및 매수/매도 방향 정밀 계산
         """
         if not self.is_available():
             return None
+
+        result = None
 
         url = f"{self.BASE_URL}/majorstock.json"
         params = {
@@ -209,54 +461,74 @@ class DartApiClient:
                     items = data.get("list", [])
                     for item in items:
                         if item.get("rcept_no") == rcept_no:
-                            # 변동 수량 (stkqy_irds)
                             stkqy_irds_raw = item.get("stkqy_irds", "0").replace(",", "")
                             try:
                                 irds_signed = int(stkqy_irds_raw)
                                 direction = "취득" if irds_signed > 0 else "처분" if irds_signed < 0 else "변동"
+                                trans_type = "매수(취득)" if irds_signed > 0 else "매도(처분)" if irds_signed < 0 else "지분 변동"
                                 irds_qty = abs(irds_signed)
-                            except:
+                            except Exception:
                                 direction = "변동"
+                                trans_type = "지분 변동"
                                 irds_qty = 0
 
-                            # 최종 보유주식 수 (stkqy)
                             final_qty_str = item.get("stkqy", "0").replace(",", "")
                             try:
                                 final_qty = int(final_qty_str)
-                            except:
+                            except Exception:
                                 final_qty = 0
 
-                            # 최종 보유비율 (stkrt)
                             final_rate_str = item.get("stkrt", "0").replace(",", "")
                             try:
                                 final_rate = float(final_rate_str)
-                            except:
+                            except Exception:
                                 final_rate = 0.0
 
-                            # 증감비율 (stkrt_irds)
                             rate_irds_str = item.get("stkrt_irds", "0").replace(",", "")
                             try:
                                 rate_irds = float(rate_irds_str)
-                            except:
+                            except Exception:
                                 rate_irds = 0.0
 
-                            # 보고 사유 (report_resn)
                             reason = item.get("report_resn", "단순투자")
                             if reason:
                                 reason = reason.split("\n")[0].strip()
 
-                            return {
-                                "reporter": item.get("repror", "알 수 없음"),
+                            result = {
+                                "reporter": item.get("repror", flr_nm or "대량보유자"),
                                 "direction": direction,
+                                "trans_type": trans_type,
                                 "irds_qty": irds_qty,
                                 "final_qty": final_qty,
                                 "final_rate": final_rate,
                                 "rate_irds": rate_irds,
                                 "reason": reason,
+                                "amount_krw": 0
                             }
+                            break
         except Exception as e:
             print(f"[DART-API] majorstock 예외 발생: {e}")
-        return None
+
+        # 2. majorstock에서 못 찾았을 경우 document.xml 다운로드 파싱으로 폴백!
+        if not result or (result.get("irds_qty", 0) == 0 and result.get("final_qty", 0) == 0):
+            xml_str = self._fetch_document_xml(rcept_no)
+            if xml_str:
+                parsed_xml = self._parse_large_holding_xml(xml_str, default_flr=flr_nm or "")
+                if parsed_xml and (parsed_xml.get("irds_qty", 0) > 0 or parsed_xml.get("final_qty", 0) > 0):
+                    result = parsed_xml
+
+        # 3. 금액 계산 (PRH_SUM or 주가 × 수량)
+        if result:
+            amt = result.get("amount_krw", 0)
+            if amt <= 0 and stock_code and result.get("irds_qty", 0) > 0:
+                price = _get_price_for_stock(stock_code)
+                if price > 0:
+                    amt = int(result["irds_qty"] * price)
+                    result["amount_krw"] = amt
+            result["amount_str"] = format_krw_amount(amt) if amt > 0 else ""
+
+        return result
+
 
 
     def get_financial_sheets(self, corp_code: str, bsns_year: str, reprt_code: str = "11011") -> List[Dict]:

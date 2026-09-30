@@ -915,7 +915,7 @@ def api_get_realtime_dart_disclosures(days_ago: int = 3):
         from datetime import datetime
         from dart_api_client import dart_api_client
         from market_tag_helper import get_stock_market_tag
-        from scheduler import generate_smart_disclosure_alert
+        from scheduler import generate_smart_disclosure_alert, format_super_ant_alert, format_insider_alert
 
         raw_items = dart_api_client.get_realtime_disclosures(days_ago=days_ago) or []
         formatted = []
@@ -928,9 +928,17 @@ def api_get_realtime_dart_disclosures(days_ago: int = 3):
             report_title = re.sub(r"\s{2,}", " ", str(item.get("report_nm") or "공시")).strip()
             dart_link = str(item.get("link") or f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={doc_id}")
             rcept_dt = str(item.get("rcept_dt") or "")
+            flr_nm = str(item.get("flr_nm") or "").strip()
+            corp_code = item.get("corp_code")
 
             market_tag = get_stock_market_tag(raw_code)
-            title, body = generate_smart_disclosure_alert(market_tag, corp, report_title, rcept_dt)
+            clean_t = report_title.replace(" ", "")
+            if "대량보유" in clean_t:
+                title, body = format_super_ant_alert(market_tag, corp, raw_code, doc_id, flr_nm, rcept_dt, corp_code=corp_code)
+            elif "임원" in clean_t or "주요주주" in clean_t:
+                title, body = format_insider_alert(market_tag, corp, raw_code, doc_id, flr_nm, rcept_dt, corp_code=corp_code)
+            else:
+                title, body = generate_smart_disclosure_alert(market_tag, corp, report_title, rcept_dt)
 
             # rcept_no 앞 8자리(YYYYMMDD) + 순번으로 타임스탬프 추정
             ts_sec = int(datetime.now().timestamp()) - (idx * 45)
