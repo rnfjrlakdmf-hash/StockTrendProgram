@@ -179,6 +179,19 @@ export default function AlertCenterPage() {
 
                 snapLatest.forEach(doc => {
                     const data = doc.data();
+                    
+                    // [철통 필터링] 단순 정기 보고서(분기/반기/사업보고서) 및 의례적 주주총회 소집/결과는 브라우저 캐시가 남아있더라도 화면에서 100% 원천 차단
+                    const cleanT = (data.title || '').replace(/\s+/g, '');
+                    const cleanB = (data.body || '').replace(/\s+/g, '');
+                    if (
+                        cleanT.includes('사업보고서') || cleanT.includes('분기보고서') || cleanT.includes('반기보고서') ||
+                        cleanT.includes('주주총회') || cleanT.includes('주총소집') || cleanT.includes('주총결과') ||
+                        cleanB.includes('사업보고서') || cleanB.includes('분기보고서') || cleanB.includes('반기보고서') ||
+                        cleanB.includes('주주총회소집') || cleanB.includes('주주총회결과') || cleanB.includes('주총소집')
+                    ) {
+                        return;
+                    }
+
                     const isGlobal = data.is_global === true;
                     const hasTargetUsers = Array.isArray(data.target_users) && data.target_users.length > 0;
                     const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
