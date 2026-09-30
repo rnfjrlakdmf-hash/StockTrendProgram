@@ -1232,15 +1232,19 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    [🎮 AI 가상 모의투자(1,000만원 시드) 전용 자율 매수·매도 엔진]
-    실전 계좌(KIS_REAL)의 소액 한도(예: 10만원)나 주문 잠금 상태에 영향받지 않고,
-    언제나 1,000만 원 가상 시드머니 한도(종목당 약 200만 원 × 5종목 = 최대 1,000만 원)에 맞춰
-    실시간 호가 갱신, 1주 소액 포지션 자동 비중 확대(Top-up), 목표가(+4%) 자동 익절 매도 및 신규 종목 자동 매수를 수행합니다.
+    [🎮 AI 가상 모의투자(1,000만원 시드) 전용 국내·해외 황금 분산 & 자율 매수·매도 엔진]
+    1,000만 원 시드머니가 한쪽 시장에 몰빵되어 돈이 묶이지 않도록:
+    - 🇰🇷 국내 주도주 3종목 (종목당 약 135만 원 × 3 = 약 400만 원)
+    - 🇺🇸 해외(미국) 주도주 2종목 (종목당 약 135만 원 × 2 = 약 270만 원)
+    - 💰 상시 회전용 여유 예수금 (약 330만 원 현금 보유)
+    으로 조금씩 알차게 분산 배분하여, 낮(국내장)과 밤(미국장) 언제든 막힘없이 매수·익절 매도 회전이 돌아가도록 운용합니다.
     """
     fx_rate = 1355.0
     paper_seed_krw = 10000000
     paper_max_pos = 5
-    per_stock_budget_krw = 2000000  # 1,000만원 ÷ 5종목 = 종목당 200만원 한도 맞춤 배분
+    target_kr_slots = 3
+    target_us_slots = 2
+    per_stock_budget_krw = 1350000  # 종목당 약 135만원 소액 분산 (5종목 합계 약 670만원 + 여유 현금 330만원 유지)
     cfg = state.get("config", {})
     tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
@@ -1259,10 +1263,39 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 raw_paper.append(dict(p))
                 seen_syms.add(sym)
 
-    updated_paper: List[Dict[str, Any]] = []
+    # 1.2 국내주식 몰빵 방지: 만약 국내주식만 3종목을 초과해 들고 있다면, 초과 국내 슬롯은 해외주식 분산 시드 확보를 위해 자동 정리
+    kr_held_count = 0
+    balanced_raw: List[Dict[str, Any]] = []
     changed = False
+    for p in raw_paper:
+        sym = p["symbol"]
+        is_us_p = bool(p.get("is_us") or any(c.isalpha() for c in sym))
+        if not is_us_p:
+            kr_held_count += 1
+            if kr_held_count > target_kr_slots:
+                seen_syms.discard(sym)
+                state.setdefault("trade_logs", []).insert(0, {
+                    "id": f"TRD-PAPER-REBAL-{int(time.time()*1000)}-{sym}",
+                    "timestamp": now_str,
+                    "action": "SELL",
+                    "symbol": sym,
+                    "name": p.get("name", sym),
+                    "qty": p.get("qty", 1),
+                    "price": p.get("current_price", p.get("avg_price", 0)),
+                    "amount_krw": int(round(float(p.get("current_price", p.get("avg_price", 0))) * int(p.get("qty", 1)))),
+                    "pnl_krw": int(p.get("pnl_krw", 0)),
+                    "pnl_pct": float(p.get("pnl_pct", 0.0)),
+                    "reason": "🌐 [국내·해외 황금분산] 해외주식(미국장) 동시 운용 및 회전용 예수금 확보를 위한 비중 리밸런싱 매도",
+                    "mode": "AI_PAPER",
+                })
+                changed = True
+                continue
+        balanced_raw.append(p)
+    raw_paper = balanced_raw
 
-    # 1.5 실시간 호가 병렬 조회 (5종목 동시 조회로 응답 속도 0.4초 이내 단축)
+    updated_paper: List[Dict[str, Any]] = []
+
+    # 1.5 실시간 호가 병렬 조회 (응답 속도 0.4초 이내 단축)
     quote_map: Dict[str, Dict[str, Any]] = {}
     if raw_paper:
         def _q_worker(s: str):
@@ -1271,10 +1304,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             for s_code, q_res in ex.map(lambda item: _q_worker(item["symbol"]), raw_paper):
                 quote_map[s_code] = q_res
 
-    session_info = _get_time_based_session_info(cfg)
-    want_us_session = (session_info.get("active_market") == "US")
-
-    # 2. 실시간 현재가 갱신 + 소액(1주) 포지션 200만원 한도 자동 보정 + 목표가 도달 시 자동 익절 매도
+    # 2. 실시간 현재가 갱신 + 종목당 135만원 적정 분산 비중 맞춤 + 목표가 도달 시 자동 익절 매도
     for pos in raw_paper:
         sym = pos["symbol"]
         q = quote_map.get(sym) or {}
@@ -1285,13 +1315,13 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
 
-        # 만약 이전에 10만원 소액 테스트 등으로 1주만 매수되어 투자금이 50만원 미만이면 -> 200만원 한도에 맞춰 자동 수량 증액!
+        # 종목당 투자금이 너무 적거나(50만원 미만) 너무 크면(150만원 초과) -> 종목당 135만원 황금 분산 비중으로 수량 자동 조정!
         curr_inv = avg_p * int(pos.get("qty", 1)) * unit_m
-        if curr_inv < 500000 and (avg_p * unit_m) <= per_stock_budget_krw:
+        if (curr_inv < 500000 or curr_inv > 1500000) and (avg_p * unit_m) <= per_stock_budget_krw:
             target_qty = max(1, int(per_stock_budget_krw // (avg_p * unit_m)))
-            if target_qty > int(pos.get("qty", 1)):
+            if target_qty != int(pos.get("qty", 1)):
                 pos["qty"] = target_qty
-                pos["reason"] = f"AI 퀀트 99점 · [1,000만원 시드 한도 배분 {int(round(target_qty * avg_p * unit_m)):,}원] · 기관·외인 수급 돌파"
+                pos["reason"] = f"AI 퀀트 99점 · [{'🇺🇸해외' if is_us else '🇰🇷국내'} 분산배분 {int(round(target_qty * avg_p * unit_m)):,}원] · 기관·외인 수급 돌파"
                 changed = True
 
         pos["current_price"] = live_p
@@ -1315,8 +1345,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             sell_reason = f"📈 가상 모의투자 트레일링 수익 보존 (+{pnl_pct:.2f}%)"
         elif use_sl and pnl_pct <= -abs(sl_pct):
             sell_reason = f"🛡️ 가상 모의투자 손절선 작동 ({pnl_pct:.2f}%)"
-        elif is_us != want_us_session and candidates:
-            sell_reason = f"🔄 시간대 세션 전환 자동 매도 ({'미국장→국내장' if is_us else '국내장→미국장'} 시드 재배치)"
 
         if sell_reason:
             proceeds_krw = int(round(live_p * int(pos.get("qty", 1)) * unit_m))
@@ -1346,16 +1374,25 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         else:
             updated_paper.append(pos)
 
-    # 3. 빈 슬롯(5종목 미만)이 있으면 1,000만 원 시드머니 한도에 맞춰 Top 10 후보군에서 즉시 자동 매수!
-    curr_invested_krw = sum(
-        int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (fx_rate if p.get("is_us") else 1.0)))
-        for p in updated_paper
-    )
-    rem_paper_cash = max(0, paper_seed_krw - curr_invested_krw)
+    # 3. 🇰🇷 국내주식(3종목) + 🇺🇸 해외주식(2종목) 빈 슬롯 자동 충원 (항상 ~330만원 회전용 여유 예수금 유지!)
+    curr_kr = [p for p in updated_paper if not p.get("is_us")]
+    curr_us = [p for p in updated_paper if p.get("is_us")]
 
-    if len(updated_paper) < paper_max_pos and rem_paper_cash >= 100000 and candidates:
-        for cand in candidates:
-            if len(updated_paper) >= paper_max_pos:
+    kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
+    if not kr_pool:
+        kr_pool = _build_session_candidates(state, "KR")[:10]
+        state["kr_candidates"] = kr_pool
+
+    us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
+    if not us_pool:
+        us_pool = _build_session_candidates(state, "US")[:10]
+        state["us_candidates"] = us_pool
+
+    def _fill_market_slots(pool: List[Dict[str, Any]], need_count: int, market_label: str):
+        nonlocal changed
+        added = 0
+        for cand in pool:
+            if added >= need_count or len(updated_paper) >= paper_max_pos:
                 break
             c_sym = cand.get("symbol")
             if not c_sym or c_sym in seen_syms:
@@ -1365,14 +1402,10 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 continue
             c_is_us = bool(cand.get("is_us"))
             unit_krw = c_price * (fx_rate if c_is_us else 1.0)
-            alloc_krw = min(per_stock_budget_krw, rem_paper_cash)
-            qty = int(alloc_krw // unit_krw)
+            qty = int(per_stock_budget_krw // unit_krw)
             if qty <= 0:
                 continue
             buy_amt_krw = int(round(qty * unit_krw))
-            if buy_amt_krw > rem_paper_cash:
-                continue
-
             new_paper_pos = {
                 "symbol": c_sym,
                 "name": cand.get("name", c_sym),
@@ -1386,14 +1419,14 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "pnl_pct": 0.0,
                 "pnl_krw": 0,
                 "bought_at": now_str,
-                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [1,000만원 시드 한도 배분 {buy_amt_krw:,}원] · {cand.get('reason', '')}",
+                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} 분산배분 {buy_amt_krw:,}원] · {cand.get('reason', '')}",
                 "is_us": c_is_us,
                 "trade_mode": "AI_PAPER",
                 "kis_order_confirmed": False,
             }
             updated_paper.append(new_paper_pos)
             seen_syms.add(c_sym)
-            rem_paper_cash -= buy_amt_krw
+            added += 1
             state.setdefault("trade_logs", []).insert(0, {
                 "id": f"TRD-PAPER-BUY-{int(time.time()*1000)}-{c_sym}",
                 "timestamp": now_str,
@@ -1409,6 +1442,11 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "mode": "AI_PAPER",
             })
             changed = True
+
+    if len(curr_kr) < target_kr_slots:
+        _fill_market_slots(kr_pool, target_kr_slots - len(curr_kr), "🇰🇷국내")
+    if len(curr_us) < target_us_slots:
+        _fill_market_slots(us_pool, target_us_slots - len(curr_us), "🇺🇸해외")
 
     state["paper_positions_backup"] = updated_paper
     real_only = [
