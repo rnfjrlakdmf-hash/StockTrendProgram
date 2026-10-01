@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { API_BASE_URL } from "@/lib/config";
@@ -24,6 +24,45 @@ import {
 } from "lucide-react";
 
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
+
+function formatTradeReason(reason: string = "") {
+  if (!reason) return { tag: "AI 판단", text: "실시간 알고리즘 체결" };
+
+  // 1. [태그] 형태가 맨 앞에 있는 경우 (예: 🧠 [AI 자율판단 조기익절] 상세...)
+  const bracketMatch = reason.match(/^([^\s\[]+)?\s*\[([^\]]+)\]\s*(.*)$/);
+  if (bracketMatch) {
+    const icon = bracketMatch[1] ? `${bracketMatch[1]} ` : "";
+    const tag = `${icon}${bracketMatch[2]}`.trim();
+    let text = bracketMatch[3].trim();
+    text = text.replace(/\[한투주문[^\]]+\]/g, "").trim();
+    return { tag, text: text || tag };
+  }
+
+  // 2. AI 퀀트 N점 · [매수 상세 사유] 형태
+  const chunks = reason.split("·").map((c) => c.trim()).filter(Boolean);
+  let tag = "AI 퀀트 포착";
+  const cleanChunks: string[] = [];
+
+  for (const chunk of chunks) {
+    if (chunk.includes("AI 퀀트")) {
+      tag = chunk.replace(/^AI\s*퀀트\s*/, "AI 퀀트 ");
+    } else if (
+      chunk.includes("정규장 실시간 포착") ||
+      chunk.includes("소액한도 맞춤") ||
+      chunk.includes("실시간 타점") ||
+      chunk.includes("한투주문")
+    ) {
+      continue;
+    } else {
+      cleanChunks.push(chunk.replace(/^[\[\(]/, "").replace(/[\]\)]$/, ""));
+    }
+  }
+
+  return {
+    tag,
+    text: cleanChunks.length > 0 ? cleanChunks.join(" · ") : reason,
+  };
+}
 
 export default function AdminAutoTradePage() {
   const { user: currentUser, isLoading: authLoading } = useAuth();
@@ -370,6 +409,17 @@ export default function AdminAutoTradePage() {
   const tradeLogs = isRealView
     ? (data?.real_trade_logs || [])
     : (data?.paper_trade_logs || data?.trade_logs || []);
+
+  const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
+
+  const buyCount = useMemo(() => tradeLogs.filter((l: any) => l.action === "BUY").length, [tradeLogs]);
+  const sellCount = useMemo(() => tradeLogs.filter((l: any) => l.action === "SELL").length, [tradeLogs]);
+
+  const filteredLogs = useMemo(() => {
+    if (logFilter === "BUY") return tradeLogs.filter((l: any) => l.action === "BUY");
+    if (logFilter === "SELL") return tradeLogs.filter((l: any) => l.action === "SELL");
+    return tradeLogs;
+  }, [tradeLogs, logFilter]);
 
   return (
     <div className="min-h-screen bg-[#06070a] text-white pb-24">
@@ -1396,49 +1446,171 @@ export default function AdminAutoTradePage() {
           </div>
         </div>
 
-        {/* 3. 로봇 자동 매수·매도 체결 일지 */}
+        {/* 3. 로봇 자동 매수·매도 실시간 체결 일지 */}
         <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
-          <h2 className="text-lg font-black text-white">📜 로봇 자동 매수·매도 실시간 체결 일지</h2>
-          {tradeLogs.length === 0 ? (
-            <p className="text-xs text-gray-500 py-6 text-center">아직 기록된 매매 내역이 없습니다.</p>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-              {tradeLogs.map((log: any) => (
-                <div
-                  key={log.id}
-                  className="p-3 rounded-2xl bg-zinc-950/80 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`px-2.5 py-1 rounded-lg font-black text-[11px] ${
-                        log.action === "BUY"
-                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                          : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                      }`}
-                    >
-                      {log.action === "BUY" ? "🟢 자동 매수" : "🔴 자동 매도"}
-                    </span>
-                    <span className="text-gray-400 font-mono text-[11px]">{log.timestamp}</span>
-                    <span className="text-white font-black text-sm">
-                      {log.name} ({log.qty}주)
-                    </span>
-                  </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                <span>📜 로봇 자동 매수·매도 실시간 체결 일지</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-gray-300 font-mono font-bold">
+                  총 {tradeLogs.length}건
+                </span>
+              </h2>
+            </div>
 
-                  <div className="flex flex-wrap items-center gap-3 font-mono">
-                    <span className="text-gray-300">
-                      체결가 <b>{log.price?.toLocaleString()}</b> (₩{(log.amount_krw || 0).toLocaleString()})
-                    </span>
-                    {log.action === "SELL" && (
-                      <span className={`font-black ${log.pnl_krw >= 0 ? "text-rose-400" : "text-blue-400"}`}>
-                        실현손익 {log.pnl_krw >= 0 ? "+" : ""}
-                        {(log.pnl_krw || 0).toLocaleString()}원 ({log.pnl_pct >= 0 ? "+" : ""}
-                        {log.pnl_pct}%)
-                      </span>
+            {/* 필터 탭 바 (전체 / 매수 / 매도) */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-950/80 border border-white/10 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setLogFilter("ALL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  logFilter === "ALL"
+                    ? "bg-zinc-800 text-white shadow-sm font-black"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                전체 ({tradeLogs.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogFilter("BUY")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  logFilter === "BUY"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-black shadow-sm"
+                    : "text-gray-400 hover:text-emerald-300"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                매수 ({buyCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogFilter("SELL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  logFilter === "SELL"
+                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 font-black shadow-sm"
+                    : "text-gray-400 hover:text-rose-300"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                매도·익절 ({sellCount})
+              </button>
+            </div>
+          </div>
+
+          {filteredLogs.length === 0 ? (
+            <div className="py-12 text-center text-gray-500 space-y-2">
+              <p className="text-sm font-bold text-gray-400">조건에 해당하는 매매 체결 내역이 없습니다.</p>
+              <p className="text-xs text-gray-600">새로운 매매가 발생하면 실시간으로 여기에 자동 기록됩니다.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+              {filteredLogs.map((log: any) => {
+                const formatted = formatTradeReason(log.reason);
+                const isBuy = log.action === "BUY";
+                const isProfit = (log.pnl_krw ?? 0) >= 0;
+
+                return (
+                  <div
+                    key={log.id}
+                    className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/5 hover:border-white/15 transition-all space-y-2.5"
+                  >
+                    {/* 상단 1열: 체결 뱃지 + 종목명 + 수량 + 시간 + 체결금액/실현손익 */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                        {/* 매수/익절/매도 뱃지 */}
+                        <span
+                          className={`px-2.5 py-1 rounded-xl font-black text-xs shrink-0 flex items-center gap-1.5 shadow-sm whitespace-nowrap ${
+                            isBuy
+                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                              : isProfit
+                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                              : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                          }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              isBuy ? "bg-emerald-400" : isProfit ? "bg-rose-400" : "bg-blue-400"
+                            }`}
+                          />
+                          {isBuy ? "자동 매수" : isProfit ? "자동 익절" : "리스크 매도"}
+                        </span>
+
+                        {/* 종목명 (글자 잘림 없이 시원하게) */}
+                        <span className="text-white font-black text-sm sm:text-base tracking-tight whitespace-nowrap">
+                          {log.name}
+                        </span>
+
+                        {/* 체결 수량 */}
+                        <span className="px-2 py-0.5 rounded-lg bg-zinc-900 border border-white/10 text-gray-300 font-bold font-mono text-xs whitespace-nowrap">
+                          {log.qty?.toLocaleString()}주
+                        </span>
+
+                        {/* 체결 일시 */}
+                        <span className="text-gray-400 text-[11px] font-mono whitespace-nowrap hidden sm:inline">
+                          🕒 {log.timestamp}
+                        </span>
+                      </div>
+
+                      {/* 우측 가격 및 실현손익 */}
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap ml-auto">
+                        <div className="text-right font-mono">
+                          <span className="text-xs text-gray-400">체결단가</span>{" "}
+                          <span className="text-xs sm:text-sm font-bold text-gray-100">
+                            {log.price
+                              ? log.price < 50
+                                ? `$${log.price}`
+                                : `${log.price.toLocaleString()}원`
+                              : "-"}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1.5 hidden sm:inline">
+                            (총 ₩{(log.amount_krw || 0).toLocaleString()})
+                          </span>
+                        </div>
+
+                        {!isBuy && (
+                          <span
+                            className={`px-2.5 py-1 rounded-xl text-xs sm:text-sm font-black font-mono shrink-0 shadow-sm whitespace-nowrap ${
+                              isProfit
+                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                                : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                            }`}
+                          >
+                            실현 {isProfit ? "+" : ""}
+                            {(log.pnl_krw || 0).toLocaleString()}원 ({log.pnl_pct >= 0 ? "+" : ""}
+                            {log.pnl_pct}%)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 하단 2열: 모바일용 시간 + AI 매매 사유 요약 */}
+                    {log.reason && (
+                      <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-start gap-2 text-xs">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-gray-500 text-[11px] font-mono sm:hidden whitespace-nowrap">
+                            🕒 {log.timestamp}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[11px] font-bold whitespace-nowrap ${
+                              isBuy
+                                ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                                : isProfit
+                                ? "bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                                : "bg-blue-500/10 border border-blue-500/30 text-blue-300"
+                            }`}
+                          >
+                            {formatted.tag}
+                          </span>
+                        </div>
+                        <p className="text-gray-300 text-xs leading-relaxed break-keep">
+                          {formatted.text}
+                        </p>
+                      </div>
                     )}
-                    <span className="text-[11px] text-gray-400 font-sans">사유: {log.reason}</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
