@@ -2539,6 +2539,7 @@ function formatUsdToKrwInText(text: string): string {
         );
 
         // [관심종목 완벽 매칭] 국내/해외 티커 및 한글 사명 대소문자/거래소접미사 무관 완벽 감지
+        // ⚠️ isTargetedToMe는 개인 알림 수신 여부일 뿐이므로, 관심종목 심볼/사명 매칭에는 절대 포함하지 않습니다.
         let symbolMatch = false;
         const alertSymbolUpper = (alert.symbol || '').trim().toUpperCase();
         const cleanAlertSymbol = alertSymbolUpper.split('.')[0];
@@ -2546,8 +2547,6 @@ function formatUsdToKrwInText(text: string): string {
         const safeNames = (watchlistNames || []).map(n => (n || '').trim()).filter(Boolean);
 
         if (cleanAlertSymbol && safeSymbolsUpper.includes(cleanAlertSymbol)) {
-            symbolMatch = true;
-        } else if (isTargetedToMe) {
             symbolMatch = true;
         } else {
             for (const sym of safeSymbolsUpper) {
@@ -2602,7 +2601,7 @@ function formatUsdToKrwInText(text: string): string {
             if (!user) {
                 return false;
             }
-            const isPortfolioAlert = [
+            const isPortfolioAlert = ([
                 'portfolio_summary', 'portfolio', 'dividend_alert', 'market_summary', 'market_open'
             ].includes(alert.type) ||
                 titleText.includes('관심종목 결산') ||
@@ -2610,7 +2609,9 @@ function formatUsdToKrwInText(text: string): string {
                 titleText.includes('지수 결산') ||
                 titleText.includes('시장·섹터 지수') ||
                 titleText.includes('장마감 시황') ||
-                titleText.includes('개장 시가');
+                titleText.includes('개장 시가') ||
+                titleText.includes('시가 알림')
+            ) && isTargetedToMe;
             
             // 내 관심종목 뉴스 속보, 공시, 시세 알림, 종목별 모닝 팩트 (반드시 본인이 등록한 종목과 일치해야 함!)
             const isWatchlistContent = (isNews || isDisclosure || isPrice || isMorning) && symbolMatch;

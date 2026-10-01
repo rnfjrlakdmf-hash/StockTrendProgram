@@ -454,7 +454,7 @@ def check_sec_form4_alerts():
                     "market": "US",
                     "is_global": "true",
                 }
-                result = send_multicast_notification(tokens, title, body, push_data, target_users=target_uids)
+                result = send_multicast_notification(tokens, title, body, push_data, target_users=None)
                 print(f"[SEC Whale Form4] Sent to {len(tokens)} tokens. Result: {result}")
                 new_count += 1
             else:
