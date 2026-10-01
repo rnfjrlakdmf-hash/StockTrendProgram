@@ -672,10 +672,19 @@ class BatchNewsSystem:
                     if t.get("pref_news", True) and t.get("token"):
                         all_tokens.append(t["token"])
 
-            if not all_tokens:
+            clean_symbol = symbol.split('.')[0]
+
+            # ── 🌙 [국내 주식 심야 수면 방해 금지 에티켓 (21:00 ~ 익일 08:00 KST)] ──
+            # 한국 시간 기준 밤 21:00부터 다음 날 오전 08:00 사이에는
+            # 국내 종목에 대한 소리/진동 푸시(FCM)를 차단하고, 알림 센터에만 조용히 보관합니다.
+            # (해외/미국 주식은 미국 정규장이 열리는 시간이므로 야간에도 정상 푸시 발송)
+            now_kst = datetime.now(pytz.timezone('Asia/Seoul'))
+            is_curfew_hours = (now_kst.hour >= 21 or now_kst.hour < 8)
+            silent_store_only = is_korean and is_curfew_hours
+
+            if not all_tokens and not silent_store_only:
                 return False
 
-            clean_symbol = symbol.split('.')[0]
             result = send_multicast_notification(
                 tokens=all_tokens,
                 title=push_title,
@@ -685,14 +694,19 @@ class BatchNewsSystem:
                     "symbol": clean_symbol,
                     "url": f"/discovery?q={clean_symbol}",
                     "news_url": news_item.get("link", ""),
-                    "is_global": "false",
+                    "is_global": "false" if is_korean else "true",
+                    "silent_store_only": str(silent_store_only).lower(),
                 },
-                target_users=user_ids
+                target_users=user_ids,
+                silent_store_only=silent_store_only
             )
 
             if result.get("success"):
                 success_count = result.get("success_count", 0)
-                print(f"[BatchNews] 📱 [{kr_name}] → {success_count}대 발송 완료: {title_text[:40]}")
+                if silent_store_only:
+                    print(f"[BatchNews] 🌙 [심야 에티켓: 21:00~08:00] [{kr_name}] 국내 주식 기기 푸시 차단, 알림센터에만 조용히 보관: {title_text[:40]}")
+                else:
+                    print(f"[BatchNews] 📱 [{kr_name}] → {success_count}대 발송 완료: {title_text[:40]}")
                 
                 # 알림센터 UI에 표시되도록 alert_history 에 저장
                 try:

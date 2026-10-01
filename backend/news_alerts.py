@@ -484,7 +484,14 @@ class NewsAlertMonitor:
                     if t.get('pref_news', True):
                         all_tokens.append(t['token'])
 
-            if not all_tokens:
+            # 심야 수면 방해 금지 에티켓 (21:00 ~ 익일 08:00 KST)
+            import pytz
+            from datetime import datetime as _dt
+            now_kst = _dt.now(pytz.timezone('Asia/Seoul'))
+            is_curfew_hours = (now_kst.hour >= 21 or now_kst.hour < 8)
+            silent_store_only = is_korean and is_curfew_hours
+
+            if not all_tokens and not silent_store_only:
                 return
 
             # 여러 기기에 동시 발송
@@ -495,7 +502,8 @@ class NewsAlertMonitor:
                 "type": alert_type,
                 "symbol": str(clean_symbol),
                 "url": str(discovery_url),        # 클릭 시 종목발굴 페이지로 이동
-                "is_global": str(not is_korean).lower()
+                "is_global": str(not is_korean).lower(),
+                "silent_store_only": str(silent_store_only).lower(),
             }
             if is_disclosure:
                 data_payload["dart_url"] = str(news_url)
@@ -507,7 +515,8 @@ class NewsAlertMonitor:
                 title=push_title,
                 body=push_body,
                 data=data_payload,
-                target_users=users
+                target_users=users,
+                silent_store_only=silent_store_only
             )
 
 

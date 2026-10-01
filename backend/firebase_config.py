@@ -829,13 +829,14 @@ def send_multicast_notification(
     data: Optional[Dict] = None,
     image_url: Optional[str] = None,
     target_users: Optional[List[str]] = None,
-    skip_db_save: bool = False
+    skip_db_save: bool = False,
+    silent_store_only: bool = False
 ) -> Dict:
     """여러 디바이스로 푸시 알림 전송 및 알림 센터 DB 저장"""
     if not _firebase_initialized:
         return {"success": False, "error": "Firebase not initialized"}
 
-    if not tokens:
+    if not tokens and not silent_store_only:
         print("[Firebase] No tokens provided for multicast")
         return {"success": False, "error": "No tokens provided"}
 
@@ -901,6 +902,11 @@ def send_multicast_notification(
             print(f"[Firestore] Alert saved to center: {title}")
         except Exception as e:
             print(f"[Firestore] Failed to save alert to center: {e}")
+
+    # 🌙 [심야 에티켓 / 사일런트 모드] 기기 푸시(소리/진동)를 울리지 않고 알림센터 DB에만 조용히 보관
+    if silent_store_only or (data and str(data.get("silent_store_only", "")).lower() == "true"):
+        print(f"[Firebase-Silent] 🌙 알림센터 보관 완료 (기기 푸시 전송 생략): {title}")
+        return {"success": True, "success_count": 0, "failure_count": 0, "silent": True}
 
     # 중복 토큰 제거 (동일 기기 중복 발송 방지)
     if tokens:
