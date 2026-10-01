@@ -333,7 +333,8 @@ export default function AlertCenterPage() {
                             if ([
                                 "분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서",
                                 "주주총회", "주총", "주주명부폐쇄", "명의개서정지", "기준일설정",
-                                "증권발행실적보고서", "일괄신고추가서류", "투자설명서"
+                                "증권발행실적보고서", "일괄신고추가서류", "투자설명서",
+                                "종료보고서", "결과보고서"
                             ].some(kw => dText.includes(kw))) {
                                 return;
                             }
@@ -2433,14 +2434,16 @@ function formatUsdToKrwInText(text: string): string {
         const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
             titleText.includes('[관리자]') || titleText.includes('[시스템 보고]') || titleText.includes('[일일 보고]') || titleText.includes('[방문자 보고]') || titleText.includes('방문자') || titleText.includes('일일 운영 보고서');
 
-        // [대표님 요청 반영] 단순 정기 서류(분기/반기/사업/감사/검토보고서) 및
+        // [대표님 요청 반영] 단순 정기 서류(분기/반기/사업/감사/검토보고서),
+        // 사후 단순 행정 보고서(합병등종료보고서, 종료보고서, 결과보고서),
         // 의례적 안내 공고(주주총회 소집/결과, 주주명부폐쇄, 명의개서정지, 기준일설정, 투자설명서 등)는
         // 실시간 투자 가치가 떨어지는 단순 서류 잡음이므로 화면(전체 브리핑 포함 전 탭)에서 100% 완전 제외!
         const alertSearchText = `${titleText} ${alert.body || ''}`.replace(/\s+/g, '');
         if ([
             "분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서",
             "주주총회", "주총", "주주명부폐쇄", "명의개서정지", "기준일설정",
-            "증권발행실적보고서", "일괄신고추가서류", "투자설명서"
+            "증권발행실적보고서", "일괄신고추가서류", "투자설명서",
+            "종료보고서", "결과보고서"
         ].some(kw => alertSearchText.includes(kw))) {
             return false;
         }
