@@ -594,7 +594,7 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
     }
 
 
-def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> Dict[str, Any]:
+def _send_admin_trade_notification(title: str, body: str, symbol: str = "", market: str = "") -> Dict[str, Any]:
     """관리자(대표님: rnfjrlakdmf@gmail.com / UID 110418985320259217419) 전용 실시간 FCM 푸시 알림 + 알림센터(🤖 자동매매 알림 탭) 단독 발송 (일반 회원 및 공개 채널 발송 100% 차단)"""
     clean_body = (
         body.replace("<b>", "")
@@ -602,6 +602,13 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
         .replace("<br/>", "\n")
         .strip()
     )
+
+    if not market and symbol:
+        try:
+            from market_tag_helper import get_clean_market_name
+            market = get_clean_market_name(symbol)
+        except Exception:
+            market = "나스닥" if not symbol.isdigit() else "코스피"
 
     # 1. 오직 대표님 관리자 계정(rnfjrlakdmf@gmail.com / rnfjr@gmail.com, UID: 110418985320259217419)으로만 단독 발송! (타 유저·공개채널 발송 0% 원천 차단)
     admin_uids = ["110418985320259217419", "rnfjrlakdmf@gmail.com", "rnfjr@gmail.com"]
@@ -644,6 +651,7 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
                 "type": "auto_trade",
                 "url": "/alerts?tab=auto_trade",
                 "symbol": symbol or "",
+                "market": market or "",
                 "is_global": "false",
                 "target_email": "rnfjrlakdmf@gmail.com",
                 "skip_db_save": "true",  # 백그라운드 스레드에서 정확한 포맷으로 Firestore 저장
@@ -673,6 +681,7 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
                 "body": clean_body,
                 "type": "auto_trade",
                 "symbol": symbol or "",
+                "market": market or "",
                 "is_global": False,
                 "target_email": "rnfjrlakdmf@gmail.com",
                 "target_users": admin_uids,
@@ -1023,12 +1032,16 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                     })
                     actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤){kis_tag}")
                     if cfg.get("telegram_notify", True):
+                        from market_tag_helper import get_clean_market_name
+                        mkt_tag = get_clean_market_name(sym)
                         _send_admin_trade_notification(
                             f"💧추매 {pos['name']} {add_cost:,}원",
-                            f"+{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
+                            f"[{mkt_tag}] +{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
                             f"남은 예수금 {acct.get('cash_krw', 0):,}원",
                             symbol=sym,
+                            market=mkt_tag,
                         )
+
 
         sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct)
         if not sell_reason:
@@ -1082,12 +1095,16 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 if cfg.get("telegram_notify", True):
                     tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
                     c_val, c_lbl = _get_current_effective_cash(state)
+                    from market_tag_helper import get_clean_market_name
+                    mkt_tag = get_clean_market_name(sym)
                     _send_admin_trade_notification(
                         f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                        f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원){kis_sell_tag}\n"
+                        f"[{mkt_tag}] 수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원){kis_sell_tag}\n"
                         f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                         symbol=sym,
+                        market=mkt_tag,
                     )
+
             else:
                 remaining_positions.append(pos)
         else:
@@ -1228,14 +1245,24 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             actions_taken.append(f"🟢 [자동 매수] {cand['name']} {qty}주 ({buy_amount_krw:,}원){kis_buy_tag}")
 
             if cfg.get("telegram_notify", True):
-                unit_lbl = f"${cand['price']:,}" if cand["is_us"] else f"{cand['price']:,}원"
+                is_us = bool(cand.get("is_us"))
+                from market_tag_helper import get_clean_market_name
+                mkt_tag = get_clean_market_name(cand["symbol"])
+                if is_us:
+                    p_val = float(cand['price'])
+                    unit_lbl = f"${p_val:.2f}" if p_val < 100 else f"${p_val:,.1f}"
+                    detail_lbl = f"[{mkt_tag}] {unit_lbl} × {qty}주 매입 완료 (≈ ₩{buy_amount_krw:,})"
+                else:
+                    unit_lbl = f"{int(cand['price']):,}원"
+                    detail_lbl = f"[{mkt_tag}] {unit_lbl} × {qty}주 매입 완료"
                 c_val, c_lbl = _get_current_effective_cash(state)
                 _send_admin_trade_notification(
                     f"🟢매수 {cand['name']} {buy_amount_krw:,}원",
-                    f"{unit_lbl} × {qty}주 매입 완료\n"
-                    f"목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
+                    f"{detail_lbl}\n목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
                     symbol=cand["symbol"],
+                    market=mkt_tag,
                 )
+
 
             # 1회 사이클당 최대 2종목씩 순차 진입하여 리스크 분산
             if len(actions_taken) >= 2 and not force_buy:
@@ -1289,12 +1316,16 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
             })
             tag = "🔴익절" if pnl_krw >= 0 else "🔴매도"
             c_val, c_lbl = _get_current_effective_cash(state)
+            from market_tag_helper import get_clean_market_name
+            mkt_tag = get_clean_market_name(symbol)
             _send_admin_trade_notification(
                 f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
+                f"[{mkt_tag}] 수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
                 f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                 symbol=symbol,
+                market=mkt_tag,
             )
+
         else:
             remaining.append(pos)
 
@@ -1329,19 +1360,19 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
         buy_amt = 1886400
         est_profit = 75456
 
-    # 1) 🟢 매수 시 알림 (대표님 전용 기기 단독 1통 즉시 발송)
+    # 1) 🟢 매수 시 알림 (대표님 전용 기기 단독 1통 즉시 발송 - 테스트 명시)
     c_val, c_lbl = _get_current_effective_cash(state)
     _send_admin_trade_notification(
-        f"🟢매수 {sample_name} {buy_amt:,}원",
-        f"{avg_p:,}원 × {qty}주 매입 완료\n"
+        f"🧪[테스트 알림] 🟢매수 {sample_name} {buy_amt:,}원",
+        f"[모바일 알림 수신 테스트]\n{avg_p:,}원 × {qty}주 매입 시뮬레이션\n"
         f"목표 +4.0% | {c_lbl} {c_val:,}원",
         symbol=sample_sym,
     )
     time.sleep(0.15)
-    # 2) 🔴 익절 시 알림 (대표님 전용 기기 단독 1통 즉시 발송)
+    # 2) 🔴 익절 시 알림 (대표님 전용 기기 단독 1통 즉시 발송 - 테스트 명시)
     res = _send_admin_trade_notification(
-        f"🔴익절 {sample_name} +{est_profit:,}원(+4.0%)",
-        f"수익 +{est_profit:,}원 확정 (회수 {buy_amt + est_profit:,}원)\n"
+        f"🧪[테스트 알림] 🔴익절 {sample_name} +{est_profit:,}원(+4.0%)",
+        f"[모바일 알림 수신 테스트]\n수익 +{est_profit:,}원 확정 시뮬레이션 (회수 {buy_amt + est_profit:,}원)\n"
         f"누적수익 +{est_profit:,}원 | {c_lbl} {c_val + buy_amt + est_profit:,}원",
         symbol=sample_sym,
     )
@@ -1674,7 +1705,19 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "reason": sell_reason,
                 "mode": "AI_PAPER",
             })
+            if cfg.get("telegram_notify", True):
+                from market_tag_helper import get_clean_market_name
+                mkt_tag = get_clean_market_name(sym)
+                c_val, c_lbl = _get_current_effective_cash(state)
+                tag = "🔴[모의투자] 익절 완료" if pnl_krw >= 0 else "🛡️[모의투자] 리스크 매도"
+                _send_admin_trade_notification(
+                    f"{tag} {pos.get('name', sym)} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
+                    f"[{mkt_tag}] 수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n누적 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
+                    symbol=sym,
+                    market=mkt_tag,
+                )
             seen_syms.discard(sym)
+
             recently_exited_syms.add(sym)
             permanently_sold_today_syms.add(sym)
             changed = True
@@ -1750,7 +1793,25 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "reason": new_paper_pos["reason"],
                 "mode": "AI_PAPER",
             })
+            if cfg.get("telegram_notify", True):
+                from market_tag_helper import get_clean_market_name
+                mkt_tag = get_clean_market_name(c_sym)
+                c_val, c_lbl = _get_current_effective_cash(state)
+                if c_is_us:
+                    p_val = float(c_price)
+                    unit_lbl = f"${p_val:.2f}" if p_val < 100 else f"${p_val:,.1f}"
+                    detail_lbl = f"[{mkt_tag}] {unit_lbl} × {qty}주 매입 완료 (≈ ₩{buy_amt_krw:,})"
+                else:
+                    unit_lbl = f"{int(c_price):,}원"
+                    detail_lbl = f"[{mkt_tag}] {unit_lbl} × {qty}주 매입 완료"
+                _send_admin_trade_notification(
+                    f"🟢[모의투자] 매수 완료 {cand.get('name', c_sym)} {buy_amt_krw:,}원",
+                    f"{detail_lbl}\n목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
+                    symbol=c_sym,
+                    market=mkt_tag,
+                )
             changed = True
+
 
     if active_mkt == "KR":
         # 현재 국내 정규장 운영 시간(평일 09:00~15:30)에만 실제 분석 및 신규 매수! (15:30 이후 및 주말에는 매수 일절 금지)
@@ -1920,9 +1981,20 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         cfg["kis_app_secret"] = "********"
     if cfg.get("kis_app_key"):
         raw_k = str(cfg["kis_app_key"])
-        cfg["kis_app_key"] = f"{raw_k[:4]}********{raw_k[-3:]}" if len(raw_k) > 8 else "********"
+    # 종목별 거래소 시장 뱃지(코스피/코스닥/나스닥/NYSE/AMEX) 주입
+    try:
+        from market_tag_helper import get_clean_market_name
+        for p in positions + paper_positions + real_positions:
+            p["market_tag"] = get_clean_market_name(p.get("symbol", ""))
+        for c in curr_cands:
+            c["market_tag"] = get_clean_market_name(c.get("symbol", ""))
+        for lg in all_logs:
+            lg["market_tag"] = get_clean_market_name(lg.get("symbol", ""))
+    except Exception as e:
+        print(f"[AutoTrader] Market tag injection warning: {e}")
 
     return {
+
         "config": cfg,
         "session_info": session_info,
         "summary": {
