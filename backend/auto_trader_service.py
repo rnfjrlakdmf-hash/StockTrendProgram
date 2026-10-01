@@ -71,66 +71,104 @@ US_UNIVERSE = [
 
 def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
-    한국시간(KST) 기준으로 현재 열리는 주식시장 세션을 자동 판별하여
-    주간(08:00~16:59 KST)에는 🇰🇷 국내주식 후보군을, 야간(17:00~07:59 KST)에는 🇺🇸 해외(미국)주식 후보군을 자동 배치합니다.
+    한국시간(KST) 기준으로 실제 거래소 운영 상태를 엄격히 판별하여
+    주간(09:00~15:30 국내 정규장)에는 국내주식 후보군을, 야간(17:00~09:00 미국장)에는 해외주식 후보군을 자동 배치합니다.
     """
     now_kst = datetime.now(KST)
+    weekday = now_kst.weekday()
     hour = now_kst.hour
-    is_kr_hours = 8 <= hour < 17  # 08:00 ~ 16:59 KST (한국 정규장 + 장전/장후 시간외)
-    target_cfg = str(cfg.get("market_target", "ALL")).upper()
+    minute = now_kst.minute
 
+    # 한국 정규장 운영 시간: 평일 09:00 ~ 15:30
+    is_kr_open = (weekday < 5) and (9 <= hour < 15 or (hour == 15 and minute <= 30))
+    # 미국 시장 거래 시간: 월요일 17:00 ~ 토요일 09:00 KST
+    is_us_open = is_market_open_now("NVDA", is_us=True)
+
+    target_cfg = str(cfg.get("market_target", "ALL")).upper()
     if target_cfg == "KR_ONLY":
         active_market = "KR"
     elif target_cfg == "US_ONLY":
         active_market = "US"
     else:
-        # ALL 또는 기존 KR/US 설정 시 시간대별 자동 스위칭 가동!
-        active_market = "KR" if is_kr_hours else "US"
+        # 시간대별 자동: 17:00 이후는 미국장, 17:00 이전은 국내장
+        active_market = "US" if (hour >= 17 or hour < 8) else "KR"
 
     if active_market == "KR":
+        if is_kr_open:
+            badge = "🟢 🇰🇷 국내 정규장 실시간 거래 중 (09:00~15:30)"
+            desc = "현재 한국거래소(코스피·코스닥) 정규장 운영 시간으로, AI가 [🇰🇷 국내 주도주·수급 포착주 Top 10]을 실시간 분석 및 매매합니다."
+        else:
+            if weekday >= 5:
+                badge = "🔒 🇰🇷 국내 주식시장 주말 휴장 (월요일 09:00 개장 대기)"
+                desc = "주말에는 한국거래소가 휴장하여 모의/실전 매매가 일시 중지되며, 다음 평일 오전 09:00 정규장 개장 시 자동 재개됩니다."
+            elif hour >= 15 and (hour > 15 or minute > 30):
+                badge = "☕ 🇰🇷 국내 정규장 마감 (15:30 마감 · 17:00 미국장 자동 전환 대기)"
+                desc = "오늘 국내 정규장(09:00~15:30)이 공식 마감되었습니다. 17:00부터 미국 해외주식(프리마켓) 모드로 자동 전환됩니다."
+            else:
+                badge = "⏳ 🇰🇷 국내 정규장 개장 전 대기 (09:00 개장 대기)"
+                desc = "오전 09:00 국내 정규장 개장을 대기 중입니다. 개장 즉시 당일 1순위 주도주를 포착하여 매수를 시작합니다."
         return {
             "active_market": "KR",
-            "is_kr_hours": is_kr_hours,
+            "is_market_open": is_kr_open,
             "current_kst": now_kst.strftime("%H:%M:%S"),
-            "session_badge": "🇰🇷 주간 국내증시 타임 (08:00~17:00 KST · 국내주식 집중 매매)",
-            "session_desc": "현재 한국거래소(코스피·코스닥) 개장 시간대에 맞춰 [🇰🇷 국내 주도주·수급 포착주 Top 10]이 후보군에 배치되어 AI가 자동 매수·익절 매도합니다.",
+            "session_badge": badge,
+            "session_desc": desc,
         }
-    return {
-        "active_market": "US",
-        "is_kr_hours": is_kr_hours,
-        "current_kst": now_kst.strftime("%H:%M:%S"),
-        "session_badge": "🇺🇸 야간 미국증시 타임 (17:00~08:00 KST · 해외주식 집중 매매)",
-        "session_desc": "현재 미국(나스닥·NYSE·AMEX) 프리마켓·정규장·애프터마켓 개장 시간대에 맞춰 [🇺🇸 해외 급등 기술주·미국 ETF Top 10]이 후보군에 배치되어 AI가 자동 매수·익절 매도합니다.",
-    }
+    else:
+        if is_us_open:
+            badge = "🟢 🇺🇸 야간 미국장 실시간 거래 중 (17:00~08:00 KST)"
+            desc = "현재 미국(나스닥·NYSE) 시장이 열려 있어, AI가 [🇺🇸 해외 혁신주·기술주 Top 10]을 실시간 분석 및 매매합니다."
+        else:
+            if weekday in (5, 6):
+                badge = "🔒 🇺🇸 미국 주식시장 주말 휴장 (화요일 17:00 개장 대기)"
+                desc = "주말에는 미국 거래소가 휴장하여 모의/실전 매매가 일시 중지되며, 다음 주 평일 야간 개장 시 자동 재개됩니다."
+            else:
+                badge = "⏳ 🇺🇸 미국장 개장 대기 (17:00 프리마켓 개장 대기)"
+                desc = "현재는 미국 거래소가 닫혀 있는 주간 시간대입니다. 오후 17:00 프리마켓 개장 즉시 실시간 매매가 재개됩니다."
+        return {
+            "active_market": "US",
+            "is_market_open": is_us_open,
+            "current_kst": now_kst.strftime("%H:%M:%S"),
+            "session_badge": badge,
+            "session_desc": desc,
+        }
 
 
 def is_market_open_now(symbol: str, is_us: bool = False) -> bool:
     """
-    해당 종목의 거래소가 현재 정규장 또는 시간외(프리/애프터마켓) 거래 가능한 시간인지 정밀 판별합니다.
-    - 국내주식 (KR): 평일 08:00 ~ 20:00 KST (정규장 + 장전/장후 시간외 + 대체거래소 ATS)
-    - 미국주식 (US): 평일 17:00 ~ 익일 09:00 KST (서머타임 기준 프리마켓 17:00~22:30, 정규장 22:30~05:00, 애프터마켓 05:00~09:00)
-    ※ 한국시간 기준 주간(09:00 ~ 17:00 KST)에는 미국 거래소가 완전히 문을 닫으므로 매수/매도 주문이 불가합니다.
+    해당 종목 거래소의 '실제 정규 거래 가능 시간'을 엄격하게 판별합니다.
+    - 국내주식 (KR): 평일(월~금) 09:00 ~ 15:30 KST (정규장 시간만 매매 체결 허용!)
+      ※ 15:30 이후 장 마감, 09:00 이전, 주말/휴일에는 가상 모의투자도 절대 매매 체결 금지!
+    - 미국주식 (US): 평일 야간 17:00 ~ 익일 09:00 KST (월 17:00 ~ 토 09:00 KST)
+      ※ 한국시간 낮 09:00 ~ 17:00 및 주말에는 미국 거래소 폐장으로 매매 체결 금지!
     """
     now_kst = datetime.now(KST)
     weekday = now_kst.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
     hour = now_kst.hour
+    minute = now_kst.minute
 
     if is_us:
         # 미국 시장 (KST 기준):
         # 월요일 17:00 KST부터 토요일 09:00 KST까지 야간(17:00 ~ 익일 09:00)에만 거래 가능
         if weekday == 5:  # 토요일
-            return hour < 9  # 토요일 아침 09:00까지 애프터마켓 가능
+            return hour < 9  # 토요일 아침 09:00까지 애프터마켓 거래 가능
         elif weekday == 6:  # 일요일
-            return False
+            return False  # 휴장
         elif weekday == 0:  # 월요일
             return hour >= 17  # 월요일 17:00부터 프리마켓 시작
         else:  # 화, 수, 목, 금
             return (hour >= 17) or (hour < 9)
     else:
-        # 국내 시장 (KST 기준): 평일 08:00 ~ 20:00
-        if weekday >= 5:
+        # 국내 시장 (KRX 정규장 기준): 평일 09:00 ~ 15:30
+        if weekday >= 5:  # 주말(토, 일) 휴장
             return False
-        return 8 <= hour < 20
+        if hour < 9:  # 09:00 이전
+            return False
+        if 9 <= hour < 15:  # 09:00 ~ 14:59
+            return True
+        if hour == 15 and minute <= 30:  # 15:00 ~ 15:30 정규장 마감 동시호가 포함
+            return True
+        return False  # 15:30 이후 정규장 마감 (체결 불가)
 
 
 def _default_state() -> Dict[str, Any]:
@@ -1108,6 +1146,8 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 break
             if cand["symbol"] in held_symbols:
                 continue
+            if not is_market_open_now(cand["symbol"], is_us=cand.get("is_us", False)) and not force_buy:
+                continue
             if cand["ai_score"] < min_score and not force_buy:
                 continue
             # [리스크 방어 ②] 동일 섹터 편중(몰빵) 방지: 같은 섹터 종목은 최대 2개까지만 편입 허용
@@ -1667,6 +1707,9 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if c_price <= 0:
                 continue
             c_is_us = bool(cand.get("is_us"))
+            # [실제 시장 운영 시간 엄격 준수] 해당 종목의 거래소가 실제로 열려있지 않으면 가상 모의투자도 절대 매수 금지!
+            if not is_market_open_now(c_sym, is_us=c_is_us):
+                continue
             unit_krw = c_price * (fx_rate if c_is_us else 1.0)
             qty = int(per_stock_budget_krw // unit_krw)
             if qty <= 0:
@@ -1710,21 +1753,23 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             changed = True
 
     if active_mkt == "KR":
-        # 현재 국내장 오픈 시간 -> 오직 국내주식(최대 3종목, 약 400만원)만 실시간 분석·매수! (미국주식은 저녁 17시 개장 전까지 절대 선매수 금지)
-        if len(curr_kr) < target_kr_slots:
-            kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
-            if not kr_pool:
-                kr_pool = _build_session_candidates(state, "KR")[:10]
-                state["kr_candidates"] = kr_pool
-            _fill_market_slots(kr_pool, target_kr_slots - len(curr_kr), "🇰🇷국내")
+        # 현재 국내 정규장 운영 시간(평일 09:00~15:30)에만 실제 분석 및 신규 매수! (15:30 이후 및 주말에는 매수 일절 금지)
+        if is_market_open_now("005930", is_us=False):
+            if len(curr_kr) < target_kr_slots:
+                kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
+                if not kr_pool:
+                    kr_pool = _build_session_candidates(state, "KR")[:10]
+                    state["kr_candidates"] = kr_pool
+                _fill_market_slots(kr_pool, target_kr_slots - len(curr_kr), "🇰🇷국내")
     elif active_mkt == "US":
-        # 현재 미국장 오픈 시간(17:00~07:59 KST) -> 실제로 열린 해외주식(최대 2종목, 약 270만원)을 아껴둔 예수금으로 실시간 분석·매수!
-        if len(curr_us) < target_us_slots:
-            us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
-            if not us_pool:
-                us_pool = _build_session_candidates(state, "US")[:10]
-                state["us_candidates"] = us_pool
-            _fill_market_slots(us_pool, target_us_slots - len(curr_us), "🇺🇸해외")
+        # 현재 미국장 운영 시간(월 17:00 ~ 토 09:00 KST)에만 실제로 열린 해외주식 신규 매수!
+        if is_market_open_now("NVDA", is_us=True):
+            if len(curr_us) < target_us_slots:
+                us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
+                if not us_pool:
+                    us_pool = _build_session_candidates(state, "US")[:10]
+                    state["us_candidates"] = us_pool
+                _fill_market_slots(us_pool, target_us_slots - len(curr_us), "🇺🇸해외")
 
     state["paper_positions_backup"] = updated_paper
     real_only = [
