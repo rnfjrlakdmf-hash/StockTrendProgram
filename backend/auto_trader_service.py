@@ -104,7 +104,37 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def is_market_open_now(symbol: str, is_us: bool = False) -> bool:
+    """
+    해당 종목의 거래소가 현재 정규장 또는 시간외(프리/애프터마켓) 거래 가능한 시간인지 정밀 판별합니다.
+    - 국내주식 (KR): 평일 08:00 ~ 20:00 KST (정규장 + 장전/장후 시간외 + 대체거래소 ATS)
+    - 미국주식 (US): 평일 17:00 ~ 익일 09:00 KST (서머타임 기준 프리마켓 17:00~22:30, 정규장 22:30~05:00, 애프터마켓 05:00~09:00)
+    ※ 한국시간 기준 주간(09:00 ~ 17:00 KST)에는 미국 거래소가 완전히 문을 닫으므로 매수/매도 주문이 불가합니다.
+    """
+    now_kst = datetime.now(KST)
+    weekday = now_kst.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
+    hour = now_kst.hour
+
+    if is_us:
+        # 미국 시장 (KST 기준):
+        # 월요일 17:00 KST부터 토요일 09:00 KST까지 야간(17:00 ~ 익일 09:00)에만 거래 가능
+        if weekday == 5:  # 토요일
+            return hour < 9  # 토요일 아침 09:00까지 애프터마켓 가능
+        elif weekday == 6:  # 일요일
+            return False
+        elif weekday == 0:  # 월요일
+            return hour >= 17  # 월요일 17:00부터 프리마켓 시작
+        else:  # 화, 수, 목, 금
+            return (hour >= 17) or (hour < 9)
+    else:
+        # 국내 시장 (KST 기준): 평일 08:00 ~ 20:00
+        if weekday >= 5:
+            return False
+        return 8 <= hour < 20
+
+
 def _default_state() -> Dict[str, Any]:
+
     return {
         "config": {
             "enabled": True,
@@ -858,7 +888,15 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         pos["pnl_pct"] = pnl_pct
         pos["pnl_krw"] = pnl_krw
 
+        is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
+        if not is_market_open_now(sym, is_us=is_us) and not force_buy:
+            # 현재 해당 국가의 거래소(예: 미국 주간 09:00~17:00 KST, 국내 야간 등)가 닫혀 있으므로
+            # 장이 열릴 때까지 익절/손절/물타기 판단을 안전하게 보류하고 기존 포지션을 홀딩 유지!
+            remaining_positions.append(pos)
+            continue
+
         tp_pct = float(cfg.get("take_profit_pct", 4.0))
+
         sl_pct = float(cfg.get("stop_loss_pct", 2.5))
         ts_pct = float(cfg.get("trailing_stop_pct", 1.2))
         use_sl = bool(cfg.get("use_stop_loss", False))
@@ -1456,7 +1494,8 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     for pos in raw_paper:
         sym = pos["symbol"]
         is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
-        is_market_open_for_pos = (is_us and active_mkt == "US") or ((not is_us) and active_mkt == "KR")
+        is_market_open_for_pos = is_market_open_now(sym, is_us=is_us)
+
 
         q = quote_map.get(sym) or {}
         live_p = float(q.get("price", 0) or pos.get("current_price", 0) or pos.get("avg_price", 0))
