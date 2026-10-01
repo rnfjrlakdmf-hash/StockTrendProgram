@@ -6,9 +6,12 @@ import zipfile
 import io
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+import pytz
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+KST = pytz.timezone('Asia/Seoul')
 
 def format_krw_amount(val: float) -> str:
     """원화 금액을 사람이 읽기 편한 한국어 단위(억, 만, 원)로 변환 (미국 SEC 알림과 동일한 포맷)"""
@@ -121,16 +124,16 @@ class DartApiClient:
             print("[DART-API] ⚠️ DART_API_KEY가 설정되어 있지 않습니다.")
             return []
 
-        now_ts = datetime.now()
+        now_ts = datetime.now(KST)
         if days_ago in self._realtime_cache_time:
             if (now_ts - self._realtime_cache_time[days_ago]).total_seconds() < 60:
                 return self._realtime_cache[days_ago]
 
         url = f"{self.BASE_URL}/list.json"
         
-        target_date = datetime.now() - timedelta(days=days_ago)
+        target_date = now_ts - timedelta(days=days_ago)
         date_str = target_date.strftime("%Y%m%d")
-        today_str = datetime.now().strftime("%Y%m%d")
+        today_str = now_ts.strftime("%Y%m%d")
 
         params = {
             "crtfc_key": self.api_key,

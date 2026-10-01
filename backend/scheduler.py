@@ -344,15 +344,20 @@ async def check_and_notify_disclosures():
     import urllib.parse
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst)
-    # 1. 주말(토/일)은 국내 증시 휴장이므로 공시 알림 발송 스킵
+    # 1. 주말(토/일) 및 법정 공휴일은 국내 증시 휴장이므로 공시 알림 발송 스킵
     if now.weekday() >= 5:
         logger.debug("[공시Monitor] 주말(토/일)에는 DART 공시 알림을 발송하지 않습니다.")
         return
 
-    # 2. [야간 소음 방지] DART 공시 업무 시간(평일 07:30 ~ 19:00) 외 야간/새벽에는 국내 공시 알림 발송 전면 차단
+    if is_holiday("kor"):
+        logger.debug("[공시Monitor] 공휴일에는 DART 공시 알림을 발송하지 않습니다.")
+        return
+
+    # 2. [소음 방지] 국내 증시 정규 준비 및 거래 시간 (평일 08:30 ~ 18:00) 외에는 실시간 공시 알림 발송 차단
+    # (08:30 장전 동시호가 시작 ~ 18:00 시간외 단일가 마감)
     current_time_num = now.hour * 100 + now.minute
-    if not (730 <= current_time_num < 1900):
-        logger.info(f"[공시Monitor] 야간/비영업 시간({now.strftime('%H:%M')})에는 국내 DART 공시 알림을 발송하지 않습니다.")
+    if not (830 <= current_time_num <= 1800):
+        logger.info(f"[공시Monitor] 국내 정규 장 운영 시간 외({now.strftime('%H:%M')})에는 DART 공시 알림을 발송하지 않습니다.")
         return
 
     from dart_api_client import dart_api_client
@@ -397,6 +402,13 @@ async def check_and_notify_disclosures():
 
                 # 비상장 법인(stock_code 없음)은 즉시 스킵
                 if not raw_code:
+                    continue
+
+                # [당일 접수 공시만 실시간 속보 발송]
+                # 어제나 과거 일자에 접수된 공시가 아침에 지연 발송되어 혼란을 주는 문제 원천 방지
+                today_kst_str = now.strftime('%Y%m%d')
+                if rcept_dt and rcept_dt != today_kst_str:
+                    logger.debug(f"[공시Monitor] 당일({today_kst_str}) 접수 공시가 아님 ({rcept_dt}) -> 발송 제외: {corp} ({report_title})")
                     continue
 
                 # [대표님 요청 반영] 단순 정기 서류 제출(분기/반기/사업/감사/검토보고서) 및
