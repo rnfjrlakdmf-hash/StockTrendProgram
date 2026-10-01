@@ -10,7 +10,7 @@ except Exception:
 import os
 import time
 import asyncio
-from fastapi import FastAPI, Header, Body
+from fastapi import FastAPI, Header, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from typing import Dict, Optional
