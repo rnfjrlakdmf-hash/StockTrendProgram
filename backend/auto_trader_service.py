@@ -212,6 +212,20 @@ def load_state() -> Dict[str, Any]:
                                     json.dump(state, fw, ensure_ascii=False, indent=2)
                             except Exception:
                                 pass
+
+                    # 당일 매도 완료된 종목이 positions 또는 paper_positions_backup에 잔류해 있을 경우 즉각 소각 정화
+                    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+                    latest_act: Dict[str, str] = {}
+                    for lg in state.get("trade_logs", []):
+                        s = lg.get("symbol")
+                        act = lg.get("action")
+                        ts = str(lg.get("timestamp", ""))
+                        if s and act and s not in latest_act and ts.startswith(today_str):
+                            latest_act[s] = act
+                    sold_today = {s for s, act in latest_act.items() if act == "SELL"}
+                    if sold_today:
+                        state["positions"] = [p for p in state.get("positions", []) if p.get("symbol") not in sold_today]
+                        state["paper_positions_backup"] = [p for p in state.get("paper_positions_backup", []) if p.get("symbol") not in sold_today]
     except Exception as e:
         print(f"[AutoTrader] load_state error: {e}")
 
@@ -865,6 +879,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
     # 1. 현재 보유 종목 실시간 시세 갱신 및 자동 익절 / 트레일링 스탑 / 자동 손절 체크
     remaining_positions = []
+    sold_symbols = set()
     for pos in state.get("positions", []):
         sym = pos["symbol"]
         q = _fetch_live_quote(sym)
@@ -1005,6 +1020,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 }
                 state["trade_logs"].insert(0, log_entry)
                 actions_taken.append(f"🔴 [매도] {pos['name']} ({pnl_pct:+.2f}% / {pnl_krw:+,}원){kis_sell_tag}")
+                sold_symbols.add(sym)
 
                 if cfg.get("telegram_notify", True):
                     tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
@@ -1020,6 +1036,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             remaining_positions.append(pos)
 
     state["positions"] = remaining_positions
+    if sold_symbols:
+        state["paper_positions_backup"] = [
+            p for p in state.get("paper_positions_backup", [])
+            if p.get("symbol") not in sold_symbols
+        ]
 
     # 2. [시간대별 국내장·미국장 자동 후보군 스위칭 엔진]
     # - 주간(08:00~16:59 KST): 🇰🇷 한국증시 개장 시간 -> 국내주식 후보군 Top 10 배치 & 국내종목 자동 매수·익절
@@ -1216,6 +1237,10 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
             remaining.append(pos)
 
     state["positions"] = remaining
+    state["paper_positions_backup"] = [
+        p for p in state.get("paper_positions_backup", [])
+        if p.get("symbol") != symbol
+    ]
     save_state(state)
     return get_dashboard_summary(state)
 
@@ -1427,16 +1452,48 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     session_info = _get_time_based_session_info(cfg)
     active_mkt = session_info.get("active_market", "KR")  # "KR" (08:00~16:59 KST) or "US" (17:00~07:59 KST)
 
-    # 1. 기존 가상 모의투자 포지션 통합 수집 (중복 제거)
+    # 1. 오늘 체결 내역 중 가장 최근 액션이 SELL인 종목 판별 (이미 매도 청산된 종목의 백업 부활 방지)
+    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+    latest_action_by_sym: Dict[str, str] = {}
+    for lg in state.get("trade_logs", []):
+        s = lg.get("symbol")
+        act = lg.get("action")
+        ts = str(lg.get("timestamp", ""))
+        if s and act and s not in latest_action_by_sym and ts.startswith(today_str):
+            latest_action_by_sym[s] = act
+
+    permanently_sold_today_syms = {
+        s for s, act in latest_action_by_sym.items() if act == "SELL"
+    }
+
+    # 백업 저장소에서도 오늘 매도 완료된 종목 강제 소각 정리
+    if permanently_sold_today_syms:
+        state["paper_positions_backup"] = [
+            p for p in state.get("paper_positions_backup", [])
+            if p.get("symbol") not in permanently_sold_today_syms
+        ]
+
+    # 1.1 기존 가상 모의투자 포지션 통합 수집 (중복 제거)
     raw_paper: List[Dict[str, Any]] = []
     seen_syms = set()
-    for src in (state.get("positions", []), state.get("paper_positions_backup", [])):
-        for p in src:
-            is_real = p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
-            sym = p.get("symbol")
-            if not is_real and sym and sym not in seen_syms:
-                raw_paper.append(dict(p))
-                seen_syms.add(sym)
+
+    active_paper_in_positions = [
+        p for p in state.get("positions", [])
+        if not (p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", "")))
+    ]
+
+    # positions에 가상 포지션이 이미 있으면 positions를 최우선 단일 원천으로 채택
+    # positions에 가상 포지션이 전무할 때만(예: KIS_REAL -> AI_PAPER 모드 전환 시점) 백업(paper_positions_backup) 참조
+    source_list = active_paper_in_positions if active_paper_in_positions else state.get("paper_positions_backup", [])
+
+    for p in source_list:
+        is_real = p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+        sym = p.get("symbol")
+        if not is_real and sym and sym not in seen_syms:
+            if sym in permanently_sold_today_syms:
+                continue
+            raw_paper.append(dict(p))
+            seen_syms.add(sym)
 
     # 1.2 [장외 체결 보정 & 시드머니 한도 초과 종목 정리]
     kr_held_count = 0
@@ -1556,6 +1613,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             })
             seen_syms.discard(sym)
             recently_exited_syms.add(sym)
+            permanently_sold_today_syms.add(sym)
             changed = True
         else:
             updated_paper.append(pos)
@@ -1580,7 +1638,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if added >= need_count or len(updated_paper) >= paper_max_pos:
                 break
             c_sym = cand.get("symbol")
-            if not c_sym or c_sym in seen_syms or c_sym in recently_exited_syms:
+            if not c_sym or c_sym in seen_syms or c_sym in recently_exited_syms or c_sym in permanently_sold_today_syms:
                 continue
             c_price = float(cand.get("price", 0))
             if c_price <= 0:
