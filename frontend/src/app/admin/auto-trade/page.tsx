@@ -25,8 +25,10 @@ import {
 
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
 
-function formatTradeReason(reason: string = "") {
-  if (!reason) return { tag: "AI 판단", text: "실시간 알고리즘 체결" };
+function formatTradeReason(rawReason: any = "") {
+  if (!rawReason) return { tag: "AI 판단", text: "실시간 알고리즘 체결" };
+  const reason = typeof rawReason === "string" ? rawReason : String(rawReason);
+  if (!reason.trim()) return { tag: "AI 판단", text: "실시간 알고리즘 체결" };
 
   // 1. [태그] 형태가 맨 앞에 있는 경우 (예: 🧠 [AI 자율판단 조기익절] 상세...)
   const bracketMatch = reason.match(/^([^\s\[]+)?\s*\[([^\]]+)\]\s*(.*)$/);
@@ -89,6 +91,7 @@ export default function AdminAutoTradePage() {
   const [kisAppSecret, setKisAppSecret] = useState("");
   const [kisAccountNo, setKisAccountNo] = useState("");
   const [paperSeedKrw, setPaperSeedKrw] = useState<number>(10000000);
+  const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
 
   // [철통 보안] 대표님 관리자 이메일(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 외 접근 원천 차단
   useEffect(() => {
@@ -128,8 +131,8 @@ export default function AdminAutoTradePage() {
     const hdrs: Record<string, string> = { "X-Admin-Key": ADMIN_KEY };
     if (withJson) hdrs["Content-Type"] = "application/json";
     try {
-      if (currentUser && typeof currentUser.getIdToken === "function") {
-        const tok = await currentUser.getIdToken();
+      if (currentUser && typeof (currentUser as any).getIdToken === "function") {
+        const tok = await (currentUser as any).getIdToken();
         if (tok) hdrs["Authorization"] = `Bearer ${tok}`;
       }
     } catch {}
@@ -313,7 +316,7 @@ export default function AdminAutoTradePage() {
     const autoOrderAmt = Math.max(25000, Math.floor(limitVal / Math.max(2, autoMaxPos)));
     setMaxTotalInvestKrw(limitVal);
     setMaxPositions(autoMaxPos);
-    setOrderAmount(autoOrderAmt);
+    setOrderAmountKrw(autoOrderAmt);
     setActionLoading(true);
     try {
       const hdrs = await getAdminHeaders(true);
@@ -328,7 +331,6 @@ export default function AdminAutoTradePage() {
         payload.enabled = true;
         setMode("KIS_REAL");
         setKisOrderEnabled(true);
-        setEnabled(true);
       }
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
         method: "POST",
@@ -410,16 +412,14 @@ export default function AdminAutoTradePage() {
     ? (data?.real_trade_logs || [])
     : (data?.paper_trade_logs || data?.trade_logs || []);
 
-  const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
-
-  const buyCount = useMemo(() => tradeLogs.filter((l: any) => l.action === "BUY").length, [tradeLogs]);
-  const sellCount = useMemo(() => tradeLogs.filter((l: any) => l.action === "SELL").length, [tradeLogs]);
-
-  const filteredLogs = useMemo(() => {
-    if (logFilter === "BUY") return tradeLogs.filter((l: any) => l.action === "BUY");
-    if (logFilter === "SELL") return tradeLogs.filter((l: any) => l.action === "SELL");
-    return tradeLogs;
-  }, [tradeLogs, logFilter]);
+  const buyCount = tradeLogs.filter((l: any) => l?.action === "BUY").length;
+  const sellCount = tradeLogs.filter((l: any) => l?.action === "SELL").length;
+  const filteredLogs =
+    logFilter === "BUY"
+      ? tradeLogs.filter((l: any) => l?.action === "BUY")
+      : logFilter === "SELL"
+      ? tradeLogs.filter((l: any) => l?.action === "SELL")
+      : tradeLogs;
 
   return (
     <div className="min-h-screen bg-[#06070a] text-white pb-24">
@@ -1505,14 +1505,14 @@ export default function AdminAutoTradePage() {
             </div>
           ) : (
             <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
-              {filteredLogs.map((log: any) => {
-                const formatted = formatTradeReason(log.reason);
-                const isBuy = log.action === "BUY";
-                const isProfit = (log.pnl_krw ?? 0) >= 0;
+              {filteredLogs.map((log: any, idx: number) => {
+                const formatted = formatTradeReason(log?.reason);
+                const isBuy = log?.action === "BUY";
+                const isProfit = (log?.pnl_krw ?? 0) >= 0;
 
                 return (
                   <div
-                    key={log.id}
+                    key={`${log?.id || "log"}-${idx}`}
                     className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/5 hover:border-white/15 transition-all space-y-2.5"
                   >
                     {/* 상단 1열: 체결 뱃지 + 종목명 + 수량 + 시간 + 체결금액/실현손익 */}
