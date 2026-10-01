@@ -906,6 +906,18 @@ def api_admin_auto_trader_test_fcm():
     return {"status": "success", "message": "✅ 대표님 스마트폰(FCM) 및 [🤖 자동매매 알림] 탭으로 실시간 체결 알림이 발송되었습니다!", "data": res}
 
 
+@app.post("/api/system/admin/log-client-error")
+async def api_admin_log_client_error(req: Request):
+    try:
+        body = await req.json()
+        logger.error(f"[CLIENT_UI_ERROR] {json.dumps(body, ensure_ascii=False)}")
+        with open("client_errors.log", "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now().isoformat()} | {json.dumps(body, ensure_ascii=False)}\n")
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @app.get("/api/disclosures/realtime")
 def api_get_realtime_dart_disclosures(days_ago: int = 3):
     """알림센터 [⚡ DART 공시 속보] 탭용 실시간 금융감독원 DART 상장사 공시 피드"""

@@ -856,12 +856,12 @@ export default function AdminAutoTradePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {positions.map((pos: any) => {
+              {positions.map((pos: any, idx: number) => {
                 const isPlus = (pos.pnl_pct || 0) >= 0;
                 const isRealPos = pos.trade_mode === "KIS_REAL" || String(pos.reason || "").includes("[한투주문 완료");
                 return (
                   <div
-                    key={pos.symbol}
+                    key={`${pos?.symbol || "pos"}-${idx}`}
                     className="p-4 rounded-2xl bg-zinc-950/90 border border-white/10 hover:border-emerald-500/40 transition-all space-y-3"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -1399,7 +1399,7 @@ export default function AdminAutoTradePage() {
                 const krwEquiv = cand.is_us ? Math.round((cand.price || 0) * 1355) : cand.price;
                 return (
                   <div
-                    key={cand.symbol}
+                    key={`${cand?.symbol || "cand"}-${idx}`}
                     className="p-3 rounded-2xl bg-zinc-950/80 border border-white/5 flex items-center justify-between gap-3"
                   >
                     <div className="space-y-0.5">
