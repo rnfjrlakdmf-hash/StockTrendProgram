@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { API_BASE_URL } from "@/lib/config";
 import Header from "@/components/Header";
+import { getMarketInfo } from "@/lib/marketTag";
 import {
   Bot,
   Power,
@@ -859,6 +860,15 @@ export default function AdminAutoTradePage() {
               {positions.map((pos: any, idx: number) => {
                 const isPlus = (pos.pnl_pct || 0) >= 0;
                 const isRealPos = pos.trade_mode === "KIS_REAL" || String(pos.reason || "").includes("[한투주문 완료");
+                const posMarket = getMarketInfo(pos.symbol);
+                const isUS = Boolean(pos.is_us || posMarket.isUS);
+                const formatPrice = (p: any) => {
+                  if (p === undefined || p === null) return "-";
+                  const num = Number(p);
+                  if (isUS) return `$${num.toFixed(2)}`;
+                  return `${Math.round(num).toLocaleString()}원`;
+                };
+
                 return (
                   <div
                     key={`${pos?.symbol || "pos"}-${idx}`}
@@ -875,6 +885,11 @@ export default function AdminAutoTradePage() {
                             }`}
                           >
                             {isRealPos ? "🏦 실전계좌 보유" : "🎮 가상 모의투자"}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black border font-mono flex items-center gap-1 ${posMarket.style}`}>
+                            <span>{posMarket.flag}</span>
+                            <span>{posMarket.label}</span>
+                            <span className="text-[9px] opacity-80 font-sans">({posMarket.isUS ? "해외" : "국내"})</span>
                           </span>
                           <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[10px] font-black">
                             {pos.sector || "주도주"}
@@ -893,7 +908,7 @@ export default function AdminAutoTradePage() {
                           {(pos.pnl_krw || 0).toLocaleString()}원)
                         </div>
                         <div className="text-[11px] text-gray-400 font-mono">
-                          매수가 {pos.avg_price?.toLocaleString()} → 현재가 <b className="text-white">{pos.current_price?.toLocaleString()}</b>
+                          매수가 {formatPrice(pos.avg_price)} → 현재가 <b className="text-white">{formatPrice(pos.current_price)}</b>
                         </div>
                       </div>
                     </div>
@@ -903,8 +918,8 @@ export default function AdminAutoTradePage() {
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] font-mono bg-zinc-900 px-3 py-2 rounded-xl">
-                      <span className="text-rose-400 font-bold">🎯 자동 익절가: {pos.target_price?.toLocaleString()}</span>
-                      <span className="text-blue-400 font-bold">🛡️ 자동 손절가: {pos.stop_price?.toLocaleString()}</span>
+                      <span className="text-rose-400 font-bold">🎯 자동 익절가: {formatPrice(pos.target_price)}</span>
+                      <span className="text-blue-400 font-bold">🛡️ 자동 손절가: {formatPrice(pos.stop_price)}</span>
                       <button
                         onClick={() => handleClosePosition(pos.symbol, pos.name)}
                         className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white font-sans font-black text-[11px] transition-all"
@@ -1397,6 +1412,7 @@ export default function AdminAutoTradePage() {
             <div className="space-y-2.5">
               {candidates.slice(0, 10).map((cand: any, idx: number) => {
                 const krwEquiv = cand.is_us ? Math.round((cand.price || 0) * 1355) : cand.price;
+                const candMarket = getMarketInfo(cand.symbol);
                 return (
                   <div
                     key={`${cand?.symbol || "cand"}-${idx}`}
@@ -1408,13 +1424,11 @@ export default function AdminAutoTradePage() {
                           {idx + 1}
                         </span>
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
-                            cand.is_us
-                              ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                              : "bg-sky-500/20 text-sky-300 border-sky-500/40"
-                          }`}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-black border font-mono flex items-center gap-1 ${candMarket.style}`}
                         >
-                          {cand.is_us ? "🇺🇸 미국장" : "🇰🇷 국내장"}
+                          <span>{candMarket.flag}</span>
+                          <span>{candMarket.label}</span>
+                          <span className="text-[9px] opacity-80 font-sans">({candMarket.isUS ? "해외" : "국내"})</span>
                         </span>
                         <span className="font-black text-white text-sm">{cand.name}</span>
                         <span className="text-[11px] text-gray-500 font-mono">{cand.symbol}</span>
@@ -1509,6 +1523,7 @@ export default function AdminAutoTradePage() {
                 const formatted = formatTradeReason(log?.reason);
                 const isBuy = log?.action === "BUY";
                 const isProfit = (log?.pnl_krw ?? 0) >= 0;
+                const logMarket = getMarketInfo(log?.symbol, log?.reason);
 
                 return (
                   <div
@@ -1536,10 +1551,17 @@ export default function AdminAutoTradePage() {
                           {isBuy ? "자동 매수" : isProfit ? "자동 익절" : "리스크 매도"}
                         </span>
 
-                        {/* 종목명 (글자 잘림 없이 시원하게) */}
-                        <span className="text-white font-black text-sm sm:text-base tracking-tight whitespace-nowrap">
-                          {log.name}
-                        </span>
+                        {/* 종목명 및 시장 뱃지 */}
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <span className="text-white font-black text-sm sm:text-base tracking-tight">
+                            {log.name}
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border font-mono flex items-center gap-1 ${logMarket.style}`}>
+                            <span>{logMarket.flag}</span>
+                            <span>{logMarket.label}</span>
+                            <span className="text-[9px] opacity-80 font-sans">({logMarket.isUS ? "해외" : "국내"})</span>
+                          </span>
+                        </div>
 
                         {/* 체결 수량 */}
                         <span className="px-2 py-0.5 rounded-lg bg-zinc-900 border border-white/10 text-gray-300 font-bold font-mono text-xs whitespace-nowrap">
@@ -1558,9 +1580,9 @@ export default function AdminAutoTradePage() {
                           <span className="text-xs text-gray-400">체결단가</span>{" "}
                           <span className="text-xs sm:text-sm font-bold text-gray-100">
                             {log.price
-                              ? log.price < 50
-                                ? `$${log.price}`
-                                : `${log.price.toLocaleString()}원`
+                              ? (log.is_us || logMarket.isUS || (typeof log.price === 'number' && log.price < 500 && !/^\d{6}$/.test(log.symbol || '')))
+                                ? `$${Number(log.price).toFixed(2)}`
+                                : `${Math.round(Number(log.price)).toLocaleString()}원`
                               : "-"}
                           </span>
                           <span className="text-xs text-gray-500 ml-1.5 hidden sm:inline">
