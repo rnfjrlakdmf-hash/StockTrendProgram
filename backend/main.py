@@ -933,6 +933,17 @@ def api_get_realtime_dart_disclosures(days_ago: int = 3):
 
             market_tag = get_stock_market_tag(raw_code)
             clean_t = report_title.replace(" ", "")
+
+            # [대표님 요청 반영] 단순 정기 서류(분기/반기/사업/감사/검토보고서) 및
+            # 의례적 안내 공고(주주총회, 주주명부폐쇄, 명의개서정지, 기준일설정, 투자설명서 등)는
+            # 투자 실시간 매매에 불필요한 잡음이므로 화면 피드에서 100% 완전 제외!
+            if any(skip_kw in clean_t for skip_kw in [
+                "분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서",
+                "주주총회", "주총", "주주명부폐쇄", "명의개서정지", "기준일설정",
+                "증권발행실적보고서", "일괄신고추가서류", "투자설명서"
+            ]):
+                continue
+
             if "대량보유" in clean_t:
                 title, body = format_super_ant_alert(market_tag, corp, raw_code, doc_id, flr_nm, rcept_dt, corp_code=corp_code)
             elif "임원" in clean_t or "주요주주" in clean_t:
