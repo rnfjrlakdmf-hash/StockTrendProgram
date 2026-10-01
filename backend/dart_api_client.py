@@ -532,9 +532,56 @@ class DartApiClient:
 
         return result
 
+    def get_treasury_stock_details(self, rcept_no: str) -> Optional[Dict]:
+        """
+        🏢 주요사항보고서(자기주식취득/신탁계약체결) XML 파싱
+        - SIG_PRC: 계약/취득금액
+        - ACQS_PLN_OSTK: 취득예정 주식수
+        - SIG_PPS: 목적
+        - SIG_ORG / CI_BRK: 신탁/중개 기관
+        """
+        if not self.is_available() or not rcept_no:
+            return None
+        xml = self._fetch_document_xml(rcept_no)
+        if not xml:
+            return None
+        try:
+            acodes = {}
+            for m in re.finditer(r'<TE[^>]*ACODE="([^"]+)"[^>]*>(.*?)</TE>', xml, re.DOTALL):
+                k = m.group(1).strip()
+                v = m.group(2).strip().replace('\n', ' ')
+                if k not in acodes or acodes[k] in ('-', ''):
+                    acodes[k] = v
 
+            sig_prc_raw = (acodes.get('SIG_PRC') or acodes.get('ACQ_PRC') or acodes.get('ACQ_AMT') or '0').replace(',', '').replace(' ', '')
+            try:
+                amt = int(sig_prc_raw)
+            except Exception:
+                amt = 0
+
+            amt_str = format_krw_amount(amt) if amt > 0 else ""
+
+            plan_stk_raw = (acodes.get('ACQS_PLN_OSTK') or acodes.get('ACQ_STK_CNT') or '0').replace(',', '').replace(' ', '')
+            try:
+                plan_stk = int(plan_stk_raw)
+            except Exception:
+                plan_stk = 0
+
+            purpose = acodes.get('SIG_PPS') or acodes.get('ACQ_PPS') or '주가안정 및 주주가치 제고'
+            org = acodes.get('SIG_ORG') or acodes.get('CI_BRK') or ''
+
+            return {
+                "amount_krw": amt,
+                "amount_str": amt_str,
+                "plan_shares": plan_stk,
+                "purpose": purpose,
+                "org": org
+            }
+        except Exception as e:
+            return None
 
     def get_financial_sheets(self, corp_code: str, bsns_year: str, reprt_code: str = "11011") -> List[Dict]:
+
         """
         📊 단일회사 주요재무제표 조회 (재무상태표, 손익계산서 등)
         - corp_code: DART 고유번호 (8자리)

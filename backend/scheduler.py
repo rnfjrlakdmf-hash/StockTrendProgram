@@ -585,6 +585,16 @@ async def check_and_notify_disclosures():
                             fact_str = f"무상증자 결정 공시! 기존 주주에게 신주 무상 배정\n💡 [시장해석] 대표적 주주친화 정책 · 유통 주식수 확대 호재"
                         elif "자기주식취득" in clean or "신탁계약" in clean:
                             fact_str = f"자사주 매입 결정 공시! 회사가 자기 주식 직접 매수\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
+                            if doc_id:
+                                try:
+                                    t_det = dart_api_client.get_treasury_stock_details(doc_id)
+                                    if t_det and (t_det.get("amount_str") or t_det.get("plan_shares", 0) > 0):
+                                        amt_info = f" {t_det['amount_str']}" if t_det.get('amount_str') else ""
+                                        stk_info = f" ({t_det['plan_shares']:,}주 취득 예정)" if t_det.get('plan_shares', 0) > 0 else ""
+                                        fact_str = f"자사주 매입 결정 공시!{amt_info}{stk_info} 회사가 자기 주식 직접 매수\n💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명"
+                                except Exception as t_e:
+                                    logger.debug(f"[WhaleSiren] 자사주 취득 상세 조회 실패: {t_e}")
+
                         elif "자기주식소각" in clean or "주식소각" in clean:
                             fact_str = f"자사주 소각 결정 공시! 발행 주식수 영구 감축\n💡 [시장해석] 주당 가치 상승을 이끄는 가장 강력한 주주환원 호재"
                         elif "공개매수" in clean:
@@ -768,8 +778,77 @@ async def check_and_notify_disclosures():
         state["processed_ids"] = list(processed_ids.keys())[-2000:]
         save_state(state)
 
+        # 2분마다 최근 접수된 폴백 공시들을 '몇 주, 얼마, 지분율' 세부 데이터로 자동 상세화
+        if now.minute % 2 == 0:
+            asyncio.create_task(asyncio.to_thread(auto_enrich_fallback_alerts))
+
     except Exception as e:
         logger.error(f"[공시Monitor] DART 체크 오류: {e}")
+
+
+def auto_enrich_fallback_alerts():
+    """
+    ⚡ DART 공시 접수 직후 수십 초 간은 금감원 서버의 변환 시차로 인해
+    '자사주 보유 변동' 등 폴백 문구가 나갈 수 있습니다.
+    접수 후 1~2분이 지나 금감원 DART 서버 생성이 완료되면,
+    최근 30분 내의 폴백 알림들을 '누가(직책), 몇 주(수량), 얼마(금액), 변동 후 보유량(지분율)'으로
+    자동 업그레이드하여 Firestore 알림센터에 갱신합니다.
+    """
+    try:
+        from firebase_config import initialize_firebase
+        from firebase_admin import firestore
+        from dart_api_client import dart_api_client
+        from market_tag_helper import get_stock_market_tag
+
+        initialize_firebase()
+        db = firestore.client()
+        docs = db.collection("alerts").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(100).stream()
+
+        for doc in docs:
+            d = doc.to_dict()
+            doc_id = doc.id
+            title = d.get("title", "")
+            body = d.get("body", "")
+            rcept_no = d.get("rcept_no")
+            symbol = d.get("symbol")
+
+            is_fallback_ant = ("슈퍼개미" in title or "대량보유" in title) and ("대량보유 지분 변동 발생" in body or "지분 보유상황 변동이 발생" in body)
+            is_fallback_insider = ("내부자" in title or "임원" in title) and ("자사주 보유 변동" in body or "주식 보유상황(매수/매도) 변동이 발생" in body)
+            is_fallback_treasury = ("자사주" in title or "자사주" in body) and ("회사가 자기 주식 직접 매수" in body and "약" not in body and "취득 예정" not in body)
+
+            if is_fallback_treasury and rcept_no:
+                t_det = dart_api_client.get_treasury_stock_details(str(rcept_no))
+                if t_det and (t_det.get("amount_str") or t_det.get("plan_shares", 0) > 0):
+                    amt_info = f" {t_det['amount_str']}" if t_det.get('amount_str') else ""
+                    stk_info = f" ({t_det['plan_shares']:,}주 취득 예정)" if t_det.get('plan_shares', 0) > 0 else ""
+                    new_body = body.replace(
+                        "자사주 매입 결정 공시! 회사가 자기 주식 직접 매수",
+                        f"자사주 매입 결정 공시!{amt_info}{stk_info} 회사가 자기 주식 직접 매수"
+                    )
+                    db.collection("alerts").document(doc_id).update({"body": new_body})
+                    logger.info(f"[auto_enrich] 자사주 취득 공시 금액/수량 보강 완료: {doc_id}")
+                    continue
+
+            if (is_fallback_ant or is_fallback_insider) and rcept_no and symbol:
+                clean_code = str(symbol).strip().split('.')[0]
+                market_tag = get_stock_market_tag(clean_code)
+                corp_name = title.split(']')[-1].strip()
+                rcept_dt = str(rcept_no)[:8] if len(str(rcept_no)) >= 8 else ""
+
+                if is_fallback_ant:
+                    new_title, new_body = format_super_ant_alert(market_tag, corp_name, clean_code, str(rcept_no), "", rcept_dt)
+                else:
+                    new_title, new_body = format_insider_alert(market_tag, corp_name, clean_code, str(rcept_no), "", rcept_dt)
+
+                if "대량보유 지분 변동 발생" not in new_body and "자사주 보유 변동" not in new_body:
+                    db.collection("alerts").document(doc_id).update({
+                        "title": new_title,
+                        "body": new_body
+                    })
+                    logger.info(f"[auto_enrich] 폴백 알림 실시간 수량/금액 상세 보강 완료: {doc_id} -> {new_title}")
+    except Exception as e:
+        logger.debug(f"[auto_enrich] Exception: {e}")
+
 
 
 async def check_and_notify_sec_disclosures():
