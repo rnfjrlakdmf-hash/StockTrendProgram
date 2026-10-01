@@ -657,6 +657,25 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "") -> D
     }
 
 
+def _get_current_effective_cash(state: Dict[str, Any]) -> tuple:
+    """현재 가동 모드(실전투자 vs 가상 모의투자)에 따라 정확한 예수금 금액과 라벨을 반환합니다."""
+    cfg = state.get("config", {})
+    acct = state.get("account", {})
+    mode = cfg.get("mode", "AI_PAPER")
+    fx_rate = 1355.0
+    if mode == "KIS_REAL":
+        return int(acct.get("cash_krw", 0)), "실전 예수금"
+    else:
+        seed = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+        realized = int(acct.get("realized_pnl_krw", 0) or 0)
+        tot = seed + realized
+        inv = sum(
+            int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (fx_rate if p.get("is_us") else 1.0)))
+            for p in state.get("positions", [])
+        )
+        return max(0, tot - inv), "가상 예수금"
+
+
 # ─────────────────────────────────────────────────────────────
 # 한국투자증권(KIS) REST OpenAPI 연동 헬퍼 (모의투자 & 실전투자 겸용)
 # ─────────────────────────────────────────────────────────────
@@ -1024,10 +1043,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
                 if cfg.get("telegram_notify", True):
                     tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
+                    c_val, c_lbl = _get_current_effective_cash(state)
                     _send_admin_trade_notification(
                         f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
                         f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원){kis_sell_tag}\n"
-                        f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | 예수금 {acct.get('cash_krw', 0):,}원",
+                        f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                         symbol=sym,
                     )
             else:
@@ -1169,10 +1189,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
             if cfg.get("telegram_notify", True):
                 unit_lbl = f"${cand['price']:,}" if cand["is_us"] else f"{cand['price']:,}원"
+                c_val, c_lbl = _get_current_effective_cash(state)
                 _send_admin_trade_notification(
                     f"🟢매수 {cand['name']} {buy_amount_krw:,}원",
                     f"{unit_lbl} × {qty}주 매입 완료\n"
-                    f"목표 +{tp_pct}% | 예수금 {acct.get('cash_krw', 0):,}원",
+                    f"목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
                     symbol=cand["symbol"],
                 )
 
@@ -1227,10 +1248,11 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
                 "mode": cfg.get("mode", "AI_PAPER"),
             })
             tag = "🔴익절" if pnl_krw >= 0 else "🔴매도"
+            c_val, c_lbl = _get_current_effective_cash(state)
             _send_admin_trade_notification(
                 f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
                 f"수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
-                f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | 예수금 {acct.get('cash_krw', 0):,}원",
+                f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                 symbol=symbol,
             )
         else:
@@ -1268,10 +1290,11 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
         est_profit = 75456
 
     # 1) 🟢 매수 시 알림 (대표님 전용 기기 단독 1통 즉시 발송)
+    c_val, c_lbl = _get_current_effective_cash(state)
     _send_admin_trade_notification(
         f"🟢매수 {sample_name} {buy_amt:,}원",
         f"{avg_p:,}원 × {qty}주 매입 완료\n"
-        f"목표 +4.0% | 예수금 {acct.get('cash_krw', 0):,}원",
+        f"목표 +4.0% | {c_lbl} {c_val:,}원",
         symbol=sample_sym,
     )
     time.sleep(0.15)
@@ -1279,7 +1302,7 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
     res = _send_admin_trade_notification(
         f"🔴익절 {sample_name} +{est_profit:,}원(+4.0%)",
         f"수익 +{est_profit:,}원 확정 (회수 {buy_amt + est_profit:,}원)\n"
-        f"누적수익 +{est_profit:,}원 | 예수금 {acct.get('cash_krw', 0) + buy_amt + est_profit:,}원",
+        f"누적수익 +{est_profit:,}원 | {c_lbl} {c_val + buy_amt + est_profit:,}원",
         symbol=sample_sym,
     )
     return res
