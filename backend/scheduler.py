@@ -353,11 +353,14 @@ async def check_and_notify_disclosures():
         logger.debug("[공시Monitor] 공휴일에는 DART 공시 알림을 발송하지 않습니다.")
         return
 
-    # 2. [소음 방지] 국내 증시 정규 준비 및 거래 시간 (평일 08:30 ~ 18:00) 외에는 실시간 공시 알림 발송 차단
-    # (08:30 장전 동시호가 시작 ~ 18:00 시간외 단일가 마감)
+    # 2. [소음 방지] 국내 증시 거래 준비 및 대체거래소(ATS) 시간외 거래 마감 시간 (평일 08:30 ~ 20:00)
+    # - 08:30: 장전 호가 접수 및 동시호가 준비 시작
+    # - 18:00: 기존 한국거래소(KRX) 시간외 단일가 마감
+    # - 19:00: 금융감독원 DART 당일 공시 최종 접수 마감 (장 마감 후 주요 경영 공시 집중 접수)
+    # - 20:00: 대체거래소(ATS 넥스트레이드) 애프터마켓 최종 거래 마감
     current_time_num = now.hour * 100 + now.minute
-    if not (830 <= current_time_num <= 1800):
-        logger.info(f"[공시Monitor] 국내 정규 장 운영 시간 외({now.strftime('%H:%M')})에는 DART 공시 알림을 발송하지 않습니다.")
+    if not (830 <= current_time_num <= 2000):
+        logger.info(f"[공시Monitor] 국내 장 및 시간외 거래 운영 시간 외({now.strftime('%H:%M')})에는 DART 공시 알림을 발송하지 않습니다.")
         return
 
     from dart_api_client import dart_api_client
