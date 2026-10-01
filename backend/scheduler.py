@@ -812,8 +812,8 @@ def auto_enrich_fallback_alerts():
             rcept_no = d.get("rcept_no")
             symbol = d.get("symbol")
 
-            is_fallback_ant = ("슈퍼개미" in title or "대량보유" in title) and ("대량보유 지분 변동 발생" in body or "지분 보유상황 변동이 발생" in body)
-            is_fallback_insider = ("내부자" in title or "임원" in title) and ("자사주 보유 변동" in body or "주식 보유상황(매수/매도) 변동이 발생" in body)
+            is_fallback_ant = ("슈퍼개미" in title or "대량보유" in title) and any(k in body for k in ["대량보유 지분 변동", "지분 보유상황 변동"])
+            is_fallback_insider = ("내부자" in title or "임원" in title) and any(k in body for k in ["자사주 보유 변동", "주식 보유상황", "변동 발생", "변동이 발생"])
             is_fallback_treasury = ("자사주" in title or "자사주" in body) and ("회사가 자기 주식 직접 매수" in body and "약" not in body and "취득 예정" not in body)
 
             if is_fallback_treasury and rcept_no:
@@ -840,12 +840,13 @@ def auto_enrich_fallback_alerts():
                 else:
                     new_title, new_body = format_insider_alert(market_tag, corp_name, clean_code, str(rcept_no), "", rcept_dt)
 
-                if "대량보유 지분 변동 발생" not in new_body and "자사주 보유 변동" not in new_body:
+                if not any(k in new_body for k in ["대량보유 지분 변동 발생", "자사주 보유 변동", "주식 보유상황"]):
                     db.collection("alerts").document(doc_id).update({
                         "title": new_title,
                         "body": new_body
                     })
                     logger.info(f"[auto_enrich] 폴백 알림 실시간 수량/금액 상세 보강 완료: {doc_id} -> {new_title}")
+
     except Exception as e:
         logger.debug(f"[auto_enrich] Exception: {e}")
 

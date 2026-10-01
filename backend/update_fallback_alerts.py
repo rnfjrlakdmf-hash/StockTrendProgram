@@ -26,8 +26,8 @@ for doc in docs:
     symbol = d.get("symbol")
 
     # Check if this alert is a fallback super ant or insider alert
-    is_fallback_ant = ("슈퍼개미" in title or "대량보유" in title) and ("대량보유 지분 변동 발생" in body or "지분 보유상황 변동이 발생" in body)
-    is_fallback_insider = ("내부자" in title or "임원" in title) and ("자사주 보유 변동" in body or "주식 보유상황(매수/매도) 변동이 발생" in body)
+    is_fallback_ant = ("슈퍼개미" in title or "대량보유" in title) and any(k in body for k in ["대량보유 지분 변동", "지분 보유상황 변동"])
+    is_fallback_insider = ("내부자" in title or "임원" in title) and any(k in body for k in ["자사주 보유 변동", "주식 보유상황", "변동 발생", "변동이 발생"])
     is_fallback_treasury = ("자사주" in title or "자사주" in body) and ("회사가 자기 주식 직접 매수" in body and "약" not in body and "취득 예정" not in body)
 
     if is_fallback_treasury and rcept_no:
@@ -61,7 +61,7 @@ for doc in docs:
         else:
             new_title, new_body = format_insider_alert(market_tag, corp_name, clean_code, str(rcept_no), "", rcept_dt)
 
-        if "대량보유 지분 변동 발생" not in new_body and "자사주 보유 변동" not in new_body:
+        if not any(k in new_body for k in ["대량보유 지분 변동 발생", "자사주 보유 변동", "주식 보유상황"]):
             print(f"Updating {doc_id}:")
             print("  New Title:", new_title)
             print("  New Body:\n" + new_body)
@@ -72,6 +72,7 @@ for doc in docs:
             updated_count += 1
         else:
             print(f"Could not extract rich data for {rcept_no}, kept original.")
+
 
 
 print(f"\nDone! Total updated alerts in Firestore: {updated_count}")
