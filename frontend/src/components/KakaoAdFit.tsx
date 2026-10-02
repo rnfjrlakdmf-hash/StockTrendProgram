@@ -9,12 +9,17 @@ interface KakaoAdFitProps {
   className?: string;
 }
 
+// [Google AdSense 심사 통과를 위한 일시적 광고 비활성화 모드]
+// 구글 애드센스 승인이 완료된 후 아래 값을 false로 변경하시면 즉시 복원됩니다.
+const ADSENSE_REVIEW_MODE = true;
+
 export default function KakaoAdFit({
   adUnit,
   adWidth,
   adHeight,
   className = "",
 }: KakaoAdFitProps) {
+  if (ADSENSE_REVIEW_MODE) return null;
   if (!adUnit || adUnit === "DAN-PLACEHOLDER") return null;
 
   const numWidth = typeof adWidth === "string" ? parseInt(adWidth, 10) : adWidth;

@@ -63,6 +63,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             alternates: {
                 canonical: `/stock/${decodedTicker}`,
             },
+            robots: {
+                index: false,
+                follow: true,
+            },
         };
     }
     
@@ -85,6 +89,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title,
         description,
+        robots: {
+            index: false,
+            follow: true,
+        },
         alternates: {
             canonical: `/stock/${decodedTicker}`,
         },

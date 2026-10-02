@@ -113,6 +113,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
         notFound();
     }
 
+    const displayAuthor = (!post.author || post.author === '관리자' || post.author === 'admin') 
+        ? "StockTrend 수석 금융 애널리스트팀 (윤희원 대표)" 
+        : post.author;
+
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
@@ -122,14 +126,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
         "dateModified": post.createdAt.toISOString(),
         "author": {
             "@type": "Person",
-            "name": post.author || "StockTrend 수석 애널리스트팀"
+            "name": displayAuthor
         },
         "publisher": {
             "@type": "Organization",
             "name": "스마트 투자비서 StockTrend",
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://stock-trend-program.co.kr/logo.png"
+                "url": "https://stock-trend-program.co.kr/favicon.ico"
             }
         },
         "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침·저녁 배달되는 국내·미국 증시 시황 리포트')}&tag=${encodeURIComponent('마켓뷰')}`
@@ -179,7 +183,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white">
                             <UserCheck className="w-4 h-4" />
                         </div>
-                        <span className="text-gray-300 font-bold">{post.author}</span>
+                        <span className="text-gray-300 font-bold">{displayAuthor}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />

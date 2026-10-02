@@ -222,10 +222,10 @@ export default function RootLayout({
               <GlobalProgressWatcher />
             </main>
 
-            {/* 우측 사이드바 세로형 광고 (160x600) - 데스크톱 전용 */}
-            <aside className="hidden xl:flex w-[180px] flex-col items-center pt-24 shrink-0 sticky top-0 h-screen overflow-hidden border-l border-white/5 glass-panel">
+            {/* 우측 사이드바 세로형 광고 (160x600) - 애드센스 심사 기간 일시 비활성화 */}
+            {/* <aside className="hidden xl:flex w-[180px] flex-col items-center pt-24 shrink-0 sticky top-0 h-screen overflow-hidden border-l border-white/5 glass-panel">
               <KakaoAdFit adUnit="DAN-jbSl6i4k3YO3nNSl" adWidth="160" adHeight="600" />
-            </aside>
+            </aside> */}
 
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />

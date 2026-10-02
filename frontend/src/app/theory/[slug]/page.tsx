@@ -104,6 +104,10 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         notFound();
     }
 
+    const displayAuthor = (!post.author || post.author === '관리자' || post.author === 'admin')
+        ? "StockTrend 금융 리서치팀 (윤희원 대표)"
+        : post.author;
+
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Article",
@@ -113,14 +117,14 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         "dateModified": post.createdAt.toISOString(),
         "author": {
             "@type": "Person",
-            "name": post.author || "StockTrend 차트 마스터"
+            "name": displayAuthor
         },
         "publisher": {
             "@type": "Organization",
             "name": "스마트 투자비서",
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://stock-trend-program.co.kr/logo.png"
+                "url": "https://stock-trend-program.co.kr/icon.png"
             }
         },
         "image": `https://stock-trend-program.co.kr/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent('매일 아침 업데이트되는 차트 스터디')}&tag=${encodeURIComponent('주식이론방')}`
@@ -212,7 +216,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
                         <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400">
                             <BookOpen className="w-4 h-4" />
                         </div>
-                        <span className="text-gray-300 font-bold tracking-wide">{post.author}</span>
+                        <span className="text-gray-300 font-bold tracking-wide">{displayAuthor}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
