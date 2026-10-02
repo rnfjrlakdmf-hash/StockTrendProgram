@@ -69,6 +69,58 @@ US_UNIVERSE = [
 ]
 
 
+def _check_market_holiday(is_us: bool = False) -> tuple[bool, str]:
+    """
+    한국/미국 법정 공휴일(개천절, 한글날, 설날, 추석 등 국경일 및 법정 대체공휴일) 판별
+    반환값: (휴장여부, 휴장사유명칭)
+    """
+    now_kst = datetime.now(KST)
+    if is_us:
+        try:
+            from holiday_checker import is_holiday
+            if is_holiday("us"):
+                import holidays
+                us_hols = holidays.US()
+                ny_date = (now_kst - timedelta(hours=13)).date()
+                hol_name = us_hols.get(ny_date, "미국 연방 공휴일")
+                return True, str(hol_name)
+        except Exception:
+            pass
+        return False, ""
+    else:
+        today_date = now_kst.date()
+        try:
+            from korea_data import is_krx_holiday, FIXED_KRX_MMDD
+            if is_krx_holiday(today_date):
+                holiday_names = {
+                    (1, 1): "신정",
+                    (3, 1): "삼일절",
+                    (5, 1): "근로자의 날 (증시 휴장)",
+                    (5, 5): "어린이날",
+                    (6, 6): "현충일",
+                    (7, 17): "제헌절",
+                    (8, 15): "광복절",
+                    (10, 3): "개천절",
+                    (10, 9): "한글날",
+                    (12, 25): "성탄절",
+                    (12, 31): "연말 납회일 (증시 폐장)",
+                }
+                name = holiday_names.get((today_date.month, today_date.day), "법정 공휴일/대체공휴일")
+                return True, name
+        except Exception:
+            pass
+
+        try:
+            import holidays
+            kr_hols = holidays.KR()
+            if today_date in kr_hols:
+                return True, str(kr_hols.get(today_date, "국경일/공휴일"))
+        except Exception:
+            pass
+
+        return False, ""
+
+
 def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     한국시간(KST) 기준으로 실제 거래소 운영 상태를 엄격히 판별하여
@@ -79,9 +131,12 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
     hour = now_kst.hour
     minute = now_kst.minute
 
-    # 한국 정규장 운영 시간: 평일 09:00 ~ 15:30
-    is_kr_open = (weekday < 5) and (9 <= hour < 15 or (hour == 15 and minute <= 30))
-    # 미국 시장 거래 시간: 월요일 17:00 ~ 토요일 09:00 KST
+    is_kr_holiday, kr_holiday_name = _check_market_holiday(is_us=False)
+    is_us_holiday, us_holiday_name = _check_market_holiday(is_us=True)
+
+    # 한국 정규장 운영 시간: 평일 09:00 ~ 15:30 (단, 공휴일/빨간날 제외)
+    is_kr_open = (weekday < 5) and (not is_kr_holiday) and (9 <= hour < 15 or (hour == 15 and minute <= 30))
+    # 미국 시장 거래 시간: 월요일 17:00 ~ 토요일 09:00 KST (단, 미국 공휴일 제외)
     is_us_open = is_market_open_now("NVDA", is_us=True)
 
     target_cfg = str(cfg.get("market_target", "ALL")).upper()
@@ -98,7 +153,10 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
             badge = "🟢 🇰🇷 국내 정규장 실시간 거래 중 (09:00~15:30)"
             desc = "현재 한국거래소(코스피·코스닥) 정규장 운영 시간으로, AI가 [🇰🇷 국내 주도주·수급 포착주 Top 10]을 실시간 분석 및 매매합니다."
         else:
-            if weekday >= 5:
+            if is_kr_holiday:
+                badge = f"🔒 🇰🇷 국내 주식시장 {kr_holiday_name} 휴장 (다음 개장일 09:00 대기)"
+                desc = f"오늘은 법정 공휴일({kr_holiday_name})로 한국거래소(코스피·코스닥)가 전면 휴장합니다. 모의/실전 매매가 일시 중지되며, 다음 정규 개장일 오전 09:00에 자동 재개됩니다."
+            elif weekday >= 5:
                 badge = "🔒 🇰🇷 국내 주식시장 주말 휴장 (월요일 09:00 개장 대기)"
                 desc = "주말에는 한국거래소가 휴장하여 모의/실전 매매가 일시 중지되며, 다음 평일 오전 09:00 정규장 개장 시 자동 재개됩니다."
             elif hour >= 15 and (hour > 15 or minute > 30):
@@ -119,7 +177,10 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
             badge = "🟢 🇺🇸 야간 미국장 실시간 거래 중 (17:00~08:00 KST)"
             desc = "현재 미국(나스닥·NYSE) 시장이 열려 있어, AI가 [🇺🇸 해외 혁신주·기술주 Top 10]을 실시간 분석 및 매매합니다."
         else:
-            if weekday in (5, 6):
+            if is_us_holiday:
+                badge = f"🔒 🇺🇸 미국 주식시장 {us_holiday_name} 휴장 (다음 개장일 17:00 대기)"
+                desc = f"현지 공휴일({us_holiday_name})로 미국 증권거래소가 전면 휴장합니다. 모의/실전 매매가 일시 중지되며 다음 개장일에 자동 재개됩니다."
+            elif weekday in (5, 6):
                 badge = "🔒 🇺🇸 미국 주식시장 주말 휴장 (화요일 17:00 개장 대기)"
                 desc = "주말에는 미국 거래소가 휴장하여 모의/실전 매매가 일시 중지되며, 다음 주 평일 야간 개장 시 자동 재개됩니다."
             else:
@@ -138,10 +199,14 @@ def is_market_open_now(symbol: str, is_us: bool = False) -> bool:
     """
     해당 종목 거래소의 '실제 정규 거래 가능 시간'을 엄격하게 판별합니다.
     - 국내주식 (KR): 평일(월~금) 09:00 ~ 15:30 KST (정규장 시간만 매매 체결 허용!)
-      ※ 15:30 이후 장 마감, 09:00 이전, 주말/휴일에는 가상 모의투자도 절대 매매 체결 금지!
-    - 미국주식 (US): 평일 야간 17:00 ~ 익일 09:00 KST (월 17:00 ~ 토 09:00 KST)
-      ※ 한국시간 낮 09:00 ~ 17:00 및 주말에는 미국 거래소 폐장으로 매매 체결 금지!
+      ※ 15:30 이후 장 마감, 09:00 이전, 주말 및 국경일/공휴일(개천절, 한글날 등)에는 가상 모의투자도 절대 매매 체결 금지!
+    - 미국주식 (US): 평일 야간 17:00 ~ 익일 09:00 KST (월 17:00 ~ 토 09:00 KST, 현지 공휴일 제외)
+      ※ 한국시간 낮 09:00 ~ 17:00 및 주말/미국 공휴일에는 미국 거래소 폐장으로 매매 체결 금지!
     """
+    is_hol, _ = _check_market_holiday(is_us=is_us)
+    if is_hol:
+        return False
+
     now_kst = datetime.now(KST)
     weekday = now_kst.weekday()  # 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
     hour = now_kst.hour
