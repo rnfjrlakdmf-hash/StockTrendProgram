@@ -69,9 +69,14 @@ US_UNIVERSE = [
 ]
 
 
+_LIVE_HOLIDAY_CACHE: Dict[str, Any] = {"date": None, "is_holiday": False, "reason": ""}
+
 def _check_market_holiday(is_us: bool = False) -> tuple[bool, str]:
     """
-    한국/미국 법정 공휴일(개천절, 한글날, 설날, 추석 등 국경일 및 법정 대체공휴일) 판별
+    [실시간 스마트 달력 + 거래소 3중 교차 검증 엔진]
+    1. 달력 라이브러리(holidays) 및 KRX 특일 캘린더 실시간 조회
+    2. 국경일(개천절, 한글날 등), 법정 공휴일, 대체공휴일, 증시 전용 휴장일(근로자의 날, 연말 폐장일) 실시간 감지
+    3. 정규장 운영 시간 중 실시간 거래소 라이브 응답을 통한 돌발 임시공휴일 교차 검증
     반환값: (휴장여부, 휴장사유명칭)
     """
     now_kst = datetime.now(KST)
@@ -89,13 +94,16 @@ def _check_market_holiday(is_us: bool = False) -> tuple[bool, str]:
         return False, ""
     else:
         today_date = now_kst.date()
+        today_str = today_date.strftime("%Y-%m-%d")
+
+        # 1. 한국거래소(KRX) 고정 및 변동 공휴일 실시간 달력 체크 (개천절, 한글날, 근로자의 날, 연말 납회일 등)
         try:
             from korea_data import is_krx_holiday, FIXED_KRX_MMDD
             if is_krx_holiday(today_date):
                 holiday_names = {
                     (1, 1): "신정",
                     (3, 1): "삼일절",
-                    (5, 1): "근로자의 날 (증시 휴장)",
+                    (5, 1): "근로자의 날 (증시 전면 휴장)",
                     (5, 5): "어린이날",
                     (6, 6): "현충일",
                     (7, 17): "제헌절",
@@ -105,11 +113,12 @@ def _check_market_holiday(is_us: bool = False) -> tuple[bool, str]:
                     (12, 25): "성탄절",
                     (12, 31): "연말 납회일 (증시 폐장)",
                 }
-                name = holiday_names.get((today_date.month, today_date.day), "법정 공휴일/대체공휴일")
+                name = holiday_names.get((today_date.month, today_date.day), "법정 공휴일 / 대체공휴일")
                 return True, name
         except Exception:
             pass
 
+        # 2. 파이썬 실시간 holidays 달력 패키지 검증 (대체공휴일 및 음력 명절 실시간 계산)
         try:
             import holidays
             kr_hols = holidays.KR()
@@ -118,6 +127,28 @@ def _check_market_holiday(is_us: bool = False) -> tuple[bool, str]:
         except Exception:
             pass
 
+        # 3. [실시간 거래소 라이브 프로브] 평일 정규장 시간대(09:00~15:30) 정부 임시공휴일/돌발 휴장 감지
+        if now_kst.weekday() < 5 and (9 <= now_kst.hour < 15 or (now_kst.hour == 15 and now_kst.minute <= 30)):
+            if _LIVE_HOLIDAY_CACHE.get("date") == today_str and _LIVE_HOLIDAY_CACHE.get("is_holiday"):
+                return True, _LIVE_HOLIDAY_CACHE.get("reason", "거래소 임시 휴장")
+            try:
+                # 네이버 금융 삼성전자 실시간 API의 장운영 마켓 상태 확인
+                r = requests.get(
+                    "https://m.stock.naver.com/api/stock/005930/basic",
+                    headers={"User-Agent": "Mozilla/5.0"},
+                    timeout=2,
+                )
+                if r.status_code == 200:
+                    j_data = r.json()
+                    mkt_status = str(j_data.get("marketStatus", "")).upper()
+                    if mkt_status == "CLOSE":
+                        _LIVE_HOLIDAY_CACHE["date"] = today_str
+                        _LIVE_HOLIDAY_CACHE["is_holiday"] = True
+                        _LIVE_HOLIDAY_CACHE["reason"] = "거래소 실시간 임시 휴장"
+                        return True, "거래소 실시간 임시 휴장"
+            except Exception:
+                pass
+
         return False, ""
 
 
@@ -125,6 +156,7 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     한국시간(KST) 기준으로 실제 거래소 운영 상태를 엄격히 판별하여
     주간(09:00~15:30 국내 정규장)에는 국내주식 후보군을, 야간(17:00~09:00 미국장)에는 해외주식 후보군을 자동 배치합니다.
+    ※ 국내 휴장일(개천절, 한글날 등)에는 멍하니 대기하지 않고, 해외(미국) 시장으로 스마트하게 자율 전환합니다!
     """
     now_kst = datetime.now(KST)
     weekday = now_kst.weekday()
@@ -145,8 +177,12 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
     elif target_cfg == "US_ONLY":
         active_market = "US"
     else:
-        # 시간대별 자동: 17:00 이후는 미국장, 17:00 이전은 국내장
-        active_market = "US" if (hour >= 17 or hour < 8) else "KR"
+        # [스마트 자율 세션 전환]
+        # 국내 증시가 휴장(개천절, 한글날 등)이고 미국 증시가 열리는 날이면 미국장으로 즉시 스마트 전환!
+        if (is_kr_holiday or weekday >= 5) and not (is_us_holiday or weekday == 6):
+            active_market = "US"
+        else:
+            active_market = "US" if (hour >= 17 or hour < 8) else "KR"
 
     if active_market == "KR":
         if is_kr_open:
@@ -180,6 +216,9 @@ def _get_time_based_session_info(cfg: Dict[str, Any]) -> Dict[str, Any]:
             if is_us_holiday:
                 badge = f"🔒 🇺🇸 미국 주식시장 {us_holiday_name} 휴장 (다음 개장일 17:00 대기)"
                 desc = f"현지 공휴일({us_holiday_name})로 미국 증권거래소가 전면 휴장합니다. 모의/실전 매매가 일시 중지되며 다음 개장일에 자동 재개됩니다."
+            elif is_kr_holiday:
+                badge = f"💡 🇰🇷국내 {kr_holiday_name} 휴장 ➡️ 🇺🇸미국장 스마트 대기 (17:00 개장)"
+                desc = f"오늘은 국내 법정 공휴일({kr_holiday_name})로 한국 증시가 휴장합니다. AI가 정상 개장하는 미국 나스닥·NYSE 유망주로 17:00부터 스마트 집중 운용합니다."
             elif weekday in (5, 6):
                 badge = "🔒 🇺🇸 미국 주식시장 주말 휴장 (화요일 17:00 개장 대기)"
                 desc = "주말에는 미국 거래소가 휴장하여 모의/실전 매매가 일시 중지되며, 다음 주 평일 야간 개장 시 자동 재개됩니다."
