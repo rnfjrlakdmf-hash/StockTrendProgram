@@ -808,7 +808,10 @@ def _send_admin_trade_notification(title: str, body: str, symbol: str = "", mark
     }
 
 
-def _get_current_effective_cash(state: Dict[str, Any]) -> tuple:
+def _get_current_effective_cash(
+    state: Dict[str, Any],
+    paper_positions_override: Optional[List[Dict[str, Any]]] = None,
+) -> tuple:
     """현재 가동 모드(실전투자 vs 가상 모의투자)에 따라 정확한 예수금 금액과 라벨을 반환합니다."""
     cfg = state.get("config", {})
     acct = state.get("account", {})
@@ -820,9 +823,18 @@ def _get_current_effective_cash(state: Dict[str, Any]) -> tuple:
         seed = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
         realized = int(acct.get("realized_pnl_krw", 0) or 0)
         tot = seed + realized
+        if paper_positions_override is not None:
+            pos_list = paper_positions_override
+        else:
+            pos_list = (
+                state.get("paper_positions")
+                or state.get("positions")
+                or state.get("paper_positions_backup")
+                or []
+            )
         inv = sum(
             int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (fx_rate if p.get("is_us") else 1.0)))
-            for p in state.get("positions", [])
+            for p in pos_list
         )
         return max(0, tot - inv), "가상 예수금"
 
@@ -1832,7 +1844,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if cfg.get("telegram_notify", True):
                 from market_tag_helper import get_clean_market_name
                 mkt_tag = get_clean_market_name(sym)
-                c_val, c_lbl = _get_current_effective_cash(state)
+                c_val, c_lbl = _get_current_effective_cash(state, paper_positions_override=updated_paper)
                 tag = "🔴[모의투자] 익절 완료" if pnl_krw >= 0 else "🛡️[모의투자] 리스크 매도"
                 _send_admin_trade_notification(
                     f"{tag} {pos.get('name', sym)} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
@@ -1920,7 +1932,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if cfg.get("telegram_notify", True):
                 from market_tag_helper import get_clean_market_name
                 mkt_tag = get_clean_market_name(c_sym)
-                c_val, c_lbl = _get_current_effective_cash(state)
+                c_val, c_lbl = _get_current_effective_cash(state, paper_positions_override=updated_paper)
                 if c_is_us:
                     p_val = float(c_price)
                     unit_lbl = f"${p_val:.2f}" if p_val < 100 else f"${p_val:,.1f}"
