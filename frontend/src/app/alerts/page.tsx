@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import KakaoAdFit from "@/components/KakaoAdFit";
+import { getMarketInfo } from "@/lib/marketTag";
 
 interface AlertItem {
     id: string;
@@ -31,60 +32,21 @@ interface AlertItem {
     sub_type?: string;
 }
 
-// Market Badge Resolver (국내 코스피·코스닥 및 미국 나스닥·NYSE·S&P500 완벽 구분)
+// Market Badge Resolver (국내 코스피·코스닥 및 미국 나스닥·NYSE·AMEX 완벽 구분)
 function getMarketBadge(alert: any): { label: string; style: string; icon?: string } | null {
+    const rawSym = (alert.symbol || alert.code || '').toUpperCase().trim();
     const text = `${alert.title || ''} ${alert.body || ''} ${alert.market || ''}`;
-    const symbol = (alert.symbol || '').toUpperCase().trim();
     
-    // 1. 국내 증시 (코스피 / 코스닥)
-    if (text.includes('[코스피]') || alert.market === 'KOSPI' || alert.market === '코스피' || symbol.endsWith('.KS')) {
-        return { label: '코스피', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
-    }
-    if (text.includes('[코스닥]') || alert.market === 'KOSDAQ' || alert.market === '코스닥' || symbol.endsWith('.KQ')) {
-        return { label: '코스닥', style: 'bg-purple-500/15 text-purple-300 border-purple-500/30' };
-    }
-    if (/^\d{6}$/.test(symbol)) {
-        return { label: '코스피', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' };
-    }
-
-    // 2. 미국 증시 (나스닥 / NYSE / S&P 500)
-    if (text.includes('[나스닥]') || alert.market === 'NASDAQ' || alert.market === '나스닥') {
-        return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
-    }
-    if (text.includes('[S&P500]') || text.includes('S&P 500') || alert.market === 'S&P500') {
-        return { label: 'S&P 500', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
-    }
-    if (text.includes('[NYSE]') || text.includes('뉴욕증시') || alert.market === 'NYSE') {
-        return { label: 'NYSE', style: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
-    }
+    // 심볼이나 텍스트 정보가 없으면 null
+    if (!rawSym && !text.trim()) return null;
     
-    // 미국 대형 지수 (S&P 500 주요 대표 종목)
-    const sp500Top = [
-        'AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL', 'GOOG', 'AMZN', 'META', 'BRK.A', 'BRK.B', 
-        'LLY', 'JPM', 'V', 'UNH', 'XOM', 'MA', 'JNJ', 'PG', 'HD', 'COST', 'ABBV', 'MRK', 
-        'NFLX', 'AMD', 'CRM', 'PEP', 'KO', 'BAC', 'WMT', 'CVX', 'TMO', 'MCD', 'CSCO', 'INTC', 'DIS'
-    ];
-    if (sp500Top.includes(symbol)) {
-        return { label: 'S&P 500', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' };
-    }
-
-    // 미국 SEC 공시 또는 [미국] 태그가 있는 경우 심볼 기반으로 나스닥 / NYSE 자동 분류
-    const isUS = text.includes('[미국]') || alert.market === 'US' || (alert.type && alert.type.startsWith('sec_'));
-    if (isUS) {
-        // 미국 거래소 룰: 4글자 이상 티커(BRZE, ALMU, PLTR, SMCI, CRWD 등)는 나스닥 상장사
-        if (symbol.length >= 4 && /^[A-Z]+$/.test(symbol)) {
-            return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
-        }
-        // 1~3글자 티커(SMR, F, BA, GM, IBM, LLY, CAT 등)는 전통 뉴욕증권거래소(NYSE) 상장사
-        if (symbol.length >= 1 && symbol.length <= 3 && /^[A-Z]+$/.test(symbol)) {
-            return { label: 'NYSE', style: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
-        }
-        // 기본 미국장 뱃지
-        return { label: '나스닥', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' };
-    }
-    
-    return null;
+    const info = getMarketInfo(rawSym, text);
+    return {
+        label: info.label,
+        style: info.style,
+    };
 }
+
 
 export default function AlertCenterPage() {
     const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -123,6 +85,26 @@ export default function AlertCenterPage() {
     const handleTestAutoTradeFcm = async () => {
         setFcmTesting(true);
         try {
+            // [스마트 자동 갱신] 현재 스마트폰/브라우저의 최신 FCM 토큰을 즉시 새로 발급받아 서버에 재등록
+            let tokenRefreshed = false;
+            try {
+                const { requestFCMToken } = await import('@/lib/firebase');
+                localStorage.removeItem('fcm_token_value'); // 캐시 폐기 후 강제 새 토큰 발급
+                const latestToken = await requestFCMToken();
+                if (latestToken) {
+                    localStorage.setItem('fcm_token_value', latestToken);
+                    const uid = user?.id || (user as any)?.uid || '110418985320259217419';
+                    await fetch(`${API_BASE_URL}/api/system/fcm-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: latestToken, user_id: uid, source: 'admin_auto_trade_test_fcm' })
+                    });
+                    tokenRefreshed = true;
+                }
+            } catch (tokenErr) {
+                console.warn('[AutoTrade Test] FCM Token refresh notice:', tokenErr);
+            }
+
             const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, {
                 method: "POST",
                 headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" }
@@ -134,7 +116,7 @@ export default function AlertCenterPage() {
                     {
                         id: `fcm-test-sell-${nowSec}`,
                         type: "auto_trade",
-                        title: "🔴익절 이수페타시스 +75,456원(+4.0%)",
+                        title: "🔴[테스트] 익절 이수페타시스 +75,456원(+4.0%)",
                         body: "수익 +75,456원 확정 (회수 1,961,856원)\n누적수익 +75,456원 | 오직 대표님 관리자 계정 단독 수신",
                         symbol: "007660",
                         url: "/admin/auto-trade",
@@ -145,7 +127,7 @@ export default function AlertCenterPage() {
                     {
                         id: `fcm-test-buy-${nowSec - 1}`,
                         type: "auto_trade",
-                        title: "🟢매수 이수페타시스 1,886,400원",
+                        title: "🟢[테스트] 매수 이수페타시스 1,886,400원",
                         body: "117,900원 × 16주 매입 완료\n목표 +4.0% | 오직 대표님 관리자 계정 단독 수신",
                         symbol: "007660",
                         url: "/admin/auto-trade",
@@ -155,10 +137,10 @@ export default function AlertCenterPage() {
                     },
                     ...prev
                 ]);
-                alert(`🔔 [대표님 단독 발송 완료]\n일반 회원에게는 절대 전송되지 않으며, 오직 대표님 관리자 아이디(${user?.email || 'rnfjrlakdmf@gmail.com'})로 등록된 기기 ${json.data?.fcm_sent || json.data?.fcm_tokens_found || 2}대로 실시간 FCM 푸시 알림 2통(🟢매수 / 🔴익절)이 즉시 발송되었습니다!`);
+                alert(`🔔 [대표님 단독 발송 완료]\n${tokenRefreshed ? '✅ 현재 스마트폰의 최신 알림 토큰이 정상 갱신되었습니다!\n' : ''}대표님 관리자 아이디(${user?.email || 'rnfjrlakdmf@gmail.com'})로 등록된 기기 ${json.data?.fcm_sent || json.data?.fcm_tokens_found || 2}대로 실시간 FCM 푸시 알림 2통(🟢매수 / 🔴익절)이 발송되었습니다!\n스마트폰 상단바를 확인해 주세요!`);
             }
         } catch (e) {
-            alert("FCM 테스트 발송 중 오류가 발생했습니다.");
+            alert("FCM 테스트 발송 중 오류가 발생했습니다. 브라우저 알림 권한을 허용해 주세요.");
         } finally {
             setFcmTesting(false);
         }
@@ -198,14 +180,16 @@ export default function AlertCenterPage() {
                     const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
                     
                     const isAutoTradeType = data.type === 'auto_trade' ||
-                        (data.title || '').includes('🟢매수') ||
-                        (data.title || '').includes('🔴익절') ||
-                        (data.title || '').includes('🔴매도') ||
-                        (data.title || '').includes('💧추매') ||
+                        data.sub_type === 'auto_trade' ||
+                        ((data.title || '').includes('🟢') && (data.title || '').includes('매수')) ||
+                        ((data.title || '').includes('🔴') && ((data.title || '').includes('익절') || (data.title || '').includes('매도'))) ||
+                        ((data.title || '').includes('💧') && ((data.title || '').includes('추매') || (data.title || '').includes('물타기'))) ||
                         (data.title || '').includes('[AI 자동매수') ||
                         (data.title || '').includes('[AI 매도') ||
                         (data.title || '').includes('[자동매매') ||
-                        (data.title || '').includes('[자동 물타기');
+                        (data.title || '').includes('[자동 물타기') ||
+                        (data.body || '').includes('가상 예수금') ||
+                        (data.body || '').includes('매입 완료');
 
                     const isAdminType = isAutoTradeType ||
                         ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
@@ -445,7 +429,18 @@ function formatUsdToKrwInText(text: string): string {
         text = formatUsdToKrwInText(text);
         if (!text) return null;
 
+        // [자동매매 해외주식 단위 보정] 해외 주식 매입 단가가 원화(원)로 저장된 구버전 알림 데이터가 있으면 달러($)로 자동 표시
+        if (alert) {
+            const sym = (alert.symbol || '').toUpperCase().trim();
+            const info = getMarketInfo(sym, `${alert.title || ''} ${text}`);
+            if (info.isUS) {
+                // "37.02원 × 54주 매입 완료" -> "$37.02 × 54주 매입 완료"
+                text = text.replace(/([0-9]+\.[0-9]+|[0-9]{1,3})원\s*×\s*([0-9]+)주/g, '$$$1 × $2주');
+            }
+        }
+
         // Separate market interpretation block, cta, and disclaimer if present
+
         let marketInterpretation = "";
         let disclaimerText = "";
         const mainLines: string[] = [];
@@ -1911,7 +1906,14 @@ function formatUsdToKrwInText(text: string): string {
             (alert as any).dart_url || 
             (alert.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
         );
-        const isAutoTradeCard = alert.type === 'auto_trade' || titleText.includes('🟢매수') || titleText.includes('🔴익절') || titleText.includes('💧추매');
+        const isAutoTradeCard = alert.type === 'auto_trade' || 
+            alert.sub_type === 'auto_trade' ||
+            (titleText.includes('🟢') && titleText.includes('매수')) || 
+            (titleText.includes('🔴') && (titleText.includes('익절') || titleText.includes('매도'))) || 
+            (titleText.includes('💧') && (titleText.includes('추매') || titleText.includes('물타기'))) ||
+            titleText.includes('자동매매') ||
+            (alert.body || '').includes('가상 예수금') ||
+            (alert.body || '').includes('매입 완료');
         const isWhale = !isAutoTradeCard && !hasDisclosureKey && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
         const isDisclosure = !isAutoTradeCard && (hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type));
         const rawSymbol = alert.symbol || alert.code || '';
@@ -2426,11 +2428,20 @@ function formatUsdToKrwInText(text: string): string {
 
     const filteredAlerts = alerts.filter(alert => {
         const titleText = (alert.title || '').trim();
+        const bodyText = (alert.body || '').trim();
         const isAutoTradeAlert = alert.type === 'auto_trade' || 
-            titleText.includes('🟢매수') || titleText.includes('🔴익절') || 
-            titleText.includes('🔴매도') || titleText.includes('💧추매') ||
-            titleText.includes('[AI 자동매수') || titleText.includes('[AI 자동익절') || 
-            titleText.includes('[AI 매도') || titleText.includes('[자동매매');
+            alert.sub_type === 'auto_trade' ||
+            (titleText.includes('🟢') && titleText.includes('매수')) || 
+            (titleText.includes('🔴') && (titleText.includes('익절') || titleText.includes('매도'))) || 
+            (titleText.includes('💧') && (titleText.includes('추매') || titleText.includes('물타기'))) ||
+            titleText.includes('AI 자동매수') || 
+            titleText.includes('AI 자동익절') || 
+            titleText.includes('AI 매도') || 
+            titleText.includes('자동매매') ||
+            titleText.includes('가상 예수금') ||
+            bodyText.includes('가상 예수금') ||
+            bodyText.includes('매입 완료') ||
+            bodyText.includes('AI 자동매수');
         const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
             titleText.includes('[관리자]') || titleText.includes('[시스템 보고]') || titleText.includes('[일일 보고]') || titleText.includes('[방문자 보고]') || titleText.includes('방문자') || titleText.includes('일일 운영 보고서');
 
@@ -2451,13 +2462,16 @@ function formatUsdToKrwInText(text: string): string {
         // 1. 관리자 전용 알림 및 자동매매 체결 알림은 비관리자에게 절대 노출 금지
         if ((isAdminAlert || isAutoTradeAlert) && !isAdmin) return false;
 
-        // 2. 🤖 자동매매 알림 탭 선택 시: 오직 AI 자동매매 매수/매도 체결 알림만 집중 표시
+        // 2. 🤖 자동매매 알림 탭 선택 시: 오직 AI 자동매매 매수/매도(익절/물타기) 체결 알림만 단독 표시
         if (activeTab === "auto_trade") return isAutoTradeAlert;
 
-        // 3. 👑 관리자 탭 선택 시: 관리자 시스템 보고서 + 자동매매 알림 표시
-        if (activeTab === "admin") return isAdminAlert || isAutoTradeAlert;
+        // 3. 👑 관리자 알림 탭 선택 시: 자동매매 알림은 100% 완전 제외하고, 순수 관리자 시스템·운영 보고서만 표시
+        if (activeTab === "admin") {
+            if (isAutoTradeAlert) return false;
+            return isAdminAlert;
+        }
 
-        // 4. 운영 알림 탭 선택 시: 관리자용 보고서는 완전 제외하고, 순수 일반 서비스 공지/업데이트/스터디 강의 표시!
+        // 4. 운영 알림 탭 선택 시: 관리자용 보고서 및 자동매매는 완전 제외하고, 순수 일반 서비스 공지/업데이트/스터디 강의 표시
         if (activeTab === "system") {
             if (isAdminAlert || isAutoTradeAlert) return false;
             const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update', 'theory_alert', 'study'].includes(alert.type) ||
@@ -2465,8 +2479,8 @@ function formatUsdToKrwInText(text: string): string {
             return isSystemNotice;
         }
 
-        // 4. 일반 탭(전체 브리핑, 공시, 퀀트, 내 관심종목)에서는 관리자 보고서 완전 제외
-        if (isAdminAlert) {
+        // 5. 일반 탭(전체 브리핑, 공시, 퀀트, 내 관심종목)에서는 관리자 보고서 및 자동매매 체결 내역 완전 제외
+        if (isAdminAlert || isAutoTradeAlert) {
             return false;
         }
 
@@ -2732,6 +2746,25 @@ function formatUsdToKrwInText(text: string): string {
                         </div>
                     </div>
                 )}
+
+                {/* 🔔 스마트폰 실시간 푸시 알림 수신 안내 배너 */}
+                <div className="bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-zinc-950/60 border border-blue-500/25 rounded-2xl p-4 flex items-start gap-3 shadow-lg">
+                    <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400 shrink-0 mt-0.5">
+                        <BellRing className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1 text-xs leading-relaxed text-gray-300">
+                        <div className="flex items-center gap-2 font-black text-white">
+                            <span>스마트폰 실시간 푸시(FCM) 수신 안내</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">안내</span>
+                        </div>
+                        <p>
+                            • <b className="text-amber-300">내가 관심종목(⭐)에 담은 종목</b>의 공시·뉴스와 <b className="text-emerald-300">슈퍼개미/세력 대량 지분 변동</b>은 실시간으로 스마트폰 푸시 진동이 울립니다.
+                        </p>
+                        <p className="text-gray-400 text-[11px]">
+                            • 그 외 상장사 2,500개의 일반 공시는 휴대폰 소음 방지를 위해 이곳 알림 센터에서만 모아보실 수 있습니다.
+                        </p>
+                    </div>
+                </div>
 
                 {/* 공시 탭 전용 서브 필터 */}
                 {activeTab === 'disclosure' && (
