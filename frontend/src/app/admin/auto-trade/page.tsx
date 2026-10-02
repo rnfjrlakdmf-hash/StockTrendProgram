@@ -81,7 +81,7 @@ export default function AdminAutoTradePage() {
   const [marketTarget, setMarketTarget] = useState("ALL");
   const [maxTotalInvestKrw, setMaxTotalInvestKrw] = useState(10000000);
   const [orderAmountKrw, setOrderAmountKrw] = useState(2000000);
-  const [maxPositions, setMaxPositions] = useState(5);
+  const [maxPositions, setMaxPositions] = useState(7);
   const [takeProfitPct, setTakeProfitPct] = useState(4.0);
   const [useStopLoss, setUseStopLoss] = useState(false);
   const [autoAveragingDown, setAutoAveragingDown] = useState(true);
@@ -115,7 +115,7 @@ export default function AdminAutoTradePage() {
     setMarketTarget(cfg.market_target === "KR_ONLY" || cfg.market_target === "US_ONLY" ? cfg.market_target : "ALL");
     setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 10000000));
     setOrderAmountKrw(Number(cfg.order_amount_krw || 2000000));
-    setMaxPositions(Number(cfg.max_positions || 5));
+    setMaxPositions(Number(cfg.max_positions || 7));
     setTakeProfitPct(Number(cfg.take_profit_pct || 4.0));
     setUseStopLoss(Boolean(cfg.use_stop_loss ?? false));
     setAutoAveragingDown(Boolean(cfg.auto_averaging_down ?? true));
@@ -313,7 +313,7 @@ export default function AdminAutoTradePage() {
 
   const handleApplyRealLimit = async (targetLimit?: number, startRealNow: boolean = false) => {
     const limitVal = Math.max(30000, Number(targetLimit ?? maxTotalInvestKrw) || 100000);
-    const autoMaxPos = limitVal <= 200000 ? 2 : limitVal <= 600000 ? 3 : 5;
+    const autoMaxPos = limitVal <= 200000 ? 2 : limitVal <= 500000 ? 3 : limitVal <= 1000000 ? 5 : limitVal <= 4000000 ? 7 : 10;
     const autoOrderAmt = Math.max(25000, Math.floor(limitVal / Math.max(2, autoMaxPos)));
     setMaxTotalInvestKrw(limitVal);
     setMaxPositions(autoMaxPos);
@@ -603,7 +603,7 @@ export default function AdminAutoTradePage() {
                 {(summary.unrealized_pnl_krw || 0) >= 0 ? "+" : ""}₩{(summary.unrealized_pnl_krw || 0).toLocaleString()}
               </div>
               <div className="text-[11px] text-gray-500 mt-1">
-                {isRealView ? `실전 보유 ${realPositions.length}종목` : `가상 보유 ${paperPositions.length}종목`} / 최대 {cfg.max_positions || 5}종목
+                {isRealView ? `실전 보유 ${realPositions.length}종목` : `가상 보유 ${paperPositions.length}종목`} / 최대 {cfg.max_positions || maxPositions || 7}종목
               </div>
             </div>
 
@@ -830,8 +830,8 @@ export default function AdminAutoTradePage() {
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
                 {isRealView
-                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || 5})`
-                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${activePaperSeed <= 300000 ? 3 : 5})`}
+                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || maxPositions || 7})`
+                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${cfg.max_positions || maxPositions || 7})`}
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
@@ -1078,12 +1078,12 @@ export default function AdminAutoTradePage() {
                   {[
                     { label: "🔥 10만원 (소액 시작)", val: 100000, pos: 2, order: 50000 },
                     { label: "30만원", val: 300000, pos: 3, order: 100000 },
-                    { label: "50만원", val: 500000, pos: 3, order: 160000 },
-                    { label: "100만원", val: 1000000, pos: 4, order: 250000 },
-                    { label: "300만원", val: 3000000, pos: 5, order: 600000 },
-                    { label: "500만원", val: 5000000, pos: 5, order: 1000000 },
-                    { label: "1,000만원", val: 10000000, pos: 5, order: 2000000 },
-                    { label: "한도 제한 없음", val: 0, pos: 5, order: 2000000 },
+                    { label: "50만원", val: 500000, pos: 4, order: 125000 },
+                    { label: "100만원", val: 1000000, pos: 5, order: 200000 },
+                    { label: "300만원", val: 3000000, pos: 6, order: 500000 },
+                    { label: "500만원", val: 5000000, pos: 7, order: 700000 },
+                    { label: "1,000만원", val: 10000000, pos: 10, order: 1000000 },
+                    { label: "한도 제한 없음", val: 0, pos: 10, order: 1000000 },
                   ].map((preset) => (
                     <button
                       key={preset.val}
@@ -1282,11 +1282,29 @@ export default function AdminAutoTradePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-emerald-300 block mb-1">📈 최대 보유 종목수</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-emerald-300">📈 최대 보유 종목수</label>
+                    <div className="flex gap-1">
+                      {[5, 7, 10, 15].map((cnt) => (
+                        <button
+                          key={cnt}
+                          type="button"
+                          onClick={() => setMaxPositions(cnt)}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            maxPositions === cnt
+                              ? "bg-emerald-500 text-black font-black"
+                              : "bg-white/10 text-gray-300 hover:text-white"
+                          }`}
+                        >
+                          {cnt}개
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <input
                     type="number"
                     min={1}
-                    max={10}
+                    max={20}
                     value={maxPositions}
                     onChange={(e) => setMaxPositions(Number(e.target.value))}
                     className="w-full bg-zinc-950 border border-emerald-500/30 rounded-xl px-3 py-2 text-xs font-mono font-bold text-emerald-300"

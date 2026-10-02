@@ -181,7 +181,7 @@ def _default_state() -> Dict[str, Any]:
             "initial_capital_krw": 10000000,
             "max_total_invest_krw": 10000000,  # 실전/연동 계좌에서 AI 자동매매가 사용할 수 있는 최대 총 투자 한도 금액 (원)
             "order_amount_krw": 2000000,
-            "max_positions": 5,
+            "max_positions": 7,
             "take_profit_pct": 4.0,
             "use_stop_loss": False,  # False = 무손절 모드 (손해 보고는 절대 안 팔고 수익 날 때만 익절!)
             "auto_averaging_down": True,  # True = -5% 하락 시 1회 자동 물타기(평단가 낮추기)
@@ -944,6 +944,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     state["active_session"] = session_info
 
     # 1. 현재 보유 종목 실시간 시세 갱신 및 자동 익절 / 트레일링 스탑 / 자동 손절 체크
+    is_kis_mode = cfg.get("mode") in ("KIS_REAL", "KIS_VIRTUAL")
     remaining_positions = []
     sold_symbols = set()
     for pos in state.get("positions", []):
@@ -983,8 +984,8 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         use_sl = bool(cfg.get("use_stop_loss", False))
         auto_avg = bool(cfg.get("auto_averaging_down", True))
 
-        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도
-        if (cfg.get("enabled") or force_buy) and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
+        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도 (한투 실전/모의 모드 전용)
+        if is_kis_mode and (cfg.get("enabled") or force_buy) and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
             max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
             curr_invested_krw = sum(
                 int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
@@ -1052,7 +1053,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             elif use_sl and pnl_pct <= -abs(sl_pct):
                 sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
 
-        if sell_reason and (cfg.get("enabled") or force_buy):
+        if is_kis_mode and sell_reason and (cfg.get("enabled") or force_buy):
             # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
             kis_sell_ok = True
             kis_sell_tag = ""
@@ -1132,7 +1133,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         state["us_candidates"] = scored_candidates[:10]
 
     held_symbols = {p["symbol"] for p in state["positions"]}
-    max_pos = int(cfg.get("max_positions", 5))
+    max_pos = int(cfg.get("max_positions", 7) or 7)
     order_budget = int(cfg.get("order_amount_krw", 2000000))
     max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
     min_score = int(cfg.get("min_ai_score", 68))
@@ -1150,7 +1151,10 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         else f"🛡️ 5중 리스크 방어 정상 가동 중 (시장 평균 {avg_market_chg:+.2f}% · 고점과열 차단 · 섹터분산 · 무손절 물타기 대기)"
     )
 
-    if (cfg.get("enabled") or force_buy) and not market_crash_brake and len(state["positions"]) < max_pos and acct["cash_krw"] >= 5000:
+    # [한투 실전·모의 계좌 주문 루프]
+    # 모의투자(AI_PAPER)는 _sync_and_trade_paper_portfolio()가 자산 배분(국내 3 / 해외 2)에 맞춰 전담하므로
+    # 이 루프는 한국투자증권 실전/모의 계좌 연동 모드일 때만 실행됩니다.
+    if is_kis_mode and (cfg.get("enabled") or force_buy) and not market_crash_brake and len(state["positions"]) < max_pos and acct["cash_krw"] >= 5000:
         for cand in scored_candidates:
             if len(state["positions"]) >= max_pos:
                 break
@@ -1434,7 +1438,7 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
         real_limit = max(30000, int(new_cfg["max_total_invest_krw"]))
         state["config"]["max_total_invest_krw"] = real_limit
         # 설정된 실전 한도에 맞춰 최대 종목 수와 1회 매수 금액을 자동 최적화
-        auto_max_pos = 2 if real_limit <= 200000 else (3 if real_limit <= 600000 else 5)
+        auto_max_pos = 2 if real_limit <= 200000 else (3 if real_limit <= 500000 else (5 if real_limit <= 1000000 else (7 if real_limit <= 4000000 else 10)))
         if "max_positions" not in new_cfg:
             state["config"]["max_positions"] = auto_max_pos
         if "order_amount_krw" not in new_cfg:
@@ -1526,16 +1530,32 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     # 시드머니 변경 또는 매매 손익으로 총 운용 금액이 변동되면 변동된 총금액(effective_seed_krw)에 맞춰 자동 스케일링!
     effective_seed_krw = max(50000, base_paper_seed_krw + realized_pnl)
 
+    cfg_max = int(cfg.get("max_positions", 7) or 7)
+    mkt_target = str(cfg.get("market_target", "ALL"))
+
     if effective_seed_krw <= 300000:
-        paper_max_pos = 3
-        target_kr_slots = 2
-        target_us_slots = 1
+        paper_max_pos = min(3, max(2, cfg_max))
+        target_kr_slots = 2 if mkt_target != "US_ONLY" else 0
+        target_us_slots = 1 if mkt_target != "KR_ONLY" else 0
+        if target_kr_slots + target_us_slots < paper_max_pos:
+            target_kr_slots = paper_max_pos
         per_stock_budget_krw = max(35000, int(effective_seed_krw * 0.35))
     else:
-        paper_max_pos = 5
-        target_kr_slots = 3
-        target_us_slots = 2
-        per_stock_budget_krw = max(65000, int(effective_seed_krw * 0.135))
+        paper_max_pos = max(3, min(20, cfg_max))
+        if mkt_target == "KR_ONLY":
+            target_kr_slots = paper_max_pos
+            target_us_slots = 0
+        elif mkt_target == "US_ONLY":
+            target_kr_slots = 0
+            target_us_slots = paper_max_pos
+        else:
+            # 기본 ALL(국내+해외): 약 60% 국내, 40% 해외 배분
+            target_kr_slots = max(2, int(round(paper_max_pos * 0.6)))
+            target_us_slots = max(1, paper_max_pos - target_kr_slots)
+
+        # 총 시드의 약 72%를 주식에 균등 배분, 나머지는 안전 현금(예수금 버퍼)으로 보존
+        invest_ratio = 0.72
+        per_stock_budget_krw = max(50000, int((effective_seed_krw * invest_ratio) // paper_max_pos))
 
     tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
@@ -1615,7 +1635,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             continue
 
         unit_p_krw = float(p.get("avg_price", 0) or 0) * (fx_rate if is_us_p else 1.0)
-        if unit_p_krw > per_stock_budget_krw * 1.35:
+        if unit_p_krw > max(per_stock_budget_krw * 1.5, 1500000):
             seen_syms.discard(sym)
             changed = True
             continue
