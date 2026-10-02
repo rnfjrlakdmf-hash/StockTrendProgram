@@ -1642,7 +1642,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
 
         if not is_us_p:
             kr_held_count += 1
-            if kr_held_count > target_kr_slots:
+            if kr_held_count > paper_max_pos:
                 seen_syms.discard(sym)
                 changed = True
                 continue
@@ -1836,21 +1836,23 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     if active_mkt == "KR":
         # 현재 국내 정규장 운영 시간(평일 09:00~15:30)에만 실제 분석 및 신규 매수! (15:30 이후 및 주말에는 매수 일절 금지)
         if is_market_open_now("005930", is_us=False):
-            if len(curr_kr) < target_kr_slots:
+            needed_kr = max(0, paper_max_pos - len(updated_paper))
+            if needed_kr > 0:
                 kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
                 if not kr_pool:
                     kr_pool = _build_session_candidates(state, "KR")[:10]
                     state["kr_candidates"] = kr_pool
-                _fill_market_slots(kr_pool, target_kr_slots - len(curr_kr), "🇰🇷국내")
+                _fill_market_slots(kr_pool, needed_kr, "🇰🇷국내")
     elif active_mkt == "US":
         # 현재 미국장 운영 시간(월 17:00 ~ 토 09:00 KST)에만 실제로 열린 해외주식 신규 매수!
         if is_market_open_now("NVDA", is_us=True):
-            if len(curr_us) < target_us_slots:
+            needed_us = max(0, paper_max_pos - len(updated_paper))
+            if needed_us > 0:
                 us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
                 if not us_pool:
                     us_pool = _build_session_candidates(state, "US")[:10]
                     state["us_candidates"] = us_pool
-                _fill_market_slots(us_pool, target_us_slots - len(curr_us), "🇺🇸해외")
+                _fill_market_slots(us_pool, needed_us, "🇺🇸해외")
 
     state["paper_positions_backup"] = updated_paper
     real_only = [
