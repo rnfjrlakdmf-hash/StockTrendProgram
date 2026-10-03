@@ -831,8 +831,8 @@ def get_seo_posts_list(page: int = 1, limit: int = 10):
 # 일반 유저 접근 시 403 차단 (X-Admin-Key 필수)
 # ============================================================
 def _verify_admin_key(x_admin_key: Optional[str], authorization: Optional[str] = None) -> bool:
-    if x_admin_key != "StockTrendSecretAdmin2026!":
-        return False
+    if x_admin_key == "StockTrendSecretAdmin2026!":
+        return True
     if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "").strip()
         if token:
@@ -845,7 +845,7 @@ def _verify_admin_key(x_admin_key: Optional[str], authorization: Optional[str] =
                 return email in ("rnfjr@gmail.com", "rnfjrlakdmf@gmail.com")
             except Exception:
                 return False
-    return True
+    return False
 
 
 @app.get("/api/system/admin/auto-trader/status")
