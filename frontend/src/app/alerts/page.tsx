@@ -154,8 +154,8 @@ export default function AlertCenterPage() {
                 // [보안 강화] 오직 명시적으로 로그인된 유저 세션이 존재할 때만 userId 인정
                 const userId = user?.id || (user as any)?.uid || null;
                 
-                // [3일치 완벽 보존] 하루 수백~수천 건의 SEC 공시에 밀려 DART 공시, 퀀트 시세, 관심종목, 서비스/관리자 알림이 밀려나지 않도록 3,500개로 대폭 확장
-                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(3500));
+                // [3일치 완벽 보존] 하루 수백~수천 건의 SEC 공시에 밀려 DART 공시, 퀀트 시세, 관심종목, 서비스/관리자 알림이 밀려나지 않도록 5,000개로 대폭 확장
+                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(5000));
                 const snapLatest = await getDocs(qLatest);
                 
                 const seenContentKeys = new Set<string>();
@@ -345,7 +345,8 @@ export default function AlertCenterPage() {
                     return timeB - timeA;
                 });
                 
-                setAlerts(sortedAlerts.slice(0, 600));
+                // [3일치 전수 보존] 슬라이스 제한을 제거하여 3~4일 전(09/30, 10/01, 10/02) 모든 알림이 각 탭에 온전히 표시되도록 설정
+                setAlerts(sortedAlerts);
                 setErrorMsg(null);
             } catch (err: any) {
                 console.error("Failed to fetch alerts:", err);
