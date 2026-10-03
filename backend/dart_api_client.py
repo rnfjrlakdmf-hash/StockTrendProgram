@@ -135,51 +135,64 @@ class DartApiClient:
         date_str = target_date.strftime("%Y%m%d")
         today_str = now_ts.strftime("%Y%m%d")
 
-        params = {
-            "crtfc_key": self.api_key,
-            "bgn_de": date_str,
-            "end_de": today_str,
-            "page_no": "1",
-            "page_count": "100"
-        }
+        cleaned_reports = []
+        seen_rcept_no = set()
+        max_pages = 5 if days_ago >= 2 else 2
 
-        try:
-            res = requests.get(url, params=params, timeout=10)
-            if res.status_code == 200:
-                data = res.json()
-                status = data.get("status")
-                
-                if status == "000":  # 정상
-                    reports = data.get("list", [])
-                    cleaned_reports = []
-                    for r in reports:
-                        stock_code = r.get("stock_code", "").strip()
-                        cleaned_reports.append({
-                            "corp_code": r.get("corp_code"),
-                            "corp_name": r.get("corp_name"),
-                            "stock_code": stock_code if stock_code else None,
-                            "report_nm": r.get("report_nm"),
-                            "rcept_no": r.get("rcept_no"),
-                            "flr_nm": r.get("flr_nm"),
-                            "rcept_dt": r.get("rcept_dt"),
-                            "rm": r.get("rm"),
-                            "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={r.get('rcept_no')}"
-                        })
+        for p_no in range(1, max_pages + 1):
+            params = {
+                "crtfc_key": self.api_key,
+                "bgn_de": date_str,
+                "end_de": today_str,
+                "page_no": str(p_no),
+                "page_count": "100"
+            }
+
+            try:
+                res = requests.get(url, params=params, timeout=10)
+                if res.status_code == 200:
+                    data = res.json()
+                    status = data.get("status")
                     
-                    self._realtime_cache[days_ago] = cleaned_reports
-                    self._realtime_cache_time[days_ago] = now_ts
-                    return cleaned_reports
-                elif status == "013":  # 조회된 데이터가 없음
-                    self._realtime_cache[days_ago] = []
-                    self._realtime_cache_time[days_ago] = now_ts
-                    return []
+                    if status == "000":  # 정상
+                        reports = data.get("list", [])
+                        for r in reports:
+                            rcp_no = r.get("rcept_no")
+                            if rcp_no and rcp_no not in seen_rcept_no:
+                                seen_rcept_no.add(rcp_no)
+                                stock_code = r.get("stock_code", "").strip()
+                                cleaned_reports.append({
+                                    "corp_code": r.get("corp_code"),
+                                    "corp_name": r.get("corp_name"),
+                                    "stock_code": stock_code if stock_code else None,
+                                    "report_nm": r.get("report_nm"),
+                                    "rcept_no": rcp_no,
+                                    "flr_nm": r.get("flr_nm"),
+                                    "rcept_dt": r.get("rcept_dt"),
+                                    "rm": r.get("rm"),
+                                    "link": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}"
+                                })
+                        total_pages = int(data.get("total_page", 1) or 1)
+                        if p_no >= total_pages:
+                            break
+                    elif status == "013":  # 조회된 데이터가 없음
+                        break
+                    else:
+                        print(f"[DART-API] ❌ API 오류 (상태코드: {status}): {data.get('message')}")
+                        break
                 else:
-                    print(f"[DART-API] ❌ API 오류 (상태코드: {status}): {data.get('message')}")
-            else:
-                print(f"[DART-API] HTTP 오류: {res.status_code}")
-        except Exception as e:
-            print(f"[DART-API] 호출 예외 발생: {e}")
+                    print(f"[DART-API] HTTP 오류: {res.status_code}")
+                    break
+            except Exception as e:
+                print(f"[DART-API] 호출 예외 발생: {e}")
+                break
 
+        if cleaned_reports:
+            self._realtime_cache[days_ago] = cleaned_reports
+            self._realtime_cache_time[days_ago] = now_ts
+            return cleaned_reports
+        elif days_ago in self._realtime_cache:
+            return self._realtime_cache[days_ago]
         return []
 
     def _fetch_document_xml(self, rcept_no: str) -> Optional[str]:
@@ -296,7 +309,7 @@ class DartApiClient:
             return None
 
     def _parse_insider_xml(self, xml_content: str, default_flr: str = "") -> Optional[Dict]:
-        """DART 임원/주요주주소유상황보고서 XML 직접 파싱 (ACODE 추출)"""
+        """DART 임원/주요주주소유상황보고서 및 거래계획보고서 XML 직접 파싱 (ACODE 추출)"""
         try:
             acodes = {}
             for m in re.finditer(r'<TE[^>]*ACODE="([^"]+)"[^>]*>(.*?)</TE>', xml_content, re.DOTALL):
@@ -305,7 +318,12 @@ class DartApiClient:
                 if k not in acodes or acodes[k] in ('-', ''):
                     acodes[k] = v
 
-            qty_raw = acodes.get('MDF_STK_CNT') or acodes.get('MDF_STK_SUM') or acodes.get('MDF_UN_CNT') or '0'
+            # 1. 변동/계획 수량 파싱 (소유상황보고서 및 2024 신설 거래계획보고서 ACODE 포괄 지원)
+            qty_raw = (
+                acodes.get('STR_STK_CNT') or acodes.get('PLN_STR_STK') or acodes.get('DEL_STR_STK') or
+                acodes.get('STR_STK_SUM2') or acodes.get('MDF_STK_CNT') or acodes.get('MDF_STK_SUM') or
+                acodes.get('MDF_UN_CNT') or '0'
+            )
             qty_raw = qty_raw.replace(',', '').replace(' ', '').replace('+', '')
             try:
                 qty_signed = int(qty_raw)
@@ -314,30 +332,58 @@ class DartApiClient:
                 qty_signed = 0
                 qty = 0
 
-            remain_raw = acodes.get('AFR_STK_CNT') or acodes.get('AFR_STK_SUM') or acodes.get('AFR_UN_CNT') or '0'
+            # 2. 거래 후 보유 수량 (또는 현재 보유 수량)
+            remain_raw = (
+                acodes.get('OWN_STK_CNT') or acodes.get('AFR_STK_CNT') or acodes.get('AFR_STK_SUM') or
+                acodes.get('AFR_UN_CNT') or acodes.get('STK_CNT') or acodes.get('CPT_CNT') or '0'
+            )
             remain_raw = remain_raw.replace(',', '').replace(' ', '')
             try:
                 remain_qty = int(remain_raw)
             except Exception:
                 remain_qty = 0
 
-            hold_rate = acodes.get('AFR_UN_RT') or acodes.get('HLD_STK_RT') or acodes.get('STK_RT') or '0.00'
+            # 3. 지분율
+            hold_rate = (
+                acodes.get('OWN_STK_RT') or acodes.get('HLD_STK_RT') or acodes.get('STK_RT') or
+                acodes.get('AFR_UN_RT') or '0.00'
+            )
 
-            reporter = acodes.get('REP_NM') or default_flr or '임원/주요주주'
-            title = acodes.get('REP_OFC') or ''
+            # 4. 변동 지분율
+            rate_irds_raw = acodes.get('STR_STK_RT') or acodes.get('MDF_UN_RT') or '0.00'
 
+            # 5. 보고자 명 및 직책
+            raw_rep = acodes.get('IFR_NM') or acodes.get('REP_NM') or default_flr or '임원/주요주주'
+            reporter = re.sub(r'\(주\)', '', raw_rep).strip() or raw_rep
+            title = acodes.get('RSP_MAN_PST') or acodes.get('REP_OFC') or ''
+
+            # 6. 거래 금액
+            amt_raw = acodes.get('TRAN_AMT') or acodes.get('PLN_TRAN_AMT') or acodes.get('TRAN_AMT_SUM2') or '0'
+            amt_raw = amt_raw.replace(',', '').replace(' ', '')
+            try:
+                amount_krw = int(amt_raw)
+            except Exception:
+                amount_krw = 0
+
+            # 7. 매수/매도 방향 판별
             bfr_raw = (acodes.get('BFR_STK_CNT') or acodes.get('BFR_STK_SUM') or acodes.get('BFR_UN_CNT') or '0').replace(',', '')
             try:
                 bfr_qty = int(bfr_raw)
             except Exception:
                 bfr_qty = 0
 
-            if qty_signed < 0 or (remain_qty < bfr_qty and bfr_qty > 0):
+            # 거래계획보고서 본문 키워드 체크 (장내매수, 장내매도 등)
+            is_plan_buy = any(kw in xml_content for kw in ['장내매수', '매수(+)', '취득(+)'])
+            is_plan_sell = any(kw in xml_content for kw in ['장내매도', '매도(-)', '처분(-)'])
+
+            if is_plan_sell or qty_signed < 0 or (remain_qty < bfr_qty and bfr_qty > 0):
                 trans_type = "매도(처분)"
-            elif qty_signed > 0 or remain_qty > bfr_qty:
+            elif is_plan_buy or qty_signed > 0 or (remain_qty > bfr_qty and bfr_qty > 0):
                 trans_type = "매수(취득)"
             else:
-                trans_type = "매수(취득)"
+                trans_type = "매수(취득)" if qty > 0 else "보유 변동"
+
+            reason = acodes.get('TRAN_PPS') or ''
 
             return {
                 "reporter": reporter,
@@ -345,9 +391,10 @@ class DartApiClient:
                 "trans_type": trans_type,
                 "qty": qty,
                 "remain_qty": remain_qty,
-                "hold_rate": hold_rate,
-                "irds_rate": acodes.get('MDF_UN_RT', '0.00'),
-                "amount_krw": 0
+                "hold_rate": str(hold_rate),
+                "irds_rate": str(rate_irds_raw),
+                "amount_krw": amount_krw,
+                "reason": reason
             }
         except Exception as e:
             print(f"[DART-API] 내부자 XML 파싱 실패: {e}")

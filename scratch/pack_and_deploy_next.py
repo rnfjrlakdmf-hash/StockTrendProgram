@@ -46,6 +46,10 @@ def deploy_to_ec2(tar_path):
     files_to_upload = [
         ("backend/market_tag_helper.py", "/home/ubuntu/StockTrendProgram/backend/market_tag_helper.py"),
         ("backend/auto_trader_service.py", "/home/ubuntu/StockTrendProgram/backend/auto_trader_service.py"),
+        ("backend/dart_api_client.py", "/home/ubuntu/StockTrendProgram/backend/dart_api_client.py"),
+        ("backend/scheduler_service.py", "/home/ubuntu/StockTrendProgram/backend/scheduler_service.py"),
+        ("backend/db_manager.py", "/home/ubuntu/StockTrendProgram/backend/db_manager.py"),
+        ("backend/scheduler.py", "/home/ubuntu/StockTrendProgram/backend/scheduler.py"),
         ("frontend/src/lib/marketTag.ts", "/home/ubuntu/StockTrendProgram/frontend/src/lib/marketTag.ts"),
         ("frontend/src/app/alerts/page.tsx", "/home/ubuntu/StockTrendProgram/frontend/src/app/alerts/page.tsx"),
         ("frontend/src/app/admin/auto-trade/page.tsx", "/home/ubuntu/StockTrendProgram/frontend/src/app/admin/auto-trade/page.tsx"),

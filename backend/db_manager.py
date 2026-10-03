@@ -2677,8 +2677,8 @@ def get_system_logs(limit: int = 100):
     finally:
         conn.close()
 
-def cleanup_old_system_logs(days: int = 3):
-    """3일(기본값)이 지난 시스템 로그를 자동으로 삭제하여 DB 용량을 절약합니다."""
+def cleanup_old_system_logs(days: int = 7):
+    """7일(기본값)이 지난 시스템 로그를 자동으로 삭제하여 데이터를 안전하게 보존하면서 DB를 관리합니다."""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()

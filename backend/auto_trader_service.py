@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import time
 import math
 import threading
@@ -317,58 +318,97 @@ def _default_state() -> Dict[str, Any]:
 
 def load_state() -> Dict[str, Any]:
     state = _default_state()
-    try:
-        if os.path.exists(STATE_FILE):
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                saved = json.load(f)
-                if isinstance(saved, dict):
-                    state["config"].update(saved.get("config", {}))
-                    state["account"].update(saved.get("account", {}))
-                    state["positions"] = saved.get("positions", [])
-                    state["paper_positions_backup"] = saved.get("paper_positions_backup", [])
-                    state["trade_logs"] = saved.get("trade_logs", [])[:100]
-                    state["candidates"] = saved.get("candidates", [])
-                    state["last_cycle_at"] = saved.get("last_cycle_at", "")
-                    state["kis_token"] = saved.get("kis_token", {"access_token": "", "expires_at": 0})
-                    # KIS_REAL 모드일 때 실제 한투 주문 확인(kis_order_confirmed / [한투주문 완료])이 없는 가상 매수분이 섞여 있으면 즉시 분리 및 예수금 복원
-                    if state["config"].get("mode") == "KIS_REAL":
-                        real_only = [
-                            p for p in state["positions"]
-                            if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
-                        ]
-                        unconfirmed = [
-                            p for p in state["positions"]
-                            if not (p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", "")))
-                        ]
-                        if unconfirmed:
-                            existing_paper_syms = {bp.get("symbol") for bp in state["paper_positions_backup"]}
-                            for up in unconfirmed:
-                                up["trade_mode"] = "AI_PAPER"
-                                if up.get("symbol") not in existing_paper_syms:
-                                    state["paper_positions_backup"].append(up)
-                            state["positions"] = real_only
-                            cap = int(state["config"].get("max_total_invest_krw", 100000) or 100000)
-                            if not real_only:
-                                state["account"]["cash_krw"] = cap
-                            try:
-                                with open(STATE_FILE, "w", encoding="utf-8") as fw:
-                                    json.dump(state, fw, ensure_ascii=False, indent=2)
-                            except Exception:
-                                pass
+    saved = None
+    loaded_source = "default"
 
-                    # 당일 매도 완료된 종목이 positions 또는 paper_positions_backup에 잔류해 있을 경우 즉각 소각 정화
-                    today_str = datetime.now(KST).strftime("%Y-%m-%d")
-                    latest_act: Dict[str, str] = {}
-                    for lg in state.get("trade_logs", []):
-                        s = lg.get("symbol")
-                        act = lg.get("action")
-                        ts = str(lg.get("timestamp", ""))
-                        if s and act and s not in latest_act and ts.startswith(today_str):
-                            latest_act[s] = act
-                    sold_today = {s for s, act in latest_act.items() if act == "SELL"}
-                    if sold_today:
-                        state["positions"] = [p for p in state.get("positions", []) if p.get("symbol") not in sold_today]
-                        state["paper_positions_backup"] = [p for p in state.get("paper_positions_backup", []) if p.get("symbol") not in sold_today]
+    # 1. Primary: auto_trader_state.json
+    if os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) > 20:
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                content = json.load(f)
+                if isinstance(content, dict) and (content.get("positions") or content.get("paper_positions_backup") or content.get("account")):
+                    saved = content
+                    loaded_source = "primary"
+        except Exception as e:
+            print(f"[AutoTrader] Primary STATE_FILE read failed: {e}")
+
+    # 2. Secondary: auto_trader_state.json.bak
+    bak_file = STATE_FILE + ".bak"
+    if not saved and os.path.exists(bak_file) and os.path.getsize(bak_file) > 20:
+        try:
+            with open(bak_file, "r", encoding="utf-8") as f:
+                content = json.load(f)
+                if isinstance(content, dict):
+                    saved = content
+                    loaded_source = "local_bak"
+                    print("[AutoTrader] Recovered state successfully from local .bak file!")
+        except Exception as e:
+            print(f"[AutoTrader] Backup .bak file read failed: {e}")
+
+    # 3. Tertiary: Cloud Firestore backup
+    if not saved:
+        try:
+            from firebase_admin import firestore
+            db = firestore.client()
+            doc = db.collection("admin_auto_trader").document("current_state").get()
+            if doc.exists:
+                content = doc.to_dict()
+                if isinstance(content, dict):
+                    saved = content
+                    loaded_source = "firestore_cloud"
+                    print("[AutoTrader] Recovered state successfully from Firestore cloud backup!")
+        except Exception as e:
+            print(f"[AutoTrader] Firestore cloud backup read failed: {e}")
+
+    try:
+        if isinstance(saved, dict):
+            state["config"].update(saved.get("config", {}))
+            state["account"].update(saved.get("account", {}))
+            state["positions"] = saved.get("positions", [])
+            state["paper_positions_backup"] = saved.get("paper_positions_backup", [])
+            state["trade_logs"] = saved.get("trade_logs", [])[:100]
+            state["candidates"] = saved.get("candidates", [])
+            state["last_cycle_at"] = saved.get("last_cycle_at", "")
+            state["kis_token"] = saved.get("kis_token", {"access_token": "", "expires_at": 0})
+            # KIS_REAL 모드일 때 실제 한투 주문 확인(kis_order_confirmed / [한투주문 완료])이 없는 가상 매수분이 섞여 있으면 즉시 분리 및 예수금 복원
+            if state["config"].get("mode") == "KIS_REAL":
+                real_only = [
+                    p for p in state["positions"]
+                    if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+                ]
+                unconfirmed = [
+                    p for p in state["positions"]
+                    if not (p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", "")))
+                ]
+                if unconfirmed:
+                    existing_paper_syms = {bp.get("symbol") for bp in state["paper_positions_backup"]}
+                    for up in unconfirmed:
+                        up["trade_mode"] = "AI_PAPER"
+                        if up.get("symbol") not in existing_paper_syms:
+                            state["paper_positions_backup"].append(up)
+                    state["positions"] = real_only
+                    cap = int(state["config"].get("max_total_invest_krw", 100000) or 100000)
+                    if not real_only:
+                        state["account"]["cash_krw"] = cap
+                    try:
+                        with open(STATE_FILE, "w", encoding="utf-8") as fw:
+                            json.dump(state, fw, ensure_ascii=False, indent=2)
+                    except Exception:
+                        pass
+
+            # 당일 매도 완료된 종목이 positions 또는 paper_positions_backup에 잔류해 있을 경우 즉각 소각 정화
+            today_str = datetime.now(KST).strftime("%Y-%m-%d")
+            latest_act: Dict[str, str] = {}
+            for lg in state.get("trade_logs", []):
+                s = lg.get("symbol")
+                act = lg.get("action")
+                ts = str(lg.get("timestamp", ""))
+                if s and act and s not in latest_act and ts.startswith(today_str):
+                    latest_act[s] = act
+            sold_today = {s for s, act in latest_act.items() if act == "SELL"}
+            if sold_today:
+                state["positions"] = [p for p in state.get("positions", []) if p.get("symbol") not in sold_today]
+                state["paper_positions_backup"] = [p for p in state.get("paper_positions_backup", []) if p.get("symbol") not in sold_today]
     except Exception as e:
         print(f"[AutoTrader] load_state error: {e}")
 
@@ -437,8 +477,22 @@ def save_state(state: Dict[str, Any]) -> None:
 
     try:
         state["trade_logs"] = state.get("trade_logs", [])[:100]
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
+        # 원자적 파일 저장 (임시 파일 작성 후 원자적 교체 - 프로세스 비정상 종료 시에도 파일 손상 0% 보장)
+        tmp_file = STATE_FILE + ".tmp"
+        bak_file = STATE_FILE + ".bak"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+
+        # 교체 전 기존 정상 파일을 .bak 로 백업 보존
+        if os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) > 20:
+            try:
+                shutil.copyfile(STATE_FILE, bak_file)
+            except Exception:
+                pass
+
+        os.replace(tmp_file, STATE_FILE)
         try:
             os.chmod(STATE_FILE, 0o600)  # 리눅스 서버 소유자(ubuntu) 외 읽기/쓰기 완전 차단
         except Exception:
@@ -1910,43 +1964,13 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             raw_paper.append(dict(p))
             seen_syms.add(sym)
 
-    # 1.2 [장외 체결 보정 & 시드머니 한도 초과 종목 정리]
-    kr_held_count = 0
+    # 1.2 [보유 포지션 100% 안전 보존]
+    # 이미 정상 매수되어 계좌에 편입된 종목은 어떠한 경우에도 임의 삭제하지 않고 전량 온전히 보존
     balanced_raw: List[Dict[str, Any]] = []
-    changed = False
     for p in raw_paper:
-        sym = p["symbol"]
-        is_us_p = bool(p.get("is_us") or any(c.isalpha() for c in sym))
-        bought_at_str = str(p.get("bought_at", ""))
-        bought_hour = -1
-        if len(bought_at_str) >= 13 and ":" in bought_at_str:
-            try:
-                bought_hour = int(bought_at_str[11:13])
-            except Exception:
-                bought_hour = -1
-
-        # 미국장이 닫혀 있는 낮 시간대(08:00~16:59 KST)에 매수된 해외주식은 장외 허수 체결이므로 즉시 취소
-        if is_us_p and (8 <= bought_hour < 17):
-            seen_syms.discard(sym)
-            state["trade_logs"] = [
-                lg for lg in state.get("trade_logs", [])
-                if not (lg.get("symbol") == sym and lg.get("mode") == "AI_PAPER")
-            ]
-            changed = True
+        sym = p.get("symbol")
+        if not sym or sym in permanently_sold_today_syms:
             continue
-
-        unit_p_krw = float(p.get("avg_price", 0) or 0) * (fx_rate if is_us_p else 1.0)
-        if unit_p_krw > max(per_stock_budget_krw * 1.5, 1500000):
-            seen_syms.discard(sym)
-            changed = True
-            continue
-
-        if not is_us_p:
-            kr_held_count += 1
-            if kr_held_count > paper_max_pos:
-                seen_syms.discard(sym)
-                changed = True
-                continue
         balanced_raw.append(p)
     raw_paper = balanced_raw
 

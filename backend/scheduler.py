@@ -70,24 +70,28 @@ def format_super_ant_alert(market_tag: str, corp: str, raw_code: str, doc_id: st
         rate_irds = ant_details.get("rate_irds", 0.0)
         reason = ant_details.get("reason", "")
         amt_str = ant_details.get("amount_str", "")
+        if irds_qty > 0:
+            prefix_title = f"🐜 [슈퍼개미 {trans_type[:2]}]"
+            qty_str = f" {irds_qty:,}주"
+            rate_str = f" ({rate_irds:+.2f}%p)" if rate_irds != 0 else ""
+            val_str = f" ({amt_str})" if amt_str else ""
+            p1 = f"{reporter} | {trans_type}{qty_str}{rate_str}{val_str}".strip()
 
-        prefix_title = f"🐜 [슈퍼개미 {trans_type[:2]}]"
+            p2_parts = []
+            if final_qty > 0:
+                f_str = f"보유: {final_qty:,}주"
+                if final_rate > 0:
+                    f_str += f" ({final_rate:.2f}%)"
+                p2_parts.append(f_str)
+            if reason:
+                p2_parts.append(reason)
+            p2 = " · ".join(p2_parts)
+        else:
+            prefix_title = "🐜 [슈퍼개미 지분]"
+            p1 = f"{reporter} | 총 {final_qty:,}주 ({final_rate:.2f}%) 보유 중"
+            p2 = f"사유: {reason or '지분 보유 현황 보고 (매매 변동 없음)'}"
+
         title = f"{prefix_title} {market_tag} {corp}".strip()
-
-        qty_str = f" {irds_qty:,}주" if irds_qty > 0 else ""
-        rate_str = f" ({rate_irds:+.2f}%p)" if rate_irds != 0 else ""
-        val_str = f" ({amt_str})" if amt_str else ""
-        p1 = f"{reporter} | {trans_type}{qty_str}{rate_str}{val_str}".strip()
-
-        p2_parts = []
-        if final_qty > 0:
-            f_str = f"보유: {final_qty:,}주"
-            if final_rate > 0:
-                f_str += f" ({final_rate:.2f}%)"
-            p2_parts.append(f_str)
-        if reason:
-            p2_parts.append(reason)
-        p2 = " · ".join(p2_parts)
 
         lines = [p1]
         if p2:
@@ -95,12 +99,15 @@ def format_super_ant_alert(market_tag: str, corp: str, raw_code: str, doc_id: st
         if rcept_dt and len(rcept_dt) >= 8:
             lines.append(f"📅 공시 접수: {rcept_dt[4:6]}월 {rcept_dt[6:8]}일")
 
-        if "취득" in direction or "매수" in direction:
-            lines.append("💡 [시장해석] 큰손 5%+ 집중 매집 · 수급 유입 기대")
-        elif "처분" in direction or "매도" in direction:
-            lines.append("💡 [시장해석] 대량보유자 지분 축소 · 차익실현 물량 주의")
+        if irds_qty > 0:
+            if "취득" in direction or "매수" in direction:
+                lines.append("💡 [시장해석] 큰손 5%+ 집중 매집 · 수급 유입 기대")
+            elif "처분" in direction or "매도" in direction:
+                lines.append("💡 [시장해석] 대량보유자 지분 축소 · 차익실현 물량 주의")
+            else:
+                lines.append("💡 [시장해석] 큰손 지분 구조 변화 · 세부 내역 확인 필요")
         else:
-            lines.append("💡 [시장해석] 큰손 지분 구조 변화 · 세부 내역 확인 필요")
+            lines.append("💡 [시장해석] 대량보유 지분 현황 유지 · 담보계약 등 세부 조건 변동")
 
         return title, "\n".join(lines)
     else:
@@ -115,7 +122,7 @@ def format_super_ant_alert(market_tag: str, corp: str, raw_code: str, doc_id: st
 
 def format_insider_alert(market_tag: str, corp: str, raw_code: str, doc_id: str, flr_nm: str, rcept_dt: str = "", corp_code: str = None) -> tuple[str, str]:
     """
-    🚨 임원/주요주주 내부자 거래 상세 알림 포맷터
+    🚨 임원/주요주주 내부자 거래 및 거래계획 상세 알림 포맷터
     미국 SEC Form 4 처럼 '누가(직책), 몇 주 샀는지/팔았는지, 금액, 잔여 보유주수'를 명확하게 노출
     """
     from dart_api_client import dart_api_client
@@ -127,7 +134,7 @@ def format_insider_alert(market_tag: str, corp: str, raw_code: str, doc_id: str,
         except Exception as e:
             logger.debug(f"[format_insider_alert] details error: {e}")
 
-    if insider_details and insider_details.get("qty", 0) > 0:
+    if insider_details and (insider_details.get("qty", 0) > 0 or insider_details.get("remain_qty", 0) > 0):
         reporter = insider_details.get("reporter", flr_nm or "임원/주요주주")
         title_pos = insider_details.get("title", "")
         trans_type = insider_details.get("trans_type", "매매")
@@ -135,21 +142,28 @@ def format_insider_alert(market_tag: str, corp: str, raw_code: str, doc_id: str,
         remain = insider_details.get("remain_qty", 0)
         rate = insider_details.get("hold_rate", "")
         amt_str = insider_details.get("amount_str", "")
+        reason = insider_details.get("reason", "")
 
         prefix_title = f"🚨 [내부자 {trans_type[:2]}]"
         title = f"{prefix_title} {market_tag} {corp}".strip()
 
         rep_info = f"{reporter} ({title_pos})" if title_pos else reporter
         val_str = f" ({amt_str})" if amt_str else ""
-        p1 = f"{rep_info} | {trans_type} {qty:,}주{val_str}"
 
-        p2_parts = []
-        if remain > 0:
-            r_str = f"변동 후 보유: {remain:,}주"
-            if rate:
-                r_str += f" ({rate}%)"
-            p2_parts.append(r_str)
-        p2 = " · ".join(p2_parts)
+        if qty > 0:
+            p1 = f"{rep_info} | {trans_type} {qty:,}주{val_str}"
+            p2_parts = []
+            if remain > 0:
+                r_str = f"거래 후 보유: {remain:,}주" if "계획" in trans_type or reason else f"변동 후 보유: {remain:,}주"
+                if rate:
+                    r_str += f" ({rate}%)"
+                p2_parts.append(r_str)
+            if reason:
+                p2_parts.append(reason)
+            p2 = " · ".join(p2_parts)
+        else:
+            p1 = f"{rep_info} | 총 {remain:,}주 ({rate}%) 보유 중"
+            p2 = f"사유: {reason or '임원/주요주주 소유 현황 보고'}"
 
         lines = [p1]
         if p2:
@@ -158,9 +172,11 @@ def format_insider_alert(market_tag: str, corp: str, raw_code: str, doc_id: str,
             lines.append(f"📅 공시 접수: {rcept_dt[4:6]}월 {rcept_dt[6:8]}일")
 
         if "매수" in trans_type or "취득" in trans_type:
-            lines.append("💡 [시장해석] 경영진 직접 매수로 사업 실적에 대한 강한 자신감 표명")
-        else:
+            lines.append("💡 [시장해석] 경영진/주요주주 직접 매수로 사업 실적에 대한 강한 자신감 표명")
+        elif "매도" in trans_type or "처분" in trans_type:
             lines.append("💡 [시장해석] 임원 지분 매도에 따른 차익실현 · 단기 주가 고점 부담 점검 권장")
+        else:
+            lines.append("💡 [시장해석] 임원/주요주주 주식 보유 현황 확인")
 
         return title, "\n".join(lines)
     else:
@@ -440,9 +456,9 @@ async def check_and_notify_disclosures():
                 # 1. 🚨 초특급 중대 공시 (시장 전체 및 주주가치에 중대한 영향 -> 전원 글로벌 푸시)
                 SUPER_GLOBAL_KEYWORDS = [
                     # 🔴 최고 수준 중대 악재 / 거래위험 / 상폐
-                    "상장폐지", "정리매매", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청", "감자결정", "회생절차",
-                    # 🟢 최고 수준 주주환원 / 경영권 분쟁 호재
-                    "무상증자", "자기주식소각", "주식소각", "공개매수", "경영권변경"
+                    "상장폐지", "정리매매", "관리종목", "횡령", "배임", "영업정지", "부도발생", "파산신청", "감자결정", "회생절차", "불성실공시",
+                    # 🟢 최고 수준 주주환원 / 경영권 분쟁 / 대형 수주 호재
+                    "무상증자", "자기주식소각", "주식소각", "자기주식취득", "신탁계약", "자사주매입", "공개매수", "경영권변경", "단일판매", "공급계약체결"
                 ]
 
                 # 2. 📊 기업 개별 스마트 팩트 공시 (단일판매 공급계약, 임원 매매, 슈퍼개미, 유상증자, 자사주 취득, 소송, 실적, 배당 등)
@@ -655,11 +671,12 @@ async def check_and_notify_disclosures():
                         except Exception as e:
                             logger.error(f"[WhaleSiren] Firestore error: {e}")
 
-                    # ✅ [글로벌 푸시 발송: 우루루 폭탄 방지]
-                    # 알림센터 DB에는 100% 전량 저장하되, 내 관심종목이 아닌 타 종목 글로벌 푸시는
-                    # 초특급 공시(is_super_global)이거나 1분 주기당 최대 1건(global_whale_push_count < 1)만 발송하여
-                    # 장 마감 직후(16시~17시) 수십 개 종목 공시가 한꺼번에 우루루 울리는 현상을 원천 차단!
-                    if is_whale and not skip_whale_alert and (is_super_global or global_whale_push_count < 1):
+                    # ✅ [글로벌 핵심 푸시 발송]
+                    # - 초특급 중대 공시(is_super_global: 자사주 매입/소각, 무증, 공급계약 등) -> 무조건 100% 즉시 푸시
+                    # - 슈퍼개미 5%+ 대량보유 지분변동(is_super_ant) -> 무조건 100% 즉시 푸시
+                    # - 임원/주요주주 내부자 거래(is_insider) -> 무조건 100% 즉시 푸시
+                    # - 그 외 팩트 공시(유상증자, 소송 등) -> 1분 주기당 최대 3건까지 여유 있게 푸시
+                    if is_whale and not skip_whale_alert and (is_super_global or is_super_ant or is_insider or global_whale_push_count < 3):
                         try:
                             from db_manager import get_all_fcm_tokens_with_user
                             whale_users = get_all_fcm_tokens_with_user(require_whale_alert=True)
@@ -751,6 +768,31 @@ async def check_and_notify_disclosures():
                         rcept_no=doc_id
                     )
                     logger.info(f"[공시Monitor] 알림센터 글로벌 100% 저장 완료: {corp} ({noti_title})")
+
+                    # 🐜 [자동 상세 보정] DART 서버의 신규 공시 인덱싱 지연(1~3분)으로 세부 수량이 비어 있을 경우, 최대 3회 재조회하여 상세 수량·금액으로 자동 업데이트!
+                    need_enrich = ("세부 내역 확인 필요" in noti_body or "자사주 보유 변동" in noti_body or "대량보유 지분 변동 발생" in noti_body)
+                    if (is_super_ant or is_insider) and need_enrich:
+                        async def _enrich_disclosure_async(doc_id_val, mkt_tag_val, corp_val, code_val, flr_val, dt_val, is_ant_flag):
+                            for delay_sec in [25, 45, 90]:
+                                await asyncio.sleep(delay_sec)
+                                try:
+                                    if is_ant_flag:
+                                        up_title, up_body = format_super_ant_alert(mkt_tag_val, corp_val, code_val, doc_id_val, flr_val, dt_val)
+                                    else:
+                                        up_title, up_body = format_insider_alert(mkt_tag_val, corp_val, code_val, doc_id_val, flr_val, dt_val)
+
+                                    if "세부 내역 확인 필요" not in up_body and "자사주 보유 변동" not in up_body and "대량보유 지분 변동 발생" not in up_body:
+                                        from firebase_admin import firestore
+                                        fs_db = firestore.client()
+                                        matched_docs = fs_db.collection("alerts").where("rcept_no", "==", doc_id_val).limit(1).get()
+                                        for mdoc in matched_docs:
+                                            mdoc.reference.update({"title": up_title, "body": up_body})
+                                            logger.info(f"[공시Monitor-Enrich] 상세 지분 변동/수량 자동 보강 완료 ({delay_sec}s): {corp_val} -> {up_title}")
+                                        break
+                                except Exception as enrich_e:
+                                    logger.debug(f"[공시Monitor-Enrich] 오류: {enrich_e}")
+
+                        asyncio.create_task(_enrich_disclosure_async(doc_id, market_tag, corp, raw_code, flr_nm, rcept_dt, is_super_ant))
                 except Exception as save_e:
                     logger.error(f"[공시Monitor] DB 저장 오류: {save_e}")
 
@@ -1533,12 +1575,12 @@ async def cleanup_alerts_scheduler_loop():
             await asyncio.sleep(60)
 
 async def cleanup_system_logs_scheduler_loop():
-    """3일 지난 시스템 로그(알림 모니터링)를 주기적으로 삭제 (6시간 주기)"""
+    """7일 지난 시스템 로그(알림 모니터링)를 주기적으로 정리하여 데이터 완벽 보존 (6시간 주기)"""
     logger.info("[CleanupSystemLogs] System Logs Cleanup Loop Active. Checking every 6 hours.")
     while True:
         try:
             from db_manager import cleanup_old_system_logs
-            deleted = await asyncio.to_thread(cleanup_old_system_logs, 3)
+            deleted = await asyncio.to_thread(cleanup_old_system_logs, 7)
             if deleted > 0:
                 logger.info(f"[CleanupSystemLogs] Deleted {deleted} old system log records.")
             await asyncio.sleep(21600) # 6시간 대기

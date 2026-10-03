@@ -1674,13 +1674,13 @@ def delete_old_alerts():
         db = get_db()
         
         kst = pytz.timezone('Asia/Seoul')
-        # [대표님 요청: 3일치 완벽 보존] 최소 3~4일 이상 온전히 유지되도록 5일(120시간) 이전 데이터만 정리
-        five_days_ago = datetime.now(kst) - timedelta(days=5)
+        # [데이터 보존 강화] 최소 3~5일 이상 넉넉히 보존되도록 7일(168시간) 이전 데이터만 정리
+        seven_days_ago = datetime.now(kst) - timedelta(days=7)
         
         # 1. Delete from Firestore
         if db:
             alerts_ref = db.collection('alerts')
-            query = alerts_ref.where('timestamp', '<', five_days_ago).limit(100)
+            query = alerts_ref.where('timestamp', '<', seven_days_ago).limit(100)
             
             deleted_count = 0
             while True:
@@ -1698,7 +1698,7 @@ def delete_old_alerts():
         cursor = conn.cursor()
         
         # 'alert_history' 테이블의 날짜 컬럼명(triggered_at)에 맞게 수정
-        cursor.execute("DELETE FROM alert_history WHERE triggered_at < ?", (five_days_ago.strftime('%Y-%m-%d %H:%M:%S'),))
+        cursor.execute("DELETE FROM alert_history WHERE triggered_at < ?", (seven_days_ago.strftime('%Y-%m-%d %H:%M:%S'),))
         db_deleted = cursor.rowcount
         
         conn.commit()
