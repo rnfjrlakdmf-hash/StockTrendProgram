@@ -1562,63 +1562,377 @@ function formatUsdToKrwInText(text: string): string {
     // Render Dedicated Premium Market Summary Micro-Bento Card
     const renderMarketSummaryCardContent = (alert: any) => {
         const text = alert.body || '';
+        const titleText = (alert.title || '').trim();
 
-        // 코스피 지표 파싱
+        // 1. 해외(미국) vs 국내 시장 판별
+        const isUSMarket = alert.market === 'US' || 
+            titleText.includes('해외') || 
+            titleText.includes('미국') || 
+            text.includes('나스닥') || 
+            text.includes('S&P500') ||
+            (alert.tag && alert.tag.includes('-US-'));
+
+        // 공통 마켓 진단 파싱
+        let diagnosis = alert.diagnosis || '';
+        if (!diagnosis) {
+            const diagMatch = text.match(/💡\s*\[마켓\s*진단\]\s*([^\n]+)/);
+            if (diagMatch) diagnosis = diagMatch[1].trim();
+        }
+
+        // ==========================================
+        // [A] 해외 (미국) 증시 전용 렌더링
+        // ==========================================
+        if (isUSMarket) {
+            let nasdaqVal = alert.nasdaq_val || '';
+            let nasdaqChg = alert.nasdaq_chg || '';
+            let nasdaqPct = alert.nasdaq_pct || '';
+            let isNasdaqUp = true;
+
+            const nMatch = text.match(/(?:🇺🇸\s*)?나스닥:?\s*([0-9,.]+)\s*(?:\(([-+▲▼0-9,.]+(?:\s*\/\s*[-+0-9,.]+%?)?%?)\))?/);
+            if (nMatch) {
+                nasdaqVal = nMatch[1];
+                const raw = nMatch[2] || '';
+                if (raw.includes('/')) {
+                    const parts = raw.split('/');
+                    nasdaqChg = parts[0].trim();
+                    nasdaqPct = parts[1].trim();
+                } else {
+                    nasdaqPct = raw.trim();
+                    nasdaqChg = raw.trim();
+                }
+                isNasdaqUp = !raw.includes('-') && !raw.includes('▼');
+            }
+
+            let spVal = alert.sp_val || '';
+            let spChg = alert.sp_chg || '';
+            let spPct = alert.sp_pct || '';
+            let isSpUp = true;
+
+            const sMatch = text.match(/(?:🇺🇸\s*)?S&P\s*500:?\s*([0-9,.]+)\s*(?:\(([-+▲▼0-9,.]+(?:\s*\/\s*[-+0-9,.]+%?)?%?)\))?/i);
+            if (sMatch) {
+                spVal = sMatch[1];
+                const raw = sMatch[2] || '';
+                if (raw.includes('/')) {
+                    const parts = raw.split('/');
+                    spChg = parts[0].trim();
+                    spPct = parts[1].trim();
+                } else {
+                    spPct = raw.trim();
+                    spChg = raw.trim();
+                }
+                isSpUp = !raw.includes('-') && !raw.includes('▼');
+            }
+
+            let soxVal = alert.sox_val || '';
+            let soxPct = alert.sox_pct || '';
+            let isSoxUp = true;
+
+            const soxMatch = text.match(/(?:💻\s*)?반도체(?:지수)?:?\s*([0-9,.]+)\s*(?:\(([-+▲▼0-9,.]+(?:\s*\/\s*[-+0-9,.]+%?)?%?)\))?/);
+            if (soxMatch) {
+                soxVal = soxMatch[1];
+                const raw = soxMatch[2] || '';
+                if (raw.includes('/')) {
+                    const parts = raw.split('/');
+                    soxPct = parts[1].trim();
+                } else {
+                    soxPct = raw.trim();
+                }
+                isSoxUp = !raw.includes('-') && !raw.includes('▼');
+            }
+
+            let tnx = alert.tnx || '';
+            const tnxMatch = text.match(/(?:美금리|금리|미\s*국채10년물):?\s*([0-9,.]+)%?/);
+            if (tnxMatch) tnx = tnxMatch[1];
+
+            let wtiOil = alert.wti_oil || '';
+            const oilMatch = text.match(/(?:유가|WTI):?\s*([-+0-9,.]+%?)/);
+            if (oilMatch) wtiOil = oilMatch[1];
+
+            let usdKrw = alert.usd_krw || '';
+            const fxMatch = text.match(/(?:환율|원\/달러):?\s*([0-9,.]+)원?/);
+            if (fxMatch) usdKrw = fxMatch[1];
+
+            const usPositive = (isNasdaqUp ? 1 : 0) + (isSpUp ? 1 : 0) + (isSoxUp ? 1 : 0);
+            const sentimentLabel = usPositive >= 2 
+                ? '🚀 모멘텀 강화 (기술주 랠리)' 
+                : usPositive === 0 
+                    ? '📉 리스크 오프 (조정 및 차익실현)' 
+                    : '⚖️ 중립 혼조세 (섹터 로테이션)';
+            const sentimentBadgeStyle = usPositive >= 2
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                : usPositive === 0
+                    ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                    : 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+
+            return (
+                <div className="space-y-4 pt-1">
+                    {/* 1. 마켓 센티먼트 상태 바 */}
+                    <div className="flex items-center justify-between bg-zinc-950/70 border border-white/5 rounded-2xl p-3 px-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-gray-400">해외장 마켓 진단</span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${sentimentBadgeStyle}`}>
+                                {sentimentLabel}
+                            </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-500">미국 정규장 마감 기준 (KST 06:00)</span>
+                    </div>
+
+                    {/* 2. 히어로 스마트 지수 3분할 칩 (Bento Grid) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {/* 나스닥 카드 */}
+                        <div className={`p-3.5 rounded-2xl border transition-all ${
+                            isNasdaqUp 
+                                ? 'bg-red-500/10 border-red-500/25 hover:border-red-500/40' 
+                                : 'bg-blue-500/10 border-blue-500/25 hover:border-blue-500/40'
+                        }`}>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-black text-gray-300 flex items-center gap-1.5">
+                                    <Globe className="w-3.5 h-3.5 text-sky-400" />
+                                    나스닥 (NASDAQ)
+                                </span>
+                                <span className={`text-[11px] font-black font-mono px-2 py-0.5 rounded-lg ${
+                                    isNasdaqUp ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
+                                }`}>
+                                    {nasdaqPct || '-'}
+                                </span>
+                            </div>
+                            <p className="text-lg md:text-xl font-black font-mono text-white tracking-tight">
+                                {nasdaqVal || '-'}
+                            </p>
+                            <p className="text-[11px] font-medium text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                                {isNasdaqUp ? <TrendingUp className="w-3 h-3 text-red-400" /> : <TrendingDown className="w-3 h-3 text-blue-400" />}
+                                전일대비 {nasdaqChg || '-'}
+                            </p>
+                        </div>
+
+                        {/* S&P 500 카드 */}
+                        <div className={`p-3.5 rounded-2xl border transition-all ${
+                            isSpUp 
+                                ? 'bg-red-500/10 border-red-500/25 hover:border-red-500/40' 
+                                : 'bg-blue-500/10 border-blue-500/25 hover:border-blue-500/40'
+                        }`}>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-black text-gray-300 flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                                    S&P 500
+                                </span>
+                                <span className={`text-[11px] font-black font-mono px-2 py-0.5 rounded-lg ${
+                                    isSpUp ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
+                                }`}>
+                                    {spPct || '-'}
+                                </span>
+                            </div>
+                            <p className="text-lg md:text-xl font-black font-mono text-white tracking-tight">
+                                {spVal || '-'}
+                            </p>
+                            <p className="text-[11px] font-medium text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                                {isSpUp ? <TrendingUp className="w-3 h-3 text-red-400" /> : <TrendingDown className="w-3 h-3 text-blue-400" />}
+                                전일대비 {spChg || '-'}
+                            </p>
+                        </div>
+
+                        {/* 반도체(SOX) or 국채금리/환율 카드 */}
+                        {soxVal ? (
+                            <div className={`p-3.5 rounded-2xl border transition-all ${
+                                isSoxUp 
+                                    ? 'bg-red-500/10 border-red-500/25 hover:border-red-500/40' 
+                                    : 'bg-blue-500/10 border-blue-500/25 hover:border-blue-500/40'
+                            }`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-black text-gray-300 flex items-center gap-1.5">
+                                        <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                                        반도체 (SOX)
+                                    </span>
+                                    <span className={`text-[11px] font-black font-mono px-2 py-0.5 rounded-lg ${
+                                        isSoxUp ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/20 text-blue-300'
+                                    }`}>
+                                        {soxPct || '실시간'}
+                                    </span>
+                                </div>
+                                <p className="text-lg md:text-xl font-black font-mono text-white tracking-tight">
+                                    {soxVal}
+                                </p>
+                                <p className="text-[11px] font-medium text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                                    {isSoxUp ? <TrendingUp className="w-3 h-3 text-red-400" /> : <TrendingDown className="w-3 h-3 text-blue-400" />}
+                                    전일대비 {soxPct || 'AI·기술주 주도'}
+                                </p>
+                            </div>
+                        ) : tnx ? (
+                            <div className="p-3.5 rounded-2xl border bg-zinc-900/80 border-white/10 hover:border-white/20 transition-all">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-black text-gray-300 flex items-center gap-1.5">
+                                        <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
+                                        미 국채10년물
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/5 text-gray-400">
+                                        실시간
+                                    </span>
+                                </div>
+                                <p className="text-lg md:text-xl font-black font-mono text-white tracking-tight">
+                                    {tnx}%
+                                </p>
+                                <p className="text-[11px] font-medium text-gray-400 mt-1">
+                                    글로벌 벤치마크 금리
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="p-3.5 rounded-2xl border bg-zinc-900/80 border-white/10 hover:border-white/20 transition-all">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-black text-gray-300 flex items-center gap-1.5">
+                                        <Globe className="w-3.5 h-3.5 text-amber-400" />
+                                        원/달러 (USD/KRW)
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/5 text-gray-400">
+                                        실시간
+                                    </span>
+                                </div>
+                                <p className="text-lg md:text-xl font-black font-mono text-white tracking-tight">
+                                    {usdKrw ? `${usdKrw}원` : '1,360원'}
+                                </p>
+                                <p className="text-[11px] font-medium text-gray-400 mt-1">
+                                    외인 수급 영향 안정권
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 3. 글로벌 매크로 & 원자재 지표 칩 */}
+                    {(wtiOil || tnx || usdKrw) && (
+                        <div className="flex flex-wrap items-center gap-2 p-3 bg-zinc-950/60 rounded-xl border border-white/5">
+                            <span className="text-[11px] font-black text-gray-400 shrink-0">글로벌 매크로:</span>
+                            {tnx && (
+                                <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                                    📈 美금리 {tnx}%
+                                </span>
+                            )}
+                            {wtiOil && (
+                                <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                    🛢️ WTI 유가 {wtiOil}
+                                </span>
+                            )}
+                            {usdKrw && (
+                                <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                                    💵 원/달러 {usdKrw}원
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 4. 마켓 인텔리전스 전문 마감 진단 박스 */}
+                    {diagnosis && (
+                        <div className="bg-gradient-to-br from-indigo-950/40 via-zinc-900/60 to-purple-950/40 border border-indigo-500/30 rounded-2xl p-4 shadow-lg flex items-start gap-3">
+                            <div className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400 shrink-0 mt-0.5 shadow-sm">
+                                <Sparkles className="w-4 h-4" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-black text-indigo-300 flex items-center gap-1.5">
+                                    AI 마켓 인텔리전스 마감 총평
+                                </p>
+                                <p className="text-xs md:text-sm text-zinc-200 leading-relaxed font-semibold">
+                                    {diagnosis}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 5. 전문가 퀵 액션 내비게이션 바 */}
+                    <div className="flex flex-wrap gap-2.5 pt-2 border-t border-white/10">
+                        <Link
+                            href="/theme"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 min-w-[130px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                        >
+                            <Zap className="w-4 h-4 text-amber-400" />
+                            오늘의 주도 테마 맵
+                            <ChevronRight className="w-4 h-4" />
+                        </Link>
+                        <Link
+                            href="/signals"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 min-w-[130px] bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-center py-2.5 rounded-2xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                        >
+                            <Compass className="w-4 h-4 text-emerald-400" />
+                            글로벌 시그널
+                            <ChevronRight className="w-4 h-4" />
+                        </Link>
+                        <Link
+                            href="/premium"
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-zinc-800/80 hover:bg-zinc-700/80 text-gray-200 border border-white/10 text-center px-3.5 py-2.5 rounded-2xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                        >
+                            <TrendingUp className="w-4 h-4 text-cyan-400" />
+                            수급 리포트
+                        </Link>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // [B] 국내 (KR) 증시 전용 렌더링
+        // ==========================================
         let kospiVal = alert.kospi_val || '';
         let kospiChg = alert.kospi_chg || '';
         let kospiPct = alert.kospi_pct || '';
         let kospiDir = alert.kospi_dir || '';
 
-        // 코스닥 지표 파싱
+        const kMatch = text.match(/(?:📈\s*)?코스피:?\s*([0-9,.]+)\s*(?:\(([-+▲▼0-9,.]+(?:\s*\/\s*[-+0-9,.]+%?)?%?)\))?/);
+        if (kMatch) {
+            kospiVal = kMatch[1];
+            const raw = kMatch[2] || '';
+            if (raw.includes('/')) {
+                const parts = raw.split('/');
+                kospiChg = parts[0].trim();
+                kospiPct = parts[1].trim();
+            } else if (raw.includes('%')) {
+                kospiPct = raw.trim();
+                kospiChg = raw.trim();
+            } else {
+                kospiChg = raw.trim();
+                kospiPct = raw.trim();
+            }
+            kospiDir = !raw.includes('-') && !raw.includes('▼') ? 'Up' : 'Down';
+        }
+
         let kosdaqVal = alert.kosdaq_val || '';
         let kosdaqChg = alert.kosdaq_chg || '';
         let kosdaqPct = alert.kosdaq_pct || '';
         let kosdaqDir = alert.kosdaq_dir || '';
 
-        // 텍스트 폴백 파싱
-        if (!kospiVal) {
-            const kospiMatch = text.match(/코스피:?\s*([0-9,.]+)\s*\(([-+▲▼0-9,.]+)\s*\/\s*([-+0-9,.]+%?)\)/);
-            if (kospiMatch) {
-                kospiVal = kospiMatch[1];
-                kospiChg = kospiMatch[2];
-                kospiPct = kospiMatch[3];
-                kospiDir = kospiPct.includes('-') || kospiChg.includes('▼') ? 'Down' : 'Up';
+        const kdMatch = text.match(/(?:📈\s*)?코스닥:?\s*([0-9,.]+)\s*(?:\(([-+▲▼0-9,.]+(?:\s*\/\s*[-+0-9,.]+%?)?%?)\))?/);
+        if (kdMatch) {
+            kosdaqVal = kdMatch[1];
+            const raw = kdMatch[2] || '';
+            if (raw.includes('/')) {
+                const parts = raw.split('/');
+                kosdaqChg = parts[0].trim();
+                kosdaqPct = parts[1].trim();
+            } else if (raw.includes('%')) {
+                kosdaqPct = raw.trim();
+                kosdaqChg = raw.trim();
+            } else {
+                kosdaqChg = raw.trim();
+                kosdaqPct = raw.trim();
             }
-        }
-        if (!kosdaqVal) {
-            const kosdaqMatch = text.match(/코스닥:?\s*([0-9,.]+)\s*\(([-+▲▼0-9,.]+)\s*\/\s*([-+0-9,.]+%?)\)/);
-            if (kosdaqMatch) {
-                kosdaqVal = kosdaqMatch[1];
-                kosdaqChg = kosdaqMatch[2];
-                kosdaqPct = kosdaqMatch[3];
-                kosdaqDir = kosdaqPct.includes('-') || kosdaqChg.includes('▼') ? 'Down' : 'Up';
-            }
+            kosdaqDir = !raw.includes('-') && !raw.includes('▼') ? 'Up' : 'Down';
         }
 
         // 환율, 유가, 반도체, 국채금리 파싱
         let usdKrw = alert.usd_krw || '';
-        if (!usdKrw) {
-            const fxMatch = text.match(/환율:?\s*([0-9,.]+)원?/);
-            if (fxMatch) usdKrw = fxMatch[1];
-        }
+        const fxMatch = text.match(/(?:💵\s*)?(?:환율|원\/달러):?\s*([0-9,.]+)원?/);
+        if (fxMatch) usdKrw = fxMatch[1];
 
         let wtiOil = alert.wti_oil || '';
-        if (!wtiOil) {
-            const oilMatch = text.match(/유가:?\s*([-+0-9,.]+%?)/);
-            if (oilMatch) wtiOil = oilMatch[1];
-        }
+        const oilMatch = text.match(/(?:🛢️\s*)?(?:유가|WTI):?\s*([-+0-9,.]+%?)/);
+        if (oilMatch) wtiOil = oilMatch[1];
 
         let sox = alert.sox || '';
-        if (!sox) {
-            const soxMatch = text.match(/반도체:?\s*([^\n|]+)/);
-            if (soxMatch) sox = soxMatch[1].trim();
-        }
+        const soxMatch = text.match(/(?:💻\s*)?반도체(?:지수)?:?\s*([^\n|]+)/);
+        if (soxMatch) sox = soxMatch[1].trim();
 
         let tnx = alert.tnx || '';
-        if (!tnx) {
-            const tnxMatch = text.match(/금리:?\s*([0-9,.]+)%?/);
-            if (tnxMatch) tnx = tnxMatch[1];
-        }
+        const tnxMatch = text.match(/(?:美금리|금리|미\s*국채10년물):?\s*([0-9,.]+)%?/);
+        if (tnxMatch) tnx = tnxMatch[1];
 
         // 스마트머니 메이저 수급 (외인, 기관, 개인)
         let frgnFlow = alert.frgn_kospi || '';
@@ -1634,7 +1948,6 @@ function formatUsdToKrwInText(text: string): string {
             retailFlow = rMatch[1].trim();
         }
 
-        // 만약 개인 수급이 '0원'이거나 누락된 경우, 시장 수급 보존 법칙(개인 ≈ -(외국인 + 기관))으로 정밀 자동 산출
         const parseKoreanFlowEok = (s: string): number => {
             if (!s) return 0;
             const sign = s.includes('-') ? -1 : 1;
@@ -1659,12 +1972,6 @@ function formatUsdToKrwInText(text: string): string {
             }
         }
 
-        // 마켓 인텔리전스 진단
-        let diagnosis = alert.diagnosis || '';
-        if (!diagnosis) {
-            const diagMatch = text.match(/💡\s*\[마켓\s*진단\]\s*([^\n]+)/);
-            if (diagMatch) diagnosis = diagMatch[1].trim();
-        }
         if (!diagnosis && (frgnFlow || instFlow)) {
             if (frgnFlow.startsWith('-') && instFlow.startsWith('-')) {
                 diagnosis = `외국인(${frgnFlow})·기관(${instFlow}) 동반 차익실현 매물을 개인(${retailFlow || '매수세'})이 흡수하며 하방 지지력을 테스트한 수급 공방 장세입니다.`;
@@ -1680,7 +1987,6 @@ function formatUsdToKrwInText(text: string): string {
         const isKospiUp = kospiDir === 'Up' || kospiPct.startsWith('+') || kospiChg.includes('▲') || kospiChg.includes('+');
         const isKosdaqUp = kosdaqDir === 'Up' || kosdaqPct.startsWith('+') || kosdaqChg.includes('▲') || kosdaqChg.includes('+');
 
-        // 시장 상태 뱃지
         const sentiment = alert.sentiment || (isKospiUp ? 'risk_on' : 'risk_off');
         const sentimentLabel = sentiment === 'risk_on' 
             ? '🚀 모멘텀 강화 (불마켓 장세)' 
@@ -1703,7 +2009,7 @@ function formatUsdToKrwInText(text: string): string {
                             {sentimentLabel}
                         </span>
                     </div>
-                    <span className="text-[10px] font-mono text-zinc-500">KST 15:30 기준</span>
+                    <span className="text-[10px] font-mono text-zinc-500">KST 15:30 기준 (국내장 마감)</span>
                 </div>
 
                 {/* 2. 히어로 스마트 지수 3분할 칩 (Bento Grid) */}
