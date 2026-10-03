@@ -2046,14 +2046,8 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
 
-        # 시드머니 또는 누적 자산이 변동되었으면 새로운 종목당 배분액(per_stock_budget_krw)에 맞춰 보유 수량을 즉시 자동 조정!
-        curr_inv = avg_p * int(pos.get("qty", 1)) * unit_m
-        if (curr_inv < per_stock_budget_krw * 0.65 or curr_inv > per_stock_budget_krw * 1.2) and (avg_p * unit_m) <= per_stock_budget_krw * 1.3:
-            target_qty = max(1, int(per_stock_budget_krw // (avg_p * unit_m)))
-            if target_qty != int(pos.get("qty", 1)):
-                pos["qty"] = target_qty
-                pos["reason"] = f"AI 퀀트 99점 · [{seed_label_man} 자산 맞춤 {int(round(target_qty * avg_p * unit_m)):,}원 배분] · 기관·외인 수급 돌파"
-                changed = True
+        # [보유 주수 절대 보존 원칙]
+        # 이미 매수 체결되어 보유 중인 종목은 시드머니나 설정을 수정하더라도 보유 수량을 절대 임의로 변경하지 않습니다. (실제 주식 계좌와 100% 동일)
 
         if is_market_open_for_pos and live_p > 0:
             pos["current_price"] = live_p
