@@ -293,7 +293,7 @@ def _default_state() -> Dict[str, Any]:
             "stop_loss_pct": 2.5,
             "trailing_stop_pct": 1.2,
             "min_ai_score": 68,
-            "allow_off_hours_sim": True,
+            "allow_off_hours_sim": False,  # 대표님 원칙: 모의투자도 실전과 100% 동일하게 정규장 거래시간만 엄수!
             "telegram_notify": True,
             "kis_order_enabled": True,  # 계좌를 연동해 두었더라도 실제 증권사 주문 전송을 ON/OFF 할 수 있는 안전 스위치
             "kis_app_key": "",
@@ -397,6 +397,8 @@ def load_state() -> Dict[str, Any]:
         else:
             state["config"]["paper_seed_krw"] = 20000000
     state["config"]["paper_seed_krw"] = max(50000, int(state["config"]["paper_seed_krw"]))
+    # [실전 거래시간 100% 엄수] 모의투자도 실전과 똑같이 정규 거래시간 외 임의 매수를 전면 금지
+    state["config"]["allow_off_hours_sim"] = False
 
     return state
 
@@ -1900,17 +1902,16 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if c_price <= 0:
                 continue
             c_is_us = bool(cand.get("is_us"))
-            allow_sim = bool(cfg.get("allow_off_hours_sim", False))
-            is_open = is_market_open_now(c_sym, is_us=c_is_us)
-            # [실제 시장 운영 시간 준수] 정규장 중이거나 오프장 모의 시뮬레이션(allow_off_hours_sim) 허용 시 매수 진행
-            if not is_open and not allow_sim:
+            # [실제 시장 운영 시간 100% 엄격 준수]
+            # 대표님 원칙: 모의투자도 실전과 똑같이 해당 거래소의 정규장이 실제로 열려있을 때만 매매 체결!
+            # 장이 닫힌 주말, 공휴일, 평일 장외 시간대에는 가상 매수도 100% 차단하여 완벽한 실전 훈련 보장
+            if not is_market_open_now(c_sym, is_us=c_is_us):
                 continue
             unit_krw = c_price * (fx_rate if c_is_us else 1.0)
             qty = int(per_stock_budget_krw // unit_krw)
             if qty <= 0:
                 continue
             buy_amt_krw = int(round(qty * unit_krw))
-            status_desc = "정규장 실시간 포착" if is_open else "AI 퀀트 주도주 시뮬레이션"
             new_paper_pos = {
                 "symbol": c_sym,
                 "name": cand.get("name", c_sym),
@@ -1924,7 +1925,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "pnl_pct": 0.0,
                 "pnl_krw": 0,
                 "bought_at": now_str,
-                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} {status_desc} · {buy_amt_krw:,}원 배분] · {cand.get('reason', '')}",
+                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} 정규장 실시간 포착 · {buy_amt_krw:,}원 배분] · {cand.get('reason', '')}",
                 "is_us": c_is_us,
                 "trade_mode": "AI_PAPER",
                 "kis_order_confirmed": False,
@@ -1966,11 +1967,10 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             changed = True
 
 
-    allow_sim = bool(cfg.get("allow_off_hours_sim", False))
-
     if active_mkt == "KR":
-        # 현재 국내 정규장 운영 시간(평일 09:00~15:30) 또는 오프장 모의 시뮬레이션 허용 시 매수 진행!
-        if is_market_open_now("005930", is_us=False) or allow_sim:
+        # [실제 국내 정규장 엄수: 평일 09:00~15:30]
+        # 장 마감 후(15:30 이후), 주말, 공휴일에는 모의투자라도 신규 매수 일절 금지!
+        if is_market_open_now("005930", is_us=False):
             needed_kr = max(0, paper_max_pos - len(updated_paper))
             if needed_kr > 0:
                 kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
@@ -1979,8 +1979,9 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                     state["kr_candidates"] = kr_pool
                 _fill_market_slots(kr_pool, needed_kr, "🇰🇷국내")
     elif active_mkt == "US":
-        # 현재 미국장 운영 시간(월 17:00 ~ 토 09:00 KST) 또는 오프장 모의 시뮬레이션 허용 시 매수 진행!
-        if is_market_open_now("NVDA", is_us=True) or allow_sim:
+        # [실제 미국 정규장 엄수: 월 17:00 ~ 토 09:00 KST]
+        # 미국 거래소가 실제로 열려 있는 시간대에만 해외주식 실시간 매수 진행!
+        if is_market_open_now("NVDA", is_us=True):
             needed_us = max(0, paper_max_pos - len(updated_paper))
             if needed_us > 0:
                 us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
