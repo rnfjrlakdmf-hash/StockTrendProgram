@@ -33,9 +33,88 @@ import {
   Coins,
   ChevronRight,
   TrendingDown,
+  Target,
+  Flame,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+  Gauge,
 } from "lucide-react";
 
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
+
+function parsePositionDetails(pos: any, fxRate: number = 1355) {
+  const isUS = Boolean(pos.is_us || (pos.symbol && /^[A-Z]/.test(pos.symbol)));
+  const qty = Number(pos.qty || 1);
+  const avgPrice = Number(pos.avg_price || pos.current_price || 0);
+  const curPrice = Number(pos.current_price || avgPrice);
+  const targetPrice = Number(pos.target_price || avgPrice * 1.04);
+  const stopPrice = Number(pos.stop_price || avgPrice * 0.99);
+
+  const unitMultiplier = isUS ? fxRate : 1;
+  const totalBuyKrw = Math.round(qty * avgPrice * unitMultiplier);
+  const totalCurKrw = Math.round(qty * curPrice * unitMultiplier);
+  const pnlKrw = Number(pos.pnl_krw !== undefined ? pos.pnl_krw : (totalCurKrw - totalBuyKrw));
+  const pnlPct = Number(pos.pnl_pct !== undefined ? pos.pnl_pct : (avgPrice > 0 ? ((curPrice - avgPrice) / avgPrice) * 100 : 0));
+  const targetProfitKrw = Math.round(qty * (targetPrice - avgPrice) * unitMultiplier);
+
+  // Target progress percentage: 0% at avgPrice, 100% at targetPrice
+  let targetProgress = 0;
+  if (targetPrice > avgPrice) {
+    targetProgress = Math.max(0, Math.min(100, Math.round(((curPrice - avgPrice) / (targetPrice - avgPrice)) * 100)));
+  }
+
+  // Parse chips from reason
+  const chips: { label: string; icon?: string; color: string }[] = [];
+  const rawReason = String(pos.reason || "");
+  const parts = rawReason.split("·").map((p: string) => p.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    if (part.includes("AI 퀀트")) {
+      const match = part.match(/\d+점/);
+      chips.push({
+        label: `AI 퀀트 ${match ? match[0] : "99점"}`,
+        icon: "✨",
+        color: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+      });
+    } else if (part.includes("자산 맞춤") || part.includes("배분")) {
+      const match = part.match(/[\d,]+원/);
+      chips.push({
+        label: match ? `예산 ${match[0]} 배분` : "자산 맞춤 균등 배분",
+        icon: "💰",
+        color: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+      });
+    } else if (part.includes("수급") || part.includes("기관") || part.includes("외인")) {
+      chips.push({
+        label: "외인·기관 수급 돌파",
+        icon: "⚡",
+        color: "bg-purple-500/15 text-purple-300 border-purple-400/30",
+      });
+    } else if (part.includes("눌림목") || part.includes("저점")) {
+      chips.push({
+        label: "장중 저점 눌림목 타점",
+        icon: "🎯",
+        color: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+      });
+    }
+  }
+
+  return {
+    isUS,
+    qty,
+    avgPrice,
+    curPrice,
+    targetPrice,
+    stopPrice,
+    totalBuyKrw,
+    totalCurKrw,
+    pnlKrw,
+    pnlPct,
+    targetProfitKrw,
+    targetProgress,
+    chips,
+  };
+}
 
 function parseCandidateReason(rawReason: any = "") {
   if (!rawReason) return { chips: [], text: "" };
@@ -739,79 +818,132 @@ export default function AdminAutoTradePage() {
 
         {/* 1. 현재 보유 종목 실시간 감시 & 자동 익절/손절 현황판 (선택된 창 전용) */}
         <div
-          className={`rounded-3xl border p-4 sm:p-6 space-y-4 ${
+          className={`rounded-3xl border p-4 sm:p-6 space-y-5 shadow-2xl relative overflow-hidden transition-all ${
             isRealView
-              ? "bg-gradient-to-b from-blue-950/25 via-zinc-900/90 to-zinc-900/90 border-blue-500/40"
-              : "bg-gradient-to-b from-amber-950/20 via-zinc-900/90 to-zinc-900/90 border-amber-500/40"
+              ? "bg-gradient-to-b from-blue-950/30 via-zinc-900/95 to-black/95 border-blue-500/40 shadow-blue-500/5"
+              : "bg-gradient-to-b from-amber-950/25 via-zinc-900/95 to-black/95 border-amber-500/40 shadow-amber-500/5"
           }`}
         >
-          {/* 창 내부 상단 빠른 전환 탭 바 */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
-            <div className="flex flex-wrap items-center gap-2">
+          {/* subtle background glow mesh */}
+          <div
+            className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${
+              isRealView ? "bg-blue-500/10" : "bg-amber-500/10"
+            }`}
+          />
+
+          {/* 창 내부 상단 빠른 전환 탭 바 & 실시간 동기화 상태 */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
+            <div className="flex items-center gap-2 p-1 bg-black/60 rounded-2xl border border-white/10 shadow-inner">
               <button
                 type="button"
                 onClick={() => setViewWindow("REAL")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2.5 cursor-pointer relative ${
                   isRealView
-                    ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
-                    : "bg-zinc-950/80 text-gray-400 border border-white/10 hover:text-white"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 border border-blue-400/40"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                🏦 실전 계좌 보유 종목 ({realPositions.length})
+                <ShieldCheck className="w-4 h-4 text-blue-300" />
+                <span>🏦 실전 계좌 보유 종목</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-black ${
+                    isRealView ? "bg-white/20 text-white" : "bg-zinc-800 text-gray-400"
+                  }`}
+                >
+                  {realPositions.length}
+                </span>
+                {isRealView && (
+                  <span className="w-2 h-2 rounded-full bg-blue-300 animate-ping absolute -top-0.5 -right-0.5" />
+                )}
               </button>
+
               <button
                 type="button"
                 onClick={() => setViewWindow("PAPER")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2.5 cursor-pointer relative ${
                   !isRealView
-                    ? "bg-amber-500 text-black shadow-lg shadow-amber-500/25"
-                    : "bg-zinc-950/80 text-gray-400 border border-white/10 hover:text-white"
+                    ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/30 border border-amber-300/60 font-black"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                🎮 가상 모의투자 보유 종목 ({paperPositions.length})
+                <Coins className="w-4 h-4 text-amber-950" />
+                <span>🎮 가상 모의투자 보유 종목</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-black ${
+                    !isRealView ? "bg-black/30 text-black" : "bg-zinc-800 text-gray-400"
+                  }`}
+                >
+                  {paperPositions.length}
+                </span>
+                {!isRealView && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5" />
+                )}
               </button>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              5초마다 실시간 현재가·수익률 자동 새로고침 중 ({data?.last_quote_refresh_at || "실시간"})
-            </span>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center gap-2 shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>5초마다 실시간 시세·수익률 자동 갱신 중 ({data?.last_quote_refresh_at || "실시간"})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => fetchStatus(false)}
+                title="지금 즉시 데이터 새로고침"
+                className="p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 text-gray-400 hover:text-white transition-all cursor-pointer shadow-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* 🏦 [신규] 한국투자증권 실전 계좌 투자 한도(내가 정한 금액) 직접 설정 & 원클릭 실전 매매 시작 바 */}
           {isRealView && (
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/10 border border-blue-400/40 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="text-xs sm:text-sm font-black text-blue-300 flex flex-wrap items-center gap-1.5">
-                    🏦 한국투자증권(43880949-22) 실전 계좌 최대 투자 한도 설정
-                    <span className="px-2 py-0.5 rounded-full bg-blue-400 text-black text-[11px] font-black">
-                      현재 내가 정한 한도: ₩{(cfg.max_total_invest_krw || maxTotalInvestKrw || 100000).toLocaleString()}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-black/60 border border-blue-500/30 space-y-3.5 relative overflow-hidden shadow-xl">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="text-xs sm:text-sm font-black text-blue-300 flex flex-wrap items-center gap-2">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-blue-400" />
+                      한국투자증권(43880949-22) 실전 계좌 최대 투자 한도 설정
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-200 text-[11px] font-mono font-bold">
+                      지정 한도: ₩{(cfg.max_total_invest_krw || maxTotalInvestKrw || 100000).toLocaleString()}원
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-black ${
                         cfg.mode === "KIS_REAL" && cfg.kis_order_enabled
-                          ? "bg-emerald-400 text-black"
+                          ? "bg-emerald-400 text-black shadow-sm shadow-emerald-400/30"
                           : "bg-zinc-800 text-amber-300 border border-amber-400/40"
                       }`}
                     >
-                      {cfg.mode === "KIS_REAL" && cfg.kis_order_enabled ? "🟢 실전 주문 ON (가동 중)" : "🔒 실전 주문 대기 중 (모의투자 전용 가동 중)"}
+                      {cfg.mode === "KIS_REAL" && cfg.kis_order_enabled ? "🟢 실전 주문 ON (가동 중)" : "🔒 실전 주문 대기 중 (모의투자 전용)"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-gray-300 mt-0.5">
-                    대표님 계좌에 예수금이 아무리 많아도, <strong className="text-blue-200">아래에서 직접 정하신 투자 한도 금액(예: 10만 원, 50만 원, 100만 원 등) 안에서만</strong> AI가 종목당 예산을 자동 분할하여 매수·익절·리스크 관리를 수행하며, 한도를 1원도 초과하지 않습니다!
+                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                    💡 <strong className="text-blue-200">대표님 자산 철통 보호 안전장치</strong>: 대표님 증권 계좌에 예수금이 아무리 많아도,{" "}
+                    <strong className="text-white underline decoration-blue-400 underline-offset-2">
+                      여기서 직접 정하신 한도 금액(예: 10만 원, 100만 원 등) 내에서만
+                    </strong>{" "}
+                    AI가 종목별로 안전하게 쪼개어 자동 매수·익절·손절합니다. 한도를 1원도 초과하지 않으므로 안심하고 소액부터 검증하실 수 있습니다.
                   </p>
                 </div>
                 <button
                   type="button"
                   disabled={actionLoading}
                   onClick={() => handleApplyRealLimit(maxTotalInvestKrw, true)}
-                  className="text-xs font-black text-black bg-emerald-400 hover:bg-emerald-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 shrink-0 cursor-pointer shadow-lg shadow-emerald-500/20"
+                  className="text-xs font-black text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 cursor-pointer shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                 >
-                  🚀 이 한도(₩{(maxTotalInvestKrw || 100000).toLocaleString()})로 실전 자동매매 시작
+                  <Flame className="w-4 h-4 text-emerald-950" />
+                  <span>이 한도(₩{(maxTotalInvestKrw || 100000).toLocaleString()}원)로 실전 자동매매 시작</span>
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
+                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 한도 선택:</span>
                 {[
                   { label: "🛡️ 5만 원", val: 50000 },
                   { label: "🔥 10만 원", val: 100000 },
@@ -830,14 +962,14 @@ export default function AdminAutoTradePage() {
                     className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                       (cfg.max_total_invest_krw || maxTotalInvestKrw) === preset.val
                         ? "bg-blue-400 text-black shadow-md shadow-blue-400/30"
-                        : "bg-zinc-900 text-gray-300 border border-white/10 hover:border-blue-400/60 hover:text-white"
+                        : "bg-zinc-900/90 text-gray-300 border border-white/10 hover:border-blue-400/60 hover:text-white"
                     }`}
                   >
                     {preset.label}
                   </button>
                 ))}
 
-                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-1 sm:mt-0">
+                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-2 sm:mt-0">
                   <input
                     type="number"
                     min={30000}
@@ -845,13 +977,13 @@ export default function AdminAutoTradePage() {
                     value={maxTotalInvestKrw}
                     onChange={(e) => setMaxTotalInvestKrw(Number(e.target.value))}
                     placeholder="실전 한도 금액(원)"
-                    className="w-40 px-3 py-1.5 rounded-xl bg-black/80 border border-blue-400/40 text-blue-200 font-mono text-xs font-bold focus:outline-none focus:border-blue-400"
+                    className="w-40 px-3.5 py-1.5 rounded-xl bg-black/80 border border-blue-400/40 text-blue-200 font-mono text-xs font-bold focus:outline-none focus:border-blue-400"
                   />
                   <button
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApplyRealLimit(maxTotalInvestKrw, false)}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shrink-0 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shrink-0 cursor-pointer shadow-md shadow-blue-500/20"
                   >
                     💾 한도만 저장
                   </button>
@@ -862,29 +994,68 @@ export default function AdminAutoTradePage() {
 
           {/* 💰 [신규] AI 가상 모의투자 시드머니 직접 설정 & 원클릭 즉시 적용 바 */}
           {!isRealView && (
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-400/40 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
-                    💰 모의투자 시드머니(가상 원금) 내 마음대로 설정
-                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-black text-[11px] font-black">
-                      현재 설정: ₩{activePaperSeed.toLocaleString()} ({paperSeedLabel})
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/30 via-yellow-950/20 to-black/60 border border-amber-500/30 space-y-3.5 relative overflow-hidden shadow-xl">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="text-xs sm:text-sm font-black text-amber-300 flex flex-wrap items-center gap-2">
+                    <span className="flex items-center gap-1.5">
+                      <Coins className="w-4 h-4 text-amber-400" />
+                      모의투자 시드머니(가상 원금) 내 마음대로 설정
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-black text-[11px] font-black shadow-sm">
+                      현재 설정: ₩{activePaperSeed.toLocaleString()}원 ({paperSeedLabel})
                     </span>
                   </div>
-                  <p className="text-[11px] text-gray-300 mt-0.5">
-                    시드머니나 누적 자산이 변동되면 AI가 국내주식(약 40%)·해외주식(약 27%) 비중을 알아서 자동 조절하며, <strong className="text-emerald-300">굳이 +4%가 아니더라도 상승 탄력이 둔화되면(+0.4%~+3.9%) 알아서 조기 익절</strong>하고 <strong className="text-amber-300">약세 종목(-1.0% 이하)은 강세 주도주로 실시간 교체 매매</strong>합니다!
+                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                    💡 <strong className="text-amber-200">24시간 자율 AI 운용 메커니즘</strong>: 시드머니 한도 내에서 퀀트 상위 종목을 자동 분할 매수합니다. 꼭 +4.0%가 아니더라도{" "}
+                    <strong className="text-emerald-300">상승 탄력이 약해지면(+0.4%~+3.9%) 알아서 조기 익절</strong>하고,{" "}
+                    <strong className="text-rose-300">약세 종목(-1.0% 이하)은 강세 주도주로 실시간 교체 매매</strong>하여 계좌 수익률을 방어합니다.
                   </p>
                 </div>
                 <button
                   onClick={() => handleResetPaper(paperSeedKrw)}
                   disabled={actionLoading}
-                  className="text-xs font-black text-amber-200 hover:text-white bg-amber-500/20 border border-amber-400/50 px-3 py-1.5 rounded-xl flex items-center gap-1 shrink-0 cursor-pointer"
+                  className="text-xs font-black text-amber-200 hover:text-white bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-3.5 py-2 rounded-xl flex items-center gap-1.5 shrink-0 cursor-pointer transition-all active:scale-95"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" /> 현재 시드({paperSeedLabel})로 처음부터 초기화 &amp; 재매수
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>현재 시드({paperSeedLabel})로 처음부터 초기화 &amp; 재매수</span>
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
+              {/* AI 포트폴리오 자동 배분 인포그래픽 바 */}
+              <div className="p-3.5 rounded-xl bg-black/60 border border-white/5 space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold">
+                  <span className="flex items-center gap-1.5 text-gray-300">
+                    <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                    AI 알고리즘 자산 자동 배분 비중
+                  </span>
+                  <span className="text-[10px] text-gray-500">실시간 유동성 관리</span>
+                </div>
+                {/* Visual Bar */}
+                <div className="h-2.5 w-full rounded-full bg-zinc-800 overflow-hidden flex shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style={{ width: "40%" }} title="국내 코스피·코스닥 40%" />
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: "27%" }} title="미국 나스닥·NYSE 27%" />
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400" style={{ width: "33%" }} title="위기대응 안전현금 33%" />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] font-mono">
+                  <span className="flex items-center gap-1.5 text-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    국내 주도주 40% (약 ₩{Math.round(activePaperSeed * 0.4).toLocaleString()}원)
+                  </span>
+                  <span className="flex items-center gap-1.5 text-blue-300">
+                    <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    미국 혁신주 27% (약 ₩{Math.round(activePaperSeed * 0.27).toLocaleString()}원)
+                  </span>
+                  <span className="flex items-center gap-1.5 text-amber-300">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    위기대응 현금 33% (약 ₩{Math.round(activePaperSeed * 0.33).toLocaleString()}원)
+                  </span>
+                </div>
+              </div>
+
+              {/* 빠른 시드 선택 & 직접 입력 */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
+                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 시드 선택:</span>
                 {[
                   { label: "🔥 10만 원", val: 100000 },
                   { label: "50만 원", val: 500000 },
@@ -903,14 +1074,14 @@ export default function AdminAutoTradePage() {
                     className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                       activePaperSeed === preset.val
                         ? "bg-amber-400 text-black shadow-md shadow-amber-400/30"
-                        : "bg-zinc-900 text-gray-300 border border-white/10 hover:border-amber-400/60 hover:text-white"
+                        : "bg-zinc-900/90 text-gray-300 border border-white/10 hover:border-amber-400/60 hover:text-white"
                     }`}
                   >
                     {preset.label}
                   </button>
                 ))}
 
-                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-1 sm:mt-0">
+                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-2 sm:mt-0">
                   <input
                     type="number"
                     min={50000}
@@ -918,13 +1089,13 @@ export default function AdminAutoTradePage() {
                     value={paperSeedKrw}
                     onChange={(e) => setPaperSeedKrw(Number(e.target.value))}
                     placeholder="원하는 시드머니(원)"
-                    className="w-40 px-3 py-1.5 rounded-xl bg-black/80 border border-amber-400/40 text-amber-200 font-mono text-xs font-bold focus:outline-none focus:border-amber-400"
+                    className="w-40 px-3.5 py-1.5 rounded-xl bg-black/80 border border-amber-400/40 text-amber-200 font-mono text-xs font-bold focus:outline-none focus:border-amber-400"
                   />
                   <button
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApplyPaperSeed(paperSeedKrw)}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs shrink-0 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-xs shrink-0 cursor-pointer shadow-md shadow-emerald-500/20"
                   >
                     🚀 시드머니 즉시 적용
                   </button>
@@ -933,106 +1104,268 @@ export default function AdminAutoTradePage() {
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
             <div>
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
                 {isRealView
-                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || maxPositions || 7})`
-                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${cfg.max_positions || maxPositions || 7})`}
+                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || maxPositions || 7} 종목)`
+                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${cfg.max_positions || maxPositions || 7} 종목)`}
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
-                  ? "한국투자증권 실제 계좌(43880949-22)에서 매수 체결된 종목만 이곳에 표시됩니다. (가상 모의투자 종목과 100% 분리됨)"
-                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 연습·검증 중인 가상 종목 목록입니다.`}
+                  ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (가상 모의투자 종목과 100% 분리 관리)"
+                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 연습·검증 중인 종목 목록입니다.`}
               </p>
             </div>
           </div>
 
           {positions.length === 0 ? (
-            <div className="py-10 text-center space-y-3 bg-zinc-950/60 rounded-2xl border border-white/5">
+            <div className="py-12 text-center space-y-4 bg-zinc-950/60 rounded-3xl border border-white/5 p-6">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center mx-auto text-gray-400">
+                <Activity className="w-6 h-6" />
+              </div>
               <p className="text-sm font-bold text-gray-300">
-                {cfg.mode === "KIS_REAL"
+                {isRealView
                   ? "🏦 현재 실전 계좌로 자동매수된 보유 종목이 없습니다 (0주 · 다음 정규장 개장 시 설정 한도 내에서 자동 매수 대기 중)"
-                  : "현재 보유 중인 종목이 없습니다."}
+                  : "현재 가상 계좌에 보유 중인 종목이 없습니다. 아래 버튼으로 1순위 후보 종목을 즉시 매수해보세요."}
               </p>
               <button
                 onClick={handleRunCycleNow}
-                className="px-4 py-2 rounded-xl bg-emerald-500 text-black font-black text-xs hover:bg-emerald-400"
+                className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
               >
-                ⚡ 지금 즉시 AI 1순위 종목 스캔 &amp; 매수 시도하기
+                <Zap className="w-4 h-4" />
+                <span>⚡ 지금 즉시 AI 1순위 종목 스캔 &amp; 매수 시도하기</span>
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {positions.map((pos: any, idx: number) => {
-                const isPlus = (pos.pnl_pct || 0) >= 0;
                 const isRealPos = pos.trade_mode === "KIS_REAL" || String(pos.reason || "").includes("[한투주문 완료");
                 const posMarket = getMarketInfo(pos.symbol);
-                const isUS = Boolean(pos.is_us || posMarket.isUS);
-                const formatPrice = (p: any) => {
-                  if (p === undefined || p === null) return "-";
-                  const num = Number(p);
-                  if (isUS) return `$${num.toFixed(2)}`;
-                  return `${Math.round(num).toLocaleString()}원`;
+                const details = parsePositionDetails(pos, 1355);
+                const isPlus = details.pnlPct >= 0;
+
+                const sector = pos.sector || (() => {
+                  const match = String(pos.reason || "").match(/(?:해외신생|국내주도)?\s*([가-힣A-Za-z0-9\/]+)\s*(?:스마트머니|테마|주도)/);
+                  return match ? match[1].trim() : (details.isUS ? "미국 혁신주" : "국내 주도주");
+                })();
+
+                const formatPrice = (p: number) => {
+                  if (details.isUS) {
+                    return `$${p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  }
+                  return `${Math.round(p).toLocaleString()}원`;
                 };
+
+                const formatKrw = (val: number) => `${Math.round(val).toLocaleString()}원`;
+
+                // Gauge Position Percentage: Stop-loss (-1%) <--- Current Price ---> Take Profit (+4%)
+                const totalSpan = details.targetPrice - details.stopPrice;
+                let gaugePosPct = 50;
+                if (totalSpan > 0) {
+                  gaugePosPct = Math.max(5, Math.min(95, Math.round(((details.curPrice - details.stopPrice) / totalSpan) * 100)));
+                }
+
+                const isTargetHit = details.curPrice >= details.targetPrice;
+                const distToTarget = Math.max(0, details.targetPrice - details.curPrice);
+                const distToTargetKrw = Math.round(details.qty * distToTarget * (details.isUS ? 1355 : 1));
 
                 return (
                   <div
                     key={`${pos?.symbol || "pos"}-${idx}`}
-                    className="p-4 rounded-2xl bg-zinc-950/90 border border-white/10 hover:border-emerald-500/40 transition-all space-y-3"
+                    className="p-5 rounded-3xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black/95 border border-white/10 hover:border-emerald-500/40 transition-all space-y-4 shadow-xl relative overflow-hidden group"
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    {/* 카드 상단 배지 바 */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${
+                            isRealPos
+                              ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                              : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                          }`}
+                        >
+                          {isRealPos ? "🏦 실전계좌 보유" : "🎮 가상 모의투자"}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border font-mono flex items-center gap-1 ${posMarket.style}`}>
+                          <span>{posMarket.flag}</span>
+                          <span>{posMarket.label}</span>
+                          <span className="text-[9px] opacity-80 font-sans">({posMarket.isUS ? "해외" : "국내"})</span>
+                        </span>
+                        <span className="px-2 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-400/30 text-[10px] font-black">
+                          {sector}
+                        </span>
+                        <span className="text-xs text-gray-400 font-mono font-bold bg-white/5 px-2 py-0.5 rounded-md">
+                          {pos.symbol}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span>24H AI 밀착 감시</span>
+                      </div>
+                    </div>
+
+                    {/* 종목명 & 수익률 메인 디스플레이 */}
+                    <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-black border ${
-                              isRealPos
-                                ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
-                                : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                            }`}
-                          >
-                            {isRealPos ? "🏦 실전계좌 보유" : "🎮 가상 모의투자"}
+                        <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                          {pos.name}
+                          <span className="text-xs sm:text-sm font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-mono">
+                            {details.qty.toLocaleString()}주 보유
                           </span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black border font-mono flex items-center gap-1 ${posMarket.style}`}>
-                            <span>{posMarket.flag}</span>
-                            <span>{posMarket.label}</span>
-                            <span className="text-[9px] opacity-80 font-sans">({posMarket.isUS ? "해외" : "국내"})</span>
-                          </span>
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[10px] font-black">
-                            {pos.sector || "주도주"}
-                          </span>
-                          <span className="text-xs text-gray-500 font-mono">{pos.symbol}</span>
-                        </div>
-                        <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
-                          {pos.name} <span className="text-xs font-bold text-gray-400">({pos.qty}주 보유)</span>
                         </h3>
+                        <div className="text-[11px] text-gray-400 mt-1 flex items-center gap-2">
+                          <span>매수일시: {pos.buy_time || "실시간 체결"}</span>
+                          <span>·</span>
+                          <span>환율: 1,355원 기준</span>
+                        </div>
                       </div>
 
                       <div className="text-right">
-                        <div className={`text-base sm:text-lg font-black font-mono ${isPlus ? "text-rose-400" : "text-blue-400"}`}>
-                          {isPlus ? "+" : ""}
-                          {pos.pnl_pct}% ({isPlus ? "+" : ""}
-                          {(pos.pnl_krw || 0).toLocaleString()}원)
+                        <div className={`text-xl sm:text-2xl font-black font-mono tracking-tight flex items-center justify-end gap-1 ${
+                          isPlus ? "text-rose-400" : "text-blue-400"
+                        }`}>
+                          {isPlus ? <ArrowUpRight className="w-5 h-5 text-rose-400" /> : <ArrowDownRight className="w-5 h-5 text-blue-400" />}
+                          <span>{isPlus ? "+" : ""}{details.pnlPct.toFixed(2)}%</span>
                         </div>
-                        <div className="text-[11px] text-gray-400 font-mono">
-                          매수가 {formatPrice(pos.avg_price)} → 현재가 <b className="text-white">{formatPrice(pos.current_price)}</b>
+                        <div className={`text-xs sm:text-sm font-black font-mono ${isPlus ? "text-rose-300" : "text-blue-300"}`}>
+                          {isPlus ? "+" : ""}{formatKrw(details.pnlKrw)}
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-[11px] text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl font-medium">
-                      💡 선정 사유: {pos.reason}
+                    {/* 매수원금 vs 현재평가액 4-Grid 인포박스 */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-2xl bg-black/60 border border-white/5">
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] text-gray-400 font-bold">총 매수 원금</div>
+                        <div className="text-xs sm:text-sm font-black text-gray-200 font-mono">
+                          ₩{formatKrw(details.totalBuyKrw)}
+                        </div>
+                        <div className="text-[10px] text-gray-500 font-mono">
+                          단가 {formatPrice(details.avgPrice)}
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] text-gray-400 font-bold">현재 평가 가치</div>
+                        <div className={`text-xs sm:text-sm font-black font-mono ${isPlus ? "text-rose-300" : "text-blue-300"}`}>
+                          ₩{formatKrw(details.totalCurKrw)}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-mono">
+                          현재가 <b className="text-white">{formatPrice(details.curPrice)}</b>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                          <Target className="w-3 h-3 text-emerald-400" />
+                          익절 달성 가치
+                        </div>
+                        <div className="text-xs sm:text-sm font-black text-emerald-300 font-mono">
+                          ₩{formatKrw(details.totalBuyKrw + details.targetProfitKrw)}
+                        </div>
+                        <div className="text-[10px] text-emerald-400/80 font-mono">
+                          목표 {formatPrice(details.targetPrice)} (+{formatKrw(details.targetProfitKrw)})
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="text-[10px] text-blue-400 font-bold flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-blue-400" />
+                          손절 방어선
+                        </div>
+                        <div className="text-xs sm:text-sm font-black text-blue-300 font-mono">
+                          {formatPrice(details.stopPrice)}
+                        </div>
+                        <div className="text-[10px] text-blue-400/80 font-mono">
+                          최대 -1.0% 이탈 즉시 방어
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-mono bg-zinc-900 px-3 py-2 rounded-xl">
-                      <span className="text-rose-400 font-bold">🎯 자동 익절가: {formatPrice(pos.target_price)}</span>
-                      <span className="text-blue-400 font-bold">🛡️ 자동 손절가: {formatPrice(pos.stop_price)}</span>
+                    {/* 🎯 [핵심 시각화] 목표 수익 & 손절 방어 거리 게이지 바 */}
+                    <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-white/10 space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-gray-300 flex items-center gap-1.5">
+                          <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                          익절 목표 도달 게이지
+                        </span>
+                        <span className="font-mono font-bold text-amber-300">
+                          {isTargetHit ? (
+                            <span className="text-rose-400 flex items-center gap-1">
+                              <Flame className="w-3.5 h-3.5 text-rose-400" />
+                              목표가 돌파 완료! 즉시 자동 익절 진행 중
+                            </span>
+                          ) : (
+                            `목표가까지 ${formatPrice(distToTarget)} 남음 (도달 시 추가 수익 +${formatKrw(distToTargetKrw)})`
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Visual Range Track */}
+                      <div className="relative h-2.5 w-full rounded-full bg-zinc-800/90 overflow-hidden border border-white/5">
+                        {/* Background segments: Red left (stop zone), neutral center, green right (profit zone) */}
+                        <div className="absolute inset-0 flex">
+                          <div className="w-1/4 h-full bg-rose-500/20" />
+                          <div className="w-2/4 h-full bg-zinc-700/30" />
+                          <div className="w-1/4 h-full bg-emerald-500/25" />
+                        </div>
+                        {/* Progress Fill Bar */}
+                        <div
+                          className={`h-full transition-all duration-500 ${
+                            isPlus
+                              ? "bg-gradient-to-r from-amber-400 to-rose-400"
+                              : "bg-gradient-to-r from-blue-500 to-amber-400"
+                          }`}
+                          style={{ width: `${gaugePosPct}%` }}
+                        />
+                      </div>
+
+                      {/* Scale Labels */}
+                      <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                        <span className="text-blue-300">🛡️ 손절선 {formatPrice(details.stopPrice)} (-1%)</span>
+                        <span className="text-amber-200 font-bold">📍 현재가 {formatPrice(details.curPrice)} ({gaugePosPct}%)</span>
+                        <span className="text-emerald-300">🎯 목표가 {formatPrice(details.targetPrice)} (+4%)</span>
+                      </div>
+                    </div>
+
+                    {/* AI 전략 & 선정 사유 프리미엄 마이크로 칩 */}
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {details.chips.map((chip, cIdx) => (
+                          <span
+                            key={cIdx}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold border flex items-center gap-1 ${chip.color}`}
+                          >
+                            <span>{chip.icon || "✨"}</span>
+                            <span>{chip.label}</span>
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="text-[11px] text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2 rounded-xl font-medium leading-relaxed">
+                        💡 <strong className="text-emerald-200">AI 포착 사유:</strong> {pos.reason}
+                      </div>
+                    </div>
+
+                    {/* 하단 원클릭 매도 및 안내 바 */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/5">
+                      <div className="text-[11px] text-gray-400 hidden sm:block">
+                        ✨ 상승 탄력 둔화 시(+0.4%~+3.9%) AI가 자동 분할 조기 익절을 실행합니다.
+                      </div>
                       <button
+                        type="button"
+                        disabled={actionLoading}
                         onClick={() => handleClosePosition(pos.symbol, pos.name)}
-                        className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white font-sans font-black text-[11px] transition-all"
+                        className="ml-auto px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 font-black text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm"
                       >
-                        즉시 매도
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>원클릭 즉시 시장가 매도</span>
                       </button>
                     </div>
                   </div>
