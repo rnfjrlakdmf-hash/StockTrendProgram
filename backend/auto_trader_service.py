@@ -1963,15 +1963,18 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 quote_map[s_code] = q_res
 
     # 2. 보유 종목 관리 (변동된 시드머니에 맞춰 수량 자동 리밸런싱 & AI 스마트 조기익절/리스크관리 매도)
+    paper_sold_items = []
     for pos in raw_paper:
-        sym = pos["symbol"]
+        sym = pos.get("symbol")
+        if not sym:
+            continue
         is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
         is_market_open_for_pos = is_market_open_now(sym, is_us=is_us)
-
 
         q = quote_map.get(sym) or {}
         live_p = float(q.get("price", 0) or pos.get("current_price", 0) or pos.get("avg_price", 0))
         if live_p <= 0:
+            updated_paper.append(pos)
             continue
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
@@ -1985,7 +1988,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 pos["reason"] = f"AI 퀀트 99점 · [{seed_label_man} 자산 맞춤 {int(round(target_qty * avg_p * unit_m)):,}원 배분] · 기관·외인 수급 돌파"
                 changed = True
 
-        if is_market_open_for_pos:
+        if is_market_open_for_pos and live_p > 0:
             pos["current_price"] = live_p
             pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
         pos["target_price"] = round(avg_p * (1.0 + tp_pct / 100.0), 2 if is_us else 0)
@@ -2000,26 +2003,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         pos["kis_order_confirmed"] = False
 
         # [핵심] 장이 열려 있을 때 AI 스마트 탄력·리스크 판단 엔진(_evaluate_ai_smart_exit) 가동!
-        sell_reason = None
-    paper_sold_items = []
-    for pos in current_paper:
-        sym = pos.get("symbol")
-        if not sym:
-            continue
-        c_is_us = bool(pos.get("is_us"))
-        unit_m = fx_rate if c_is_us else 1.0
-        q = _fetch_live_quote(sym)
-        cur_p_calc = float(q.get("price", pos.get("current_price", pos.get("avg_price", 0))))
-        if cur_p_calc > 0:
-            pos["current_price"] = cur_p_calc
-            pos["highest_price"] = max(float(pos.get("highest_price", cur_p_calc)), cur_p_calc)
-            avg_p_calc = float(pos.get("avg_price", cur_p_calc) or cur_p_calc)
-            pnl_pct = round(((cur_p_calc - avg_p_calc) / avg_p_calc) * 100.0, 2) if avg_p_calc > 0 else 0.0
-            pnl_krw = int(round((cur_p_calc - avg_p_calc) * int(pos.get("qty", 1)) * unit_m))
-            pos["pnl_pct"] = pnl_pct
-            pos["pnl_krw"] = pnl_krw
-
-        is_market_open_for_pos = is_market_open_now(sym, is_us=c_is_us)
         sell_reason = ""
         if is_market_open_for_pos:
             sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct)
