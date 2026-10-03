@@ -1836,12 +1836,10 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     if "max_total_invest_krw" in new_cfg and new_cfg["max_total_invest_krw"] is not None:
         real_limit = max(30000, int(new_cfg["max_total_invest_krw"]))
         state["config"]["max_total_invest_krw"] = real_limit
-        # 설정된 실전 한도에 맞춰 최대 종목 수와 1회 매수 금액을 자동 최적화
-        auto_max_pos = 2 if real_limit <= 200000 else (3 if real_limit <= 500000 else (5 if real_limit <= 1000000 else (7 if real_limit <= 4000000 else 10)))
-        if "max_positions" not in new_cfg:
-            state["config"]["max_positions"] = auto_max_pos
-        if "order_amount_krw" not in new_cfg:
-            state["config"]["order_amount_krw"] = max(25000, int(real_limit // max(2, state["config"].get("max_positions", auto_max_pos))))
+        if "max_positions" in new_cfg and new_cfg["max_positions"] is not None:
+            state["config"]["max_positions"] = max(1, int(new_cfg["max_positions"]))
+        if "order_amount_krw" in new_cfg and new_cfg["order_amount_krw"] is not None:
+            state["config"]["order_amount_krw"] = max(10000, int(new_cfg["order_amount_krw"]))
 
     new_mode = state["config"].get("mode", "AI_PAPER")
     # [모의투자 <-> 실전투자 완전 분리]

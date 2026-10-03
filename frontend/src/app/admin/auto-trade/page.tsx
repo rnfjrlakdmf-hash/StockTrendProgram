@@ -99,6 +99,15 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
     }
   }
 
+  const uniqueChips: { label: string; icon?: string; color: string }[] = [];
+  const seenLabels = new Set<string>();
+  for (const chip of chips) {
+    if (!seenLabels.has(chip.label)) {
+      seenLabels.add(chip.label);
+      uniqueChips.push(chip);
+    }
+  }
+
   return {
     isUS,
     qty,
@@ -112,7 +121,7 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
     pnlPct,
     targetProfitKrw,
     targetProgress,
-    chips,
+    chips: uniqueChips,
   };
 }
 
@@ -585,6 +594,7 @@ export default function AdminAutoTradePage() {
   }
 
   const cfg = data?.config || {};
+  const configuredMaxPos = Number(cfg.max_positions || maxPositions || 7);
   const activePaperSeed = Number(cfg.paper_seed_krw || paperSeedKrw || 20000000);
   const paperSeedLabel = activePaperSeed >= 10000 ? `${(activePaperSeed / 10000).toLocaleString()}만원` : `${activePaperSeed.toLocaleString()}원`;
   const realPositions = data?.real_positions || [];
@@ -789,8 +799,10 @@ export default function AdminAutoTradePage() {
               <div className={`text-lg sm:text-xl font-black font-mono mt-1 ${(summary.unrealized_pnl_krw || 0) >= 0 ? "text-rose-400" : "text-blue-400"}`}>
                 {(summary.unrealized_pnl_krw || 0) >= 0 ? "+" : ""}₩{(summary.unrealized_pnl_krw || 0).toLocaleString()}
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">
-                {isRealView ? `실전 보유 ${realPositions.length}종목` : `가상 보유 ${paperPositions.length}종목`} / 최대 {cfg.max_positions || maxPositions || 7}종목
+              <div className="text-[11px] text-gray-400 mt-1">
+                {isRealView
+                  ? `실전 ${realPositions.length} / 최대 ${configuredMaxPos}종목 (${Math.max(0, configuredMaxPos - realPositions.length)}개 대기)`
+                  : `가상 ${paperPositions.length} / 최대 ${configuredMaxPos}종목 (${Math.max(0, configuredMaxPos - paperPositions.length)}개 대기)`}
               </div>
             </div>
 
@@ -1109,13 +1121,13 @@ export default function AdminAutoTradePage() {
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
                 {isRealView
-                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${cfg.max_positions || maxPositions || 7} 종목)`
-                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${cfg.max_positions || maxPositions || 7} 종목)`}
+                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${configuredMaxPos}개 종목 · ${Math.max(0, configuredMaxPos - realPositions.length)}개 추가 매수 대기 중)`
+                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${configuredMaxPos}개 종목 · ${Math.max(0, configuredMaxPos - paperPositions.length)}개 추가 매수 대기 중)`}
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
                   ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (가상 모의투자 종목과 100% 분리 관리)"
-                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 연습·검증 중인 종목 목록입니다.`}
+                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 연습·검증 중인 종목 목록입니다. (최대 ${configuredMaxPos}종목 중 ${paperPositions.length}종목 보유 중 · 다음 장 개장 시 ${Math.max(0, configuredMaxPos - paperPositions.length)}개 종목 자동 추가 매수)`}
               </p>
             </div>
           </div>
@@ -1150,6 +1162,12 @@ export default function AdminAutoTradePage() {
                   const match = String(pos.reason || "").match(/(?:해외신생|국내주도)?\s*([가-힣A-Za-z0-9\/]+)\s*(?:스마트머니|테마|주도)/);
                   return match ? match[1].trim() : (details.isUS ? "미국 혁신주" : "국내 주도주");
                 })();
+
+                const cleanSector = sector
+                  .replace(/^🚀?\s*해외신생\s*·?\s*/, "")
+                  .replace(/\s*\(\$[\d~]+대?\)/, "")
+                  .replace(/\s*\(₩[\d~,]+대?\)/, "")
+                  .trim() || (details.isUS ? "미국 혁신주" : "국내 주도주");
 
                 const formatPrice = (p: number) => {
                   if (details.isUS) {
@@ -1193,15 +1211,15 @@ export default function AdminAutoTradePage() {
                           <span>{posMarket.label}</span>
                           <span className="text-[9px] opacity-80 font-sans">({posMarket.isUS ? "해외" : "국내"})</span>
                         </span>
-                        <span className="px-2 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-400/30 text-[10px] font-black">
-                          {sector}
+                        <span className="px-2 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-400/30 text-[10px] font-black shrink-0">
+                          {cleanSector}
                         </span>
                         <span className="text-xs text-gray-400 font-mono font-bold bg-white/5 px-2 py-0.5 rounded-md">
                           {pos.symbol}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 shrink-0">
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -1212,28 +1230,30 @@ export default function AdminAutoTradePage() {
 
                     {/* 종목명 & 수익률 메인 디스플레이 */}
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-                          {pos.name}
-                          <span className="text-xs sm:text-sm font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-mono">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base sm:text-xl font-black text-white leading-tight">
+                            {pos.name}
+                          </h3>
+                          <span className="text-xs sm:text-sm font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-mono shrink-0">
                             {details.qty.toLocaleString()}주 보유
                           </span>
-                        </h3>
-                        <div className="text-[11px] text-gray-400 mt-1 flex items-center gap-2">
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span>매수일시: {pos.buy_time || "실시간 체결"}</span>
                           <span>·</span>
                           <span>환율: 1,355원 기준</span>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <div className={`text-xl sm:text-2xl font-black font-mono tracking-tight flex items-center justify-end gap-1 ${
+                      <div className="text-right shrink-0 whitespace-nowrap pl-2">
+                        <div className={`text-xl sm:text-2xl font-black font-mono tracking-tight flex items-center justify-end gap-1 whitespace-nowrap ${
                           isPlus ? "text-rose-400" : "text-blue-400"
                         }`}>
-                          {isPlus ? <ArrowUpRight className="w-5 h-5 text-rose-400" /> : <ArrowDownRight className="w-5 h-5 text-blue-400" />}
-                          <span>{isPlus ? "+" : ""}{details.pnlPct.toFixed(2)}%</span>
+                          {isPlus ? <ArrowUpRight className="w-5 h-5 text-rose-400 shrink-0" /> : <ArrowDownRight className="w-5 h-5 text-blue-400 shrink-0" />}
+                          <span className="whitespace-nowrap">{isPlus ? "+" : ""}{details.pnlPct.toFixed(2)}%</span>
                         </div>
-                        <div className={`text-xs sm:text-sm font-black font-mono ${isPlus ? "text-rose-300" : "text-blue-300"}`}>
+                        <div className={`text-xs sm:text-sm font-black font-mono whitespace-nowrap ${isPlus ? "text-rose-300" : "text-blue-300"}`}>
                           {isPlus ? "+" : ""}{formatKrw(details.pnlKrw)}
                         </div>
                       </div>
