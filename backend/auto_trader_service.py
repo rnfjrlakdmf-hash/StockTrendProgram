@@ -282,7 +282,8 @@ def _default_state() -> Dict[str, Any]:
             "enabled": True,
             "mode": "AI_PAPER",  # AI_PAPER | KIS_VIRTUAL | KIS_REAL
             "market_target": "ALL",  # ALL(국내주식+해외주식+국내외ETF 24시간 풀가동) | KR | US
-            "initial_capital_krw": 10000000,
+            "paper_seed_krw": 20000000,  # 모의투자 시드머니 기본값 2,000만원 영구 유지
+            "initial_capital_krw": 20000000,
             "max_total_invest_krw": 10000000,  # 실전/연동 계좌에서 AI 자동매매가 사용할 수 있는 최대 총 투자 한도 금액 (원)
             "order_amount_krw": 2000000,
             "max_positions": 7,
@@ -386,6 +387,16 @@ def load_state() -> Dict[str, Any]:
         pass
     if not str(state["config"].get("kis_account_no", "") or "").strip():
         state["config"]["kis_account_no"] = "43880949-22"
+
+    # [모의투자 시드머니 영구 보존] 대표님이 설정한 시드머니가 서버 재시작/일자변경 시 1,000만원 기본값으로 되돌아가지 않도록 완벽 보존
+    current_seed = state["config"].get("paper_seed_krw")
+    if not current_seed or int(current_seed) <= 0:
+        saved_init = state["config"].get("initial_capital_krw")
+        if saved_init and int(saved_init) > 0:
+            state["config"]["paper_seed_krw"] = int(saved_init)
+        else:
+            state["config"]["paper_seed_krw"] = 20000000
+    state["config"]["paper_seed_krw"] = max(50000, int(state["config"]["paper_seed_krw"]))
 
     return state
 
@@ -820,7 +831,7 @@ def _get_current_effective_cash(
     if mode == "KIS_REAL":
         return int(acct.get("cash_krw", 0)), "실전 예수금"
     else:
-        seed = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+        seed = max(50000, int(cfg.get("paper_seed_krw", 20000000) or 20000000))
         realized = int(acct.get("realized_pnl_krw", 0) or 0)
         tot = seed + realized
         if paper_positions_override is not None:
@@ -1510,9 +1521,9 @@ def panic_sell_all() -> Dict[str, Any]:
     return get_dashboard_summary(state)
 
 
-def reset_paper_account(initial_capital_krw: int = 10000000) -> Dict[str, Any]:
+def reset_paper_account(initial_capital_krw: int = 20000000) -> Dict[str, Any]:
     state = load_state()
-    seed_krw = max(50000, int(initial_capital_krw or 10000000))
+    seed_krw = max(50000, int(initial_capital_krw or 20000000))
     state["config"]["paper_seed_krw"] = seed_krw
     if state["config"].get("mode") != "KIS_REAL":
         state["config"]["initial_capital_krw"] = seed_krw
@@ -1543,6 +1554,9 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     old_mode = state["config"].get("mode", "AI_PAPER")
     if "paper_seed_krw" in new_cfg and new_cfg["paper_seed_krw"] is not None:
         state["config"]["paper_seed_krw"] = max(50000, int(new_cfg["paper_seed_krw"]))
+    elif not state["config"].get("paper_seed_krw"):
+        state["config"]["paper_seed_krw"] = 20000000
+
     for k, v in new_cfg.items():
         if k in state["config"] and v is not None:
             if k in ("kis_app_secret", "kis_app_key", "kis_account_no"):
@@ -1569,7 +1583,7 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
         if paper_only:
             state["paper_positions_backup"] = paper_only
             state["positions"] = real_only
-        target_budget = int(state["config"].get("max_total_invest_krw", 0) or state["config"].get("initial_capital_krw", 10000000))
+        target_budget = int(state["config"].get("max_total_invest_krw", 0) or state["config"].get("initial_capital_krw", 20000000))
         if target_budget > 0:
             real_inv = sum(int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (1355.0 if p.get("is_us") else 1.0))) for p in real_only)
             state["account"]["cash_krw"] = max(0, target_budget + int(state["account"].get("realized_pnl_krw", 0)) - real_inv)
@@ -1641,7 +1655,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     fx_rate = 1355.0
     cfg = state.get("config", {})
     acct = state.setdefault("account", {})
-    base_paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+    base_paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 20000000) or 20000000))
     realized_pnl = int(acct.get("realized_pnl_krw", 0) or 0)
     # 시드머니 변경 또는 매매 손익으로 총 운용 금액이 변동되면 변동된 총금액(effective_seed_krw)에 맞춰 자동 스케일링!
     effective_seed_krw = max(50000, base_paper_seed_krw + realized_pnl)
@@ -2103,10 +2117,12 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             "total_return_pct": ret_pct,
         }
 
-    paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+    paper_seed_krw = max(50000, int(cfg.get("paper_seed_krw", 20000000) or 20000000))
     cfg["paper_seed_krw"] = paper_seed_krw
+    if isinstance(state.get("config"), dict):
+        state["config"]["paper_seed_krw"] = paper_seed_krw
     paper_summary = _calc_group_metrics(paper_positions, paper_seed_krw, realized_krw=int(acct.get("realized_pnl_krw", 0)))
-    real_cap = max_total_invest_krw if max_total_invest_krw > 0 else int(cfg.get("initial_capital_krw", 10000000) or 10000000)
+    real_cap = max_total_invest_krw if max_total_invest_krw > 0 else int(cfg.get("initial_capital_krw", 20000000) or 20000000)
     real_summary = _calc_group_metrics(real_positions, real_cap)
 
     all_logs = state.get("trade_logs", [])[:60]

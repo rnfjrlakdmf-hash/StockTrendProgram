@@ -91,7 +91,7 @@ export default function AdminAutoTradePage() {
   const [kisAppKey, setKisAppKey] = useState("");
   const [kisAppSecret, setKisAppSecret] = useState("");
   const [kisAccountNo, setKisAccountNo] = useState("");
-  const [paperSeedKrw, setPaperSeedKrw] = useState<number>(10000000);
+  const [paperSeedKrw, setPaperSeedKrw] = useState<number>(20000000);
   const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
 
   // [철통 보안] 대표님 관리자 이메일(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 외 접근 원천 차단
@@ -109,6 +109,16 @@ export default function AdminAutoTradePage() {
     }
   }, [currentUser, authLoading, router]);
 
+  // [로컬 시드 캐시 복원] 새로고침 또는 브라우저 재접속 시에도 대표님이 설정한 시드머니 즉시 복원
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("admin_auto_paper_seed");
+      if (cached && Number(cached) > 0) {
+        setPaperSeedKrw(Number(cached));
+      }
+    } catch {}
+  }, []);
+
   const syncFormFromConfig = (cfg: any) => {
     if (!cfg) return;
     setMode(cfg.mode || "AI_PAPER");
@@ -125,7 +135,13 @@ export default function AdminAutoTradePage() {
     setKisAppKey(cfg.kis_app_key || "");
     setKisAppSecret(cfg.kis_app_secret || "");
     setKisAccountNo(cfg.kis_account_no || "");
-    if (cfg.paper_seed_krw) setPaperSeedKrw(Number(cfg.paper_seed_krw));
+    if (cfg.paper_seed_krw) {
+      const sVal = Number(cfg.paper_seed_krw);
+      setPaperSeedKrw(sVal);
+      try {
+        localStorage.setItem("admin_auto_paper_seed", String(sVal));
+      } catch {}
+    }
   };
 
   const getAdminHeaders = useCallback(async (withJson = true) => {
@@ -229,6 +245,7 @@ export default function AdminAutoTradePage() {
           kis_app_key: kisAppKey,
           kis_app_secret: kisAppSecret,
           kis_account_no: kisAccountNo,
+          paper_seed_krw: Number(paperSeedKrw),
         }),
       });
       const json = await res.json();
@@ -291,8 +308,11 @@ export default function AdminAutoTradePage() {
   };
 
   const handleApplyPaperSeed = async (targetSeed?: number) => {
-    const seedVal = Math.max(50000, Number(targetSeed ?? paperSeedKrw) || 10000000);
+    const seedVal = Math.max(50000, Number(targetSeed ?? paperSeedKrw) || 20000000);
     setPaperSeedKrw(seedVal);
+    try {
+      localStorage.setItem("admin_auto_paper_seed", String(seedVal));
+    } catch {}
     setActionLoading(true);
     try {
       const hdrs = await getAdminHeaders(true);
@@ -360,10 +380,13 @@ export default function AdminAutoTradePage() {
   };
 
   const handleResetPaper = async (customSeed?: number) => {
-    const seedVal = Math.max(50000, Number(customSeed ?? paperSeedKrw) || 10000000);
+    const seedVal = Math.max(50000, Number(customSeed ?? paperSeedKrw) || 20000000);
     const seedText = seedVal >= 10000 ? `${(seedVal / 10000).toLocaleString()}만 원` : `${seedVal.toLocaleString()}원`;
     if (!confirm(`가상 계좌 시드머니를 [${seedText}]으로 초기화하고 즉시 새 포트폴리오 매수를 시작하시겠습니까?`)) return;
     setPaperSeedKrw(seedVal);
+    try {
+      localStorage.setItem("admin_auto_paper_seed", String(seedVal));
+    } catch {}
     setActionLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/reset-paper`, {
@@ -398,7 +421,7 @@ export default function AdminAutoTradePage() {
   }
 
   const cfg = data?.config || {};
-  const activePaperSeed = Number(cfg.paper_seed_krw || paperSeedKrw || 10000000);
+  const activePaperSeed = Number(cfg.paper_seed_krw || paperSeedKrw || 20000000);
   const paperSeedLabel = activePaperSeed >= 10000 ? `${(activePaperSeed / 10000).toLocaleString()}만원` : `${activePaperSeed.toLocaleString()}원`;
   const realPositions = data?.real_positions || [];
   const paperPositions = data?.paper_positions || [];
