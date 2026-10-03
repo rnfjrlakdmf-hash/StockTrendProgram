@@ -2010,6 +2010,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
 
     # 1.2 [보유 포지션 100% 안전 보존]
     # 이미 정상 매수되어 계좌에 편입된 종목은 어떠한 경우에도 임의 삭제하지 않고 전량 온전히 보존
+    changed = False
     balanced_raw: List[Dict[str, Any]] = []
     for p in raw_paper:
         sym = p.get("symbol")
