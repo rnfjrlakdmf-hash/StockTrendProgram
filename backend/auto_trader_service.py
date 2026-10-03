@@ -1253,11 +1253,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     state["active_session"] = session_info
 
     scored_candidates = _build_session_candidates(state, active_market)
-    state["candidates"] = scored_candidates[:10]
+    state["candidates"] = scored_candidates[:25]
     if active_market == "KR":
-        state["kr_candidates"] = scored_candidates[:10]
+        state["kr_candidates"] = scored_candidates[:25]
     else:
-        state["us_candidates"] = scored_candidates[:10]
+        state["us_candidates"] = scored_candidates[:25]
 
     held_symbols = {p["symbol"] for p in state["positions"]}
     max_pos = int(cfg.get("max_positions", 7) or 7)
@@ -1900,14 +1900,17 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if c_price <= 0:
                 continue
             c_is_us = bool(cand.get("is_us"))
-            # [실제 시장 운영 시간 엄격 준수] 해당 종목의 거래소가 실제로 열려있지 않으면 가상 모의투자도 절대 매수 금지!
-            if not is_market_open_now(c_sym, is_us=c_is_us):
+            allow_sim = bool(cfg.get("allow_off_hours_sim", False))
+            is_open = is_market_open_now(c_sym, is_us=c_is_us)
+            # [실제 시장 운영 시간 준수] 정규장 중이거나 오프장 모의 시뮬레이션(allow_off_hours_sim) 허용 시 매수 진행
+            if not is_open and not allow_sim:
                 continue
             unit_krw = c_price * (fx_rate if c_is_us else 1.0)
             qty = int(per_stock_budget_krw // unit_krw)
             if qty <= 0:
                 continue
             buy_amt_krw = int(round(qty * unit_krw))
+            status_desc = "정규장 실시간 포착" if is_open else "AI 퀀트 주도주 시뮬레이션"
             new_paper_pos = {
                 "symbol": c_sym,
                 "name": cand.get("name", c_sym),
@@ -1921,7 +1924,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "pnl_pct": 0.0,
                 "pnl_krw": 0,
                 "bought_at": now_str,
-                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} 정규장 실시간 포착 · {buy_amt_krw:,}원 배분] · {cand.get('reason', '')}",
+                "reason": f"AI 퀀트 {cand.get('ai_score', 98)}점 · [{market_label} {status_desc} · {buy_amt_krw:,}원 배분] · {cand.get('reason', '')}",
                 "is_us": c_is_us,
                 "trade_mode": "AI_PAPER",
                 "kis_order_confirmed": False,
@@ -1963,24 +1966,26 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             changed = True
 
 
+    allow_sim = bool(cfg.get("allow_off_hours_sim", False))
+
     if active_mkt == "KR":
-        # 현재 국내 정규장 운영 시간(평일 09:00~15:30)에만 실제 분석 및 신규 매수! (15:30 이후 및 주말에는 매수 일절 금지)
-        if is_market_open_now("005930", is_us=False):
+        # 현재 국내 정규장 운영 시간(평일 09:00~15:30) 또는 오프장 모의 시뮬레이션 허용 시 매수 진행!
+        if is_market_open_now("005930", is_us=False) or allow_sim:
             needed_kr = max(0, paper_max_pos - len(updated_paper))
             if needed_kr > 0:
                 kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
-                if not kr_pool:
-                    kr_pool = _build_session_candidates(state, "KR")[:10]
+                if not kr_pool or len(kr_pool) < needed_kr:
+                    kr_pool = _build_session_candidates(state, "KR")[:25]
                     state["kr_candidates"] = kr_pool
                 _fill_market_slots(kr_pool, needed_kr, "🇰🇷국내")
     elif active_mkt == "US":
-        # 현재 미국장 운영 시간(월 17:00 ~ 토 09:00 KST)에만 실제로 열린 해외주식 신규 매수!
-        if is_market_open_now("NVDA", is_us=True):
+        # 현재 미국장 운영 시간(월 17:00 ~ 토 09:00 KST) 또는 오프장 모의 시뮬레이션 허용 시 매수 진행!
+        if is_market_open_now("NVDA", is_us=True) or allow_sim:
             needed_us = max(0, paper_max_pos - len(updated_paper))
             if needed_us > 0:
                 us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
-                if not us_pool:
-                    us_pool = _build_session_candidates(state, "US")[:10]
+                if not us_pool or len(us_pool) < needed_us:
+                    us_pool = _build_session_candidates(state, "US")[:25]
                     state["us_candidates"] = us_pool
                 _fill_market_slots(us_pool, needed_us, "🇺🇸해외")
 
@@ -2070,7 +2075,7 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     curr_cands = state.get("candidates", [])
     if not curr_cands or any(bool(c.get("is_us")) != want_us for c in curr_cands[:3]):
         try:
-            fresh_cands = _build_session_candidates(state, active_mkt)[:10]
+            fresh_cands = _build_session_candidates(state, active_mkt)[:25]
             state["candidates"] = fresh_cands
             if active_mkt == "KR":
                 state["kr_candidates"] = fresh_cands
