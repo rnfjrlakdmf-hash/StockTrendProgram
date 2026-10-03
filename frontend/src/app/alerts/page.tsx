@@ -154,7 +154,8 @@ export default function AlertCenterPage() {
                 // [보안 강화] 오직 명시적으로 로그인된 유저 세션이 존재할 때만 userId 인정
                 const userId = user?.id || (user as any)?.uid || null;
                 
-                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(800));
+                // [3일치 완벽 보존] 하루 수백~수천 건의 SEC 공시에 밀려 DART 공시, 퀀트 시세, 관심종목, 서비스/관리자 알림이 밀려나지 않도록 3,500개로 대폭 확장
+                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(3500));
                 const snapLatest = await getDocs(qLatest);
                 
                 const seenContentKeys = new Set<string>();
@@ -244,11 +245,12 @@ export default function AlertCenterPage() {
                         const timeBucket = Math.floor(sec / 1800);
                         const cleanTitle = (data.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
                         const cleanBody = (data.body || '').replace(/\s+/g, ' ').trim().substring(0, 60).toLowerCase();
-                        const isDailyOnceType = ['morning_briefing', 'market_open', 'market_summary', 'portfolio_summary', 'quant_scanner'].includes(data.type) ||
+                        // quant_scanner는 종목별 고유 시세이므로 daily 1회 합치기에서 제외하여 3일치 종목별 알림 완전 보존!
+                        const isDailyOnceType = ['morning_briefing', 'market_open', 'market_summary', 'portfolio_summary'].includes(data.type) ||
                             cleanTitle.includes('간추린 모닝 팩트') ||
                             cleanTitle.includes('장시작:') ||
                             cleanTitle.includes('관심종목 시가');
-                        const uniqueDocRef = String(data.rcept_no || data.dart_url || '');
+                        const uniqueDocRef = String(data.rcept_no || data.dart_url || data.symbol || '');
                         const contentKey = isDailyOnceType
                             ? `daily::${data.type || ''}::${cleanTitle}::${kstDayBucket}`
                             : `${cleanTitle}::${uniqueDocRef || cleanBody}::${timeBucket}`;
