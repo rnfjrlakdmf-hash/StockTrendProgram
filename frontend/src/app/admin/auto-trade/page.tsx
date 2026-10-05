@@ -137,6 +137,20 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
   };
 }
 
+function splitStockName(rawName: any = "") {
+  if (!rawName) return { mainName: "", subName: "" };
+  const trimmed = String(rawName).trim();
+  // (괄호) 또는 [대괄호]로 감싸진 부제/테마/영문명 분리
+  const match = trimmed.match(/^([^\(\[]+)\s*([\(\[].+[\)\]])$/);
+  if (match) {
+    return {
+      mainName: match[1].trim(),
+      subName: match[2].trim(),
+    };
+  }
+  return { mainName: trimmed, subName: "" };
+}
+
 function parseCandidateReason(rawReason: any = "") {
   if (!rawReason) return { chips: [], techSummary: "", text: "" };
   const str = typeof rawReason === "string" ? rawReason : String(rawReason);
@@ -251,7 +265,7 @@ function parseCandidateReason(rawReason: any = "") {
       const clean = part.replace(/^[\[\(]/, "").replace(/[\]\)]$/, "").trim();
       if (clean && (clean.includes("차트:") || clean.includes("CVD") || clean.includes("OBV"))) {
         techSummary = clean;
-      } else if (clean) {
+      } else if (clean && clean.length >= 4 && !clean.includes("기관·외인") && clean !== "기관" && clean !== "외인") {
         textParts.push(clean);
       }
     }
@@ -1715,14 +1729,24 @@ export default function AdminAutoTradePage() {
                     {/* 종목명 & 수익률 메인 디스플레이 */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base sm:text-xl font-black text-white leading-tight">
-                            {pos.name}
-                          </h3>
-                          <span className="text-xs sm:text-sm font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-mono shrink-0">
-                            {details.qty.toLocaleString()}주 보유
-                          </span>
-                        </div>
+                        {(() => {
+                          const posNameInfo = splitStockName(pos.name);
+                          return (
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                              <h3 className="text-base sm:text-xl font-extrabold text-white leading-normal tracking-[0.03em]">
+                                {posNameInfo.mainName}
+                              </h3>
+                              {posNameInfo.subName && (
+                                <span className="text-xs sm:text-sm font-semibold text-gray-300 bg-white/[0.06] border border-white/10 px-2 py-0.5 rounded-md tracking-normal">
+                                  {posNameInfo.subName}
+                                </span>
+                              )}
+                              <span className="text-xs sm:text-sm font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-mono shrink-0 ml-1">
+                                {details.qty.toLocaleString()}주 보유
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <div className="text-[11px] text-gray-400 mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span>매수일시: {pos.buy_time || "실시간 체결"}</span>
                           <span>·</span>
@@ -2586,34 +2610,50 @@ export default function AdminAutoTradePage() {
                       {idx === 1 && <div className="absolute top-0 right-0 w-48 h-48 bg-slate-300/5 rounded-full blur-2xl pointer-events-none" />}
                       {idx === 2 && <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />}
 
-                      {/* 1. 상단: 순위, 마켓, 종목명(전체 표시!), 심볼, AI 스코어 (잘림 없는 단독 행) */}
-                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/[0.08] relative z-10">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black shrink-0 ${rankBadgeClass}`}>
-                            {rankMedal}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-black border font-mono shrink-0 flex items-center gap-1 ${candMarket.style}`}
-                          >
-                            <span>{candMarket.flag}</span>
-                            <span>{candMarket.label}</span>
-                          </span>
-                          <span
-                            className="font-black text-white text-base sm:text-lg group-hover:text-emerald-300 transition-colors whitespace-nowrap"
-                            title={cand.name}
-                          >
-                            {cand.name}
-                          </span>
-                          <span className="text-xs text-gray-400 font-mono font-bold shrink-0">
-                            {cand.symbol}
-                          </span>
-                        </div>
+                      {/* 1. 상단: 순위, 마켓, 종목명 (넓은 자간 및 부제 분리), 심볼, AI 스코어 */}
+                      {(() => {
+                        const nameInfo = splitStockName(cand.name);
+                        return (
+                          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-3 pb-3 border-b border-white/[0.08] relative z-10">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 min-w-0">
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-black shrink-0 tracking-wider shadow-sm ${rankBadgeClass}`}>
+                                {rankMedal}
+                              </span>
+                              <span
+                                className={`px-2.5 py-1 rounded-md text-[11px] font-black border font-mono shrink-0 flex items-center gap-1.5 shadow-2xs ${candMarket.style}`}
+                              >
+                                <span>{candMarket.flag}</span>
+                                <span className="tracking-wide">{candMarket.label}</span>
+                              </span>
 
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-[11px] font-black flex items-center gap-1 shrink-0 shadow-sm">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                          AI {cand.ai_score || 99}점
-                        </span>
-                      </div>
+                              {/* 종목명 (쾌적한 자간 + 부제/테마 뱃지 분리) */}
+                              <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1 min-w-0">
+                                <span
+                                  className="font-extrabold text-white text-base sm:text-lg group-hover:text-emerald-300 transition-colors tracking-[0.03em] leading-normal"
+                                  title={cand.name}
+                                >
+                                  {nameInfo.mainName}
+                                </span>
+                                {nameInfo.subName && (
+                                  <span className="text-xs sm:text-sm font-semibold text-gray-300 bg-white/[0.06] border border-white/10 px-2 py-0.5 rounded-md tracking-normal">
+                                    {nameInfo.subName}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* 티커 심볼 뱃지 */}
+                              <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-zinc-800/90 border border-white/15 text-emerald-400/90 tracking-wider shrink-0 shadow-2xs">
+                                {cand.symbol}
+                              </span>
+                            </div>
+
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-black flex items-center gap-1.5 shrink-0 shadow-sm tracking-wide">
+                              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                              AI {cand.ai_score || 99}점
+                            </span>
+                          </div>
+                        );
+                      })()}
 
                       {/* 2. 시세 & 1회 권장 매수량 히어로 박스 */}
                       <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10 relative z-10">
@@ -2736,8 +2776,8 @@ export default function AdminAutoTradePage() {
                       )}
 
                       {/* 부가 브리핑 텍스트 */}
-                      {parsed.text && (
-                        <p className="text-xs text-gray-400 pl-1 leading-snug relative z-10">
+                      {parsed.text && parsed.text.length >= 4 && (
+                        <p className="text-xs text-gray-400 pl-1 leading-relaxed relative z-10 tracking-normal">
                           💡 {parsed.text}
                         </p>
                       )}
