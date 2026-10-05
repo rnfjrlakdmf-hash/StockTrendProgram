@@ -40,6 +40,9 @@ KR_UNIVERSE = [
     {"symbol": "012450", "name": "한화에어로스페이스", "sector": "K-방산/우주", "tier": "BLUECHIP"},
     {"symbol": "267260", "name": "HD현대일렉트릭", "sector": "AI 변압기/전력", "tier": "BLUECHIP"},
     {"symbol": "196170", "name": "알테오젠", "sector": "바이오 플랫폼", "tier": "BLUECHIP"},
+    {"symbol": "003230", "name": "삼양식품", "sector": "K-푸드 불닭 글로벌 수출 대장", "tier": "MID_MOMENTUM"},
+    {"symbol": "064350", "name": "현대로템", "sector": "K-방산 전차/철도 수출 대장", "tier": "MID_MOMENTUM"},
+    {"symbol": "141080", "name": "리가켐바이오", "sector": "글로벌 ADC 항암 바이오 대장", "tier": "MID_MOMENTUM"},
 ]
 
 US_UNIVERSE = [
@@ -60,13 +63,17 @@ US_UNIVERSE = [
     {"symbol": "SOFI", "name": "소파이 테크놀로지스 (미국 AI 핀테크)", "sector": "🚀 해외신생 · 미국 디지털금융 대장 ($10~$15대)", "tier": "US_EMERGING", "exchange": "NASD"},
     {"symbol": "MARA", "name": "마라 홀딩스 (북미 비트코인 AI 데이터센터)", "sector": "🚀 해외신생 · 가상자산/AI 전력 인프라 ($15~$20대)", "tier": "US_EMERGING", "exchange": "NASD"},
     {"symbol": "NVDL", "name": "NVDL (엔비디아 2배 레버리지 ETF)", "sector": "미국 AI 반도체 2배 ETF ($50~$60대)", "tier": "ETF_FAST", "exchange": "NASD"},
-    # [3] 미국 나스닥/뉴욕 대표 빅테크 주도주
+    # [3] 미국 나스닥/뉴욕 대표 빅테크 및 최고 탄력 주도주
     {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "미국 AI 국방 소프트웨어 ($40대)", "tier": "MID_MOMENTUM", "exchange": "NYSE"},
     {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "미국 AI 반도체 대장 ($120대)", "tier": "BLUECHIP", "exchange": "NASD"},
     {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "미국 자율주행/로봇", "tier": "BLUECHIP", "exchange": "NASD"},
     {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "미국 온디바이스 AI", "tier": "BLUECHIP", "exchange": "NASD"},
     {"symbol": "MSFT", "name": "마이크로소프트", "sector": "미국 클라우드 AI", "tier": "BLUECHIP", "exchange": "NASD"},
     {"symbol": "META", "name": "메타 (Meta)", "sector": "미국 AI 광고/플랫폼", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "AMD", "name": "AMD (어드밴스드 마이크로)", "sector": "미국 AI GPU 데이터센터 대장", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "MSTR", "name": "마이크로스트래티지 (MSTR)", "sector": "비트코인/AI 인프라 고탄력 대장", "tier": "MID_MOMENTUM", "exchange": "NASD"},
+    {"symbol": "AVGO", "name": "브로드컴 (Broadcom)", "sector": "미국 AI ASIC 맞춤형 반도체", "tier": "BLUECHIP", "exchange": "NASD"},
+    {"symbol": "COIN", "name": "코인베이스 (Coinbase)", "sector": "미국 디지털자산 거래소 대장", "tier": "MID_MOMENTUM", "exchange": "NASD"},
 ]
 
 
@@ -750,6 +757,7 @@ def _analyze_chart_technicals(symbol: str, current_price: float) -> Dict[str, An
         "chart_summary": summary_str,
         "rsi": rsi,
         "ma20_gap_pct": round(ma20_gap_pct, 2),
+        "vol_ratio": round(vol_ratio, 2),
     }
     _CHART_CACHE[symbol] = {"ts": now_ts, "data": res_data}
     return res_data
@@ -768,19 +776,27 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
     chart_info = _analyze_chart_technicals(item["symbol"], price)
     base += chart_info["chart_score"]
     reasons.append(chart_info["chart_summary"])
+    vol_ratio = float(chart_info.get("vol_ratio", 1.0) or 1.0)
 
-    # 1) 당일 분봉/호가 추격매수 방지 (-1.5% ~ +4.5% 눌림목·초동 돌파 구간 우대)
-    if 0.3 <= chg <= 4.2:
-        base += 11.0
+    # 1) [수익 극대화 & 기회 누락 방지] 듀얼 매수 엔진 (돌파 모멘텀 + 눌림목 저점 반등)
+    if vol_ratio >= 1.45 and 0.8 <= chg <= 7.2:
+        # [수익 돌파 타점]: 거래량이 폭증하며 수급이 강하게 쏠리는 주도주 즉시 포착 탑승!
+        base += 15.0
+        reasons.append(f"🚀 거래량 급증 돌파 모멘텀 (+{chg:.1f}%, 거래량 {vol_ratio:.1f}배)")
+    elif 0.3 <= chg <= 4.2:
+        # [초동 돌파 타점]: 기관·외인 수급 돌파 초기 진입
+        base += 11.5
         reasons.append(f"기관·외인 수급 초동 돌파 (+{chg:.2f}%)")
-    elif -2.0 <= chg < 0.3:
-        base += 9.0
+    elif -2.8 <= chg < 0.3:
+        # [눌림목 저점 반등]: 지지선 부근 안정적 반등 자리
+        base += 9.5
         reasons.append(f"장중 눌림목 저점 매집 ({chg:+.2f}%)")
-    elif chg > 7.5:
-        base -= 10.0
+    elif chg > 8.5 and vol_ratio < 2.5:
+        # 거래량 뒷받침 없는 고점 과열 추격매수만 합리적으로 차단
+        base -= 8.0
         reasons.append("단기 급등 과열 구간 (추격매수 차단)")
     else:
-        base += 4.0
+        base += 5.0
         reasons.append("바닥권 거래량 유입 포착")
 
     # 2) 섹터 모멘텀 및 1만~5만 원대 고탄력 알짜주 · 해외 유망 신생기업 가산점
