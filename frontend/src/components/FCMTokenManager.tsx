@@ -103,9 +103,10 @@ export default function FCMTokenManager() {
 
         onForegroundMessage((payload) => {
             console.log('[FCM] Received foreground message (Web):', payload);
-            const title = payload.notification?.title || '새 알림';
-            const body = payload.notification?.body || '';
-            showNotification(title, { body, data: payload.data });
+            const title = payload.notification?.title || payload.data?.title || '새 알림';
+            const body = payload.notification?.body || payload.data?.body || '';
+            const tag = payload.data?.tag || `st-fg-${Date.now()}`;
+            showNotification(title, { body, data: payload.data, tag } as any);
         });
 
         // [Fix] 네이티브 푸시 알림 리스너 (앱이 켜져 있을 때 수신 처리)
@@ -135,12 +136,24 @@ export default function FCMTokenManager() {
             }
         });
 
-        // Service Worker로부터의 네비게이션 메시지 수신 (창 전환 후 목적지 링크 이동 100% 보장)
+        // Service Worker로부터의 네비게이션 및 포그라운드 위임 메시지 수신
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
             const handleSwMessage = (event: MessageEvent) => {
                 if (event.data && event.data.type === 'FCM_NAVIGATE' && event.data.url) {
                     console.log('[FCM] Received FCM_NAVIGATE from SW:', event.data.url);
                     window.location.href = event.data.url;
+                    return;
+                }
+                // 사이트 탭이 열려 있어 구버전 SW가 포그라운드로 위임한 FCM 메시지 즉시 표시
+                const fmPayload = event.data?.firebaseMessaging?.payload || (event.data?.isFirebaseMessaging ? event.data : null);
+                if (fmPayload && (fmPayload.notification || fmPayload.data)) {
+                    const t = fmPayload.notification?.title || fmPayload.data?.title || '📢 스톡 트렌드 알림';
+                    const b = fmPayload.notification?.body || fmPayload.data?.body || '';
+                    showNotification(t, {
+                        body: b,
+                        data: fmPayload.data || fmPayload,
+                        tag: `st-sw-fg-${Date.now()}`
+                    } as any);
                 }
             };
             navigator.serviceWorker.addEventListener('message', handleSwMessage);

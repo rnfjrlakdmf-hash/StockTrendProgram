@@ -588,9 +588,9 @@ def resolve_click_url(title: str, data: dict = None) -> str:
         if notif_title: params['title'] = notif_title
         click_url = f"/news-redirect?{urllib.parse.urlencode(params)}"
     # 4. 명시적 url이 존재하고, 루트 메인('/')이 아닌 유의미한 상세 경로인 경우
-    elif raw_url and raw_url not in ['/', 'https://stock-trend-program.co.kr', 'https://stock-trend-program.co.kr/', 'http://stock-trend-program.co.kr', 'http://stock-trend-program.co.kr/']:
+    elif raw_url and raw_url not in ['/', 'https://stocktrend.site', 'https://stocktrend.site/', 'http://stocktrend.site', 'http://stocktrend.site/', 'https://stock-trend-program.co.kr', 'https://stock-trend-program.co.kr/']:
         # 구버전 /scanner 링크가 들어온 경우 퀀트 스캐너 전체보기로 자동 교정
-        if raw_url in ['/scanner', 'https://stock-trend-program.co.kr/scanner']:
+        if raw_url in ['/scanner', 'https://stocktrend.site/scanner', 'https://stock-trend-program.co.kr/scanner']:
             click_url = "/signals?tab=scanner"
         else:
             click_url = raw_url
@@ -602,7 +602,7 @@ def resolve_click_url(title: str, data: dict = None) -> str:
         click_url = "/alerts"
 
     if click_url and not click_url.startswith('http'):
-        click_url = f'https://stock-trend-program.co.kr{click_url}'
+        click_url = f'https://stocktrend.site{click_url}'
 
     return click_url
 
@@ -695,6 +695,8 @@ def send_push_notification(
                             "급등", "급락", "신고가", "목표", "손절", "익절",
                             "가격", "도달", "auto_price", "포착", "경신",
                             "장시작", "장마감", "시가", "결산", "시황",
+                            "매수", "매도", "체결", "추매", "물타기", "자동매매", "모의투자", "실전매매",
+                            "buy", "sell", "trade", "🧪", "🟢", "🔴", "💧", "🛡️",
                             "[test]", "connection verified"]
     is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
     # [Update] 대표님 요청으로 야간 알림 제한 해제 (24시간 무조건 발송)
@@ -729,12 +731,11 @@ def send_push_notification(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='https://stock-trend-program.co.kr/icon.png',
-                badge='https://stock-trend-program.co.kr/badge.png',
+                icon='https://stocktrend.site/icon.png',
+                badge='https://stocktrend.site/badge.png',
                 vibrate=[200, 100, 200],
                 tag=f"{fcm_tag}-{int(time.time() * 1000)}",
-                renotify=True,
-                actions=webpush_actions
+                renotify=True
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
@@ -918,6 +919,8 @@ def send_multicast_notification(
                             "급등", "급락", "신고가", "목표", "손절", "익절",
                             "가격", "도달", "auto_price", "포착", "경신",
                             "장시작", "장마감", "시가", "결산", "시황",
+                            "매수", "매도", "체결", "추매", "물타기", "자동매매", "모의투자", "실전매매",
+                            "buy", "sell", "trade", "🧪", "🟢", "🔴", "💧", "🛡️",
                             "[test]", "connection verified"]
     is_price_or_admin = any(k in title.lower() for k in PRICE_ALERT_KEYWORDS)
     # [Update] 대표님 요청으로 야간 알림 제한 해제 (24시간 무조건 발송)
@@ -958,12 +961,11 @@ def send_multicast_notification(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='https://stock-trend-program.co.kr/icon.png',
-                badge='https://stock-trend-program.co.kr/badge.png',
+                icon='https://stocktrend.site/icon.png',
+                badge='https://stocktrend.site/badge.png',
                 vibrate=[200, 100, 200],
                 tag=unique_fcm_tag,
-                renotify=True,
-                actions=webpush_actions
+                renotify=True
             ),
             fcm_options=messaging.WebpushFCMOptions(
                 link=click_url
@@ -1222,8 +1224,8 @@ def send_topic_push(
             notification=messaging.WebpushNotification(
                 title=title,
                 body=body,
-                icon='https://stock-trend-program.co.kr/icon.png',
-                badge='https://stock-trend-program.co.kr/badge.png',
+                icon='https://stocktrend.site/icon.png',
+                badge='https://stocktrend.site/badge.png',
                 renotify=True
             ),
             fcm_options=messaging.WebpushFCMOptions(

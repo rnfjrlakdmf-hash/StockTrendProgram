@@ -862,16 +862,31 @@ export default function AdminAutoTradePage() {
                 type="button"
                 onClick={async () => {
                   try {
-                    const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, { method: "POST" });
+                    if (typeof window !== "undefined" && "Notification" in window) {
+                      if (Notification.permission === "default") {
+                        const perm = await Notification.requestPermission();
+                        if (perm !== "granted") {
+                          alert("⚠️ 알림 권한이 허용되지 않았습니다. 브라우저 주소창 좌측 자물쇠(설정)에서 '알림 허용'으로 변경해주세요!");
+                          return;
+                        }
+                      } else if (Notification.permission === "denied") {
+                        alert("⚠️ 현재 브라우저의 알림이 '차단' 상태입니다.\n스마트폰 설정 > 애플리케이션 > 브라우저(삼성인터넷/크롬) > 알림을 '허용'으로 변경해주세요!");
+                        return;
+                      }
+                    }
+                    const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
+                    });
                     const d = await res.json();
-                    alert(d.message || "대표님 계정으로 자동매매 FCM 푸시 알림을 발송했습니다!");
+                    alert(d.message || "✅ 대표님 스마트폰으로 [🟢매수 + 🔴익절] 실시간 체결 알림 2통을 즉시 발송했습니다! 스마트폰 상단바를 확인해주세요.");
                   } catch {
                     alert("FCM 테스트 요청 실패");
                   }
                 }}
-                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
               >
-                <span>📲 내 폰으로 알림 테스트</span>
+                <span>📲 내 폰으로 실시간 알림 1초 테스트</span>
               </button>
 
               <span className="px-3 py-1.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-black flex items-center gap-1.5">

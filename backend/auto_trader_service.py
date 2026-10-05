@@ -1025,6 +1025,7 @@ def _send_batch_trade_notification(
                 f"{detail_lbl}\n목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
                 symbol=sym,
                 market=mkt_tag,
+                force=True,
             )
         else:
             names_summary = ", ".join(it.get("name", it.get("symbol")) for it in items[:2])
@@ -1075,6 +1076,7 @@ def _send_batch_trade_notification(
                 f"잔여 {c_lbl} {c_val:,}원",
                 symbol=sym,
                 market=mkt_tag,
+                force=True,
             )
         else:
             tag = "🔴일괄 익절" if total_pnl_krw >= 0 else "🛡️일괄 매도"
@@ -1454,6 +1456,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                             f"남은 예수금 {acct.get('cash_krw', 0):,}원",
                             symbol=sym,
                             market=mkt_tag,
+                            force=True,
                         )
 
 
@@ -1761,6 +1764,7 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
                 f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                 symbol=symbol,
                 market=mkt_tag,
+                force=True,
             )
 
         else:
@@ -1804,6 +1808,7 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
         f"[모바일 알림 수신 테스트]\n{avg_p:,}원 × {qty}주 매입 시뮬레이션\n"
         f"목표 +4.0% | {c_lbl} {c_val:,}원",
         symbol=sample_sym,
+        force=True,
     )
     time.sleep(0.15)
     # 2) 🔴 익절 시 알림 (대표님 전용 기기 단독 1통 즉시 발송 - 테스트 명시)
@@ -1812,6 +1817,7 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
         f"[모바일 알림 수신 테스트]\n수익 +{est_profit:,}원 확정 시뮬레이션 (회수 {buy_amt + est_profit:,}원)\n"
         f"누적수익 +{est_profit:,}원 | {c_lbl} {c_val + buy_amt + est_profit:,}원",
         symbol=sample_sym,
+        force=True,
     )
     return res
 

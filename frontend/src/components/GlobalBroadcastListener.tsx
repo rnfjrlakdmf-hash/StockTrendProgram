@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { onSnapshot, collection, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, showNotification } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { X, BellRing, Sparkles, ChevronRight, Newspaper, FileText, TrendingUp, Flame, Zap, Clock } from "lucide-react";
 
@@ -119,6 +119,15 @@ export default function GlobalBroadcastListener() {
                         setIsClosing(false);
                         setPopupAlert({ id: change.doc.id, ...data });
                         playAlertSound();
+                        try {
+                            const notifTag = data.tag || `st-alert-${change.doc.id}`;
+                            showNotification(data.title || '📢 스톡 트렌드 알림', {
+                                body: data.body || '',
+                                data: data,
+                                tag: notifTag,
+                                renotify: false
+                            } as any);
+                        } catch (e) {}
                     }
                 }
             });
