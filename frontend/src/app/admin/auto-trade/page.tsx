@@ -2588,6 +2588,21 @@ export default function AdminAutoTradePage() {
                   const recAmountKrw = recShares * unitPriceKrw;
                   const rrRatio = stopPct > 0 ? (targetPct / stopPct).toFixed(1) : "4.0";
 
+                  // [핵심] 예상 수익금 및 손실 제한금 계산 (미국주는 달러 * 환율 적용하여 실제 원화 단위로 정확히 표시!)
+                  const expectedProfitKrw = cand.is_us
+                    ? Math.round(targetUpside * recShares * fxRate)
+                    : Math.round(targetUpside * recShares);
+                  const expectedProfitUsd = cand.is_us
+                    ? Number((targetUpside * recShares).toFixed(1))
+                    : 0;
+
+                  const expectedLossKrw = cand.is_us
+                    ? Math.round(stopDownside * recShares * fxRate)
+                    : Math.round(stopDownside * recShares);
+                  const expectedLossUsd = cand.is_us
+                    ? Number((stopDownside * recShares).toFixed(1))
+                    : 0;
+
                   // 순위 뱃지 스타일링 (1위 골드, 2위 실버, 3위 브론즈)
                   const rankBadgeClass =
                     idx === 0
@@ -2710,8 +2725,8 @@ export default function AdminAutoTradePage() {
                               AI 익절 목표 (+{targetPct}%)
                             </span>
                             {recShares > 0 && (
-                              <span className="text-[10px] text-emerald-300 font-bold">
-                                +{Math.round(targetUpside * recShares).toLocaleString()}원 기대
+                              <span className="text-[11px] text-emerald-300 font-extrabold bg-emerald-500/15 border border-emerald-400/30 px-2 py-0.5 rounded-md font-mono">
+                                +약 ₩{expectedProfitKrw.toLocaleString()}원{cand.is_us ? ` (+$${expectedProfitUsd})` : ""} 기대
                               </span>
                             )}
                           </div>
@@ -2734,8 +2749,8 @@ export default function AdminAutoTradePage() {
                               AI 방어 손절선 (-{stopPct}%)
                             </span>
                             {recShares > 0 && (
-                              <span className="text-[10px] text-blue-300 font-bold">
-                                -{Math.round(stopDownside * recShares).toLocaleString()}원 제한
+                              <span className="text-[11px] text-blue-300 font-extrabold bg-blue-500/15 border border-blue-400/30 px-2 py-0.5 rounded-md font-mono">
+                                -약 ₩{expectedLossKrw.toLocaleString()}원{cand.is_us ? ` (-$${expectedLossUsd})` : ""} 제한
                               </span>
                             )}
                           </div>
