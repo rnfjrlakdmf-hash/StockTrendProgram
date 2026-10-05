@@ -533,49 +533,37 @@ def _parse_num(val: Any) -> float:
 
 
 def _fetch_live_quote(symbol: str) -> Dict[str, Any]:
-    """실시간 시세 및 등락률 3중 교차 조회 (stock_data 엔진 + Yahoo/Naver 공식 실시간 API 직접 연동)"""
+    """실시간 시세 및 등락률 3중 교차 조회 (프리마켓/정규장/시간외 1분봉 실시간 스트림 + Yahoo/Naver 공식 실시간 연동)"""
     is_us_sym = bool(any(c.isalpha() for c in symbol))
 
-    # 1. First priority: stock_data.get_simple_quote
-    try:
-        from stock_data import get_simple_quote
-        q = get_simple_quote(symbol)
-        if q and _parse_num(q.get("price")) > 0:
-            price = _parse_num(q.get("price"))
-            change_pct = _parse_num(q.get("change_percent", q.get("change_rate", 0)))
-            volume = _parse_num(q.get("volume", 0))
-            return {
-                "price": price,
-                "change_pct": change_pct,
-                "volume": volume,
-                "is_us": is_us_sym,
-            }
-    except Exception as e:
-        print(f"[AutoTrader] stock_data quote error for {symbol}: {e}")
-
-    # 2. Second priority for US stocks: Yahoo Finance Official Chart/Quote REST API
+    # 1. 미국주식 최우선: Yahoo Finance 1분봉 실시간 틱 (프리마켓/정규장/애프터마켓 전구간 초정밀 실시간 연동)
     if is_us_sym:
         try:
-            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d"
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&includePrePost=true"
             res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
-                meta = data.get("chart", {}).get("result", [{}])[0].get("meta", {})
-                regular_price = float(meta.get("regularMarketPrice", 0) or 0)
-                prev_close = float(meta.get("chartPreviousClose", regular_price) or regular_price)
-                if regular_price > 0:
-                    chg_pct = round(((regular_price - prev_close) / prev_close) * 100.0, 2) if prev_close > 0 else 0.0
+                res_obj = data.get("chart", {}).get("result", [{}])[0]
+                meta = res_obj.get("meta", {})
+                quote_obj = res_obj.get("indicators", {}).get("quote", [{}])[0]
+                closes = [c for c in (quote_obj.get("close") or []) if c is not None and float(c) > 0]
+
+                # 프리마켓 체결가 또는 최신 1분봉 체결가를 최우선 현재가로 반영!
+                live_price = round(float(closes[-1]), 2) if closes else float(meta.get("preMarketPrice") or meta.get("regularMarketPrice", 0) or 0)
+                prev_close = float(meta.get("chartPreviousClose", live_price) or live_price)
+                if live_price > 0:
+                    chg_pct = round(((live_price - prev_close) / prev_close) * 100.0, 2) if prev_close > 0 else 0.0
                     vol = float(meta.get("regularMarketVolume", 0) or 0)
                     return {
-                        "price": regular_price,
+                        "price": live_price,
                         "change_pct": chg_pct,
                         "volume": vol,
                         "is_us": True,
                     }
         except Exception as e:
-            print(f"[AutoTrader] Direct Yahoo Finance quote error for {symbol}: {e}")
+            print(f"[AutoTrader] Direct Yahoo Finance live quote error for {symbol}: {e}")
 
-    # 3. Second priority for KR stocks: Naver Finance mobile API
+    # 2. 국내주식 최우선: Naver Finance mobile API
     if not is_us_sym:
         try:
             url = f"https://m.stock.naver.com/api/stock/{symbol}/basic"
@@ -594,6 +582,23 @@ def _fetch_live_quote(symbol: str) -> Dict[str, Any]:
                     }
         except Exception as e:
             print(f"[AutoTrader] Direct Naver Finance quote error for {symbol}: {e}")
+
+    # 3. Fallback: stock_data.get_simple_quote
+    try:
+        from stock_data import get_simple_quote
+        q = get_simple_quote(symbol)
+        if q and _parse_num(q.get("price")) > 0:
+            price = _parse_num(q.get("price"))
+            change_pct = _parse_num(q.get("change_percent", q.get("change_rate", 0)))
+            volume = _parse_num(q.get("volume", 0))
+            return {
+                "price": price,
+                "change_pct": change_pct,
+                "volume": volume,
+                "is_us": is_us_sym,
+            }
+    except Exception as e:
+        print(f"[AutoTrader] stock_data quote error for {symbol}: {e}")
 
     # 4. Emergency Fallback (최신 실제 실거래가 기준 안전망)
     fallback_prices = {
