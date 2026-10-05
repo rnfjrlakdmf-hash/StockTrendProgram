@@ -45,6 +45,10 @@ import {
   Copy,
   Check,
   BarChart2,
+  Search,
+  Filter,
+  ArrowRight,
+  Award,
 } from "lucide-react";
 
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
@@ -266,9 +270,11 @@ function parseCandidateReason(rawReason: any = "") {
 }
 
 function formatTradeReason(rawReason: any = "") {
-  if (!rawReason) return { tag: "AI 판단", text: "실시간 알고리즘 체결" };
+  if (!rawReason) return { tag: "AI 판단", text: "실시간 알고리즘 체결", chips: [] };
   const reason = typeof rawReason === "string" ? rawReason : String(rawReason);
-  if (!reason.trim()) return { tag: "AI 판단", text: "실시간 알고리즘 체결" };
+  if (!reason.trim()) return { tag: "AI 판단", text: "실시간 알고리즘 체결", chips: [] };
+
+  const chips: { label: string; color: string }[] = [];
 
   // 1. [태그] 형태가 맨 앞에 있는 경우 (예: 🧠 [AI 자율판단 조기익절] 상세...)
   const bracketMatch = reason.match(/^([^\s\[]+)?\s*\[([^\]]+)\]\s*(.*)$/);
@@ -277,17 +283,74 @@ function formatTradeReason(rawReason: any = "") {
     const tag = `${icon}${bracketMatch[2]}`.trim();
     let text = bracketMatch[3].trim();
     text = text.replace(/\[한투주문[^\]]+\]/g, "").trim();
-    return { tag, text: text || tag };
+
+    if (text.includes("수익 조기 챙김") || text.includes("조기익절")) {
+      chips.push({
+        label: "수익 조기 실현",
+        color: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+      });
+    }
+    if (text.includes("추가하락 방어") || text.includes("리스크관리")) {
+      chips.push({
+        label: "원금 손실 방어",
+        color: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+      });
+    }
+    if (text.includes("시드 즉시 교체")) {
+      chips.push({
+        label: "강세 주도주 교체",
+        color: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+      });
+    }
+    if (text.includes("목표가")) {
+      chips.push({
+        label: "목표가 달성 익절",
+        color: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+      });
+    }
+
+    return { tag, text: text || tag, chips };
   }
 
   // 2. AI 퀀트 N점 · [매수 상세 사유] 형태
-  const chunks = reason.split("·").map((c) => c.trim()).filter(Boolean);
-  let tag = "AI 퀀트 포착";
+  const safeStr = reason.replace(/5·20/g, "5_20_SAFE").replace(/·/g, "|||");
+  const chunks = safeStr
+    .split("|||")
+    .map((c) => c.replace(/5_20_SAFE/g, "5·20").trim())
+    .filter(Boolean);
+
+  let tag = "⚡ AI 퀀트 포착";
   const cleanChunks: string[] = [];
 
   for (const chunk of chunks) {
     if (chunk.includes("AI 퀀트")) {
-      tag = chunk.replace(/^AI\s*퀀트\s*/, "AI 퀀트 ");
+      tag = `✨ ${chunk.replace(/^AI\s*퀀트\s*/, "AI 퀀트 ")}`;
+    } else if (chunk.includes("RSI")) {
+      const match = chunk.match(/RSI\s*\d+[^\)]*\)?/i);
+      chips.push({
+        label: match ? match[0] : "RSI 저점 반등",
+        color: "bg-purple-500/15 text-purple-300 border-purple-400/30",
+      });
+    } else if (chunk.includes("골든크로스") || chunk.includes("정배열")) {
+      chips.push({
+        label: "5·20일선 골든크로스",
+        color: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+      });
+    } else if (chunk.includes("볼린저")) {
+      chips.push({
+        label: "볼린저 하단 반등",
+        color: "bg-indigo-500/15 text-indigo-300 border-indigo-400/30",
+      });
+    } else if (chunk.includes("거래량")) {
+      chips.push({
+        label: "바닥권 거래량 급증",
+        color: "bg-cyan-500/15 text-cyan-300 border-cyan-400/30",
+      });
+    } else if (chunk.includes("스마트머니") || chunk.includes("수급")) {
+      chips.push({
+        label: "외인·기관 수급 집중",
+        color: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+      });
     } else if (
       chunk.includes("정규장 실시간 포착") ||
       chunk.includes("소액한도 맞춤") ||
@@ -303,6 +366,7 @@ function formatTradeReason(rawReason: any = "") {
   return {
     tag,
     text: cleanChunks.length > 0 ? cleanChunks.join(" · ") : reason,
+    chips,
   };
 }
 
@@ -331,7 +395,8 @@ export default function AdminAutoTradePage() {
   const [kisAppSecret, setKisAppSecret] = useState("");
   const [kisAccountNo, setKisAccountNo] = useState("");
   const [paperSeedKrw, setPaperSeedKrw] = useState<number>(20000000);
-  const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
+  const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL" | "PROFIT" | "LOSS">("ALL");
+  const [logSearch, setLogSearch] = useState<string>("");
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
 
   const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
@@ -689,14 +754,52 @@ export default function AdminAutoTradePage() {
     ? (data?.real_trade_logs || [])
     : (data?.paper_trade_logs || data?.trade_logs || []);
 
-  const buyCount = tradeLogs.filter((l: any) => l?.action === "BUY").length;
-  const sellCount = tradeLogs.filter((l: any) => l?.action === "SELL").length;
-  const filteredLogs =
-    logFilter === "BUY"
-      ? tradeLogs.filter((l: any) => l?.action === "BUY")
-      : logFilter === "SELL"
-      ? tradeLogs.filter((l: any) => l?.action === "SELL")
-      : tradeLogs;
+  const buyLogs = useMemo(() => tradeLogs.filter((l: any) => l?.action === "BUY"), [tradeLogs]);
+  const sellLogs = useMemo(() => tradeLogs.filter((l: any) => l?.action === "SELL"), [tradeLogs]);
+  const profitLogs = useMemo(() => sellLogs.filter((l: any) => (Number(l?.pnl_krw) || 0) >= 0), [sellLogs]);
+  const lossLogs = useMemo(() => sellLogs.filter((l: any) => (Number(l?.pnl_krw) || 0) < 0), [sellLogs]);
+
+  const buyCount = buyLogs.length;
+  const sellCount = sellLogs.length;
+  const profitCount = profitLogs.length;
+  const lossCount = lossLogs.length;
+
+  const totalRealizedPnl = useMemo(() => {
+    return sellLogs.reduce((acc: number, l: any) => acc + (Number(l?.pnl_krw) || 0), 0);
+  }, [sellLogs]);
+
+  const winRate = useMemo(() => {
+    if (sellLogs.length === 0) return "0.0";
+    return ((profitCount / sellLogs.length) * 100).toFixed(1);
+  }, [profitCount, sellLogs.length]);
+
+  const totalVolumeKrw = useMemo(() => {
+    return tradeLogs.reduce((acc: number, l: any) => acc + (Number(l?.amount_krw) || 0), 0);
+  }, [tradeLogs]);
+
+  const bestTrade = useMemo(() => {
+    if (profitLogs.length === 0) return null;
+    return [...profitLogs].sort((a: any, b: any) => (Number(b?.pnl_krw) || 0) - (Number(a?.pnl_krw) || 0))[0];
+  }, [profitLogs]);
+
+  const filteredLogs = useMemo(() => {
+    let list = tradeLogs;
+    if (logFilter === "BUY") list = buyLogs;
+    else if (logFilter === "SELL") list = sellLogs;
+    else if (logFilter === "PROFIT") list = profitLogs;
+    else if (logFilter === "LOSS") list = lossLogs;
+
+    if (logSearch.trim()) {
+      const q = logSearch.trim().toLowerCase();
+      list = list.filter((l: any) => {
+        const name = String(l?.name || "").toLowerCase();
+        const sym = String(l?.symbol || "").toLowerCase();
+        const reason = String(l?.reason || "").toLowerCase();
+        return name.includes(q) || sym.includes(q) || reason.includes(q);
+      });
+    }
+    return list;
+  }, [tradeLogs, buyLogs, sellLogs, profitLogs, lossLogs, logFilter, logSearch]);
 
   const totalEq = Math.max(1, Number(summary.total_equity_krw || 0));
   const cashAmt = Math.max(0, Number(summary.cash_krw || 0));
@@ -2698,24 +2801,108 @@ export default function AdminAutoTradePage() {
           </div>
         </div>
 
-        {/* 3. 로봇 자동 매수·매도 실시간 체결 일지 */}
-        <div className="rounded-3xl bg-zinc-900/90 border border-white/10 p-4 sm:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                <span>📜 로봇 자동 매수·매도 실시간 체결 일지</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-gray-300 font-mono font-bold">
-                  총 {tradeLogs.length}건
-                </span>
+        {/* 3. 로봇 자동 매수·매도 실시간 체결 일지 (초프리미엄 퀀트 트레이딩 저널) */}
+        <div className="rounded-3xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black/95 border border-white/10 p-5 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          {/* 헤더 & 실시간 상태 */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 tracking-tight">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-sm">
+                  <Coins className="w-4 h-4" />
+                </div>
+                로봇 자동 매수·매도 실시간 체결 일지
               </h2>
+              <p className="text-xs text-gray-400 mt-1 pl-10.5">
+                AI 퀀트 알고리즘이 24시간 동안 실시간으로 판단하여 진입·청산한 모든 체결 영수증
+              </p>
             </div>
 
-            {/* 필터 탭 바 (전체 / 매수 / 매도) */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-950/80 border border-white/10 self-start sm:self-auto">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-900 border border-white/10 text-gray-300 flex items-center gap-1.5 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                실시간 기록 중: 총 {tradeLogs.length}건
+              </span>
+            </div>
+          </div>
+
+          {/* 🌟 체결 성과 KPI 4대 지표 카드 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 relative z-10">
+            {/* 누적 실현 손익 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-1 shadow-md">
+              <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                <span>누적 실현 손익</span>
+              </div>
+              <div
+                className={`text-base sm:text-xl font-black font-mono tracking-tight ${
+                  totalRealizedPnl >= 0 ? "text-rose-400" : "text-blue-400"
+                }`}
+              >
+                {totalRealizedPnl >= 0 ? "+" : ""}
+                {totalRealizedPnl.toLocaleString()}원
+              </div>
+              <div className="text-[10px] text-gray-400 font-medium">
+                {sellCount > 0 ? `매도 ${sellCount}건 정산 완료` : "매도 대기 중"}
+              </div>
+            </div>
+
+            {/* 매매 승률 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-1 shadow-md">
+              <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>체결 승률 (Win Rate)</span>
+              </div>
+              <div className="text-base sm:text-xl font-black font-mono text-amber-300 tracking-tight">
+                {winRate}%
+              </div>
+              <div className="text-[10px] text-gray-400 font-medium">
+                {profitCount}승 {lossCount}패 (익절 비중)
+              </div>
+            </div>
+
+            {/* 누적 회전 거래대금 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-1 shadow-md">
+              <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                <span>총 체결 회전액</span>
+              </div>
+              <div className="text-base sm:text-xl font-black font-mono text-cyan-300 tracking-tight">
+                {totalVolumeKrw >= 100000000
+                  ? `${(totalVolumeKrw / 100000000).toFixed(1)}억원`
+                  : totalVolumeKrw >= 10000
+                  ? `${Math.round(totalVolumeKrw / 10000).toLocaleString()}만원`
+                  : `${totalVolumeKrw.toLocaleString()}원`}
+              </div>
+              <div className="text-[10px] text-gray-400 font-medium">
+                매수 {buyCount}건 · 매도 {sellCount}건
+              </div>
+            </div>
+
+            {/* 최고 수익 거래 */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-1 shadow-md">
+              <div className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                <span>최고 수익 거래</span>
+              </div>
+              <div className="text-xs sm:text-sm font-black text-white truncate" title={bestTrade?.name}>
+                {bestTrade ? bestTrade.name : "체결 대기"}
+              </div>
+              <div className="text-[11px] font-black font-mono text-rose-400">
+                {bestTrade ? `+${(bestTrade.pnl_krw || 0).toLocaleString()}원 (+${bestTrade.pnl_pct}%)` : "-"}
+              </div>
+            </div>
+          </div>
+
+          {/* 🎛️ 필터 탭 바 & 실시간 검색창 툴바 */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+            {/* 탭 바: 전체 / 매수 / 익절 / 손절방어 */}
+            <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-zinc-950/90 border border-white/10 self-start sm:self-auto overflow-x-auto max-w-full">
               <button
                 type="button"
                 onClick={() => setLogFilter("ALL")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   logFilter === "ALL"
                     ? "bg-zinc-800 text-white shadow-sm font-black"
                     : "text-gray-400 hover:text-white"
@@ -2726,37 +2913,83 @@ export default function AdminAutoTradePage() {
               <button
                 type="button"
                 onClick={() => setLogFilter("BUY")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                   logFilter === "BUY"
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-black shadow-sm"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black shadow-sm"
                     : "text-gray-400 hover:text-emerald-300"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 매수 ({buyCount})
               </button>
               <button
                 type="button"
-                onClick={() => setLogFilter("SELL")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                  logFilter === "SELL"
-                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 font-black shadow-sm"
+                onClick={() => setLogFilter("PROFIT")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  logFilter === "PROFIT"
+                    ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 font-black shadow-sm"
                     : "text-gray-400 hover:text-rose-300"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                매도·익절 ({sellCount})
+                <span className="w-2 h-2 rounded-full bg-rose-400" />
+                익절 성공 ({profitCount})
               </button>
+              <button
+                type="button"
+                onClick={() => setLogFilter("LOSS")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  logFilter === "LOSS"
+                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/40 font-black shadow-sm"
+                    : "text-gray-400 hover:text-blue-300"
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                리스크 방어 ({lossCount})
+              </button>
+            </div>
+
+            {/* 실시간 종목명/티커 검색창 */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-3 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="종목명·티커·사유 실시간 검색..."
+                value={logSearch}
+                onChange={(e) => setLogSearch(e.target.value)}
+                className="w-full bg-zinc-950/90 border border-white/10 hover:border-white/20 focus:border-emerald-500/50 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition-all font-medium"
+              />
+              {logSearch && (
+                <button
+                  type="button"
+                  onClick={() => setLogSearch("")}
+                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-white text-xs cursor-pointer p-0.5"
+                  title="검색어 지우기"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 
+          {/* 체결 일지 카드 목록 */}
           {filteredLogs.length === 0 ? (
-            <div className="py-12 text-center text-gray-500 space-y-2">
-              <p className="text-sm font-bold text-gray-400">조건에 해당하는 매매 체결 내역이 없습니다.</p>
-              <p className="text-xs text-gray-600">새로운 매매가 발생하면 실시간으로 여기에 자동 기록됩니다.</p>
+            <div className="py-14 text-center text-gray-500 space-y-3 rounded-2xl bg-zinc-950/40 border border-white/5">
+              <Bot className="w-8 h-8 text-gray-600 mx-auto" />
+              <p className="text-sm font-bold text-gray-400">
+                {logSearch ? `"${logSearch}" 검색 결과가 없습니다.` : "조건에 해당하는 매매 체결 내역이 없습니다."}
+              </p>
+              {logSearch && (
+                <button
+                  type="button"
+                  onClick={() => setLogSearch("")}
+                  className="text-xs text-emerald-400 hover:underline font-bold cursor-pointer"
+                >
+                  검색어 초기화
+                </button>
+              )}
             </div>
           ) : (
-            <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+            <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar relative z-10">
               {filteredLogs.map((log: any, idx: number) => {
                 const formatted = formatTradeReason(log?.reason);
                 const isBuy = log?.action === "BUY";
@@ -2766,12 +2999,25 @@ export default function AdminAutoTradePage() {
                 return (
                   <div
                     key={`${log?.id || "log"}-${idx}`}
-                    className="p-3.5 sm:p-4 rounded-2xl bg-zinc-950/80 border border-white/5 hover:border-white/15 transition-all space-y-2.5"
+                    className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 shadow-md hover:shadow-xl space-y-3 relative overflow-hidden group ${
+                      isBuy
+                        ? "bg-gradient-to-r from-emerald-950/20 via-zinc-950 to-zinc-950 border-emerald-500/20 hover:border-emerald-500/40"
+                        : isProfit
+                        ? "bg-gradient-to-r from-rose-950/20 via-zinc-950 to-zinc-950 border-rose-500/25 hover:border-rose-500/50"
+                        : "bg-gradient-to-r from-blue-950/20 via-zinc-950 to-zinc-950 border-blue-500/25 hover:border-blue-500/50"
+                    }`}
                   >
-                    {/* 상단 1열: 체결 뱃지 + 종목명 + 수량 + 시간 + 체결금액/실현손익 */}
-                    <div className="flex flex-wrap items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-                        {/* 매수/익절/매도 뱃지 */}
+                    {/* 미세 글로우 */}
+                    <div
+                      className={`absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl pointer-events-none opacity-20 ${
+                        isBuy ? "bg-emerald-500" : isProfit ? "bg-rose-500" : "bg-blue-500"
+                      }`}
+                    />
+
+                    {/* Row 1: 거래 분류 뱃지 + 종목명/코드 + 수량 + 체결 시간 + 실현 손익 / 체결 금액 */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                      {/* 좌측: 체결 뱃지 + 마켓 + 종목명 + 수량 */}
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
                         <span
                           className={`px-2.5 py-1 rounded-xl font-black text-xs shrink-0 flex items-center gap-1.5 shadow-sm whitespace-nowrap ${
                             isBuy
@@ -2783,91 +3029,160 @@ export default function AdminAutoTradePage() {
                         >
                           <span
                             className={`w-2 h-2 rounded-full ${
-                              isBuy ? "bg-emerald-400" : isProfit ? "bg-rose-400" : "bg-blue-400"
+                              isBuy ? "bg-emerald-400" : isProfit ? "bg-rose-400 animate-pulse" : "bg-blue-400"
                             }`}
                           />
-                          {isBuy ? "자동 매수" : isProfit ? "자동 익절" : "리스크 매도"}
+                          {isBuy ? "⚡ 자동 매수" : isProfit ? "🎯 자동 익절" : "🛡️ 리스크 매도"}
                         </span>
 
-                        {/* 종목명 및 시장 뱃지 */}
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          <span className="text-white font-black text-sm sm:text-base tracking-tight">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-black border font-mono shrink-0 flex items-center gap-1 ${logMarket.style}`}
+                        >
+                          <span>{logMarket.flag}</span>
+                          <span>{logMarket.label}</span>
+                        </span>
+
+                        <div className="flex items-baseline gap-1.5 min-w-0">
+                          <span
+                            className="font-black text-white text-base sm:text-lg group-hover:text-emerald-300 transition-colors whitespace-nowrap"
+                            title={log.name}
+                          >
                             {log.name}
                           </span>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border font-mono flex items-center gap-1 ${logMarket.style}`}>
-                            <span>{logMarket.flag}</span>
-                            <span>{logMarket.label}</span>
-                            <span className="text-[9px] opacity-80 font-sans">({logMarket.isUS ? "해외" : "국내"})</span>
+                          <span className="text-xs text-gray-400 font-mono font-bold shrink-0">
+                            {log.symbol}
                           </span>
                         </div>
 
-                        {/* 체결 수량 */}
-                        <span className="px-2 py-0.5 rounded-lg bg-zinc-900 border border-white/10 text-gray-300 font-bold font-mono text-xs whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-lg bg-zinc-900 border border-white/10 text-amber-300 font-black font-mono text-xs whitespace-nowrap">
                           {log.qty?.toLocaleString()}주
                         </span>
 
-                        {/* 체결 일시 */}
-                        <span className="text-gray-400 text-[11px] font-mono whitespace-nowrap hidden sm:inline">
-                          🕒 {log.timestamp}
+                        <span className="px-2 py-0.5 rounded-lg bg-zinc-900/80 border border-white/5 text-gray-400 font-mono text-[11px] whitespace-nowrap hidden sm:inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-500" />
+                          {log.timestamp}
                         </span>
                       </div>
 
-                      {/* 우측 가격 및 실현손익 */}
-                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap ml-auto">
-                        <div className="text-right font-mono">
-                          <span className="text-xs text-gray-400">체결단가</span>{" "}
-                          <span className="text-xs sm:text-sm font-bold text-gray-100">
-                            {log.price
-                              ? (log.is_us || logMarket.isUS || (typeof log.price === 'number' && log.price < 500 && !/^\d{6}$/.test(log.symbol || '')))
-                                ? `$${Number(log.price).toFixed(2)}`
-                                : `${Math.round(Number(log.price)).toLocaleString()}원`
-                              : "-"}
-                          </span>
-                          <span className="text-xs text-gray-500 ml-1.5 hidden sm:inline">
-                            (총 ₩{(log.amount_krw || 0).toLocaleString()})
-                          </span>
+                      {/* 우측: 체결단가 & 실현 손익 / 매수 총액 */}
+                      <div className="flex items-center sm:items-end justify-between sm:justify-end gap-3 font-mono shrink-0 ml-auto sm:ml-0">
+                        <div className="text-left sm:text-right">
+                          <div className="text-xs text-gray-400">
+                            체결단가{" "}
+                            <strong className="text-white text-sm">
+                              {log.price
+                                ? (log.is_us || logMarket.isUS || (typeof log.price === 'number' && log.price < 500 && !/^\d{6}$/.test(log.symbol || '')))
+                                  ? `$${Number(log.price).toFixed(2)}`
+                                  : `₩${Math.round(Number(log.price)).toLocaleString()}`
+                                : "-"}
+                            </strong>
+                          </div>
+                          <div className="text-[11px] text-gray-400 font-bold">
+                            총 정산: ₩{(log.amount_krw || 0).toLocaleString()}
+                          </div>
                         </div>
 
-                        {!isBuy && (
-                          <span
-                            className={`px-2.5 py-1 rounded-xl text-xs sm:text-sm font-black font-mono shrink-0 shadow-sm whitespace-nowrap ${
+                        {!isBuy ? (
+                          <div
+                            className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black font-mono shrink-0 shadow-md ${
                               isProfit
                                 ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
                                 : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
                             }`}
                           >
-                            실현 {isProfit ? "+" : ""}
-                            {(log.pnl_krw || 0).toLocaleString()}원 ({log.pnl_pct >= 0 ? "+" : ""}
-                            {log.pnl_pct}%)
-                          </span>
+                            <div className="text-[10px] opacity-80">실현 손익</div>
+                            <div>
+                              {isProfit ? "+" : ""}
+                              {(log.pnl_krw || 0).toLocaleString()}원 ({log.pnl_pct >= 0 ? "+" : ""}
+                              {log.pnl_pct}%)
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black font-mono shrink-0 bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                            <div className="text-[10px] text-emerald-400/80">매수 투입금</div>
+                            <div>₩{(log.amount_krw || 0).toLocaleString()}</div>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    {/* 하단 2열: 모바일용 시간 + AI 매매 사유 요약 */}
+                    {/* Row 2: AI 매매 사유 & 테크니컬 지표 (가독성 높은 디테일 박스) */}
                     {log.reason && (
-                      <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-start gap-2 text-xs">
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-gray-500 text-[11px] font-mono sm:hidden whitespace-nowrap">
-                            🕒 {log.timestamp}
-                          </span>
+                      <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2 relative z-10 text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`px-2 py-0.5 rounded-lg text-[11px] font-bold whitespace-nowrap ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black border flex items-center gap-1 ${
                               isBuy
-                                ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
                                 : isProfit
-                                ? "bg-rose-500/10 border border-rose-500/30 text-rose-300"
-                                : "bg-blue-500/10 border border-blue-500/30 text-blue-300"
+                                ? "bg-rose-500/15 border-rose-500/30 text-rose-300"
+                                : "bg-blue-500/15 border-blue-500/30 text-blue-300"
                             }`}
                           >
                             {formatted.tag}
                           </span>
+
+                          {/* 이유 파싱 칩들 */}
+                          {formatted.chips && formatted.chips.map((chip: any, cIdx: number) => (
+                            <span
+                              key={cIdx}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${chip.color}`}
+                            >
+                              {chip.label}
+                            </span>
+                          ))}
                         </div>
+
                         <p className="text-gray-300 text-xs leading-relaxed break-keep">
                           {formatted.text}
                         </p>
                       </div>
                     )}
+
+                    {/* Row 3: 하단 편의 액션 바: 차트 보기 & 종목코드 복사 & 모바일 시간 */}
+                    <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-xs relative z-10">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/stock/${log.symbol}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/90 hover:bg-emerald-600 hover:text-white text-gray-300 text-[11px] font-bold transition-all border border-white/10 hover:border-emerald-500 shadow-xs cursor-pointer group/btn"
+                        >
+                          <BarChart2 className="w-3.5 h-3.5 text-emerald-400 group-hover/btn:text-white" />
+                          <span>차트·체결 타점 분석</span>
+                          <ExternalLink className="w-3 h-3 opacity-60 group-hover/btn:opacity-100" />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopySymbol(e, log.symbol)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-gray-400 hover:text-gray-200 text-[11px] font-mono transition-all border border-white/5 cursor-pointer"
+                          title="종목코드 복사"
+                        >
+                          {copiedSymbol === log.symbol ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              <span className="text-emerald-400 font-bold">복사됨</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>코드 복사</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono">
+                        <span className="sm:hidden flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {log.timestamp}
+                        </span>
+                        <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-zinc-900 border border-white/5">
+                          {log.mode === "KIS_REAL" ? "증권사 실전 연동" : "AI 가상 모의매매"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
