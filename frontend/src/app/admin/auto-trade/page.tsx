@@ -134,7 +134,14 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
 function parseCandidateReason(rawReason: any = "") {
   if (!rawReason) return { chips: [], techSummary: "", text: "" };
   const str = typeof rawReason === "string" ? rawReason : String(rawReason);
-  const parts = str.split("·").map((p: string) => p.trim()).filter(Boolean);
+
+  // 5·20일선 등에서 '·'가 구분자로 오인되어 잘리는 문제 완벽 방지
+  const safeStr = str.replace(/5·20/g, "5_20_SAFE").replace(/·/g, "|||");
+  const parts = safeStr
+    .split("|||")
+    .map((p: string) => p.replace(/5_20_SAFE/g, "5·20").trim())
+    .filter(Boolean);
+
   const rawChips: { label: string; icon?: string; color: string; priority: number }[] = [];
   let techSummary = "";
   const textParts: string[] = [];
@@ -150,11 +157,14 @@ function parseCandidateReason(rawReason: any = "") {
       });
     } else if (part.includes("골든크로스") || part.includes("정배열")) {
       rawChips.push({
-        label: "5·20일선 골든크로스",
+        label: "5·20일선 정배열 골든크로스",
         icon: "📈",
         color: "bg-blue-500/15 text-blue-300 border-blue-400/30",
         priority: 2,
       });
+      if (part.includes("차트:")) {
+        techSummary = part.replace(/^[\[\(]/, "").replace(/[\]\)]$/, "").trim();
+      }
     } else if (part.includes("20일선")) {
       rawChips.push({
         label: "20일 이평 지지 반등",
@@ -162,6 +172,9 @@ function parseCandidateReason(rawReason: any = "") {
         color: "bg-indigo-500/15 text-indigo-300 border-indigo-400/30",
         priority: 3,
       });
+      if (part.includes("차트:")) {
+        techSummary = part.replace(/^[\[\(]/, "").replace(/[\]\)]$/, "").trim();
+      }
     } else if (part.includes("RSI")) {
       const rsiMatch = part.match(/RSI\s*\d+[^\)]*\)?/i);
       rawChips.push({
@@ -222,12 +235,7 @@ function parseCandidateReason(rawReason: any = "") {
         priority: 1,
       });
     } else if (part.includes("소액한도 맞춤")) {
-      rawChips.push({
-        label: "예산 한도 최적가",
-        icon: "💡",
-        color: "bg-teal-500/15 text-teal-300 border-teal-400/30",
-        priority: 5,
-      });
+      // 주당 단가 배분은 메인 카드 상단에 직접 표시되므로 중복 칩 추가 생략
     } else if (
       !part.includes("야간 미국장") &&
       !part.includes("주간 한국장") &&
@@ -2430,7 +2438,21 @@ export default function AdminAutoTradePage() {
                   // 🎯 AI 목표가 & 손절가 & 1회 권장 매수량 계산
                   const targetPct = Number(data?.config?.take_profit_pct || takeProfitPct || 4.0);
                   const stopPct = Number(data?.config?.stop_loss_pct || (useStopLoss ? stopLossPct : 1.0) || 1.0);
-                  const orderBudgetKrw = Number(data?.config?.order_amount_krw || orderAmountKrw || 2000000);
+
+                  // 대표님의 총 운용자산(1,000만원) 및 7종목 균등 분할 고려
+                  const totalSeedOrLimit = Math.max(
+                    Number(data?.config?.max_total_invest_krw || 0),
+                    Number(data?.config?.paper_seed_krw || 0),
+                    activePaperSeed,
+                    10000000
+                  );
+                  const maxPos = Number(data?.config?.max_positions || maxPositions || 7);
+                  const evenAllocKrw = Math.floor(totalSeedOrLimit / Math.max(1, maxPos)); // 1000만원 / 7 ≈ 142만원
+
+                  // 설정된 1회 주문금액이 너무 작으면(소액 테스트 잔여값 등) 7종목 균등 분할액(약 140만원) 자동 적용
+                  const rawOrderBudget = Number(data?.config?.order_amount_krw || orderAmountKrw || 0);
+                  const orderBudgetKrw = rawOrderBudget >= 200000 ? rawOrderBudget : evenAllocKrw;
+
                   const unitPriceKrw = cand.is_us ? Math.round((cand.price || 0) * fxRate) : (cand.price || 0);
 
                   const targetPrice = cand.is_us
@@ -2466,16 +2488,15 @@ export default function AdminAutoTradePage() {
                   return (
                     <div
                       key={`${cand?.symbol || "cand"}-${idx}`}
-                      className="p-4 sm:p-5 rounded-2xl bg-zinc-950/85 hover:bg-zinc-900/95 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-lg group relative overflow-hidden space-y-3"
+                      className="p-4 sm:p-5 rounded-2xl bg-zinc-950/90 hover:bg-zinc-900/95 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-xl group relative overflow-hidden space-y-3"
                     >
                       {/* 1~3위 배경 미세 글로우 */}
                       {idx === 0 && <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />}
                       {idx === 1 && <div className="absolute top-0 right-0 w-48 h-48 bg-slate-300/5 rounded-full blur-2xl pointer-events-none" />}
                       {idx === 2 && <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />}
 
-                      {/* 1. 상단 타이틀 바: 순위, 마켓, 종목명/코드, AI 스코어, 현재가 및 등락률 */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.07] relative z-10">
-                        {/* 좌측: 순위 + 마켓 + 종목명/코드 + AI 점수 */}
+                      {/* 1. 상단: 순위, 마켓, 종목명(전체 표시!), 심볼, AI 스코어 (잘림 없는 단독 행) */}
+                      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/[0.08] relative z-10">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black shrink-0 ${rankBadgeClass}`}>
                             {rankMedal}
@@ -2486,37 +2507,37 @@ export default function AdminAutoTradePage() {
                             <span>{candMarket.flag}</span>
                             <span>{candMarket.label}</span>
                           </span>
-                          <div className="flex items-baseline gap-1.5 min-w-0">
-                            <span
-                              className="font-black text-white text-base sm:text-lg group-hover:text-emerald-300 transition-colors truncate max-w-[130px] sm:max-w-[210px]"
-                              title={cand.name}
-                            >
-                              {cand.name}
-                            </span>
-                            <span className="text-xs text-gray-400 font-mono font-bold shrink-0">
-                              {cand.symbol}
-                            </span>
-                          </div>
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/35 text-emerald-300 text-[11px] font-black flex items-center gap-1 shrink-0 shadow-sm ml-auto sm:ml-0">
-                            <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-                            AI {cand.ai_score || 99}점
+                          <span
+                            className="font-black text-white text-base sm:text-lg group-hover:text-emerald-300 transition-colors whitespace-nowrap"
+                            title={cand.name}
+                          >
+                            {cand.name}
+                          </span>
+                          <span className="text-xs text-gray-400 font-mono font-bold shrink-0">
+                            {cand.symbol}
                           </span>
                         </div>
 
-                        {/* 우측: 현재가 & 당일 등락률 */}
-                        <div className="flex items-center sm:items-end justify-between sm:justify-end gap-3 font-mono shrink-0">
-                          <div className="text-left sm:text-right">
-                            <div className="text-base sm:text-lg font-black text-white leading-tight">
-                              {cand.is_us ? `$${Number(cand.price || 0).toLocaleString()}` : `₩${Number(cand.price || 0).toLocaleString()}`}
-                            </div>
-                            {cand.is_us && (
-                              <div className="text-[10px] text-gray-400 font-bold">
-                                ≈ ₩{krwEquiv?.toLocaleString()}
-                              </div>
-                            )}
-                          </div>
-                          <div
-                            className={`text-xs font-black inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-[11px] font-black flex items-center gap-1 shrink-0 shadow-sm">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                          AI {cand.ai_score || 99}점
+                        </span>
+                      </div>
+
+                      {/* 2. 시세 & 1회 권장 매수량 히어로 박스 */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10 relative z-10">
+                        {/* 실시간 현재가 & 당일 등락률 */}
+                        <div className="flex items-baseline gap-2.5 font-mono">
+                          <span className="text-lg sm:text-xl font-black text-white tracking-tight">
+                            {cand.is_us ? `$${Number(cand.price || 0).toLocaleString()}` : `₩${Number(cand.price || 0).toLocaleString()}`}
+                          </span>
+                          {cand.is_us && (
+                            <span className="text-xs text-gray-400 font-bold">
+                              ≈ ₩{krwEquiv?.toLocaleString()}
+                            </span>
+                          )}
+                          <span
+                            className={`text-xs font-black px-2.5 py-0.5 rounded-md inline-flex items-center gap-1 ${
                               isPositive
                                 ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
                                 : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
@@ -2524,51 +2545,20 @@ export default function AdminAutoTradePage() {
                           >
                             <span>{isPositive ? "▲" : "▼"}</span>
                             <span>{isPositive ? "+" : ""}{cand.change_pct}%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 2. AI 퀀트 매수 전략 및 목표가/손절가 브리핑 카드 */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs relative z-10">
-                        {/* 🎯 AI 1차 목표가 */}
-                        <div className="flex sm:flex-col justify-between items-center sm:items-start p-1.5 px-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20">
-                          <div className="text-[11px] text-gray-400 flex items-center gap-1">
-                            <Target className="w-3 h-3 text-emerald-400 shrink-0" />
-                            <span>AI 익절 목표 (+{targetPct}%)</span>
-                          </div>
-                          <div className="font-mono font-black text-emerald-400 text-xs sm:text-sm mt-0.5 flex items-baseline gap-1">
-                            <span>{cand.is_us ? `$${targetPrice}` : `₩${targetPrice.toLocaleString()}`}</span>
-                            <span className="text-[10px] text-emerald-300/80 font-normal">
-                              (+{cand.is_us ? `$${targetUpside}` : `₩${targetUpside.toLocaleString()}`})
-                            </span>
-                          </div>
+                          </span>
                         </div>
 
-                        {/* 🛡️ AI 방어 손절선 */}
-                        <div className="flex sm:flex-col justify-between items-center sm:items-start p-1.5 px-2 rounded-lg bg-blue-500/[0.06] border border-blue-500/20">
-                          <div className="text-[11px] text-gray-400 flex items-center gap-1">
-                            <ShieldAlert className="w-3 h-3 text-blue-400 shrink-0" />
-                            <span>AI 방어 손절 (-{stopPct}%)</span>
+                        {/* 1회 권장 매수량 (총 자산 1,000만원 기준 1종목당 140만원 배분) */}
+                        <div className="text-right shrink-0">
+                          <div className="text-[11px] text-gray-400 font-bold flex items-center justify-end gap-1">
+                            <Coins className="w-3.5 h-3.5 text-amber-400" />
+                            <span>1회 권장 매수 (1종목 {Math.round(orderBudgetKrw / 10000)}만원 배정)</span>
                           </div>
-                          <div className="font-mono font-black text-blue-400 text-xs sm:text-sm mt-0.5 flex items-baseline gap-1">
-                            <span>{cand.is_us ? `$${stopPrice}` : `₩${stopPrice.toLocaleString()}`}</span>
-                            <span className="text-[10px] text-blue-300/80 font-normal">
-                              (-{cand.is_us ? `$${stopDownside}` : `₩${stopDownside.toLocaleString()}`})
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* 💼 1회 진입 권장 (예산 기준) */}
-                        <div className="flex sm:flex-col justify-between items-center sm:items-start p-1.5 px-2 rounded-lg bg-zinc-900/70 border border-white/5">
-                          <div className="text-[11px] text-gray-400 flex items-center gap-1">
-                            <Coins className="w-3 h-3 text-amber-400 shrink-0" />
-                            <span>1회 권장 매수량</span>
-                          </div>
-                          <div className="font-mono text-xs sm:text-sm mt-0.5 flex items-baseline gap-1">
+                          <div className="font-mono text-sm sm:text-base font-black text-amber-300 mt-0.5">
                             {recShares > 0 ? (
                               <>
                                 <span className="text-amber-300 font-black">{recShares.toLocaleString()}주</span>
-                                <span className="text-[10px] text-gray-400 font-normal">
+                                <span className="text-xs text-gray-300 ml-1.5 font-bold">
                                   (약 {Math.round(recAmountKrw / 10000).toLocaleString()}만원)
                                 </span>
                               </>
@@ -2579,13 +2569,64 @@ export default function AdminAutoTradePage() {
                         </div>
                       </div>
 
-                      {/* 3. AI 시그널 브리핑 칩 (중복 완전 제거 및 정돈) */}
+                      {/* 3. AI 퀀트 익절 목표가 & 손절 방어선 듀얼 카드 (2열 와이드 그리드) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 relative z-10">
+                        {/* 🎯 AI 익절 목표가 */}
+                        <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/25 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                              <Target className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              AI 익절 목표 (+{targetPct}%)
+                            </span>
+                            {recShares > 0 && (
+                              <span className="text-[10px] text-emerald-300 font-bold">
+                                +{Math.round(targetUpside * recShares).toLocaleString()}원 기대
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-black text-emerald-400 text-base sm:text-lg flex items-baseline gap-1.5">
+                            <span>{cand.is_us ? `$${targetPrice}` : `₩${targetPrice.toLocaleString()}`}</span>
+                            <span className="text-xs text-emerald-300/80 font-normal">
+                              (+{cand.is_us ? `$${targetUpside}` : `₩${targetUpside.toLocaleString()}`})
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-gray-400">
+                            목표 도달 시 AI가 전량 자동 익절 매도
+                          </div>
+                        </div>
+
+                        {/* 🛡️ AI 방어 손절선 */}
+                        <div className="p-2.5 sm:p-3 rounded-xl bg-blue-500/[0.07] border border-blue-500/25 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-blue-300 flex items-center gap-1.5">
+                              <ShieldAlert className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                              AI 방어 손절선 (-{stopPct}%)
+                            </span>
+                            {recShares > 0 && (
+                              <span className="text-[10px] text-blue-300 font-bold">
+                                -{Math.round(stopDownside * recShares).toLocaleString()}원 제한
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-black text-blue-400 text-base sm:text-lg flex items-baseline gap-1.5">
+                            <span>{cand.is_us ? `$${stopPrice}` : `₩${stopPrice.toLocaleString()}`}</span>
+                            <span className="text-xs text-blue-300/80 font-normal">
+                              (-{cand.is_us ? `$${stopDownside}` : `₩${stopDownside.toLocaleString()}`})
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-gray-400">
+                            급락 리스크 발생 시 즉시 원금 방어 손절
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. AI 시그널 브리핑 칩 */}
                       {parsed.chips.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-0.5 relative z-10">
                           {parsed.chips.map((chip, cIdx) => (
                             <span
                               key={cIdx}
-                              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 shadow-xs ${chip.color}`}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-xs ${chip.color}`}
                             >
                               {chip.icon && <span>{chip.icon}</span>}
                               <span>{chip.label}</span>
@@ -2594,30 +2635,30 @@ export default function AdminAutoTradePage() {
                         </div>
                       )}
 
-                      {/* 기술 지표 요약 (CVD / OBV / 이평선) */}
+                      {/* 5. 기술 지표 요약 (5·20일선 잘림 방지 완료) */}
                       {parsed.techSummary && (
-                        <div className="text-[11px] text-gray-300 bg-white/[0.02] border border-white/5 rounded-lg px-2.5 py-1.5 flex items-center gap-2 font-mono relative z-10">
-                          <Activity className="w-3 h-3 text-emerald-400 shrink-0" />
-                          <span className="text-gray-400 text-[10px] shrink-0">기술 지표:</span>
-                          <span className="truncate">{parsed.techSummary}</span>
+                        <div className="text-xs text-gray-300 bg-white/[0.03] border border-white/10 rounded-xl p-2.5 flex items-center gap-2 font-mono relative z-10">
+                          <Activity className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="text-gray-400 font-bold shrink-0">기술 지표:</span>
+                          <span className="text-gray-200 font-medium truncate">{parsed.techSummary}</span>
                         </div>
                       )}
 
                       {/* 부가 브리핑 텍스트 */}
                       {parsed.text && (
-                        <p className="text-[11px] text-gray-400 pl-1 leading-snug relative z-10">
+                        <p className="text-xs text-gray-400 pl-1 leading-snug relative z-10">
                           💡 {parsed.text}
                         </p>
                       )}
 
-                      {/* 4. 사용자 편의 액션 바: 차트 보기 & 종목코드 복사 & 손익비 지표 */}
-                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs relative z-10">
+                      {/* 6. 사용자 편의 액션 바: 차트 보기 & 종목코드 복사 & 손익비 지표 */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.08] text-xs relative z-10">
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/stock/${cand.symbol}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/90 hover:bg-emerald-600 hover:text-white text-gray-300 text-[11px] font-bold transition-all border border-white/10 hover:border-emerald-500 shadow-xs cursor-pointer group/btn"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-emerald-600 hover:text-white text-gray-200 text-xs font-bold transition-all border border-white/10 hover:border-emerald-500 shadow-sm cursor-pointer group/btn"
                           >
                             <BarChart2 className="w-3.5 h-3.5 text-emerald-400 group-hover/btn:text-white" />
                             <span>차트·호가 상세</span>
@@ -2627,25 +2668,25 @@ export default function AdminAutoTradePage() {
                           <button
                             type="button"
                             onClick={(e) => handleCopySymbol(e, cand.symbol)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-gray-400 hover:text-gray-200 text-[11px] font-mono transition-all border border-white/5 cursor-pointer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-gray-300 hover:text-white text-xs font-mono transition-all border border-white/10 cursor-pointer"
                             title="종목코드 복사"
                           >
                             {copiedSymbol === cand.symbol ? (
                               <>
-                                <Check className="w-3 h-3 text-emerald-400" />
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
                                 <span className="text-emerald-400 font-bold">복사됨</span>
                               </>
                             ) : (
                               <>
-                                <Copy className="w-3 h-3" />
+                                <Copy className="w-3.5 h-3.5" />
                                 <span>코드 복사</span>
                               </>
                             )}
                           </button>
                         </div>
 
-                        <div className="text-[10px] text-gray-500 font-mono hidden sm:flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 inline-block" />
+                        <div className="text-xs text-gray-400 font-mono hidden sm:flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400/80 inline-block animate-pulse" />
                           <span>손익비 {rrRatio}:1 퀀트 타점</span>
                         </div>
                       </div>
