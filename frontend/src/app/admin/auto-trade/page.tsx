@@ -1548,22 +1548,22 @@ export default function AdminAutoTradePage() {
                 </div>
                 {/* Visual Bar */}
                 <div className="h-2.5 w-full rounded-full bg-zinc-800 overflow-hidden flex shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style={{ width: "40%" }} title="국내 코스피·코스닥 40%" />
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: "27%" }} title="미국 나스닥·NYSE 27%" />
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400" style={{ width: "33%" }} title="위기대응 안전현금 33%" />
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: "45%" }} title="야간 미국 나스닥·NYSE 풀가동 45%" />
+                  <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style={{ width: "30%" }} title="주간 국내 코스피·코스닥 탄력 예비 슬롯 30%" />
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400" style={{ width: "25%" }} title="위기대응 안전현금 버퍼 25%" />
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] font-mono">
-                  <span className="flex items-center gap-1.5 text-emerald-300">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    국내 주도주 40% (약 ₩{Math.round(activePaperSeed * 0.4).toLocaleString()}원)
-                  </span>
                   <span className="flex items-center gap-1.5 text-blue-300">
                     <span className="w-2 h-2 rounded-full bg-blue-400" />
-                    미국 혁신주 27% (약 ₩{Math.round(activePaperSeed * 0.27).toLocaleString()}원)
+                    야간 미국장 풀가동 ({configuredMaxPos}개 슬롯)
+                  </span>
+                  <span className="flex items-center gap-1.5 text-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    주간 국내장 탄력 예비 (+3개 슬롯)
                   </span>
                   <span className="flex items-center gap-1.5 text-amber-300">
                     <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    위기대응 현금 33% (약 ₩{Math.round(activePaperSeed * 0.33).toLocaleString()}원)
+                    위기대응 안전현금 (약 ₩{Math.round(activePaperSeed * 0.28).toLocaleString()}원)
                   </span>
                 </div>
               </div>
@@ -1624,13 +1624,13 @@ export default function AdminAutoTradePage() {
               <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                 <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
                 {isRealView
-                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${configuredMaxPos}개 종목 · ${Math.max(0, configuredMaxPos - realPositions.length)}개 추가 매수 대기 중)`
-                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${configuredMaxPos}개 종목 · 국내 4 / 해외 3 슬롯 균형 배분)`}
+                  ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${configuredMaxPos}개 종목 · 예비 3슬롯 탄력 운용)`
+                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / 기본 ${configuredMaxPos}개 + 탄력 예비 3슬롯 풀가동)`}
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
-                  ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (국내/해외 맞춤 분산 슬롯 자동 관리)"
-                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 검증 중인 종목 목록입니다. (총 ${configuredMaxPos}개 슬롯 중 🇺🇸해외 ${paperPositions.filter((p: any) => p.is_us || (p.symbol && /^[A-Z]/.test(p.symbol))).length}개 보유 중 · 🇰🇷국내 전용 4개 슬롯은 국내 개장(09:00) 시 주도주 자동 매수 대기)`}
+                  ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (야간 미국장 7개 풀가동 + 주간 국내장 예비 3슬롯 탄력 매수)"
+                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 검증 중인 종목 목록입니다. (야간 미국장 ${configuredMaxPos}개 풀가동 운용 중 · 🇰🇷국내 개장(09:00) 시 시드머니 여유에 맞춰 탄력 예비 슬롯으로 국내 주도주 즉시 자동 매수)`}
               </p>
             </div>
           </div>
