@@ -60,8 +60,11 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
   const qty = Number(pos.qty || 1);
   const avgPrice = Number(pos.avg_price || pos.current_price || 0);
   const curPrice = Number(pos.current_price || avgPrice);
-  const targetPrice = Number(pos.target_price || avgPrice * 1.04);
-  const stopPrice = Number(pos.stop_price || avgPrice * 0.99);
+  const targetPrice = Number(pos.target_price || (avgPrice > 0 ? avgPrice * 1.02 : 0));
+  const stopPrice = Number(pos.stop_price || (avgPrice > 0 ? avgPrice * 0.99 : 0));
+
+  const targetPct = avgPrice > 0 ? Number((((targetPrice - avgPrice) / avgPrice) * 100).toFixed(1)) : 2.0;
+  const stopPct = avgPrice > 0 ? Number((((avgPrice - stopPrice) / avgPrice) * 100).toFixed(1)) : 1.0;
 
   const unitMultiplier = isUS ? fxRate : 1;
   const totalBuyKrw = Math.round(qty * avgPrice * unitMultiplier);
@@ -127,6 +130,8 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
     curPrice,
     targetPrice,
     stopPrice,
+    targetPct,
+    stopPct,
     totalBuyKrw,
     totalCurKrw,
     pnlKrw,
@@ -1517,9 +1522,9 @@ export default function AdminAutoTradePage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-300 leading-relaxed">
-                    💡 <strong className="text-amber-200">24시간 자율 AI 운용 메커니즘</strong>: 시드머니 한도 내에서 퀀트 상위 종목을 자동 분할 매수합니다. 꼭 +4.0%가 아니더라도{" "}
-                    <strong className="text-emerald-300">상승 탄력이 약해지면(+0.4%~+3.9%) 알아서 조기 익절</strong>하고,{" "}
-                    <strong className="text-rose-300">약세 종목(-1.0% 이하)은 강세 주도주로 실시간 교체 매매</strong>하여 계좌 수익률을 방어합니다.
+                    💡 <strong className="text-amber-200">24시간 자율 AI 운용 메커니즘</strong>: 시드머니 한도 내에서 퀀트 상위 종목을 국내(4종목 60%)와 해외(3종목 40%)로 균형 분할 매수합니다. 목표 수익률(+{takeProfitPct || 2.0}%) 도달 시 즉시 익절하고,{" "}
+                    <strong className="text-emerald-300">상승 탄력이 약해지면(+0.5%~+{(Number(takeProfitPct || 2.0) - 0.1).toFixed(1)}%) 알아서 조기 익절</strong>하며,{" "}
+                    <strong className="text-rose-300">약세 종목(-1.0% 이하)은 강세 주도주로 실시간 교체 매매</strong>하여 계좌 수익률을 극대화합니다.
                   </p>
                 </div>
                 <button
@@ -1620,12 +1625,12 @@ export default function AdminAutoTradePage() {
                 <Activity className={`w-5 h-5 ${isRealView ? "text-blue-400" : "text-amber-400"}`} />
                 {isRealView
                   ? `🏦 한국투자증권 실전 계좌 보유·감시 종목 (${realPositions.length} / ${configuredMaxPos}개 종목 · ${Math.max(0, configuredMaxPos - realPositions.length)}개 추가 매수 대기 중)`
-                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${configuredMaxPos}개 종목 · ${Math.max(0, configuredMaxPos - paperPositions.length)}개 추가 매수 대기 중)`}
+                  : `🎮 AI 가상 모의투자(${paperSeedLabel} 시드) 보유·감시 종목 (${paperPositions.length} / ${configuredMaxPos}개 종목 · 국내 4 / 해외 3 슬롯 균형 배분)`}
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
-                  ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (가상 모의투자 종목과 100% 분리 관리)"
-                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 연습·검증 중인 종목 목록입니다. (최대 ${configuredMaxPos}종목 중 ${paperPositions.length}종목 보유 중 · 다음 장 개장 시 ${Math.max(0, configuredMaxPos - paperPositions.length)}개 종목 자동 추가 매수)`}
+                  ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (국내/해외 맞춤 분산 슬롯 자동 관리)"
+                  : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 검증 중인 종목 목록입니다. (총 ${configuredMaxPos}개 슬롯 중 🇺🇸해외 ${paperPositions.filter((p: any) => p.is_us || (p.symbol && /^[A-Z]/.test(p.symbol))).length}개 보유 중 · 🇰🇷국내 전용 4개 슬롯은 국내 개장(09:00) 시 주도주 자동 매수 대기)`}
               </p>
             </div>
           </div>
@@ -1811,7 +1816,7 @@ export default function AdminAutoTradePage() {
                           {formatPrice(details.stopPrice)}
                         </div>
                         <div className="text-[10px] text-blue-400/80 font-mono">
-                          최대 -1.0% 이탈 즉시 방어
+                          최대 -{details.stopPct}% 이탈 즉시 방어
                         </div>
                       </div>
                     </div>
@@ -1856,9 +1861,9 @@ export default function AdminAutoTradePage() {
 
                       {/* Scale Labels */}
                       <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
-                        <span className="text-blue-300">🛡️ 손절선 {formatPrice(details.stopPrice)} (-1%)</span>
+                        <span className="text-blue-300">🛡️ 손절선 {formatPrice(details.stopPrice)} (-{details.stopPct}%)</span>
                         <span className="text-amber-200 font-bold">📍 현재가 {formatPrice(details.curPrice)} ({gaugePosPct}%)</span>
-                        <span className="text-emerald-300">🎯 목표가 {formatPrice(details.targetPrice)} (+4%)</span>
+                        <span className="text-emerald-300">🎯 목표가 {formatPrice(details.targetPrice)} (+{details.targetPct}%)</span>
                       </div>
                     </div>
 
@@ -1884,7 +1889,7 @@ export default function AdminAutoTradePage() {
                     {/* 하단 원클릭 매도 및 안내 바 */}
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/5">
                       <div className="text-[11px] text-gray-400 hidden sm:block">
-                        ✨ 상승 탄력 둔화 시(+0.4%~+3.9%) AI가 자동 분할 조기 익절을 실행합니다.
+                        ✨ 상승 탄력 둔화 시(+0.5%~+{(details.targetPct - 0.1).toFixed(1)}%) AI가 자동 분할 조기 익절을 실행합니다.
                       </div>
                       <button
                         type="button"
@@ -2330,7 +2335,7 @@ export default function AdminAutoTradePage() {
                     onChange={(e) => setTakeProfitPct(Number(e.target.value))}
                     className="w-full bg-zinc-900 border border-rose-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono font-black text-rose-300 focus:outline-none"
                   />
-                  <div className="text-[9px] text-gray-400 mt-1">기본: +4.0% (탄력 조기익절 병행)</div>
+                  <div className="text-[9px] text-gray-400 mt-1">권장: +2.0% (단기 빠른 회전율 극대화)</div>
                 </div>
 
                 <div className={`p-3 rounded-xl bg-zinc-950 border ${useStopLoss ? "border-blue-500/40" : "border-white/10 opacity-50"}`}>

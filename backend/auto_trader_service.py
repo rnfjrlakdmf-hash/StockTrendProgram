@@ -1570,13 +1570,32 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     )
 
     # [한투 실전·모의 계좌 주문 루프]
-    # 모의투자(AI_PAPER)는 _sync_and_trade_paper_portfolio()가 자산 배분(국내 3 / 해외 2)에 맞춰 전담하므로
+    # 모의투자(AI_PAPER)는 _sync_and_trade_paper_portfolio()가 자산 배분(국내 4 / 해외 3)에 맞춰 전담하므로
     # 이 루프는 한국투자증권 실전/모의 계좌 연동 모드일 때만 실행됩니다.
+    mkt_target = str(cfg.get("market_target", "ALL"))
+    if mkt_target == "ALL":
+        target_kr_slots = max(2, int(round(max_pos * 0.6)))
+        target_us_slots = max(1, max_pos - target_kr_slots)
+    elif mkt_target == "KR_ONLY":
+        target_kr_slots = max_pos
+        target_us_slots = 0
+    else:
+        target_kr_slots = 0
+        target_us_slots = max_pos
+
+    real_kr_cnt = sum(1 for p in state["positions"] if not p.get("is_us"))
+    real_us_cnt = sum(1 for p in state["positions"] if p.get("is_us"))
+
     if is_kis_mode and (cfg.get("enabled") or force_buy) and not market_crash_brake and len(state["positions"]) < max_pos and acct["cash_krw"] >= 5000:
         newly_bought_real = []
         for cand in scored_candidates:
             if len(state["positions"]) >= max_pos:
                 break
+            c_is_us = bool(cand.get("is_us"))
+            if c_is_us and real_us_cnt >= target_us_slots and not force_buy:
+                continue
+            if not c_is_us and real_kr_cnt >= target_kr_slots and not force_buy:
+                continue
             curr_invested_krw = sum(
                 int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
                 for p in state["positions"]
@@ -1648,6 +1667,10 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "kis_order_confirmed": kis_confirmed,
             }
             state["positions"].append(new_pos)
+            if c_is_us:
+                real_us_cnt += 1
+            else:
+                real_kr_cnt += 1
             held_symbols.add(cand["symbol"])
 
             log_entry = {
@@ -2153,9 +2176,27 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             is_paper=True,
         )
 
-    # 3. [장 운영시간 엄격 준수 신규 매수]
+    # 3. [장 운영시간 엄격 준수 신규 매수 및 국내/해외 슬롯 분리 배분]
     curr_kr = [p for p in updated_paper if not p.get("is_us")]
     curr_us = [p for p in updated_paper if p.get("is_us")]
+
+    # [국내/해외 슬롯 균형 리밸런싱]
+    # ALL 모드에서 야간 미국장으로 인해 해외 주식이 해외 슬롯(target_us_slots, 예: 3종목)을 초과하여 국내 주식 슬롯(4종목)을 잠식한 경우:
+    # 가장 경쟁력 있는 상위 target_us_slots개 종목만 유지하고, 나머지 종목은 예수금으로 환원하여 국내 주식 전용 슬롯을 완벽 확보!
+    if mkt_target == "ALL" and len(curr_us) > target_us_slots:
+        curr_us_sorted = sorted(
+            curr_us,
+            key=lambda x: (float(x.get("pnl_pct", 0)), float(x.get("avg_price", 0))),
+            reverse=True,
+        )
+        retained_us = curr_us_sorted[:target_us_slots]
+        pruned_us = curr_us_sorted[target_us_slots:]
+        for p_us in pruned_us:
+            s_sym = p_us.get("symbol")
+            seen_syms.discard(s_sym)
+        updated_paper = curr_kr + retained_us
+        curr_us = retained_us
+        changed = True
 
     def _fill_market_slots(pool: List[Dict[str, Any]], need_count: int, market_label: str):
         nonlocal changed
@@ -2167,7 +2208,10 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             reverse=True,
         )
         for cand in sorted_pool:
-            if added >= need_count or len(updated_paper) >= paper_max_pos:
+            c_is_us = bool(cand.get("is_us"))
+            cur_market_cnt = sum(1 for p in updated_paper if bool(p.get("is_us")) == c_is_us)
+            max_market_slots = target_us_slots if c_is_us else target_kr_slots
+            if added >= need_count or len(updated_paper) >= paper_max_pos or cur_market_cnt >= max_market_slots:
                 break
             c_sym = cand.get("symbol")
             if not c_sym or c_sym in seen_syms or c_sym in recently_exited_syms or c_sym in permanently_sold_today_syms:
@@ -2175,7 +2219,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             c_price = float(cand.get("price", 0))
             if c_price <= 0:
                 continue
-            c_is_us = bool(cand.get("is_us"))
             # [실제 시장 운영 시간 100% 엄격 준수]
             if not is_market_open_now(c_sym, is_us=c_is_us):
                 continue
@@ -2241,13 +2284,12 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 is_paper=True,
             )
 
-
     if active_mkt == "KR":
         # [실제 국내 정규장 엄수: 평일 09:00~15:30]
         # 장 마감 후(15:30 이후), 주말, 공휴일에는 모의투자라도 신규 매수 일절 금지!
         if is_market_open_now("005930", is_us=False):
-            needed_kr = max(0, paper_max_pos - len(updated_paper))
-            if needed_kr > 0:
+            needed_kr = max(0, target_kr_slots - len(curr_kr))
+            if needed_kr > 0 and len(updated_paper) < paper_max_pos:
                 kr_pool = state.get("kr_candidates") or [c for c in (candidates or []) if not c.get("is_us")]
                 if not kr_pool or len(kr_pool) < needed_kr:
                     kr_pool = _build_session_candidates(state, "KR")[:25]
@@ -2257,8 +2299,8 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         # [실제 미국 정규장 엄수: 월 17:00 ~ 토 09:00 KST]
         # 미국 거래소가 실제로 열려 있는 시간대에만 해외주식 실시간 매수 진행!
         if is_market_open_now("NVDA", is_us=True):
-            needed_us = max(0, paper_max_pos - len(updated_paper))
-            if needed_us > 0:
+            needed_us = max(0, target_us_slots - len(curr_us))
+            if needed_us > 0 and len(updated_paper) < paper_max_pos:
                 us_pool = state.get("us_candidates") or [c for c in (candidates or []) if c.get("is_us")]
                 if not us_pool or len(us_pool) < needed_us:
                     us_pool = _build_session_candidates(state, "US")[:25]
