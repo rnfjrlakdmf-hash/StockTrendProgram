@@ -39,6 +39,7 @@ import {
   ArrowDownRight,
   Calendar,
   Gauge,
+  Wallet,
 } from "lucide-react";
 
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
@@ -619,210 +620,524 @@ export default function AdminAutoTradePage() {
       ? tradeLogs.filter((l: any) => l?.action === "SELL")
       : tradeLogs;
 
+  const totalEq = Math.max(1, Number(summary.total_equity_krw || 0));
+  const cashAmt = Math.max(0, Number(summary.cash_krw || 0));
+  const stockAmt = Math.max(0, Number(summary.eval_amount_krw || 0));
+  const cashPct = Math.min(100, Math.max(0, Math.round((cashAmt / totalEq) * 100)));
+  const stockPct = Math.min(100, Math.max(0, 100 - cashPct));
+
+  const totalTrades = Number(summary.total_trades || 0);
+  const winTrades = Number(summary.win_trades || 0);
+  const lossTrades = Number(summary.loss_trades || 0);
+  const calculatedWinRate = totalTrades > 0 ? Math.round((winTrades / totalTrades) * 100) : 0;
+  const waitingSlotsCount = Math.max(0, configuredMaxPos - positions.length);
+
+  const formatSignedKrw = (val: number) => {
+    const rounded = Math.round(val || 0);
+    if (rounded > 0) return `+₩${rounded.toLocaleString()}`;
+    if (rounded < 0) return `-₩${Math.abs(rounded).toLocaleString()}`;
+    return "₩0";
+  };
+
   return (
     <div className="min-h-screen bg-[#06070a] text-white pb-24">
       <Header />
 
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-5 space-y-6">
-        {/* 상단 헤더 & 마스터 스위치 */}
-        <div className="rounded-3xl bg-gradient-to-br from-emerald-950/50 via-zinc-900/95 to-black border border-emerald-500/30 p-4 sm:p-7 shadow-2xl space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => router.push("/admin")}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> 관리자 홈
-                </button>
-                <button
-                  onClick={() => router.push("/alerts?tab=auto_trade")}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-xs font-black flex items-center gap-1"
-                >
-                  🔔 자동매매 알림탭 열기
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, { method: "POST" });
-                      const d = await res.json();
-                      alert(d.message || "대표님 계정으로 자동매매 FCM 푸시 알림을 발송했습니다!");
-                    } catch {
-                      alert("FCM 테스트 요청 실패");
-                    }
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-black flex items-center gap-1"
-                >
-                  📲 내 폰으로 FCM 알림 테스트
-                </button>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
-                  👑 대표님 단독 전용 (일반 회원 비공개)
+        {/* 상단 사령부 메인 헤더 & 마스터 스위치 콘솔 */}
+        <div className="rounded-3xl bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-black border border-white/10 p-5 sm:p-7 shadow-2xl space-y-6 relative overflow-hidden backdrop-blur-xl">
+          {/* Subtle ambient lighting */}
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* 1. 상단 내비게이션 & 실시간 시스템 인디케이터 바 */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-white/5 relative z-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => router.push("/admin")}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold flex items-center gap-1.5 transition-all border border-white/10 hover:border-white/20 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>관리자 홈</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/alerts?tab=auto_trade")}
+                className="px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/30 text-indigo-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              >
+                <span>🔔 자동매매 체결 알림</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/test-fcm`, { method: "POST" });
+                    const d = await res.json();
+                    alert(d.message || "대표님 계정으로 자동매매 FCM 푸시 알림을 발송했습니다!");
+                  } catch {
+                    alert("FCM 테스트 요청 실패");
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              >
+                <span>📲 내 폰으로 알림 테스트</span>
+              </button>
+
+              <span className="px-3 py-1.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-black flex items-center gap-1.5">
+                <span>👑 대표님 단독 전용 관제</span>
+              </span>
+            </div>
+
+            {/* 실시간 서버 엔진 헬스체크 배지 */}
+            <div className="flex items-center gap-2 self-start lg:self-auto">
+              <div className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/10 text-[11px] font-mono flex items-center gap-2 text-gray-300">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
+                <span className="text-emerald-400 font-bold">24H 무인 자율엔진 ONLINE</span>
+                <span className="text-gray-500">·</span>
+                <span className="text-gray-400">5초 주기 시세 동기화</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2.5 pt-1">
-                <Bot className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-400" />
-                24시간 무인 AI 자동매매 사령부
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-400">
-                우리 서버 AI가 24시간 수급·공시·차트 지지선을 분석해 혼자서 종목을 고르고 자동 매수·익절·손절까지 수행합니다.
+            </div>
+          </div>
+
+          {/* 2. 타이틀 & 마스터 컨트롤 커맨드 덱 */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20">
+                  <div className="w-full h-full bg-black rounded-[14px] flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-emerald-400" />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                    24시간 무인 AI 자율 트레이딩 사령부
+                  </h1>
+                  <span className="text-[11px] font-bold text-emerald-400 tracking-wider font-mono">
+                    AUTONOMOUS AI QUANT TRADING SYSTEM
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-400 max-w-2xl leading-relaxed">
+                24시간 수급 집중도·외인·기관 동향·기술적 지지선을 실시간 추적하여, 사람의 개입 없이 최적의 매수·조기익절·손절을 스스로 무인 집행합니다.
               </p>
             </div>
 
-            {/* 마스터 컨트롤 버튼 그룹 */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* 마스터 컨트롤 버튼 덱 (완벽한 레이아웃 밸런스) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+              {/* 메인 마스터 스위치 */}
               <button
+                type="button"
                 onClick={handleToggleBot}
                 disabled={actionLoading}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl font-black text-xs sm:text-sm transition-all shadow-lg ${
+                className={`flex items-center justify-between sm:justify-center gap-3 px-4 py-3 rounded-2xl font-black text-xs sm:text-sm transition-all cursor-pointer shadow-xl ${
                   cfg.enabled
-                    ? "bg-emerald-500 text-black hover:bg-emerald-400 shadow-emerald-500/25"
-                    : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 border border-white/10"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-400 text-black hover:from-emerald-400 hover:to-teal-300 shadow-emerald-500/25 ring-2 ring-emerald-400/40"
+                    : "bg-zinc-900 text-gray-300 hover:bg-zinc-800 border border-white/10"
                 }`}
               >
-                <Power className="w-4 h-4" />
-                {cfg.enabled ? "🟢 로봇 자동매매 가동 중 (ON)" : "⚪ 로봇 일시정지됨 (OFF)"}
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    {cfg.enabled && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    )}
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${cfg.enabled ? "bg-emerald-950" : "bg-gray-500"}`} />
+                  </span>
+                  <Power className="w-4 h-4" />
+                  <span>{cfg.enabled ? "로봇 자동매매 가동 중 (ON)" : "로봇 일시정지됨 (OFF)"}</span>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono ${cfg.enabled ? "bg-black/20 text-black font-black" : "bg-white/10 text-gray-400"}`}>
+                  {cfg.enabled ? "RUNNING" : "STOPPED"}
+                </span>
               </button>
 
-              <button
-                onClick={handleRunCycleNow}
-                disabled={actionLoading}
-                className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs sm:text-sm transition-all shadow-lg shadow-blue-600/25"
-              >
-                <Zap className="w-4 h-4" />
-                지금 즉시 종목 발굴 &amp; 매매 실행
-              </button>
+              {/* 보조 실행 액션 2종 */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleRunCycleNow}
+                  disabled={actionLoading}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs transition-all shadow-lg shadow-blue-600/25 active:scale-95 cursor-pointer whitespace-nowrap"
+                  title="현재 시각 최우선 순위 종목을 즉시 스캔하여 매매 사이클을 실행합니다"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
+                  <span>즉시 종목 발굴·매매</span>
+                </button>
 
-              <button
-                onClick={handlePanicSell}
-                disabled={actionLoading || positions.length === 0}
-                className="flex items-center gap-1.5 px-3.5 py-3 rounded-2xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-black text-xs sm:text-sm transition-all disabled:opacity-40"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                전량 즉시 매도(킬스위치)
-              </button>
+                <button
+                  type="button"
+                  onClick={handlePanicSell}
+                  disabled={actionLoading || positions.length === 0}
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-3 rounded-2xl bg-rose-950/40 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white font-black text-xs transition-all disabled:opacity-30 disabled:pointer-events-none active:scale-95 cursor-pointer whitespace-nowrap shadow-sm"
+                  title="비상 시 현재 보유 중인 모든 종목을 즉시 시장가로 일괄 매도합니다"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>전량 매도(킬스위치)</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* 🔀 [실전 계좌 보유 창] vs [가상 모의투자 창] 대형 2분할 전환 버튼 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          {/* 3. 🔀 [실전 계좌 보유 창] vs [가상 모의투자 창] 프라이빗 뱅킹 스타일 대형 2분할 덱 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+            {/* 카드 1: 한국투자증권 실전 계좌 창 */}
             <button
               type="button"
               onClick={() => setViewWindow("REAL")}
-              className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+              className={`p-4 sm:p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden group cursor-pointer ${
                 isRealView
-                  ? "bg-gradient-to-r from-blue-600/30 via-indigo-600/25 to-emerald-600/20 border-blue-400 text-white shadow-[0_0_25px_rgba(59,130,246,0.3)]"
-                  : "bg-zinc-950/70 border-white/10 text-gray-400 hover:border-blue-400/40 hover:text-gray-200"
+                  ? "bg-gradient-to-br from-blue-950/50 via-zinc-900/95 to-black border-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.25)] ring-1 ring-blue-400/50"
+                  : "bg-zinc-950/60 border-white/10 text-gray-400 hover:border-blue-400/50 hover:bg-zinc-900/60 hover:text-gray-200"
               }`}
             >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black">🏦 실전 계좌 보유 · 운용 창</span>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-blue-500 text-white">
-                    {realPositions.length}종목 보유
-                  </span>
+              <div className={`absolute top-0 right-0 w-44 h-44 rounded-full blur-2xl pointer-events-none transition-all ${
+                isRealView ? "bg-blue-500/15" : "bg-transparent group-hover:bg-blue-500/5"
+              }`} />
+
+              <div className="flex items-start justify-between gap-3 relative z-10">
+                <div className="space-y-2 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black border font-mono tracking-tight bg-blue-500/20 text-blue-300 border-blue-400/40 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-blue-400" />
+                      <span>KIS REAL ACCOUNT</span>
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-mono">
+                      계좌번호 43880949-22
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                      🏦 한국투자증권 실전 계좌 운용 창
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black font-mono shrink-0 ${
+                      realPositions.length > 0
+                        ? "bg-blue-500 text-white shadow-md shadow-blue-500/30"
+                        : "bg-zinc-800 text-gray-400"
+                    }`}>
+                      {realPositions.length}종목 보유 중
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    실제 증권사 한도 <b className="text-blue-300 font-mono">₩{(cfg.max_total_invest_krw || 100000).toLocaleString()}원</b> 내에서 체결된 실전 보유 종목만 100% 분리 관리합니다.
+                  </p>
                 </div>
-                <p className="text-[11px] text-gray-300">
-                  한국투자증권 실제 계좌(한도 ₩{(cfg.max_total_invest_krw || 0).toLocaleString()})에서 체결된 실전 보유 종목만 단독 표시
-                </p>
+
+                <div className="shrink-0 flex flex-col items-end gap-2 pt-1">
+                  <span
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md ${
+                      isRealView
+                        ? "bg-blue-400 text-black shadow-blue-400/30 ring-2 ring-blue-300/40"
+                        : "bg-zinc-800 text-gray-400 border border-white/10 group-hover:border-blue-400/40 group-hover:text-white"
+                    }`}
+                  >
+                    {isRealView ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-black" />
+                        <span>현재 열림</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>창 열기</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </span>
+                  {isRealView && (
+                    <span className="text-[10px] text-blue-300/90 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                      실시간 관제 중
+                    </span>
+                  )}
+                </div>
               </div>
-              <span
-                className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 ${
-                  isRealView ? "bg-blue-400 text-black" : "bg-zinc-800 text-gray-400"
-                }`}
-              >
-                {isRealView ? "현재 열림 ✓" : "창 열기"}
-              </span>
             </button>
 
+            {/* 카드 2: AI 가상 모의투자 창 */}
             <button
               type="button"
               onClick={() => setViewWindow("PAPER")}
-              className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+              className={`p-4 sm:p-5 rounded-3xl border-2 text-left transition-all relative overflow-hidden group cursor-pointer ${
                 !isRealView
-                  ? "bg-gradient-to-r from-amber-500/25 via-orange-500/20 to-zinc-900 border-amber-400 text-white shadow-[0_0_25px_rgba(245,158,11,0.25)]"
-                  : "bg-zinc-950/70 border-white/10 text-gray-400 hover:border-amber-400/40 hover:text-gray-200"
+                  ? "bg-gradient-to-br from-amber-950/50 via-zinc-900/95 to-black border-amber-400 text-white shadow-[0_0_30px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50"
+                  : "bg-zinc-950/60 border-white/10 text-gray-400 hover:border-amber-400/50 hover:bg-zinc-900/60 hover:text-gray-200"
               }`}
             >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black">🎮 AI 가상 모의투자 창 ({paperSeedLabel} 시드)</span>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-500 text-black">
-                    {paperPositions.length}종목 보유
-                  </span>
+              <div className={`absolute top-0 right-0 w-44 h-44 rounded-full blur-2xl pointer-events-none transition-all ${
+                !isRealView ? "bg-amber-500/15" : "bg-transparent group-hover:bg-amber-500/5"
+              }`} />
+
+              <div className="flex items-start justify-between gap-3 relative z-10">
+                <div className="space-y-2 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black border font-mono tracking-tight bg-amber-500/20 text-amber-300 border-amber-400/40 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>AI PAPER PORTFOLIO</span>
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-mono">
+                      가상 시드 {paperSeedLabel}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                      🎮 AI 가상 모의투자 창 ({paperSeedLabel})
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black font-mono shrink-0 ${
+                      paperPositions.length > 0
+                        ? "bg-amber-400 text-black shadow-md shadow-amber-400/30"
+                        : "bg-zinc-800 text-gray-400"
+                    }`}>
+                      {paperPositions.length}종목 운용 중
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    자유로운 가상 시드로 AI 퀀트 알고리즘의 매수·익절·교체매매 실력을 실시간으로 검증하는 모의 전용 창입니다.
+                  </p>
                 </div>
-                <p className="text-[11px] text-gray-300">
-                  {paperSeedLabel} 가상 시드머니(내 마음대로 금액 설정 가능)로 AI가 테스트 매수·감시 중인 모의투자 전용 창
-                </p>
+
+                <div className="shrink-0 flex flex-col items-end gap-2 pt-1">
+                  <span
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md ${
+                      !isRealView
+                        ? "bg-amber-400 text-black shadow-amber-400/30 ring-2 ring-amber-300/40"
+                        : "bg-zinc-800 text-gray-400 border border-white/10 group-hover:border-amber-400/40 group-hover:text-white"
+                    }`}
+                  >
+                    {!isRealView ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-black" />
+                        <span>현재 열림</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>창 열기</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </span>
+                  {!isRealView && (
+                    <span className="text-[10px] text-amber-300/90 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      실시간 관제 중
+                    </span>
+                  )}
+                </div>
               </div>
-              <span
-                className={`px-3 py-1.5 rounded-xl text-xs font-black shrink-0 ${
-                  !isRealView ? "bg-amber-400 text-black" : "bg-zinc-800 text-gray-400"
-                }`}
-              >
-                {!isRealView ? "현재 열림 ✓" : "창 열기"}
-              </span>
             </button>
           </div>
 
-          {/* 5대 핵심 계좌 자산 전광판 (선택된 창 기준) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
-            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">
-                {isRealView ? "🏦 실전 설정 한도 (총 운용액)" : "🎮 가상 총 운용 자산"}
+          {/* 4. 💎 5대 핵심 계좌 자산 프리미엄 인포그래픽 전광판 (선택된 창 기준) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
+            {/* 1) 총 운용 자산 */}
+            <div className="p-4 rounded-3xl bg-zinc-950/80 border border-white/10 hover:border-amber-500/40 transition-all space-y-3 shadow-lg relative overflow-hidden group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400">
+                    <Wallet className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-black text-gray-300">
+                    {isRealView ? "실전 총 자산" : "가상 총 운용 자산"}
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {isRealView ? `한도 ₩${(cfg.max_total_invest_krw || 100000).toLocaleString()}` : `시드 ${paperSeedLabel}`}
+                </span>
               </div>
-              <div className="text-lg sm:text-xl font-black text-white font-mono mt-1">
-                ₩{(summary.total_equity_krw || 0).toLocaleString()}
+
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">
+                  ₩{(summary.total_equity_krw || 0).toLocaleString()}
+                </div>
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-md text-[11px] font-black font-mono border flex items-center gap-0.5 ${
+                    (summary.total_return_krw || 0) >= 0
+                      ? "text-rose-400 bg-rose-500/10 border-rose-500/25"
+                      : "text-blue-400 bg-blue-500/10 border-blue-500/25"
+                  }`}>
+                    {(summary.total_return_krw || 0) >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    <span>{formatSignedKrw(summary.total_return_krw || 0)}</span>
+                    <span>({(summary.total_return_pct || 0) >= 0 ? "+" : ""}{summary.total_return_pct || 0}%)</span>
+                  </span>
+                </div>
               </div>
-              <div className={`text-xs font-black mt-1 ${summary.total_return_krw >= 0 ? "text-rose-400" : "text-blue-400"}`}>
-                원금 대비 {summary.total_return_krw >= 0 ? "+" : ""}
-                {(summary.total_return_krw || 0).toLocaleString()}원 ({summary.total_return_pct >= 0 ? "+" : ""}
-                {summary.total_return_pct || 0}%)
+
+              <div className="pt-1 border-t border-white/5 text-[10px] text-gray-400 flex items-center justify-between">
+                <span>원금 보존율</span>
+                <span className="font-mono text-gray-300 font-bold">
+                  {Math.max(0, 100 + Number(summary.total_return_pct || 0)).toFixed(1)}%
+                </span>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">
-                {isRealView ? "🏦 남은 실전 매수 가능 한도" : "🎮 가상 주문 가능 예수금"}
+            {/* 2) 가용 예수금 & 자산 배분 비중 */}
+            <div className="p-4 rounded-3xl bg-zinc-950/80 border border-white/10 hover:border-emerald-500/40 transition-all space-y-3 shadow-lg relative overflow-hidden group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center text-emerald-400">
+                    <Coins className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-black text-gray-300">
+                    {isRealView ? "남은 매수 가능 한도" : "주문 가능 예수금"}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  현금 {cashPct}%
+                </span>
               </div>
-              <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono mt-1">
-                ₩{(summary.cash_krw || 0).toLocaleString()}
+
+              <div>
+                <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tracking-tight">
+                  ₩{(summary.cash_krw || 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-400 mt-1 flex items-center gap-1 font-mono">
+                  <span>주식 평가액:</span>
+                  <b className="text-gray-200">₩{(summary.eval_amount_krw || 0).toLocaleString()}</b>
+                </div>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">
-                주식 평가액: ₩{(summary.eval_amount_krw || 0).toLocaleString()}
+
+              {/* 자산 배분 듀얼 바 */}
+              <div className="space-y-1 pt-1 border-t border-white/5">
+                <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden flex">
+                  <div className="h-full bg-emerald-400" style={{ width: `${cashPct}%` }} title={`현금 비중 ${cashPct}%`} />
+                  <div className="h-full bg-blue-400" style={{ width: `${stockPct}%` }} title={`주식 비중 ${stockPct}%`} />
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                  <span className="text-emerald-400">예수금 {cashPct}%</span>
+                  <span className="text-blue-400">주식 {stockPct}%</span>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">
-                {isRealView ? "🏦 실전 보유종목 평가손익" : "🎮 가상 보유종목 평가손익"}
+            {/* 3) 보유 종목 실시간 평가손익 & 슬롯 현황 */}
+            <div className="p-4 rounded-3xl bg-zinc-950/80 border border-white/10 hover:border-purple-500/40 transition-all space-y-3 shadow-lg relative overflow-hidden group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                    (summary.unrealized_pnl_krw || 0) >= 0
+                      ? "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                      : "bg-blue-500/10 border border-blue-500/20 text-blue-400"
+                  }`}>
+                    <Activity className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-black text-gray-300">
+                    {isRealView ? "실전 종목 평가손익" : "가상 종목 평가손익"}
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  실시간 5초 갱신
+                </span>
               </div>
-              <div className={`text-lg sm:text-xl font-black font-mono mt-1 ${(summary.unrealized_pnl_krw || 0) >= 0 ? "text-rose-400" : "text-blue-400"}`}>
-                {(summary.unrealized_pnl_krw || 0) >= 0 ? "+" : ""}₩{(summary.unrealized_pnl_krw || 0).toLocaleString()}
+
+              <div>
+                <div className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
+                  (summary.unrealized_pnl_krw || 0) >= 0 ? "text-rose-400" : "text-blue-400"
+                }`}>
+                  {formatSignedKrw(summary.unrealized_pnl_krw || 0)}
+                </div>
+                <div className="text-xs text-gray-300 mt-1 flex items-center gap-1 font-mono">
+                  <span>{isRealView ? "실전" : "가상"} <b>{positions.length}</b>개 / 최대 <b>{configuredMaxPos}</b>종목</span>
+                </div>
               </div>
-              <div className="text-[11px] text-gray-400 mt-1">
-                {isRealView
-                  ? `실전 ${realPositions.length} / 최대 ${configuredMaxPos}종목 (${Math.max(0, configuredMaxPos - realPositions.length)}개 대기)`
-                  : `가상 ${paperPositions.length} / 최대 ${configuredMaxPos}종목 (${Math.max(0, configuredMaxPos - paperPositions.length)}개 대기)`}
+
+              {/* 슬롯 시각화 도트 */}
+              <div className="pt-1 border-t border-white/5 space-y-1">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: configuredMaxPos }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-2 rounded-full transition-all ${
+                        i < positions.length
+                          ? (isRealView ? "w-3.5 bg-blue-400 shadow-sm shadow-blue-400/50" : "w-3.5 bg-amber-400 shadow-sm shadow-amber-400/50")
+                          : "w-2 bg-zinc-800 border border-white/20"
+                      }`}
+                      title={i < positions.length ? `${positions[i]?.name || '보유 종목'}` : '매수 대기 슬롯'}
+                    />
+                  ))}
+                  <span className="text-[10px] text-gray-400 font-mono ml-auto">
+                    {waitingSlotsCount}개 대기
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10">
-              <div className="text-[11px] text-gray-400 font-bold">누적 확정 수익 (실현손익)</div>
-              <div className={`text-lg sm:text-xl font-black font-mono mt-1 ${(summary.realized_pnl_krw || 0) >= 0 ? "text-rose-400" : "text-blue-400"}`}>
-                {(summary.realized_pnl_krw || 0) >= 0 ? "+" : ""}₩{(summary.realized_pnl_krw || 0).toLocaleString()}
+            {/* 4) 누적 확정 수익 (실현손익) & 승률 */}
+            <div className="p-4 rounded-3xl bg-zinc-950/80 border border-white/10 hover:border-cyan-500/40 transition-all space-y-3 shadow-lg relative overflow-hidden group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-cyan-400/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400">
+                    <Target className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-black text-gray-300">누적 확정 수익</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {summary.total_trades || 0}회 매도
+                </span>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">
-                총 {summary.total_trades || 0}회 매도 완료
+
+              <div>
+                <div className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
+                  (summary.realized_pnl_krw || 0) >= 0 ? "text-rose-400" : "text-blue-400"
+                }`}>
+                  {formatSignedKrw(summary.realized_pnl_krw || 0)}
+                </div>
+                <div className="text-xs text-gray-400 mt-1 flex items-center gap-1.5 font-mono">
+                  <span>승률:</span>
+                  <b className="text-cyan-300">{calculatedWinRate}%</b>
+                  <span className="text-gray-500">({winTrades}승 {lossTrades}패)</span>
+                </div>
+              </div>
+
+              {/* 승률 미니 바 */}
+              <div className="pt-1 border-t border-white/5 space-y-1">
+                <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden flex">
+                  <div className="h-full bg-cyan-400" style={{ width: `${calculatedWinRate}%` }} />
+                  <div className="h-full bg-rose-500/40" style={{ width: `${100 - calculatedWinRate}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono text-gray-400">
+                  <span className="text-cyan-300">익절 {winTrades}회</span>
+                  <span className="text-rose-300">손절 {lossTrades}회</span>
+                </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10 col-span-2 sm:col-span-1">
-              <div className="text-[11px] text-gray-400 font-bold">현재 보고 있는 창 &amp; 운전 모드</div>
-              <div className="text-base sm:text-lg font-black text-amber-300 mt-1">
-                {isRealView ? "🏦 실전 계좌 전용 창" : "🎮 가상 모의투자 창"}
+            {/* 5) 현재 관제 창 & 운전 모드 */}
+            <div className="p-4 rounded-3xl bg-zinc-950/80 border border-white/10 hover:border-emerald-500/40 transition-all space-y-3 shadow-lg relative overflow-hidden group col-span-1 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-indigo-400/10 border border-indigo-400/20 flex items-center justify-center text-indigo-400">
+                    <Cpu className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-xs font-black text-gray-300">실시간 관제 모드</span>
+                </div>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
               </div>
-              <div className="text-[11px] text-emerald-400 font-bold mt-1">
-                가동 모드: {cfg.mode === "KIS_REAL" ? "🔥 한국투자증권 실전계좌" : cfg.mode === "KIS_VIRTUAL" ? "🧪 한국투자증권 모의계좌" : "⚡ 서버 실시간 AI 가상계좌"}
+
+              <div>
+                <div className="text-base sm:text-lg font-black text-amber-300 tracking-tight flex items-center gap-1.5">
+                  {isRealView ? "🏦 실전 계좌 전용" : "🎮 가상 모의투자"}
+                </div>
+                <div className="text-xs text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                  <span>가동:</span>
+                  <span className="text-gray-200">
+                    {cfg.mode === "KIS_REAL" ? "한국투자증권 실전" : cfg.mode === "KIS_VIRTUAL" ? "한국투자증권 모의" : "서버 자율 AI 가상"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-1 border-t border-white/5 flex items-center justify-between text-[10px] font-mono">
+                <span className="text-gray-400">서버 상태</span>
+                <span className="text-emerald-400 font-bold">NORMAL 24H</span>
               </div>
             </div>
           </div>
