@@ -80,7 +80,7 @@ def deploy_to_ec2(tar_path):
         "tar -xzf next_dist.tar.gz && "
         "rm next_dist.tar.gz && "
         "sudo systemctl restart stocktrend-backend.service && "
-        "pm2 reload stocktrend-frontend"
+        "pm2 restart stocktrend-frontend"
     )
     stdin, stdout, stderr = ssh.exec_command(extract_cmd)
     print(stdout.read().decode('utf-8', 'ignore'))

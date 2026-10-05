@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+export const dynamic = "force-dynamic";
+
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -398,6 +400,7 @@ export default function AdminAutoTradePage() {
   const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL" | "PROFIT" | "LOSS">("ALL");
   const [logSearch, setLogSearch] = useState<string>("");
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
+  const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("REAL");
 
   const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
     e.preventDefault();
@@ -499,6 +502,12 @@ export default function AdminAutoTradePage() {
       return () => clearInterval(timer);
     }
   }, [authLoading, currentUser, fetchStatus]);
+
+  useEffect(() => {
+    if (data?.config?.mode) {
+      setViewWindow(data.config.mode === "KIS_REAL" ? "REAL" : "PAPER");
+    }
+  }, [data?.config?.mode]);
 
   const handleToggleBot = async () => {
     if (!data?.config) return;
@@ -717,14 +726,6 @@ export default function AdminAutoTradePage() {
       setActionLoading(false);
     }
   };
-
-  const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("REAL");
-
-  useEffect(() => {
-    if (data?.config?.mode) {
-      setViewWindow(data.config.mode === "KIS_REAL" ? "REAL" : "PAPER");
-    }
-  }, [data?.config?.mode]);
 
   if (authLoading || loading) {
     return (
