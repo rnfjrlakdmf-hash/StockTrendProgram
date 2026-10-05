@@ -754,52 +754,39 @@ export default function AdminAutoTradePage() {
     ? (data?.real_trade_logs || [])
     : (data?.paper_trade_logs || data?.trade_logs || []);
 
-  const buyLogs = useMemo(() => tradeLogs.filter((l: any) => l?.action === "BUY"), [tradeLogs]);
-  const sellLogs = useMemo(() => tradeLogs.filter((l: any) => l?.action === "SELL"), [tradeLogs]);
-  const profitLogs = useMemo(() => sellLogs.filter((l: any) => (Number(l?.pnl_krw) || 0) >= 0), [sellLogs]);
-  const lossLogs = useMemo(() => sellLogs.filter((l: any) => (Number(l?.pnl_krw) || 0) < 0), [sellLogs]);
+  const buyLogs = tradeLogs.filter((l: any) => l?.action === "BUY");
+  const sellLogs = tradeLogs.filter((l: any) => l?.action === "SELL");
+  const profitLogs = sellLogs.filter((l: any) => (Number(l?.pnl_krw) || 0) >= 0);
+  const lossLogs = sellLogs.filter((l: any) => (Number(l?.pnl_krw) || 0) < 0);
 
   const buyCount = buyLogs.length;
   const sellCount = sellLogs.length;
   const profitCount = profitLogs.length;
   const lossCount = lossLogs.length;
 
-  const totalRealizedPnl = useMemo(() => {
-    return sellLogs.reduce((acc: number, l: any) => acc + (Number(l?.pnl_krw) || 0), 0);
-  }, [sellLogs]);
+  const totalRealizedPnl = sellLogs.reduce((acc: number, l: any) => acc + (Number(l?.pnl_krw) || 0), 0);
+  const winRate = sellLogs.length === 0 ? "0.0" : ((profitCount / sellLogs.length) * 100).toFixed(1);
+  const totalVolumeKrw = tradeLogs.reduce((acc: number, l: any) => acc + (Number(l?.amount_krw) || 0), 0);
+  const bestTrade =
+    profitLogs.length === 0
+      ? null
+      : [...profitLogs].sort((a: any, b: any) => (Number(b?.pnl_krw) || 0) - (Number(a?.pnl_krw) || 0))[0];
 
-  const winRate = useMemo(() => {
-    if (sellLogs.length === 0) return "0.0";
-    return ((profitCount / sellLogs.length) * 100).toFixed(1);
-  }, [profitCount, sellLogs.length]);
+  let filteredLogs = tradeLogs;
+  if (logFilter === "BUY") filteredLogs = buyLogs;
+  else if (logFilter === "SELL") filteredLogs = sellLogs;
+  else if (logFilter === "PROFIT") filteredLogs = profitLogs;
+  else if (logFilter === "LOSS") filteredLogs = lossLogs;
 
-  const totalVolumeKrw = useMemo(() => {
-    return tradeLogs.reduce((acc: number, l: any) => acc + (Number(l?.amount_krw) || 0), 0);
-  }, [tradeLogs]);
-
-  const bestTrade = useMemo(() => {
-    if (profitLogs.length === 0) return null;
-    return [...profitLogs].sort((a: any, b: any) => (Number(b?.pnl_krw) || 0) - (Number(a?.pnl_krw) || 0))[0];
-  }, [profitLogs]);
-
-  const filteredLogs = useMemo(() => {
-    let list = tradeLogs;
-    if (logFilter === "BUY") list = buyLogs;
-    else if (logFilter === "SELL") list = sellLogs;
-    else if (logFilter === "PROFIT") list = profitLogs;
-    else if (logFilter === "LOSS") list = lossLogs;
-
-    if (logSearch.trim()) {
-      const q = logSearch.trim().toLowerCase();
-      list = list.filter((l: any) => {
-        const name = String(l?.name || "").toLowerCase();
-        const sym = String(l?.symbol || "").toLowerCase();
-        const reason = String(l?.reason || "").toLowerCase();
-        return name.includes(q) || sym.includes(q) || reason.includes(q);
-      });
-    }
-    return list;
-  }, [tradeLogs, buyLogs, sellLogs, profitLogs, lossLogs, logFilter, logSearch]);
+  if (logSearch.trim()) {
+    const q = logSearch.trim().toLowerCase();
+    filteredLogs = filteredLogs.filter((l: any) => {
+      const name = String(l?.name || "").toLowerCase();
+      const sym = String(l?.symbol || "").toLowerCase();
+      const reason = String(l?.reason || "").toLowerCase();
+      return name.includes(q) || sym.includes(q) || reason.includes(q);
+    });
+  }
 
   const totalEq = Math.max(1, Number(summary.total_equity_krw || 0));
   const cashAmt = Math.max(0, Number(summary.cash_krw || 0));
