@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { API_BASE_URL } from "@/lib/config";
 import Header from "@/components/Header";
@@ -40,6 +41,10 @@ import {
   Calendar,
   Gauge,
   Wallet,
+  ExternalLink,
+  Copy,
+  Check,
+  BarChart2,
 } from "lucide-react";
 
 const ADMIN_KEY = "StockTrendSecretAdmin2026!";
@@ -127,45 +132,72 @@ function parsePositionDetails(pos: any, fxRate: number = 1355) {
 }
 
 function parseCandidateReason(rawReason: any = "") {
-  if (!rawReason) return { chips: [], text: "" };
+  if (!rawReason) return { chips: [], techSummary: "", text: "" };
   const str = typeof rawReason === "string" ? rawReason : String(rawReason);
   const parts = str.split("·").map((p: string) => p.trim()).filter(Boolean);
-  const chips: { label: string; icon?: string; color: string }[] = [];
+  const rawChips: { label: string; icon?: string; color: string; priority: number }[] = [];
+  let techSummary = "";
   const textParts: string[] = [];
 
   for (const part of parts) {
-    if (part.includes("소액한도 맞춤")) {
-      const match = part.match(/[\d,]+원\/주/);
-      chips.push({
-        label: match ? `주당 ${match[0]}` : part.replace(/[\[\]]/g, ""),
-        icon: "💰",
+    if (part.includes("장마감 수급스캐너") || part.includes("CVD") || part.includes("OBV")) {
+      techSummary = part.replace(/[\[\]]/g, "").replace("🔥", "").trim();
+      rawChips.push({
+        label: "장마감 수급스캐너 포착",
+        icon: "🔥",
+        color: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+        priority: 1,
+      });
+    } else if (part.includes("골든크로스") || part.includes("정배열")) {
+      rawChips.push({
+        label: "5·20일선 골든크로스",
+        icon: "📈",
         color: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+        priority: 2,
+      });
+    } else if (part.includes("20일선")) {
+      rawChips.push({
+        label: "20일 이평 지지 반등",
+        icon: "📊",
+        color: "bg-indigo-500/15 text-indigo-300 border-indigo-400/30",
+        priority: 3,
       });
     } else if (part.includes("RSI")) {
       const rsiMatch = part.match(/RSI\s*\d+[^\)]*\)?/i);
-      chips.push({
+      rawChips.push({
         label: rsiMatch ? rsiMatch[0] : "RSI 저점 반등",
-        icon: "📊",
+        icon: "📉",
         color: "bg-purple-500/15 text-purple-300 border-purple-400/30",
+        priority: 4,
+      });
+    } else if (part.includes("초동 돌파")) {
+      rawChips.push({
+        label: "외인·기관 초동 돌파",
+        icon: "⚡",
+        color: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+        priority: 2,
+      });
+    } else if (part.includes("눌림목") || part.includes("저점")) {
+      rawChips.push({
+        label: "장중 저점 분할매집",
+        icon: "🎯",
+        color: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+        priority: 3,
       });
     } else if (part.includes("거래량")) {
       const volMatch = part.match(/거래량\s*[\d%]+/i);
-      chips.push({
-        label: volMatch ? `${volMatch[0]} 급증` : "거래량 유입",
-        icon: "🔥",
-        color: "bg-amber-500/15 text-amber-300 border-amber-400/30",
-      });
-    } else if (part.includes("눌림목") || part.includes("저점")) {
-      chips.push({
-        label: "장중 눌림목 저점 타점",
-        icon: "🎯",
-        color: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+      rawChips.push({
+        label: volMatch ? `${volMatch[0]} 급증` : "거래량 유입 포착",
+        icon: "🌊",
+        color: "bg-cyan-500/15 text-cyan-300 border-cyan-400/30",
+        priority: 4,
       });
     } else if (part.includes("스마트머니") || part.includes("수급")) {
-      chips.push({
+      rawChips.push({
         label: "외인·기관 수급 집중",
         icon: "⚡",
         color: "bg-cyan-500/15 text-cyan-300 border-cyan-400/30",
+        priority: 3,
       });
     } else if (
       part.includes("해외신생") ||
@@ -174,7 +206,8 @@ function parseCandidateReason(rawReason: any = "") {
       part.includes("우주") ||
       part.includes("로봇") ||
       part.includes("양자") ||
-      part.includes("원전")
+      part.includes("원전") ||
+      part.includes("방산")
     ) {
       const cleanTheme = part
         .replace(/^[\[\(]/, "")
@@ -182,10 +215,18 @@ function parseCandidateReason(rawReason: any = "") {
         .replace("스마트머니 집중", "")
         .replace("스마트머니", "")
         .trim();
-      chips.push({
+      rawChips.push({
         label: cleanTheme,
         icon: "🚀",
         color: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+        priority: 1,
+      });
+    } else if (part.includes("소액한도 맞춤")) {
+      rawChips.push({
+        label: "예산 한도 최적가",
+        icon: "💡",
+        color: "bg-teal-500/15 text-teal-300 border-teal-400/30",
+        priority: 5,
       });
     } else if (
       !part.includes("야간 미국장") &&
@@ -193,11 +234,27 @@ function parseCandidateReason(rawReason: any = "") {
       !part.includes("AI 퀀트") &&
       !part.includes("실시간 타점")
     ) {
-      textParts.push(part.replace(/^[\[\(]/, "").replace(/[\]\)]$/, "").trim());
+      const clean = part.replace(/^[\[\(]/, "").replace(/[\]\)]$/, "").trim();
+      if (clean && (clean.includes("차트:") || clean.includes("CVD") || clean.includes("OBV"))) {
+        techSummary = clean;
+      } else if (clean) {
+        textParts.push(clean);
+      }
     }
   }
 
-  return { chips, text: textParts.join(" · ") };
+  // 중복 칩 완전 제거 (동일 라벨 중복 방지)
+  const uniqueChips: { label: string; icon?: string; color: string }[] = [];
+  const seen = new Set<string>();
+  rawChips.sort((a, b) => a.priority - b.priority);
+  for (const c of rawChips) {
+    if (!seen.has(c.label)) {
+      seen.add(c.label);
+      uniqueChips.push({ label: c.label, icon: c.icon, color: c.color });
+    }
+  }
+
+  return { chips: uniqueChips, techSummary, text: textParts.join(" · ") };
 }
 
 function formatTradeReason(rawReason: any = "") {
@@ -267,6 +324,19 @@ export default function AdminAutoTradePage() {
   const [kisAccountNo, setKisAccountNo] = useState("");
   const [paperSeedKrw, setPaperSeedKrw] = useState<number>(20000000);
   const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
+  const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
+
+  const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(symbol);
+        setCopiedSymbol(symbol);
+        setTimeout(() => setCopiedSymbol(null), 1800);
+      }
+    } catch {}
+  };
 
   // [철통 보안] 대표님 관리자 이메일(rnfjr@gmail.com / rnfjrlakdmf@gmail.com) 외 접근 원천 차단
   useEffect(() => {
@@ -2290,7 +2360,7 @@ export default function AdminAutoTradePage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
               <div>
                 <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 tracking-tight">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-sm">
                     <TrendingUp className="w-4 h-4" />
                   </div>
                   AI 로봇 실시간 매수 타점 레이더 Top 10
@@ -2309,7 +2379,7 @@ export default function AdminAutoTradePage() {
                   type="button"
                   onClick={() => fetchStatus(false)}
                   disabled={loading}
-                  className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-gray-300 hover:text-white transition-all cursor-pointer"
+                  className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-gray-300 hover:text-white transition-all cursor-pointer shadow-sm"
                   title="지금 새로고침"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-400" : ""}`} />
@@ -2319,10 +2389,10 @@ export default function AdminAutoTradePage() {
 
             {/* 🕒 시간대별 자동 스위칭 세션 상태 배너 */}
             <div
-              className={`p-4 rounded-2xl border flex flex-col gap-1.5 relative z-10 shadow-lg ${
+              className={`p-4 rounded-2xl border flex flex-col gap-2 relative z-10 shadow-lg ${
                 data?.session_info?.active_market === "US"
-                  ? "bg-gradient-to-r from-indigo-950/60 via-zinc-950 to-zinc-950 border-indigo-500/40 text-indigo-200 shadow-indigo-500/5"
-                  : "bg-gradient-to-r from-emerald-950/60 via-zinc-950 to-zinc-950 border-emerald-500/40 text-emerald-200 shadow-emerald-500/5"
+                  ? "bg-gradient-to-r from-indigo-950/70 via-zinc-950/90 to-zinc-950 border-indigo-500/40 text-indigo-200 shadow-indigo-500/5"
+                  : "bg-gradient-to-r from-emerald-950/70 via-zinc-950/90 to-zinc-950 border-emerald-500/40 text-emerald-200 shadow-emerald-500/5"
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2343,104 +2413,246 @@ export default function AdminAutoTradePage() {
 
             {/* Top 10 종목 카드 목록 (프리미엄 퀀트 레이더 디자인) */}
             <div className="space-y-3 relative z-10">
-              {candidates.slice(0, 10).map((cand: any, idx: number) => {
-                const krwEquiv = cand.is_us ? Math.round((cand.price || 0) * (data?.session_info?.fx_rate || 1355)) : cand.price;
-                const candMarket = getMarketInfo(cand.symbol);
-                const parsed = parseCandidateReason(cand.reason);
-                const isPositive = Number(cand.change_pct || 0) >= 0;
+              {candidates.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-zinc-950/50 border border-white/5 text-center text-gray-400 space-y-2">
+                  <Bot className="w-8 h-8 text-gray-500 mx-auto animate-pulse" />
+                  <p className="text-sm font-bold">실시간 시장 종목 스캔 중...</p>
+                  <p className="text-xs text-gray-500">잠시 후 AI 퀀트 알고리즘이 발굴한 최우선 10대 종목이 표시됩니다.</p>
+                </div>
+              ) : (
+                candidates.slice(0, 10).map((cand: any, idx: number) => {
+                  const fxRate = data?.session_info?.fx_rate || 1355;
+                  const krwEquiv = cand.is_us ? Math.round((cand.price || 0) * fxRate) : cand.price;
+                  const candMarket = getMarketInfo(cand.symbol);
+                  const parsed = parseCandidateReason(cand.reason);
+                  const isPositive = Number(cand.change_pct || 0) >= 0;
 
-                // 순위 뱃지 스타일링 (1위 골드, 2위 실버, 3위 브론즈)
-                const rankBadgeClass =
-                  idx === 0
-                    ? "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-black font-black shadow-md shadow-amber-500/30"
-                    : idx === 1
-                    ? "bg-gradient-to-r from-slate-200 to-zinc-400 text-black font-black shadow-md shadow-zinc-400/20"
-                    : idx === 2
-                    ? "bg-gradient-to-r from-amber-600 to-orange-400 text-white font-black shadow-md shadow-orange-500/20"
-                    : "bg-zinc-800 text-gray-300 font-black";
+                  // 🎯 AI 목표가 & 손절가 & 1회 권장 매수량 계산
+                  const targetPct = Number(data?.config?.take_profit_pct || takeProfitPct || 4.0);
+                  const stopPct = Number(data?.config?.stop_loss_pct || (useStopLoss ? stopLossPct : 1.0) || 1.0);
+                  const orderBudgetKrw = Number(data?.config?.order_amount_krw || orderAmountKrw || 2000000);
+                  const unitPriceKrw = cand.is_us ? Math.round((cand.price || 0) * fxRate) : (cand.price || 0);
 
-                const rankMedal = idx === 0 ? "🥇 #1" : idx === 1 ? "🥈 #2" : idx === 2 ? "🥉 #3" : `#${idx + 1}`;
+                  const targetPrice = cand.is_us
+                    ? Number(((cand.price || 0) * (1 + targetPct / 100)).toFixed(2))
+                    : Math.round((cand.price || 0) * (1 + targetPct / 100));
+                  const targetUpside = cand.is_us
+                    ? Number((targetPrice - (cand.price || 0)).toFixed(2))
+                    : Math.round(targetPrice - (cand.price || 0));
 
-                return (
-                  <div
-                    key={`${cand?.symbol || "cand"}-${idx}`}
-                    className="p-4 rounded-2xl bg-zinc-950/85 hover:bg-zinc-900/90 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-md group relative overflow-hidden"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      {/* 좌측: 순위, 마켓, 종목명, AI 스코어 */}
-                      <div className="space-y-1.5 flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded-lg text-xs font-black ${rankBadgeClass}`}>
+                  const stopPrice = cand.is_us
+                    ? Number(((cand.price || 0) * (1 - stopPct / 100)).toFixed(2))
+                    : Math.round((cand.price || 0) * (1 - stopPct / 100));
+                  const stopDownside = cand.is_us
+                    ? Number(((cand.price || 0) - stopPrice).toFixed(2))
+                    : Math.round((cand.price || 0) - stopPrice);
+
+                  const recShares = unitPriceKrw > 0 ? Math.floor(orderBudgetKrw / unitPriceKrw) : 0;
+                  const recAmountKrw = recShares * unitPriceKrw;
+                  const rrRatio = stopPct > 0 ? (targetPct / stopPct).toFixed(1) : "4.0";
+
+                  // 순위 뱃지 스타일링 (1위 골드, 2위 실버, 3위 브론즈)
+                  const rankBadgeClass =
+                    idx === 0
+                      ? "bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-500 text-black font-black shadow-md shadow-amber-500/25 border border-amber-300/60"
+                      : idx === 1
+                      ? "bg-gradient-to-r from-slate-200 via-zinc-200 to-slate-400 text-black font-black shadow-md shadow-zinc-400/20 border border-slate-300/60"
+                      : idx === 2
+                      ? "bg-gradient-to-r from-amber-700 via-orange-600 to-amber-600 text-white font-black shadow-md shadow-orange-500/20 border border-amber-500/40"
+                      : "bg-zinc-800/90 text-gray-300 font-bold border border-white/10";
+
+                  const rankMedal = idx === 0 ? "🥇 #1" : idx === 1 ? "🥈 #2" : idx === 2 ? "🥉 #3" : `#${idx + 1}`;
+
+                  return (
+                    <div
+                      key={`${cand?.symbol || "cand"}-${idx}`}
+                      className="p-4 sm:p-5 rounded-2xl bg-zinc-950/85 hover:bg-zinc-900/95 border border-white/10 hover:border-emerald-500/40 transition-all duration-200 shadow-lg group relative overflow-hidden space-y-3"
+                    >
+                      {/* 1~3위 배경 미세 글로우 */}
+                      {idx === 0 && <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />}
+                      {idx === 1 && <div className="absolute top-0 right-0 w-48 h-48 bg-slate-300/5 rounded-full blur-2xl pointer-events-none" />}
+                      {idx === 2 && <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />}
+
+                      {/* 1. 상단 타이틀 바: 순위, 마켓, 종목명/코드, AI 스코어, 현재가 및 등락률 */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.07] relative z-10">
+                        {/* 좌측: 순위 + 마켓 + 종목명/코드 + AI 점수 */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black shrink-0 ${rankBadgeClass}`}>
                             {rankMedal}
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-black border font-mono flex items-center gap-1 ${candMarket.style}`}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-black border font-mono shrink-0 flex items-center gap-1 ${candMarket.style}`}
                           >
                             <span>{candMarket.flag}</span>
                             <span>{candMarket.label}</span>
-                            <span className="text-[9px] opacity-80 font-sans">
-                              ({candMarket.isUS ? "해외" : "국내"})
+                          </span>
+                          <div className="flex items-baseline gap-1.5 min-w-0">
+                            <span
+                              className="font-black text-white text-base sm:text-lg group-hover:text-emerald-300 transition-colors truncate max-w-[130px] sm:max-w-[210px]"
+                              title={cand.name}
+                            >
+                              {cand.name}
                             </span>
-                          </span>
-                          <span className="font-black text-white text-sm sm:text-base group-hover:text-emerald-300 transition-colors truncate">
-                            {cand.name}
-                          </span>
-                          <span className="text-xs text-gray-400 font-mono font-bold">
-                            {cand.symbol}
-                          </span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-[10px] font-black flex items-center gap-1 shadow-sm">
-                            <Sparkles className="w-3 h-3 text-emerald-400" />
+                            <span className="text-xs text-gray-400 font-mono font-bold shrink-0">
+                              {cand.symbol}
+                            </span>
+                          </div>
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/35 text-emerald-300 text-[11px] font-black flex items-center gap-1 shrink-0 shadow-sm ml-auto sm:ml-0">
+                            <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
                             AI {cand.ai_score || 99}점
                           </span>
                         </div>
 
-                        {/* AI 시그널 브리핑 칩 (Chips) */}
-                        {parsed.chips.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {parsed.chips.map((chip, cIdx) => (
-                              <span
-                                key={cIdx}
-                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 ${chip.color}`}
-                              >
-                                {chip.icon && <span>{chip.icon}</span>}
-                                <span>{chip.label}</span>
-                              </span>
-                            ))}
+                        {/* 우측: 현재가 & 당일 등락률 */}
+                        <div className="flex items-center sm:items-end justify-between sm:justify-end gap-3 font-mono shrink-0">
+                          <div className="text-left sm:text-right">
+                            <div className="text-base sm:text-lg font-black text-white leading-tight">
+                              {cand.is_us ? `$${Number(cand.price || 0).toLocaleString()}` : `₩${Number(cand.price || 0).toLocaleString()}`}
+                            </div>
+                            {cand.is_us && (
+                              <div className="text-[10px] text-gray-400 font-bold">
+                                ≈ ₩{krwEquiv?.toLocaleString()}
+                              </div>
+                            )}
                           </div>
-                        )}
-
-                        {parsed.text && (
-                          <p className="text-[11px] text-gray-400 pt-0.5 leading-snug">
-                            {parsed.text}
-                          </p>
-                        )}
+                          <div
+                            className={`text-xs font-black inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${
+                              isPositive
+                                ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                                : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                            }`}
+                          >
+                            <span>{isPositive ? "▲" : "▼"}</span>
+                            <span>{isPositive ? "+" : ""}{cand.change_pct}%</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* 우측: 가격 & 등락률 */}
-                      <div className="text-right shrink-0 font-mono space-y-0.5">
-                        <div className="text-base sm:text-lg font-black text-white">
-                          {cand.is_us ? `$${Number(cand.price || 0).toLocaleString()}` : `₩${Number(cand.price || 0).toLocaleString()}`}
-                        </div>
-                        {cand.is_us && (
-                          <div className="text-[11px] text-gray-400 font-bold">
-                            ≈ ₩{krwEquiv?.toLocaleString()}
+                      {/* 2. AI 퀀트 매수 전략 및 목표가/손절가 브리핑 카드 */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs relative z-10">
+                        {/* 🎯 AI 1차 목표가 */}
+                        <div className="flex sm:flex-col justify-between items-center sm:items-start p-1.5 px-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/20">
+                          <div className="text-[11px] text-gray-400 flex items-center gap-1">
+                            <Target className="w-3 h-3 text-emerald-400 shrink-0" />
+                            <span>AI 익절 목표 (+{targetPct}%)</span>
                           </div>
-                        )}
-                        <div
-                          className={`text-xs font-black inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md ${
-                            isPositive
-                              ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-                              : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                          }`}
-                        >
-                          {isPositive ? "+" : ""}
-                          {cand.change_pct}%
+                          <div className="font-mono font-black text-emerald-400 text-xs sm:text-sm mt-0.5 flex items-baseline gap-1">
+                            <span>{cand.is_us ? `$${targetPrice}` : `₩${targetPrice.toLocaleString()}`}</span>
+                            <span className="text-[10px] text-emerald-300/80 font-normal">
+                              (+{cand.is_us ? `$${targetUpside}` : `₩${targetUpside.toLocaleString()}`})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 🛡️ AI 방어 손절선 */}
+                        <div className="flex sm:flex-col justify-between items-center sm:items-start p-1.5 px-2 rounded-lg bg-blue-500/[0.06] border border-blue-500/20">
+                          <div className="text-[11px] text-gray-400 flex items-center gap-1">
+                            <ShieldAlert className="w-3 h-3 text-blue-400 shrink-0" />
+                            <span>AI 방어 손절 (-{stopPct}%)</span>
+                          </div>
+                          <div className="font-mono font-black text-blue-400 text-xs sm:text-sm mt-0.5 flex items-baseline gap-1">
+                            <span>{cand.is_us ? `$${stopPrice}` : `₩${stopPrice.toLocaleString()}`}</span>
+                            <span className="text-[10px] text-blue-300/80 font-normal">
+                              (-{cand.is_us ? `$${stopDownside}` : `₩${stopDownside.toLocaleString()}`})
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 💼 1회 진입 권장 (예산 기준) */}
+                        <div className="flex sm:flex-col justify-between items-center sm:items-start p-1.5 px-2 rounded-lg bg-zinc-900/70 border border-white/5">
+                          <div className="text-[11px] text-gray-400 flex items-center gap-1">
+                            <Coins className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span>1회 권장 매수량</span>
+                          </div>
+                          <div className="font-mono text-xs sm:text-sm mt-0.5 flex items-baseline gap-1">
+                            {recShares > 0 ? (
+                              <>
+                                <span className="text-amber-300 font-black">{recShares.toLocaleString()}주</span>
+                                <span className="text-[10px] text-gray-400 font-normal">
+                                  (약 {Math.round(recAmountKrw / 10000).toLocaleString()}만원)
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-gray-400 text-xs">예산 조정 필요</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. AI 시그널 브리핑 칩 (중복 완전 제거 및 정돈) */}
+                      {parsed.chips.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-0.5 relative z-10">
+                          {parsed.chips.map((chip, cIdx) => (
+                            <span
+                              key={cIdx}
+                              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 shadow-xs ${chip.color}`}
+                            >
+                              {chip.icon && <span>{chip.icon}</span>}
+                              <span>{chip.label}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 기술 지표 요약 (CVD / OBV / 이평선) */}
+                      {parsed.techSummary && (
+                        <div className="text-[11px] text-gray-300 bg-white/[0.02] border border-white/5 rounded-lg px-2.5 py-1.5 flex items-center gap-2 font-mono relative z-10">
+                          <Activity className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span className="text-gray-400 text-[10px] shrink-0">기술 지표:</span>
+                          <span className="truncate">{parsed.techSummary}</span>
+                        </div>
+                      )}
+
+                      {/* 부가 브리핑 텍스트 */}
+                      {parsed.text && (
+                        <p className="text-[11px] text-gray-400 pl-1 leading-snug relative z-10">
+                          💡 {parsed.text}
+                        </p>
+                      )}
+
+                      {/* 4. 사용자 편의 액션 바: 차트 보기 & 종목코드 복사 & 손익비 지표 */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs relative z-10">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/stock/${cand.symbol}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/90 hover:bg-emerald-600 hover:text-white text-gray-300 text-[11px] font-bold transition-all border border-white/10 hover:border-emerald-500 shadow-xs cursor-pointer group/btn"
+                          >
+                            <BarChart2 className="w-3.5 h-3.5 text-emerald-400 group-hover/btn:text-white" />
+                            <span>차트·호가 상세</span>
+                            <ExternalLink className="w-3 h-3 opacity-60 group-hover/btn:opacity-100" />
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopySymbol(e, cand.symbol)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-gray-400 hover:text-gray-200 text-[11px] font-mono transition-all border border-white/5 cursor-pointer"
+                            title="종목코드 복사"
+                          >
+                            {copiedSymbol === cand.symbol ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-400" />
+                                <span className="text-emerald-400 font-bold">복사됨</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>코드 복사</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        <div className="text-[10px] text-gray-500 font-mono hidden sm:flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 inline-block" />
+                          <span>손익비 {rrRatio}:1 퀀트 타점</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
