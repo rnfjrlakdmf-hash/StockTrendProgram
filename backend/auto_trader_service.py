@@ -286,13 +286,13 @@ def _default_state() -> Dict[str, Any]:
             "paper_seed_krw": 20000000,  # 모의투자 시드머니 기본값 2,000만원 영구 유지
             "initial_capital_krw": 20000000,
             "max_total_invest_krw": 10000000,  # 실전/연동 계좌에서 AI 자동매매가 사용할 수 있는 최대 총 투자 한도 금액 (원)
-            "order_amount_krw": 2000000,
+            "order_amount_krw": 1400000,
             "max_positions": 7,
-            "take_profit_pct": 4.0,
+            "take_profit_pct": 2.0,
             "use_stop_loss": False,  # False = 무손절 모드 (손해 보고는 절대 안 팔고 수익 날 때만 익절!)
             "auto_averaging_down": True,  # True = -5% 하락 시 1회 자동 물타기(평단가 낮추기)
             "stop_loss_pct": 2.5,
-            "trailing_stop_pct": 1.2,
+            "trailing_stop_pct": 1.0,
             "min_ai_score": 68,
             "allow_off_hours_sim": False,  # 대표님 원칙: 모의투자도 실전과 100% 동일하게 정규장 거래시간만 엄수!
             "telegram_notify": True,
@@ -986,7 +986,7 @@ def _send_batch_trade_notification(
 
     if action == "BUY":
         total_spent_krw = sum(it.get("amount_krw", 0) for it in items)
-        tp_pct = float(cfg.get("take_profit_pct", 4.0))
+        tp_pct = float(cfg.get("take_profit_pct", 2.0))
 
         if len(items) == 1:
             it = items[0]
@@ -1374,10 +1374,10 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             remaining_positions.append(pos)
             continue
 
-        tp_pct = float(cfg.get("take_profit_pct", 4.0))
+        tp_pct = float(cfg.get("take_profit_pct", 2.0))
 
         sl_pct = float(cfg.get("stop_loss_pct", 2.5))
-        ts_pct = float(cfg.get("trailing_stop_pct", 1.2))
+        ts_pct = float(cfg.get("trailing_stop_pct", 1.0))
         use_sl = bool(cfg.get("use_stop_loss", False))
         auto_avg = bool(cfg.get("auto_averaging_down", True))
 
@@ -1389,7 +1389,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 for p in state["positions"]
             )
             rem_cap = max(0, max_invest_cap - curr_invested_krw) if max_invest_cap > 0 else int(acct.get("cash_krw", 0))
-            add_budget = min(int(cfg.get("order_amount_krw", 2000000) * 0.5), int(acct.get("cash_krw", 0)), rem_cap)
+            add_budget = min(int(cfg.get("order_amount_krw", 1400000) * 0.5), int(acct.get("cash_krw", 0)), rem_cap)
             add_qty = int(add_budget // (live_price * unit_mult)) if (live_price * unit_mult) > 0 else 0
             if add_qty >= 1:
                 kis_tag = ""
@@ -1441,11 +1441,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                         )
 
 
-        sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct)
+        sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct, use_sl=use_sl)
         if not sell_reason:
             if pnl_pct >= tp_pct:
                 sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}%)"
-            elif peak_pct >= 2.2 and drop_from_peak >= ts_pct and pnl_pct > 0.5:
+            elif peak_pct >= max(1.4, tp_pct * 0.7) and drop_from_peak >= ts_pct and pnl_pct > 0.4:
                 sell_reason = f"트레일링 수익 보존 (+{pnl_pct:.2f}%)"
             elif use_sl and pnl_pct <= -abs(sl_pct):
                 sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
@@ -1610,7 +1610,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 kis_confirmed = True
 
             acct["cash_krw"] -= buy_amount_krw
-            tp_pct = float(cfg.get("take_profit_pct", 4.0))
+            tp_pct = float(cfg.get("take_profit_pct", 2.0))
             sl_pct = float(cfg.get("stop_loss_pct", 2.5))
 
             new_pos = {
@@ -1864,6 +1864,22 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
         if not state.get("positions") and state.get("paper_positions_backup"):
             state["positions"] = state.get("paper_positions_backup", [])
 
+    # [실시간 목표가·손절가 즉시 재계산] 대표님이 익절률/손절률을 변경하는 즉시 보유 종목 전체에 반영
+    cur_tp = float(state["config"].get("take_profit_pct", 2.0))
+    cur_sl = float(state["config"].get("stop_loss_pct", 2.5))
+    for p in state.get("positions", []):
+        avg = float(p.get("avg_price", 0) or 0)
+        is_us = bool(p.get("is_us") or any(c.isalpha() for c in str(p.get("symbol", ""))))
+        if avg > 0:
+            p["target_price"] = round(avg * (1.0 + cur_tp / 100.0), 2 if is_us else 0)
+            p["stop_price"] = round(avg * (1.0 - cur_sl / 100.0), 2 if is_us else 0)
+    for p in state.get("paper_positions_backup", []):
+        avg = float(p.get("avg_price", 0) or 0)
+        is_us = bool(p.get("is_us") or any(c.isalpha() for c in str(p.get("symbol", ""))))
+        if avg > 0:
+            p["target_price"] = round(avg * (1.0 + cur_tp / 100.0), 2 if is_us else 0)
+            p["stop_price"] = round(avg * (1.0 - cur_sl / 100.0), 2 if is_us else 0)
+
     save_state(state)
     return get_dashboard_summary(state)
 
@@ -1874,13 +1890,14 @@ def _evaluate_ai_smart_exit(
     tp_pct: float,
     sl_pct: float,
     ts_pct: float,
+    use_sl: bool = False,
 ) -> Optional[str]:
     """
     [🧠 AI 실시간 상승탄력 둔화 감지 & 자율 리스크 관리 매도 판단 엔진]
-    굳이 +4.0% 목표가까지 가지 않더라도:
-    1) 수익권(+0.35% ~ +3.9%)에서 고점 대비 밀리거나 당일 상승 탄력이 둔화되면 '더 오르기 어렵다'고 스스로 판단해 즉시 조기 익절!
-    2) 반대로 상승 동력이 죽고 하락(-1.0% 이하 & 수급 약세)하여 더 들고 있으면 손실만 커질 것으로 판단되면,
-       -2.5%까지 방치하지 않고 선제적으로 리스크 관리 커트(교체 매도) 후 수급이 살아있는 신규 급등주로 즉시 갈아탑니다.
+    1) 목표 익절가(+2.0%) 달성 시 즉시 전량 익절 확정!
+    2) 고점 도달 후 고점 대비 ts_pct(1.0%p) 이상 밀릴 때 트레일링 스탑으로 수익 보존!
+    3) 소폭 수익권(+1.0% 이상)에서 고점 대비 0.5%p 이상 밀리며 탄력 둔화 시 선제 조기 익절!
+    4) 원금 손절 모드(use_sl=True)일 때만 손실 컷 가동 (use_sl=False 시 무손절 원칙 엄수!)
     """
     avg_p = float(pos.get("avg_price", 0) or 0)
     cur_p = float(pos.get("current_price", avg_p) or avg_p)
@@ -1893,25 +1910,24 @@ def _evaluate_ai_smart_exit(
     drop_from_peak = round(peak_pct - pnl_pct, 2)
     intraday_chg = float((quote or {}).get("change_pct", 0.0) or 0.0)
 
-    # 1. 목표 익절가(+4%) 달성 시 칼익절
+    # 1. 목표 익절가(+2.0% 등) 달성 시 칼익절
     if pnl_pct >= tp_pct:
         return f"🎯 [AI 목표돌파 익절] 목표 수익률(+{pnl_pct:.2f}%) 달성 전량 수익 확정"
 
-    # 2. 굳이 +4%가 아니어도 +1.0% 이상 수익권에서 고점 대비 0.35%p 이상 밀리면 -> 탄력 둔화로 판단해 즉시 조기 익절!
-    if pnl_pct >= 1.0 and drop_from_peak >= 0.35:
+    # 2. 트레일링 스탑: 고점(+1.4% 이상) 저항 후 ts_pct(1.0%p) 이상 밀릴 때 수익 보존
+    if peak_pct >= max(1.4, tp_pct * 0.7) and drop_from_peak >= ts_pct and pnl_pct >= 0.4:
+        return f"🧠 [AI 트레일링 익절] 고점(+{peak_pct:.2f}%) 대비 {drop_from_peak:.2f}%p 하락 감지 → +{pnl_pct:.2f}% 수익 보존"
+
+    # 3. 소폭 수익권(+1.0% 이상)에서 고점 대비 0.5%p 이상 밀리면 -> 탄력 둔화로 판단해 조기 익절
+    if pnl_pct >= 1.0 and drop_from_peak >= 0.5:
         return f"🧠 [AI 탄력둔화 조기익절] 고점(+{peak_pct:.2f}%) 저항 후 상승세 둔화 감지 → +{pnl_pct:.2f}% 수익 선제 확정"
 
-    # 3. 소폭 수익권(+0.35% ~ +0.99%)이라도 고점 대비 0.25%p 이상 밀리거나 당일 호가 탄력이 약해지면 -> 마이너스 전환 전 알짜 조기 익절!
-    if 0.35 <= pnl_pct < 1.0 and (drop_from_peak >= 0.25 or intraday_chg < 0.3):
-        return f"🧠 [AI 자율판단 조기익절] 추가 상승 여력 약화 감지 → 꺾이기 전 +{pnl_pct:.2f}% 수익 조기 챙김"
-
-    # 4. 실시간 리스크 관리: 상승 동력이 소멸되어 -1.0% 이하로 밀리면서 반등 탄력이 없을 때 -> 더 떨어지기 전에 선제 정리 후 강세주로 교체!
-    if pnl_pct <= -1.0 and (intraday_chg <= 0.2 or drop_from_peak >= 1.0):
-        return f"🛡️ [AI 리스크관리 교체매도] 상승탄력 소멸·추가하락 방어 ({pnl_pct:+.2f}%) → 강세 주도주로 시드 즉시 교체"
-
-    # 5. 긴급 손절선 도달 시 방어
-    if pnl_pct <= -abs(sl_pct):
-        return f"🛡️ [AI 리스크 방어선 작동] 손실 제한 기준 도달 ({pnl_pct:+.2f}%) 즉시 현금화"
+    # 4. 손절 옵션이 명시적으로 켜져 있을 때만(use_sl=True) 손절/리스크 관리 실행 (False면 무손절 원칙 엄수!)
+    if use_sl:
+        if pnl_pct <= -1.0 and (intraday_chg <= 0.2 or drop_from_peak >= 1.0):
+            return f"🛡️ [AI 리스크관리 교체매도] 상승탄력 소멸·추가하락 방어 ({pnl_pct:+.2f}%) → 강세 주도주로 시드 즉시 교체"
+        if pnl_pct <= -abs(sl_pct):
+            return f"🛡️ [AI 리스크 방어선 작동] 손실 제한 기준 도달 ({pnl_pct:+.2f}%) 즉시 현금화"
 
     return None
 
@@ -1959,9 +1975,10 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         invest_ratio = 0.72
         per_stock_budget_krw = max(50000, int((effective_seed_krw * invest_ratio) // paper_max_pos))
 
-    tp_pct = float(cfg.get("take_profit_pct", 4.0) or 4.0)
+    tp_pct = float(cfg.get("take_profit_pct", 2.0) or 2.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
-    ts_pct = float(cfg.get("trailing_stop_pct", 1.2) or 1.2)
+    ts_pct = float(cfg.get("trailing_stop_pct", 1.0) or 1.0)
+    use_sl = bool(cfg.get("use_stop_loss", False))
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
     seed_label_man = f"{effective_seed_krw // 10000:,}만원" if effective_seed_krw >= 10000 else f"{effective_seed_krw:,}원"
 
@@ -2071,7 +2088,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         # [핵심] 장이 열려 있을 때 AI 스마트 탄력·리스크 판단 엔진(_evaluate_ai_smart_exit) 가동!
         sell_reason = ""
         if is_market_open_for_pos:
-            sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct)
+            sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct, use_sl=use_sl)
 
         if sell_reason:
             proceeds_krw = int(round(cur_p_calc * int(pos.get("qty", 1)) * unit_m))
@@ -2255,7 +2272,7 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         # 보유 중인 실전 종목들의 실시간 현재가·수익률·평가손익을 조회할 때마다 실시간 갱신!
         fx_rate_live = 1355.0
         cfg_live = state.get("config", {})
-        tp_pct_live = float(cfg_live.get("take_profit_pct", 4.0))
+        tp_pct_live = float(cfg_live.get("take_profit_pct", 2.0))
         sl_pct_live = float(cfg_live.get("stop_loss_pct", 2.5))
         use_sl_live = bool(cfg_live.get("use_stop_loss", False))
         need_cycle_trigger = False
