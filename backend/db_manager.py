@@ -2833,60 +2833,112 @@ def sync_live_market_search_trends():
         cursor = conn.cursor()
         ensure_search_keyword_table(cursor)
         
-        # 1. 네이버 실시간 검색 상위 종목 크롤링
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'}
-        r = requests.get('https://finance.naver.com/sise/lastsearch2.naver', headers=headers, timeout=5)
-        r.encoding = 'cp949'
-        soup = BeautifulSoup(r.text, 'html.parser')
-        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://m.stock.naver.com/'
+        }
+
+        # 1. 네이버 모바일 공식 실시간 인기 검색 종목 (종목명, 코드, 실시간 등락률)
+        popular_stocks = {}
+        try:
+            url_pop = "https://m.stock.naver.com/front-api/market/popularStock?nationType=KOR"
+            res_pop = requests.get(url_pop, headers=headers, timeout=4)
+            if res_pop.status_code == 200:
+                data_pop = res_pop.json().get("result", [])
+                for item in data_pop:
+                    p_info = item.get("priceInfo", {})
+                    code = p_info.get("id") or p_info.get("itemCode")
+                    name = p_info.get("name")
+                    fluc_type = p_info.get("fluctuationsType", "UNCHANGED")
+                    fluc_ratio = str(p_info.get("fluctuationsRatio", "0.00"))
+                    
+                    if fluc_type == "FALLING" and not fluc_ratio.startswith("-"):
+                        change_str = f"-{fluc_ratio}%"
+                    elif fluc_type in ["RISING", "UPPER_LIMIT"] and not fluc_ratio.startswith("+"):
+                        change_str = f"+{fluc_ratio}%"
+                    elif fluc_ratio in ["0", "0.0", "0.00"]:
+                        change_str = "0.00%"
+                    else:
+                        change_str = f"{fluc_ratio}%" if fluc_ratio.startswith("-") or fluc_ratio.startswith("+") else f"+{fluc_ratio}%"
+
+                    if code and name:
+                        popular_stocks[code] = {
+                            "name": name,
+                            "change": change_str,
+                            "ranking": item.get("ranking", 99)
+                        }
+        except Exception as ep:
+            print(f"[Search Trends] popularStock fetch error: {ep}")
+
+        # 2. 네이버 검색 상위 클릭수 (sumCount) 연동
+        search_counts = {}
+        total_sum_count = 0
+        try:
+            url_top = "https://stock.naver.com/api/domestic/market/searchTop?nationType=KOR&startIdx=0&pageSize=20"
+            res_top = requests.get(url_top, headers=headers, timeout=4)
+            if res_top.status_code == 200:
+                for item in res_top.json():
+                    code = item.get("reutersCode")
+                    cnt = int(item.get("sumCount", 0))
+                    ranking = int(item.get("ranking", 99))
+                    if code:
+                        search_counts[code] = {"count": cnt, "ranking": ranking}
+                        total_sum_count += cnt
+        except Exception as et:
+            print(f"[Search Trends] searchTop fetch error: {et}")
+
+        # 3. 실시간 크롤링 종목 리스트 구성
         crawled_stocks = []
-        for tr in soup.select('table.type_5 tr'):
-            a = tr.select_one('a.tltle')
-            if a:
-                ratio_td = tr.select('td.number')
-                search_ratio = ratio_td[0].text.strip() if ratio_td else '0%'
-                change = ratio_td[3].text.strip() if len(ratio_td) > 3 else ''
-                crawled_stocks.append({
-                    'name': a.text.strip(),
-                    'code': a['href'].split('code=')[-1],
-                    'ratio': search_ratio,
-                    'change': change
-                })
-                
-        # 2. 크롤링된 실시간 상위 종목 DB 업데이트
-        for i, s in enumerate(crawled_stocks[:15], 1):
-            kw = s['name']
-            ratio_val = float(s['ratio'].replace('%', '')) if '%' in s['ratio'] else 1.0
-            computed_count = int(ratio_val * 35) + (16 - i) * 8
+        sorted_pop_codes = sorted(popular_stocks.keys(), key=lambda c: popular_stocks[c]["ranking"])
+        for code in sorted_pop_codes:
+            info = popular_stocks[code]
+            cnt_info = search_counts.get(code, {})
+            cnt = cnt_info.get("count", 0)
+            if cnt <= 0:
+                cnt = max(500, 2000 - info["ranking"] * 100)
             
-            cursor.execute("SELECT id, count FROM search_keyword_logs WHERE keyword = ?", (kw,))
-            row = cursor.fetchone()
-            if row:
-                cursor.execute("""
-                    UPDATE search_keyword_logs
-                    SET count = MAX(count, ?), search_ratio = ?, price_change = ?, last_searched = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                """, (computed_count, s['ratio'], s['change'], row[0]))
-            else:
-                cursor.execute("""
-                    INSERT INTO search_keyword_logs (keyword, source, count, search_ratio, price_change, last_searched)
-                    VALUES (?, 'portal_live', ?, ?, ?, CURRENT_TIMESTAMP)
-                """, (kw, computed_count, s['ratio'], s['change']))
-                
-        # 3. 미국 주요 핫 키워드 추가
+            ratio_pct = f"{(cnt / max(1, total_sum_count) * 100):.2f}%" if total_sum_count > 0 else f"{max(1.0, 16.0 - info['ranking']):.2f}%"
+            crawled_stocks.append({
+                "code": code,
+                "name": info["name"],
+                "count": cnt,
+                "ratio": ratio_pct,
+                "change": info["change"],
+                "ranking": info["ranking"]
+            })
+
+        # 4. 실시간 상위 종목 DB 업데이트 (과거 낡은 데이터 최신화)
+        if crawled_stocks:
+            for s in crawled_stocks[:15]:
+                kw = s["name"]
+                cursor.execute("SELECT id FROM search_keyword_logs WHERE keyword = ?", (kw,))
+                row = cursor.fetchone()
+                if row:
+                    cursor.execute("""
+                        UPDATE search_keyword_logs
+                        SET count = ?, search_ratio = ?, price_change = ?, last_searched = CURRENT_TIMESTAMP, source = 'portal_live'
+                        WHERE id = ?
+                    """, (s["count"], s["ratio"], s["change"], row[0]))
+                else:
+                    cursor.execute("""
+                        INSERT INTO search_keyword_logs (keyword, source, count, search_ratio, price_change, last_searched)
+                        VALUES (?, 'portal_live', ?, ?, ?, CURRENT_TIMESTAMP)
+                    """, (kw, s["count"], s["ratio"], s["change"]))
+
+        # 5. 미국 주요 핫 키워드 추가 (보조)
         us_hot = [
-            ("엔비디아 (NVDA)", "5.2%", "+2.15%"),
-            ("테슬라 (TSLA)", "4.8%", "-1.30%"),
-            ("팔란티어 (PLTR)", "3.5%", "+4.80%"),
-            ("애플 (AAPL)", "2.9%", "+0.45%")
+            ("엔비디아 (NVDA)", "5.2%", "+2.15%", 2500),
+            ("테슬라 (TSLA)", "4.8%", "-1.30%", 2300),
+            ("팔란티어 (PLTR)", "3.5%", "+4.80%", 1800),
+            ("애플 (AAPL)", "2.9%", "+0.45%", 1500)
         ]
-        for kw, ratio, chg in us_hot:
+        for kw, ratio, chg, base_cnt in us_hot:
             cursor.execute("SELECT id FROM search_keyword_logs WHERE keyword = ?", (kw,))
             if not cursor.fetchone():
                 cursor.execute("""
                     INSERT INTO search_keyword_logs (keyword, source, count, search_ratio, price_change, last_searched)
-                    VALUES (?, 'us_market', 75, ?, ?, CURRENT_TIMESTAMP)
-                """, (kw, ratio, chg))
+                    VALUES (?, 'us_market', ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (kw, base_cnt, ratio, chg))
                 
         conn.commit()
     except Exception as e:
