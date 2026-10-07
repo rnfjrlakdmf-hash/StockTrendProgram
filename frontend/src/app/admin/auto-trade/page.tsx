@@ -2574,19 +2574,21 @@ export default function AdminAutoTradePage() {
                   const targetPct = Number(data?.config?.take_profit_pct || takeProfitPct || 4.0);
                   const stopPct = Number(data?.config?.stop_loss_pct || (useStopLoss ? stopLossPct : 1.0) || 1.0);
 
-                  // 대표님의 총 운용자산(1,000만원) 및 7종목 균등 분할 고려
-                  const totalSeedOrLimit = Math.max(
-                    Number(data?.config?.max_total_invest_krw || 0),
-                    Number(data?.config?.paper_seed_krw || 0),
-                    activePaperSeed,
-                    10000000
-                  );
+                  // 사용자가 설정한 실제 1회 주문금액 및 총 투자한도 정확히 반영 (10만원, 5만원 등 소액 완벽 지원)
+                  const configuredOrder = Number(data?.config?.order_amount_krw || orderAmountKrw || 0);
+                  const configuredMaxCap = Number(data?.config?.max_total_invest_krw || maxTotalInvestKrw || 0);
                   const maxPos = Number(data?.config?.max_positions || maxPositions || 7);
-                  const evenAllocKrw = Math.floor(totalSeedOrLimit / Math.max(1, maxPos)); // 1000만원 / 7 ≈ 142만원
-
-                  // 설정된 1회 주문금액이 너무 작으면(소액 테스트 잔여값 등) 7종목 균등 분할액(약 140만원) 자동 적용
-                  const rawOrderBudget = Number(data?.config?.order_amount_krw || orderAmountKrw || 0);
-                  const orderBudgetKrw = rawOrderBudget >= 200000 ? rawOrderBudget : evenAllocKrw;
+                  
+                  // 1회 주문 예산 산출: 설정된 1회 주문금액이 있으면 최우선 반영, 없으면 총한도/종목수
+                  let orderBudgetKrw = 100000; // 기본 10만원
+                  if (configuredOrder > 0) {
+                    orderBudgetKrw = configuredOrder;
+                  } else if (configuredMaxCap > 0) {
+                    orderBudgetKrw = Math.floor(configuredMaxCap / Math.max(1, maxPos));
+                  } else if (activePaperSeed > 0) {
+                    orderBudgetKrw = Math.floor(activePaperSeed / Math.max(1, maxPos));
+                  }
+                  if (orderBudgetKrw < 10000) orderBudgetKrw = 10000;
 
                   const unitPriceKrw = cand.is_us ? Math.round((cand.price || 0) * fxRate) : (cand.price || 0);
 
@@ -2718,18 +2720,20 @@ export default function AdminAutoTradePage() {
                         <div className="text-right shrink-0">
                           <div className="text-[11px] text-gray-400 font-bold flex items-center justify-end gap-1">
                             <Coins className="w-3.5 h-3.5 text-amber-400" />
-                            <span>1회 권장 매수 (1종목 {Math.round(orderBudgetKrw / 10000)}만원 배정)</span>
+                            <span>1회 권장 매수 (1종목 {orderBudgetKrw >= 10000 ? `${Math.round(orderBudgetKrw / 10000)}만원` : `${orderBudgetKrw.toLocaleString()}원`} 배정)</span>
                           </div>
                           <div className="font-mono text-sm sm:text-base font-black text-amber-300 mt-0.5">
                             {recShares > 0 ? (
                               <>
                                 <span className="text-amber-300 font-black">{recShares.toLocaleString()}주</span>
                                 <span className="text-xs text-gray-300 ml-1.5 font-bold">
-                                  (약 {Math.round(recAmountKrw / 10000).toLocaleString()}만원)
+                                  (약 {recAmountKrw.toLocaleString()}원)
                                 </span>
                               </>
                             ) : (
-                              <span className="text-gray-400 text-xs">예산 조정 필요</span>
+                              <span className="text-amber-400/90 text-[11px] font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                ⚠️ 1주당 {unitPriceKrw.toLocaleString()}원 (예산 {orderBudgetKrw.toLocaleString()}원 초과)
+                              </span>
                             )}
                           </div>
                         </div>

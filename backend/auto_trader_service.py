@@ -1292,13 +1292,39 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
     effective_single_limit = min(order_budget, max_invest_cap) if max_invest_cap > 0 else order_budget
 
     universe = list(KR_UNIVERSE if active_market == "KR" else US_UNIVERSE)
+    existing_syms = {u["symbol"] for u in universe}
     closing_scanner_map: Dict[str, Dict[str, Any]] = {}
+
+    # [실시간 핫 종목 동적 유입 엔진 - 매일 새로운 주도주 발굴]
+    try:
+        from korea_data import fetch_naver_ranking_data
+        target_nation = "KOR" if active_market == "KR" else "USA"
+        search_top = fetch_naver_ranking_data(target_nation, "searchTop") or []
+        quant_top = fetch_naver_ranking_data(target_nation, "quantTop") or []
+        dynamic_hot_items = (search_top[:10] + quant_top[:10])
+
+        for h_item in dynamic_hot_items:
+            raw_sym = str(h_item.get("itemcode") or h_item.get("reutersCode") or h_item.get("symbol") or "").strip()
+            # reutersCode에서 거래소 접미사 제거 (예: TSLA.O -> TSLA)
+            clean_sym = raw_sym.split(".")[0].upper() if active_market == "US" else raw_sym
+            if clean_sym and clean_sym not in existing_syms:
+                name = str(h_item.get("itemname") or h_item.get("name") or clean_sym).strip()
+                sec_desc = "🔥 실시간 모바일 인기검색 Top" if h_item in search_top else "⚡ 실시간 당일 거래량 급증 Top"
+                universe.append({
+                    "symbol": clean_sym,
+                    "name": name,
+                    "sector": sec_desc,
+                    "tier": "US_EMERGING" if active_market == "US" else "MID_MOMENTUM",
+                    "exchange": "NASD" if active_market == "US" else "KRX",
+                })
+                existing_syms.add(clean_sym)
+    except Exception as e:
+        print(f"[AutoTrader] Dynamic popular stock injection warning: {e}")
 
     if active_market == "KR":
         try:
             from routes.closing_scanner import generate_closing_scanner_data
             scanner_data = generate_closing_scanner_data() or {}
-            existing_syms = {u["symbol"] for u in universe}
             for d_key in (0, 1):
                 day_bucket = scanner_data.get(d_key, {})
                 for s_item in day_bucket.get("items", []):
@@ -1335,17 +1361,21 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
                 scored["reason"] = f"🔥[장마감 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
             scored["reason"] = "🇰🇷[주간 한국장 실시간 타점] · " + scored["reason"]
         else:
-            # 야간 미국장 세션: 해외 유망 기술주 및 3배 레버리지 ETF 실시간 모멘텀 가산점
             scored["ai_score"] = min(99, scored["ai_score"] + 8)
             scored["reason"] = "🇺🇸[야간 미국장 실시간 타점] · " + scored["reason"]
 
         unit_krw = scored["price"] * (fx_rate if scored["is_us"] else 1.0)
-        if 0 < effective_single_limit <= 300000:
+        # [스마트 예산 최적화]: 사용자가 설정한 1회 매수 한도(예: 5만원, 10만원)에 딱 맞는 알짜 종목 상위 배치!
+        if effective_single_limit > 0:
             if 0 < unit_krw <= effective_single_limit:
-                scored["ai_score"] = min(99, scored["ai_score"] + 8)
-                scored["reason"] = f"💰[소액한도 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
-            elif max_invest_cap > 0 and unit_krw > max_invest_cap:
-                scored["ai_score"] = max(10, scored["ai_score"] - 25)
+                # 1주당 가격이 1회 예산 이내이면 가산점 부여하여 최우선 추천!
+                scored["ai_score"] = min(99, scored["ai_score"] + 15)
+                scored["reason"] = f"💰[소액예산 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
+            elif unit_krw > effective_single_limit:
+                # 1주당 가격이 1회 예산을 초과하면 점수 감점하여 한도 내 종목들이 1~5위에 오르도록 유도
+                scored["ai_score"] = max(10, scored["ai_score"] - 35)
+                scored["reason"] = f"⚠️[1회 한도 {effective_single_limit:,}원 초과] · " + scored["reason"]
+
         return scored
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -1412,8 +1442,8 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         use_sl = bool(cfg.get("use_stop_loss", False))
         auto_avg = bool(cfg.get("auto_averaging_down", True))
 
-        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도 (한투 실전/모의 모드 전용)
-        if is_kis_mode and (cfg.get("enabled") or force_buy) and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
+        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도
+        if (cfg.get("enabled") or force_buy) and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
             max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
             curr_invested_krw = sum(
                 int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
@@ -1482,7 +1512,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             elif use_sl and pnl_pct <= -abs(sl_pct):
                 sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
 
-        if is_kis_mode and sell_reason and (cfg.get("enabled") or force_buy):
+        if sell_reason and (cfg.get("enabled") or force_buy):
             # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
             kis_sell_ok = True
             kis_sell_tag = ""
@@ -1596,7 +1626,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     real_kr_cnt = sum(1 for p in state["positions"] if not p.get("is_us"))
     real_us_cnt = sum(1 for p in state["positions"] if p.get("is_us"))
 
-    if is_kis_mode and (cfg.get("enabled") or force_buy) and not market_crash_brake and len(state["positions"]) < total_allowed_pos and acct["cash_krw"] >= 5000:
+    if (cfg.get("enabled") or force_buy) and not market_crash_brake and len(state["positions"]) < total_allowed_pos and acct["cash_krw"] >= 5000:
         newly_bought_real = []
         for cand in scored_candidates:
             if len(state["positions"]) >= total_allowed_pos:
@@ -1628,9 +1658,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
             unit_price_krw = cand["price"] * (fx_rate if cand["is_us"] else 1.0)
             alloc_krw = min(order_budget, acct["cash_krw"], rem_cap)
-            qty = int(alloc_krw // unit_price_krw)
-            if qty <= 0 and acct["cash_krw"] >= unit_price_krw and rem_cap >= unit_price_krw:
-                qty = 1
+            qty = int(alloc_krw // unit_price_krw) if unit_price_krw > 0 else 0
             if qty <= 0:
                 continue
 
