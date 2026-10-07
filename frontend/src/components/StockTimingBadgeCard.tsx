@@ -48,6 +48,10 @@ interface TimingSignalResult {
     psychology: string;       // 시장 심리 & 스마트 머니 수급 분석
     traderProtocol: string;   // 프로 트레이더 행동 수칙 (Action Protocol)
     scaleInTip: string;       // 3단계 황금 분할 매수 공식
+    sellerSituation: string;    // 보유자(매도 입장)가 처한 상황 설명
+    sellerPsychology: string;   // 팔려는 쪽의 심리 설명
+    holderChecklist: string[];  // 보유자가 스스로 점검해 볼 질문 예시 (지시형 표현 금지)
+    scaleOutNote: string;       // 분할 매도 개념 설명 (교육용)
     riskLevel: string;
     riskScore: number;        // 1~5점
     borderColor: string;
@@ -70,7 +74,7 @@ export default function StockTimingBadgeCard({
     className = ""
 }: StockTimingBadgeCardProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<"protocol" | "psychology" | "scaleIn">("protocol");
+    const [activeTab, setActiveTab] = useState<"protocol" | "psychology" | "seller" | "scaleIn">("protocol");
 
     // 6자리 종목코드 추출
     const cleanTicker = symbol
@@ -105,92 +109,137 @@ export default function StockTimingBadgeCard({
     const lowNum = typeof dayLow === "number" ? dayLow : Number(String(dayLow || 0).replace(/,/g, "")) || 0;
     const prevCloseNum = typeof prevClose === "number" ? prevClose : Number(String(prevClose || 0).replace(/,/g, "")) || 0;
 
-    // 객관적 기술적 시세 팩트 기반 신호등 판정 알고리즘
+// 객관적 기술적 시세 팩트 기반 신호등 판정 알고리즘
+    // [표현 원칙] 특정 종목의 매매 시점·가격을 지시하지 않고, 불특정 다수에게 동일하게 제공되는
+    // 일반 개념 · 점검 질문 형태로만 서술합니다. (매수 입장 / 보유 입장 양쪽을 균형 있게 설명)
     const signal: TimingSignalResult = useMemo(() => {
         const pct = parsedChangePct;
+        const sign = pct > 0 ? "+" : "";
 
-        // 1. 빨간불: 단기 급등 과열 주의권 (+5.5% 이상 급등)
+        // 1. 빨간불: 단기 급등 과열 신호 (+5.5% 이상)
         if (pct >= 5.5) {
             return {
                 type: "red",
-                statusLabel: "단기 과열 위험 구간 (상투 주의)",
-                subTitle: "로켓 급등으로 꼭대기(상투)에 물리기 쉬운 위험한 자리",
-                badgeText: "추격매수 주의",
-                headline: `당일 +${pct.toFixed(2)}% 폭등! 남들의 환호성 속 꼭대기(상투)에 물릴 위험 극대화`,
-                description: `오늘 주가가 너무 가파르게 치솟아 머리 꼭대기(상투)에 와 있습니다. 뉴스를 보고 뒤늦게 뛰어든 초보자들이 가장 많이 물리는 대표적인 자리입니다.`,
-                advice: "지금 쫓아가서 사면 최고점에 물려 오랫동안 고생할 수 있습니다. 2~3일간 주가가 땀을 식히며 초록불(숨고르기)로 내려올 때까지 기다리는 것이 안전합니다.",
-                psychology: "호재성 뉴스를 보고 뒤늦게 '나만 소외될까 봐(FOMO)' 급하게 뛰어든 개인들이 몰려있습니다. 반면 바닥에서 먼저 샀던 프로나 큰손들은 환호성 속에서 조용히 팔고 나갈(차익 실현) 준비를 하고 있습니다.",
-                traderProtocol: "【과열 경보 / 추격 진입 자제】 주가가 평균선보다 너무 높게 붕 떠 있는 과열 상태입니다. 차트 이론상 급등 뒤에는 반드시 차익 매물이 쏟아지므로, 주가가 얌전해질 때까지 기다리는 것이 최고의 원금 보존법입니다.",
-                scaleInTip: "과열 구간에서는 성급한 매수를 멈추고 현금을 100% 지키세요. 주가가 며칠간 쉬어가며 바닥 받침대(초록불)로 내려올 때까지 기다려야 손실을 피할 수 있습니다.",
+                statusLabel: "단기 과열 신호 구간",
+                subTitle: "짧은 시간에 크게 오른 만큼 변동성이 커지기 쉬운 구간",
+                badgeText: "과열 신호",
+                headline: `당일 +${pct.toFixed(2)}% 급등 - 단기 변동성이 커질 수 있는 구간`,
+                description: "오늘 주가가 평소보다 빠르게 올랐습니다. 이렇게 짧은 기간에 크게 오른 뒤에는 차익을 실현하려는 매물이 늘어 주가가 흔들리는 경우가 있어, 일반적으로 '과열 신호'로 분류합니다.",
+                advice: "급등 직후에는 가격 변동 폭이 커지는 경향이 있어, 투자자마다 거래 시점을 신중히 살펴보는 구간으로 알려져 있습니다.",
+                psychology: "뒤늦게 소식을 접하고 관심을 갖는 투자자가 늘어나는 한편, 일찍 보유했던 투자자 중에는 수익을 확정하려는 움직임이 나타나기도 합니다. 두 힘의 균형에 따라 변동성이 커질 수 있습니다.",
+                traderProtocol: "【과열 신호 요약】 오늘 상승률이 +5.5% 이상으로, 이 도구의 기준상 '과열 신호' 구간입니다. 급등 이후 차익 실현 매물이 나오며 조정을 받는 사례가 흔하다고 알려져 있으나, 이후 흐름은 종목과 시장 상황에 따라 달라 예측할 수 없습니다.",
+                scaleInTip: "분할 접근은 한 번에 판단하지 않고 시간과 가격을 나누어 거래하는 개념입니다. 가격 변동이 큰 급등 구간에서 특히 자주 언급됩니다. (교육용 설명이며 특정 거래 권유가 아닙니다)",
+                sellerSituation: "이미 보유 중인 투자자에게는 평가 수익이 크게 늘어난 구간입니다. 이 시점에는 '더 오를 것 같다'는 기대와 '지금 수익을 확정할까'라는 고민이 동시에 생기기 쉽습니다.",
+                sellerPsychology: "수익이 난 상태에서는 '더 오를지 모른다'는 욕심과 '오른 만큼 되돌릴지 모른다'는 불안이 부딪힙니다. 이 갈등 때문에 단기 고점 부근에서 매도 물량이 늘어나기도 합니다.",
+                holderChecklist: [
+                    "내가 처음 세운 목표 수익률에 가까워졌는가?",
+                    "오늘 상승의 이유(뉴스·수급)가 일회성인가, 지속될 만한 내용인가?",
+                    "이 종목이 내 전체 자산에서 차지하는 비중은 적절한가?",
+                    "거래량이 평소보다 크게 늘었는가? (매수·매도 모두 활발하다는 뜻)"
+                ],
+                scaleOutNote: "분할 매도는 보유 수량을 한 번에 정리하지 않고 여러 번에 나누어 정리하는 방식으로, 가격 변동에 따른 아쉬움을 줄이려는 목적으로 자주 소개됩니다. 어떤 방식을 쓸지는 투자자 본인의 목표와 투자 기간에 따라 다릅니다.",
                 borderColor: "border-rose-500/50 hover:border-rose-400",
                 glowColor: "bg-rose-500/15 group-hover:bg-rose-500/25",
                 badgeBg: "bg-rose-500/20 text-rose-300 border-rose-500/40",
                 textColor: "text-rose-400",
                 bgGradient: "from-rose-950/40 via-zinc-900 to-zinc-950",
-                riskLevel: "단기 과열 (주의)",
+                riskLevel: "단기 과열 (변동성 확대)",
                 riskScore: 5
             };
         }
 
-        // 2. 초록불: 눌림목 안정권 (-0.2% ~ -3.5% 건전한 조정 또는 +0.0% ~ +1.8% 안정적 추세)
+        // 2. 초록불: 숨고르기 구간 (-0.2% ~ -3.5% 완만한 조정 또는 +0.0% ~ +1.8% 안정 흐름)
         if ((pct <= -0.2 && pct >= -3.5) || (pct >= 0 && pct <= 1.8)) {
             const isPullback = pct < 0;
             return {
                 type: "green",
-                statusLabel: "숨고르기 할인 구간 (눌림목)",
-                subTitle: isPullback ? "마라톤 달리다 잠깐 숨고르는 자리 (안전 바닥판 형성)" : "바닥을 탄탄하게 다지는 중 (과열 없는 안심 구간)",
-                badgeText: isPullback ? "숨고르기 할인" : "바닥 다지기",
-                headline: isPullback 
-                    ? `당일 ${pct.toFixed(2)}% 수준의 완만한 숨고르기로 바닥 받침대(지지선)를 다지는 구간`
-                    : `당일 +${pct.toFixed(2)}%로 과열 없이 차분하게 계단식 상승을 준비하는 구간`,
+                statusLabel: "숨고르기 구간 (눌림목)",
+                subTitle: isPullback ? "상승 후 잠시 쉬어가며 가격대를 다지는 구간" : "큰 변동 없이 차분한 흐름이 이어지는 구간",
+                badgeText: isPullback ? "숨고르기" : "안정 흐름",
+                headline: isPullback
+                    ? `당일 ${pct.toFixed(2)}% 수준의 완만한 조정 - 가격대를 다지는 흐름`
+                    : `당일 +${pct.toFixed(2)}%로 급한 변동 없이 차분한 흐름`,
                 description: isPullback
-                    ? `주가가 쉼 없이 오르면 쉽게 지칩니다. 지금은 마라톤 선수가 잠깐 물을 마시듯 숨을 고르는 상태이며, 밑에서 든든하게 받쳐주는 '안전 바닥판(지지선)'이 있어 떨어질 위험이 비교적 적은 자리입니다.`
-                    : `주가가 급등하지 않고 차분하게 매물을 소화하며 바닥을 탄탄하게 다지고 있습니다. 과열 부담이 없어 초보자도 안심하고 지켜볼 수 있는 자리입니다.`,
-                advice: "단기 과열 부담이 적은 자리입니다. 한 번에 전액을 다 사기보다 계단을 밟듯이 2~3번에 나누어 들어가는 분할 매매가 초보자에게 가장 안전합니다.",
-                psychology: "어제 주가가 너무 올라서 못 샀던 사람들에게 깜짝 '바겐세일' 기회가 온 셈입니다. 큰손(기관/외국인)도 밑에서 매수를 받쳐주며 주가가 폭락하지 않도록 지지해 주고 있습니다.",
-                traderProtocol: "【안전 바닥판 확인】 주가가 큰 하락 없이 얌전하게 숨을 고르고 있습니다. 차트 이론상 이렇게 바닥 받침대가 튼튼한 자리에서는 위험이 적어 소액으로 천천히 분할 관찰하기 좋은 기술적 구간입니다.",
-                scaleInTip: "1단계(소액 정찰대 보내기) ➔ 2단계(다음 날 바닥판을 딛고 일어설 때) ➔ 3단계(완전한 상승 추세로 돌아설 때) 순으로 나누어 접근하면 한 방에 물릴 위험이 없습니다.",
+                    ? "주가는 계속 오르기만 하지 않고 중간에 쉬어가며 조정을 받는 경우가 많습니다. 지금은 가파른 하락 없이 완만하게 쉬어가는 모습으로, 기술적으로 '눌림목'이라고 부릅니다."
+                    : "급등락 없이 매물을 소화하며 차분하게 움직이고 있습니다. 변동성이 낮은 구간으로 분류됩니다.",
+                advice: "과열 신호가 없는 구간이라 상대적으로 변동성이 낮은 편입니다. 다만 이후 방향은 시장 상황에 따라 달라질 수 있어, 투자자마다 분할 접근 등 자신만의 원칙을 점검하는 구간입니다.",
+                psychology: "그동안 가격 부담 때문에 지켜보던 투자자의 관심이 다시 모이기도 하고, 기관·외국인 수급이 가격대를 받쳐주는지 함께 살펴보는 투자자가 많습니다. 보유 중인 투자자 입장에서는 급한 매도 압박이 크지 않은 편입니다.",
+                traderProtocol: "【숨고르기 구간 요약】 큰 하락 없이 완만한 흐름입니다. 차트상 이전 저점(지지선) 부근에서 가격이 유지되는지를 함께 살펴보는 투자자가 많습니다.",
+                scaleInTip: "단계적 접근 개념 예시: 1단계(소량으로 시작) → 2단계(가격대 유지 여부 확인) → 3단계(상승 흐름 확인 후 추가 판단). 교육용 설명이며 특정 거래를 권유하는 것이 아닙니다.",
+                sellerSituation: isPullback
+                    ? "오늘 소폭 하락해 평가 수익이 줄었거나 평가 손실이 조금 커졌을 수 있습니다. 이 정도의 완만한 조정은 상승 추세 중에도 흔히 나타나는 흐름입니다."
+                    : "보유 중인 투자자에게는 큰 평가 변동 없이 지켜볼 수 있는 구간입니다. 서둘러 정리를 고민할 만한 신호는 이 도구의 기준상 나타나지 않았습니다.",
+                sellerPsychology: "작은 하락에도 '더 떨어지면 어쩌나' 하는 불안이 생기기 쉽지만, 완만한 조정은 정상 범위로 보는 시각이 많습니다. 사전에 정해 둔 원칙(보유 기간·손실 허용 범위)이 있으면 감정적 판단을 줄이는 데 도움이 됩니다.",
+                holderChecklist: [
+                    "처음 투자할 때 세운 보유 기간과 목표가 그대로인가?",
+                    "이 종목을 보유한 이유(실적·산업 전망 등)에 변화가 있는가?",
+                    "손실을 어디까지 감내할지 미리 정해 두었는가?",
+                    "오늘 변동이 시장 전체 영향인지, 이 종목만의 이슈인지?"
+                ],
+                scaleOutNote: "이런 구간에서는 서둘러 정리하기보다 보유 이유가 아직 유효한지 점검하는 투자자가 많습니다. 분할 매도는 목표 수익률에 도달했을 때 일부씩 정리하는 방식으로 소개됩니다.",
                 borderColor: "border-emerald-500/50 hover:border-emerald-400",
                 glowColor: "bg-emerald-500/15 group-hover:bg-emerald-500/25",
                 badgeBg: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
                 textColor: "text-emerald-400",
                 bgGradient: "from-emerald-950/40 via-zinc-900 to-zinc-950",
-                riskLevel: "안정 (숨고르기 찬스)",
+                riskLevel: "안정 (낮은 변동성)",
                 riskScore: 1
             };
         }
 
-        // 3. 노란불: 방향성 탐색권 (보합 공방 또는 1.8% ~ 5.5% 상승 구간, 또는 -3.5% 초과 급락)
+        // 3. 노란불: 방향 탐색 구간 (보합 공방 또는 +1.8% ~ +5.5%, 또는 -3.5% 초과 하락)
         const isSharpDrop = pct < -3.5;
         return {
             type: "yellow",
-            statusLabel: isSharpDrop ? "급락 관망 구간 (칼날 주의)" : "눈치보기 관망 구간 (방향 탐색)",
-            subTitle: isSharpDrop ? "바닥이 어디인지 확인할 때까지 지켜보는 자리" : "사려는 사람과 팔려는 사람의 팽팽한 줄다리기",
-            badgeText: isSharpDrop ? "바닥 확인 필수" : "추세 관망",
-            headline: isSharpDrop 
-                ? `당일 ${pct.toFixed(2)}% 낙폭 확대로 '떨어지는 칼날'을 조심해야 하는 관망 구간`
-                : `당일 등락률 ${pct > 0 ? "+" : ""}${pct.toFixed(2)}%로 오를지 내릴지 힘을 모으고 있는 줄다리기 구간`,
+            statusLabel: isSharpDrop ? "급락 구간 (변동성 주의)" : "방향 탐색 구간 (관망 우세)",
+            subTitle: isSharpDrop ? "하락 폭이 커서 바닥 여부가 아직 확인되지 않은 구간" : "사려는 쪽과 팔려는 쪽이 팽팽하게 맞선 구간",
+            badgeText: isSharpDrop ? "급락 변동성" : "방향 탐색",
+            headline: isSharpDrop
+                ? `당일 ${pct.toFixed(2)}% 낙폭 확대 - 하락 변동성이 큰 구간`
+                : `당일 등락률 ${sign}${pct.toFixed(2)}% - 방향을 탐색하는 구간`,
             description: isSharpDrop
-                ? `주가가 가파르게 떨어질 때는 '싸 보인다'고 섣불리 손을 대면 다칩니다. 바닥이 어디인지 확인되고 아래로 더 떨어지지 않는 안전판이 생길 때까지 차분히 지켜봐야 합니다.`
-                : `사려는 세력과 팔려는 세력이 팽팽하게 맞서며 눈치게임을 하고 있습니다. 주가가 위로 뚫고 올라갈지, 아래로 꺾일지 방향이 나올 때까지 기다리는 자리입니다.`,
+                ? "주가가 짧은 시간에 크게 내려 변동성이 매우 큰 상태입니다. 하락 이유와 거래량 변화 등을 함께 확인하는 투자자가 많으며, 하락이 멈췄는지는 차트에서 별도로 살펴봐야 합니다."
+                : "매수와 매도 힘이 비슷해 뚜렷한 방향 없이 움직이는 상태입니다. 위로든 아래로든 방향이 나올 때까지 지켜보는 투자자가 많은 구간입니다.",
             advice: isSharpDrop
-                ? "하락이 멈추고 바닥에서 매수세가 들어오는 신호(반등 캔들)가 나올 때까지는 조급하게 서두르지 말고 관망하는 것이 현명합니다."
-                : "방향성이 정해지기 전에는 무리한 베팅을 피하고, 확실하게 위로 뚫어내거나 초록불(숨고르기)로 내려올 때까지 차분하게 관찰하세요.",
+                ? "급락 구간에서는 가격 변동 폭이 커서 판단이 어려워지는 경우가 많습니다. 하락 원인과 거래량 변화를 함께 확인하는 것이 일반적인 점검 방식입니다."
+                : "방향이 정해지기 전에는 판단이 엇갈리기 쉬워, 추세가 확인될 때까지 지켜보는 투자자가 많은 구간입니다.",
             psychology: isSharpDrop
-                ? "주가 하락에 겁을 먹은 사람들의 실망 매물이 쏟아지고 있습니다. 누군가 '이 정도면 싸다'며 강하게 사서 바닥을 받쳐줄 때까지는 불안 심리가 남아있는 상태입니다."
-                : "시장 참여자들의 생각이 반반으로 나뉘어 있습니다. 뚜렷한 뉴스나 큰손의 매수세가 어느 쪽으로 쏠리는지 지켜보려는 관망세가 짙습니다.",
+                ? "하락에 대한 두려움으로 매도 물량이 늘어나는 한편, 낮아진 가격에 관심을 갖는 투자자도 나타납니다. 두 움직임의 균형이 잡히기 전까지는 불안정한 흐름이 이어질 수 있습니다."
+                : "시장 참여자들의 생각이 반반으로 나뉘어 있고, 뚜렷한 뉴스나 수급 변화가 나타나는지 지켜보는 분위기입니다.",
             traderProtocol: isSharpDrop
-                ? "【바닥 지지선 형성 대기】 떨어지는 칼날을 무리하게 잡지 마세요. 주가가 하락을 멈추고 며칠간 바닥을 단단하게 다지는 것을 눈으로 확인한 뒤에 움직여도 결코 늦지 않습니다."
-                : "【추세 분기점 관찰】 방향이 뚜렷하지 않은 상태입니다. 확실하게 위로 돌파하거나, 반대로 밑에서 탄탄한 바닥판(초록불)을 만들 때까지 인내심을 갖고 지켜보는 것이 안전합니다.",
+                ? "【급락 변동성 요약】 하락 폭이 -3.5%를 넘어 이 도구의 기준상 '변동성 주의' 구간입니다. 하락이 멈추고 가격대가 유지되는지는 차트에서 별도로 확인해야 합니다."
+                : "【방향 탐색 요약】 뚜렷한 방향 없이 움직이는 상태입니다. 위쪽 돌파 또는 아래쪽 이탈 중 어느 쪽으로 방향이 나오는지 차트로 함께 살펴보는 투자자가 많습니다.",
             scaleInTip: isSharpDrop
-                ? "급락할 때는 추가 매수를 서두르지 마세요! 주가가 멈추고 바닥을 다지는 '쌍바닥(바닥 2번 확인)' 신호가 나온 뒤에만 소액으로 접근하는 것이 정석입니다."
-                : "방향이 불확실할 때는 자금을 아껴두세요. 뚜렷한 상승 흐름이 확인될 때 단계별로 자금을 투입하는 것이 리스크를 줄이는 원칙입니다.",
+                ? "변동성이 큰 구간에서는 한 번에 판단하기보다 시간과 가격을 나누어 접근하는 개념이 자주 언급됩니다. 교육용 설명이며 특정 거래를 권유하지 않습니다."
+                : "방향이 불확실할 때는 여러 번에 나누어 판단한다는 개념이 소개됩니다. 교육용 설명이며 특정 거래를 권유하지 않습니다.",
+            sellerSituation: isSharpDrop
+                ? "보유 중인 투자자에게는 평가 손실이 빠르게 커질 수 있는 구간입니다. 이때 '추가 하락 전에 정리할까', '조금 더 지켜볼까' 사이에서 고민이 커지기 쉽습니다."
+                : "보유 중인 투자자 입장에서는 평가 금액의 변화가 크지 않아 판단이 쉽지 않은 구간입니다. 정리와 보유 모두 근거가 뚜렷하지 않을 수 있습니다.",
+            sellerPsychology: isSharpDrop
+                ? "손실이 커질수록 '본전이 되면 팔겠다'는 심리와 '더 떨어지기 전에 정리하자'는 공포가 부딪힙니다. 이런 감정은 판단을 흐리게 하는 대표적인 원인으로 알려져 있습니다."
+                : "뚜렷한 신호가 없으면 '조금만 더 보자'는 기대가 길어지기 쉽습니다. 사전에 정한 기준이 있는 투자자는 이런 구간에서 감정 개입을 줄일 수 있습니다.",
+            holderChecklist: isSharpDrop
+                ? [
+                    "하락 이유가 시장 전체 요인인지, 종목 고유의 악재인지?",
+                    "처음 정해 둔 손실 허용 범위를 넘었는가?",
+                    "추가 하락을 감당할 수 있는 자금 여력과 투자 기간이 남아 있는가?",
+                    "감정이 아니라 미리 세운 원칙에 따라 판단하고 있는가?"
+                ]
+                : [
+                    "내가 이 종목을 보유한 이유가 아직 유효한가?",
+                    "목표 수익률과 손실 허용 범위가 정해져 있는가?",
+                    "거래량이 늘어나며 방향이 나오고 있는가?",
+                    "전체 자산 대비 이 종목의 비중은 적정한가?"
+                ],
+            scaleOutNote: isSharpDrop
+                ? "분할 매도는 한 번에 정리하지 않고 나누어 정리해 한 시점의 가격에 대한 부담을 줄이려는 방식으로 소개됩니다. 하락 구간에서의 손실 제한(손절) 기준은 투자자마다 달라 일률적인 정답이 없습니다."
+                : "분할 매도는 목표 수익률에 도달하거나 보유 이유가 바뀌었을 때 일부씩 나누어 정리하는 방식으로 소개됩니다. 어떤 기준을 쓸지는 투자자 본인의 계획에 따라 다릅니다.",
             borderColor: "border-amber-500/50 hover:border-amber-400",
             glowColor: "bg-amber-500/15 group-hover:bg-amber-500/25",
             badgeBg: "bg-amber-500/20 text-amber-300 border-amber-500/40",
             textColor: "text-amber-400",
             bgGradient: "from-amber-950/40 via-zinc-900 to-zinc-950",
-            riskLevel: isSharpDrop ? "주의 (급락 관망)" : "보통 (방향 탐색)",
+            riskLevel: isSharpDrop ? "주의 (하락 변동성)" : "보통 (방향 탐색)",
             riskScore: isSharpDrop ? 4 : 3
         };
     }, [parsedChangePct]);
@@ -203,10 +252,10 @@ export default function StockTimingBadgeCard({
             let statusText = "당일 중간 가격대 형성";
             let statusColor = "text-zinc-300";
             if (clamped >= 80) {
-                statusText = "당일 최고가권 근접 (상투 주의)";
+                statusText = "당일 최고가권 근접 (변동성 주의)";
                 statusColor = "text-rose-400";
             } else if (clamped <= 25) {
-                statusText = "당일 최저가권 부근 (바닥 테스트)";
+                statusText = "당일 최저가권 부근";
                 statusColor = "text-blue-400";
             } else {
                 statusText = "당일 안정적 중심 가격대 위치";
@@ -230,6 +279,48 @@ export default function StockTimingBadgeCard({
             statusColor: "text-zinc-400"
         };
     }, [highNum, lowNum, priceNum]);
+
+
+    // 보유자(매도 입장) 참고용 객관 수치: 전일 종가 · 당일 고가 · 당일 저가 대비 현재 위치
+    const sellerStats = useMemo(() => {
+        const fromPrev = prevCloseNum > 0 && priceNum > 0
+            ? ((priceNum - prevCloseNum) / prevCloseNum) * 100
+            : parsedChangePct;
+        const fromHigh = highNum > 0 && priceNum > 0 ? ((priceNum - highNum) / highNum) * 100 : null;
+        const fromLow = lowNum > 0 && priceNum > 0 ? ((priceNum - lowNum) / lowNum) * 100 : null;
+        const fmt = (v: number | null) => (v === null ? "집계 중" : `${v > 0 ? "+" : ""}${v.toFixed(2)}%`);
+        const color = (v: number | null) =>
+            v === null ? "text-zinc-400" : v > 0 ? "text-rose-400" : v < 0 ? "text-blue-400" : "text-zinc-300";
+
+        let rangeText = "오늘 가격 범위를 집계하는 중입니다.";
+        if (dayRangeInfo.valid) {
+            const p = Math.round(dayRangeInfo.percent);
+            if (p >= 80) {
+                rangeText = `현재가는 오늘 변동폭의 상단 부근(${p}%)에 있습니다. 오늘 고가에 가까워 평가 수익이 큰 상태일 수 있습니다.`;
+            } else if (p <= 25) {
+                rangeText = `현재가는 오늘 변동폭의 하단 부근(${p}%)에 있습니다. 오늘 저가에 가까워 평가 손익이 불리한 쪽일 수 있습니다.`;
+            } else {
+                rangeText = `현재가는 오늘 변동폭의 중간대(${p}%)에 있습니다.`;
+            }
+        }
+        return {
+            prevText: fmt(fromPrev),
+            prevColor: color(fromPrev),
+            highText: fmt(fromHigh),
+            highColor: color(fromHigh),
+            lowText: fmt(fromLow),
+            lowColor: color(fromLow),
+            rangeText
+        };
+    }, [highNum, lowNum, priceNum, prevCloseNum, parsedChangePct, dayRangeInfo]);
+
+    // 전문가 브리핑 탭 목록
+    const tabItems: { key: "protocol" | "psychology" | "seller" | "scaleIn"; label: string; icon: React.ReactNode }[] = [
+        { key: "protocol", label: "한눈에 요약", icon: <Flame className="w-3.5 h-3.5" /> },
+        { key: "psychology", label: "사람들의 심리 & 수급", icon: <Activity className="w-3.5 h-3.5" /> },
+        { key: "seller", label: "보유자 관점 (매도)", icon: <TrendingDown className="w-3.5 h-3.5" /> },
+        { key: "scaleIn", label: "분할 접근 개념", icon: <Layers className="w-3.5 h-3.5" /> }
+    ];
 
     // 모달 활성화 시 배경 스크롤 방지
     useEffect(() => {
@@ -447,22 +538,30 @@ export default function StockTimingBadgeCard({
                                 </div>
                             </div>
 
-                            {/* 💡 초보자를 위한 1초 용어 사전 (쉬운 개념 설명) */}
-                            <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 space-y-2">
-                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-300">
-                                    <span>💡 초보자를 위한 1초 핵심 용어 사전</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] leading-relaxed text-zinc-300">
-                                    <div className="p-2.5 rounded-xl bg-black/40 border border-white/5">
-                                        <strong className="text-emerald-400 block mb-0.5">🏃‍♂️ 눌림목(숨고르기)이란?</strong>
-                                        마라톤 선수가 전력질주 후 숨을 고르듯, 주가가 오른 뒤 잠깐 쉬어가는 꿀맛 같은 <strong>'할인(세일)'</strong> 구간입니다.
-                                    </div>
-                                    <div className="p-2.5 rounded-xl bg-black/40 border border-white/5">
-                                        <strong className="text-cyan-400 block mb-0.5">🪜 지지선(바닥판)이란?</strong>
-                                        주가가 떨어질 때 밑에서 받쳐주어 더 이상 폭락하지 않게 막아주는 <strong>'안전 바닥 받침대'</strong>입니다.
-                                    </div>
-                                </div>
-                            </div>
+{/* 💡 쉬운 용어 사전 (매수·매도 공통 개념) */}
+<div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 space-y-2">
+    <div className="flex items-center gap-2 text-xs font-bold text-indigo-300">
+        <span>💡 1초 핵심 용어 사전 (사는 입장 · 파는 입장 공통)</span>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] leading-relaxed text-zinc-300">
+        <div className="p-2.5 rounded-xl bg-black/40 border border-white/5">
+            <strong className="text-emerald-400 block mb-0.5">🏃‍♂️ 눌림목(숨고르기)이란?</strong>
+            상승하던 주가가 잠시 쉬어가며 조정을 받는 구간을 말합니다.
+        </div>
+        <div className="p-2.5 rounded-xl bg-black/40 border border-white/5">
+            <strong className="text-cyan-400 block mb-0.5">🪜 지지선(바닥판)이란?</strong>
+            하락하던 주가가 멈추거나 되돌림이 자주 나타났던 가격대입니다.
+        </div>
+        <div className="p-2.5 rounded-xl bg-black/40 border border-white/5">
+            <strong className="text-rose-400 block mb-0.5">🧱 저항선(천장판)이란?</strong>
+            상승하던 주가가 막혀 되돌려졌던 가격대로, 보유자가 매도 시점을 고민할 때 함께 참고하는 개념입니다.
+        </div>
+        <div className="p-2.5 rounded-xl bg-black/40 border border-white/5">
+            <strong className="text-amber-400 block mb-0.5">💰 차익실현 · 손절이란?</strong>
+            차익실현은 오른 주식을 팔아 수익을 확정하는 것, 손절은 손실이 더 커지기 전에 정리하는 것을 말합니다.
+        </div>
+    </div>
+</div>
 
                             {/* 2. 📊 당일 가격 레인지 & 현재가 위치 게이지 (Day High-Low Radar) */}
                             <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800 space-y-3">
@@ -544,43 +643,22 @@ export default function StockTimingBadgeCard({
                             {/* 3. 🧠 전문가 심층 브리핑 (3대 인터랙티브 탭) */}
                             <div className="rounded-2xl bg-zinc-900/60 border border-zinc-800 overflow-hidden">
                                 {/* 탭 네비게이션 */}
-                                <div className="grid grid-cols-3 border-b border-zinc-800 bg-zinc-950/50 p-1.5 gap-1 text-xs font-bold">
-                                    <button
-                                        onClick={() => setActiveTab("protocol")}
-                                        className={`py-2.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                                            activeTab === "protocol"
-                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                                                : "text-zinc-400 hover:text-white hover:bg-white/5"
-                                        }`}
-                                    >
-                                        <Flame className="w-3.5 h-3.5" />
-                                        <span>한눈에 보는 핵심 요약</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setActiveTab("psychology")}
-                                        className={`py-2.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                                            activeTab === "psychology"
-                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                                                : "text-zinc-400 hover:text-white hover:bg-white/5"
-                                        }`}
-                                    >
-                                        <Activity className="w-3.5 h-3.5" />
-                                        <span>사람들의 심리 & 수급</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setActiveTab("scaleIn")}
-                                        className={`py-2.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                                            activeTab === "scaleIn"
-                                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                                                : "text-zinc-400 hover:text-white hover:bg-white/5"
-                                        }`}
-                                    >
-                                        <Layers className="w-3.5 h-3.5" />
-                                        <span>계단식 분할 매매법</span>
-                                    </button>
-                                </div>
+<div className="grid grid-cols-2 sm:grid-cols-4 border-b border-zinc-800 bg-zinc-950/50 p-1.5 gap-1 text-[11px] sm:text-xs font-bold">
+    {tabItems.map((t) => (
+        <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`py-2.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === t.key
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+        >
+            {t.icon}
+            <span>{t.label}</span>
+        </button>
+    ))}
+</div>
 
                                 {/* 탭 본문 내용 */}
                                 <div className="p-5">
@@ -600,7 +678,7 @@ export default function StockTimingBadgeCard({
                                             <div className="flex items-start gap-2 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-200 leading-relaxed">
                                                 <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                                                 <span>
-                                                    <strong className="text-white">초보자 체크 포인트:</strong> {signal.advice}
+                                                    <strong className="text-white">참고 포인트:</strong> {signal.advice}
                                                 </span>
                                             </div>
 
@@ -642,42 +720,132 @@ export default function StockTimingBadgeCard({
                                                 {signal.psychology}
                                             </p>
                                             <div className="text-[11px] text-zinc-400 bg-white/[0.02] p-3 rounded-xl border border-white/5">
-                                                💡 <strong className="text-zinc-200">왜 사람들의 심리가 중요한가요?</strong> 주가는 결국 탐욕과 공포에 의해 움직입니다. 남들이 너도나도 환호할 때 조심하고, 주가가 살짝 쉬어갈 때 좋은 주식을 차분히 모아가는 것이 주식 시장에서 내 돈을 지키는 가장 쉬운 비결입니다.
+                                                💡 <strong className="text-zinc-200">왜 사람들의 심리가 중요한가요?</strong> 주가는 사려는 마음(기대·욕심)과 팔려는 마음(차익 실현·불안)의 균형에 따라 움직입니다. 사는 입장과 파는 입장 모두 감정이 판단을 흐리기 쉬워, 미리 세운 원칙을 점검하는 것이 도움이 된다고 알려져 있습니다.
                                             </div>
                                         </div>
                                     )}
 
-                                    {activeTab === "scaleIn" && (
-                                        <div className="space-y-3 animate-in fade-in duration-200">
-                                            <div className="flex items-center gap-2">
-                                                <span className="p-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase">
-                                                    Smart Scale-In
-                                                </span>
-                                                <h4 className="text-sm font-bold text-white">
-                                                    한 번에 사지 않고 나누어 사는 계단식 원칙 (참고용)
-                                                </h4>
-                                            </div>
-                                            <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 space-y-2">
-                                                <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed">
-                                                    {signal.scaleInTip}
-                                                </p>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
-                                                    <span className="text-[10px] text-zinc-400 font-bold block">1단계</span>
-                                                    <span className="text-emerald-400 font-bold text-[11px]">소액 정찰대</span>
-                                                </div>
-                                                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
-                                                    <span className="text-[10px] text-zinc-400 font-bold block">2단계</span>
-                                                    <span className="text-indigo-400 font-bold text-[11px]">바닥판 지지 확인</span>
-                                                </div>
-                                                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
-                                                    <span className="text-[10px] text-zinc-400 font-bold block">3단계</span>
-                                                    <span className="text-amber-400 font-bold text-[11px]">상승 반등 확인</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+{activeTab === "seller" && (
+    <div className="space-y-3 animate-in fade-in duration-200">
+        <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-1 rounded bg-rose-500/20 text-rose-300 text-[10px] font-extrabold uppercase">
+                Holder View
+            </span>
+            <h4 className="text-sm font-bold text-white">
+                이미 보유 중인 투자자의 입장 (매도 관점)
+            </h4>
+        </div>
+
+        <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed bg-black/30 p-3.5 rounded-xl border border-white/5 font-medium">
+            {signal.sellerSituation}
+        </p>
+
+        {/* 객관 수치: 전일 종가 / 오늘 고가 / 오늘 저가 대비 */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                <span className="text-[10px] text-zinc-500 block">전일 종가 대비</span>
+                <span className={`text-sm font-mono font-black ${sellerStats.prevColor}`}>{sellerStats.prevText}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                <span className="text-[10px] text-zinc-500 block">오늘 고가 대비</span>
+                <span className={`text-sm font-mono font-black ${sellerStats.highColor}`}>{sellerStats.highText}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                <span className="text-[10px] text-zinc-500 block">오늘 저가 대비</span>
+                <span className={`text-sm font-mono font-black ${sellerStats.lowColor}`}>{sellerStats.lowText}</span>
+            </div>
+        </div>
+        <p className="text-[11px] text-zinc-400 leading-relaxed px-1">
+            📍 {sellerStats.rangeText}
+        </p>
+
+        <div className="p-3.5 rounded-xl bg-rose-500/5 border border-rose-500/20 space-y-1.5">
+            <strong className="text-rose-300 text-xs block">🧠 팔려는 마음에는 어떤 심리가 있을까요?</strong>
+            <p className="text-xs text-zinc-300 leading-relaxed">{signal.sellerPsychology}</p>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 space-y-2">
+            <strong className="text-zinc-100 text-xs block">✅ 보유 중인 투자자가 스스로 점검해 보는 질문 예시</strong>
+            <ul className="space-y-1.5">
+                {signal.holderChecklist.map((q, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-zinc-300 leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+                        <span>{q}</span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-200 leading-relaxed">
+            <Layers className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+            <span>
+                <strong className="text-white">분할 매도 개념:</strong> {signal.scaleOutNote}
+            </span>
+        </div>
+
+        <p className="text-[10px] text-zinc-500 leading-relaxed px-1">
+            ※ 위 내용은 투자자가 스스로 생각해 볼 수 있는 일반적인 질문과 개념 설명이며, 특정 종목의 매도 시점·가격을 제시하거나 권유하는 것이 아닙니다.
+        </p>
+    </div>
+)}
+
+{activeTab === "scaleIn" && (
+    <div className="space-y-3 animate-in fade-in duration-200">
+        <div className="flex items-center gap-2 flex-wrap">
+            <span className="p-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase">
+                Staged Approach
+            </span>
+            <h4 className="text-sm font-bold text-white">
+                나누어 거래하는 &quot;분할 접근&quot; 개념 (교육용 설명)
+            </h4>
+        </div>
+        <div className="p-3.5 rounded-xl bg-black/30 border border-white/5 space-y-2">
+            <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed">
+                {signal.scaleInTip}
+            </p>
+        </div>
+
+        <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-emerald-300">🟢 매수 입장에서 소개되는 분할 개념</span>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold block">1단계</span>
+                    <span className="text-emerald-400 font-bold text-[11px]">소량으로 시작</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold block">2단계</span>
+                    <span className="text-indigo-400 font-bold text-[11px]">가격대 유지 확인</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold block">3단계</span>
+                    <span className="text-amber-400 font-bold text-[11px]">상승 흐름 확인</span>
+                </div>
+            </div>
+        </div>
+
+        <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-rose-300">🔴 보유 입장에서 소개되는 분할 개념</span>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold block">1단계</span>
+                    <span className="text-rose-400 font-bold text-[11px]">목표 일부 도달 시 일부 정리</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold block">2단계</span>
+                    <span className="text-indigo-400 font-bold text-[11px]">남은 수량 보유 이유 재점검</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-white/5">
+                    <span className="text-[10px] text-zinc-400 font-bold block">3단계</span>
+                    <span className="text-amber-400 font-bold text-[11px]">계획 변경 시 나머지 정리</span>
+                </div>
+            </div>
+        </div>
+
+        <p className="text-[10px] text-zinc-500 leading-relaxed px-1">
+            ※ 분할 접근은 한 시점의 가격에 대한 부담을 줄이려는 일반 개념이며, 수익을 보장하지 않습니다. 실제 방식은 투자자 본인의 목표·기간·자금 상황에 따라 달라집니다.
+        </p>
+    </div>
+)}
                                 </div>
                             </div>
 
@@ -686,7 +854,7 @@ export default function StockTimingBadgeCard({
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                         <ShieldCheck className="w-4 h-4 text-zinc-400" />
-                                        신호등 색상별 의미 & 쉬운 행동 기준
+                                        신호등 색상별 의미 & 매수·매도 입장별 해석
                                     </h3>
                                     <span className="text-[10px] text-zinc-500">
                                         테두리가 빛나는 카드가 현재 종목의 상태입니다
@@ -705,7 +873,7 @@ export default function StockTimingBadgeCard({
                                                 <span className="text-base">🟢</span>
                                                 <div>
                                                     <strong className="text-emerald-300 font-bold text-sm">
-                                                        초록불 (숨고르기 할인 구간 - 눌림목)
+                                                        초록불 (숨고르기 구간 - 눌림목)
                                                     </strong>
                                                     <span className="text-[10px] text-zinc-400 block sm:inline sm:ml-2">
                                                         당일 -0.2% ~ -3.5% 살짝 조정 또는 +0.0% ~ +1.8% 안정 추세
@@ -719,7 +887,7 @@ export default function StockTimingBadgeCard({
                                             )}
                                         </div>
                                         <p className="mt-2 text-zinc-300 leading-relaxed text-[11px] sm:text-xs">
-                                            주가가 과열 없이 숨을 고르며 바닥 받침대(지지선)를 다지는 최적의 자리입니다. 어제 상승을 놓쳐 아쉬웠던 분들에게 안전한 할인 진입 찬스를 제공합니다.
+                                            급한 변동 없이 가격대를 다지는 구간으로 분류됩니다. 매수를 고민하는 입장에서는 가격 부담이 상대적으로 낮은 구간으로, 보유 중인 입장에서는 서둘러 판단하지 않아도 되는 구간으로 해석하는 경우가 많습니다.
                                         </p>
                                     </div>
 
@@ -748,7 +916,7 @@ export default function StockTimingBadgeCard({
                                             )}
                                         </div>
                                         <p className="mt-2 text-zinc-300 leading-relaxed text-[11px] sm:text-xs">
-                                            매수와 매도가 팽팽하게 맞서 방향성을 탐색하거나, 단기 급락으로 바닥을 확인해야 하는 구간입니다. 성급한 올인은 피하고 관망 또는 소액 분할로 대응하세요.
+                                            사려는 힘과 팔려는 힘이 팽팽하거나 하락 변동성이 큰 구간입니다. 매수 입장에서는 방향이 확인되는지를, 보유 입장에서는 미리 정해 둔 기준을 점검하는 투자자가 많은 구간입니다.
                                         </p>
                                     </div>
 
@@ -763,7 +931,7 @@ export default function StockTimingBadgeCard({
                                                 <span className="text-base">🔴</span>
                                                 <div>
                                                     <strong className="text-rose-300 font-bold text-sm">
-                                                        빨간불 (단기 과열 위험 구간 - 상투 주의)
+                                                        빨간불 (단기 과열 신호 구간)
                                                     </strong>
                                                     <span className="text-[10px] text-zinc-400 block sm:inline sm:ml-2">
                                                         당일 +5.5% 이상 급등 시
@@ -777,7 +945,7 @@ export default function StockTimingBadgeCard({
                                             )}
                                         </div>
                                         <p className="mt-2 text-zinc-300 leading-relaxed text-[11px] sm:text-xs">
-                                            당일 급등으로 단기 꼭대기(상투)에 물릴 위험이 가장 높은 상태입니다. 소외 공포에 쫓겨 추격 매수하지 마시고, 반드시 며칠간 쉬어가는 조정을 기다려야 합니다.
+                                            당일 급등으로 단기 변동성이 커지기 쉬운 구간입니다. 매수 입장에서는 추격에 대한 부담이, 보유 입장에서는 수익 확정과 추가 상승 기대 사이의 고민이 커지는 구간으로 알려져 있습니다.
                                         </p>
                                     </div>
                                 </div>
@@ -790,7 +958,7 @@ export default function StockTimingBadgeCard({
                                     <span>자본시장법 준수 법적 면책 고지 (Legal Disclaimer)</span>
                                 </div>
                                 <p className="text-zinc-500">
-                                    본 신호등 기술적 타이밍 진단기는 한국거래소 및 글로벌 금융 데이터의 실시간 주가 등락률과 당일 가격 변동 레인지를 기반으로 자동 산출된 <strong>객관적 기술 분석 보조지표(단순 수치 계산 결과)</strong>입니다. 자본시장과 금융투자업에 관한 법률상 특정 종목의 매수·매도를 권유하거나 투자 자문, 수익 보장을 제공하지 않으며, 투자에 관한 모든 판단과 최종 책임은 투자자 본인에게 있습니다.
+                                    본 진단기는 실시간 주가 등락률과 당일 가격 변동 범위를 기반으로 자동 산출한 <strong>객관적 수치</strong>와, 불특정 다수에게 동일하게 제공되는 <strong>일반적인 교육·참고 정보</strong>입니다. 개별 투자자의 투자 목적·재산 상황을 고려한 맞춤형 투자자문이 아니며, 특정 종목의 매수·매도 시점이나 가격을 제시하거나 권유하지 않습니다. 매수 입장과 보유(매도) 입장의 설명은 이해를 돕기 위한 일반 개념이며, 과거 시세 흐름이 미래 수익을 보장하지 않습니다. 투자 판단과 그에 따른 손익의 책임은 투자자 본인에게 있습니다.
                                 </p>
                             </div>
                         </div>
