@@ -654,7 +654,11 @@ export default function AdminAutoTradePage() {
 
   const handleApplyPaperSeed = async (targetSeed?: number) => {
     const seedVal = Math.max(50000, Number(targetSeed ?? paperSeedKrw) || 20000000);
+    const autoMaxPos = seedVal <= 200000 ? 2 : seedVal <= 500000 ? 3 : seedVal <= 1000000 ? 5 : seedVal <= 4000000 ? 7 : 10;
+    const autoOrderAmt = Math.max(25000, Math.floor(seedVal / Math.max(2, autoMaxPos)));
     setPaperSeedKrw(seedVal);
+    setMaxTotalInvestKrw(seedVal);
+    setOrderAmountKrw(autoOrderAmt);
     try {
       localStorage.setItem("admin_auto_paper_seed", String(seedVal));
     } catch {}
@@ -664,7 +668,12 @@ export default function AdminAutoTradePage() {
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/config`, {
         method: "POST",
         headers: hdrs,
-        body: JSON.stringify({ paper_seed_krw: seedVal }),
+        body: JSON.stringify({
+          paper_seed_krw: seedVal,
+          max_total_invest_krw: seedVal,
+          order_amount_krw: autoOrderAmt,
+          max_positions: autoMaxPos,
+        }),
       });
       const json = await res.json();
       if (json.status === "success") {
@@ -1587,6 +1596,7 @@ export default function AdminAutoTradePage() {
               <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
                 <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 시드 선택:</span>
                 {[
+                  { label: "🛡️ 5만 원", val: 50000 },
                   { label: "🔥 10만 원", val: 100000 },
                   { label: "50만 원", val: 500000 },
                   { label: "100만 원", val: 1000000 },

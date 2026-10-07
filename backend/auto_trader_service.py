@@ -1959,6 +1959,20 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
             p["target_price"] = round(avg * (1.0 + cur_tp / 100.0), 2 if is_us else 0)
             p["stop_price"] = round(avg * (1.0 - cur_sl / 100.0), 2 if is_us else 0)
 
+    # [한도 및 설정 변경 즉시 추천 종목 레이더 실시간 재스캔]
+    try:
+        session_info = _get_time_based_session_info(state["config"])
+        active_mkt = session_info["active_market"]
+        state["active_session"] = session_info
+        fresh_cands = _build_session_candidates(state, active_mkt)[:25]
+        state["candidates"] = fresh_cands
+        if active_mkt == "KR":
+            state["kr_candidates"] = fresh_cands
+        else:
+            state["us_candidates"] = fresh_cands
+    except Exception as e:
+        print(f"[AutoTrader] Refresh candidates on config update warning: {e}")
+
     save_state(state)
     return get_dashboard_summary(state)
 
