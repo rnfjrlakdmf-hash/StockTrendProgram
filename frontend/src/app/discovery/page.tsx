@@ -153,6 +153,142 @@ interface StockData {
 }
 
 
+interface MetricGuide {
+    key: string;
+    standardName: string;
+    shortLabel: string;
+    easyName: string;
+    icon: string;
+    easyBottomTip: string;
+    normalBottomTip: string;
+    analogy: string;
+    howToRead: string;
+    badgeTitle: string;
+}
+
+const METRIC_GUIDES: Record<string, MetricGuide> = {
+    "시가총액": {
+        key: "시가총액",
+        standardName: "시가총액",
+        shortLabel: "시총",
+        easyName: "회사 전체 몸값",
+        icon: "🏢",
+        easyBottomTip: "이 회사를 통째로 인수하는 총 금액",
+        normalBottomTip: "기업 전체 시장가치",
+        analogy: "아파트 1채 가격이 '주가'라면, 아파트 단지 전체를 사는 총 금액이 '시가총액'이에요. (현재 주가 × 총 발행주식수)",
+        howToRead: "시총이 클수록 망할 위험이 적고 주가가 묵직하며, 작을수록 주가 등락폭이 큰 특징이 있어요.",
+        badgeTitle: "기업 체급",
+    },
+    "거래량": {
+        key: "거래량",
+        standardName: "당일 거래량",
+        shortLabel: "거래량",
+        easyName: "오늘 손바뀜 수량",
+        icon: "📊",
+        easyBottomTip: "오늘 사고팔린 주식 총수 (인기 척도)",
+        normalBottomTip: "당일 총 손바뀜 주식수",
+        analogy: "유명 맛집의 오늘 하루 손님 방문 수와 같아요! 손님이 많을수록 관심과 인기가 뜨거운 상태예요.",
+        howToRead: "거래량이 평소의 2~3배 이상 터지면서 주가가 오를 때 진짜 매수 세력이 강하게 유입된 것으로 봅니다.",
+        badgeTitle: "시장 관심도",
+    },
+    "PER": {
+        key: "PER",
+        standardName: "PER (주가수익비율)",
+        shortLabel: "PER",
+        easyName: "원금 회수 년수",
+        icon: "⚖️",
+        easyBottomTip: "번 돈으로 투자금 본전 뽑는 시간 (가성비)",
+        normalBottomTip: "순이익 대비 주가 배수",
+        analogy: "1,000만원 투자했는데 회사가 매년 100만원씩 순이익을 낸다면 PER은 10년! 숫자가 작을수록 본전을 빨리 뽑는 가성비 주식이에요.",
+        howToRead: "보통 10~15배 이하를 저평가(가성비 좋음)로 보고, 높으면 미래 성장 기대감이 많이 반영된 상태예요.",
+        badgeTitle: "수익 가성비",
+    },
+    "EPS": {
+        key: "EPS",
+        standardName: "EPS (주당순이익)",
+        shortLabel: "EPS",
+        easyName: "주식 1장의 순이익",
+        icon: "📈",
+        easyBottomTip: "주식 딱 1장이 1년간 벌어들인 알짜 돈",
+        normalBottomTip: "1주당 번 연간 순이익",
+        analogy: "내가 들고 있는 주식 딱 1장이 지난 1년 동안 내 통장에 벌어다 준 진짜 순이익 금액이에요.",
+        howToRead: "EPS가 매년 꾸준히 증가하는 기업은 실질적인 돈 버는 능력이 매년 성장하는 알짜 우량 기업이에요.",
+        badgeTitle: "실적 체력",
+    },
+    "배당수익률": {
+        key: "배당수익률",
+        standardName: "배당수익률",
+        shortLabel: "배당률",
+        easyName: "보너스 이자율",
+        icon: "💰",
+        easyBottomTip: "은행 예금처럼 통장에 주는 연 보너스",
+        normalBottomTip: "주가 대비 연간 현금 배당률",
+        analogy: "은행 예금 이자처럼, 주식을 1년 동안 갖고 있을 때 내 통장에 꽂히는 현금 보너스 비율이에요.",
+        howToRead: "은행 예금 금리(3~4%)보다 높으면 주가 등락과 상관없이 쏠쏠한 현금 수익을 주는 효자 종목이에요.",
+        badgeTitle: "현금 배당",
+    },
+    "추정 PER": {
+        key: "추정 PER",
+        standardName: "추정 PER (Fwd PER)",
+        shortLabel: "Fwd PER",
+        easyName: "내년 예상 가성비",
+        icon: "🔮",
+        easyBottomTip: "증권사 예측 내년 실적 기준 본전 년수",
+        normalBottomTip: "증권사 컨센서스 미래 밸류",
+        analogy: "과거 성적표가 아니라, 내년에 벌어들일 예상 성적표로 미리 계산해본 본전 뽑기 시간이에요.",
+        howToRead: "현재 PER보다 추정 PER이 낮다면 내년에 실적이 더 좋아져 저평가 매력이 커진다는 뜻이에요.",
+        badgeTitle: "미래 밸류",
+    },
+    "추정 EPS": {
+        key: "추정 EPS",
+        standardName: "추정 EPS (Fwd EPS)",
+        shortLabel: "Fwd EPS",
+        easyName: "내년 1주 예상순익",
+        icon: "🎯",
+        easyBottomTip: "내년에 주식 1장이 벌어올 예상 순익",
+        normalBottomTip: "다음 회계연도 예상 순익",
+        analogy: "증권사 애널리스트들이 분석한 '내년 1년 동안 주식 1장이 벌어들일 예상 순이익'이에요.",
+        howToRead: "현재 EPS보다 내년 추정 EPS가 크게 늘어날수록 실적 성장에 따른 주가 상승 기대감이 커집니다.",
+        badgeTitle: "미래 실적",
+    },
+    "PBR": {
+        key: "PBR",
+        standardName: "PBR (주가순자산비율)",
+        shortLabel: "PBR",
+        easyName: "청산 장부가 배수",
+        icon: "🏛️",
+        easyBottomTip: "회사 문 닫아도 건지는 자산 가치 비율",
+        normalBottomTip: "청산가치(순자산) 대비 배수",
+        analogy: "회사가 오늘 당장 망해서 공장, 땅, 건물을 다 팔아 주주에게 나눠줄 때 주가와 비교한 비율이에요.",
+        howToRead: "PBR 1배 미만이면 회사 재산 가치보다도 헐값에 팔리는 초저평가(바겐세일) 상태를 뜻해요.",
+        badgeTitle: "자산 안전판",
+    },
+    "BPS": {
+        key: "BPS",
+        standardName: "BPS (주당순자산)",
+        shortLabel: "BPS",
+        easyName: "1주당 알짜 밑천",
+        icon: "📑",
+        easyBottomTip: "빚 다 갚고 1주당 나눠가질 청산가치",
+        normalBottomTip: "기업 청산 시 1주당 분배금",
+        analogy: "회사의 모든 빚을 갚고 남은 순수 자산을 주식 수로 나눈 '1주당 장부상 밑천'이에요.",
+        howToRead: "현재 주가가 BPS보다 낮다면, 회사가 가진 알짜 자산보다도 싼 가격에 주식을 살 수 있다는 뜻이에요.",
+        badgeTitle: "청산 가치",
+    },
+    "주당배당금": {
+        key: "주당배당금",
+        standardName: "주당배당금 (DPS)",
+        shortLabel: "DPS",
+        easyName: "1주당 통장 입금액",
+        icon: "💸",
+        easyBottomTip: "주식 1장당 내 계좌로 꽂히는 실제 현금",
+        normalBottomTip: "1주당 실제 입금 현금",
+        analogy: "주가가 오르든 내리든 상관없이, 주식 1장을 갖고 있으면 실제로 내 계좌로 입금되는 현금 금액이에요.",
+        howToRead: "배당금이 매년 꾸준히 오르는 기업은 불황에도 돈을 잘 버는 강력한 현금 창출력을 가진 기업이에요.",
+        badgeTitle: "입금 배당금",
+    },
+};
+
 const TERM_EXPLANATIONS: Record<string, string> = {
     "시가총액": "이 회사를 통째로 인수하려면 필요한 돈이에요. (기업의 덩치)",
     "거래량": "오늘 하루 동안 사고팔린 주식의 개수예요. (많을수록 인기 폭발!)",
@@ -180,24 +316,70 @@ const getExchangeLabel = (symbol: string): { code: string; exchange: string; col
     return { code: symbol, exchange: '', color: 'text-gray-400' };
 };
 
-function EasyTerm({ label, term, isEasyMode, align = 'left' }: { label: string, term: string, isEasyMode: boolean, align?: 'left' | 'right' }) {
-    if (!isEasyMode) return <span className="text-zinc-400 text-xs font-bold whitespace-nowrap">{label}</span>;
+function EasyTerm({
+    label,
+    term,
+    isEasyMode,
+    align = 'left',
+    onOpenGuide,
+}: {
+    label: string;
+    term: string;
+    isEasyMode: boolean;
+    align?: 'left' | 'right';
+    onOpenGuide?: (term: string) => void;
+}) {
+    const guide = METRIC_GUIDES[term];
 
-    const explanation = TERM_EXPLANATIONS[term];
+    if (!isEasyMode) {
+        return <span className="text-zinc-400 text-xs font-bold whitespace-nowrap">{label}</span>;
+    }
+
+    const displayName = guide ? guide.easyName : label;
+    const shortLabel = guide ? guide.shortLabel : term;
 
     return (
-        <div className="group relative inline-flex items-center cursor-help max-w-full">
-            <span className="text-blue-300 border-b border-dashed border-blue-500/50 text-xs font-bold flex items-center gap-0.5 whitespace-nowrap leading-tight">
-                {label} <span className="text-[10px] text-yellow-400 opacity-80 shrink-0">📋</span>
+        <div
+            onClick={(e) => {
+                if (onOpenGuide) {
+                    e.stopPropagation();
+                    onOpenGuide(term);
+                }
+            }}
+            className="group relative inline-flex items-center gap-1 cursor-pointer max-w-full select-none"
+        >
+            <span className="text-indigo-200 font-extrabold text-xs flex items-center gap-1 whitespace-nowrap leading-tight group-hover:text-indigo-100 transition-colors">
+                <span>{displayName}</span>
+                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-bold shrink-0">
+                    {shortLabel}
+                </span>
+                <span className="text-[10px] text-yellow-400 opacity-90 group-hover:scale-125 transition-transform shrink-0">
+                    💡
+                </span>
             </span>
-            <div className={`absolute bottom-full mb-2 w-52 p-3 bg-[#09090b] border border-blue-500/30 text-white text-xs rounded-xl shadow-2xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xl leading-relaxed font-medium ${
+
+            {/* 데스크톱 마우스 호버 툴팁 */}
+            <div className={`hidden sm:block absolute bottom-full mb-2 w-64 p-3.5 bg-zinc-950/95 border border-indigo-500/40 text-white text-xs rounded-2xl shadow-2xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xl leading-relaxed font-medium ${
                 align === 'right' ? 'right-0 left-auto' : 'left-0'
             }`}>
-                <span className="text-yellow-400 font-bold block mb-1"><span>💡</span> <span>{term}</span> <span>지표 풀이</span></span>
-                <span>{explanation || "쉬운 설명이 준비 중이에요!"}</span>
-                <div className={`absolute top-full -mt-1 border-4 border-transparent border-t-[#09090b] ${
+                <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/10">
+                    <span className="text-indigo-300 font-extrabold flex items-center gap-1 text-[11px]">
+                        <span>🔮</span> <span>초보 번역: {displayName}</span>
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">[{guide?.standardName || term}]</span>
+                </div>
+                <p className="text-zinc-200 text-[11px] mb-2 leading-relaxed">
+                    <span className="text-yellow-400 font-bold">💡 실생활 비유: </span>
+                    {guide?.analogy || TERM_EXPLANATIONS[term] || "쉬운 설명이 준비 중이에요!"}
+                </p>
+                {guide?.howToRead && (
+                    <p className="text-emerald-300 text-[10px] bg-emerald-500/10 p-1.5 rounded-lg border border-emerald-500/20 leading-normal">
+                        <span className="font-bold">📌 쉽게 보는 법: </span>{guide.howToRead}
+                    </p>
+                )}
+                <div className={`absolute top-full -mt-1 border-4 border-transparent border-t-zinc-950/95 ${
                     align === 'right' ? 'right-4 left-auto' : 'left-4'
-                }`}></div>
+                }`} />
             </div>
         </div>
     );
@@ -621,6 +803,7 @@ function DiscoveryContent() {
     const [showReport, setShowReport] = useState(false);
     const [activeTab, setActiveTab] = useState<'analysis' | 'news' | 'disclosure' | 'financials' | 'backtest' | 'history' | 'daily' | 'story' | 'alerts' | 'dividend_health' | 'investor' | 'overhang'>('analysis');
     const [easyMode, setEasyMode] = useState(false);
+    const [activeMetricGuide, setActiveMetricGuide] = useState<string | null>(null);
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [exchangeRate, setExchangeRate] = useState<number>(1450); // Default
     const [financialHighlights, setFinancialHighlights] = useState<any | null>(null);
@@ -2504,34 +2687,64 @@ function DiscoveryContent() {
 
                                                     <button
                                                         onClick={() => setEasyMode(!easyMode)}
-                                                        className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-2.5 border cursor-pointer select-none self-start sm:self-auto ${easyMode
-                                                            ? "bg-gradient-to-r from-indigo-600 to-indigo-500 border-indigo-400/40 text-white shadow-lg shadow-indigo-500/25 ring-1 ring-white/20"
+                                                        className={`text-xs font-black px-3.5 py-2 rounded-xl transition-all duration-300 flex items-center gap-2.5 border cursor-pointer select-none self-start sm:self-auto ${easyMode
+                                                            ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-500 border-indigo-300/60 text-white shadow-[0_0_20px_rgba(99,102,241,0.45)] ring-2 ring-indigo-400/50 scale-[1.02]"
                                                             : "bg-white/[0.04] border-white/10 text-zinc-400 hover:bg-white/[0.08] hover:text-white"
                                                             }`}
+                                                        title={easyMode ? "초보 번역기 끄기 (표준 재무 용어로 복원)" : "초보 번역기 켜기 (쉬운 일상 비유 모드)"}
                                                     >
                                                         <span className="flex items-center gap-1.5">
-                                                            <span className="text-sm">🎓</span>
-                                                            <span>초보 번역기</span>
+                                                            <span className="text-sm">{easyMode ? "🔮" : "🎓"}</span>
+                                                            <span>{easyMode ? "초보 번역기 ON" : "초보 번역기"}</span>
+                                                            {easyMode && <span className="text-[10px] text-yellow-300 animate-pulse">✨</span>}
                                                         </span>
-                                                        <div className={`w-7 h-4 rounded-full p-0.5 transition-colors duration-200 ${easyMode ? 'bg-black/40' : 'bg-zinc-800'}`}>
-                                                            <div className={`w-3 h-3 rounded-full bg-white shadow-sm transform transition-transform duration-200 ${easyMode ? 'translate-x-3' : 'translate-x-0'}`} />
+                                                        <div className={`w-8 h-4.5 rounded-full p-0.5 transition-colors duration-300 flex items-center ${easyMode ? 'bg-black/50 justify-end' : 'bg-zinc-800 justify-start'}`}>
+                                                            <div className={`w-3.5 h-3.5 rounded-full shadow-md transform transition-all duration-300 ${easyMode ? 'bg-yellow-300' : 'bg-zinc-400'}`} />
                                                         </div>
                                                     </button>
                                                 </div>
 
+                                                {/* 초보 번역기 가동 시 나타나는 시각적 피드백 배너 */}
+                                                {easyMode && (
+                                                    <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-purple-950/50 to-indigo-950/70 border border-indigo-500/40 text-xs text-indigo-200 flex items-start sm:items-center justify-between gap-3 shadow-lg shadow-indigo-950/40">
+                                                        <div className="flex items-start sm:items-center gap-2.5">
+                                                            <span className="text-lg shrink-0">🔮</span>
+                                                            <div className="leading-relaxed">
+                                                                <span className="font-extrabold text-white mr-1.5">[초보 번역기 가동 중]</span>
+                                                                어려운 전문 주식 용어를 <span className="text-yellow-300 font-bold">쉬운 우리말과 일상 비유</span>로 변환했습니다. 카드를 터치/클릭하면 실생활 비유와 투자 꿀팁을 확인할 수 있어요!
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setEasyMode(false)}
+                                                            className="text-[11px] text-zinc-400 hover:text-white underline shrink-0 hidden sm:inline cursor-pointer"
+                                                        >
+                                                            기본 모드로 복귀
+                                                        </button>
+                                                    </div>
+                                                )}
+
                                                 {/* 10개 핵심 지표 카드 그리드 (모바일 2열 완벽 최적화 & 통일된 높이) */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3.5">
                                                     {/* 1. 시가총액 (Market Cap) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-sky-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("시가총액")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-sky-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-sky-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-sky-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     🏢
                                                                 </span>
-                                                                <EasyTerm label="시가총액" term="시가총액" isEasyMode={easyMode} />
+                                                                <EasyTerm label="시가총액" term="시가총액" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2539,33 +2752,58 @@ function DiscoveryContent() {
                                                                 {formatCapDisplay(stock.details?.market_cap || 'N/A')}
                                                             </div>
 
-                                                            {/* 3행: 스마트 인사이트 뱃지 (단독 행으로 배치되어 텍스트 보존) */}
+                                                            {/* 3행: 스마트 인사이트 뱃지 */}
                                                             <div className="mt-1.5 flex items-center gap-1 flex-wrap">
                                                                 {capBadge && (
                                                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-tight inline-flex items-center gap-0.5 whitespace-nowrap ${capBadgeStyle}`}>
                                                                         {capBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-1.5 py-0.5 rounded">
+                                                                        체급
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            기업 전체 시장가치
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["시가총액"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["시가총액"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 2. 거래량 (Volume) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-cyan-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("거래량")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-cyan-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-cyan-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-cyan-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     📊
                                                                 </span>
-                                                                <EasyTerm label="당일 거래량" term="거래량" isEasyMode={easyMode} />
+                                                                <EasyTerm label="당일 거래량" term="거래량" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2581,27 +2819,52 @@ function DiscoveryContent() {
                                                                         {volBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 rounded">
+                                                                        인기
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            당일 총 손바뀜 주식수
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["거래량"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["거래량"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 3. PER (주가수익비율) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-purple-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("PER")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-purple-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-purple-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-purple-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     ⚖️
                                                                 </span>
-                                                                <EasyTerm label="PER" term="PER" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주가수익비율</span>
+                                                                <EasyTerm label="PER" term="PER" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주가수익비율</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2623,27 +2886,52 @@ function DiscoveryContent() {
                                                                         {peBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded">
+                                                                        가성비
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            순이익 대비 주가 배수
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["PER"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["PER"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 4. EPS (주당순이익) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("EPS")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-emerald-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-emerald-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     📈
                                                                 </span>
-                                                                <EasyTerm label="EPS" term="EPS" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주당순이익</span>
+                                                                <EasyTerm label="EPS" term="EPS" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주당순이익</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2666,26 +2954,51 @@ function DiscoveryContent() {
                                                                         {epsBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                                                                        벌이 체력
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            1주당 번 연간 순이익
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["EPS"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["EPS"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 5. 배당수익률 (Yield) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-amber-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("배당수익률")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-amber-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-amber-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-amber-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     💰
                                                                 </span>
-                                                                <EasyTerm label="배당수익률" term="배당수익률" isEasyMode={easyMode} />
+                                                                <EasyTerm label="배당수익률" term="배당수익률" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2701,27 +3014,52 @@ function DiscoveryContent() {
                                                                         {dvrBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                                                                        용돈 보너스
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            주가 대비 연간 현금 배당률
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["배당수익률"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["배당수익률"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 6. 추정 PER (Forward PE) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-indigo-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("추정 PER")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-indigo-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-indigo-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-indigo-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     🔮
                                                                 </span>
-                                                                <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">Fwd PER</span>
+                                                                <EasyTerm label="추정 PER" term="추정 PER" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">Fwd PER</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2743,27 +3081,52 @@ function DiscoveryContent() {
                                                                         {fwdPeBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-1.5 py-0.5 rounded">
+                                                                        내년 가성비
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            증권사 컨센서스 미래 밸류
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["추정 PER"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["추정 PER"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 7. 추정 EPS */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-teal-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("추정 EPS")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-teal-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-teal-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-teal-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     🎯
                                                                 </span>
-                                                                <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">Fwd EPS</span>
+                                                                <EasyTerm label="추정 EPS" term="추정 EPS" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">Fwd EPS</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2791,27 +3154,52 @@ function DiscoveryContent() {
                                                                         역산
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-1.5 py-0.5 rounded">
+                                                                        내년 순익
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            다음 회계연도 예상 순익
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["추정 EPS"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["추정 EPS"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 8. PBR (주가순자산비율) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-orange-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("PBR")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-orange-500/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-orange-500" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-orange-500"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     🏛️
                                                                 </span>
-                                                                <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주가순자산비율</span>
+                                                                <EasyTerm label="PBR" term="PBR" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주가순자산비율</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2833,27 +3221,52 @@ function DiscoveryContent() {
                                                                         {pbrBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-orange-300 bg-orange-500/15 border border-orange-500/30 px-1.5 py-0.5 rounded">
+                                                                        자산 바겐세일
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            청산가치(순자산) 대비 배수
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["PBR"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["PBR"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 9. BPS (주당순자산) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-zinc-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("BPS")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-zinc-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-zinc-400" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-zinc-400"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-zinc-500/10 border border-zinc-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     📑
                                                                 </span>
-                                                                <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주당순자산</span>
+                                                                <EasyTerm label="BPS" term="BPS" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-medium hidden sm:inline">주당순자산</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2876,27 +3289,52 @@ function DiscoveryContent() {
                                                                         {bpsBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-zinc-300 bg-zinc-700/30 border border-zinc-600/40 px-1.5 py-0.5 rounded">
+                                                                        안전판 밑천
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            기업 청산 시 1주당 분배금
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["BPS"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["BPS"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
 
                                                     {/* 10. 주당배당금 (DPS) */}
-                                                    <div className="relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5 flex flex-col justify-between min-h-[148px]">
+                                                    <div 
+                                                        onClick={() => easyMode && setActiveMetricGuide("주당배당금")}
+                                                        className={`relative group overflow-hidden rounded-2xl p-3 sm:p-3.5 transition-all duration-300 flex flex-col justify-between min-h-[148px] ${
+                                                            easyMode 
+                                                                ? "bg-gradient-to-b from-indigo-950/40 via-zinc-950/90 to-black/95 border border-indigo-500/40 shadow-lg shadow-indigo-950/30 hover:border-indigo-400 ring-1 ring-indigo-500/20 cursor-pointer" 
+                                                                : "bg-gradient-to-b from-zinc-900/90 via-zinc-950/85 to-black/95 border border-white/[0.08] hover:border-emerald-400/30 hover:shadow-xl hover:shadow-black/70 hover:-translate-y-0.5"
+                                                        }`}
+                                                    >
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
-                                                        <div className="pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl opacity-10 group-hover:opacity-30 transition-opacity bg-emerald-400" />
+                                                        <div className={`pointer-events-none absolute -right-6 -top-6 w-20 h-20 rounded-full blur-2xl transition-opacity ${
+                                                            easyMode ? "opacity-35 bg-indigo-500" : "opacity-10 group-hover:opacity-30 bg-emerald-400"
+                                                        }`} />
                                                         <div>
                                                             {/* 1행: 아이콘 + 지표명 */}
                                                             <div className="flex items-center gap-1.5 mb-2">
                                                                 <span className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[11px] shrink-0">
                                                                     💸
                                                                 </span>
-                                                                <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} />
-                                                                <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">DPS</span>
+                                                                <EasyTerm label="주당배당금" term="주당배당금" isEasyMode={easyMode} onOpenGuide={(t) => setActiveMetricGuide(t)} />
+                                                                {!easyMode && <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline">DPS</span>}
                                                             </div>
 
                                                             {/* 2행: 메인 수치 */}
@@ -2921,15 +3359,110 @@ function DiscoveryContent() {
                                                                         {dpsBadge}
                                                                     </span>
                                                                 )}
+                                                                {easyMode && (
+                                                                    <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                                                                        현금 입금
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {/* 4행: 하단 설명 */}
-                                                        <div className="mt-2.5 pt-2 border-t border-white/[0.05] text-[10px] text-zinc-400 font-medium truncate">
-                                                            1주당 실제 입금 현금
+                                                        <div className={`mt-2.5 pt-2 border-t text-[10px] truncate transition-colors ${
+                                                            easyMode 
+                                                                ? "border-indigo-500/25 text-indigo-200 font-semibold flex items-center gap-1" 
+                                                                : "border-white/[0.05] text-zinc-400 font-medium"
+                                                        }`}>
+                                                            {easyMode ? (
+                                                                <>
+                                                                    <span className="text-yellow-400 shrink-0">💡</span>
+                                                                    <span className="truncate">{METRIC_GUIDES["주당배당금"]?.easyBottomTip}</span>
+                                                                </>
+                                                            ) : (
+                                                                <span>{METRIC_GUIDES["주당배당금"]?.normalBottomTip}</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {/* 초보 번역기 상세 가이드 모달 / 팝오버 (모바일 터치 및 클릭 완벽 지원) */}
+                                                {activeMetricGuide && METRIC_GUIDES[activeMetricGuide] && (() => {
+                                                    const guide = METRIC_GUIDES[activeMetricGuide];
+                                                    return (
+                                                        <div 
+                                                            onClick={() => setActiveMetricGuide(null)}
+                                                            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn"
+                                                        >
+                                                            <div 
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="bg-zinc-950 border border-indigo-500/40 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 relative ring-1 ring-white/10"
+                                                            >
+                                                                {/* 닫기 버튼 */}
+                                                                <button
+                                                                    onClick={() => setActiveMetricGuide(null)}
+                                                                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center text-sm transition-all cursor-pointer"
+                                                                >
+                                                                    ✕
+                                                                </button>
+
+                                                                {/* 헤더 */}
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                                                                        {guide.icon}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300">
+                                                                                {guide.badgeTitle}
+                                                                            </span>
+                                                                            <span className="text-xs text-zinc-400 font-mono">[{guide.standardName}]</span>
+                                                                        </div>
+                                                                        <h3 className="text-lg font-black text-white mt-0.5 flex items-center gap-1.5">
+                                                                            <span>{guide.easyName}</span>
+                                                                            <span className="text-xs text-yellow-400 font-normal">({guide.shortLabel})</span>
+                                                                        </h3>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* 핵심 1초 요약 */}
+                                                                <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-xs text-indigo-100 font-medium leading-relaxed">
+                                                                    <div className="text-[11px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
+                                                                        <span>⚡</span> <span>1초 핵심 요약</span>
+                                                                    </div>
+                                                                    {guide.easyBottomTip}
+                                                                </div>
+
+                                                                {/* 실생활 비유 */}
+                                                                <div className="p-3.5 rounded-2xl bg-zinc-900/80 border border-white/5 space-y-1.5">
+                                                                    <div className="text-xs font-bold text-yellow-400 flex items-center gap-1.5">
+                                                                        <span>💡</span> <span>알기 쉬운 실생활 비유</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-zinc-300 leading-relaxed font-normal">
+                                                                        {guide.analogy}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* 쉽게 보는 꿀팁 */}
+                                                                <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/20 space-y-1.5">
+                                                                    <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                                                                        <span>📌</span> <span>투자할 때 어떻게 보나요?</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-emerald-200 leading-relaxed font-normal">
+                                                                        {guide.howToRead}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* 확인 버튼 */}
+                                                                <button
+                                                                    onClick={() => setActiveMetricGuide(null)}
+                                                                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-bold text-xs hover:from-indigo-500 hover:to-indigo-400 transition-all shadow-lg shadow-indigo-500/25 cursor-pointer"
+                                                                >
+                                                                    이해했어요! 확인
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
 
                                             {/* 가격 범위 및 52주 변동성 위치 게이지 바 */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
