@@ -22,14 +22,21 @@ const navigationGroups = [
         ]
     },
     {
+        groupName: "투자 아카데미 & 리서치",
+        items: [
+            { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "초보자를 위한 PER, PBR, 공매도, DART 등 46대 필수 주식 용어 해설 백과사전입니다.", badge: "필수" },
+            { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 심층 리포트를 제공합니다.", badge: "칼럼" },
+            { name: "1타 강사 차트 스터디", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론, 보조지표 매매타점을 쉽고 체계적으로 학습합니다.", badge: "인기" },
+            { name: "실시간 핫이슈 종목", href: "/post", icon: Flame, desc: "실시간으로 쏟아지는 구글 검색 트렌드 기반 급등주 및 테마주 핫이슈 리포트입니다." },
+        ]
+    },
+    {
         groupName: "프리미엄 & 리포트",
         items: [
             { name: "주식 고수 랭킹", href: "/ranking", icon: Trophy, desc: "전국 주식 고수들의 포트폴리오 수익률과 명예의 전당 랭킹입니다.", badge: "VIP" },
             { name: "VIP 프리미엄 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다.", badge: "PRO" },
             { name: "주말 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "주말에 발행되는 프리미엄 마켓 요약 리포트입니다." },
             { name: "주말 고래 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "세력과 외국인이 매집한 TOP 10 종목을 파헤치는 주말 프리미엄 리포트입니다." },
-            { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 요약 리포트를 제공합니다." },
-            { name: "실시간 핫이슈 종목", href: "/post", icon: Flame, desc: "실시간으로 쏟아지는 구글 검색 트렌드 기반 급등주 및 테마주 핫이슈 리포트입니다." },
         ]
     },
     {
@@ -49,14 +56,6 @@ const navigationGroups = [
             { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
             { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
             { name: "물타기 평단 계산기", href: "/calculator", icon: Calculator, desc: "추가 매수 시 변화하는 평단가와 탈출 시나리오를 계산합니다.", badge: "NEW" },
-        ]
-    },
-    {
-        groupName: "스터디 & 설정",
-        items: [
-            { name: "차트 스터디 (이론방)", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론을 쉽고 체계적으로 학습합니다." },
-            { name: "주식 투자 용어 사전", href: "/guide", icon: HelpCircle, desc: "주식 초보자를 위한 필수 투자 용어 및 기초 지표를 정리한 백과사전입니다." },
-            { name: "종목 디렉토리 (전체 종목)", href: "/directory", icon: List, desc: "국내 상장된 모든 주식 종목을 A-Z로 탐색합니다.", hidden: true },
             { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings, desc: "증권사 API 연동, 화면 다크모드, 알림 설정 등 시스템 환경을 관리합니다." },
         ]
     }
@@ -69,10 +68,10 @@ export default function Sidebar() {
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         "홈 & 대시보드": true,
+        "투자 아카데미 & 리서치": true,
         "프리미엄 & 리포트": true,
-        "종목 발굴 & 분석": true,
-        "내 투자 & 자산 관리": false,
-        "스터디 & 설정": true
+        "종목 발굴 & 분석": false,
+        "내 투자 & 자산 관리": false
     });
 
     const toggleGroup = (groupName: string) => {

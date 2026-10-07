@@ -2,8 +2,7 @@ import { MetadataRoute } from 'next';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { API_BASE_URL } from '@/lib/config';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 3600;
+export const revalidate = 3600; // 1시간마다 ISR 재생성 및 CDN 캐싱
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
@@ -179,106 +178,91 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
 
     const backendApiUrl = API_BASE_URL || 'http://127.0.0.1:8000';
-    const frontendApiUrl = baseUrl; // Next.js API Routes (/api/theory/posts, /api/blog/posts, /api/seo_posts)
+    const frontendApiUrl = baseUrl;
 
-    // 4. 테마별 산업 및 시장 분석 (고품질 테마 분석 콘텐츠)
+    // 4~7. 동적 포스트들을 Promise.allSettled로 병렬 수집 (최대 타임아웃 1.2초로 제한하여 검색봇 타임아웃 절대 방지)
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(`${backendApiUrl}/api/seo/themes`, { next: { revalidate: 86400 }, signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.data && Array.isArray(data.data)) {
-                data.data.forEach((theme: any) => {
-                    routes.push({
-                        url: `${baseUrl}/theme/${theme.slug}`,
-                        lastModified: new Date(),
-                        changeFrequency: 'weekly',
-                        priority: 0.8,
-                    });
-                });
+        const fetchWithFastTimeout = async (url: string, timeoutMs: number = 1200) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { next: { revalidate: 3600 }, signal: controller.signal });
+                clearTimeout(id);
+                return res.ok ? await res.json() : null;
+            } catch {
+                clearTimeout(id);
+                return null;
             }
+        };
+
+        const [themeData, blogData, theoryData, seoData] = await Promise.all([
+            fetchWithFastTimeout(`${backendApiUrl}/api/seo/themes`),
+            fetchWithFastTimeout(`${frontendApiUrl}/api/blog/posts?page=1&limit=100`),
+            fetchWithFastTimeout(`${frontendApiUrl}/api/theory/posts?page=1&limit=100`),
+            fetchWithFastTimeout(`${frontendApiUrl}/api/seo_posts?page=1&limit=200`),
+        ]);
+
+        // 테마 페이지
+        if (themeData?.data && Array.isArray(themeData.data)) {
+            themeData.data.forEach((theme: any) => {
+                routes.push({
+                    url: `${baseUrl}/theme/${theme.slug}`,
+                    lastModified: new Date(),
+                    changeFrequency: 'weekly',
+                    priority: 0.8,
+                });
+            });
+        }
+
+        // 블로그 포스트
+        if (blogData?.status === 'ok' && Array.isArray(blogData.posts)) {
+            blogData.posts.forEach((post: any) => {
+                const slug = post.slug || post.id;
+                routes.push({
+                    url: `${baseUrl}/blog/${encodeURIComponent(slug)}`,
+                    lastModified: new Date(post.createdAt || Date.now()),
+                    changeFrequency: 'daily',
+                    priority: 0.9,
+                });
+            });
+        }
+
+        // 이론 포스트
+        if (theoryData?.status === 'ok' && Array.isArray(theoryData.posts)) {
+            theoryData.posts.forEach((post: any) => {
+                const slug = post.slug || post.id;
+                routes.push({
+                    url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
+                    lastModified: new Date(post.createdAt || Date.now()),
+                    changeFrequency: 'daily',
+                    priority: 0.95,
+                });
+            });
+        }
+
+        // 실시간 SEO 포스트
+        if (seoData?.status === 'ok' && Array.isArray(seoData.posts)) {
+            seoData.posts.forEach((post: any) => {
+                const slug = post.slug || post.id;
+                routes.push({
+                    url: `${baseUrl}/post/${encodeURIComponent(slug)}`,
+                    lastModified: new Date(post.createdAt || Date.now()),
+                    changeFrequency: 'daily',
+                    priority: 0.85,
+                });
+            });
         }
     } catch (e) {
-        console.error("Failed to generate theme sitemap:", e);
+        console.error("Fast sitemap extra fetch failed safely:", e);
     }
 
-    // 5. 전문가 마켓 리포트 & 실시간 브리핑 포스트 (Next.js API Route)
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-        const res = await fetch(`${frontendApiUrl}/api/blog/posts?page=1&limit=200`, { next: { revalidate: 3600 }, signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.status === 'ok' && Array.isArray(data.posts)) {
-                data.posts.forEach((post: any) => {
-                    const slug = post.slug || post.id;
-                    routes.push({
-                        url: `${baseUrl}/blog/${encodeURIComponent(slug)}`,
-                        lastModified: new Date(post.createdAt || Date.now()),
-                        changeFrequency: 'daily',
-                        priority: 0.9,
-                    });
-                });
-            }
-        }
-    } catch (e) {
-        console.error("Failed to generate blog sitemap:", e);
-    }
+    // 중복 URL 제거 (Set 기반)
+    const seenUrls = new Set<string>();
+    const uniqueRoutes = routes.filter((r) => {
+        if (seenUrls.has(r.url)) return false;
+        seenUrls.add(r.url);
+        return true;
+    });
 
-    // 6. 차트 및 기술적 분석 투자 이론 포스트 (70+ 고품질 1타 강사 스터디 - Next.js API Route)
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-        const res = await fetch(`${frontendApiUrl}/api/theory/posts?page=1&limit=200`, { next: { revalidate: 3600 }, signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.status === 'ok' && Array.isArray(data.posts)) {
-                data.posts.forEach((post: any) => {
-                    const slug = post.slug || post.id;
-                    routes.push({
-                        url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
-                        lastModified: new Date(post.createdAt || Date.now()),
-                        changeFrequency: 'daily',
-                        priority: 0.95,
-                    });
-                });
-            }
-        }
-    } catch (e) {
-        console.error("Failed to generate theory sitemap:", e);
-    }
-
-    // 7. 실시간 핫이슈 & 시장 분석 포스트 (Next.js API Route)
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-        const res = await fetch(`${frontendApiUrl}/api/seo_posts?page=1&limit=500`, { next: { revalidate: 3600 }, signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.status === 'ok' && Array.isArray(data.posts)) {
-                data.posts.forEach((post: any) => {
-                    const slug = post.slug || post.id;
-                    routes.push({
-                        url: `${baseUrl}/post/${encodeURIComponent(slug)}`,
-                        lastModified: new Date(post.createdAt || Date.now()),
-                        changeFrequency: 'daily',
-                        priority: 0.85,
-                    });
-                });
-            }
-        }
-    } catch (e) {
-        console.error("Failed to generate seo posts sitemap:", e);
-    }
-
-    // [중요] 8,000개 이상의 자동생성된 빈약한 종목 상세 페이지(/stock/XXXXXX)는
-    // 구글 애드센스 심사 봇이 "가치 없는 콘텐츠(Thin Content)"로 오인하는 주원인이므로
-    // 사이트맵에서 배제하고, 위와 같이 100% 읽을거리가 풍부한 고품질 교육·분석 페이지로만 집중 등록합니다.
-
-    return routes;
+    return uniqueRoutes;
 }

@@ -7,20 +7,36 @@ import {
 } from 'lucide-react';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 
-export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
 async function getLatestTheoryPosts() {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
     const res = await fetch('https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=6', {
-      next: { revalidate: 300 }
+      next: { revalidate: 300 },
+      signal: controller.signal
     });
-    if (!res.ok) return [];
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error("Theory fetch error");
     const data = await res.json();
-    return Array.isArray(data?.posts) ? data.posts.slice(0, 6) : [];
+    if (Array.isArray(data?.posts) && data.posts.length > 0) {
+      return data.posts.slice(0, 6);
+    }
   } catch {
-    return [];
+    // API 장애 또는 타임아웃 시 100% 무중단 정적 칼럼 제공
   }
+
+  // Fallback: STATIC_POSTS에서 실전 투자/차트 기법 칼럼 6선 반환
+  return STATIC_POSTS.slice(0, 6).map(p => ({
+    id: p.id,
+    title: p.title,
+    content: p.content,
+    summary: p.content.replace(/<[^>]*>?/gm, ' ').substring(0, 150),
+    slug: p.slug || p.id,
+    createdAt: p.createdAt,
+    tags: p.tags
+  }));
 }
 
 export const metadata: Metadata = {
@@ -35,14 +51,26 @@ const INVESTMENT_GUIDES = [
   { href: '/guide/per', title: 'PER (주가수익비율)', desc: '적정 PER 기준과 실전 가치평가' },
   { href: '/guide/pbr', title: 'PBR (주가순자산비율)', desc: '장부가치 대비 저평가 판단 지표' },
   { href: '/guide/roe', title: 'ROE (자기자본이익률)', desc: '워런 버핏이 강조한 자본 효율성' },
+  { href: '/guide/eps', title: 'EPS (주당순이익)', desc: '순이익 성장률과 기업 체력 측정' },
   { href: '/guide/rsi', title: 'RSI (상대강도지수)', desc: '과매수·과매도 반등 타점 포착' },
   { href: '/guide/macd', title: 'MACD 추세 분석', desc: '이동평균 수렴확산과 골든크로스' },
   { href: '/guide/bollinger-band', title: '볼린저 밴드', desc: '표준편차 밴드 스퀴즈와 돌파' },
   { href: '/guide/moving-average', title: '이동평균선(MA)', desc: '단기·장기 추세선 매매 타이밍' },
+  { href: '/guide/golden-cross', title: '골든크로스 & 데드크로스', desc: '추세 반전 시그널의 실전 활용법' },
+  { href: '/guide/volume', title: '거래량 분석', desc: '주가 상승의 원동력과 세력 매집' },
   { href: '/guide/dividend-yield', title: '배당수익률 분석', desc: '안정적인 고배당주 포트폴리오' },
+  { href: '/guide/ex-dividend-date', title: '배당락일 & 배당주 매매', desc: '배당 기준일과 배당락 주가 방어' },
   { href: '/guide/short-selling', title: '공매도 & 숏스퀴즈', desc: '외인·기관 대차잔고와 수급 구조' },
   { href: '/guide/dart', title: 'DART 전자공시', desc: '공급계약 및 내부자 거래 분석' },
+  { href: '/guide/disclosure', title: '기업 공시 완전 정복', desc: '유상증자·무상증자 주가 영향' },
   { href: '/guide/fomc', title: 'FOMC & 기준금리', desc: '미국 연준 통화정책과 주가 상관관계' },
+  { href: '/guide/interest-rate', title: '금리 사이클과 주식', desc: '고금리·저금리 수혜 섹터 로테이션' },
+  { href: '/guide/inflation', title: '인플레이션과 원자재', desc: '물가 상승기 헷지 자산 배분 전략' },
+  { href: '/guide/etf', title: 'ETF 투자 바이블', desc: '시장 지수 및 섹터 분산 투자 비법' },
+  { href: '/guide/value-investing', title: '가치투자 기본 원칙', desc: '안전마진과 경제적 해자 기업 발굴' },
+  { href: '/guide/growth-investing', title: '성장주 투자 전략', desc: '빅테크와 혁신 기업 밸류에이션' },
+  { href: '/guide/stop-loss', title: '손절매(Stop-Loss) 원칙', desc: '원금 보존을 위한 리스크 관리 룰' },
+  { href: '/guide/averaging-down', title: '올바른 물타기 전략', desc: '평단가 낮추기와 탈출 시나리오' },
   { href: '/guide/rebalancing', title: '포트폴리오 리밸런싱', desc: '자산배분과 변동성 리스크 관리' },
 ];
 
@@ -75,7 +103,7 @@ const FAQS = [
 
 export default async function Home() {
   const latestTheoryPosts = await getLatestTheoryPosts();
-  const featuredBlogPosts = STATIC_POSTS.slice(0, 6);
+  const featuredBlogPosts = STATIC_POSTS.slice(0, 9);
 
   const jsonLd = {
     "@context": "https://schema.org",

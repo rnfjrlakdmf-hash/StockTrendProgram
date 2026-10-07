@@ -8,27 +8,45 @@ import PushSubscribeButton from "@/components/PushSubscribeButton";
 import KakaoAdFit from "@/components/KakaoAdFit";
 import ResponsiveKakaoAd from "@/components/ResponsiveKakaoAd";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0; // ISR 60초
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+
+export const revalidate = 60; // ISR 60초
 
 async function getRelatedPosts() {
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500);
         const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=3`;
-        const res = await fetch(apiUrl, { cache: 'no-store' });
+        const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
+        clearTimeout(timeoutId);
         const data = await res.json();
         return data.posts || [];
-    } catch { return []; }
+    } catch { 
+        return STATIC_POSTS.slice(0, 3); 
+    }
 }
 
 async function getTheoryPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
+
+        // 1. STATIC_POSTS에서 먼저 검색 (0ms 즉시 반환 및 API 실패 방어)
+        const staticP = STATIC_POSTS.find(p => p.slug === decodedSlug || p.id === decodedSlug);
+        if (staticP) {
+            return {
+                ...staticP,
+                createdAt: staticP.createdAt ? new Date(staticP.createdAt) : new Date(),
+            };
+        }
         
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
         const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts/${encodeURIComponent(decodedSlug)}`;
-        const res = await fetch(apiUrl, { cache: 'no-store' });
+        const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
+        clearTimeout(timeoutId);
         
         if (!res.ok) {
-            console.error(`API error: ${res.status}`);
+            console.warn(`이론 포스트 API 응답 실패: ${res.status}`);
             return null;
         }
         
@@ -43,7 +61,7 @@ async function getTheoryPost(slug: string) {
         return null;
 
     } catch (error) {
-        console.error("이론 포스트 상세 로딩 에러:", error);
+        console.warn("이론 포스트 상세 로딩 에러:", error);
         return null;
     }
 }

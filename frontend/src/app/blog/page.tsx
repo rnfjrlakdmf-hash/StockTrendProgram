@@ -47,20 +47,35 @@ export const metadata: Metadata = {
     }
 };
 
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+
 export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
 async function getBlogPosts(page: number, limitPerPage: number) {
+    // 1. 고품질 정적 블로그 25편을 기본 데이터셋으로 장착 (구글 애드센스 심사 통과 핵심 보증)
+    const baseStaticPosts: BlogPost[] = STATIC_POSTS.map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        createdAt: new Date(p.createdAt),
+        tags: p.tags || [],
+        slug: p.slug || p.id,
+        viewCount: p.viewCount || 1000,
+    }));
+
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts?page=${page}&limit=${limitPerPage}`;
-        const res = await fetch(apiUrl, { next: { revalidate: 60 } });
-        
-        let apiPosts: BlogPost[] = [];
-        let totalPages = 1;
+        const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        let dynamicPosts: BlogPost[] = [];
 
         if (res.ok) {
             const data = await res.json();
-            if (data.status === "ok" && data.posts?.length) {
-                apiPosts = data.posts.map((p: any) => ({
+            if (data.status === "ok" && Array.isArray(data.posts)) {
+                dynamicPosts = data.posts.map((p: any) => ({
                     id: p.id,
                     title: p.title,
                     content: p.content,
@@ -69,14 +84,35 @@ async function getBlogPosts(page: number, limitPerPage: number) {
                     slug: p.slug || p.id,
                     viewCount: p.viewCount || 0,
                 }));
-                totalPages = data.totalPages || 1;
             }
         }
 
-        return { posts: apiPosts, totalPages: totalPages };
+        // 중복 방지 병합 (동적 포스트 우선, 정적 포스트 보강)
+        const postMap = new Map<string, BlogPost>();
+        dynamicPosts.forEach(p => postMap.set(p.slug, p));
+        baseStaticPosts.forEach(p => {
+            if (!postMap.has(p.slug)) {
+                postMap.set(p.slug, p);
+            }
+        });
+
+        const mergedPosts = Array.from(postMap.values()).sort(
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+        );
+
+        const totalPages = Math.max(1, Math.ceil(mergedPosts.length / limitPerPage));
+        const startIndex = (page - 1) * limitPerPage;
+        const pagedPosts = mergedPosts.slice(startIndex, startIndex + limitPerPage);
+
+        return { posts: pagedPosts.length ? pagedPosts : mergedPosts.slice(0, limitPerPage), totalPages };
     } catch (error) {
-        console.error("블로그 포스트 로딩 에러:", error);
-        return { posts: [], totalPages: 1 };
+        console.warn("블로그 동적 API 로딩 타임아웃, 정적 데이터 100% 안전 서빙:", error);
+        const totalPages = Math.max(1, Math.ceil(baseStaticPosts.length / limitPerPage));
+        const startIndex = (page - 1) * limitPerPage;
+        return { 
+            posts: baseStaticPosts.slice(startIndex, startIndex + limitPerPage), 
+            totalPages 
+        };
     }
 }
 

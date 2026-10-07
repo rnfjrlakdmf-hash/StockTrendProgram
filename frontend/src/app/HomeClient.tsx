@@ -51,12 +51,15 @@ export default function HomeClient() {
               금융감독원 DART·미국 SEC 공시 원천 데이터 분석 리포트와 매일 아침 연재되는 실전 차트·재무 교육 칼럼을 100% 무료로 제공합니다.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/theory" className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-black transition-all">
-              📖 매일 차트 스터디 칼럼 (70+편)
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <Link href="/guide" className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-black transition-all">
+              📚 주식 용어 백과 (46선)
             </Link>
             <Link href="/blog" className="px-3.5 py-2 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 text-xs font-black transition-all">
-              📰 심층 마켓 칼럼
+              📰 심층 마켓 리포트
+            </Link>
+            <Link href="/theory" className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-black transition-all">
+              📖 1타 차트 스터디
             </Link>
           </div>
         </div>

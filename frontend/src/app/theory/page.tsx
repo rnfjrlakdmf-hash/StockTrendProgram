@@ -17,19 +17,34 @@ export const metadata: Metadata = {
     }
 };
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+
+export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
 async function getTheoryPosts(page: number, limitPerPage: number) {
+    // API 실패 시 서빙할 핵심 실전 차트 & 투자 이론 포스트 (구글 애드센스 빈 페이지 방지 보증)
+    const fallbackTheoryPosts: TheoryPost[] = STATIC_POSTS.slice(0, 15).map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        createdAt: new Date(p.createdAt),
+        tags: p.tags || ["차트스터디", "투자이론"],
+        slug: p.slug || p.id,
+        viewCount: p.viewCount || 850,
+    }));
+
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts?page=${page}&limit=${limitPerPage}`;
-        const res = await fetch(apiUrl, { cache: 'no-store' });
+        const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
+        clearTimeout(timeoutId);
         
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         
         const data = await res.json();
         
-        if (data.status !== "ok" || !data.posts?.length) {
+        if (data.status !== "ok" || !Array.isArray(data.posts) || data.posts.length === 0) {
             throw new Error("No posts from API");
         }
 
@@ -45,8 +60,11 @@ async function getTheoryPosts(page: number, limitPerPage: number) {
 
         return { posts, totalPages: data.totalPages || 1 };
     } catch (error) {
-        console.error("이론 포스트 로딩 에러:", error);
-        return { posts: [], totalPages: 1 };
+        console.warn("이론 포스트 API 실패, 안전 대체 데이터 제공:", error);
+        return { 
+            posts: fallbackTheoryPosts.slice((page - 1) * limitPerPage, page * limitPerPage), 
+            totalPages: Math.max(1, Math.ceil(fallbackTheoryPosts.length / limitPerPage)) 
+        };
     }
 }
 
