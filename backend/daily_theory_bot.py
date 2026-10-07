@@ -660,7 +660,7 @@ def post_daily_theory(force=False):
                 f"📊 수록 자료: <b>실전 차트 그림 · 비교 막대그래프 · 1,000만원 계산 예시</b>\n\n"
                 f"👉 <a href='{new_url}'>차트·그래프 포함 강의 보러가기</a>"
             )
-            send_telegram_teaser(teaser_msg)
+            send_telegram_teaser(teaser_msg, alert_type="theory_alert")
             print("[Telegram & FCM] 스터디 알림 통합 발송 완료")
         except Exception as e:
             print(f"[Telegram & FCM] 발송 실패: {e}")

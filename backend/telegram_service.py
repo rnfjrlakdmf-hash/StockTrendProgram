@@ -53,6 +53,8 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_sa
             # 중요 공지 및 스터디 알림일 경우 FCM 푸시 발송 연동 (푸시와 함께 1회만 저장)
             is_important_notice = (
                 "스터디" in clean_text or 
+                "1타 강사" in clean_text or
+                "차트" in clean_text or
                 alert_type in ["theory_alert", "system_alert", "notice", "announcement"] or
                 any(kw in title for kw in ["[공지]", "[안내]", "[업데이트]", "[점검]"])
             )
@@ -62,7 +64,7 @@ def send_telegram_teaser(teaser_text: str, alert_type="system_alert", skip_db_sa
                     from firebase_config import send_multicast_notification
                     from db_manager import get_all_fcm_tokens
                     all_tokens = get_all_fcm_tokens()
-                    target_alert_type = "theory_alert" if "스터디" in clean_text else alert_type
+                    target_alert_type = "theory_alert" if ("스터디" in clean_text or "1타 강사" in clean_text or alert_type == "theory_alert") else alert_type
                     if all_tokens:
                         push_data = {
                             "type": target_alert_type,
