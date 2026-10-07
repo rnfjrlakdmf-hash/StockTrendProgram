@@ -50,7 +50,7 @@ self.addEventListener('push', (event) => {
     const baseTag = dataObj.tag || notifObj.tag || (symbol ? `st-${alertType}-${symbol}` : `st-${alertType}`);
     const uniqueTag = `${baseTag}-${Date.now()}`;
 
-    const baseOrigin = (self.location && self.location.origin) ? self.location.origin : 'https://stocktrend.site';
+    const baseOrigin = (self.location && self.location.origin) ? self.location.origin : 'https://stock-trend-program.co.kr';
     const iconUrl = `${baseOrigin}/icon.png`;
     const badgeUrl = `${baseOrigin}/badge.png`;
 
@@ -184,7 +184,7 @@ self.addEventListener('notificationclick', (event) => {
         if (cleanSymbol) params.set('symbol', cleanSymbol);
         if (notifTitle) params.set('title', notifTitle);
         targetUrl = `/news-redirect?${params.toString()}`;
-    } else if (customUrl && customUrl !== '/' && !customUrl.endsWith('stocktrend.site') && !customUrl.endsWith('stocktrend.site/') && !customUrl.endsWith('stock-trend-program.co.kr') && !customUrl.endsWith('stock-trend-program.co.kr/')) {
+    } else if (customUrl && customUrl !== '/' && !customUrl.endsWith('stock-trend-program.co.kr') && !customUrl.endsWith('stock-trend-program.co.kr/')) {
         // 구버전 /scanner 링크가 들어온 경우 퀀트 스캐너 전체보기로 자동 교정
         if (customUrl === '/scanner' || customUrl.endsWith('/scanner')) {
             targetUrl = '/signals?tab=scanner';

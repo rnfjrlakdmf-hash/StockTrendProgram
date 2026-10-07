@@ -831,6 +831,7 @@ def _compute_ai_quant_score(item: Dict[str, Any], quote: Dict[str, Any]) -> Dict
 
 
 _NOTIFICATION_HISTORY: Dict[str, float] = {}
+_EXACT_NOTIFY_HISTORY: Dict[str, float] = {}
 _LAST_GLOBAL_NOTIFY_TIME: float = 0.0
 
 
@@ -847,6 +848,18 @@ def _send_admin_trade_notification(
     - [도배 방지 레이트 리미터]: 단시간 연속 알림 폭탄 방지 및 동일 종목 중복 알림 차단
     """
     global _LAST_GLOBAL_NOTIFY_TIME
+
+    # [완전 동일 알림 중복 차단] 같은 체결을 여러 경로에서 호출해도 20초 내 동일 제목+내용은 1회만 발송 (force 포함)
+    _exact_key = f"{title}|{body}"
+    _now_exact = time.time()
+    _last_exact = _EXACT_NOTIFY_HISTORY.get(_exact_key, 0.0)
+    if (_now_exact - _last_exact) < 20.0:
+        print(f"[AutoTrader-Notify] Suppressed exact duplicate ({_now_exact - _last_exact:.1f}s ago): {title}")
+        return {"suppressed": True, "reason": "exact_duplicate"}
+    _EXACT_NOTIFY_HISTORY[_exact_key] = _now_exact
+    if len(_EXACT_NOTIFY_HISTORY) > 200:
+        for _k in [k for k, v in _EXACT_NOTIFY_HISTORY.items() if _now_exact - v > 60.0]:
+            _EXACT_NOTIFY_HISTORY.pop(_k, None)
 
     clean_body = (
         body.replace("<b>", "")
