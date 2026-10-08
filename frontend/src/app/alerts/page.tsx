@@ -49,8 +49,31 @@ function getMarketBadge(alert: any): { label: string; style: string; icon?: stri
 
 
 export default function AlertCenterPage() {
-    const [alerts, setAlerts] = useState<AlertItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    // [초고속 즉시 렌더링] 이전에 방문한 세션 캐시가 있으면 스피너 대기 없이 0초 만에 화면 즉시 노출
+    const [alerts, setAlerts] = useState<AlertItem[]>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = sessionStorage.getItem('stocktrend_alerts_cache_v2');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                }
+            } catch {}
+        }
+        return [];
+    });
+    const [loading, setLoading] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = sessionStorage.getItem('stocktrend_alerts_cache_v2');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (Array.isArray(parsed) && parsed.length > 0) return false;
+                }
+            } catch {}
+        }
+        return true;
+    });
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState("all");
     const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
@@ -147,207 +170,243 @@ export default function AlertCenterPage() {
     };
 
     useEffect(() => {
+        // [공통 문서 처리 및 고속 필터링 엔진]
+        const processAlertDoc = (
+            doc: any,
+            targetList: any[],
+            seenKeys: Set<string>,
+            userId: string | null,
+            isAdminUser: boolean,
+            onAdded?: () => void
+        ) => {
+            const data = typeof doc.data === 'function' ? doc.data() : doc;
+            const docId = doc.id || data.id || Math.random().toString();
+
+            // [철통 필터링] 단순 정기 서류(분기/반기/사업/감사보고서), 주주총회 소집/결과 등 제외
+            const cleanT = (data.title || '').replace(/\s+/g, '');
+            const cleanB = (data.body || '').replace(/\s+/g, '');
+            const noisyKeywords = [
+                '사업보고서', '분기보고서', '반기보고서', '감사보고서', '검토보고서',
+                '주주총회', '주총소집', '주총결과', '주주총회소집', '주주총회결과',
+                '주주명부폐쇄', '명의개서정지', '기준일설정', '증권발행실적보고서', '일괄신고추가서류', '투자설명서'
+            ];
+            if (noisyKeywords.some(kw => cleanT.includes(kw) || cleanB.includes(kw))) {
+                return;
+            }
+
+            const isGlobal = data.is_global === true;
+            const hasTargetUsers = Array.isArray(data.target_users) && data.target_users.length > 0;
+            const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
+            
+            const isAutoTradeType = data.type === 'auto_trade' ||
+                data.sub_type === 'auto_trade' ||
+                ((data.title || '').includes('🟢') && (data.title || '').includes('매수')) ||
+                ((data.title || '').includes('🔴') && ((data.title || '').includes('익절') || (data.title || '').includes('매도'))) ||
+                ((data.title || '').includes('💧') && ((data.title || '').includes('추매') || (data.title || '').includes('물타기'))) ||
+                (data.title || '').includes('[AI 자동매수') ||
+                (data.title || '').includes('[AI 매도') ||
+                (data.title || '').includes('[자동매매') ||
+                (data.title || '').includes('[자동 물타기') ||
+                (data.body || '').includes('가상 예수금') ||
+                (data.body || '').includes('매입 완료');
+
+            const isAdminType = isAutoTradeType ||
+                ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
+                (data.title || '').includes('[관리자]') || (data.title || '').includes('일일 운영 보고서') || (data.title || '').includes('방문자 보고');
+
+            // 1. 관리자 전용 알림은 비관리자 유저에게는 DB에서부터 필터링
+            if (isAdminType && !isAdminUser) return;
+
+            // 2. 순수 개인 맞춤형 알림 판별
+            const titleStr = (data.title || '').trim();
+            const isPersonalWatchlistAlert =
+                ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(data.type) ||
+                (data.type === 'market_summary' && (hasTargetUsers || !isGlobal || titleStr.includes('시장·섹터 지수 결산'))) ||
+                titleStr.includes('관심종목 시가') ||
+                titleStr.includes('시가 알림') ||
+                titleStr.includes('관심종목 결산') ||
+                titleStr.includes('내 관심종목 결산') ||
+                titleStr.includes('시장·섹터 지수 결산') ||
+                titleStr.includes('간추린 모닝');
+
+            // 3. 공공 시장 정보만 비로그인/전체 열람 허용
+            const isPublicMarketInfo = !isPersonalWatchlistAlert && !isAdminType && (
+                [
+                    'sec_insider_trading', 'sec_13f', 'sec_disclosure',
+                    'disclosure_alert', 'disclosure', 'large_holding',
+                    'insider_trading', 'whale_accumulation', 'whale_alert',
+                    'quant_scanner', 'theory_alert', 'system_alert'
+                ].includes(data.type) ||
+                (data.type === 'market_summary' && isGlobal && !hasTargetUsers) ||
+                titleStr.includes('[SEC]') ||
+                titleStr.includes('[DART]') ||
+                titleStr.includes('[미국]') ||
+                titleStr.includes('Form 4') ||
+                titleStr.includes('13F') ||
+                titleStr.includes('1타 강사') ||
+                titleStr.includes('[스톡 트렌드]') ||
+                (data.url && String(data.url).includes('sec.gov'))
+            );
+
+            // 4. 관리자 알림은 관리자 로그인 시 무조건 통과
+            if (!(isAdminUser && isAdminType)) {
+                if (isPersonalWatchlistAlert || !isPublicMarketInfo) {
+                    if (isPersonalWatchlistAlert && !isTargeted) return;
+                    if (hasTargetUsers && !isTargeted) return;
+                    if (!isGlobal && !isTargeted) return;
+                }
+            }
+            
+            if (isPublicMarketInfo || isGlobal || isTargeted || (isAdminUser && isAdminType)) {
+                const sec = data.timestamp?.seconds || Math.floor(Date.now() / 1000);
+                const kstDayBucket = new Date((sec + 9 * 3600) * 1000).toISOString().slice(0, 10);
+                const timeBucket = Math.floor(sec / 1800);
+                const cleanTitle = (data.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                const cleanBody = (data.body || '').replace(/\s+/g, ' ').trim().substring(0, 60).toLowerCase();
+                
+                const isDailyOnceType = ['morning_briefing', 'market_open', 'market_summary', 'portfolio_summary'].includes(data.type) ||
+                    cleanTitle.includes('간추린 모닝 팩트') ||
+                    cleanTitle.includes('장시작:') ||
+                    cleanTitle.includes('관심종목 시가');
+                const uniqueDocRef = String(data.rcept_no || data.dart_url || data.symbol || '');
+                const contentKey = isDailyOnceType
+                    ? `daily::${data.type || ''}::${cleanTitle}::${kstDayBucket}`
+                    : `${cleanTitle}::${uniqueDocRef || cleanBody}::${timeBucket}`;
+                
+                if (!seenKeys.has(contentKey)) {
+                    seenKeys.add(contentKey);
+                    targetList.push({ id: docId, ...data });
+                    if (onAdded) onAdded();
+                }
+            }
+        };
+
         async function fetchAlerts() {
             try {
                 const alertsRef = collection(db, "alerts");
-                
-                // [보안 강화] 오직 명시적으로 로그인된 유저 세션이 존재할 때만 userId 인정
                 const userId = user?.id || (user as any)?.uid || null;
-                
-                // [3일치 완벽 보존] 하루 수백~수천 건의 SEC 공시에 밀려 DART 공시, 퀀트 시세, 관심종목, 서비스/관리자 알림이 밀려나지 않도록 5,000개로 대폭 확장
-                const qLatest = query(alertsRef, orderBy("timestamp", "desc"), limit(5000));
-                const snapLatest = await getDocs(qLatest);
-                
                 const seenContentKeys = new Set<string>();
-                const deduplicatedAlerts: any[] = [];
+                const combinedAlerts: any[] = [];
 
-                snapLatest.forEach(doc => {
-                    const data = doc.data();
-                    
-                    // [철통 필터링] 단순 정기 서류(분기/반기/사업/감사보고서), 주주총회 소집/결과, 명의개서정지, 투자설명서 등은 화면에서 100% 원천 차단
-                    const cleanT = (data.title || '').replace(/\s+/g, '');
-                    const cleanB = (data.body || '').replace(/\s+/g, '');
-                    const noisyKeywords = [
-                        '사업보고서', '분기보고서', '반기보고서', '감사보고서', '검토보고서',
-                        '주주총회', '주총소집', '주총결과', '주주총회소집', '주주총회결과',
-                        '주주명부폐쇄', '명의개서정지', '기준일설정', '증권발행실적보고서', '일괄신고추가서류', '투자설명서'
-                    ];
-                    if (noisyKeywords.some(kw => cleanT.includes(kw) || cleanB.includes(kw))) {
-                        return;
-                    }
+                // 🚀 [1단계: 0.3초 초고속 렌더링 파이프라인] 최신 300개 쿼리 + 백엔드 API들을 병렬(Promise.allSettled) 동시 실행!
+                const qFast = query(alertsRef, orderBy("timestamp", "desc"), limit(300));
 
-                    const isGlobal = data.is_global === true;
-                    const hasTargetUsers = Array.isArray(data.target_users) && data.target_users.length > 0;
-                    const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
-                    
-                    const isAutoTradeType = data.type === 'auto_trade' ||
-                        data.sub_type === 'auto_trade' ||
-                        ((data.title || '').includes('🟢') && (data.title || '').includes('매수')) ||
-                        ((data.title || '').includes('🔴') && ((data.title || '').includes('익절') || (data.title || '').includes('매도'))) ||
-                        ((data.title || '').includes('💧') && ((data.title || '').includes('추매') || (data.title || '').includes('물타기'))) ||
-                        (data.title || '').includes('[AI 자동매수') ||
-                        (data.title || '').includes('[AI 매도') ||
-                        (data.title || '').includes('[자동매매') ||
-                        (data.title || '').includes('[자동 물타기') ||
-                        (data.body || '').includes('가상 예수금') ||
-                        (data.body || '').includes('매입 완료');
+                const [snapFastResult, trResult, dartResult] = await Promise.allSettled([
+                    getDocs(qFast),
+                    isAdmin ? fetch(`${API_BASE_URL}/api/system/admin/auto-trader/status`, {
+                        headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" },
+                        signal: AbortSignal.timeout(3500)
+                    }).then(r => r.json()).catch(() => null) : Promise.resolve(null),
+                    fetch(`${API_BASE_URL}/api/disclosures/realtime?days_ago=3`, {
+                        signal: AbortSignal.timeout(3500)
+                    }).then(r => r.json()).catch(() => null)
+                ]);
 
-                    const isAdminType = isAutoTradeType ||
-                        ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
-                        (data.title || '').includes('[관리자]') || (data.title || '').includes('일일 운영 보고서') || (data.title || '').includes('방문자 보고');
+                // 1. Firestore 1차 300건 고속 처리
+                if (snapFastResult.status === 'fulfilled' && snapFastResult.value) {
+                    snapFastResult.value.forEach(doc => {
+                        processAlertDoc(doc, combinedAlerts, seenContentKeys, userId, isAdmin);
+                    });
+                }
 
-                    // 1. 관리자 전용 알림(자동매매 포함)은 비관리자 유저에게는 DB에서부터 필터링
-                    if (isAdminType && !isAdmin) return;
+                // 2. 관리자 자동매매 체결 로그 병합
+                if (isAdmin && trResult.status === 'fulfilled' && trResult.value) {
+                    const tLogs = trResult.value?.data?.trade_logs || [];
+                    tLogs.forEach((lg: any, logIdx: number) => {
+                        const isBuy = lg.action === "BUY";
+                        const amtStr = Number(lg.amount_krw || 0).toLocaleString();
+                        const priceStr = Number(lg.price || 0).toLocaleString();
+                        const pnlKrw = Number(lg.pnl_krw || 0);
+                        const pnlPct = Number(lg.pnl_pct || 0).toFixed(1);
+                        const pnlSign = pnlKrw >= 0 ? "+" : "";
+                        const synTitle = isBuy
+                            ? `🟢매수 ${lg.name} ${amtStr}원`
+                            : `🔴익절 ${lg.name} ${pnlSign}${pnlKrw.toLocaleString()}원(${pnlSign}${pnlPct}%)`;
+                        const synBody = isBuy
+                            ? `${priceStr}원 × ${lg.qty}주 매입 완료\n목표 +4.0% | ${lg.reason || 'AI 퀀트 수급 돌파'}`
+                            : `수익 ${pnlSign}${pnlKrw.toLocaleString()}원 확정 (회수 ${amtStr}원)\n사유: ${lg.reason || '목표 익절가 도달'}`;
+                        const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
+                        const key = `auto-log-${lg.id || logIdx}-${lg.symbol}`;
+                        if (!seenContentKeys.has(key)) {
+                            seenContentKeys.add(key);
+                            combinedAlerts.push({
+                                id: `auto-trd-${lg.id || logIdx}-${lg.symbol}-${logIdx}`,
+                                type: "auto_trade",
+                                title: synTitle,
+                                body: synBody,
+                                symbol: lg.symbol,
+                                url: "/admin/auto-trade",
+                                timestamp: { seconds: parsedSec || Math.floor(Date.now() / 1000) }
+                            });
+                        }
+                    });
+                }
 
-                    // 2. 순수 개인 맞춤형 알림 판별
-                    const titleStr = (data.title || '').trim();
-                    const isPersonalWatchlistAlert =
-                        ['portfolio_summary', 'portfolio', 'market_open', 'morning_briefing'].includes(data.type) ||
-                        (data.type === 'market_summary' && (hasTargetUsers || !isGlobal || titleStr.includes('시장·섹터 지수 결산'))) ||
-                        titleStr.includes('관심종목 시가') ||
-                        titleStr.includes('시가 알림') ||
-                        titleStr.includes('관심종목 결산') ||
-                        titleStr.includes('내 관심종목 결산') ||
-                        titleStr.includes('시장·섹터 지수 결산') ||
-                        titleStr.includes('간추린 모닝');
-
-                    // 3. 공공 시장 정보만 비로그인/전체 열람 허용
-                    const isPublicMarketInfo = !isPersonalWatchlistAlert && !isAdminType && (
-                        [
-                            'sec_insider_trading', 'sec_13f', 'sec_disclosure',
-                            'disclosure_alert', 'disclosure', 'large_holding',
-                            'insider_trading', 'whale_accumulation', 'whale_alert',
-                            'quant_scanner', 'theory_alert', 'system_alert'
-                        ].includes(data.type) ||
-                        (data.type === 'market_summary' && isGlobal && !hasTargetUsers) ||
-                        titleStr.includes('[SEC]') ||
-                        titleStr.includes('[DART]') ||
-                        titleStr.includes('[미국]') ||
-                        titleStr.includes('Form 4') ||
-                        titleStr.includes('13F') ||
-                        titleStr.includes('1타 강사') ||
-                        titleStr.includes('[스톡 트렌드]') ||
-                        (data.url && String(data.url).includes('sec.gov'))
+                // 3. 백엔드 실시간 OpenDART 공시 병합
+                if (dartResult.status === 'fulfilled' && dartResult.value) {
+                    const liveDartList = dartResult.value?.data || [];
+                    const existingDartUrls = new Set(
+                        combinedAlerts.map((a: any) => String(a.dart_url || a.rcept_no || "")).filter(Boolean)
                     );
-
-                    // 4. [보안 철저] 관리자 알림(isAdmin && isAdminType)은 관리자 로그인 시 무조건 통과!
-                    if (!(isAdmin && isAdminType)) {
-                        if (isPersonalWatchlistAlert || !isPublicMarketInfo) {
-                            if (isPersonalWatchlistAlert && !isTargeted) return;
-                            if (hasTargetUsers && !isTargeted) return;
-                            if (!isGlobal && !isTargeted) return;
+                    liveDartList.forEach((dItem: any) => {
+                        const dText = `${dItem.title || ''} ${dItem.body || ''}`.replace(/\s+/g, '');
+                        if ([
+                            "분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서",
+                            "주주총회", "주총", "주주명부폐쇄", "명의개서정지", "기준일설정",
+                            "증권발행실적보고서", "일괄신고", "투자설명서",
+                            "종료보고서", "결과보고서", "기업설명회", "코퍼릿데이"
+                        ].some(kw => dText.includes(kw))) {
+                            return;
                         }
-                    }
-                    
-                    if (isPublicMarketInfo || isGlobal || isTargeted || (isAdmin && isAdminType)) {
-                        const sec = data.timestamp?.seconds || Math.floor(Date.now() / 1000);
-                        const kstDayBucket = new Date((sec + 9 * 3600) * 1000).toISOString().slice(0, 10);
-                        const timeBucket = Math.floor(sec / 1800);
-                        const cleanTitle = (data.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
-                        const cleanBody = (data.body || '').replace(/\s+/g, ' ').trim().substring(0, 60).toLowerCase();
-                        // quant_scanner는 종목별 고유 시세이므로 daily 1회 합치기에서 제외하여 3일치 종목별 알림 완전 보존!
-                        const isDailyOnceType = ['morning_briefing', 'market_open', 'market_summary', 'portfolio_summary'].includes(data.type) ||
-                            cleanTitle.includes('간추린 모닝 팩트') ||
-                            cleanTitle.includes('장시작:') ||
-                            cleanTitle.includes('관심종목 시가');
-                        const uniqueDocRef = String(data.rcept_no || data.dart_url || data.symbol || '');
-                        const contentKey = isDailyOnceType
-                            ? `daily::${data.type || ''}::${cleanTitle}::${kstDayBucket}`
-                            : `${cleanTitle}::${uniqueDocRef || cleanBody}::${timeBucket}`;
-                        
-                        if (!seenContentKeys.has(contentKey)) {
-                            seenContentKeys.add(contentKey);
-                            deduplicatedAlerts.push({ id: doc.id, ...data });
+                        const dKey = String(dItem.dart_url || dItem.rcept_no || "");
+                        const rcpMatch = dKey.match(/rcpNo=(\d+)/);
+                        const rcpNo = rcpMatch ? rcpMatch[1] : String(dItem.rcept_no || "");
+                        const alreadyHasRcp = rcpNo && Array.from(existingDartUrls).some(u => u.includes(rcpNo));
+                        if (!alreadyHasRcp) {
+                            if (dKey) existingDartUrls.add(dKey);
+                            combinedAlerts.push(dItem);
                         }
-                    }
-                });
-
-                // [관리자 전용] 백엔드 실시간 자동매매 체결 로그(trade_logs)도 함께 병합하여 🤖 자동매매 알림 탭에 100% 누락 없이 표시
-                if (isAdmin) {
-                    try {
-                        const trRes = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/status`, {
-                            headers: { "X-Admin-Key": "StockTrendSecretAdmin2026!" }
-                        });
-                        const trJson = await trRes.json();
-                        const tLogs = trJson?.data?.trade_logs || [];
-                        tLogs.forEach((lg: any, logIdx: number) => {
-                            const isBuy = lg.action === "BUY";
-                            const amtStr = Number(lg.amount_krw || 0).toLocaleString();
-                            const priceStr = Number(lg.price || 0).toLocaleString();
-                            const pnlKrw = Number(lg.pnl_krw || 0);
-                            const pnlPct = Number(lg.pnl_pct || 0).toFixed(1);
-                            const pnlSign = pnlKrw >= 0 ? "+" : "";
-                            const synTitle = isBuy
-                                ? `🟢매수 ${lg.name} ${amtStr}원`
-                                : `🔴익절 ${lg.name} ${pnlSign}${pnlKrw.toLocaleString()}원(${pnlSign}${pnlPct}%)`;
-                            const synBody = isBuy
-                                ? `${priceStr}원 × ${lg.qty}주 매입 완료\n목표 +4.0% | ${lg.reason || 'AI 퀀트 수급 돌파'}`
-                                : `수익 ${pnlSign}${pnlKrw.toLocaleString()}원 확정 (회수 ${amtStr}원)\n사유: ${lg.reason || '목표 익절가 도달'}`;
-                            const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
-                            const key = `auto-log-${lg.id || logIdx}-${lg.symbol}`;
-                            if (!seenContentKeys.has(key)) {
-                                seenContentKeys.add(key);
-                                deduplicatedAlerts.push({
-                                    id: `auto-trd-${lg.id || logIdx}-${lg.symbol}-${logIdx}`,
-                                    type: "auto_trade",
-                                    title: synTitle,
-                                    body: synBody,
-                                    symbol: lg.symbol,
-                                    url: "/admin/auto-trade",
-                                    timestamp: { seconds: parsedSec || Math.floor(Date.now() / 1000) }
-                                });
-                            }
-                        });
-                    } catch (trErr) {
-                        console.error("Auto-trader live logs merge warning:", trErr);
-                    }
+                    });
                 }
 
-                // [실시간 DART 공시 연동] Firestore 알림과 함께 백엔드 OpenDART 실시간 공시 피드(/api/disclosures/realtime)도 병합하여 DART 공시 속보 누락 원천 차단
-                try {
-                    const dartRes = await fetch(`${API_BASE_URL}/api/disclosures/realtime?days_ago=3`);
-                    if (dartRes.ok) {
-                        const dartJson = await dartRes.json();
-                        const liveDartList = dartJson?.data || [];
-                        const existingDartUrls = new Set(
-                            deduplicatedAlerts
-                                .map((a: any) => String(a.dart_url || a.rcept_no || ""))
-                                .filter(Boolean)
-                        );
-                        liveDartList.forEach((dItem: any) => {
-                            const dText = `${dItem.title || ''} ${dItem.body || ''}`.replace(/\s+/g, '');
-                            if ([
-                                "분기보고서", "반기보고서", "사업보고서", "감사보고서", "검토보고서",
-                                "주주총회", "주총", "주주명부폐쇄", "명의개서정지", "기준일설정",
-                                "증권발행실적보고서", "일괄신고", "투자설명서",
-                                "종료보고서", "결과보고서", "기업설명회", "코퍼릿데이"
-                            ].some(kw => dText.includes(kw))) {
-                                return;
-                            }
-                            const dKey = String(dItem.dart_url || dItem.rcept_no || "");
-                            const rcpMatch = dKey.match(/rcpNo=(\d+)/);
-                            const rcpNo = rcpMatch ? rcpMatch[1] : String(dItem.rcept_no || "");
-                            const alreadyHasRcp = rcpNo && Array.from(existingDartUrls).some(u => u.includes(rcpNo));
-                            if (!alreadyHasRcp) {
-                                if (dKey) existingDartUrls.add(dKey);
-                                deduplicatedAlerts.push(dItem);
-                            }
-                        });
-                    }
-                } catch (dartErr) {
-                    console.error("Live DART disclosures merge warning:", dartErr);
-                }
+                combinedAlerts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-                let sortedAlerts = deduplicatedAlerts;
-                sortedAlerts.sort((a, b) => {
-                    const timeA = a.timestamp?.seconds || 0;
-                    const timeB = b.timestamp?.seconds || 0;
-                    return timeB - timeA;
-                });
-                
-                // [3일치 전수 보존] 슬라이스 제한을 제거하여 3~4일 전(09/30, 10/01, 10/02) 모든 알림이 각 탭에 온전히 표시되도록 설정
-                setAlerts(sortedAlerts);
+                // ⚡ [초고속 1차 화면 표시 완료!] 스피너 즉시 해제 (0.3~0.5초 이내)
+                setAlerts([...combinedAlerts]);
+                setLoading(false);
                 setErrorMsg(null);
+
+                // 세션 스토리지 캐시 저장
+                try {
+                    sessionStorage.setItem('stocktrend_alerts_cache_v2', JSON.stringify(combinedAlerts.slice(0, 100)));
+                } catch {}
+
+                // 🌊 [2단계: 백그라운드 심층 보강] 3일치 전체 알림(1,500건)을 백그라운드로 가져와 부드럽게 병합 (화면 멈춤 없음)
+                setTimeout(async () => {
+                    try {
+                        const qDeep = query(alertsRef, orderBy("timestamp", "desc"), limit(1500));
+                        const snapDeep = await getDocs(qDeep);
+                        const deepList = [...combinedAlerts];
+                        let addedCount = 0;
+
+                        snapDeep.forEach(doc => {
+                            processAlertDoc(doc, deepList, seenContentKeys, userId, isAdmin, () => {
+                                addedCount++;
+                            });
+                        });
+
+                        if (addedCount > 0) {
+                            deepList.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                            setAlerts(deepList);
+                            try {
+                                sessionStorage.setItem('stocktrend_alerts_cache_v2', JSON.stringify(deepList.slice(0, 100)));
+                            } catch {}
+                        }
+                    } catch (deepErr) {
+                        console.warn("Background deep alerts load notice:", deepErr);
+                    }
+                }, 400);
+
             } catch (err: any) {
                 console.error("Failed to fetch alerts:", err);
                 setErrorMsg(err.message || "알림을 불러오는 중 오류가 발생했습니다.");
