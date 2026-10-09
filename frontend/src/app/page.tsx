@@ -219,7 +219,7 @@ export default async function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {featuredBlogPosts.map((post) => {
-                const plainDesc = String(post.excerpt || post.content || '')
+                const plainDesc = String((post as any).excerpt || post.content || '')
                   .replace(/<[^>]*>?/gm, ' ')
                   .replace(/\s+/g, ' ')
                   .trim()
@@ -232,7 +232,7 @@ export default async function Home() {
                   >
                     <div className="space-y-2">
                       <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                        {post.category || '심층 투자 칼럼'}
+                        {(post as any).category || '심층 투자 칼럼'}
                       </span>
                       <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-blue-300 transition-colors leading-snug">
                         {post.title}
@@ -286,10 +286,10 @@ export default async function Home() {
                   <div className="p-2 rounded-xl bg-blue-400/20 text-blue-300">
                     <Calculator className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-black bg-blue-400/20 text-blue-300 px-2 py-0.5 rounded-full">시뮬레이터</span>
+                  <span className="text-[10px] font-black bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">HOT 도구</span>
                 </div>
-                <h3 className="text-white font-black text-base group-hover:text-blue-300 transition-colors">스마트 물타기 계산기</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">추가 매수 시 평단가 인하 효과와 원금 회복 탈출 시나리오 산출</p>
+                <h3 className="text-white font-black text-base group-hover:text-blue-300 transition-colors">스마트 주식 계산기</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">물타기 평단가 인하 탈출 시뮬레이터 &amp; 종목별 월배당 캐시플로우 계산기</p>
               </Link>
 
               <Link 

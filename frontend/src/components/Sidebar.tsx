@@ -55,7 +55,7 @@ const navigationGroups = [
         items: [
             { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
             { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
-            { name: "물타기 평단 계산기", href: "/calculator", icon: Calculator, desc: "추가 매수 시 변화하는 평단가와 탈출 시나리오를 계산합니다.", badge: "NEW" },
+            { name: "스마트 주식 계산기", href: "/calculator", icon: Calculator, desc: "물타기 평단가 인하 탈출 시뮬레이션 및 종목별 월배당·연간 배당금 캐시플로우를 계산합니다.", badge: "인기" },
             { name: "연동 설정 및 시스템 관리", href: "/settings", icon: Settings, desc: "증권사 API 연동, 화면 다크모드, 알림 설정 등 시스템 환경을 관리합니다." },
         ]
     }

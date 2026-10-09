@@ -359,6 +359,13 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                         <span>장마감 스캐너</span>
                     </Link>
                     <Link 
+                        href="/calculator" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/calculator') ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>🧮</span>
+                        <span>주식 계산기</span>
+                    </Link>
+                    <Link 
                         href="/guide" 
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/guide') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >
