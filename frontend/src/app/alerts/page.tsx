@@ -198,17 +198,32 @@ export default function AlertCenterPage() {
             const hasTargetUsers = Array.isArray(data.target_users) && data.target_users.length > 0;
             const isTargeted = Boolean(userId && hasTargetUsers && data.target_users.includes(userId));
             
-            const isAutoTradeType = data.type === 'auto_trade' ||
+            const titleStrRaw = (data.title || '').trim();
+            const bodyStrRaw = (data.body || '').trim();
+            const isNewsRaw = ['news_alert', 'news_naver', 'news_google', 'news'].includes(data.type) || 
+                titleStrRaw.includes("뉴스") || titleStrRaw.includes("속보");
+            const isDisclosureRaw = Boolean(
+                titleStrRaw.includes("공시") || 
+                titleStrRaw.includes("자사주") || 
+                bodyStrRaw.includes("자사주") || 
+                titleStrRaw.includes("증자") || 
+                titleStrRaw.includes("전환사채") || 
+                (data as any).dart_url || 
+                (data.url && (data.url.includes('dart') || data.url.includes('disclosure')))
+            );
+
+            const isAutoTradeType = !isNewsRaw && !isDisclosureRaw && (
+                data.type === 'auto_trade' ||
                 data.sub_type === 'auto_trade' ||
-                ((data.title || '').includes('🟢') && (data.title || '').includes('매수')) ||
-                ((data.title || '').includes('🔴') && ((data.title || '').includes('익절') || (data.title || '').includes('매도'))) ||
-                ((data.title || '').includes('💧') && ((data.title || '').includes('추매') || (data.title || '').includes('물타기'))) ||
-                (data.title || '').includes('[AI 자동매수') ||
-                (data.title || '').includes('[AI 매도') ||
-                (data.title || '').includes('[자동매매') ||
-                (data.title || '').includes('[자동 물타기') ||
-                (data.body || '').includes('가상 예수금') ||
-                (data.body || '').includes('매입 완료');
+                (titleStrRaw.includes('🟢') && (titleStrRaw.includes('매수') || titleStrRaw.includes('체결'))) ||
+                (titleStrRaw.includes('🔴') && (titleStrRaw.includes('익절') || titleStrRaw.includes('매도'))) ||
+                (titleStrRaw.includes('💧') && (titleStrRaw.includes('추매') || titleStrRaw.includes('물타기'))) ||
+                titleStrRaw.includes('[AI 자동매수') ||
+                titleStrRaw.includes('[AI 매도') ||
+                titleStrRaw.includes('[자동매매') ||
+                titleStrRaw.includes('[자동 물타기') ||
+                bodyStrRaw.includes('가상 예수금')
+            );
 
             const isAdminType = isAutoTradeType ||
                 ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(data.type) || 
@@ -318,13 +333,16 @@ export default function AlertCenterPage() {
                         const priceStr = Number(lg.price || 0).toLocaleString();
                         const pnlKrw = Number(lg.pnl_krw || 0);
                         const pnlPct = Number(lg.pnl_pct || 0).toFixed(1);
-                        const pnlSign = pnlKrw >= 0 ? "+" : "";
+                        const isProfit = pnlKrw >= 0;
+                        const pnlSign = pnlKrw > 0 ? "+" : "";
+                        const sellTag = isProfit ? "🔴익절" : "🛡️손절";
+                        const pnlLabel = isProfit ? "수익" : "손실";
                         const synTitle = isBuy
                             ? `🟢매수 ${lg.name} ${amtStr}원`
-                            : `🔴익절 ${lg.name} ${pnlSign}${pnlKrw.toLocaleString()}원(${pnlSign}${pnlPct}%)`;
+                            : `${sellTag} ${lg.name} ${pnlSign}${pnlKrw.toLocaleString()}원(${pnlSign}${pnlPct}%)`;
                         const synBody = isBuy
                             ? `${priceStr}원 × ${lg.qty}주 매입 완료\n목표 +4.0% | ${lg.reason || 'AI 퀀트 수급 돌파'}`
-                            : `수익 ${pnlSign}${pnlKrw.toLocaleString()}원 확정 (회수 ${amtStr}원)\n사유: ${lg.reason || '목표 익절가 도달'}`;
+                            : `${pnlLabel} ${pnlSign}${pnlKrw.toLocaleString()}원 확정 (회수 ${amtStr}원)\n사유: ${lg.reason || (isProfit ? '목표 익절가 도달' : 'AI 리스크관리 교체매도')}`;
                         const parsedSec = lg.timestamp ? Math.floor(new Date(lg.timestamp.replace(" ", "T") + "+09:00").getTime() / 1000) : Math.floor(Date.now() / 1000);
                         const key = `auto-log-${lg.id || logIdx}-${lg.symbol}`;
                         if (!seenContentKeys.has(key)) {
@@ -490,6 +508,7 @@ function formatUsdToKrwInText(text: string): string {
     const renderFormattedBody = (text: string, alert?: any) => {
         text = formatUsdToKrwInText(text);
         if (!text) return null;
+        text = text.replace(/\+\+/g, '+');
 
         // [자동매매 해외주식 단위 보정] 해외 주식 매입 단가가 원화(원)로 저장된 구버전 알림 데이터가 있으면 달러($)로 자동 표시
         if (alert) {
@@ -2263,25 +2282,32 @@ function formatUsdToKrwInText(text: string): string {
 
     const renderAlertCard = (alert: any) => {
         const titleText = (alert.title || '').trim();
+        const bodyText = (alert.body || '').trim();
+        const isNewsAlert = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) || 
+            titleText.includes("뉴스") || titleText.includes("헤드라인") || titleText.includes("속보");
         const hasDisclosureKey = Boolean(
             titleText.includes("공시") || 
             titleText.includes("증자") || 
             titleText.includes("공급계약") || 
             titleText.includes("전환사채") || 
             titleText.includes("자사주") || 
+            bodyText.includes("자사주") || 
             titleText.includes("실적") || 
             titleText.includes("배당") || 
             (alert as any).dart_url || 
             (alert.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
         );
-        const isAutoTradeCard = alert.type === 'auto_trade' || 
+        const isAutoTradeCard = !isNewsAlert && !hasDisclosureKey && (
+            alert.type === 'auto_trade' || 
             alert.sub_type === 'auto_trade' ||
-            (titleText.includes('🟢') && titleText.includes('매수')) || 
+            (titleText.includes('🟢') && (titleText.includes('매수') || titleText.includes('체결'))) || 
             (titleText.includes('🔴') && (titleText.includes('익절') || titleText.includes('매도'))) || 
             (titleText.includes('💧') && (titleText.includes('추매') || titleText.includes('물타기'))) ||
+            titleText.includes('AI 자동매수') ||
+            titleText.includes('AI 자동익절') ||
             titleText.includes('자동매매') ||
-            (alert.body || '').includes('가상 예수금') ||
-            (alert.body || '').includes('매입 완료');
+            bodyText.includes('가상 예수금')
+        );
         const isWhale = !isAutoTradeCard && !hasDisclosureKey && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
         const isDisclosure = !isAutoTradeCard && (hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type));
         const rawSymbol = alert.symbol || alert.code || '';
@@ -2296,9 +2322,14 @@ function formatUsdToKrwInText(text: string): string {
             } catch(e){}
         }
 
-        // 통합 대시보드('/')로 잘못 설정되어 있는 경우 빈 문자열로 초기화하여 재계산
-        if (!targetUrl || targetUrl === '/' || targetUrl === 'https://stock-trend-program.co.kr' || targetUrl === 'https://stock-trend-program.co.kr/') {
+        // 통합 대시보드('/') 또는 알림센터('/alerts')로 잘못 설정되어 있는 경우 빈 문자열로 초기화하여 재계산
+        if (!targetUrl || targetUrl === '/' || targetUrl === '/alerts' || targetUrl.includes('stock-trend-program.co.kr/alerts') || targetUrl === 'https://stock-trend-program.co.kr' || targetUrl === 'https://stock-trend-program.co.kr/') {
             targetUrl = '';
+        }
+
+        // 주말 한정판 세력/외인 매집 리포트 자동 라우팅 보정
+        if (titleText.includes('월요일 장 준비') || titleText.includes('세력/외인 매집') || (alert.body || '').includes('주말 한정판 세력') || (alert.body || '').includes('세력/외인 매집')) {
+            targetUrl = '/weekend-whale';
         }
 
         // 구버전 알림 데이터 중 /scanner로 저장된 건은 퀀트 스캐너 전체보기(/signals?tab=scanner)로 자동 교정
@@ -2350,13 +2381,25 @@ function formatUsdToKrwInText(text: string): string {
 
         // [0-0순위: 🤖 AI 자동매매 실시간 체결 알림]
         if (isAutoTradeCard) {
-            const isProfitSell = titleText.includes('🔴익절');
-            typeBadgeStyle = isProfitSell
-                ? "bg-rose-500/25 text-rose-300 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-                : "bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-            typeBadgeLabel = isProfitSell ? "🔴 AI 자동익절 수익 확정" : "🟢 AI 자동매수 실시간 체결";
-            cardBorderHover = "hover:border-emerald-500/50 hover:shadow-[0_0_25px_rgba(16,185,129,0.25)]";
-            accentBorder = isProfitSell ? "border-l-4 border-l-rose-400" : "border-l-4 border-l-emerald-400";
+            const isProfitSell = (titleText.includes('🔴익절') || (titleText.includes('익절') && !titleText.includes('-'))) && !titleText.includes('🛡️');
+            const isLossSell = titleText.includes('🛡️손절') || titleText.includes('🛡️매도') || titleText.includes('손절') || (titleText.includes('매도') && (titleText.includes('-') || (alert.body || '').includes('손실')));
+
+            if (isProfitSell) {
+                typeBadgeStyle = "bg-rose-500/25 text-rose-300 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]";
+                typeBadgeLabel = "🔴 AI 자동익절 수익 확정";
+                accentBorder = "border-l-4 border-l-rose-400";
+                cardBorderHover = "hover:border-rose-500/50 hover:shadow-[0_0_25px_rgba(244,63,94,0.25)]";
+            } else if (isLossSell) {
+                typeBadgeStyle = "bg-blue-500/25 text-blue-300 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]";
+                typeBadgeLabel = "🛡️ AI 리스크관리 손절";
+                accentBorder = "border-l-4 border-l-blue-400";
+                cardBorderHover = "hover:border-blue-500/50 hover:shadow-[0_0_25px_rgba(59,130,246,0.25)]";
+            } else {
+                typeBadgeStyle = "bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]";
+                typeBadgeLabel = "🟢 AI 자동매수 실시간 체결";
+                accentBorder = "border-l-4 border-l-emerald-400";
+                cardBorderHover = "hover:border-emerald-500/50 hover:shadow-[0_0_25px_rgba(16,185,129,0.25)]";
+            }
             targetUrl = "/admin/auto-trade";
             defaultCta = { href: "/admin/auto-trade", label: "🤖 24시간 무인 자동매매 사령부 열기", icon: Zap, style: "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40" };
         }
@@ -2453,22 +2496,32 @@ function formatUsdToKrwInText(text: string): string {
             defaultCta = { href: isPersonalSectorSummary ? "/watchlist" : "/blog", label: isPersonalSectorSummary ? "내 관심종목 & 섹터 지수 확인" : "마켓 심층 브리핑 전문 읽기", icon: Globe, style: "bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border-indigo-500/30" };
         } 
         // [3순위: 세력 및 외국인·기관 수급 특보]
-        else if (isWhale) {
+        else if (isWhale || titleText.includes('월요일 장 준비') || (alert.body || '').includes('세력/외인 매집') || (alert.body || '').includes('주말 한정판 세력')) {
             typeBadgeStyle = "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]";
             typeBadgeLabel = "🐳 외인·기관 수급 특보";
             cardBorderHover = "hover:border-cyan-500/40 hover:shadow-[0_0_25px_rgba(6,182,212,0.15)]";
             accentBorder = "border-l-4 border-l-cyan-400";
-            defaultCta = { href: targetUrl || "/premium", label: "실시간 외국인·기관 수급 현황 보기", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
+            const whaleHref = targetUrl || "/weekend-whale";
+            defaultCta = { href: whaleHref, label: "주말 세력/외인 매집 TOP 3 리포트 확인", icon: TrendingUp, style: "bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border-cyan-500/30" };
         } 
-        // [3-1순위: 수급 퀀트 스캐너 급등 & 벤치마크선 도달 알림]
-        else if (alert.type === 'quant_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계')) {
+        // [3-1순위: 수급 퀀트 스캐너 급등 & 벤치마크선 도달 알림 & 장마감 수급 스캐너]
+        else if (alert.type === 'quant_scanner' || alert.type === 'closing_scanner' || titleText.includes('퀀트 시세') || titleText.includes('퀀트 통계') || titleText.includes('수급 스캐너')) {
             typeBadgeStyle = "bg-violet-500/25 text-violet-300 border-violet-500/50 shadow-[0_0_15px_rgba(139,92,246,0.3)]";
-            typeBadgeLabel = "📈 퀀트 시세 급등 특보";
+            typeBadgeLabel = titleText.includes('수급 스캐너') || alert.type === 'closing_scanner' ? "🔥 장마감 수급 스캐너" : "📈 퀀트 시세 급등 특보";
             cardBorderHover = "hover:border-violet-500/40 hover:shadow-[0_0_25px_rgba(139,92,246,0.2)]";
             accentBorder = "border-l-4 border-l-violet-400";
             targetUrl = "/signals?tab=scanner";
             defaultCta = { href: "/signals?tab=scanner", label: "장마감 수급 퀀트 스캐너 전체보기", icon: Sparkles, style: "bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border-violet-500/30" };
         } 
+        // [3-2순위: 개장 15분 전 모닝 마켓 레이더]
+        else if (alert.type === 'morning_radar' || titleText.includes('개장 15분 전') || titleText.includes('모닝 마켓 레이더')) {
+            typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+            typeBadgeLabel = "☀️ 개장 전 모닝 마켓 레이더";
+            cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
+            accentBorder = "border-l-4 border-l-amber-400";
+            targetUrl = "/discovery";
+            defaultCta = { href: "/discovery", label: "오늘의 AI 퀀트 레이더 확인하기", icon: Sparkles, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
+        }
         // [4순위: 뉴스 알림 속보 - 주도 테마 레이더보다 먼저 판정하여 오분류 방지]
         else if (['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) || (alert.title && (alert.title.includes("뉴스") || alert.title.includes("헤드라인") || alert.title.includes("속보")))) {
             typeBadgeStyle = "bg-sky-500/20 text-sky-300 border-sky-500/40 shadow-[0_0_15px_rgba(14,165,233,0.2)]";
@@ -2477,19 +2530,21 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-sky-400";
             defaultCta = { href: alert.url || (alert.symbol ? `/discovery?q=${alert.symbol}` : "/discovery"), label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
         }
-        // [4-0순위: 🎓 주식 1타 강사 실전 매매법 특강 / 투자 아카데미]
+        // [4-0순위: 🎓 주식 1타 강사 실전 매매법 특강 / 매일 차트 스터디]
         else if (
             titleText.includes("1타 강사") ||
             titleText.includes("1타강사") ||
+            titleText.includes("차트 스터디") ||
             alert.type === 'theory_alert' ||
             alert.type === 'study' ||
-            (alert.url && String(alert.url).includes('/study'))
+            (alert.url && String(alert.url).includes('/study')) ||
+            (alert.url && String(alert.url).includes('/theory'))
         ) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
-            typeBadgeLabel = "🎓 주식 1타 강사 실전 특강";
+            typeBadgeLabel = "🎓 매일 차트 스터디 요약";
             cardBorderHover = "hover:border-amber-500/40 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]";
             accentBorder = "border-l-4 border-l-amber-400";
-            defaultCta = { href: alert.url || "/study", label: "📚 1타 강사 실전 매매법 강의 보러가기", icon: Sparkles, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
+            defaultCta = { href: alert.url || "/theory", label: "📚 오늘의 차트 스터디 강의 보러가기", icon: Sparkles, style: "bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30" };
         }
         // [4-1순위: 스톡 트렌드 공식 시황 브리핑 / 텔레그램 연동 브리핑]
         else if (titleText.includes('[스톡 트렌드]') || titleText.includes('시황 브리핑') || titleText.includes('장마감 시황')) {
@@ -2758,7 +2813,22 @@ function formatUsdToKrwInText(text: string): string {
         );
 
         // 카드 클릭 시 이동할 최종 목적지 URL (통합 대시보드로 떨어지지 않도록 정밀 계산)
-        const finalHref = targetUrl || (cleanSymbol ? `/discovery?q=${cleanSymbol}` : (defaultCta?.href || '/discovery'));
+        let finalHref = targetUrl || (cleanSymbol ? `/discovery?q=${cleanSymbol}` : (defaultCta?.href || '/discovery'));
+
+        // 만약 finalHref가 현재 머무는 알림센터('/alerts') 또는 빈 문자열이어서 클릭 시 아무 반응이 없는 문제를 원천 방지!
+        if (!finalHref || finalHref === '/alerts' || finalHref.includes('stock-trend-program.co.kr/alerts')) {
+            if (titleText.includes('월요일 장 준비') || titleText.includes('세력/외인 매집') || (alert.body || '').includes('주말 한정판 세력') || (alert.body || '').includes('세력/외인 매집')) {
+                finalHref = "/weekend-whale";
+            } else if (titleText.includes("스터디") || titleText.includes("1타 강사") || titleText.includes("1타강사")) {
+                finalHref = "/theory";
+            } else if (titleText.includes("스캐너") || titleText.includes("퀀트")) {
+                finalHref = "/signals?tab=scanner";
+            } else if (cleanSymbol) {
+                finalHref = `/discovery?q=${cleanSymbol}`;
+            } else {
+                finalHref = "/signals";
+            }
+        }
 
         if (finalHref.startsWith("http")) {
             return (
@@ -2797,9 +2867,24 @@ function formatUsdToKrwInText(text: string): string {
     const filteredAlerts = alerts.filter(alert => {
         const titleText = (alert.title || '').trim();
         const bodyText = (alert.body || '').trim();
-        const isAutoTradeAlert = alert.type === 'auto_trade' || 
+        const isNewsAlert = ['news_alert', 'news_naver', 'news_google', 'news'].includes(alert.type) || 
+            titleText.includes("뉴스") || titleText.includes("헤드라인") || titleText.includes("속보");
+        const hasDisclosureKey = Boolean(
+            titleText.includes("공시") || 
+            titleText.includes("증자") || 
+            titleText.includes("공급계약") || 
+            titleText.includes("전환사채") || 
+            titleText.includes("자사주") || 
+            bodyText.includes("자사주") || 
+            titleText.includes("실적") || 
+            titleText.includes("배당") || 
+            (alert as any).dart_url || 
+            (alert.url && (alert.url.includes('dart') || alert.url.includes('disclosure')))
+        );
+        const isAutoTradeAlert = !isNewsAlert && !hasDisclosureKey && (
+            alert.type === 'auto_trade' || 
             alert.sub_type === 'auto_trade' ||
-            (titleText.includes('🟢') && titleText.includes('매수')) || 
+            (titleText.includes('🟢') && (titleText.includes('매수') || titleText.includes('체결'))) || 
             (titleText.includes('🔴') && (titleText.includes('익절') || titleText.includes('매도'))) || 
             (titleText.includes('💧') && (titleText.includes('추매') || titleText.includes('물타기'))) ||
             titleText.includes('AI 자동매수') || 
@@ -2807,9 +2892,8 @@ function formatUsdToKrwInText(text: string): string {
             titleText.includes('AI 매도') || 
             titleText.includes('자동매매') ||
             titleText.includes('가상 예수금') ||
-            bodyText.includes('가상 예수금') ||
-            bodyText.includes('매입 완료') ||
-            bodyText.includes('AI 자동매수');
+            bodyText.includes('가상 예수금')
+        );
         const isAdminAlert = ['admin_report', 'ping_test', 'system_error', 'health_check', 'visitor_report', 'daily_admin_report', 'admin'].includes(alert.type) || 
             titleText.includes('[관리자]') || titleText.includes('[시스템 보고]') || titleText.includes('[일일 보고]') || titleText.includes('[방문자 보고]') || titleText.includes('방문자') || titleText.includes('일일 운영 보고서');
 

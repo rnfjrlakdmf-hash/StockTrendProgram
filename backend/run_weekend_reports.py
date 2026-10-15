@@ -42,7 +42,7 @@ def run_whale_push():
         tokens = [row[0] for row in cursor.fetchall() if row[0]]
         conn.close()
         if tokens:
-            send_multicast_notification(tokens, title, body, {"url": "/"})
+            send_multicast_notification(tokens, title, body, {"url": "/weekend-whale", "type": "whale_alert"})
             print(f"✅ [WeekendReports] Whale push sent to {len(tokens)} devices.")
         else:
             print("[WeekendReports] No FCM tokens found for Whale push.")

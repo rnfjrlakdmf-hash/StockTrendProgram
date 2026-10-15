@@ -22,12 +22,11 @@ export default function ResponsiveKakaoAd({
   className = ""
 }: ResponsiveKakaoAdProps) {
   const [isPC, setIsPC] = useState<boolean | null>(null);
-  const [shouldDisplay, setShouldDisplay] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
-      setShouldDisplay(false);
       return;
     }
 
@@ -40,21 +39,20 @@ export default function ResponsiveKakaoAd({
                   ua.includes("headless") ||
                   ua.includes("crawler");
 
-    if (isBot) {
-      setShouldDisplay(false);
-      return;
-    }
+    if (isBot) return;
 
+    // 2. 해외 구글 애드센스 심사관(아일랜드/미국/싱가포르) 심사 시 100% 클린 화면 제공
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      setShouldDisplay(isKorea);
+      if (!isKorea) return;
     } catch {
-      setShouldDisplay(true);
+      // ignore
     }
 
     const checkIsPC = () => window.innerWidth >= 768;
     setIsPC(checkIsPC());
+    setMounted(true);
 
     let resizeTimer: any;
     const handleResize = () => {
@@ -66,60 +64,62 @@ export default function ResponsiveKakaoAd({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  if (!shouldDisplay || isPC === null) return null;
-
   const currentUnit = isPC ? pcAdUnit : mobileAdUnit;
   const currentWidth = isPC ? pcAdWidth : mobileAdWidth;
   const currentHeight = isPC ? pcAdHeight : mobileAdHeight;
 
-  if (!currentUnit || currentUnit === "DAN-PLACEHOLDER") return null;
+  useEffect(() => {
+    if (!mounted || !currentUnit || currentUnit === "DAN-PLACEHOLDER") return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const ins = document.createElement("ins");
+    ins.className = "kakao_ad_area";
+    ins.style.display = "none";
+    ins.setAttribute("data-ad-unit", currentUnit);
+    ins.setAttribute("data-ad-width", String(currentWidth));
+    ins.setAttribute("data-ad-height", String(currentHeight));
+
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "//t1.daumcdn.net/kas/static/ba.min.js";
+    script.async = true;
+
+    container.appendChild(ins);
+    container.appendChild(script);
+
+    return () => {
+      if (container) {
+        container.innerHTML = "";
+      }
+    };
+  }, [mounted, currentUnit, currentWidth, currentHeight]);
+
+  if (!mounted || isPC === null || !currentUnit || currentUnit === "DAN-PLACEHOLDER") return null;
 
   const numWidth = parseInt(currentWidth, 10);
   const numHeight = parseInt(currentHeight, 10);
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html style="margin:0;padding:0;overflow:hidden;">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: transparent; overflow: hidden; }
-        </style>
-      </head>
-      <body>
-        <ins class="kakao_ad_area" style="display:none;"
-          data-ad-unit="${currentUnit}"
-          data-ad-width="${currentWidth}"
-          data-ad-height="${currentHeight}"></ins>
-        <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
-      </body>
-    </html>
-  `;
-
   return (
     <div 
-      ref={containerRef}
       className={`responsive-kakao-ad-wrapper flex justify-center items-center my-4 overflow-hidden ${className}`}
-      style={{ minHeight: `${numHeight}px` }}
+      style={{ minHeight: `${numHeight}px`, width: "100%" }}
     >
-      <iframe
-        srcDoc={htmlContent}
-        width={numWidth}
-        height={numHeight}
+      <div
+        ref={containerRef}
         style={{
-          border: "none",
-          overflow: "hidden",
           width: `${numWidth}px`,
           height: `${numHeight}px`,
           maxWidth: "100%",
-          display: "block",
-          margin: "0 auto"
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
         }}
-        scrolling="no"
-        title="Responsive Kakao Ad"
       />
     </div>
   );
 }
+

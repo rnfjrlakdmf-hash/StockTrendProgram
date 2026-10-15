@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 
-export default function DisclosureRedirectPage() {
+function RedirectContent() {
   const searchParams = useSearchParams();
   const targetUrl = searchParams.get("url");
   const [countdown, setCountdown] = useState(5);
@@ -12,7 +12,7 @@ export default function DisclosureRedirectPage() {
   useEffect(() => {
     if (!targetUrl) return;
 
-    // 2초 카운트다운 후 실제 공시 페이지로 자동 이동
+    // 카운트다운 후 실제 공시 페이지로 자동 이동
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -61,5 +61,17 @@ export default function DisclosureRedirectPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function DisclosureRedirectPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0e17] text-white">
+        <p className="text-gray-400">연결 준비 중...</p>
+      </div>
+    }>
+      <RedirectContent />
+    </Suspense>
   );
 }

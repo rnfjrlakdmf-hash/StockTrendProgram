@@ -330,7 +330,7 @@ export default function TheoryListClient({ initialPosts, totalPages, currentPage
                                     {pageNum}
                                 </Link>
                             );
-                        } else if (pageNum === page - 2 || pageNum === page + 2) {
+                        } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
                             return <span key={pageNum} className="text-gray-600 px-1">...</span>;
                         }
                         return null;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Star, Menu, Users, BookOpen } from "lucide-react";
+import { LayoutDashboard, Search, Star, Menu, Users, BookOpen, Flame } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const ADMIN_EMAILS = ['rnfjr@gmail.com', 'rnfjrlakdmf@gmail.com'];
@@ -14,9 +14,9 @@ export default function BottomTabBar() {
     
     const tabs = [
         { name: "홈", href: "/", icon: LayoutDashboard },
-        { name: "종목발굴", href: "/discovery", icon: Search },
         { name: "가이드", href: "/guide", icon: BookOpen },
-        { name: "관심종목", href: "/watchlist", icon: Star },
+        { name: "차트스터디", href: "/theory", icon: Flame },
+        { name: "주식계산기", href: "/calculator", icon: Search },
     ];
 
     const openSidebar = () => {

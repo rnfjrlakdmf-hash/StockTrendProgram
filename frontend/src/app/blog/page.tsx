@@ -97,7 +97,7 @@ async function getBlogPosts(page: number, limitPerPage: number) {
         });
 
         const mergedPosts = Array.from(postMap.values()).sort(
-            (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
 
         const totalPages = Math.max(1, Math.ceil(mergedPosts.length / limitPerPage));

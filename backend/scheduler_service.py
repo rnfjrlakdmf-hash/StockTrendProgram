@@ -1,3 +1,12 @@
+import sys
+try:
+    if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 import time
 import threading
 from datetime import datetime
@@ -1219,6 +1228,174 @@ def send_dormant_user_alert():
         print(f"[Scheduler-Error] Failed to send Dormant User alert: {e}")
         return 0
 
+def send_morning_market_radar():
+    """[아침 개장 15분 전 08:45] 전체 회원 발송 모닝 마켓 레이더 & 오늘의 핫 테마"""
+    try:
+        initialize_firebase()
+        kst = pytz.timezone('Asia/Seoul')
+        now = datetime.now(kst)
+        date_str = now.strftime('%m/%d')
+        
+        # 1. 미국 증시 지표 (간밤 종가)
+        us_indices = []
+        md_dict = {}
+        try:
+            from stock_data import get_market_data
+            md = get_market_data() or []
+            md_dict = {item['label']: item for item in md if isinstance(item, dict) and 'label' in item}
+            for lbl, name in [("NASDAQ", "나스닥"), ("S&P 500", "S&P500"), ("SOX", "반도체")]:
+                if lbl in md_dict:
+                    chg = md_dict[lbl].get('change', '0.00%')
+                    us_indices.append(f"{name} {chg}")
+        except Exception as e:
+            print(f"[Scheduler-MorningRadar] Failed to load market data: {e}")
+            
+        us_line = " ｜ ".join(us_indices) if us_indices else "나스닥 견조 ｜ S&P500 견조"
+        
+        # 2. 환율
+        fx_rate_str = "1,332원"
+        try:
+            if "USD/KRW" in md_dict:
+                fx_val = md_dict["USD/KRW"].get("value", "1,332")
+                fx_rate_str = f"{fx_val}원"
+        except Exception:
+            pass
+
+        # 3. 핫 테마 TOP 2
+        theme_strs = []
+        try:
+            top_themes = get_top_trending_themes(limit=2)
+            if top_themes:
+                for t in top_themes:
+                    name = t.get('name', '') if isinstance(t, dict) else str(t)
+                    lead = t.get('leading_stock', '') if isinstance(t, dict) else ''
+                    if name:
+                        theme_strs.append(f"• {name}" + (f" (대장주: {lead})" if lead else ""))
+        except Exception as te:
+            print(f"[Scheduler-MorningRadar] Theme load error: {te}")
+            
+        if not theme_strs:
+            theme_strs = ["• 반도체 / AI", "• 2차전지 / 바이오"]
+
+        title = f"☀️ [{date_str} 개장 15분 전] 오늘 증시 핵심 전망 & 주목 테마"
+        body_lines = [
+            f"🇺🇸 간밤 뉴욕: {us_line}",
+            f"💵 원/달러 환율: {fx_rate_str}",
+            "",
+            "🔥 오늘 주목할 핫 테마:",
+            "\n".join(theme_strs),
+            "",
+            "오늘의 AI 퀀트 레이더로 최적의 매수 타점을 포착하세요! 🚀"
+        ]
+        body = "\n".join(body_lines)
+        
+        # FCM 토큰 추출 (pref_morning = 1 필터)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != '' AND (pref_morning = 1 OR pref_morning IS NULL)")
+        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+        conn.close()
+        
+        if tokens:
+            print(f"[Scheduler] ☀️ Sending Morning Market Radar to {len(tokens)} devices...")
+            payload = {
+                "url": "/discovery",
+                "type": "morning_radar",
+                "tag": f"morning-radar-{now.strftime('%Y%m%d')}"
+            }
+            send_multicast_notification(tokens, title, body, payload)
+            
+            # alert_history 기록
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                    VALUES ('all', 'ALL', 'morning_radar', ?, 0, 0, 0)
+                """, (f"{title}\n{body}",))
+                conn.commit()
+                conn.close()
+            except Exception as dbe:
+                print(f"[Scheduler-MorningRadar] DB save error: {dbe}")
+                
+            return len(tokens)
+    except Exception as e:
+        print(f"[Scheduler-Error] send_morning_market_radar failed: {e}")
+    return 0
+
+def send_evening_closing_scanner():
+    """[저녁 퇴근길 17:45] 전체 회원 발송 장마감 수급 스캐너 TOP 3"""
+    try:
+        initialize_firebase()
+        from routes.closing_scanner import generate_closing_scanner_data
+        kst = pytz.timezone('Asia/Seoul')
+        now = datetime.now(kst)
+        date_str = now.strftime('%m/%d')
+        
+        scanner_data = generate_closing_scanner_data()
+        day0 = scanner_data.get(0, {})
+        items = day0.get("items", [])
+        
+        title = f"🔥 [{date_str} 장마감 수급 스캐너] 오늘 외인·기관이 쓸어담은 TOP 3는?"
+        
+        item_lines = []
+        medals = ["🥇 1위", "🥈 2위", "🥉 3위"]
+        for idx, item in enumerate(items[:3]):
+            name = item.get("name", "")
+            code = item.get("code", "")
+            price = item.get("entryPrice", 0)
+            fluc = item.get("returnRate", 0.0)
+            buyer = item.get("majorBuyer", "외인·기관")
+            sign = "+" if fluc > 0 else ""
+            item_lines.append(f"{medals[idx]} {name} : {price:,}원 ({sign}{fluc:.1f}%) ｜ {buyer}")
+            
+        if not item_lines:
+            item_lines = ["• 오늘 장마감 메이저 수급 집중 종목 집계 완료"]
+            
+        body_lines = [
+            "오늘 정규장 마감 후 메이저 수급이 대량 유입된 종목:",
+            "",
+            "\n".join(item_lines),
+            "",
+            "내일 상승을 주도할 수급 레이더 종목들을 스캐너에서 지금 바로 확인하세요! 🔍"
+        ]
+        body = "\n".join(body_lines)
+        
+        # FCM 토큰 추출 (pref_closing = 1 필터)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != '' AND (pref_closing = 1 OR pref_closing IS NULL)")
+        tokens = [row[0] for row in cursor.fetchall() if row[0]]
+        conn.close()
+        
+        if tokens:
+            print(f"[Scheduler] 🔥 Sending Evening Closing Scanner to {len(tokens)} devices...")
+            payload = {
+                "url": "/signals?tab=scanner",
+                "type": "closing_scanner",
+                "tag": f"evening-scanner-{now.strftime('%Y%m%d')}"
+            }
+            send_multicast_notification(tokens, title, body, payload)
+            
+            # alert_history 기록
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO alert_history (user_id, symbol, type, message, current_price, buy_price, threshold)
+                    VALUES ('all', 'ALL', 'closing_scanner', ?, 0, 0, 0)
+                """, (f"{title}\n{body}",))
+                conn.commit()
+                conn.close()
+            except Exception as dbe:
+                print(f"[Scheduler-EveningScanner] DB save error: {dbe}")
+                
+            return len(tokens)
+    except Exception as e:
+        print(f"[Scheduler-Error] send_evening_closing_scanner failed: {e}")
+    return 0
+
+
 def run_market_scheduler():
     """시장별 이벤트 감시 메인 루프"""
     import asyncio
@@ -1264,6 +1441,8 @@ def run_market_scheduler():
     last_run_analytics = _saved.get("last_run_analytics", "")
     last_run_fomo = _saved.get("last_run_fomo", "")
     last_run_dormant = _saved.get("last_run_dormant", "")
+    last_run_morning_radar = _saved.get("last_run_morning_radar", "")
+    last_run_evening_scanner = _saved.get("last_run_evening_scanner", "")
     last_run_crypto_surge = ""
     run_market_scheduler.last_run_whale_report_gen = _saved.get("last_run_whale_report_gen")
     run_market_scheduler.last_run_whale_push = _saved.get("last_run_whale_push")
@@ -1350,6 +1529,18 @@ def run_market_scheduler():
                     except Exception as e:
                         print(f"[Scheduler] IPO 알림 오류: {e}")
 
+            # [평일 발송] ☀️ 개장 15분 전 모닝 마켓 레이더 & 오늘 핫 테마 (08:45 ~ 09:04)
+            if day_of_week <= 4 and not is_holiday("kor"):
+                if ((now.hour == 8 and now.minute >= 45) or (now.hour == 9 and now.minute < 5)) and current_date != last_run_morning_radar:
+                    try:
+                        last_run_morning_radar = current_date
+                        _save_sched_state("last_run_morning_radar", current_date)
+                        print(f"[Scheduler] ☀️ Launching Morning Market Radar for {current_date}...")
+                        send_morning_market_radar()
+                        print(f"[Scheduler] ✅ Morning Market Radar completed.")
+                    except Exception as mmr_e:
+                        print(f"[Scheduler-Error] Morning market radar failed: {mmr_e}")
+
             # 1. 국내 장시작 시가 알림 (09:05 ~ 10:59)
             if day_of_week <= 4:
                 if ((now.hour == 9 and now.minute >= 5) or now.hour == 10) and current_date != last_run_open_kr and not is_market_holiday("KR"):
@@ -1371,6 +1562,18 @@ def run_market_scheduler():
                         print(f"[Scheduler] ✅ Closing Notification (KR) completed.")
                     except Exception as cl_e:
                         print(f"[Scheduler-Error] Closing notification KR failed: {cl_e}")
+
+            # [평일 발송] 🔥 퇴근길 장마감 수급 스캐너 외인·기관 매집 TOP 3 (17:45 ~ 20:59)
+            if day_of_week <= 4 and not is_holiday("kor"):
+                if ((now.hour == 17 and now.minute >= 45) or (18 <= now.hour <= 20)) and current_date != last_run_evening_scanner:
+                    try:
+                        last_run_evening_scanner = current_date
+                        _save_sched_state("last_run_evening_scanner", current_date)
+                        print(f"[Scheduler] 🔥 Launching Evening Closing Scanner for {current_date}...")
+                        send_evening_closing_scanner()
+                        print(f"[Scheduler] ✅ Evening Closing Scanner completed.")
+                    except Exception as ecs_e:
+                        print(f"[Scheduler-Error] Evening closing scanner failed: {ecs_e}")
 
             # [평일 발송] AI 모닝 브리핑 (US) (21:30 ~ 23:30)
             if day_of_week <= 4 and not is_market_holiday("US"):
@@ -1573,7 +1776,7 @@ def run_market_scheduler():
                     tokens = [row[0] for row in cursor.fetchall() if row[0]]
                     conn.close()
                     if tokens:
-                        send_multicast_notification(tokens, title, body, {"url": "/"})
+                        send_multicast_notification(tokens, title, body, {"url": "/weekend-whale", "type": "whale_alert"})
                 except Exception as e:
                     print(f"[Scheduler-Error] Failed to send whale report push: {e}")
                 run_market_scheduler.last_run_whale_push = current_date
@@ -1715,4 +1918,8 @@ if __name__ == "__main__":
     import sys
     if "--test-closing" in sys.argv:
         send_closing_notification("KR")
+    elif "--test-morning-radar" in sys.argv:
+        send_morning_market_radar()
+    elif "--test-evening-scanner" in sys.argv:
+        send_evening_closing_scanner()
 

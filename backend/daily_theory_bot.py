@@ -651,7 +651,28 @@ def post_daily_theory(force=False):
         clean_title = title.replace('[오늘의 차트 스터디]', '').replace('[주식 1타 강의]', '').strip()
         summary_line = push_summary if push_summary else "초보자도 30초 만에 이해하는 핵심 원리와 1,000만 원 실전 시뮬레이션 예시 완벽 정리"
         
-        # 텔레그램 발송 (telegram_service 내부에서 FCM 푸시와 알림 센터 등록까지 모두 자동으로 처리함)
+        # 1. [FCM 푸시 & 알림 센터 직접 발송] 텔레그램 서버 상태와 무관하게 100% 독립 수신 보장
+        try:
+            from firebase_config import send_multicast_notification, save_alert_to_firestore
+            from db_manager import get_all_fcm_tokens
+            all_tokens = get_all_fcm_tokens()
+            push_title = f"📚 [주식 1타 강사] {clean_title}"
+            push_body = f"📌 핵심 요약: {summary_line}\n📌 수록 자료: 실전 차트 그림 · 비교 막대그래프 · 1,000만원 계산 예시"
+            push_data = {
+                "type": "theory_alert",
+                "url": f"/theory/{slug}",
+                "theory_id": slug
+            }
+            if all_tokens:
+                send_multicast_notification(all_tokens, push_title, push_body, push_data, skip_db_save=False)
+                print(f"[Theory FCM] 스터디 푸시 {len(all_tokens)}명 발송 성공 (DB 저장 완료)")
+            else:
+                save_alert_to_firestore(title=push_title, body=push_body, alert_type="theory_alert", url=f"/theory/{slug}")
+                print("[Theory FCM] 토큰 없음 -> 알림 센터 DB 단독 저장 완료")
+        except Exception as push_err:
+            print(f"[Theory FCM Error] 푸시 발송 실패: {push_err}")
+
+        # 2. [텔레그램 채널 발송] 부가 채널 (텔레그램 실패/토큰 만료 시에도 FCM에는 0% 영향 없음)
         try:
             from telegram_service import send_telegram_teaser
             teaser_msg = (
@@ -660,10 +681,10 @@ def post_daily_theory(force=False):
                 f"📊 수록 자료: <b>실전 차트 그림 · 비교 막대그래프 · 1,000만원 계산 예시</b>\n\n"
                 f"👉 <a href='{new_url}'>차트·그래프 포함 강의 보러가기</a>"
             )
-            send_telegram_teaser(teaser_msg, alert_type="theory_alert")
-            print("[Telegram & FCM] 스터디 알림 통합 발송 완료")
+            send_telegram_teaser(teaser_msg, alert_type="theory_alert", skip_db_save=True)
+            print("[Telegram] 스터디 채널 알림 발송 시도 완료")
         except Exception as e:
-            print(f"[Telegram & FCM] 발송 실패: {e}")
+            print(f"[Telegram] 발송 오류 (FCM은 이미 발송됨): {e}")
         
         # Google Indexing API 실시간 핑
         try:

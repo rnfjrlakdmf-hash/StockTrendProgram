@@ -257,10 +257,10 @@ export default function PremiumPage() {
                     if (s3Split.length > 1) {
                         const p3 = s3Split[1];
                         const s4Split = p3.split(/###\s*🛡️?\s*Section 4[^\n]*/i);
-                        s3Raw = s4Split[0].replace(/---.*/s, '').trim();
+                        s3Raw = s4Split[0].replace(/---[\s\S]*/, '').trim();
 
                         if (s4Split.length > 1) {
-                            s4Raw = s4Split[1].replace(/---.*/s, '').replace(/\*※.*/s, '').trim();
+                            s4Raw = s4Split[1].replace(/---[\s\S]*/, '').replace(/\*※[\s\S]*/, '').trim();
                         }
                     }
                 }

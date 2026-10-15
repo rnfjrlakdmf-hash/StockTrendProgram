@@ -162,7 +162,7 @@ export default function BloombergLiveTicker() {
                 summary = rawBody
                   .replace(/\(단순 집계.*?\)/g, "")
                   .split("\n")
-                  .map(s => s.trim())
+                  .map((s: string) => s.trim())
                   .filter(Boolean)
                   .slice(0, 3)
                   .join(" · ");

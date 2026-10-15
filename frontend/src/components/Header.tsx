@@ -373,6 +373,13 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                         <span>투자 가이드</span>
                     </Link>
                     <Link 
+                        href="/theory" 
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/theory') ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <span>📖</span>
+                        <span>차트 스터디</span>
+                    </Link>
+                    <Link 
                         href="/blog" 
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/blog') ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                     >

@@ -419,7 +419,8 @@ export default function AdminAutoTradePage() {
   const [logFilter, setLogFilter] = useState<"ALL" | "BUY" | "SELL" | "PROFIT" | "LOSS">("ALL");
   const [logSearch, setLogSearch] = useState<string>("");
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
-  const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("REAL");
+  const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("PAPER");
+  const [limitToastMsg, setLimitToastMsg] = useState<string | null>(null);
 
   const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
     e.preventDefault();
@@ -461,8 +462,13 @@ export default function AdminAutoTradePage() {
   const syncFormFromConfig = (cfg: any) => {
     if (!cfg) return;
     setMode(cfg.mode || "AI_PAPER");
+    if (cfg.mode === "KIS_REAL" && cfg.kis_order_enabled) {
+      setViewWindow("REAL");
+    } else {
+      setViewWindow("PAPER");
+    }
     setMarketTarget(cfg.market_target === "KR_ONLY" || cfg.market_target === "US_ONLY" ? cfg.market_target : "ALL");
-    setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 10000000));
+    setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 100000));
     setOrderAmountKrw(Number(cfg.order_amount_krw || 1400000));
     setMaxPositions(Number(cfg.max_positions || 7));
     setTakeProfitPct(Number(cfg.take_profit_pct || 2.0));
@@ -656,9 +662,41 @@ export default function AdminAutoTradePage() {
     const seedVal = Math.max(50000, Number(targetSeed ?? paperSeedKrw) || 20000000);
     const autoMaxPos = seedVal <= 200000 ? 2 : seedVal <= 500000 ? 3 : seedVal <= 1000000 ? 5 : seedVal <= 4000000 ? 7 : 10;
     const autoOrderAmt = Math.max(25000, Math.floor(seedVal / Math.max(2, autoMaxPos)));
+    
+    // 1. React 상태 즉시 반영 (가상 모의투자 시드머니만 독립 변경!)
+    setMode("AI_PAPER");
+    setViewWindow("PAPER");
     setPaperSeedKrw(seedVal);
-    setMaxTotalInvestKrw(seedVal);
-    setOrderAmountKrw(autoOrderAmt);
+
+    // 2. 화면 전체 낙관적 즉시 업데이트 (0.001초 만에 화면 전체 반영)
+    setData((prev: any) => {
+      if (!prev) return prev;
+      const prevPaperSummary = prev.paper_summary || {};
+      const currentInvested = Number(prevPaperSummary.invested_principal_krw || 0);
+      const newCash = Math.max(0, seedVal - currentInvested);
+      return {
+        ...prev,
+        config: {
+          ...(prev.config || {}),
+          mode: "AI_PAPER",
+          kis_order_enabled: false,
+          paper_seed_krw: seedVal,
+        },
+        paper_summary: {
+          ...prevPaperSummary,
+          cash_krw: newCash,
+          max_total_invest_krw: seedVal,
+          remaining_invest_limit_krw: newCash,
+          total_equity_krw: newCash + Number(prevPaperSummary.eval_amount_krw || 0),
+        },
+      };
+    });
+
+    const seedLabel = seedVal >= 10000 ? `${(seedVal / 10000).toLocaleString()}만 원` : `${seedVal.toLocaleString()}원`;
+    const orderLabel = autoOrderAmt >= 10000 ? `${(autoOrderAmt / 10000).toFixed(0)}만 원` : `${autoOrderAmt.toLocaleString()}원`;
+    setLimitToastMsg(`✨ 가상 모의투자 시드머니가 [${seedLabel}]으로 즉시 적용되었습니다! (1회 약 ${orderLabel}, 최대 ${autoMaxPos}종목)`);
+    setTimeout(() => setLimitToastMsg(null), 3500);
+
     try {
       localStorage.setItem("admin_auto_paper_seed", String(seedVal));
     } catch {}
@@ -669,29 +707,75 @@ export default function AdminAutoTradePage() {
         method: "POST",
         headers: hdrs,
         body: JSON.stringify({
+          mode: "AI_PAPER",
+          kis_order_enabled: false,
           paper_seed_krw: seedVal,
-          max_total_invest_krw: seedVal,
-          order_amount_krw: autoOrderAmt,
-          max_positions: autoMaxPos,
         }),
       });
       const json = await res.json();
-      if (json.status === "success") {
+      if (json.status === "success" && json.data) {
         setData(json.data);
         syncFormFromConfig(json.data.config);
+        // 백엔드 자동매매 사이클은 비동기 백그라운드로 실행 (화면 멈춤 없이 즉각 완료!)
+        fetch(`${API_BASE_URL}/api/system/admin/auto-trader/run-cycle?force_buy=true`, {
+          method: "POST",
+          headers: hdrs,
+        })
+          .then((r) => r.json())
+          .then((j) => {
+            if (j.status === "success" && j.data) setData(j.data);
+          })
+          .catch(() => {});
       }
+    } catch (e) {
+      console.error("Apply paper seed error:", e);
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleApplyRealLimit = async (targetLimit?: number, startRealNow: boolean = false) => {
-    const limitVal = Math.max(30000, Number(targetLimit ?? maxTotalInvestKrw) || 100000);
-    const autoMaxPos = limitVal <= 200000 ? 2 : limitVal <= 500000 ? 3 : limitVal <= 1000000 ? 5 : limitVal <= 4000000 ? 7 : 10;
-    const autoOrderAmt = Math.max(25000, Math.floor(limitVal / Math.max(2, autoMaxPos)));
+    const rawNum = targetLimit !== undefined ? Number(targetLimit) : Number(maxTotalInvestKrw);
+    const limitVal = rawNum === 0 ? 0 : Math.max(30000, isNaN(rawNum) ? 100000 : rawNum);
+    const autoMaxPos = limitVal === 0 ? 10 : limitVal <= 200000 ? 2 : limitVal <= 500000 ? 3 : limitVal <= 1000000 ? 5 : limitVal <= 4000000 ? 7 : 10;
+    const autoOrderAmt = limitVal === 0 ? 1000000 : Math.max(25000, Math.floor(limitVal / Math.max(2, autoMaxPos)));
+    
     setMaxTotalInvestKrw(limitVal);
     setMaxPositions(autoMaxPos);
     setOrderAmountKrw(autoOrderAmt);
+
+    // 실전 계좌 낙관적 업데이트
+    setData((prev: any) => {
+      if (!prev) return prev;
+      const prevRealSummary = prev.real_summary || {};
+      const currentInvested = Number(prevRealSummary.invested_principal_krw || 0);
+      const newCash = limitVal === 0 ? Number(prevRealSummary.cash_krw || 0) : Math.max(0, limitVal - currentInvested);
+      return {
+        ...prev,
+        config: {
+          ...(prev.config || {}),
+          max_total_invest_krw: limitVal,
+          order_amount_krw: autoOrderAmt,
+          max_positions: autoMaxPos,
+          ...(startRealNow ? { mode: "KIS_REAL", kis_order_enabled: true, enabled: true } : {}),
+        },
+        real_summary: {
+          ...prevRealSummary,
+          cash_krw: newCash,
+          max_total_invest_krw: limitVal,
+          remaining_invest_limit_krw: newCash,
+        },
+      };
+    });
+
+    const limitLabel = limitVal === 0 ? "무제한 (계좌 전액)" : limitVal >= 10000 ? `${(limitVal / 10000).toLocaleString()}만 원` : `${limitVal.toLocaleString()}원`;
+    setLimitToastMsg(
+      startRealNow
+        ? `🔥 실전 한도 [${limitLabel}] 설정 완료! 실전 자동매매가 즉시 가동되었습니다!`
+        : `🔒 실전 계좌 한도가 [${limitLabel}]으로 자유 설정되었습니다! (최대 ${autoMaxPos}종목 분할 매수)`
+    );
+    setTimeout(() => setLimitToastMsg(null), 3500);
+
     setActionLoading(true);
     try {
       const hdrs = await getAdminHeaders(true);
@@ -713,21 +797,22 @@ export default function AdminAutoTradePage() {
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (json.status === "success") {
+      if (json.status === "success" && json.data) {
         setData(json.data);
         syncFormFromConfig(json.data.config);
-        if (startRealNow) {
-          await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/run-cycle?force_buy=true`, {
-            method: "POST",
-            headers: hdrs,
+        // 실전/모의 구분 없이 바뀐 한도에 맞춰 레이더 즉시 갱신 (비동기 백그라운드)
+        fetch(`${API_BASE_URL}/api/system/admin/auto-trader/run-cycle?force_buy=true`, {
+          method: "POST",
+          headers: hdrs,
+        })
+          .then((r) => r.json())
+          .then((j) => {
+            if (j.status === "success" && j.data) setData(j.data);
           })
-            .then((r) => r.json())
-            .then((j) => {
-              if (j.status === "success") setData(j.data);
-            })
-            .catch(() => {});
-        }
+          .catch(() => {});
       }
+    } catch (e) {
+      console.error("Apply real limit error:", e);
     } finally {
       setActionLoading(false);
     }
@@ -738,6 +823,8 @@ export default function AdminAutoTradePage() {
     const seedText = seedVal >= 10000 ? `${(seedVal / 10000).toLocaleString()}만 원` : `${seedVal.toLocaleString()}원`;
     if (!confirm(`가상 계좌 시드머니를 [${seedText}]으로 초기화하고 즉시 새 포트폴리오 매수를 시작하시겠습니까?`)) return;
     setPaperSeedKrw(seedVal);
+    setMode("AI_PAPER");
+    setViewWindow("PAPER");
     try {
       localStorage.setItem("admin_auto_paper_seed", String(seedVal));
     } catch {}
@@ -746,7 +833,7 @@ export default function AdminAutoTradePage() {
       const res = await fetch(`${API_BASE_URL}/api/system/admin/auto-trader/reset-paper`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Admin-Key": ADMIN_KEY },
-        body: JSON.stringify({ initial_capital_krw: seedVal }),
+        body: JSON.stringify({ initial_capital_krw: seedVal, mode: "AI_PAPER" }),
       });
       const json = await res.json();
       if (json.status === "success") setData(json.data);
@@ -767,8 +854,8 @@ export default function AdminAutoTradePage() {
   }
 
   const cfg = data?.config || {};
-  const configuredMaxPos = Number(cfg.max_positions || maxPositions || 7);
-  const activePaperSeed = Number(cfg.paper_seed_krw || paperSeedKrw || 20000000);
+  const configuredMaxPos = Number(maxPositions || cfg.max_positions || 7);
+  const activePaperSeed = Number(paperSeedKrw || cfg.paper_seed_krw || 20000000);
   const paperSeedLabel = activePaperSeed >= 10000 ? `${(activePaperSeed / 10000).toLocaleString()}만원` : `${activePaperSeed.toLocaleString()}원`;
   const realPositions = data?.real_positions || [];
   const paperPositions = data?.paper_positions || [];
@@ -839,6 +926,25 @@ export default function AdminAutoTradePage() {
   return (
     <div className="min-h-screen bg-[#06070a] text-white pb-24">
       <Header />
+
+      {/* 한도 변경 즉각 반응 토스트 알림 배너 */}
+      {limitToastMsg && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4 animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-400 text-black font-black text-xs sm:text-sm shadow-2xl flex items-center justify-between gap-3 border border-white/40">
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-black shrink-0" />
+              <span>{limitToastMsg}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setLimitToastMsg(null)}
+              className="text-black/70 hover:text-black font-bold text-xs px-2 py-0.5 rounded-lg bg-black/10 hover:bg-black/20 shrink-0 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-5 space-y-6">
         {/* 상단 사령부 메인 헤더 & 마스터 스위치 콘솔 */}
@@ -1037,7 +1143,7 @@ export default function AdminAutoTradePage() {
                   </div>
 
                   <p className="text-xs text-gray-300 leading-relaxed">
-                    실제 증권사 한도 <b className="text-blue-300 font-mono">₩{(cfg.max_total_invest_krw || 100000).toLocaleString()}원</b> 내에서 체결된 실전 보유 종목만 100% 분리 관리합니다.
+                    실제 증권사 한도 <b className="text-blue-300 font-mono">{cfg.max_total_invest_krw === 0 ? "무제한(전액)" : `₩${(cfg.max_total_invest_krw !== undefined ? cfg.max_total_invest_krw : (maxTotalInvestKrw || 100000)).toLocaleString()}원`}</b> 내에서 체결된 실전 보유 종목만 100% 분리 관리합니다.
                   </p>
                 </div>
 
@@ -1160,7 +1266,11 @@ export default function AdminAutoTradePage() {
                   </span>
                 </div>
                 <span className="text-[10px] text-gray-400 font-mono">
-                  {isRealView ? `한도 ₩${(cfg.max_total_invest_krw || 100000).toLocaleString()}` : `시드 ${paperSeedLabel}`}
+                  {isRealView
+                    ? cfg.max_total_invest_krw === 0
+                      ? "한도 무제한"
+                      : `한도 ₩${(cfg.max_total_invest_krw !== undefined ? cfg.max_total_invest_krw : (maxTotalInvestKrw || 100000)).toLocaleString()}`
+                    : `시드 ${paperSeedLabel}`}
                 </span>
               </div>
 
@@ -1439,18 +1549,25 @@ export default function AdminAutoTradePage() {
             </div>
           </div>
 
-          {/* 🏦 [신규] 한국투자증권 실전 계좌 투자 한도(내가 정한 금액) 직접 설정 & 원클릭 실전 매매 시작 바 */}
-          {isRealView && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-black/60 border border-blue-500/30 space-y-3.5 relative overflow-hidden shadow-xl">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* 💳 [실전 & 가상 시드머니 독립 자유 설정 콘솔] - 양쪽 모두 상시 노출되어 대표님이 원하는 금액을 언제든지 자유롭게 즉시 변경 가능 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 🏦 [카드 1] 한국투자증권 실전 계좌 투자 한도(내가 정한 금액) 직접 설정 & 원클릭 실전 매매 시작 바 */}
+            <div
+              className={`p-4 sm:p-5 rounded-2xl space-y-3.5 relative overflow-hidden shadow-xl transition-all ${
+                isRealView
+                  ? "bg-gradient-to-br from-blue-950/60 via-indigo-950/40 to-black/90 border-2 border-blue-400/80 shadow-blue-500/20 ring-1 ring-blue-400/30"
+                  : "bg-gradient-to-br from-blue-950/30 via-zinc-900/90 to-black/90 border border-blue-500/30 hover:border-blue-400/50"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="text-xs sm:text-sm font-black text-blue-300 flex flex-wrap items-center gap-2">
                     <span className="flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-blue-400" />
-                      한국투자증권(43880949-22) 실전 계좌 최대 투자 한도 설정
+                      실전 계좌 시드머니(투자 한도) 자유 설정
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-200 text-[11px] font-mono font-bold">
-                      지정 한도: ₩{(cfg.max_total_invest_krw || maxTotalInvestKrw || 100000).toLocaleString()}원
+                      지정 한도: ₩{(cfg.max_total_invest_krw !== undefined ? cfg.max_total_invest_krw : maxTotalInvestKrw).toLocaleString()}원
                     </span>
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-black ${
@@ -1459,30 +1576,22 @@ export default function AdminAutoTradePage() {
                           : "bg-zinc-800 text-amber-300 border border-amber-400/40"
                       }`}
                     >
-                      {cfg.mode === "KIS_REAL" && cfg.kis_order_enabled ? "🟢 실전 주문 ON (가동 중)" : "🔒 실전 주문 대기 중 (모의투자 전용)"}
+                      {cfg.mode === "KIS_REAL" && cfg.kis_order_enabled ? "🟢 실전 주문 ON (가동 중)" : "🔒 실전 주문 대기 (모의 전용)"}
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-300 leading-relaxed">
-                    💡 <strong className="text-blue-200">대표님 자산 철통 보호 안전장치</strong>: 대표님 증권 계좌에 예수금이 아무리 많아도,{" "}
+                    💡 <strong className="text-blue-200">10만 원 고정이 절대 아닙니다!</strong> 대표님께서 1원 단위까지 원하시는 금액(예: 30만 원, 50만 원, 100만 원, 500만 원 또는 직접 입력)을 자유롭게 설정하실 수 있습니다. 대표님의 증권 계좌 예수금이 아무리 많아도,{" "}
                     <strong className="text-white underline decoration-blue-400 underline-offset-2">
-                      여기서 직접 정하신 한도 금액(예: 10만 원, 100만 원 등) 내에서만
+                      여기서 직접 정하신 한도 금액 내에서만
                     </strong>{" "}
-                    AI가 종목별로 안전하게 쪼개어 자동 매수·익절·손절합니다. 한도를 1원도 초과하지 않으므로 안심하고 소액부터 검증하실 수 있습니다.
+                    AI가 안전하게 쪼개어 자동 매매하므로 예수금이 1원도 초과 지출되지 않습니다.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={() => handleApplyRealLimit(maxTotalInvestKrw, true)}
-                  className="text-xs font-black text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 cursor-pointer shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
-                >
-                  <Flame className="w-4 h-4 text-emerald-950" />
-                  <span>이 한도(₩{(maxTotalInvestKrw || 100000).toLocaleString()}원)로 실전 자동매매 시작</span>
-                </button>
               </div>
 
+              {/* 빠른 한도 선택 칩 */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
-                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 한도 선택:</span>
+                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 한도:</span>
                 {[
                   { label: "🛡️ 5만 원", val: 50000 },
                   { label: "🔥 10만 원", val: 100000 },
@@ -1492,112 +1601,93 @@ export default function AdminAutoTradePage() {
                   { label: "300만 원", val: 3000000 },
                   { label: "500만 원", val: 5000000 },
                   { label: "1,000만 원", val: 10000000 },
+                  { label: "무제한", val: 0 },
                 ].map((preset) => (
                   <button
                     key={preset.val}
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApplyRealLimit(preset.val, false)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      (cfg.max_total_invest_krw || maxTotalInvestKrw) === preset.val
-                        ? "bg-blue-400 text-black shadow-md shadow-blue-400/30"
+                    className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      (cfg.max_total_invest_krw !== undefined ? cfg.max_total_invest_krw : maxTotalInvestKrw) === preset.val
+                        ? "bg-blue-400 text-black shadow-md shadow-blue-400/30 scale-105"
                         : "bg-zinc-900/90 text-gray-300 border border-white/10 hover:border-blue-400/60 hover:text-white"
                     }`}
                   >
                     {preset.label}
                   </button>
                 ))}
+              </div>
 
-                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-2 sm:mt-0">
-                  <input
-                    type="number"
-                    min={30000}
-                    step={50000}
-                    value={maxTotalInvestKrw}
-                    onChange={(e) => setMaxTotalInvestKrw(Number(e.target.value))}
-                    placeholder="실전 한도 금액(원)"
-                    className="w-40 px-3.5 py-1.5 rounded-xl bg-black/80 border border-blue-400/40 text-blue-200 font-mono text-xs font-bold focus:outline-none focus:border-blue-400"
-                  />
+              {/* 직접 입력 & 액션 버튼들 */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/5">
+                <div className="flex items-center gap-1.5 flex-1 min-w-[170px]">
+                  <span className="text-[11px] text-gray-400 font-bold shrink-0">✏️ 직접 입력:</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={0}
+                      step={50000}
+                      value={maxTotalInvestKrw}
+                      onChange={(e) => setMaxTotalInvestKrw(Math.max(0, Number(e.target.value)))}
+                      placeholder="원하는 실전 한도(원)"
+                      className="w-full px-3 py-1.5 rounded-xl bg-black/80 border border-blue-400/40 text-blue-200 font-mono text-xs font-bold focus:outline-none focus:border-blue-400"
+                    />
+                    <span className="absolute right-2.5 top-1.5 text-[11px] text-gray-500 font-mono font-bold">원</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApplyRealLimit(maxTotalInvestKrw, false)}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs shrink-0 cursor-pointer shadow-md shadow-blue-500/20"
+                    className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-xs cursor-pointer shadow-md shadow-blue-500/20 active:scale-95 transition-all"
                   >
-                    💾 한도만 저장
+                    💾 실전 한도 저장
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() => handleApplyRealLimit(maxTotalInvestKrw, true)}
+                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-black font-black text-xs flex items-center gap-1 cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+                  >
+                    <Flame className="w-3.5 h-3.5 text-emerald-950" />
+                    <span>실전 매매 가동</span>
                   </button>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* 💰 [신규] AI 가상 모의투자 시드머니 직접 설정 & 원클릭 즉시 적용 바 */}
-          {!isRealView && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/30 via-yellow-950/20 to-black/60 border border-amber-500/30 space-y-3.5 relative overflow-hidden shadow-xl">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* 💰 [카드 2] AI 가상 모의투자 시드머니 직접 설정 & 원클릭 즉시 적용 바 */}
+            <div
+              className={`p-4 sm:p-5 rounded-2xl space-y-3.5 relative overflow-hidden shadow-xl transition-all ${
+                !isRealView
+                  ? "bg-gradient-to-br from-amber-950/60 via-yellow-950/40 to-black/90 border-2 border-amber-400/80 shadow-amber-500/20 ring-1 ring-amber-400/30"
+                  : "bg-gradient-to-br from-amber-950/25 via-zinc-900/90 to-black/90 border border-amber-500/30 hover:border-amber-400/50"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="text-xs sm:text-sm font-black text-amber-300 flex flex-wrap items-center gap-2">
                     <span className="flex items-center gap-1.5">
                       <Coins className="w-4 h-4 text-amber-400" />
-                      모의투자 시드머니(가상 원금) 내 마음대로 설정
+                      가상 모의투자 시드머니(가상 원금) 자유 설정
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-black text-[11px] font-black shadow-sm">
-                      현재 설정: ₩{activePaperSeed.toLocaleString()}원 ({paperSeedLabel})
+                      현재 시드: ₩{activePaperSeed.toLocaleString()}원 ({paperSeedLabel})
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-300 leading-relaxed">
-                    💡 <strong className="text-amber-200">24시간 자율 AI 운용 메커니즘</strong>: 시드머니 한도 내에서 퀀트 상위 종목을 국내(4종목 60%)와 해외(3종목 40%)로 균형 분할 매수합니다. 목표 수익률(+{takeProfitPct || 2.0}%) 도달 시 즉시 익절하고,{" "}
-                    <strong className="text-emerald-300">상승 탄력이 약해지면(+0.5%~+{(Number(takeProfitPct || 2.0) - 0.1).toFixed(1)}%) 알아서 조기 익절</strong>하며,{" "}
-                    <strong className="text-rose-300">약세 종목(-1.0% 이하)은 강세 주도주로 실시간 교체 매매</strong>하여 계좌 수익률을 극대화합니다.
+                    💡 <strong className="text-amber-200">100% 안전한 모의투자</strong>: 실제 돈이 전혀 들어가지 않습니다. 1,000만 원, 5,000만 원 등 원하시는 시드머니를 마음대로 설정하여 24시간 AI 알고리즘의 국내·해외 분할 매수와 익절(+{takeProfitPct || 2.0}%) 및 교체매매 성과를 실시간으로 테스트하실 수 있습니다.
                   </p>
                 </div>
-                <button
-                  onClick={() => handleResetPaper(paperSeedKrw)}
-                  disabled={actionLoading}
-                  className="text-xs font-black text-amber-200 hover:text-white bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-3.5 py-2 rounded-xl flex items-center gap-1.5 shrink-0 cursor-pointer transition-all active:scale-95"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>현재 시드({paperSeedLabel})로 처음부터 초기화 &amp; 재매수</span>
-                </button>
               </div>
 
-              {/* AI 포트폴리오 자동 배분 인포그래픽 바 */}
-              <div className="p-3.5 rounded-xl bg-black/60 border border-white/5 space-y-2.5">
-                <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold">
-                  <span className="flex items-center gap-1.5 text-gray-300">
-                    <Gauge className="w-3.5 h-3.5 text-amber-400" />
-                    AI 알고리즘 자산 자동 배분 비중
-                  </span>
-                  <span className="text-[10px] text-gray-500">실시간 유동성 관리</span>
-                </div>
-                {/* Visual Bar */}
-                <div className="h-2.5 w-full rounded-full bg-zinc-800 overflow-hidden flex shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: "45%" }} title="야간 미국 나스닥·NYSE 풀가동 45%" />
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400" style={{ width: "30%" }} title="주간 국내 코스피·코스닥 탄력 예비 슬롯 30%" />
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400" style={{ width: "25%" }} title="위기대응 안전현금 버퍼 25%" />
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] font-mono">
-                  <span className="flex items-center gap-1.5 text-blue-300">
-                    <span className="w-2 h-2 rounded-full bg-blue-400" />
-                    야간 미국장 풀가동 ({configuredMaxPos}개 슬롯)
-                  </span>
-                  <span className="flex items-center gap-1.5 text-emerald-300">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    주간 국내장 탄력 예비 (+3개 슬롯)
-                  </span>
-                  <span className="flex items-center gap-1.5 text-amber-300">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    위기대응 안전현금 (약 ₩{Math.round(activePaperSeed * 0.28).toLocaleString()}원)
-                  </span>
-                </div>
-              </div>
-
-              {/* 빠른 시드 선택 & 직접 입력 */}
+              {/* 빠른 시드 선택 칩 */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
-                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 시드 선택:</span>
+                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 시드:</span>
                 {[
-                  { label: "🛡️ 5만 원", val: 50000 },
-                  { label: "🔥 10만 원", val: 100000 },
+                  { label: "10만 원", val: 100000 },
                   { label: "50만 원", val: 500000 },
                   { label: "100만 원", val: 1000000 },
                   { label: "300만 원", val: 3000000 },
@@ -1605,44 +1695,64 @@ export default function AdminAutoTradePage() {
                   { label: "💎 1,000만 원", val: 10000000 },
                   { label: "🚀 2,000만 원", val: 20000000 },
                   { label: "5,000만 원", val: 50000000 },
+                  { label: "1억 원", val: 100000000 },
                 ].map((preset) => (
                   <button
                     key={preset.val}
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApplyPaperSeed(preset.val)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
                       activePaperSeed === preset.val
-                        ? "bg-amber-400 text-black shadow-md shadow-amber-400/30"
+                        ? "bg-amber-400 text-black shadow-md shadow-amber-400/30 scale-105"
                         : "bg-zinc-900/90 text-gray-300 border border-white/10 hover:border-amber-400/60 hover:text-white"
                     }`}
                   >
                     {preset.label}
                   </button>
                 ))}
+              </div>
 
-                <div className="flex items-center gap-1.5 ml-auto w-full sm:w-auto mt-2 sm:mt-0">
-                  <input
-                    type="number"
-                    min={50000}
-                    step={100000}
-                    value={paperSeedKrw}
-                    onChange={(e) => setPaperSeedKrw(Number(e.target.value))}
-                    placeholder="원하는 시드머니(원)"
-                    className="w-40 px-3.5 py-1.5 rounded-xl bg-black/80 border border-amber-400/40 text-amber-200 font-mono text-xs font-bold focus:outline-none focus:border-amber-400"
-                  />
+              {/* 직접 입력 & 액션 버튼들 */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-white/5">
+                <div className="flex items-center gap-1.5 flex-1 min-w-[170px]">
+                  <span className="text-[11px] text-gray-400 font-bold shrink-0">✏️ 직접 입력:</span>
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min={50000}
+                      step={100000}
+                      value={paperSeedKrw}
+                      onChange={(e) => setPaperSeedKrw(Number(e.target.value))}
+                      placeholder="원하는 시드머니(원)"
+                      className="w-full px-3 py-1.5 rounded-xl bg-black/80 border border-amber-400/40 text-amber-200 font-mono text-xs font-bold focus:outline-none focus:border-amber-400"
+                    />
+                    <span className="absolute right-2.5 top-1.5 text-[11px] text-gray-500 font-mono font-bold">원</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     disabled={actionLoading}
                     onClick={() => handleApplyPaperSeed(paperSeedKrw)}
-                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-xs shrink-0 cursor-pointer shadow-md shadow-emerald-500/20"
+                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-xs cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
                   >
-                    🚀 시드머니 즉시 적용
+                    🚀 가상 시드 적용
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={() => handleResetPaper(paperSeedKrw)}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 font-black text-xs flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                    title="현재 설정된 시드머니로 가상 보유 종목을 초기화하고 새롭게 매수 시작"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>초기화</span>
                   </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
             <div>
@@ -2145,13 +2255,8 @@ export default function AdminAutoTradePage() {
                     <button
                       key={preset.val}
                       type="button"
-                      onClick={() => {
-                        setMaxTotalInvestKrw(preset.val);
-                        if (preset.val > 0) {
-                          setMaxPositions(preset.pos);
-                          setOrderAmountKrw(preset.order);
-                        }
-                      }}
+                      disabled={actionLoading}
+                      onClick={() => handleApplyRealLimit(preset.val)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
                         isPresetActive
                           ? "bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/25 scale-[1.02]"

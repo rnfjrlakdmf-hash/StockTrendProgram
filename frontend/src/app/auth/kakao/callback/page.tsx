@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { API_BASE_URL } from "@/lib/config";
 
-export default function KakaoCallback() {
+function KakaoCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login } = useAuth();
@@ -50,7 +50,7 @@ export default function KakaoCallback() {
         };
 
         processKakaoLogin();
-    }, [searchParams, login]);
+    }, [searchParams, login, router]);
 
     return (
         <div className="flex h-screen w-full items-center justify-center bg-black">
@@ -61,3 +61,19 @@ export default function KakaoCallback() {
         </div>
     );
 }
+
+export default function KakaoCallback() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-black">
+                <div className="text-center">
+                    <div className="w-10 h-10 border-4 border-[#FEE500] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-white font-semibold">로그인 준비 중...</p>
+                </div>
+            </div>
+        }>
+            <KakaoCallbackContent />
+        </Suspense>
+    );
+}
+

@@ -435,18 +435,18 @@ function ThemePageContent() {
         let followers = (result.followers || []).map((s: any, i: number) => formatStock(s, false, i + 1));
 
         if (sortBy === "change") {
-            leaders.sort((a, b) => b.changeNum - a.changeNum);
-            followers.sort((a, b) => b.changeNum - a.changeNum);
+            leaders.sort((a: any, b: any) => b.changeNum - a.changeNum);
+            followers.sort((a: any, b: any) => b.changeNum - a.changeNum);
         } else if (sortBy === "real") {
-            leaders.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
-            followers.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
+            leaders.sort((a: any, b: any) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
+            followers.sort((a: any, b: any) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
         }
 
         const all = [...leaders, ...followers];
         if (sortBy === "change") {
-            all.sort((a, b) => b.changeNum - a.changeNum);
+            all.sort((a: any, b: any) => b.changeNum - a.changeNum);
         } else if (sortBy === "real") {
-            all.sort((a, b) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
+            all.sort((a: any, b: any) => (b.is_real ? 1 : 0) - (a.is_real ? 1 : 0) || b.changeNum - a.changeNum);
         }
 
         return { leaders, followers, allSorted: all };

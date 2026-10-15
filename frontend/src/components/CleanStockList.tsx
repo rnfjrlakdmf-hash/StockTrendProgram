@@ -368,7 +368,7 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
 
                                         const extChangeStr = item.extendedChange !== undefined && item.extendedChange !== null && item.extendedChange !== ''
                                             ? (typeof item.extendedChange === 'number'
-                                                ? `${item.extendedChange > 0 ? '+' : ''}${item.extendedChange.toFixed(2)}%`
+                                                ? `${Number(item.extendedChange) > 0 ? '+' : ''}${Number(item.extendedChange).toFixed(2)}%`
                                                 : String(item.extendedChange))
                                             : '';
 

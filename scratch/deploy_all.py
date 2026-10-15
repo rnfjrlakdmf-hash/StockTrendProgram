@@ -44,11 +44,14 @@ def deploy_all():
         
         # 3. Build Next.js frontend
         print("\n=== [3/4] Building Next.js Frontend on EC2 ===")
-        # 메모리 보존을 위해 .next 디렉토리를 깨끗하게 정리한 후 빌드합니다.
+        # 메모리 확보를 위해 PM2를 일시 중지하고 빌드 메모리를 2048MB로 지정합니다.
+        ssh.exec_command("pm2 stop stocktrend-frontend")
+        time.sleep(1)
+
         build_cmd = (
             "cd /home/ubuntu/StockTrendProgram/frontend && "
             "rm -rf .next && "
-            "npm run build"
+            "NODE_OPTIONS=\"--max-old-space-size=2048\" npm run build"
         )
         stdin, stdout, stderr = ssh.exec_command(build_cmd)
         
@@ -63,7 +66,7 @@ def deploy_all():
             
         # 4. PM2 Frontend Restart
         print("\n=== [4/4] Restarting PM2 frontend service ===")
-        stdin, stdout, stderr = ssh.exec_command("pm2 restart stocktrend-frontend")
+        stdin, stdout, stderr = ssh.exec_command("pm2 start stocktrend-frontend || pm2 restart stocktrend-frontend")
         print(stdout.read().decode('utf-8', 'ignore'))
         
         ssh.close()

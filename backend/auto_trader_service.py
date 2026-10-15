@@ -849,24 +849,34 @@ def _send_admin_trade_notification(
     """
     global _LAST_GLOBAL_NOTIFY_TIME
 
-    # [완전 동일 알림 중복 차단] 같은 체결을 여러 경로에서 호출해도 20초 내 동일 제목+내용은 1회만 발송 (force 포함)
-    _exact_key = f"{title}|{body}"
-    _now_exact = time.time()
-    _last_exact = _EXACT_NOTIFY_HISTORY.get(_exact_key, 0.0)
-    if (_now_exact - _last_exact) < 20.0:
-        print(f"[AutoTrader-Notify] Suppressed exact duplicate ({_now_exact - _last_exact:.1f}s ago): {title}")
-        return {"suppressed": True, "reason": "exact_duplicate"}
-    _EXACT_NOTIFY_HISTORY[_exact_key] = _now_exact
-    if len(_EXACT_NOTIFY_HISTORY) > 200:
-        for _k in [k for k, v in _EXACT_NOTIFY_HISTORY.items() if _now_exact - v > 60.0]:
-            _EXACT_NOTIFY_HISTORY.pop(_k, None)
-
+    # [완전 동일 알림 중복 차단] 같은 체결을 여러 경로에서 호출해도 30분(1800초) 내 동일 제목+내용은 1회만 발송 (force 포함)
     clean_body = (
         body.replace("<b>", "")
         .replace("</b>", "")
         .replace("<br/>", "\n")
         .strip()
     )
+    _exact_key = f"{title}|{clean_body}"
+    _now_exact = time.time()
+    _last_exact = _EXACT_NOTIFY_HISTORY.get(_exact_key, 0.0)
+    if (_now_exact - _last_exact) < 1800.0:
+        print(f"[AutoTrader-Notify] Suppressed exact duplicate ({_now_exact - _last_exact:.1f}s ago): {title}")
+        return {"suppressed": True, "reason": "exact_duplicate"}
+    _EXACT_NOTIFY_HISTORY[_exact_key] = _now_exact
+    if len(_EXACT_NOTIFY_HISTORY) > 500:
+        for _k in [k for k, v in _EXACT_NOTIFY_HISTORY.items() if _now_exact - v > 3600.0]:
+            _EXACT_NOTIFY_HISTORY.pop(_k, None)
+
+    # [종목별 매매 중복 알림 차단] 동일 종목의 매도/익절 알림은 15분(900초) 내 무조건 1회만 발송 (force 무관)
+    if symbol:
+        _action_tag = "SELL" if any(w in title for w in ["익절", "손절", "매도"]) else "BUY" if "매수" in title else "TRADE"
+        _sym_action_key = f"{symbol}:{_action_tag}"
+        _last_sym_time = _NOTIFICATION_HISTORY.get(_sym_action_key, 0.0)
+        if (_now_exact - _last_sym_time) < 900.0:
+            print(f"[AutoTrader-Notify] Suppressed duplicate {_action_tag} notification for {symbol} ({_now_exact - _last_sym_time:.1f}s ago): {title}")
+            return {"suppressed": True, "reason": "symbol_action_cooldown"}
+        _NOTIFICATION_HISTORY[_sym_action_key] = _now_exact
+
 
     if not market and symbol:
         try:
@@ -1082,17 +1092,18 @@ def _send_batch_trade_notification(
             kis_tag = it.get("kis_sell_tag", "")
             from market_tag_helper import get_clean_market_name
             mkt_tag = get_clean_market_name(sym)
-            tag = "🔴익절" if pnl_krw >= 0 else "🛡️매도"
+            tag = "🔴익절" if pnl_krw >= 0 else "🛡️손절"
+            pnl_label = "수익" if pnl_krw >= 0 else "손실"
             _send_admin_trade_notification(
                 f"{tag}{mode_tag} {name} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                f"[{mkt_tag}] 수익 {pnl_krw:+,}원 확정 (회수 {proceeds:,}원){kis_tag}\n"
+                f"[{mkt_tag}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds:,}원){kis_tag}\n"
                 f"잔여 {c_lbl} {c_val:,}원",
                 symbol=sym,
                 market=mkt_tag,
                 force=True,
             )
         else:
-            tag = "🔴일괄 익절" if total_pnl_krw >= 0 else "🛡️일괄 매도"
+            tag = "🔴일괄 익절" if total_pnl_krw >= 0 else "🛡️일괄 손절"
             names_summary = ", ".join(it.get("name", it.get("symbol")) for it in items[:2])
             if len(items) > 2:
                 names_summary += f" 외 {len(items)-2}건"
@@ -1581,6 +1592,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             p for p in state.get("paper_positions_backup", [])
             if p.get("symbol") not in sold_symbols
         ]
+        save_state(state)
 
     # 2. [시간대별 국내장·미국장 자동 후보군 스위칭 엔진]
     # - 주간(08:00~16:59 KST): 🇰🇷 한국증시 개장 시간 -> 국내주식 후보군 Top 10 배치 & 국내종목 자동 매수·익절
@@ -1619,9 +1631,13 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     # 대표님 요청: 야간 미국장에는 기본 7개를 꽉 채워 회전율을 극대화하고,
     # 주간 국내장 개장 시에는 시드머니 여유에 맞춰 +3개의 탄력 예비 슬롯(총 최대 10개)으로 국내 주도주를 매수!
     cfg_max = int(cfg.get("max_positions", 7) or 7)
-    elastic_buffer = int(cfg.get("elastic_reserve_slots", 3) or 3)
-    total_allowed_pos = cfg_max + elastic_buffer  # 7 + 3 = 최대 10개까지 탄력 허용
-    single_market_max = cfg_max  # 단일 시장 상한 7개
+    # 대표님이 설정한 슬롯 수(한도) 엄수: 소액 한도(<=100만원)이거나 슬롯이 3개 이하일 때는 추가 예비 슬롯 없이 설정값 엄격 적용!
+    if max_invest_cap <= 1000000 or cfg_max <= 3:
+        total_allowed_pos = cfg_max
+    else:
+        elastic_buffer = int(cfg.get("elastic_reserve_slots", 2) or 2)
+        total_allowed_pos = cfg_max + elastic_buffer
+    single_market_max = cfg_max
 
     real_kr_cnt = sum(1 for p in state["positions"] if not p.get("is_us"))
     real_us_cnt = sum(1 for p in state["positions"] if p.get("is_us"))
@@ -1795,13 +1811,14 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
                 "reason": reason,
                 "mode": cfg.get("mode", "AI_PAPER"),
             })
-            tag = "🔴익절" if pnl_krw >= 0 else "🔴매도"
+            tag = "🔴익절" if pnl_krw >= 0 else "🛡️손절"
+            pnl_label = "수익" if pnl_krw >= 0 else "손실"
             c_val, c_lbl = _get_current_effective_cash(state)
             from market_tag_helper import get_clean_market_name
             mkt_tag = get_clean_market_name(symbol)
             _send_admin_trade_notification(
                 f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                f"[{mkt_tag}] 수익 {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
+                f"[{mkt_tag}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
                 f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                 symbol=symbol,
                 market=mkt_tag,
@@ -1878,15 +1895,17 @@ def reset_paper_account(initial_capital_krw: int = 20000000) -> Dict[str, Any]:
     state = load_state()
     seed_krw = max(50000, int(initial_capital_krw or 20000000))
     state["config"]["paper_seed_krw"] = seed_krw
-    if state["config"].get("mode") != "KIS_REAL":
-        state["config"]["initial_capital_krw"] = seed_krw
-        state["account"] = {
-            "cash_krw": seed_krw,
-            "realized_pnl_krw": 0,
-            "total_trades": 0,
-            "win_trades": 0,
-            "loss_trades": 0,
-        }
+    state["config"]["initial_capital_krw"] = seed_krw
+    state["config"]["max_total_invest_krw"] = seed_krw
+    state["config"]["mode"] = "AI_PAPER"
+    state["config"]["kis_order_enabled"] = False
+    state["account"] = {
+        "cash_krw": seed_krw,
+        "realized_pnl_krw": 0,
+        "total_trades": 0,
+        "win_trades": 0,
+        "loss_trades": 0,
+    }
     # 실전 포지션은 그대로 보존하고 가상 모의투자 포지션만 새 시드머니 기준으로 즉시 재편성
     real_only = [
         p for p in state.get("positions", [])
@@ -1899,7 +1918,12 @@ def reset_paper_account(initial_capital_krw: int = 20000000) -> Dict[str, Any]:
         if "[한투주문 완료" in str(lg.get("reason", ""))
     ]
     save_state(state)
-    return get_dashboard_summary(state)
+    # 가상 시드 변경 즉시 신규 포트폴리오 매수 사이클 1회 실행
+    try:
+        run_auto_trader_cycle(force_buy=True)
+    except Exception as e:
+        print(f"[AutoTrader] reset_paper cycle trigger warning: {e}")
+    return get_dashboard_summary(load_state())
 
 
 def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -1917,31 +1941,70 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
                     continue
             state["config"][k] = v
 
+    # 1-1. 실전 계좌 최대 투자 한도 (max_total_invest_krw) 독립 설정 (가상 시드에 절대 영향 주지 않음!)
     if "max_total_invest_krw" in new_cfg and new_cfg["max_total_invest_krw"] is not None:
-        real_limit = max(30000, int(new_cfg["max_total_invest_krw"]))
+        raw_limit = int(new_cfg["max_total_invest_krw"])
+        real_limit = 0 if raw_limit == 0 else max(30000, raw_limit)
         state["config"]["max_total_invest_krw"] = real_limit
-        if "max_positions" in new_cfg and new_cfg["max_positions"] is not None:
-            state["config"]["max_positions"] = max(1, int(new_cfg["max_positions"]))
-        if "order_amount_krw" in new_cfg and new_cfg["order_amount_krw"] is not None:
-            state["config"]["order_amount_krw"] = max(10000, int(new_cfg["order_amount_krw"]))
+
+        if real_limit == 0:
+            state["config"]["initial_capital_krw"] = int(state.get("account", {}).get("cash_krw", 10000000) or 10000000)
+            calc_real_pos = max(1, int(new_cfg.get("max_positions") or 10))
+            state["config"]["max_positions"] = calc_real_pos
+            state["config"]["order_amount_krw"] = max(10000, int(new_cfg.get("order_amount_krw") or 1000000))
+        else:
+            state["config"]["initial_capital_krw"] = real_limit
+            if "max_positions" in new_cfg and new_cfg["max_positions"] is not None:
+                calc_real_pos = max(1, int(new_cfg["max_positions"]))
+            else:
+                calc_real_pos = 2 if real_limit <= 200000 else 3 if real_limit <= 500000 else 5 if real_limit <= 1000000 else 7 if real_limit <= 4000000 else 10
+            state["config"]["max_positions"] = calc_real_pos
+
+            if "order_amount_krw" in new_cfg and new_cfg["order_amount_krw"] is not None:
+                state["config"]["order_amount_krw"] = max(10000, int(new_cfg["order_amount_krw"]))
+            else:
+                state["config"]["order_amount_krw"] = max(15000, real_limit // max(1, calc_real_pos))
+
+    # 1-2. 가상 모의투자 시드머니 (paper_seed_krw) 완전 독립 설정 (실전 계좌 한도와 완전 분리!)
+    if "paper_seed_krw" in new_cfg and new_cfg["paper_seed_krw"] is not None:
+        p_seed = max(50000, int(new_cfg["paper_seed_krw"]))
+        state["config"]["paper_seed_krw"] = p_seed
 
     new_mode = state["config"].get("mode", "AI_PAPER")
     # [모의투자 <-> 실전투자 완전 분리]
-    # 가상 모의투자(AI_PAPER)로 산 가상 종목들이 실전투자(KIS_REAL) 한도와 슬롯을 막지 않도록 자동 분리!
     if new_mode == "KIS_REAL":
         paper_only = [p for p in state.get("positions", []) if p.get("trade_mode", "AI_PAPER") != "KIS_REAL" and "[한투주문 완료" not in str(p.get("reason", ""))]
         real_only = [p for p in state.get("positions", []) if p.get("trade_mode") == "KIS_REAL" or "[한투주문 완료" in str(p.get("reason", ""))]
         if paper_only:
             state["paper_positions_backup"] = paper_only
             state["positions"] = real_only
-        target_budget = int(state["config"].get("max_total_invest_krw", 0) or state["config"].get("initial_capital_krw", 20000000))
-        if target_budget > 0:
-            real_inv = sum(int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (1355.0 if p.get("is_us") else 1.0))) for p in real_only)
-            state["account"]["cash_krw"] = max(0, target_budget + int(state["account"].get("realized_pnl_krw", 0)) - real_inv)
-            state["config"]["initial_capital_krw"] = target_budget
     elif new_mode == "AI_PAPER" and old_mode != "AI_PAPER":
         if not state.get("positions") and state.get("paper_positions_backup"):
             state["positions"] = state.get("paper_positions_backup", [])
+
+    # [가용 예수금(cash_krw) 실시간 즉시 재계산 — 모드별로 각각 독립 계산]
+    if new_mode == "KIS_REAL":
+        raw_cap = state["config"].get("max_total_invest_krw")
+        if raw_cap is not None and int(raw_cap) == 0:
+            effective_cap = int(state.get("account", {}).get("cash_krw", 10000000) or 10000000)
+        else:
+            effective_cap = int(raw_cap or 100000)
+        current_invested = sum(
+            int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (1355.0 if p.get("is_us") else 1.0)))
+            for p in state.get("positions", [])
+            if p.get("kis_order_confirmed") is True or "[한투주문 완료" in str(p.get("reason", ""))
+        )
+        realized_pnl = int(state.get("account", {}).get("realized_pnl_krw", 0) or 0)
+        state["account"]["cash_krw"] = max(0, effective_cap + realized_pnl - current_invested)
+    else:
+        effective_cap = int(state["config"].get("paper_seed_krw", 10000000) or 10000000)
+        paper_pos = state.get("positions", [])
+        current_invested = sum(
+            int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (1355.0 if p.get("is_us") else 1.0)))
+            for p in paper_pos
+        )
+        realized_pnl = int(state.get("account", {}).get("realized_pnl_krw", 0) or 0)
+        state["account"]["cash_krw"] = max(0, effective_cap + realized_pnl - current_invested)
 
     # [실시간 목표가·손절가 즉시 재계산] 대표님이 익절률/손절률을 변경하는 즉시 보유 종목 전체에 반영
     cur_tp = float(state["config"].get("take_profit_pct", 2.0))
@@ -1959,21 +2022,28 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
             p["target_price"] = round(avg * (1.0 + cur_tp / 100.0), 2 if is_us else 0)
             p["stop_price"] = round(avg * (1.0 - cur_sl / 100.0), 2 if is_us else 0)
 
-    # [한도 및 설정 변경 즉시 추천 종목 레이더 실시간 재스캔]
-    try:
-        session_info = _get_time_based_session_info(state["config"])
-        active_mkt = session_info["active_market"]
-        state["active_session"] = session_info
-        fresh_cands = _build_session_candidates(state, active_mkt)[:25]
-        state["candidates"] = fresh_cands
-        if active_mkt == "KR":
-            state["kr_candidates"] = fresh_cands
-        else:
-            state["us_candidates"] = fresh_cands
-    except Exception as e:
-        print(f"[AutoTrader] Refresh candidates on config update warning: {e}")
-
+    # [초고속 응답 최적화] 설정값 및 예수금은 0.05초 만에 즉시 저장하고,
+    # 무거운 수십 개 종목 실시간 호가/기술지표 재스캔은 백그라운드 스레드로 즉각 위임!
     save_state(state)
+
+    def _async_bg_radar_refresh():
+        try:
+            st = load_state()
+            sess = _get_time_based_session_info(st["config"])
+            mkt = sess["active_market"]
+            st["active_session"] = sess
+            fresh = _build_session_candidates(st, mkt)[:25]
+            st["candidates"] = fresh
+            if mkt == "KR":
+                st["kr_candidates"] = fresh
+            else:
+                st["us_candidates"] = fresh
+            save_state(st)
+        except Exception as ex:
+            print(f"[AutoTrader] Async radar refresh warning: {ex}")
+
+    threading.Thread(target=_async_bg_radar_refresh, daemon=True).start()
+
     return get_dashboard_summary(state)
 
 
@@ -2044,15 +2114,16 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     cfg_max = int(cfg.get("max_positions", 7) or 7)
     mkt_target = str(cfg.get("market_target", "ALL"))
 
+    cfg_order_amt = int(cfg.get("order_amount_krw", 0) or 0)
     if effective_seed_krw <= 300000:
-        paper_max_pos = min(3, max(2, cfg_max))
-        target_kr_slots = 2 if mkt_target != "US_ONLY" else 0
-        target_us_slots = 1 if mkt_target != "KR_ONLY" else 0
+        paper_max_pos = min(3, max(1, cfg_max))
+        target_kr_slots = max(1, paper_max_pos // 2) if mkt_target != "US_ONLY" else 0
+        target_us_slots = max(1, paper_max_pos - target_kr_slots) if mkt_target != "KR_ONLY" else 0
         if target_kr_slots + target_us_slots < paper_max_pos:
             target_kr_slots = paper_max_pos
-        per_stock_budget_krw = max(35000, int(effective_seed_krw * 0.35))
+        per_stock_budget_krw = cfg_order_amt if cfg_order_amt > 0 else max(25000, effective_seed_krw // paper_max_pos)
     else:
-        paper_max_pos = max(3, min(20, cfg_max))
+        paper_max_pos = max(1, min(20, cfg_max))
         if mkt_target == "KR_ONLY":
             target_kr_slots = paper_max_pos
             target_us_slots = 0
@@ -2235,12 +2306,14 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         )
 
     # 3. [장 운영시간 엄격 준수 신규 매수 및 24시간 탄력 예비 슬롯 운용]
-    # 대표님 요청: 야간 미국장에는 기본 7개를 꽉 채워 회전율과 수익률을 극대화하고,
-    # 주간 국내장 개장 시에는 시드머니 여유에 맞춰 +3개의 탄력 예비 슬롯(총 최대 10개)으로 국내 주도주를 즉시 매수!
+    # 대표님이 지정한 한도 및 슬롯 수 엄수: 소액 한도(<=100만원)이거나 슬롯이 3개 이하일 때는 설정값 그대로 엄격 적용!
     cfg_max = int(cfg.get("max_positions", 7) or 7)
-    elastic_buffer = int(cfg.get("elastic_reserve_slots", 3) or 3)
-    total_allowed_pos = cfg_max + elastic_buffer  # 7 + 3 = 최대 10개까지 탄력 동시 운용 허용
-    single_market_max = cfg_max  # 단일 시장 상한 7개 (미국 7개, 국내 7개)
+    if effective_seed_krw <= 1000000 or cfg_max <= 3:
+        total_allowed_pos = cfg_max
+    else:
+        elastic_buffer = int(cfg.get("elastic_reserve_slots", 3) or 3)
+        total_allowed_pos = cfg_max + elastic_buffer
+    single_market_max = cfg_max
 
     curr_kr = [p for p in updated_paper if not p.get("is_us")]
     curr_us = [p for p in updated_paper if p.get("is_us")]

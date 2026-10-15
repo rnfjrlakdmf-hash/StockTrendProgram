@@ -1666,7 +1666,7 @@ function DiscoveryContent() {
                                                 const isOvertimeSession = (() => {
                                                     if (isKrHolidayOrWeekend || isKrRegularOpenNow) return false;
                                                     if (stock.market_status?.includes('시간외') || stock.market_status === 'AFTER_MARKET' || stock.is_extended_hours) return true;
-                                                    if (stock.after_market_data?.is_active) return true;
+                                                    if ((stock.after_market_data as any)?.is_active) return true;
                                                     if (extendedHours?.extended?.session === 'AFTER') return true;
                                                     if (isKrStock) {
                                                         const timeNum = nowKst.getHours() * 100 + nowKst.getMinutes();
@@ -3473,7 +3473,7 @@ function DiscoveryContent() {
                                                             <span>🎯 당일 가격 범위 (Day Range)</span>
                                                         </span>
                                                         <div className="flex items-center gap-3 text-[11px] font-mono">
-                                                            <span className="text-zinc-400">전일 종가: {stock.currency === 'KRW' ? '₩' : '$'}{(stock.details?.prev_close && Number(stock.details.prev_close) > 0) ? Number(stock.details.prev_close).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : (stock.prev_close && Number(stock.prev_close) > 0 ? Number(stock.prev_close).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : '-')}</span>
+                                                            <span className="text-zinc-400">전일 종가: {stock.currency === 'KRW' ? '₩' : '$'}{(stock.details?.prev_close && Number(stock.details.prev_close) > 0) ? Number(stock.details.prev_close).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : ((stock as any).prev_close && Number((stock as any).prev_close) > 0 ? Number((stock as any).prev_close).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : '-')}</span>
                                                             <span className="text-zinc-300 font-bold">시가: {stock.currency === 'KRW' ? '₩' : '$'}{stock.details?.open ? Number(stock.details.open).toLocaleString(undefined, { minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2 }) : '-'}</span>
                                                         </div>
                                                     </div>

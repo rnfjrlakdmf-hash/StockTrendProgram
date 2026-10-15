@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface KakaoRevenueAdProps {
   type?: "feed" | "banner" | "box" | "bottom" | "sticky";
@@ -34,12 +34,15 @@ const AD_CONFIGS = {
 export default function KakaoRevenueAd({
   type = "banner",
   className = "",
+  autoRefreshInterval,
 }: KakaoRevenueAdProps) {
   const [isPC, setIsPC] = useState<boolean | null>(null);
-  const [shouldDisplay, setShouldDisplay] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // 1. 구글 심사 봇 감지 시 타사 광고 미노출 (심사 감점 방지)
+    // 1. 크롤러/검색엔진 봇 감지 (봇 방문 시 광고 호출 차단)
     const ua = (navigator.userAgent || "").toLowerCase();
     const isBot = ua.includes("googlebot") || 
                   ua.includes("mediapartners-google") || 
@@ -49,22 +52,20 @@ export default function KakaoRevenueAd({
                   ua.includes("headless") ||
                   ua.includes("crawler");
 
-    if (isBot) {
-      setShouldDisplay(false);
-      return;
-    }
+    if (isBot) return;
 
-    // 2. 일반 한국 이용자에게는 100% 정상 노출 (대표님 광고 수익 유지)
+    // 2. 해외 구글 애드센스 심사관(아일랜드/미국/싱가포르) 심사 시 100% 클린 화면 제공
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      setShouldDisplay(isKorea);
+      if (!isKorea) return;
     } catch {
-      setShouldDisplay(true);
+      // ignore
     }
 
     const checkIsPC = () => window.innerWidth >= 768;
     setIsPC(checkIsPC());
+    setMounted(true);
 
     let resizeTimer: any;
     const handleResize = () => {
@@ -76,57 +77,71 @@ export default function KakaoRevenueAd({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  if (!shouldDisplay || isPC === null) return null;
+  // 주기적 광고 갱신 (지정된 경우: 뷰어블 노출 갱신)
+  useEffect(() => {
+    if (!autoRefreshInterval || autoRefreshInterval < 30) return;
+    const timer = setInterval(() => {
+      setRefreshKey(prev => prev + 1);
+    }, autoRefreshInterval * 1000);
+    return () => clearInterval(timer);
+  }, [autoRefreshInterval]);
 
   const config = isPC ? AD_CONFIGS[type]?.pc : AD_CONFIGS[type]?.mobile;
-  if (!config?.unit || config.unit === "DAN-PLACEHOLDER") return null;
+
+  useEffect(() => {
+    if (!mounted || !config?.unit || config.unit === "DAN-PLACEHOLDER") return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Next.js SPA 페이지 전환 및 리프레시 시 깨끗하게 초기화
+    container.innerHTML = "";
+
+    // [카카오 공식 정석 규격] iframe(srcDoc)을 완전히 제거하고 순수 DOM에 직접 삽입!
+    const ins = document.createElement("ins");
+    ins.className = "kakao_ad_area";
+    ins.style.display = "none";
+    ins.setAttribute("data-ad-unit", config.unit);
+    ins.setAttribute("data-ad-width", config.width);
+    ins.setAttribute("data-ad-height", config.height);
+
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "//t1.daumcdn.net/kas/static/ba.min.js";
+    script.async = true;
+
+    container.appendChild(ins);
+    container.appendChild(script);
+
+    return () => {
+      if (container) {
+        container.innerHTML = "";
+      }
+    };
+  }, [mounted, config?.unit, config?.width, config?.height, refreshKey]);
+
+  if (!mounted || isPC === null || !config?.unit || config.unit === "DAN-PLACEHOLDER") return null;
 
   const numWidth = parseInt(config.width, 10);
   const numHeight = parseInt(config.height, 10);
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html style="margin:0;padding:0;overflow:hidden;">
-      <head>
-        <meta charset="utf-8">
-        <base href="https://stock-trend-program.co.kr/" target="_top">
-        <meta name="referrer" content="always">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: transparent; overflow: hidden; }
-        </style>
-      </head>
-      <body>
-        <ins class="kakao_ad_area" style="display:none;"
-          data-ad-unit="${config.unit}"
-          data-ad-width="${config.width}"
-          data-ad-height="${config.height}"></ins>
-        <script type="text/javascript" src="https://t1.daumcdn.net/kas/static/ba.min.js" async></script>
-      </body>
-    </html>
-  `;
-
   return (
     <div
       className={`kakao-revenue-ad-wrapper flex justify-center items-center my-4 overflow-hidden ${className}`}
+      style={{ minHeight: `${numHeight}px`, width: "100%" }}
     >
-      <iframe
-        srcDoc={htmlContent}
-        width={numWidth}
-        height={numHeight}
+      <div
+        ref={containerRef}
         style={{
-          border: "none",
-          overflow: "hidden",
           width: `${numWidth}px`,
           height: `${numHeight}px`,
           maxWidth: "100%",
-          display: "block",
-          margin: "0 auto",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
-        scrolling="no"
-        title={`Kakao AdFit ${type}`}
       />
     </div>
   );
 }
+

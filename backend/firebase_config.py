@@ -219,6 +219,11 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     # [v4.5] 사용자 요청: FCM 알림 화면 공간 최적화 (면책 문구는 앱 내에서 상시 고지되므로 푸시 본문에서는 제거)
     DISCLAIMER_TEXT = ""
 
+    # [차트 스터디 / 1타 강사 특강 알림 보호]
+    # 대표님이 지정하신 명확한 2줄 요약 (📌 핵심 요약 / 📌 수록 자료) 형식을 왜곡 없이 100% 보존
+    if alert_type in ['theory_alert', 'study'] or any(k in clean_title for k in ["1타 강사", "1타강사", "차트 스터디", "주식 스터디"]):
+        return sanitize_notification_text(clean_title, clean_body)
+
     # 기존 본문에 들어있던 💡 해석 등 모든 형태의 해석 및 사족 문구를 분리/제거
     import re
     clean_no_interp, extracted_interp = extract_and_strip_interpretations(clean_body)
@@ -501,7 +506,10 @@ def sanitize_notification_text(title: str, body: str):
     clean_body = format_korean_shares_and_amounts(clean_body)
     
     # 1. 스마트워치 및 모바일 공통 타이틀 슬림화
-    if "장시작" in clean_title:
+    if "수급 스캐너" in clean_title or "모닝 마켓 레이더" in clean_title or "개장 15분 전" in clean_title or "차트 스터디" in clean_title or "1타 강사" in clean_title:
+        # 매력적인 전용 헤드라인 원형 보존
+        pass
+    elif "장시작" in clean_title:
         market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
         clean_title = f"☀️ 장시작: {market_name}" if market_name else "☀️ 장시작 알림"
         
@@ -572,8 +580,11 @@ def resolve_click_url(title: str, data: dict = None) -> str:
     alert_type = str(data.get('type', '')).strip()
     notif_title = title.split('\n')[0] if title else ''
 
+    # 0. 주말 세력/외인 매집 리포트 알림 -> /weekend-whale
+    if any(k in notif_title for k in ["월요일 장 준비", "세력/외인 매집", "외인 매집", "주말 한정판"]) or alert_type in ['weekend_whale', 'whale_weekend']:
+        click_url = "/weekend-whale"
     # 1. 퀀트 스캐너 알림: 사용자 요청에 따라 스캐너 전체보기(/signals?tab=scanner)로 최우선 연결
-    if alert_type == 'quant_scanner' or '퀀트 시세' in notif_title or '퀀트 통계' in notif_title:
+    elif alert_type == 'quant_scanner' or '퀀트 시세' in notif_title or '퀀트 통계' in notif_title:
         click_url = "/signals?tab=scanner"
     # 2. DART 공시 원문 링크가 있는 경우 -> 경유 페이지(광고+카운트다운) 거쳐 원문 이동
     elif dart_url:

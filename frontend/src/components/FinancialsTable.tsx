@@ -350,7 +350,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
         if (!data) return null;
         
         const getLatestVal = (key: string) => {
-            const vals = data[key]?.values || [];
+            const vals = (data as any)[key]?.values || [];
             for (let i = vals.length - 1; i >= 0; i--) {
                 if (vals[i] !== null && vals[i] !== undefined && !isNaN(vals[i] as number)) {
                     return { val: vals[i] as number, date: dates[i] };

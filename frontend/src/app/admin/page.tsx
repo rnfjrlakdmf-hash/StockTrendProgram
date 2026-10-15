@@ -87,6 +87,7 @@ export default function AdminPage() {
     const [pushTitle, setPushTitle] = useState("");
     const [pushBody, setPushBody] = useState("");
     const [inactiveDays, setInactiveDays] = useState(7);
+    const [pushSending, setPushSending] = useState(false);
     const [geminiCost, setGeminiCost] = useState<GeminiCostData | null>(null);
     const [geminiCostLoading, setGeminiCostLoading] = useState(false);
     const [copiedUid, setCopiedUid] = useState<string | null>(null);
@@ -133,10 +134,11 @@ export default function AdminPage() {
 
 
     const [searchAnalytics, setSearchAnalytics] = useState<{
-        top_searches: Array<{ keyword: string; source: string; count: number; last_searched: string }>;
+        top_searches: Array<{ keyword: string; source: string; count: number; last_searched: string; price_change?: string; search_ratio?: string }>;
         seo_target_keywords: Array<{ keyword: string; monthly_volume: string; target_page: string; status: string; category: string }>;
         total_tracked_volume: string;
         total_indexed_pages: string;
+        last_updated?: string;
     } | null>(null);
     const [searchAnalyticsLoading, setSearchAnalyticsLoading] = useState(false);
 
@@ -1275,9 +1277,9 @@ export default function AdminPage() {
                                                                                 {user.fcm_devices.map((device, idx) => {
                                                                                     const isMobile = device.toLowerCase().includes('mobile') || device.toLowerCase().includes('android') || device.toLowerCase().includes('ios');
                                                                                     return isMobile ? (
-                                                                                        <Smartphone key={idx} className="w-2.5 h-2.5" title={device} />
+                                                                                        <span key={idx} title={device}><Smartphone className="w-2.5 h-2.5" /></span>
                                                                                     ) : (
-                                                                                        <Monitor key={idx} className="w-2.5 h-2.5" title={device} />
+                                                                                        <span key={idx} title={device}><Monitor className="w-2.5 h-2.5" /></span>
                                                                                     );
                                                                                 })}
                                                                             </span>

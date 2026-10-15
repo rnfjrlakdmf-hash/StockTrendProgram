@@ -86,7 +86,12 @@ const FAQ = [
   },
 ];
 
-export default function SeoContentBlock() {
+interface SeoContentBlockProps {
+  pageTitle?: string;
+  pageDescription?: string;
+}
+
+export default function SeoContentBlock({ pageTitle, pageDescription }: SeoContentBlockProps = {}) {
   return (
     <section
       aria-label="서비스 안내 및 정책"
@@ -97,10 +102,10 @@ export default function SeoContentBlock() {
         {/* ── 상단 헤딩 (SEO용 h2) ── */}
         <div className="text-center space-y-2">
           <h2 className="text-xl font-bold text-white/80 tracking-tight">
-            스마트 투자 비서 — 서비스 핵심 기능 안내
+            {pageTitle || "스마트 투자 비서 — 서비스 핵심 기능 안내"}
           </h2>
           <p className="text-gray-500 text-sm max-w-2xl mx-auto">
-            인공지능 기반 주식 수급 분석, 실시간 공시 알림, AI 차트 스터디, 글로벌 증시 모니터를 무료로 제공합니다.
+            {pageDescription || "인공지능 기반 주식 수급 분석, 실시간 공시 알림, AI 차트 스터디, 글로벌 증시 모니터를 무료로 제공합니다."}
           </p>
         </div>
 

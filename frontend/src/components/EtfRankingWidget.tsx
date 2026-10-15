@@ -1155,7 +1155,7 @@ export default function EtfRankingWidget({ data, loading, market, filterKeyword 
                                                                 <BeginnerTooltip
                                                                     align="left"
                                                                     title={`실시간 괴리율 판독: ${navAnalysis.label}`}
-                                                                    desc={navAnalysis.tooltip}
+                                                                    desc={navAnalysis.subText}
                                                                 >
                                                                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border flex items-center gap-1 cursor-help ${navAnalysis.badgeClass}`}>
                                                                         <span>{navAnalysis.label}</span>

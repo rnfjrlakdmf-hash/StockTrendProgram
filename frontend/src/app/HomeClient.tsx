@@ -174,24 +174,6 @@ export default function HomeClient() {
             {/* Recent Theory Posts Widget (AdSense SEO) */}
             <RecentTheoryWidget />
 
-            {/* SEO Text Rich Links (sr-only: 시각적 공간 0px 숨김, 구글/네이버 봇 및 애드센스 크롤러 100% 색인) */}
-            <div className="sr-only">
-              <h2>투자 전략 가이드</h2>
-              <div>
-                <Link href="/guide/ai-investing">
-                  <h3>초보자를 위한 실전 주식 가이드</h3>
-                  <p>데이터 기반의 올바른 투자 습관과 마인드셋을 기르는 첫 걸음</p>
-                </Link>
-                <Link href="/guide/supply-chain-analysis">
-                  <h3>공급망 지도 분석 방법론</h3>
-                  <p>산업의 밸류체인을 이해하고 숨은 수혜주를 발굴하는 비법</p>
-                </Link>
-                <Link href="/guide/risk-management">
-                  <h3>포트폴리오 변동성 관리</h3>
-                  <p>하락장에서도 계좌를 지키는 리스크 관리 및 자산 배분 전략</p>
-                </Link>
-              </div>
-            </div>
 
             {/* 하단 통합 배너 광고 (모바일: 320x480 고단가 세로형, PC: 728x90, 35초 스마트 리프레시) */}
             <div className="my-4 flex justify-center">

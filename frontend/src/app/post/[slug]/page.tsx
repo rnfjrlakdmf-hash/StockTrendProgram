@@ -142,7 +142,7 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
         .replace(/<a href="[^"]*">오늘의 시장 분석 리포트 더 보기<\/a>/g, '<a href="/discovery">오늘의 시장 분석 리포트 더 보기</a>')
         .replace(/whitespace-nowrap/g, 'break-keep');
         
-    contentWithIds = contentWithIds.replace(/<(h[23])([^>]*)>(.*?)<\/\1>/gi, (fullMatch, tag, attrs, innerHtml) => {
+    contentWithIds = contentWithIds.replace(/<(h[23])([^>]*)>(.*?)<\/\1>/gi, (fullMatch: string, tag: string, attrs: string, innerHtml: string) => {
         const id = `toc-${idCounter++}`;
         return `<${tag} id="${id}"${attrs} class="scroll-mt-32">${innerHtml}</${tag}>`;
     });
