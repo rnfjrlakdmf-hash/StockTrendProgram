@@ -2073,26 +2073,32 @@ def _evaluate_ai_smart_exit(
     drop_from_peak = round(peak_pct - pnl_pct, 2)
     intraday_chg = float((quote or {}).get("change_pct", 0.0) or 0.0)
 
-    # 1. 목표 익절가 달성 시 즉시 전량 익절 확정
+    # 1. 🎯 [목표 달성 시 전량 익절]
     if pnl_pct >= tp_pct:
         return f"🎯 [AI 목표돌파 익절] 목표 수익률(+{pnl_pct:.2f}%) 달성 전량 수익 확정"
 
-    # 2. 트레일링 스탑: 고점이 목표가의 70% 이상 도달 후 고점 대비 ts_pct(1.0%p) 이상 밀릴 때 수익 보존
-    trailing_trigger = max(1.5, tp_pct * 0.7)
-    if peak_pct >= trailing_trigger and drop_from_peak >= ts_pct and pnl_pct >= max(0.5, tp_pct * 0.3):
+    # 2. 🛡️ [선제적 위험 조기 감지 탈출 (Early Danger Cut)]
+    # - 손절선(-2.0%)까지 멍하니 버티지 않고, 매수가 대비 -0.9% 수준이라도 하락 전환 조짐이나 당일 약세 발생 시 조기 컷!
+    if pnl_pct <= -0.9 and (intraday_chg <= -0.2 or drop_from_peak >= 1.2):
+        return f"🛡️ [AI 위험 조기감지 선제탈출] 하락 전환 조짐 포착 ({pnl_pct:+.2f}%) → 큰 손실 예방을 위해 조기 현금화"
+
+    # 3. 🛡️ [엄격한 최대 허용 손절선 작동]
+    if use_sl and pnl_pct <= -abs(sl_pct):
+        return f"🛡️ [AI 리스크 방어선 작동] 손실 제한 기준(-{abs(sl_pct):.1f}%) 도달 ({pnl_pct:+.2f}%) 즉시 전량 손절"
+
+    # 4. 🧠 [고점 차익실현 매도세 감지 → 이익 보존 조기 매도]
+    # - 장중 +1.4% 이상 올랐다가 고점 대비 0.5%p 이상 밀리며 매도세가 출현하면, 이익이 날아가기 전에 즉시 조기 매도!
+    if peak_pct >= 1.4 and drop_from_peak >= 0.5 and pnl_pct >= 0.6:
+        return f"🧠 [AI 위험감지 이익보존] 고점(+{peak_pct:.2f}%) 대비 매도세 유입 감지 → +{pnl_pct:.2f}% 수익 즉시 챙기고 안전 탈출"
+
+    # 5. 🧠 [소폭 수익권 조기 탄력 익절]
+    # - 너무 딱 고수익만 고집하지 않고, +1.0% 이상 오른 상태에서 상승세가 둔화(고점 대비 0.4%p 이상 반락)되면 조기 확정!
+    if pnl_pct >= 1.0 and drop_from_peak >= 0.4:
+        return f"🧠 [AI 조기판단 탄력익절] 고점 저항 및 탄력 둔화 감지 → +{pnl_pct:.2f}% 수익 선제 확정"
+
+    # 6. 🧠 [고수익 트레일링 스탑] - +2.0% 이상 고수익 도달 후 꺾일 때 안전벨트
+    if peak_pct >= 2.0 and drop_from_peak >= max(0.8, ts_pct) and pnl_pct >= 0.8:
         return f"🧠 [AI 트레일링 익절] 고점(+{peak_pct:.2f}%) 대비 {drop_from_peak:.2f}%p 하락 감지 → +{pnl_pct:.2f}% 수익 보존"
-
-    # 3. 충분한 수익권(목표가의 60% 이상)에서 상승 탄력 둔화 시 선제 조기 익절 (조기 컷으로 추세 이탈 방어)
-    early_trigger = max(1.5, tp_pct * 0.6)
-    if pnl_pct >= early_trigger and drop_from_peak >= max(0.7, ts_pct * 0.7):
-        return f"🧠 [AI 탄력둔화 조기익절] 고점(+{peak_pct:.2f}%) 저항 후 상승세 둔화 감지 → +{pnl_pct:.2f}% 수익 선제 확정"
-
-    # 4. 손절 옵션이 켜져 있을 때(use_sl=True): 손실 제한 기준(-sl_pct%) 도달 시 즉시 엄격 손절
-    if use_sl:
-        if pnl_pct <= -abs(sl_pct):
-            return f"🛡️ [AI 리스크 방어선 작동] 손실 제한 기준(-{abs(sl_pct):.1f}%) 도달 ({pnl_pct:+.2f}%) 즉시 전량 손절"
-        if pnl_pct <= -max(1.5, abs(sl_pct) * 0.8) and (intraday_chg <= -0.5 or drop_from_peak >= 2.0):
-            return f"🛡️ [AI 리스크관리 교체매도] 상승탄력 소멸·추가하락 방어 ({pnl_pct:+.2f}%) → 강세 주도주로 시드 즉시 교체"
 
     return None
 
