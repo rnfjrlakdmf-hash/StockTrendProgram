@@ -405,11 +405,11 @@ export default function AdminAutoTradePage() {
   const [marketTarget, setMarketTarget] = useState("ALL");
   const [maxTotalInvestKrw, setMaxTotalInvestKrw] = useState(10000000);
   const [orderAmountKrw, setOrderAmountKrw] = useState(1400000);
-  const [maxPositions, setMaxPositions] = useState(7);
-  const [takeProfitPct, setTakeProfitPct] = useState(2.0);
-  const [useStopLoss, setUseStopLoss] = useState(false);
+  const [maxPositions, setMaxPositions] = useState(4);
+  const [takeProfitPct, setTakeProfitPct] = useState(3.8);
+  const [useStopLoss, setUseStopLoss] = useState(true);
   const [autoAveragingDown, setAutoAveragingDown] = useState(true);
-  const [stopLossPct, setStopLossPct] = useState(2.5);
+  const [stopLossPct, setStopLossPct] = useState(2.0);
   const [trailingStopPct, setTrailingStopPct] = useState(1.0);
   const [kisOrderEnabled, setKisOrderEnabled] = useState(true);
   const [kisAppKey, setKisAppKey] = useState("");
@@ -470,11 +470,11 @@ export default function AdminAutoTradePage() {
     setMarketTarget(cfg.market_target === "KR_ONLY" || cfg.market_target === "US_ONLY" ? cfg.market_target : "ALL");
     setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 100000));
     setOrderAmountKrw(Number(cfg.order_amount_krw || 1400000));
-    setMaxPositions(Number(cfg.max_positions || 7));
-    setTakeProfitPct(Number(cfg.take_profit_pct || 2.0));
-    setUseStopLoss(Boolean(cfg.use_stop_loss ?? false));
+    setMaxPositions(Number(cfg.max_positions || 4));
+    setTakeProfitPct(Number(cfg.take_profit_pct || 3.8));
+    setUseStopLoss(Boolean(cfg.use_stop_loss ?? true));
     setAutoAveragingDown(Boolean(cfg.auto_averaging_down ?? true));
-    setStopLossPct(Number(cfg.stop_loss_pct || 2.5));
+    setStopLossPct(Number(cfg.stop_loss_pct || 2.0));
     setTrailingStopPct(Number(cfg.trailing_stop_pct || 1.0));
     setKisOrderEnabled(Boolean(cfg.kis_order_enabled ?? true));
     setKisAppKey(cfg.kis_app_key || "");
@@ -2465,7 +2465,7 @@ export default function AdminAutoTradePage() {
                     onChange={(e) => setTakeProfitPct(Number(e.target.value))}
                     className="w-full bg-zinc-900 border border-rose-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono font-black text-rose-300 focus:outline-none"
                   />
-                  <div className="text-[9px] text-gray-400 mt-1">권장: +2.0% (단기 빠른 회전율 극대화)</div>
+                  <div className="text-[9px] text-gray-400 mt-1">추천: +3.5% ~ +4.0% (수익 극대화형)</div>
                 </div>
 
                 <div className={`p-3 rounded-xl bg-zinc-950 border ${useStopLoss ? "border-blue-500/40" : "border-white/10 opacity-50"}`}>
@@ -2480,14 +2480,14 @@ export default function AdminAutoTradePage() {
                     onChange={(e) => setStopLossPct(Number(e.target.value))}
                     className="w-full bg-zinc-900 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-mono font-black text-blue-300 focus:outline-none"
                   />
-                  <div className="text-[9px] text-gray-400 mt-1">단타 손절 시에만 적용</div>
+                  <div className="text-[9px] text-gray-400 mt-1">추천: -2.0% (원금 손실 철통 방어)</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-zinc-950 border border-emerald-500/30">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[11px] font-bold text-emerald-300">📈 최대 종목수</label>
                     <div className="flex gap-1">
-                      {[5, 7, 10].map((cnt) => (
+                      {[3, 4, 5, 7].map((cnt) => (
                         <button
                           key={cnt}
                           type="button"
@@ -2511,7 +2511,7 @@ export default function AdminAutoTradePage() {
                     onChange={(e) => setMaxPositions(Number(e.target.value))}
                     className="w-full bg-zinc-900 border border-emerald-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono font-black text-emerald-300 focus:outline-none"
                   />
-                  <div className="text-[9px] text-gray-400 mt-1">동시 보유 최대 개수</div>
+                  <div className="text-[9px] text-gray-400 mt-1">추천: 3~5개 (집중 투자로 수익금 극대화)</div>
                 </div>
               </div>
             </div>
