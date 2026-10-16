@@ -2975,43 +2975,59 @@ def get_naver_investor_data(symbol: str, trader_day: int = 1):
                     f"Mobile API Fetch Error (last_bizdate={last_bizdate}): {e}")
                 break
 
-        # [New] Merge today's live/confirmed data if missing from mobile API trend
+        # [Fix] Only merge today's live data if:
+        # 1. Today is a weekday (Mon-Fri: weekday < 5)
+        # 2. Market is currently open or was open today (hour >= 9)
+        # 3. trend does not already include today's date
+        # 4. There is genuine live estimate data for today (not fallback history from previous days)
         try:
             import pytz
             kst = pytz.timezone('Asia/Seoul')
-            today_str = datetime.datetime.now(kst).strftime("%Y-%m-%d")
-            # If the first trend item is not today, try to get today's data
-            if not trend or trend[0].get("date") != today_str:
+            now_dt = datetime.datetime.now(kst)
+            today_str = now_dt.strftime("%Y-%m-%d")
+            is_weekday = now_dt.weekday() < 5
+            is_market_active = now_dt.hour >= 9
+
+            if is_weekday and is_market_active and (not trend or trend[0].get("date") != today_str):
                 live_data = get_live_investor_estimates(code)
-                latest_live = live_data[-1] if live_data and len(
-                    live_data) > 0 else {}
+                # Verify that the live estimate is actually for today and represents real intraday data
+                valid_live = [
+                    p for p in (live_data or [])
+                    if p.get("is_today") is True and p.get("date") == today_str and not p.get("is_daily")
+                ]
 
-                # Find price if missing
-                current_price = trend[0].get("close", 0) if trend else 0
-                if current_price == 0:
-                    try:
-                        from stock_data import get_simple_quote
-                        q = get_simple_quote(symbol)
-                        if q:
-                            current_price = float(
-                                str(q.get("price")).replace(',', ''))
-                    except BaseException:
-                        pass
+                if valid_live:
+                    latest_live = valid_live[-1]
+                    # Find price if missing
+                    current_price = trend[0].get("close", 0) if trend else 0
+                    if current_price == 0:
+                        try:
+                            from stock_data import get_simple_quote
+                            q = get_simple_quote(symbol)
+                            if q:
+                                current_price = float(
+                                    str(q.get("price")).replace(',', ''))
+                        except BaseException:
+                            pass
 
-                # Create a trend-compatible item
-                today_item = {
-                    "date": today_str,
-                    "close": current_price,
-                    "diff": current_price - (trend[0].get("close", current_price) if trend else current_price),
-                    "change": 0.0,
-                    "volume": 0,
-                    "institution": latest_live.get("institution", 0),
-                    "foreigner": latest_live.get("foreigner", 0),
-                    "retail": 0,
-                    "foreign_holdings": trend[0].get("foreign_holdings", 0) if trend else 0,
-                    "foreign_ratio": trend[0].get("foreign_ratio", 0) if trend else 0
-                }
-                trend.insert(0, today_item)
+                    # Create a trend-compatible item
+                    inst_val = latest_live.get("institution", 0)
+                    frgn_val = latest_live.get("foreigner", 0)
+                    retail_val = -(inst_val + frgn_val)
+
+                    today_item = {
+                        "date": today_str,
+                        "close": current_price,
+                        "diff": current_price - (trend[0].get("close", current_price) if trend else current_price),
+                        "change": 0.0,
+                        "volume": 0,
+                        "institution": inst_val,
+                        "foreigner": frgn_val,
+                        "retail": retail_val,
+                        "foreign_holdings": trend[0].get("foreign_holdings", 0) if trend else 0,
+                        "foreign_ratio": trend[0].get("foreign_ratio", 0) if trend else 0
+                    }
+                    trend.insert(0, today_item)
         except Exception as merge_err:
             print(f"Investor Merge Error: {merge_err}")
 
