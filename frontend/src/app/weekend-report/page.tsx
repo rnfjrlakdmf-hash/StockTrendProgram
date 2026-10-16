@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
     Lock, Clock, Calendar, CheckCircle2, TrendingUp, AlertTriangle, Share2, 
     ArrowLeft, Flame, Sparkles, Check, Copy, Compass, Zap, ShieldCheck, 
-    Layers, ChevronRight, BarChart3, Globe
+    Layers, ChevronRight, BarChart3, Globe, Building2
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -145,6 +145,105 @@ export default function WeekendReportPage() {
         }
     };
 
+interface MacroImpact {
+    globalImpact: string;
+    domesticImpact: string;
+    keyTip?: string;
+    badgeText?: string;
+}
+
+const getMacroEventImpact = (title: string, note: string = ""): MacroImpact => {
+    const text = `${title} ${note}`.toLowerCase();
+
+    // 1. CPI / 소비자물가지수 / 물가 / PCE
+    if (text.includes('소비자물가지수') || text.includes('cpi') || text.includes('pce') || text.includes('개인소비지출')) {
+        return {
+            badgeText: "인플레이션 & 연준 금리 결정 핵심 지표",
+            globalImpact: "물가 상승률이 예상보다 둔화되면 연준(Fed)의 금리 인하 기대감이 고조되며 나스닥 빅테크(엔비디아, 애플, 마이크로소프트)와 기술 성장주 중심의 강력한 반등 랠리가 촉발됩니다. 반대로 예상치를 상회하면 미 국채 금리 급등과 함께 성장주에 매물 압박이 가중됩니다.",
+            domesticImpact: "미국 인플레이션 안정은 달러 강세를 누그러뜨려 원/달러 환율 안정을 유도합니다. 이는 환차손 우려를 덜어주어 외국인 투자자들의 코스피 대형 반도체(삼성전자, SK하이닉스), 2차전지, 바이오 등 시가총액 상위주로의 강력한 순매수 유입으로 연결됩니다.",
+            keyTip: "변동성이 큰 에너지·식품을 제외한 '근원(Core) 물가지수'가 시장 예상치보다 낮게 나오는지가 기술주 상승의 핵심 트리거입니다."
+        };
+    }
+
+    // 2. PPI / 생산자물가지수
+    if (text.includes('생산자물가지수') || text.includes('ppi')) {
+        return {
+            badgeText: "도매 물가 & CPI 선행 지표",
+            globalImpact: "기업들의 상품 생산 원가를 나타내며 향후 소비자물가의 방향타 역할을 합니다. PPI 둔화 시 기업들의 마진 개선 및 연준 긴축 완화 기대로 뉴욕 증시 전반에 우호적입니다.",
+            domesticImpact: "글로벌 원자재 및 부품 조달 가격 안정으로 한국 제조업(자동차, 부품, 철강)의 원가 부담을 덜어주어 기업 실적 개선 모멘텀으로 작용합니다.",
+            keyTip: "CPI 발표 직후나 직전에 발표되어 인플레이션 둔화 흐름의 일관성을 검증하는 지표로 활용됩니다."
+        };
+    }
+
+    // 3. 소매판매 (Retail Sales)
+    if (text.includes('소매판매') || text.includes('retail sales') || text.includes('소비')) {
+        return {
+            badgeText: "미국 실물 경제 70% 차지 소비 펀더멘털",
+            globalImpact: "미국 GDP의 70%를 차지하는 민간 소비 체력을 검증합니다. 견조한 소매판매는 경기 침체(리세션) 우려를 차단하며 아마존, 월마트 등 유통·소비재 및 S&P500의 든든한 하방 지지선 역할을 합니다.",
+            domesticImpact: "미국 소비 활성화는 대미 수출 비중이 절대적인 한국의 완성차(현대차·기아), IT 가전, 스마트폰 부품사 실적 가시성을 높여주어 외국인 및 기관 수급 유입에 긍정적으로 작용합니다.",
+            keyTip: "'침체 없는 적당한 둔화(골디락스)' 수치가 금리 부담도 덜고 경기 우려도 낮춰 증시에 가장 이상적입니다."
+        };
+    }
+
+    // 4. 산업생산 / 설비가동 / 제조업 / PMI / ISM
+    if (text.includes('산업생산') || text.includes('제조업') || text.includes('pmi') || text.includes('ism') || text.includes('공장')) {
+        return {
+            badgeText: "실물 경기 & 공장 가동률 척도",
+            globalImpact: "공장 가동률과 실물 제조 역량을 직접 확인하는 지표입니다. 지표 호조 시 경기 확장 국면으로 해석되어 다우존스 전통 산업재(캐터필러, 보잉)와 에너지·소재주가 강세를 보입니다.",
+            domesticImpact: "한국은 전형적인 글로벌 중간재 수출국이므로, 글로벌 산업생산 확대는 전력설비(변압기·전선), 중기계, 조선, 화학, 해운 등 한국 인프라·산업재 섹터의 실적 모멘텀으로 직결됩니다.",
+            keyTip: "제조업 경기 확장 기준선(보통 50 이상) 유지 여부가 경기순환(시클리컬) 주도주의 주가 향방을 가릅니다."
+        };
+    }
+
+    // 5. 금리 / FOMC / 기준금리 / 연준 / 파월
+    if (text.includes('기준금리') || text.includes('fomc') || text.includes('연준') || text.includes('금리') || text.includes('파월')) {
+        return {
+            badgeText: "글로벌 유동성 & 통화 정책 최고 이벤트",
+            globalImpact: "금리 인하 또는 비둘기파(완화적) 기조 확인 시 유동성 공급 기대감으로 기술 성장주와 고밸류에이션 테크주가 전방위 탄력을 받습니다.",
+            domesticImpact: "한미 금리차 축소로 원화 환율이 안정세를 찾고 신흥국 증시로의 글로벌 자금 리밸런싱이 일어나 코스피 지수 견인의 결정적 촉매제가 됩니다.",
+            keyTip: "금리 결정 수치 자체보다 점도표(Dot Plot)와 파월 연준 의장의 기자회견 발언 뉘앙스가 단기 변동성을 결정합니다."
+        };
+    }
+
+    // 6. 고용 / 실업률 / 비농업 / NFP
+    if (text.includes('고용') || text.includes('실업률') || text.includes('비농업') || text.includes('nfp') || text.includes('일자리')) {
+        return {
+            badgeText: "연준 통화 정책의 양대 축 (물가 & 고용)",
+            globalImpact: "신규 고용이 적당히 둔화되면 연준의 금리 인하 명분이 강화되어 뉴욕 증시에 훈풍이 불며, 급격한 경기 침체 신호만 아니라면 증시 상승 동력이 됩니다.",
+            domesticImpact: "글로벌 긴축 종료 기대감을 키워 한국은행의 기준금리 인하 환경을 조성하고, 국내 내수 및 코스닥 성장주(바이오, 로봇 등)의 투자 심리를 개선합니다.",
+            keyTip: "비농업 신규 일자리 수치와 함께 시간당 평균 임금 상승률의 둔화 여부를 필수적으로 체크해야 합니다."
+        };
+    }
+
+    // 7. GDP / 경제성장률
+    if (text.includes('gdp') || text.includes('경제성장') || text.includes('성장률')) {
+        return {
+            badgeText: "국가 경제 총체적 성적표",
+            globalImpact: "미국 경제의 견조한 펀더멘털을 확인시켜 주며 기업들의 어닝스(실적) 신뢰도를 높여 지수의 안정적인 추세 상승을 뒷받침합니다.",
+            domesticImpact: "글로벌 교역량 확대 기대감을 키워 한국 수출 주도 대형주(반도체, 자동차, 조선 등)의 실적 전망치를 상향시키는 요인이 됩니다.",
+            keyTip: "잠재성장률 수준의 안정적 성장세가 유지되는지 확인하는 것이 중요합니다."
+        };
+    }
+
+    // 8. 무역수지 / 수출입
+    if (text.includes('무역수지') || text.includes('수출입') || text.includes('수출')) {
+        return {
+            badgeText: "한국 경제 생명선 & 수출 성적표",
+            globalImpact: "글로벌 공급망과 주요 교역국 간의 물동량 흐름 및 교역 활력을 확인하는 주요 바로미터입니다.",
+            domesticImpact: "무역흑자 유지 시 외환보유액 안정과 원화 강세를 유도하여 외국인 투자자들의 코스피 매수세를 촉진하는 핵심 동력이 됩니다.",
+            keyTip: "반도체, 자동차, 선박 등 주력 품목의 대미·대중 수출액 증감률이 코스피 대형주의 향방을 좌우합니다."
+        };
+    }
+
+    // 9. 기본 fallback
+    return {
+        badgeText: "글로벌 거시 경제 주요 지표",
+        globalImpact: "실물 경제 펀더멘털과 글로벌 금리 향방에 영향을 주어 S&P500 및 나스닥 주요 지수의 변동성 지표로 작용합니다.",
+        domesticImpact: "달러화 환율 및 글로벌 투자 심리와 연동되어 외국인/기관 수급과 국내 주요 수출 대형주의 단기 수급을 좌우합니다.",
+        keyTip: "시장 예상치(컨센서스)와의 괴리율 및 발표 직후 미국 선물 시장의 즉각적인 반응에 주목하세요."
+    };
+};
+
     // Helper to parse section content into spacious, breathing, open editorial list
     const renderParsedContent = (content: string) => {
         if (!content) return null;
@@ -155,7 +254,7 @@ export default function WeekendReportPage() {
                 {lines.map((line, idx) => {
                     const cleanLine = line.replace(/^[•\-\*·]\s*/, '').trim();
                     
-                    // 1. 날짜 패턴 우선 검사 (예: 9월 10일(목) 또는 9월 10일 (목): ...)
+                    // 1. 날짜 패턴 우선 검사 (예: 10월 14일(수) 또는 10월 14일 (수): ...)
                     const dateMatch = cleanLine.match(/^(\d{1,2}월\s*\d{1,2}일(?:\s*\([월화수목금토일]\))?)[:\s-]*(.*)$/);
                     
                     let tag = "";
@@ -176,10 +275,40 @@ export default function WeekendReportPage() {
                     }
 
                     if (tag && desc) {
-                        // desc 내부에 괄호 해설이 있는 경우 (예: "일정명 (초보자를 위한 쉬운 해설)") 분리
-                        const parenMatch = isDate ? desc.match(/^(.*?)\s*\((.*?)\)$/) : null;
-                        const eventTitle = parenMatch ? parenMatch[1].trim() : desc;
-                        const eventNote = parenMatch ? parenMatch[2].trim() : null;
+                        let eventTitle = desc;
+                        let eventNote: string | null = null;
+
+                        if (isDate) {
+                            // 대괄호 [일정명] 및 괄호 해설 정밀 파싱 (중첩 괄호 버그 방지)
+                            const firstBracketOpen = desc.indexOf('[');
+                            const lastBracketClose = desc.lastIndexOf(']');
+
+                            if (firstBracketOpen !== -1 && lastBracketClose > firstBracketOpen) {
+                                eventTitle = desc.substring(firstBracketOpen + 1, lastBracketClose).trim();
+                                let remaining = desc.substring(lastBracketClose + 1).trim();
+                                if (remaining.startsWith('(') && remaining.endsWith(')')) {
+                                    remaining = remaining.substring(1, remaining.length - 1).trim();
+                                } else if (remaining.startsWith(':')) {
+                                    remaining = remaining.substring(1).trim();
+                                }
+                                if (remaining) {
+                                    eventNote = remaining;
+                                }
+                            } else {
+                                const lastParenOpen = desc.lastIndexOf('(');
+                                const lastParenClose = desc.lastIndexOf(')');
+                                if (lastParenOpen > 0 && lastParenClose === desc.length - 1) {
+                                    const potentialNote = desc.substring(lastParenOpen + 1, lastParenClose).trim();
+                                    const potentialTitle = desc.substring(0, lastParenOpen).trim();
+                                    if (potentialNote.length > 5 || potentialNote.includes(' ')) {
+                                        eventTitle = potentialTitle;
+                                        eventNote = potentialNote;
+                                    }
+                                }
+                            }
+                        }
+
+                        const impact = isDate ? getMacroEventImpact(eventTitle, eventNote || "") : null;
 
                         return (
                             <div 
@@ -204,16 +333,65 @@ export default function WeekendReportPage() {
                                     }`}>
                                         {isDate ? "KEY EVENT" : "HOT SECTOR"}
                                     </span>
+                                    {isDate && impact?.badgeText && (
+                                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-blue-500/15 border border-blue-400/30 text-blue-200">
+                                            {impact.badgeText}
+                                        </span>
+                                    )}
                                 </div>
-                                {isDate && eventNote ? (
-                                    <div className="space-y-2 pl-0.5">
-                                        <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                                {isDate ? (
+                                    <div className="space-y-3.5 pl-0.5">
+                                        <h4 className="text-base sm:text-lg font-black text-white tracking-tight">
                                             <HighlightText text={eventTitle} />
                                         </h4>
-                                        <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal bg-blue-950/30 border border-blue-500/20 rounded-xl p-3 flex items-start gap-2">
-                                            <span className="text-blue-400 font-bold shrink-0">💡 체크포인트:</span>
-                                            <span>{eventNote}</span>
-                                        </p>
+                                        {eventNote && (
+                                            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal bg-blue-950/30 border border-blue-500/20 rounded-xl p-3 flex items-start gap-2">
+                                                <span className="text-blue-400 font-bold shrink-0">💡 체크포인트:</span>
+                                                <span>{eventNote}</span>
+                                            </p>
+                                        )}
+
+                                        {/* 증시 파급효과 분석 (국내 vs 해외 2-Column Grid) */}
+                                        {impact && (
+                                            <div className="mt-3.5 pt-3.5 border-t border-white/10 space-y-3">
+                                                <div className="flex items-center gap-2 text-xs font-black text-zinc-300">
+                                                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                                                    <span>이 일정이 증시에 미치는 실전 파급효과 & 투자 전략</span>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {/* 🇺🇸 해외증시 영향 */}
+                                                    <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 to-indigo-950/20 border border-blue-500/20 space-y-1.5">
+                                                        <div className="flex items-center gap-2 text-xs font-black text-blue-300">
+                                                            <Globe className="w-3.5 h-3.5 text-blue-400" />
+                                                            <span>🇺🇸 해외(미국) 증시 영향</span>
+                                                        </div>
+                                                        <p className="text-xs text-zinc-300 leading-relaxed font-normal">
+                                                            {impact.globalImpact}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* 🇰🇷 국내증시 영향 */}
+                                                    <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/20 space-y-1.5">
+                                                        <div className="flex items-center gap-2 text-xs font-black text-emerald-300">
+                                                            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span>🇰🇷 국내(한국) 증시 영향</span>
+                                                        </div>
+                                                        <p className="text-xs text-zinc-300 leading-relaxed font-normal">
+                                                            {impact.domesticImpact}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* 🎯 핵심 관전 팁 */}
+                                                {impact.keyTip && (
+                                                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2 text-xs text-amber-200/90 leading-relaxed">
+                                                        <span className="font-black text-amber-400 shrink-0">🎯 핵심 관전 팁:</span>
+                                                        <span>{impact.keyTip}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pl-0.5">
