@@ -11,9 +11,16 @@ import { Rocket, Sparkles, Search, Compass, ShieldCheck, ArrowRight, ArrowLeft, 
 
 export default function EmergingStocksPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-black" />}>
-            <EmergingStocksContent />
-        </Suspense>
+        <div className="min-h-screen bg-zinc-950 text-white">
+            <Suspense fallback={<div className="min-h-[200px]" />}>
+                <EmergingStocksContent />
+            </Suspense>
+            <SeoContentBlock 
+                asH1={true}
+                pageTitle="미국 혁신 신생기업 큐레이션 | 우주항공·양자컴퓨터·차세대 AI 리서치" 
+                pageDescription="우주항공(AST 스페이스모바일, 로켓랩), 양자컴퓨터(아이온큐, 리게티), UAM 플라잉카(조비 에비에이션, 아처), 차세대 AI(팔란티어) 등 미국의 미래 혁신을 이끄는 신생 기업 재무·수급 분석 리포트를 제공합니다."
+            />
+        </div>
     );
 }
 
@@ -138,11 +145,6 @@ function EmergingStocksContent() {
                     </div>
                 </div>
 
-                {/* SEO 텍스트 블록 */}
-                <SeoContentBlock 
-                    pageTitle="미국 혁신 신생기업 큐레이션 | 초보자 맞춤 텐배거 유망주" 
-                    pageDescription="우주항공(AST 스페이스모바일, 로켓랩), 양자컴퓨터(아이온큐, 리게티), UAM 플라잉카(조비 에비에이션, 아처), 차세대 AI(팔란티어) 등 미국의 미래 혁신을 이끄는 신생 기업 분석 및 5단계 AI 리포트를 제공합니다."
-                />
             </div>
         </div>
     );

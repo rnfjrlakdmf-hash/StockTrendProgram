@@ -50,10 +50,26 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+import SeoContentBlock from "@/components/SeoContentBlock";
+
 async function getSeoPosts(page: number, limitPerPage: number) {
+    const fallbackSeoPosts: SeoPost[] = STATIC_POSTS.slice(0, 15).map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        createdAt: new Date(p.createdAt),
+        tags: p.tags || ["특징주분석", "퀀트리포트"],
+        slug: p.slug || p.id,
+        viewCount: p.viewCount || 920,
+    }));
+
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         const apiUrl = `https://stock-trend-program.co.kr/api/seo_posts?page=${page}&limit=${limitPerPage}`;
-        const res = await fetch(apiUrl, { cache: 'no-store' });
+        const res = await fetch(apiUrl, { cache: 'no-store', signal: controller.signal });
+        clearTimeout(timeoutId);
         
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         
@@ -75,8 +91,11 @@ async function getSeoPosts(page: number, limitPerPage: number) {
 
         return { posts, totalPages: data.totalPages || 1 };
     } catch (error) {
-        console.error("SEO 포스트 로딩 에러:", error);
-        return { posts: [], totalPages: 1 };
+        console.error("SEO 포스트 로딩 에러, 정적 대체 데이터 제공:", error);
+        return {
+            posts: fallbackSeoPosts.slice((page - 1) * limitPerPage, page * limitPerPage),
+            totalPages: Math.max(1, Math.ceil(fallbackSeoPosts.length / limitPerPage))
+        };
     }
 }
 
@@ -173,6 +192,11 @@ export default async function SeoListPage(props: Props) {
             <div className="w-full flex justify-center mb-8">
                 <KakaoAdFit adUnit="DAN-8TxTsrWjI6Q4SOt0" adWidth="320" adHeight="100" />
             </div>
+
+            <SeoContentBlock
+                pageTitle="오늘의 특징주 & 외국인·기관 수급 심층 분석 리포트 아카이브"
+                pageDescription="한국거래소(KRX) 및 글로벌 증시의 핵심 특징주, 주도 테마 대장주, 외국인·기관 순매수 유입 배경과 재무·밸류에이션 팩터를 심층 분석한 리포트 아카이브입니다."
+            />
         </div>
     );
 }

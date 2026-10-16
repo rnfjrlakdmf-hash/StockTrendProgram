@@ -21,6 +21,10 @@ export default function ResponsiveKakaoAd({
   pcAdHeight = "90",
   className = ""
 }: ResponsiveKakaoAdProps) {
+  // 구글 애드센스 최종 승인 심사 기간 동안 타사 광고 슬롯을 100% 비활성화하여 클린 레이아웃 유지
+  if (process.env.NEXT_PUBLIC_ENABLE_KAKAO_ADS !== "true") {
+    return null;
+  }
   const [isPC, setIsPC] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);

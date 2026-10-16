@@ -1336,10 +1336,6 @@ function ThemePageContent() {
                 <div className="mt-8 flex justify-center">
                     <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
                 </div>
-
-                <div className="mt-8">
-                    <SeoContentBlock />
-                </div>
             </div>
         </div>
     );
@@ -1347,8 +1343,15 @@ function ThemePageContent() {
 
 export default function ThemePage() {
     return (
-        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
-            <ThemePageContent />
-        </Suspense>
+        <div className="min-h-screen bg-black text-white">
+            <Suspense fallback={<div className="min-h-[200px]" />}>
+                <ThemePageContent />
+            </Suspense>
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="실시간 주도 테마 트래커 & 대장주·밸류체인 수혜 검증"
+                pageDescription="반도체·2차전지·AI 가속기·전력기기·바이오·우주항공 등 국내외 증시 핵심 주도 테마의 1·2·3대장주와 DART 사업보고서 기반 실제 매출 수혜 여부를 정밀 분석합니다."
+            />
+        </div>
     );
 }

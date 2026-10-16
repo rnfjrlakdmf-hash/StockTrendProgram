@@ -382,8 +382,6 @@ function AnalysisContent() {
         );
     };
 
-    if (!mounted) return null;
-
     return (
         <div className="min-h-screen pb-20 text-white bg-zinc-950 notranslate" translate="no">
             <Header title="종목 퀀트 정밀 진단" subtitle="재무·가치·모멘텀 5대 팩터 심층 진단" />
@@ -1501,10 +1499,19 @@ function AnalysisContent() {
     );
 }
 
+import SeoContentBlock from "@/components/SeoContentBlock";
+
 export default function AnalysisPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-black text-white flex flex-col items-center justify-center"><RefreshCw className="w-10 h-10 animate-spin mx-auto text-indigo-400 mb-4" /><p className="text-gray-400 font-bold">로딩 중...</p></div>}>
-            <AnalysisContent />
-        </Suspense>
+        <div className="min-h-screen bg-zinc-950 text-white">
+            <Suspense fallback={<div className="min-h-[200px]" />}>
+                <AnalysisContent />
+            </Suspense>
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="기업 펀더멘탈 & 5대 퀀트 팩터 심층 진단 시스템"
+                pageDescription="가치(PER·PBR), 수익성(ROE·영업이익률), 안정성(부채비율·유보율), 성장성(매출·EPS 증가율), 모멘텀(수급·추세) 5대 퀀트 팩터와 동종 업계 경쟁사 비교 데이터를 제공합니다."
+            />
+        </div>
     );
 }

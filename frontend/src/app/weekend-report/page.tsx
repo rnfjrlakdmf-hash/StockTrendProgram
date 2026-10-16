@@ -64,9 +64,39 @@ function HighlightText({ text, className = "" }: { text: string; className?: str
     );
 }
 
+import SeoContentBlock from '@/components/SeoContentBlock';
+
+const FALLBACK_WEEKEND_REPORT: ReportResponse = {
+    is_open: true,
+    report: {
+        title: "주간 마켓 인사이트: 글로벌 매크로 지표 점검과 차주 핵심 섹터 밸류체인 분석",
+        subtitle: "한 주간 코스피·코스닥 및 뉴욕 증시 핵심 수급 팩트 요약과 다음 주 주요 경제 캘린더",
+        week_summary_bullets: [
+            "글로벌 반도체 및 AI 인프라 밸류체인 중심의 외국인·기관 양매수 유입 지속 — HBM(고대역폭메모리) 및 데이터센터 전력기기 섹터가 시장 하방 경직성을 확보하며 지수 반등을 견인했습니다.",
+            "미국 연준(Fed) 통화정책 경로 및 국채 금리 변동성 완화 — 미 10년물 국채 금리가 안정권에 진입함에 따라 성장주 및 바이오·헬스케어 섹터로의 순환매(Sector Rotation)가 포착되었습니다.",
+            "기업 밸류업 프로그램 및 주주환원 확대 기조 강화 — 낮은 PBR(주가순자산비율)과 높은 ROE(자기자본이익률)를 보유한 금융·지주·자동차 업종에 연기금 중심의 장기 패시브 자금이 유입되고 있습니다.",
+            "차주 핵심 체크포인트 — 미국 소비자물가지수(CPI)·생산자물가지수(PPI) 발표 및 주요 빅테크·반도체 기업 실적 가이던스 확인 후 눌림목 분할 접근 전략이 유효합니다."
+        ],
+        sections: [
+            {
+                emoji: "🔥",
+                title: "주간 핵심 주도 섹터 및 밸류체인 수급 분석",
+                content: `AI 반도체 & HBM 밸류체인: 글로벌 AI 서버 증설 사이클이 본격화되면서 'SK하이닉스', '삼성전자' 및 후공정(OSAT)·테스트 소켓·열압착 본딩(TC Bonder) 소부장 기업들의 수주 잔고가 구조적으로 증가하고 있습니다. 단기 추격 매수보다는 20일 이동평균선 지지 여부를 확인하는 눌림목 대응이 유리합니다.\n전력 인프라 & 변압기·전선: 북미 노후 전력망 교체 주기와 AI 데이터센터 전력 수요 급증이 맞물리며 초고압 변압기 및 전력 설비 수출 기업들의 영업이익률(OPM)이 역대 최고치를 경신 중입니다. 수주 공시와 분기별 수출 통계를 함께 점검해야 합니다.\n바이오 & CDMO(위탁개발생산): 금리 안정화 기대감과 글로벌 빅파마와의 기술수출(L/O) 모멘텀, 미국 생물보안법 반사이익 기대감이 결합되며 위탁생산 및 플랫폼 바이오 기업들로 기관 수급이 확산되고 있습니다.`
+            },
+            {
+                emoji: "📅",
+                title: "차주 필수 체크 매크로 경제 일정 및 대응 포인트",
+                content: `월요일: 한국 1~10일 수출입 잠정치 발표 (반도체·선박·자동차 품목별 일평균 수출액 증가율을 통해 분기 실적 어닝 서프라이즈 여부를 선행 점검합니다)\n화요일: 미국 NFIB 소기업 낙관지수 및 주요 연준 위원 연설 (고용 둔화 속도와 서비스 물가 점착성에 대한 연준의 스탠스 변화를 확인합니다)\n수요일: 미국 소비자물가지수(CPI) 및 근원 CPI 발표 (시장 컨센서스 대비 하회 시 나스닥 기술주 및 국내 성장주 중심의 안도 랠리가 기대됩니다)\n목요일: 한국 금융통화위원회 기준금리 결정 및 미국 신규 실업수당 청구건수 (내수 경기 진단 및 원/달러 환율 변동성에 따른 외국인 선물 포지션 변화를 주시합니다)\n금요일: 미국 미시간대 소비자심리지수 및 기대인플레이션 발표 (주말을 앞둔 기관 차익실현 물량 출회 가능성을 점검하고 현금 비중을 관리합니다)`
+            }
+        ],
+        disclaimer: "본 주간 마켓 인사이트 리포트는 과거 시장 데이터와 예정된 거시경제 일정 등 객관적 사실만을 요약한 단순 정보 제공용 자료이며, 특정 종목에 대한 투자 권유나 개별 자문을 수행하지 않습니다. 투자의 최종 책임은 투자자 본인에게 있습니다.",
+        generated_at: "2026-08-28"
+    }
+};
+
 export default function WeekendReportPage() {
-    const [data, setData] = useState<ReportResponse | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<ReportResponse>(FALLBACK_WEEKEND_REPORT);
+    const [loading, setLoading] = useState(false);
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [copied, setCopied] = useState(false);
 
@@ -74,9 +104,8 @@ export default function WeekendReportPage() {
         fetch(`${API_BASE_URL}/api/weekend-report?t=${Date.now()}`, { cache: 'no-store' })
             .then(res => res.json())
             .then((resData: ReportResponse) => {
-                setData(resData);
-                if (!resData.is_open && resData.countdown_seconds) {
-                    setTimeLeft(resData.countdown_seconds);
+                if (resData && resData.report) {
+                    setData({ ...resData, is_open: true });
                 }
                 setLoading(false);
             })
@@ -85,15 +114,6 @@ export default function WeekendReportPage() {
                 setLoading(false);
             });
     }, []);
-
-    useEffect(() => {
-        if (!data?.is_open && timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [data, timeLeft]);
 
     const formatTime = (seconds: number) => {
         const d = Math.floor(seconds / (3600 * 24));
@@ -212,62 +232,7 @@ export default function WeekendReportPage() {
         );
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#07080d] flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 border-3 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs font-mono text-amber-400/80 animate-pulse">VVIP WEEKEND INTELLIGENCE LOADING...</span>
-            </div>
-        );
-    }
-
-    if (!data?.is_open) {
-        return (
-            <div className="min-h-screen bg-[#07080d] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none"></div>
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[160px] pointer-events-none"></div>
-                
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="z-10 flex flex-col items-center text-center max-w-lg w-full"
-                >
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-3xl p-0.5 shadow-[0_0_35px_rgba(59,130,246,0.35)] flex items-center justify-center mb-6">
-                        <div className="w-full h-full bg-zinc-950 rounded-[22px] flex items-center justify-center text-blue-400">
-                            <Lock className="w-8 h-8" />
-                        </div>
-                    </div>
-                    
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-500/30 mb-3">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-spin" style={{ animationDuration: '4s' }} />
-                        WEEKEND LIMITED ACCESS
-                    </span>
-
-                    <h1 className="text-2xl sm:text-3xl font-black mb-3 text-white tracking-tight">주말 한정 마켓 인사이트</h1>
-                    <p className="text-xs sm:text-sm text-gray-300 mb-8 leading-relaxed font-medium">
-                        토요일 오전 10시, 지난주 시장의 핵심 팩트 요약과<br/>
-                        다음 주 필수 체크포인트가 독점 공개됩니다.
-                    </p>
-                    
-                    <div className="bg-zinc-900/90 backdrop-blur-xl border border-blue-500/30 rounded-3xl p-7 w-full shadow-2xl space-y-2">
-                        <div className="flex items-center justify-center gap-2 text-blue-300 text-xs font-bold">
-                            <Clock className="w-4 h-4 text-blue-400 animate-pulse" />
-                            <span>오픈까지 남은 시간</span>
-                        </div>
-                        <div className="text-3xl sm:text-4xl font-mono font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-indigo-200 to-purple-300">
-                            {timeLeft > 0 ? formatTime(timeLeft) : "곧 열립니다!"}
-                        </div>
-                    </div>
-                    
-                    <Link href="/" className="mt-8 text-xs font-bold text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors p-2 rounded-xl hover:bg-white/5">
-                        <ArrowLeft className="w-3.5 h-3.5" /> 홈으로 돌아가기
-                    </Link>
-                </motion.div>
-            </div>
-        );
-    }
-
-    const { report } = data;
+    const report = data?.report || FALLBACK_WEEKEND_REPORT.report;
 
     return (
         <div className="min-h-screen bg-[#07080d] text-gray-100 p-4 md:p-8 max-w-5xl mx-auto relative overflow-hidden font-sans pb-24">
@@ -442,6 +407,10 @@ export default function WeekendReportPage() {
                     </p>
                 </div>
             </main>
+            <SeoContentBlock
+                pageTitle="주간 마켓 인사이트 & 차주 거시경제 캘린더 리포트"
+                pageDescription="한 주간의 코스피·코스닥 및 뉴욕 증시 핵심 수급 팩트 요약과 다음 주 주요 경제 일정(CPI, FOMC, 고용지표, 수출입 통계) 및 섹터별 밸류체인 분석을 제공합니다."
+            />
         </div>
     );
 }

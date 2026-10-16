@@ -130,17 +130,30 @@ export default function FloatingQuickMenu() {
                 </div>
                 
                 <div className="max-h-64 overflow-y-auto custom-scrollbar p-2">
-                    {!user ? (
-                        <div className="py-8 text-center text-xs text-gray-400">
-                            로그인이 필요한 서비스입니다.
+                    {!user || watchlist.length === 0 ? (
+                        <div className="flex flex-col gap-1.5">
+                            {[
+                                { name: "삼성전자", code: "005930", sector: "반도체 대표주" },
+                                { name: "SK하이닉스", code: "000660", sector: "HBM·메모리" },
+                                { name: "NVIDIA", code: "NVDA", sector: "AI 가속기" },
+                                { name: "Tesla", code: "TSLA", sector: "자율주행·전기차" },
+                            ].map((item) => (
+                                <Link key={item.code} href={`/discovery?q=${item.code}`} onClick={() => setIsWatchlistOpen(false)}>
+                                    <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 cursor-pointer">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-white truncate max-w-[120px]">{item.name}</span>
+                                            <span className="text-[10px] text-gray-500">{item.code}</span>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                                            {item.sector}
+                                        </span>
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
                     ) : isLoading && watchlist.length === 0 ? (
                         <div className="flex justify-center items-center py-8">
                             <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                        </div>
-                    ) : watchlist.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-gray-400">
-                            등록된 관심종목이 없습니다.
                         </div>
                     ) : (
                         <div className="flex flex-col gap-1.5">
@@ -174,7 +187,7 @@ export default function FloatingQuickMenu() {
                 <div className="p-2 border-t border-white/5 bg-black/40">
                     <Link href="/watchlist" onClick={() => setIsWatchlistOpen(false)}>
                         <button className="w-full py-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 text-[11px] font-bold hover:bg-cyan-500/20 transition-colors border border-cyan-500/30">
-                            관심종목 전체보기
+                            관심종목 관리 바로가기
                         </button>
                     </Link>
                 </div>
@@ -186,22 +199,6 @@ export default function FloatingQuickMenu() {
                     isOpen ? "scale-100 opacity-100 pointer-events-auto translate-y-0" : "scale-50 opacity-0 pointer-events-none translate-y-10"
                 }`}
             >
-                {/* ⚡ 주거래 증권사 MTS 앱 즉시 실행 버튼 */}
-                <button 
-                    onClick={() => {
-                        toast.info(`📱 ${preferredBroker.name} (${preferredBroker.appTitle}) 앱을 실행합니다...`);
-                        launchMtsApp(preferredBroker.id);
-                        setIsOpen(false);
-                    }}
-                    className={`group relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r ${preferredBroker.bgColor} hover:brightness-125 backdrop-blur-md border border-white/30 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all hover:scale-115 active:scale-95`}
-                    title={`${preferredBroker.name} MTS 앱 실행`}
-                >
-                    <span className="text-sm">{preferredBroker.emoji}</span>
-                    <span className="absolute right-12 px-2.5 py-1 bg-black/90 text-white text-[11px] font-bold rounded-lg border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl flex items-center gap-1.5">
-                        <Zap className="w-3 h-3 text-yellow-400 fill-current animate-pulse" />
-                        {preferredBroker.name} 앱 열기
-                    </span>
-                </button>
 
                 <button 
                     onClick={scrollToTop}

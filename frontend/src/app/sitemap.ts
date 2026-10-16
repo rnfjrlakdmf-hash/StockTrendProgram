@@ -7,7 +7,7 @@ export const revalidate = 3600; // 1시간마다 ISR 재생성 및 CDN 캐싱
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
     
-    // 1. 핵심 서비스 및 분석 대시보드 페이지
+    // 1. 핵심 금융 아카데미·리서치 및 주요 서비스 페이지 (100% 풍부한 SSR 텍스트 보장 페이지)
     const routes: MetadataRoute.Sitemap = [
         {
             url: `${baseUrl}`,
@@ -31,85 +31,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             url: `${baseUrl}/theory`,
             lastModified: new Date(),
             changeFrequency: 'daily',
+            priority: 0.95,
+        },
+        {
+            url: `${baseUrl}/post`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
             priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/calculator`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/etf`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.85,
+        },
+        {
+            url: `${baseUrl}/emerging`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.85,
         },
         {
             url: `${baseUrl}/signals`,
             lastModified: new Date(),
             changeFrequency: 'daily',
-            priority: 0.9,
-        },
-        {
-            url: `${baseUrl}/analysis`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
-            priority: 0.9,
-        },
-        {
-            url: `${baseUrl}/ranking`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
             priority: 0.85,
-        },
-        {
-            url: `${baseUrl}/calculator`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.85,
-        },
-        {
-            url: `${baseUrl}/pattern`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
-            priority: 0.85,
-        },
-        {
-            url: `${baseUrl}/etf-analysis`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
-            priority: 0.85,
-        },
-        {
-            url: `${baseUrl}/portfolio`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/weekend-report`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.85,
-        },
-        {
-            url: `${baseUrl}/watchlist`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
-            priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/supply-chain`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
         },
         {
             url: `${baseUrl}/discovery`,
             lastModified: new Date(),
             changeFrequency: 'daily',
-            priority: 0.8,
+            priority: 0.85,
         },
         {
-            url: `${baseUrl}/calendar`,
+            url: `${baseUrl}/theme`,
             lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
+            changeFrequency: 'daily',
+            priority: 0.85,
         },
         {
-            url: `${baseUrl}/earnings`,
+            url: `${baseUrl}/analysis`,
             lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
+            changeFrequency: 'daily',
+            priority: 0.85,
         },
         // 애드센스 및 검색엔진 필수 5대 정책/신뢰성 페이지
         {
@@ -177,12 +147,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
     });
 
-    const backendApiUrl = API_BASE_URL || 'http://127.0.0.1:8000';
+    const backendApiUrl = 'http://13.209.99.170:8000';
     const frontendApiUrl = baseUrl;
 
-    // 4~7. 동적 포스트들을 Promise.allSettled로 병렬 수집 (최대 타임아웃 1.2초로 제한하여 검색봇 타임아웃 절대 방지)
+    // 4~7. 동적 포스트들을 병렬 수집 (여유로운 5초 타임아웃으로 누락 방지)
     try {
-        const fetchWithFastTimeout = async (url: string, timeoutMs: number = 1200) => {
+        const fetchWithFastTimeout = async (url: string, timeoutMs: number = 5000) => {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
             try {

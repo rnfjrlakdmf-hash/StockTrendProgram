@@ -150,7 +150,7 @@ export default function HomeClient() {
                       <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
                           <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-200 text-xs font-bold mb-3 flex items-center gap-1 w-max">
-                            <Lock className="w-3 h-3" /> PRO ONLY
+                            📊 WEEKLY REPORT
                           </span>
                           <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                             <Newspaper className="w-5 h-5" /> 이번 주 증시 요약 리포트

@@ -7,8 +7,7 @@
  * 무료 모드가 활성화되어 있는지 확인
  */
 export function isFreeModeEnabled(): boolean {
-    if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem('admin_free_mode') === 'true';
+    return true;
 }
 
 /**

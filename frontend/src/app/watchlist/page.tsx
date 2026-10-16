@@ -1749,6 +1749,14 @@ export default function WatchlistPage() {
                     onSuccess={() => fetchWatchlist()}
                 />
             )}
+
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="관심종목 실시간 시세 & DART 지분 공시·실적 일정 통합 트래커"
+                pageDescription="한국(KOSPI·KOSDAQ) 및 미국(NASDAQ·NYSE) 관심종목의 실시간 주가, 프리·애프터마켓 시세, 실적 발표일(Earnings) 캘린더, 최근 90일 대량보유(5% 룰) 및 임원 지분 변동 공시를 통합 모니터링합니다."
+            />
         </div>
     );
 }
+
+import SeoContentBlock from "@/components/SeoContentBlock";

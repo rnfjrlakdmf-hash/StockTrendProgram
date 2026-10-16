@@ -1253,6 +1253,13 @@ export default function PatternPage() {
                 )}
             </div>
 
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="기술적 차트 패턴 & 매물대·이평선 정밀 분석기"
+                pageDescription="이동평균선(5·20·60·120일) 배열, 거래량 프로파일(매물대 지지·저항선), RSI·MACD·볼린저밴드 기술적 지표 및 최근 5영업일 외국인·기관 수급 주포를 정밀 진단합니다."
+            />
         </div>
     );
 }
+
+import SeoContentBlock from "@/components/SeoContentBlock";

@@ -111,8 +111,8 @@ export default function CalculatorPage() {
 
         {/* 인터랙티브 계산기 본문 (서스펜스 감싸기) */}
         <Suspense fallback={
-          <div className="p-12 text-center text-zinc-500 text-sm">
-            계산기 엔진 로딩 중...
+          <div className="p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-center text-zinc-400 text-xs">
+            물타기 평단가 인하 공식 및 배당소득세(15.4%) 공제 후 월별 세후 실수령액 시뮬레이터
           </div>
         }>
           <CalculatorHub />

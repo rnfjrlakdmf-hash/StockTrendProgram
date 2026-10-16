@@ -15,6 +15,10 @@ export default function KakaoAdFit({
   adHeight,
   className = "",
 }: KakaoAdFitProps) {
+  // 구글 애드센스 최종 승인 심사 기간 동안 타사 광고 슬롯 및 빈 여백(minHeight)을 100% 비활성화하여 클린 레이아웃 유지
+  if (process.env.NEXT_PUBLIC_ENABLE_KAKAO_ADS !== "true") {
+    return null;
+  }
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 

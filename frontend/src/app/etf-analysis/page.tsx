@@ -1139,10 +1139,19 @@ function EtfAnalysisContent() {
     );
 }
 
+import SeoContentBlock from "@/components/SeoContentBlock";
+
 export default function EtfAnalysisPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><p className="text-gray-400 font-bold">ETF 분석기 준비 중...</p></div>}>
-            <EtfAnalysisContent />
-        </Suspense>
+        <div className="min-h-screen bg-black text-white">
+            <Suspense fallback={<div className="min-h-[200px]" />}>
+                <EtfAnalysisContent />
+            </Suspense>
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="글로벌 & 국내 ETF 펀더멘탈·샤프비율 정밀 비교 분석기"
+                pageDescription="KODEX·TIGER 국내 대표 ETF부터 SPY·QQQ·SCHD·JEPI 미국 핵심 상장지수펀드까지 총보수율(TER), 배당 분배율, 최대낙폭(MDD), 변동성 대비 수익률(샤프비율) 및 구성 종목 비중을 정량 비교합니다."
+            />
+        </div>
     );
 }

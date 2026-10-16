@@ -20,6 +20,7 @@ import CleanStockList from "@/components/CleanStockList";
 import RankingWidget from "@/components/RankingWidget";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import ClosingQuantScanner from "@/components/ClosingQuantScanner";
+import SeoContentBlock from "@/components/SeoContentBlock";
 
 
 // ============ Shared Types ============
@@ -27,9 +28,16 @@ interface Signal { id: number; symbol: string; signal_type: string; title: strin
 
 export default function SignalsPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-black" />}>
-            <SignalsPageContent />
-        </Suspense>
+        <div className="min-h-screen bg-black text-white">
+            <Suspense fallback={<div className="min-h-[200px]" />}>
+                <SignalsPageContent />
+            </Suspense>
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="글로벌 마켓 시그널 & 장마감 수급 퀀트 스캐너"
+                pageDescription="한국거래소(KRX) 외국인·기관 순매수 포착, 금융감독원 DART 주요 공시, 업종별 섹터 히트맵, 그리고 미국 연준 FOMC·CPI 등 글로벌 거시경제 지표를 실시간으로 통합 분석합니다."
+            />
+        </div>
     );
 }
 

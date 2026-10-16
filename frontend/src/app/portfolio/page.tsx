@@ -885,6 +885,13 @@ export default function PortfolioPage() {
           )}
         </div>
       </div>
+      <SeoContentBlock
+        asH1={true}
+        pageTitle="포트폴리오 퀀트 정밀 진단 & 리스크·배당 시뮬레이터"
+        pageDescription="보유 종목의 섹터 편중도, 시장 베타(Beta), 최대낙폭(MDD), 샤프 지수(Sharpe Ratio), 6대 퀀트 팩터 밸런스 및 연간 배당 현금흐름 스케줄을 정량적으로 진단합니다."
+      />
     </div>
   );
 }
+
+import SeoContentBlock from "@/components/SeoContentBlock";

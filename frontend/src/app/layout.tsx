@@ -175,13 +175,6 @@ export default function RootLayout({
 
               {children}
 
-              {/* Closing Report Banner */}
-              <ClosingBanner />
-              <AppInstallBanner />
-              <LeadGenerationPopup />
-              <FomoWidget />
-              <WhaleSiren />
-
               {/* Site Footer - AdSense 및 YMYL 정책 준수 완벽 푸터 */}
               <footer className="border-t border-white/10 mt-16 bg-black/80 px-6 py-12 text-center relative z-10">
                 <div className="max-w-4xl mx-auto">
@@ -201,6 +194,8 @@ export default function RootLayout({
                     <span className="text-gray-700">|</span>
                     <a href="/blog" className="hover:text-white transition-colors">마켓 리포트</a>
                     <span className="text-gray-700">|</span>
+                    <a href="/theory" className="hover:text-white transition-colors">차트 스터디</a>
+                    <span className="text-gray-700">|</span>
                     <a href="/contact" className="hover:text-white transition-colors">문의하기</a>
                     <span className="text-gray-700">|</span>
                     <a href="/privacy-policy" className="hover:text-white transition-colors">개인정보처리방침</a>
@@ -211,7 +206,7 @@ export default function RootLayout({
                   </div>
 
                   <div className="text-[11px] text-gray-500 space-y-1 mb-2">
-                    <p>서비스명: 스마트 투자 비서 (StockTrend) | 운영 및 콘텐츠 책임: 윤희원 | 문의: rnfjrlakdmf@gmail.com</p>
+                    <p>서비스명: 스마트 투자 비서 (StockTrend) | 운영 및 콘텐츠 책임: 윤희원 | 문의: rnfjrlakdmf<span>&#64;</span>gmail.com</p>
                     <p>데이터 출처: 한국거래소(KRX), 금융감독원 DART 전자공시시스템, 미국 증권거래위원회(SEC EDGAR)</p>
                   </div>
                   <p className="text-gray-600 text-xs mt-3">© 2026 StockTrend Team. All rights reserved.</p>
@@ -222,23 +217,12 @@ export default function RootLayout({
               <GlobalProgressWatcher />
             </main>
 
-            {/* 우측 사이드바 세로형 광고 (160x600) - 데스크톱 전용 (스마트 봇 필터 적용) */}
-            <aside className="hidden xl:flex w-[180px] flex-col items-center pt-24 shrink-0 sticky top-0 h-screen overflow-hidden border-l border-white/5 glass-panel">
-              <KakaoAdFit adUnit="DAN-jbSl6i4k3YO3nNSl" adWidth="160" adHeight="600" />
-            </aside>
-
             {/* Global FCM Token Manager (Client-Only Wrapper) */}
             <FCMWrapper />
-            
-            {/* Mobile & PC Sticky Bottom Revenue Ad (35s Auto Refresh) */}
-            <KakaoStickyBottomAd />
             <BottomTabBar />
 
             {/* Smart Floating Quick Menu */}
             <FloatingQuickMenu />
-
-            {/* Global Broadcast Popup (Kakao Style) */}
-            <GlobalBroadcastListener />
 
             <CookieConsent />
           </div>

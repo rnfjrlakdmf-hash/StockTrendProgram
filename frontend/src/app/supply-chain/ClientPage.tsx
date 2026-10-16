@@ -731,8 +731,14 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                     </div>
                 )}
 
-
+                <SeoContentBlock
+                    asH1={true}
+                    pageTitle="글로벌 밸류체인 & 산업 공급망(Supply Chain) 네트워크 맵"
+                    pageDescription="핵심 기업의 원재료·소부장 공급사(Suppliers), 고객사(Customers), 경쟁사(Competitors) 간의 매출 의존도와 글로벌 산업 밸류체인 연결 구조를 입체적으로 분석합니다."
+                />
             </div>
         </div>
     );
 }
+
+import SeoContentBlock from "@/components/SeoContentBlock";

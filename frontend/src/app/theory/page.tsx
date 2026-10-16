@@ -131,6 +131,13 @@ export default async function TheoryListPage(props: Props) {
             <div className="w-full flex justify-center mb-8">
                 <KakaoAdFit adUnit="DAN-8TxTsrWjI6Q4SOt0" adWidth="320" adHeight="100" />
             </div>
+
+            <SeoContentBlock
+                pageTitle="실전 주식 차트 아카데미 & 보조지표·재무제표 완전 정복"
+                pageDescription="이동평균선, RSI, MACD, 볼린저밴드, 거래량 매물대 등 기술적 분석 이론부터 PER·PBR·ROE 재무제표 독해법과 거시경제 지표 활용법까지 체계적으로 정리한 금융 교육 라이브러리입니다."
+            />
         </div>
     );
 }
+
+import SeoContentBlock from "@/components/SeoContentBlock";

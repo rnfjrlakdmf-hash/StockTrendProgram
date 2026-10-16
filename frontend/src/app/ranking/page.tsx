@@ -274,6 +274,12 @@ export default function RankingPage() {
         </div>
 
       </div>
+      <SeoContentBlock
+        pageTitle="전국 주식 포트폴리오 수익률 리더보드 & 퀀트 운용 벤치마크"
+        pageDescription="실시간 관심종목 및 모의 포트폴리오 수익률과 퀀트 팩터 점수를 종합하여 산출되는 투자자 리더보드 및 자산배분 벤치마크 통계를 제공합니다."
+      />
     </div>
   );
 }
+
+import SeoContentBlock from '@/components/SeoContentBlock';

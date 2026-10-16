@@ -773,16 +773,16 @@ function getRationaleExplanation(type: 'supply' | 'momentum' | 'risk', text: str
 
 export default function DiscoveryPage() {
     return (
-        <Suspense fallback={
-            <div className="flex h-screen items-center justify-center bg-[#09090b] text-white">
-                <div className="text-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-4" />
-                    <p className="text-gray-400">Loading Discovery...</p>
-                </div>
-            </div>
-        }>
-            <DiscoveryContent />
-        </Suspense>
+        <div className="min-h-screen bg-[#09090b] text-white">
+            <Suspense fallback={<div className="min-h-[200px]" />}>
+                <DiscoveryContent />
+            </Suspense>
+            <SeoContentBlock
+                asH1={true}
+                pageTitle="AI 종목 발굴 & 기업 재무·수급 정밀 분석 터미널"
+                pageDescription="국내외 상장 기업의 PER·PBR·ROE 재무제표 건전성, 외국인·기관 순매수 수급 추이, DART·SEC 전자공시 팩트체크 및 캔들 차트 기술적 지표를 한눈에 분석합니다."
+            />
+        </div>
     );
 }
 
@@ -1283,8 +1283,6 @@ function DiscoveryContent() {
             handleSearch();
         }
     };
-
-    if (!mounted) return null;
 
     return (
         <div className="min-h-screen pb-10 text-white notranslate" translate="no">

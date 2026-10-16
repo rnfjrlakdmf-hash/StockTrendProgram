@@ -36,6 +36,9 @@ export default function KakaoRevenueAd({
   className = "",
   autoRefreshInterval,
 }: KakaoRevenueAdProps) {
+  if (process.env.NEXT_PUBLIC_ENABLE_KAKAO_ADS !== "true") {
+    return null;
+  }
   const [isPC, setIsPC] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);

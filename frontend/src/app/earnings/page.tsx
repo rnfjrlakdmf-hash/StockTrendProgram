@@ -132,7 +132,14 @@ export default function EarningsPage() {
                         </div>
                     </div>
                 )}
+
+                <SeoContentBlock
+                    pageTitle="어닝콜(Earnings Call) 스크립트 뉘앙스 & 경영진 가이던스 분석"
+                    pageDescription="글로벌 상장 기업의 분기 실적 발표(Earnings Call) 전문과 Q&A 세션을 자연어 처리(NLP) 알고리즘으로 분석하여 경영진의 자신감 지수, 긍정·부정 모멘텀 요인을 도출합니다."
+                />
             </div>
         </div>
     );
 }
+
+import SeoContentBlock from "@/components/SeoContentBlock";
