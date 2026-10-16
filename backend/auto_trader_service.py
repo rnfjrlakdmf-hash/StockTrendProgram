@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import shutil
 import time
@@ -1610,9 +1611,38 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
 
     held_symbols = {p["symbol"] for p in state["positions"]}
     max_pos = int(cfg.get("max_positions", 7) or 7)
-    order_budget = int(cfg.get("order_amount_krw", 2000000))
-    max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
     min_score = int(cfg.get("min_ai_score", 68))
+
+    # [핵심 분리] AI_PAPER(가상 모의투자) 모드일 때는 실전 계좌 한도(max_total_invest_krw/order_amount_krw)가 아닌
+    # 가상 시드머니(paper_seed_krw)를 기준으로 총 투자한도와 종목당 매수금액(약 88% 투자)을 독립 산출합니다!
+    if cfg.get("mode", "AI_PAPER") == "AI_PAPER":
+        base_paper_seed = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+        realized_pnl_val = int(acct.get("realized_pnl_krw", 0) or 0)
+        max_invest_cap = max(50000, base_paper_seed + realized_pnl_val)
+        cfg_max = int(cfg.get("max_positions", 5) or 5)
+        if max_invest_cap <= 1000000 or cfg_max <= 3:
+            total_allowed_pos = cfg_max
+        else:
+            elastic_buffer = int(cfg.get("elastic_reserve_slots", 1) or 1)
+            total_allowed_pos = min(6, cfg_max + elastic_buffer)
+        target_slots_for_budget = max(1, len(state["positions"]), total_allowed_pos)
+        order_budget = max(30000, int((max_invest_cap * 0.88) // target_slots_for_budget))
+        acct["cash_krw"] = max(
+            0,
+            max_invest_cap - sum(
+                int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (fx_rate if p.get("is_us") else 1.0)))
+                for p in state["positions"]
+            ),
+        )
+    else:
+        order_budget = int(cfg.get("order_amount_krw", 2000000))
+        max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
+        cfg_max = int(cfg.get("max_positions", 7) or 7)
+        if max_invest_cap <= 1000000 or cfg_max <= 3:
+            total_allowed_pos = cfg_max
+        else:
+            elastic_buffer = int(cfg.get("elastic_reserve_slots", 2) or 2)
+            total_allowed_pos = cfg_max + elastic_buffer
 
     # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
     avg_market_chg = (
@@ -1627,16 +1657,6 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         else f"🛡️ 5중 리스크 방어 정상 가동 중 (시장 평균 {avg_market_chg:+.2f}% · 고점과열 차단 · 섹터분산 · 무손절 물타기 대기)"
     )
 
-    # [한투 실전·모의 계좌 주문 루프]
-    # 대표님 요청: 야간 미국장에는 기본 7개를 꽉 채워 회전율을 극대화하고,
-    # 주간 국내장 개장 시에는 시드머니 여유에 맞춰 +3개의 탄력 예비 슬롯(총 최대 10개)으로 국내 주도주를 매수!
-    cfg_max = int(cfg.get("max_positions", 7) or 7)
-    # 대표님이 설정한 슬롯 수(한도) 엄수: 소액 한도(<=100만원)이거나 슬롯이 3개 이하일 때는 추가 예비 슬롯 없이 설정값 엄격 적용!
-    if max_invest_cap <= 1000000 or cfg_max <= 3:
-        total_allowed_pos = cfg_max
-    else:
-        elastic_buffer = int(cfg.get("elastic_reserve_slots", 2) or 2)
-        total_allowed_pos = cfg_max + elastic_buffer
     single_market_max = cfg_max
 
     real_kr_cnt = sum(1 for p in state["positions"] if not p.get("is_us"))
@@ -2153,19 +2173,21 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
     # 시드머니 변경 또는 매매 손익으로 총 운용 금액이 변동되면 변동된 총금액(effective_seed_krw)에 맞춰 자동 스케일링!
     effective_seed_krw = max(50000, base_paper_seed_krw + realized_pnl)
 
-    cfg_max = int(cfg.get("max_positions", 7) or 7)
+    cfg_max = int(cfg.get("max_positions", 5) or 5)
     mkt_target = str(cfg.get("market_target", "ALL"))
 
-    cfg_order_amt = int(cfg.get("order_amount_krw", 0) or 0)
+    # [핵심] 가상 모의투자는 실전 계좌의 1종목 주문금액(order_amount_krw)을 절대 참조하지 않고,
+    # 오직 가상 모의투자 시드머니(paper_seed_krw)만을 기준으로 종목당 투자금을 독립 산출합니다!
     if effective_seed_krw <= 300000:
         paper_max_pos = min(3, max(1, cfg_max))
         target_kr_slots = max(1, paper_max_pos // 2) if mkt_target != "US_ONLY" else 0
         target_us_slots = max(1, paper_max_pos - target_kr_slots) if mkt_target != "KR_ONLY" else 0
         if target_kr_slots + target_us_slots < paper_max_pos:
             target_kr_slots = paper_max_pos
-        per_stock_budget_krw = cfg_order_amt if cfg_order_amt > 0 else max(25000, effective_seed_krw // paper_max_pos)
+        invest_ratio = 0.90
+        per_stock_budget_krw = max(25000, int((effective_seed_krw * invest_ratio) // paper_max_pos))
     else:
-        paper_max_pos = max(1, min(20, cfg_max))
+        paper_max_pos = max(1, min(10, cfg_max))
         if mkt_target == "KR_ONLY":
             target_kr_slots = paper_max_pos
             target_us_slots = 0
@@ -2173,17 +2195,13 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             target_kr_slots = 0
             target_us_slots = paper_max_pos
         else:
-            # 기본 ALL(국내+해외): 약 60% 국내, 40% 해외 배분
             target_kr_slots = max(2, int(round(paper_max_pos * 0.6)))
             target_us_slots = max(1, paper_max_pos - target_kr_slots)
 
-        # 총 시드의 약 72%를 주식에 균등 배분, 나머지는 안전 현금(예수금 버퍼)으로 보존
-        invest_ratio = 0.72
-        cfg_order_amt = int(cfg.get("order_amount_krw", 0) or 0)
-        if cfg_order_amt > 0:
-            per_stock_budget_krw = cfg_order_amt
-        else:
-            per_stock_budget_krw = max(50000, int((effective_seed_krw * invest_ratio) // paper_max_pos))
+        # 시드머니의 약 88%를 주식에 적극 배분하고 약 12%만 예비 예수금 버퍼로 유지 (과도한 유휴 현금 낭비 방지)
+        invest_ratio = 0.88
+        target_total_slots = min(6, paper_max_pos + 1) if paper_max_pos >= 4 else paper_max_pos
+        per_stock_budget_krw = max(50000, int((effective_seed_krw * invest_ratio) // max(1, target_total_slots)))
 
     tp_pct = float(cfg.get("take_profit_pct", 2.0) or 2.0)
     sl_pct = float(cfg.get("stop_loss_pct", 2.5) or 2.5)
@@ -2239,7 +2257,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             seen_syms.add(sym)
 
     # 1.2 [보유 포지션 100% 안전 보존]
-    # 이미 정상 매수되어 계좌에 편입된 종목은 어떠한 경우에도 임의 삭제하지 않고 전량 온전히 보존
     changed = False
     balanced_raw: List[Dict[str, Any]] = []
     for p in raw_paper:
@@ -2248,6 +2265,11 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             continue
         balanced_raw.append(p)
     raw_paper = balanced_raw
+
+    # 현재 보유 종목 수가 확정되면 종목당 목표 배분 금액을 더 정밀하게 보정
+    if raw_paper and effective_seed_krw > 300000:
+        slot_denom = max(len(raw_paper), min(6, paper_max_pos + 1) if paper_max_pos >= 4 else paper_max_pos)
+        per_stock_budget_krw = max(50000, int((effective_seed_krw * 0.88) // max(1, slot_denom)))
 
     updated_paper: List[Dict[str, Any]] = []
     recently_exited_syms = set()
@@ -2261,7 +2283,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             for s_code, q_res in ex.map(lambda item: _q_worker(item["symbol"]), raw_paper):
                 quote_map[s_code] = q_res
 
-    # 2. 보유 종목 관리 (변동된 시드머니에 맞춰 수량 자동 리밸런싱 & AI 스마트 조기익절/리스크관리 매도)
+    # 2. 보유 종목 관리 (설정된 시드머니에 맞게 과소/과대 배분된 수량 자동 스케일링 & AI 스마트 조기익절/리스크관리 매도)
     paper_sold_items = []
     for pos in raw_paper:
         sym = pos.get("symbol")
@@ -2278,14 +2300,37 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         unit_m = fx_rate if is_us else 1.0
         avg_p = float(pos.get("avg_price", live_p) or live_p)
 
-        # [보유 주수 절대 보존 원칙]
-        # 이미 매수 체결되어 보유 중인 종목은 시드머니나 설정을 수정하더라도 보유 수량을 절대 임의로 변경하지 않습니다. (실제 주식 계좌와 100% 동일)
+        # [시드머니 맞춤형 수량 자동 스케일링]
+        # 실전 소액 한도 버그 등으로 종목당 투자금이 설정된 가상 시드(per_stock_budget_krw) 대비 현저히 적거나(45% 미만),
+        # 사용자가 가상 시드머니 금액을 변경하여 배분 규모가 크게 달라진 경우(220% 초과) 설정된 시드에 맞게 보유 수량을 자동 맞춤 조정합니다.
+        unit_cost_krw = avg_p * unit_m
+        cur_qty = max(1, int(pos.get("qty", 1)))
+        cur_principal_krw = cur_qty * unit_cost_krw
+        if unit_cost_krw > 0 and (
+            cur_principal_krw < per_stock_budget_krw * 0.45
+            or cur_principal_krw > per_stock_budget_krw * 2.2
+        ):
+            new_qty = max(1, int(round(per_stock_budget_krw / unit_cost_krw)))
+            if new_qty != cur_qty:
+                pos["qty"] = new_qty
+                new_buy_amt_krw = int(round(new_qty * unit_cost_krw))
+                old_reason = str(pos.get("reason", ""))
+                if "원 배분" in old_reason:
+                    pos["reason"] = re.sub(r"[\d,]+원 배분", f"{new_buy_amt_krw:,}원 배분", old_reason)
+                for lg in state.get("trade_logs", []):
+                    if lg.get("symbol") == sym and lg.get("action") == "BUY" and "[한투주문 완료" not in str(lg.get("reason", "")):
+                        lg["qty"] = new_qty
+                        lg["amount_krw"] = new_buy_amt_krw
+                        if "원 배분" in str(lg.get("reason", "")):
+                            lg["reason"] = re.sub(r"[\d,]+원 배분", f"{new_buy_amt_krw:,}원 배분", str(lg.get("reason", "")))
+                        break
+                changed = True
 
         if is_market_open_for_pos and live_p > 0:
             pos["current_price"] = live_p
             pos["highest_price"] = max(float(pos.get("highest_price", live_p)), live_p)
         pos["target_price"] = round(avg_p * (1.0 + tp_pct / 100.0), 2 if is_us else 0)
-        pos["stop_price"] = round(avg_p * (1.0 - 1.0 / 100.0), 2 if is_us else 0)  # AI 스마트 리스크 컷 기준선(-1.0%)
+        pos["stop_price"] = round(avg_p * (1.0 - sl_pct / 100.0), 2 if is_us else 0)
 
         cur_p_calc = float(pos.get("current_price", avg_p))
         pnl_pct = round(((cur_p_calc - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 else 0.0
@@ -2348,13 +2393,12 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         )
 
     # 3. [장 운영시간 엄격 준수 신규 매수 및 24시간 탄력 예비 슬롯 운용]
-    # 대표님이 지정한 한도 및 슬롯 수 엄수: 소액 한도(<=100만원)이거나 슬롯이 3개 이하일 때는 설정값 그대로 엄격 적용!
-    cfg_max = int(cfg.get("max_positions", 7) or 7)
+    cfg_max = int(cfg.get("max_positions", 5) or 5)
     if effective_seed_krw <= 1000000 or cfg_max <= 3:
         total_allowed_pos = cfg_max
     else:
-        elastic_buffer = int(cfg.get("elastic_reserve_slots", 3) or 3)
-        total_allowed_pos = cfg_max + elastic_buffer
+        elastic_buffer = int(cfg.get("elastic_reserve_slots", 1) or 1)
+        total_allowed_pos = min(6, cfg_max + elastic_buffer)
     single_market_max = cfg_max
 
     curr_kr = [p for p in updated_paper if not p.get("is_us")]
@@ -2384,7 +2428,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             if not is_market_open_now(c_sym, is_us=c_is_us):
                 continue
             unit_krw = c_price * (fx_rate if c_is_us else 1.0)
-            qty = int(per_stock_budget_krw // unit_krw)
+            qty = max(1, int(round(per_stock_budget_krw / unit_krw))) if per_stock_budget_krw >= unit_krw * 0.7 else int(per_stock_budget_krw // unit_krw)
             if qty <= 0:
                 continue
             buy_amt_krw = int(round(qty * unit_krw))
@@ -2395,7 +2439,11 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 for p in updated_paper
             )
             if total_invested_so_far + buy_amt_krw > effective_seed_krw:
-                continue
+                rem_seed = max(0, effective_seed_krw - total_invested_so_far)
+                qty = int(rem_seed // unit_krw)
+                if qty <= 0:
+                    continue
+                buy_amt_krw = int(round(qty * unit_krw))
 
             new_paper_pos = {
                 "symbol": c_sym,
@@ -2455,7 +2503,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
 
     if active_mkt == "KR":
         # [실제 국내 정규장 엄수: 평일 09:00~15:30]
-        # 장 마감 후(15:30 이후), 주말, 공휴일에는 모의투자라도 신규 매수 일절 금지!
         if is_market_open_now("005930", is_us=False):
             needed_kr = max(0, min(single_market_max - len(curr_kr), total_allowed_pos - len(updated_paper)))
             if needed_kr > 0 and len(updated_paper) < total_allowed_pos:
@@ -2466,7 +2513,6 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 _fill_market_slots(kr_pool, needed_kr, "🇰🇷국내")
     elif active_mkt == "US":
         # [실제 미국 정규장 엄수: 월 17:00 ~ 토 09:00 KST]
-        # 미국 거래소가 실제로 열려 있는 시간대에만 해외주식 실시간 매수 진행!
         if is_market_open_now("NVDA", is_us=True):
             needed_us = max(0, min(single_market_max - len(curr_us), total_allowed_pos - len(updated_paper)))
             if needed_us > 0 and len(updated_paper) < total_allowed_pos:
@@ -2485,6 +2531,11 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
         state["positions"] = real_only
     else:
         state["positions"] = real_only + updated_paper
+        total_paper_invested = sum(
+            int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 1)) * (fx_rate if p.get("is_us") else 1.0)))
+            for p in updated_paper
+        )
+        acct["cash_krw"] = max(0, effective_seed_krw - total_paper_invested)
 
     if changed:
         save_state(state)
