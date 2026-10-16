@@ -1,4 +1,4 @@
-﻿import time
+import time
 import asyncio
 from typing import Dict, Any, List, Callable
 import pandas as pd
@@ -162,7 +162,7 @@ class TurboEngine:
 turbo_engine = TurboEngine()
 
 # [Global] Cache Versioning to force invalidation
-CACHE_VERSION = "v15"
+CACHE_VERSION = "v16"
 
 def turbo_cache(ttl_seconds: int = 300):
     """

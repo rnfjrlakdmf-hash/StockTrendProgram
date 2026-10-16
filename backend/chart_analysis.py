@@ -351,12 +351,71 @@ def generate_beginner_insight(df, ticker="알 수 없는 종목"):
         ]
     }
 
+def patch_kr_daily_df_with_naver(df: pd.DataFrame, code: str) -> pd.DataFrame:
+    """
+    야후 파이낸스(yfinance)의 국내 주식(KRX) 최신 거래일 결측치(NaN 누락 및 업데이트 지연)를
+    네이버 증권 공식 실시간 시세 데이터(fchart)를 통해 즉시 정밀 보정합니다.
+    """
+    import xml.etree.ElementTree as ET
+    import requests
+    
+    clean_code = "".join([c for c in str(code) if c.isdigit()])
+    if len(clean_code) != 6:
+        return df
+        
+    try:
+        url = f"https://fchart.stock.naver.com/sise.nhn?symbol={clean_code}&timeframe=day&count=20&requestType=0"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        r = requests.get(url, headers=headers, timeout=5)
+        root = ET.fromstring(r.text)
+        items = [i.attrib.get('data', '').split('|') for i in root.findall('.//item')]
+        if not items:
+            return df
+            
+        naver_map = {}
+        for item in items:
+            if len(item) >= 6:
+                d_str = f"{item[0][:4]}-{item[0][4:6]}-{item[0][6:8]}"
+                naver_map[d_str] = {
+                    'Open': float(item[1]),
+                    'High': float(item[2]),
+                    'Low': float(item[3]),
+                    'Close': float(item[4]),
+                    'Volume': float(item[5])
+                }
+                
+        if df is None or df.empty:
+            rows = [{'Date': pd.to_datetime(d).tz_localize('Asia/Seoul'), **v} for d, v in naver_map.items()]
+            return pd.DataFrame(rows).set_index('Date')
+            
+        existing_dates = {idx.strftime('%Y-%m-%d'): idx for idx in df.index}
+        
+        for d_str, v in naver_map.items():
+            if d_str in existing_dates:
+                t_idx = existing_dates[d_str]
+                if pd.isna(df.loc[t_idx, 'Close']) or df.loc[t_idx, 'Close'] == 0:
+                    for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
+                        df.at[t_idx, col] = v[col]
+            else:
+                if len(df) > 0 and d_str > df.index[-1].strftime('%Y-%m-%d'):
+                    dt = pd.to_datetime(d_str)
+                    if df.index.tz is not None:
+                        dt = dt.tz_localize(df.index.tz)
+                    new_row = pd.DataFrame([v], index=[dt])
+                    df = pd.concat([df, new_row])
+                    
+        return df
+    except Exception as e:
+        print(f"[ChartAnalysis] Naver patch error for {clean_code}: {e}")
+        return df
+
 def get_chart_analysis_full(symbol, interval="1d", period=None):
     """
     Combined analysis: Weather + Whale Tracker + Full History (Chart) + Beginner Insight
     """
     code = symbol
     yf_ticker = get_yf_ticker(code)
+    clean_code = symbol_to_clean_code(code)
     
     from stock_events import detect_inflection_points
     
@@ -389,6 +448,11 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
             elif period == "1일": yf_period = "1d"
 
         df = yf.Ticker(yf_ticker).history(period=yf_period, interval=interval)
+        
+        # [Fix] 국내 주식(KRX)의 경우 야후 파이낸스의 최신 거래일 결측치(NaN 누락/업데이트 지연)를
+        # 네이버 증권 공식 실시간 시세 데이터(fchart)를 통해 즉시 정밀 보정
+        if interval == "1d" and clean_code.isdigit() and len(clean_code) == 6:
+            df = patch_kr_daily_df_with_naver(df, clean_code)
         
         if not df.empty:
             # [Fix] NaN 결측치 행 제거 및 보정
@@ -423,6 +487,8 @@ def get_chart_analysis_full(symbol, interval="1d", period=None):
             insight_df = df
             if interval != "1d" or yf_period != "1y":
                 insight_df = yf.Ticker(yf_ticker).history(period="1y", interval="1d")
+                if clean_code.isdigit() and len(clean_code) == 6:
+                    insight_df = patch_kr_daily_df_with_naver(insight_df, clean_code)
                 if not insight_df.empty:
                     insight_df = insight_df.dropna(subset=['Close'])
             beginner_insight = generate_beginner_insight(insight_df, ticker=yf_ticker)
