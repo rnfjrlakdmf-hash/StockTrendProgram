@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
     Lock, Clock, Calendar, CheckCircle2, TrendingUp, AlertTriangle, Share2, 
     ArrowLeft, Flame, Sparkles, Check, Copy, Compass, Zap, ShieldCheck, 
-    Layers, ChevronRight, BarChart3, Globe, Building2
+    Layers, ChevronRight, BarChart3, Globe, Building2, BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -244,6 +244,154 @@ const getMacroEventImpact = (title: string, note: string = ""): MacroImpact => {
     };
 };
 
+interface EconomicTerm {
+    term: string;
+    keywords: string[];
+    easyMeaning: string;
+}
+
+const ECONOMIC_TERMS_DICTIONARY: EconomicTerm[] = [
+    {
+        term: "인플레이션 (Inflation)",
+        keywords: ["인플레이션", "물가 상승", "물가상승", "cpi", "pce", "물가지수"],
+        easyMeaning: "물건 가격이 전반적으로 계속 오르고 돈의 가치는 떨어지는 경제 현상입니다."
+    },
+    {
+        term: "환차손 (Exchange Loss)",
+        keywords: ["환차손"],
+        easyMeaning: "환율 변동 때문에 가만히 앉아서 손해를 보는 위험입니다. (예: 외국인이 한국 주식을 샀는데 원화 가치가 폭락하면 달러로 바꿀 때 손실 발생)"
+    },
+    {
+        term: "환차익 (Exchange Gain)",
+        keywords: ["환차익"],
+        easyMeaning: "환율 변동으로 인해 추가로 얻는 이익입니다. (예: 원화 가치가 오를 때 외국인이 주가 상승과 더불어 챙기는 환율 보너스)"
+    },
+    {
+        term: "달러 강세 (King Dollar)",
+        keywords: ["달러 강세", "달러강세", "강달러"],
+        easyMeaning: "미국 달러의 힘(가치)이 강해져서 원화 등 다른 나라 돈에 비해 달러가 더 비싸지는 현상입니다."
+    },
+    {
+        term: "달러 약세",
+        keywords: ["달러 약세", "달러약세", "약달러"],
+        easyMeaning: "미국 달러의 가치가 떨어져 상대적으로 우리 원화 가치가 강해지는 현상입니다."
+    },
+    {
+        term: "원/달러 환율",
+        keywords: ["원/달러", "환율", "원달러"],
+        easyMeaning: "미국 1달러를 사기 위해 우리 돈(원화)을 얼마 줘야 하는지를 나타내는 교환 비율입니다. (환율 하락 = 원화 가치 상승)"
+    },
+    {
+        term: "순매수 (Net Buying)",
+        keywords: ["순매수"],
+        easyMeaning: "주식을 판(매도) 금액보다 사들인(매수) 금액이 더 많다는 뜻으로, 시장에 자금이 적극적으로 들어오는 것을 의미합니다."
+    },
+    {
+        term: "순매도 (Net Selling)",
+        keywords: ["순매도"],
+        easyMeaning: "사들인 금액보다 팔아치운 금액이 더 많아 주식을 현금화하고 빠져나가는 것을 의미합니다."
+    },
+    {
+        term: "시가총액 (Market Cap)",
+        keywords: ["시가총액", "시총"],
+        easyMeaning: "회사 전체 주식 수에 주가를 곱한 값으로, 그 기업의 전체 '몸값 규모'를 뜻합니다."
+    },
+    {
+        term: "연준 (Fed / 연방준비제도)",
+        keywords: ["연준", "fed", "파월"],
+        easyMeaning: "미국의 중앙은행으로, 전 세계 경제의 이자율(기준금리)과 달러 통화량을 조절하는 가장 강력한 기관입니다."
+    },
+    {
+        term: "기준금리",
+        keywords: ["기준금리", "금리 인하", "금리 인상", "금리인하", "금리인상", "긴축"],
+        easyMeaning: "중앙은행이 결정하는 모든 이자의 기준점입니다. 금리가 내려가면 돈 빌리기 쉬워져 주식시장으로 돈이 유입됩니다."
+    },
+    {
+        term: "근원 물가지수 (Core CPI)",
+        keywords: ["근원", "core"],
+        easyMeaning: "계절에 따라 가격이 출렁이는 농산물과 유가(기름값)를 제외하고 측정한 순수 기초 물가 성적표입니다."
+    },
+    {
+        term: "골디락스 (Goldilocks)",
+        keywords: ["골디락스"],
+        easyMeaning: "뜨겁지도 차갑지도 않은 상태로, 경제가 탄탄하게 성장하면서도 물가는 오르지 않는 주식시장에 가장 이상적인 호황 상태입니다."
+    },
+    {
+        term: "리세션 (Recession / 경기침체)",
+        keywords: ["리세션", "침체", "경기 침체"],
+        easyMeaning: "경제 활동이 전반적으로 얼어붙어 기업 실적이 꺾이고 소비가 줄어드는 불황 국면입니다."
+    },
+    {
+        term: "빅테크 (Big Tech)",
+        keywords: ["빅테크", "대형 기술주", "성장주"],
+        easyMeaning: "엔비디아, 애플, 마이크로소프트, 구글처럼 전 세계 IT와 기술 혁신을 이끄는 초대형 테크 기업들을 말합니다."
+    },
+    {
+        term: "2차전지",
+        keywords: ["2차전지", "이차전지", "배터리"],
+        easyMeaning: "한 번 쓰고 버리는 건전지와 달리, 계속 충전해서 재사용할 수 있는 배터리로 전기차와 에너지 저장의 핵심입니다."
+    },
+    {
+        term: "바이오 (Bio)",
+        keywords: ["바이오", "제약"],
+        easyMeaning: "생명공학 기술을 통해 난치병 신약이나 백신을 개발하는 고부가가치 첨단 제약 산업입니다."
+    },
+    {
+        term: "밸류에이션 (Valuation)",
+        keywords: ["밸류에이션", "고평가", "저평가", "per", "pbr"],
+        easyMeaning: "기업이 실제로 벌어들이는 이익에 비해 주가가 비싼지 싼지를 따져보는 기업 가치 평가 잣대입니다."
+    },
+    {
+        term: "패시브 자금 (Passive Fund)",
+        keywords: ["패시브", "리밸런싱"],
+        easyMeaning: "종목을 일일이 고르지 않고 코스피나 S&P500 같은 시장 지수 전체를 기계적으로 사들이는 거대 연기금·기관 자금입니다."
+    },
+    {
+        term: "시클리컬 (경기순환주)",
+        keywords: ["시클리컬", "경기순환", "산업재"],
+        easyMeaning: "철강, 화학, 기계, 조선, 해운처럼 전 세계 경기 상황에 따라 실적이 크게 울고 웃는 업종입니다."
+    },
+    {
+        term: "하방 지지선",
+        keywords: ["하방 지지선", "하방 경직성", "지지선"],
+        easyMeaning: "주가가 더 이상 떨어지지 않고 바닥을 다질 수 있도록 받쳐주는 단단한 가격대나 기업 실적 방어벽입니다."
+    },
+    {
+        term: "중간재 (Intermediate Goods)",
+        keywords: ["중간재"],
+        easyMeaning: "완제품(스마트폰, 자동차 등)을 완성하기 위해 중간에 부품이나 원료로 들어가는 반도체, 화학소재, 부품 등을 뜻합니다."
+    },
+    {
+        term: "컨센서스 (Consensus)",
+        keywords: ["컨센서스", "시장 예상치", "예상치"],
+        easyMeaning: "시장의 유명 증권사 애널리스트들과 경제 전문가들이 미리 조사해 발표한 평균 예상치입니다."
+    },
+    {
+        term: "점도표 (Dot Plot)",
+        keywords: ["점도표"],
+        easyMeaning: "미국 연준 위원들이 앞으로 기준금리가 몇 %까지 갈지 각자의 생각을 점으로 콕콕 찍어 보여주는 미래 금리 지도입니다."
+    },
+    {
+        term: "밸류업 (Value-up)",
+        keywords: ["밸류업", "주주환원"],
+        easyMeaning: "기업들이 주주들을 위해 배당을 늘리고 자사주를 소각하여 주식 가치를 높이도록 유도하는 정책입니다."
+    }
+];
+
+const getRelevantEconomicTerms = (text: string, maxCount: number = 4): EconomicTerm[] => {
+    if (!text) return [];
+    const lower = text.toLowerCase();
+    const matched: EconomicTerm[] = [];
+
+    for (const item of ECONOMIC_TERMS_DICTIONARY) {
+        if (item.keywords.some(k => lower.includes(k.toLowerCase()))) {
+            matched.push(item);
+            if (matched.length >= maxCount) break;
+        }
+    }
+    return matched;
+};
+
     // Helper to parse section content into spacious, breathing, open editorial list
     const renderParsedContent = (content: string) => {
         if (!content) return null;
@@ -309,6 +457,9 @@ const getMacroEventImpact = (title: string, note: string = ""): MacroImpact => {
                         }
 
                         const impact = isDate ? getMacroEventImpact(eventTitle, eventNote || "") : null;
+                        const combinedText = isDate ? `${eventTitle} ${eventNote || ''} ${impact?.globalImpact || ''} ${impact?.domesticImpact || ''} ${impact?.keyTip || ''}` : "";
+                        const detectedTerms = isDate ? getRelevantEconomicTerms(combinedText, 4) : [];
+                        const themeTerms = !isDate ? getRelevantEconomicTerms(desc, 2) : [];
 
                         return (
                             <div 
@@ -390,13 +541,53 @@ const getMacroEventImpact = (title: string, note: string = ""): MacroImpact => {
                                                         <span>{impact.keyTip}</span>
                                                     </div>
                                                 )}
+
+                                                {/* 📖 1분 쏙쏙! 초보자를 위한 핵심 경제 용어 풀이 */}
+                                                {detectedTerms.length > 0 && (
+                                                    <div className="mt-3.5 pt-3.5 border-t border-white/10 space-y-2">
+                                                        <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                                                            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                                                            <span>📖 1분 쏙쏙! 이번 일정 핵심 경제 용어 풀이</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                            {detectedTerms.map((term, tIdx) => (
+                                                                <div 
+                                                                    key={tIdx} 
+                                                                    className="p-3 rounded-xl bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/15 transition-colors flex flex-col gap-1 text-left shadow-sm"
+                                                                >
+                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                                                        <span>{term.term}</span>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-zinc-300 leading-relaxed font-normal pl-3">
+                                                                        {term.easyMeaning}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal pl-0.5">
-                                        <HighlightText text={desc} />
-                                    </p>
+                                    <div className="space-y-2 pl-0.5">
+                                        <p className="text-sm sm:text-base text-zinc-100 leading-relaxed font-normal">
+                                            <HighlightText text={desc} />
+                                        </p>
+                                        {themeTerms.length > 0 && (
+                                            <div className="mt-3 pt-2.5 border-t border-white/5 flex flex-wrap items-center gap-2">
+                                                <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1 shrink-0">
+                                                    <BookOpen className="w-3 h-3 text-amber-400" /> 핵심 용어:
+                                                </span>
+                                                {themeTerms.map((t, tIdx) => (
+                                                    <span key={tIdx} className="text-[11px] text-zinc-300 bg-white/[0.03] px-2 py-0.5 rounded-lg border border-white/5">
+                                                        <strong className="text-amber-300 font-bold">{t.term}</strong>: {t.easyMeaning}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         );
