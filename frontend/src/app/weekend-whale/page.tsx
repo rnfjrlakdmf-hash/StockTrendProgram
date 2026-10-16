@@ -245,7 +245,7 @@ export default function WeekendWhalePage() {
                             <Anchor className="w-5 h-5" /> 외국인 주간 순매수 TOP 10
                         </h2>
                         <div className="space-y-3">
-                            {report?.foreign_analysis?.map((item, idx) => (
+                            {(user ? report?.foreign_analysis : report?.foreign_analysis?.slice(0, 3))?.map((item, idx) => (
                                 <div 
                                     key={idx} 
                                     className="bg-zinc-900/60 border border-white/5 hover:border-cyan-500/30 rounded-2xl p-3.5 flex items-start gap-3 transition-all"
@@ -279,7 +279,7 @@ export default function WeekendWhalePage() {
                             <Briefcase className="w-5 h-5" /> 기관 주간 순매수 TOP 10
                         </h2>
                         <div className="space-y-3">
-                            {report?.inst_analysis?.map((item, idx) => (
+                            {(user ? report?.inst_analysis : report?.inst_analysis?.slice(0, 3))?.map((item, idx) => (
                                 <div 
                                     key={idx} 
                                     className="bg-zinc-900/60 border border-white/5 hover:border-indigo-500/30 rounded-2xl p-3.5 flex items-start gap-3 transition-all"
@@ -308,16 +308,36 @@ export default function WeekendWhalePage() {
                     </section>
                 </div>
 
-                {/* 4. Monday Strategy */}
-                <section className="bg-gradient-to-br from-zinc-900/90 via-zinc-900 to-indigo-950/30 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-2xl">
-                    <h2 className="text-lg md:text-xl font-black mb-4 flex items-center gap-2 text-emerald-400 pb-3 border-b border-white/10">
-                        <CheckCircle className="w-6 h-6" />
-                        🎯 다음 주 월요일 시초가 공략 로드맵 (Monday Opening Playbook)
-                    </h2>
-                    <div className="text-gray-200 leading-relaxed text-xs md:text-sm whitespace-pre-line space-y-2 font-normal">
-                        {report?.monday_strategy}
-                    </div>
-                </section>
+                {/* 4. Monday Strategy (Member Distinction) */}
+                {user ? (
+                    <section className="bg-gradient-to-br from-zinc-900/90 via-zinc-900 to-indigo-950/30 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-md shadow-2xl">
+                        <h2 className="text-lg md:text-xl font-black mb-4 flex items-center gap-2 text-emerald-400 pb-3 border-b border-white/10">
+                            <CheckCircle className="w-6 h-6" />
+                            🎯 다음 주 월요일 시초가 공략 로드맵 (Monday Opening Playbook)
+                        </h2>
+                        <div className="text-gray-200 leading-relaxed text-xs md:text-sm whitespace-pre-line space-y-2 font-normal">
+                            {report?.monday_strategy}
+                        </div>
+                    </section>
+                ) : (
+                    <section className="bg-gradient-to-br from-zinc-900/95 via-zinc-950 to-indigo-950/30 border border-cyan-500/30 rounded-3xl p-6 md:p-8 text-center space-y-4 shadow-2xl">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-black">
+                            <Lock className="w-3.5 h-3.5" /> 회원 전용 심층 데이터 잠금
+                        </div>
+                        <h2 className="text-lg md:text-xl font-black text-white">
+                            외인·기관 순매수 4~10위 전체 명단 & 월요일 시초가 공략 로드맵
+                        </h2>
+                        <p className="text-xs sm:text-sm text-zinc-300 max-w-xl mx-auto leading-relaxed">
+                            상단 3대 주도 섹터 맵, 은밀한 매집주 3선, 외인·기관 TOP 3 분석은 무료로 공개됩니다. 나머지 4~10위 종목 상세 수급 사유와 월요일 장 초반(09:00~09:30) 실전 대응 로드맵은 회원 로그인 후 즉시 열람하실 수 있습니다.
+                        </p>
+                        <button
+                            onClick={() => setShowLoginModal(true)}
+                            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-lg transition-all cursor-pointer"
+                        >
+                            🔐 무료 로그인하고 전체 명단 & 월요일 전략 열람하기
+                        </button>
+                    </section>
+                )}
 
                 {/* 5. Disclaimer */}
                 <div className="p-5 bg-zinc-950/80 border border-white/5 rounded-3xl text-[11px] text-gray-400 space-y-1.5">

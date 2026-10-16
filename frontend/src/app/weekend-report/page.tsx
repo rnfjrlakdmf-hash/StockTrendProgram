@@ -65,6 +65,7 @@ function HighlightText({ text, className = "" }: { text: string; className?: str
 }
 
 import SeoContentBlock from '@/components/SeoContentBlock';
+import { useAuth } from '@/context/AuthContext';
 
 const FALLBACK_WEEKEND_REPORT: ReportResponse = {
     is_open: true,
@@ -95,6 +96,7 @@ const FALLBACK_WEEKEND_REPORT: ReportResponse = {
 };
 
 export default function WeekendReportPage() {
+    const { user } = useAuth();
     const [data, setData] = useState<ReportResponse>(FALLBACK_WEEKEND_REPORT);
     const [loading, setLoading] = useState(false);
     const [timeLeft, setTimeLeft] = useState<number>(0);
@@ -365,7 +367,27 @@ export default function WeekendReportPage() {
                                     </div>
                                 </div>
 
-                                {renderParsedContent(section.content)}
+                                {idx === 1 && !user ? (
+                                    <div className="space-y-4">
+                                        {renderParsedContent(section.content.split('\n').slice(0, 2).join('\n'))}
+                                        <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-950/40 via-zinc-900/90 to-zinc-950 border border-blue-500/30 text-center space-y-3 shadow-xl">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black">
+                                                <Lock className="w-3.5 h-3.5" /> 회원 전용 차주 중·후반 실전 대응 전략
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-zinc-300 max-w-lg mx-auto leading-relaxed">
+                                                수요일~금요일 핵심 거시경제 이벤트(CPI·금통위·옵션만기 등) 발표 시점별 기관·외국인 수급 시나리오와 현금 비중 조절 가이드는 회원 로그인 후 전체 열람하실 수 있습니다.
+                                            </p>
+                                            <Link
+                                                href="/login"
+                                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-lg transition-all"
+                                            >
+                                                🔐 무료 로그인하고 차주 전체 일정 & 대응 전략 보기
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    renderParsedContent(section.content)
+                                )}
                             </div>
                         </section>
                     ))}

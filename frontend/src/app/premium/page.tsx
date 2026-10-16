@@ -91,7 +91,7 @@ import SeoContentBlock from '@/components/SeoContentBlock';
 
 const FALLBACK_PREMIUM_REPORT = {
     status: "success",
-    locked: false,
+    locked: true,
     data: {
         report_date: "2026-08-28",
         content: `### 💎 Section 1. 스마트머니 자금 대이동 맥락
@@ -131,12 +131,17 @@ export default function PremiumPage() {
 
     useEffect(() => {
         const fetchReport = async () => {
+            if (!user) {
+                setReport(FALLBACK_PREMIUM_REPORT);
+                setIsLoading(false);
+                return;
+            }
             try {
-                const userId = (user as any)?.uid || (user as any)?.id || "public";
+                const userId = (user as any)?.uid || (user as any)?.id;
                 const res = await fetch(`${API_BASE_URL}/api/auth/reports/premium?user_id=${userId}&t=${Date.now()}`, { cache: "no-store" });
                 const data = await res.json();
                 if (data.status === "success" && data.data?.content) {
-                    setReport({ ...data, locked: false });
+                    setReport(data);
                 }
             } catch (err) {
                 console.error("Failed to fetch premium report", err);
@@ -175,7 +180,7 @@ export default function PremiumPage() {
 
     const handleUnlock = async () => {
         if (!user) {
-            alert("로그인이 필요합니다.");
+            window.location.href = "/login";
             return;
         }
 
@@ -587,6 +592,29 @@ export default function PremiumPage() {
                                 )}
                             </div>
 
+                            {/* Section 2 Sample Stock #1 Preview */}
+                            {quantStocks.length > 0 && (
+                                <div className="relative bg-gradient-to-br from-cyan-950/20 via-zinc-950 to-zinc-950 border border-cyan-500/30 rounded-3xl p-6 md:p-8 shadow-2xl space-y-4">
+                                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                                        <h3 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+                                            🏆 Section 2. 퀀트 알파 TOP 3 종목 심층 해부
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                                                TOP 1 샘플 공개 (나머지 2종목 및 Section 3·4 회원 전용)
+                                            </span>
+                                        </h3>
+                                    </div>
+                                    <div className="p-5 rounded-2xl bg-zinc-900/85 border border-cyan-500/30 space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-base font-black text-white">🥇 {quantStocks[0].name}</span>
+                                            <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950 px-2.5 py-1 rounded-lg border border-cyan-500/30">{quantStocks[0].volume}</span>
+                                        </div>
+                                        <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">• <strong>수급 팩트:</strong> {quantStocks[0].fact}</p>
+                                        <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">• <strong>기술적 맥점:</strong> {quantStocks[0].tech}</p>
+                                        <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">• <strong>컨센서스:</strong> {quantStocks[0].consensus}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Luxury Gold Vault Lock Card */}
                             <div className="relative rounded-3xl overflow-hidden border border-amber-500/30 p-8 md:p-12 bg-gradient-to-b from-zinc-900/95 via-zinc-950 to-zinc-950 shadow-2xl flex flex-col items-center justify-center text-center">
                                 <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-3xl p-0.5 shadow-[0_0_30px_rgba(245,158,11,0.35)] flex items-center justify-center mb-5">
@@ -596,17 +624,17 @@ export default function PremiumPage() {
                                 </div>
 
                                 <h3 className="text-xl md:text-2xl font-black text-white mb-2">
-                                    VVIP 프리미엄 인텔리전스 잠금
+                                    {!user ? "회원 전용 퀀트 알파 #2·#3 및 내일 주도 테마 잠금" : "VVIP 프리미엄 인텔리전스 전체 잠금 해제"}
                                 </h3>
                                 <p className="text-xs md:text-sm text-gray-200 max-w-lg mb-6 leading-relaxed font-medium">
-                                    오늘 시장에서 외인·기관 퀀트 스코어 1위 종목들의 수급 팩트와 기술적 맥점, 내일의 주도 테마 밸류체인 심층 분석을 즉시 확인하세요.
+                                    오늘 시장에서 외인·기관 퀀트 스코어 상위 종목 전체 명단과 기술적 맥점, 내일의 주도 테마 밸류체인 및 헷지 전략(Section 2~4 전문)을 확인하세요.
                                 </p>
 
                                 {/* 3 Feature Badges */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-xl mb-8">
                                     <div className="bg-zinc-900/90 border border-amber-500/30 rounded-2xl p-3.5 text-left">
-                                        <span className="text-amber-300 text-xs font-black block mb-1">🏆 퀀트 알파 3선</span>
-                                        <p className="text-xs text-gray-300 leading-tight">수급+이평선+컨센서스 종합 1위</p>
+                                        <span className="text-amber-300 text-xs font-black block mb-1">🏆 퀀트 알파 3선 전체</span>
+                                        <p className="text-xs text-gray-300 leading-tight">수급+이평선+컨센서스 TOP 3</p>
                                     </div>
                                     <div className="bg-zinc-900/90 border border-cyan-500/30 rounded-2xl p-3.5 text-left">
                                         <span className="text-cyan-300 text-xs font-black block mb-1">🚀 내일 주도 테마</span>
@@ -625,6 +653,11 @@ export default function PremiumPage() {
                                 >
                                     {isUnlocking ? (
                                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
+                                    ) : !user ? (
+                                        <>
+                                            <span className="text-lg">🔐</span>
+                                            로그인하고 VVIP 전체 리포트 열람하기
+                                        </>
                                     ) : (
                                         <>
                                             <span className="text-lg">🪙</span>
@@ -634,7 +667,7 @@ export default function PremiumPage() {
                                 </button>
                                 <p className="text-xs text-gray-400 mt-3.5 flex items-center justify-center gap-1.5">
                                     <AlertCircle className="w-4 h-4 text-amber-400" />
-                                    매일 출석체크로 무료 지급되는 코인으로 열람 가능합니다.
+                                    로그인 후 매일 출석체크로 무료 지급되는 코인으로 즉시 열람 가능합니다.
                                 </p>
                             </div>
                         </div>
