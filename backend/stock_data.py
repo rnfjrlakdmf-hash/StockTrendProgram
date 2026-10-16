@@ -379,7 +379,18 @@ def get_daily_prices_data(ticker):
         if hist_asc.empty:
             return []
 
+        ticker_str = getattr(ticker, 'ticker', '')
+        if ticker_str:
+            clean_sym = ticker_str.split('.')[0]
+            if clean_sym.isdigit() and len(clean_sym) == 6:
+                try:
+                    from chart_analysis import patch_kr_daily_df_with_naver
+                    hist_asc = patch_kr_daily_df_with_naver(hist_asc, clean_sym)
+                except Exception as pe:
+                    print(f"Daily price Naver patch error: {pe}")
+
         # Calculate daily change
+        hist_asc = hist_asc.sort_index()
         hist_asc['PrevClose'] = hist_asc['Close'].shift(1)
         hist_asc['Change'] = (
             (hist_asc['Close'] - hist_asc['PrevClose']) / hist_asc['PrevClose']) * 100

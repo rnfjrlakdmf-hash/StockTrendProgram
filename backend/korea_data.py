@@ -797,6 +797,42 @@ def get_naver_daily_prices(symbol: str):
             except BaseException:
                 continue
 
+        # [Fallback / High Reliability] If sise_day HTML parsing failed or returned empty, use Naver official fchart XML API
+        if not history and len(code) == 6:
+            try:
+                import xml.etree.ElementTree as ET
+                fc_url = f"https://fchart.stock.naver.com/sise.nhn?symbol={code}&timeframe=day&count=25&requestType=0"
+                fc_res = requests.get(fc_url, headers=HEADER, timeout=5)
+                if fc_res.status_code == 200:
+                    fc_root = ET.fromstring(fc_res.text)
+                    items = [i.attrib.get('data', '').split('|') for i in fc_root.findall('.//item')]
+                    for i in range(len(items) - 1, -1, -1):
+                        item = items[i]
+                        if len(item) < 6: continue
+                        d_str = f"{item[0][:4]}-{item[0][4:6]}-{item[0][6:8]}"
+                        o = int(item[1])
+                        h = int(item[2])
+                        l = int(item[3])
+                        c = int(item[4])
+                        v = int(item[5])
+                        prev_c = int(items[i-1][4]) if i > 0 else o
+                        diff = c - prev_c
+                        change_pct = (diff / prev_c * 100) if prev_c > 0 else 0.0
+                        history.append({
+                            "date": d_str,
+                            "close": c,
+                            "change": float(round(change_pct, 2)),
+                            "change_val": diff,
+                            "open": o,
+                            "high": h,
+                            "low": l,
+                            "volume": v
+                        })
+                        if len(history) >= 10:
+                            break
+            except Exception as fce:
+                print(f"[get_naver_daily_prices] fchart fallback error: {fce}")
+
         return history[:10]  # Return top 10
     except Exception as e:
         print(f"Naver History Error: {e}")

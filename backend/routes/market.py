@@ -210,12 +210,21 @@ def stock_daily_history(symbol: str, range: str = Query("1mo")):
                     ticker = yf.Ticker(f"{symbol}.KQ")
                     hist = ticker.history(period=range)
             except: pass
+            
+            # [Fix] Patch KRX NaN/missing latest data with Naver fchart API
+            try:
+                from chart_analysis import patch_kr_daily_df_with_naver
+                hist = patch_kr_daily_df_with_naver(hist, symbol)
+            except Exception as e:
+                import logging
+                logging.getLogger("DailyHistory").error(f"Naver patch error for {symbol}: {e}")
         else:
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period=range)
         
         # [Fix] Return error status so turbo_cache ignores this empty response.
         if hist.empty: return {"status": "error", "message": "No data found", "data": []}
+        hist = hist.sort_index()
         hist['PrevClose'] = hist['Close'].shift(1)
         hist['ChangePct'] = ((hist['Close'] - hist['PrevClose']) / hist['PrevClose']) * 100
         hist['ChangeVal'] = hist['Close'] - hist['PrevClose']
