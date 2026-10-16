@@ -449,12 +449,16 @@ export default function AdminAutoTradePage() {
     }
   }, [currentUser, authLoading, router]);
 
-  // [로컬 시드 캐시 복원] 새로고침 또는 브라우저 재접속 시에도 대표님이 설정한 시드머니 즉시 복원
+  // [로컬 시드 캐시 복원] 새로고침 또는 브라우저 재접속 시에도 대표님이 설정한 시드머니 및 실전 한도 즉시 복원
   useEffect(() => {
     try {
       const cached = localStorage.getItem("admin_auto_paper_seed");
       if (cached && Number(cached) > 0) {
         setPaperSeedKrw(Number(cached));
+      }
+      const cachedReal = localStorage.getItem("admin_auto_real_limit");
+      if (cachedReal !== null && !isNaN(Number(cachedReal))) {
+        setMaxTotalInvestKrw(Number(cachedReal));
       }
     } catch {}
   }, []);
@@ -468,8 +472,14 @@ export default function AdminAutoTradePage() {
       setViewWindow("PAPER");
     }
     setMarketTarget(cfg.market_target === "KR_ONLY" || cfg.market_target === "US_ONLY" ? cfg.market_target : "ALL");
-    setMaxTotalInvestKrw(Number(cfg.max_total_invest_krw ?? 100000));
-    setOrderAmountKrw(Number(cfg.order_amount_krw || 1400000));
+    if (cfg.max_total_invest_krw !== undefined && cfg.max_total_invest_krw !== null) {
+      const rVal = Number(cfg.max_total_invest_krw);
+      setMaxTotalInvestKrw(rVal);
+      try {
+        localStorage.setItem("admin_auto_real_limit", String(rVal));
+      } catch {}
+    }
+    setOrderAmountKrw(Number(cfg.real_order_amount_krw || cfg.order_amount_krw || 1400000));
     setMaxPositions(Number(cfg.max_positions || 4));
     setTakeProfitPct(Number(cfg.take_profit_pct || 3.8));
     setUseStopLoss(Boolean(cfg.use_stop_loss ?? true));
@@ -736,13 +746,16 @@ export default function AdminAutoTradePage() {
 
   const handleApplyRealLimit = async (targetLimit?: number, startRealNow: boolean = false) => {
     const rawNum = targetLimit !== undefined ? Number(targetLimit) : Number(maxTotalInvestKrw);
-    const limitVal = rawNum === 0 ? 0 : Math.max(30000, isNaN(rawNum) ? 100000 : rawNum);
-    const autoMaxPos = limitVal === 0 ? 10 : limitVal <= 200000 ? 2 : limitVal <= 500000 ? 3 : limitVal <= 1000000 ? 5 : limitVal <= 4000000 ? 7 : 10;
-    const autoOrderAmt = limitVal === 0 ? 1000000 : Math.max(25000, Math.floor(limitVal / Math.max(2, autoMaxPos)));
-    
+    const limitVal = rawNum === 0 ? 0 : Math.max(30000, isNaN(rawNum) ? 1000000 : rawNum);
+    const autoMaxPos =
+      limitVal === 0 ? 6 : limitVal <= 60000 ? 2 : limitVal <= 180000 ? 3 : limitVal <= 400000 ? 4 : limitVal <= 1500000 ? 5 : 6;
+    const autoOrderAmt = limitVal === 0 ? 1500000 : Math.max(15000, Math.floor((limitVal * 0.9) / autoMaxPos));
+
     setMaxTotalInvestKrw(limitVal);
-    setMaxPositions(autoMaxPos);
     setOrderAmountKrw(autoOrderAmt);
+    try {
+      localStorage.setItem("admin_auto_real_limit", String(limitVal));
+    } catch {}
 
     // 실전 계좌 낙관적 업데이트
     setData((prev: any) => {
@@ -755,8 +768,9 @@ export default function AdminAutoTradePage() {
         config: {
           ...(prev.config || {}),
           max_total_invest_krw: limitVal,
+          real_max_positions: autoMaxPos,
+          real_order_amount_krw: autoOrderAmt,
           order_amount_krw: autoOrderAmt,
-          max_positions: autoMaxPos,
           ...(startRealNow ? { mode: "KIS_REAL", kis_order_enabled: true, enabled: true } : {}),
         },
         real_summary: {
@@ -764,15 +778,18 @@ export default function AdminAutoTradePage() {
           cash_krw: newCash,
           max_total_invest_krw: limitVal,
           remaining_invest_limit_krw: newCash,
+          real_max_positions: autoMaxPos,
+          real_order_amount_krw: autoOrderAmt,
         },
       };
     });
 
     const limitLabel = limitVal === 0 ? "무제한 (계좌 전액)" : limitVal >= 10000 ? `${(limitVal / 10000).toLocaleString()}만 원` : `${limitVal.toLocaleString()}원`;
+    const perStockLabel = autoOrderAmt >= 10000 ? `약 ${(autoOrderAmt / 10000).toFixed(autoOrderAmt % 10000 === 0 ? 0 : 1)}만 원` : `약 ${autoOrderAmt.toLocaleString()}원`;
     setLimitToastMsg(
       startRealNow
-        ? `🔥 실전 한도 [${limitLabel}] 설정 완료! 실전 자동매매가 즉시 가동되었습니다!`
-        : `🔒 실전 계좌 한도가 [${limitLabel}]으로 자유 설정되었습니다! (최대 ${autoMaxPos}종목 분할 매수)`
+        ? `🔥 실전 한도 [${limitLabel}] 설정 완료! (최대 ${autoMaxPos}종목 · 종목당 ${perStockLabel} 분산) 실전 자동매매 가동!`
+        : `🔒 실전 한도가 [${limitLabel}]으로 적용되었습니다! (최대 ${autoMaxPos}종목 · 종목당 ${perStockLabel} 자동 분산투자)`
     );
     setTimeout(() => setLimitToastMsg(null), 3500);
 
@@ -781,7 +798,6 @@ export default function AdminAutoTradePage() {
       const hdrs = await getAdminHeaders(true);
       const payload: Record<string, unknown> = {
         max_total_invest_krw: limitVal,
-        max_positions: autoMaxPos,
         order_amount_krw: autoOrderAmt,
       };
       if (startRealNow) {
@@ -854,12 +870,29 @@ export default function AdminAutoTradePage() {
   }
 
   const cfg = data?.config || {};
-  const configuredMaxPos = Number(maxPositions || cfg.max_positions || 7);
+  const isRealView = viewWindow === "REAL";
+  const activeRealLimit = cfg.max_total_invest_krw !== undefined ? Number(cfg.max_total_invest_krw) : Number(maxTotalInvestKrw);
+  const realPlanSlots =
+    activeRealLimit === 0
+      ? 6
+      : activeRealLimit <= 60000
+      ? 2
+      : activeRealLimit <= 180000
+      ? 3
+      : activeRealLimit <= 400000
+      ? 4
+      : activeRealLimit <= 1500000
+      ? 5
+      : 6;
+  const realPlanOrderAmt =
+    activeRealLimit === 0
+      ? 1500000
+      : Math.max(15000, Math.floor((activeRealLimit * 0.9) / realPlanSlots));
+  const configuredMaxPos = isRealView ? realPlanSlots : Number(maxPositions || cfg.max_positions || 5);
   const activePaperSeed = Number(paperSeedKrw || cfg.paper_seed_krw || 20000000);
   const paperSeedLabel = activePaperSeed >= 10000 ? `${(activePaperSeed / 10000).toLocaleString()}만원` : `${activePaperSeed.toLocaleString()}원`;
   const realPositions = data?.real_positions || [];
   const paperPositions = data?.paper_positions || [];
-  const isRealView = viewWindow === "REAL";
 
   const summary = isRealView
     ? { ...(data?.summary || {}), ...(data?.real_summary || {}) }
@@ -1567,7 +1600,10 @@ export default function AdminAutoTradePage() {
                       실전 계좌 시드머니(투자 한도) 자유 설정
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-200 text-[11px] font-mono font-bold">
-                      지정 한도: ₩{(cfg.max_total_invest_krw !== undefined ? cfg.max_total_invest_krw : maxTotalInvestKrw).toLocaleString()}원
+                      지정 한도: {activeRealLimit === 0 ? "무제한 (계좌 전액)" : `₩${activeRealLimit.toLocaleString()}원`}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-200 text-[11px] font-mono font-bold">
+                      📊 자동 분산: 최대 {realPlanSlots}종목 · 종목당 약 ₩{realPlanOrderAmt.toLocaleString()}원 (90% 투자)
                     </span>
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[11px] font-black ${
@@ -1580,11 +1616,11 @@ export default function AdminAutoTradePage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-300 leading-relaxed">
-                    💡 <strong className="text-blue-200">10만 원 고정이 절대 아닙니다!</strong> 대표님께서 1원 단위까지 원하시는 금액(예: 30만 원, 50만 원, 100만 원, 500만 원 또는 직접 입력)을 자유롭게 설정하실 수 있습니다. 대표님의 증권 계좌 예수금이 아무리 많아도,{" "}
+                    💡 <strong className="text-blue-200">10만 원 고정이 절대 아닙니다!</strong> 대표님께서 원하시는 금액(5만 원, 10만 원, 30만 원, 50만 원, 100만 원, 500만 원, 1,000만 원 등)을 설정하시면,{" "}
                     <strong className="text-white underline decoration-blue-400 underline-offset-2">
-                      여기서 직접 정하신 한도 금액 내에서만
+                      설정된 금액 규모에 맞춰 AI가 자동으로 분산 종목 수({realPlanSlots}종목)와 1종목당 투자금(약 ₩{realPlanOrderAmt.toLocaleString()}원, 한도의 약 90% 투자)을 맞춤 계산하여
                     </strong>{" "}
-                    AI가 안전하게 쪼개어 자동 매매하므로 예수금이 1원도 초과 지출되지 않습니다.
+                    분산 투자합니다.
                   </p>
                 </div>
               </div>

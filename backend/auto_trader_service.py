@@ -1293,15 +1293,58 @@ def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool,
     return {"ok": False, "msg": last_err}
 
 
+def _calc_real_allocation_plan(real_limit_krw: int, cash_krw: int = 0) -> Dict[str, int]:
+    """
+    [🏦 실전 계좌(KIS_REAL) 설정 금액별 맞춤형 자동 분산투자 설계 엔진]
+    - 10만 원으로 고정하지 않고, 대표님이 설정한 실전 한도(max_total_invest_krw) 금액에 맞춰
+      분산 종목 수(real_max_positions)와 1종목당 매수 금액(real_order_amount_krw, 한도의 약 90% 투자)을 동적으로 계산합니다.
+      * ~6만 원 이하: 2종목 분산 (예: 5만 원 -> 종목당 약 2.25만 원)
+      * 6만~18만 원: 3종목 분산 (예: 10만 원 -> 종목당 약 3만 원씩 3종목 분산)
+      * 18만~40만 원: 4종목 분산 (예: 30만 원 -> 종목당 약 6.75만 원씩 4종목 분산)
+      * 40만~150만 원: 5종목 분산 (예: 50만 원 -> 9만 원×5종목 / 100만 원 -> 18만 원×5종목)
+      * 150만 원 초과 / 무제한: 6종목 분산 (예: 300만 원 -> 45만 원×6종목 / 1,000만 원 -> 150만 원×6종목)
+    """
+    if real_limit_krw == 0:
+        eff_cap = max(100000, int(cash_krw or 10000000))
+    else:
+        eff_cap = max(30000, int(real_limit_krw))
+
+    if eff_cap <= 60000:
+        real_slots = 2
+    elif eff_cap <= 180000:
+        real_slots = 3
+    elif eff_cap <= 400000:
+        real_slots = 4
+    elif eff_cap <= 1500000:
+        real_slots = 5
+    else:
+        real_slots = 6
+
+    per_stock = max(15000, int((eff_cap * 0.90) // real_slots))
+    return {
+        "effective_cap_krw": eff_cap,
+        "real_max_positions": real_slots,
+        "real_order_amount_krw": per_stock,
+    }
+
+
 # ─────────────────────────────────────────────────────────────
 # 시간대별 맞춤 후보군(Top 10) 스캔 및 채점 빌더 (주간 KR / 야간 US)
 # ─────────────────────────────────────────────────────────────
 def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List[Dict[str, Any]]:
     cfg = state.get("config", {})
+    acct = state.get("account", {})
     fx_rate = 1355.0
-    order_budget = int(cfg.get("order_amount_krw", 2000000))
-    max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
-    effective_single_limit = min(order_budget, max_invest_cap) if max_invest_cap > 0 else order_budget
+
+    # 현재 운전 모드에 맞게 1종목당 매수 가용 예산(effective_single_limit) 산출
+    if cfg.get("mode", "AI_PAPER") in ("KIS_REAL", "KIS_VIRTUAL"):
+        real_limit_val = int(cfg.get("max_total_invest_krw", 0) or 0)
+        plan = _calc_real_allocation_plan(real_limit_val, int(acct.get("cash_krw", 0) or 0))
+        effective_single_limit = int(plan["real_order_amount_krw"] * 1.2)
+    else:
+        paper_seed_val = max(50000, int(cfg.get("paper_seed_krw", 10000000) or 10000000))
+        paper_slots = max(1, min(6, int(cfg.get("max_positions", 5) or 5)))
+        effective_single_limit = max(50000, int((paper_seed_val * 0.88) // paper_slots))
 
     universe = list(KR_UNIVERSE if active_market == "KR" else US_UNIVERSE)
     existing_syms = {u["symbol"] for u in universe}
@@ -1377,16 +1420,15 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
             scored["reason"] = "🇺🇸[야간 미국장 실시간 타점] · " + scored["reason"]
 
         unit_krw = scored["price"] * (fx_rate if scored["is_us"] else 1.0)
-        # [스마트 예산 최적화]: 사용자가 설정한 1회 매수 한도(예: 5만원, 10만원)에 딱 맞는 알짜 종목 상위 배치!
+        # [스마트 예산 최적화]: 설정된 시드머니/실전 한도에서 계산된 1종목당 매수 예산에 맞는 종목을 자동 우선 배치!
         if effective_single_limit > 0:
             if 0 < unit_krw <= effective_single_limit:
-                # 1주당 가격이 1회 예산 이내이면 가산점 부여하여 최우선 추천!
-                scored["ai_score"] = min(99, scored["ai_score"] + 15)
-                scored["reason"] = f"💰[소액예산 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
+                if effective_single_limit <= 250000:
+                    scored["ai_score"] = min(99, scored["ai_score"] + 12)
+                    scored["reason"] = f"💰[설정예산 맞춤 {int(unit_krw):,}원/주] · " + scored["reason"]
             elif unit_krw > effective_single_limit:
-                # 1주당 가격이 1회 예산을 초과하면 점수 감점하여 한도 내 종목들이 1~5위에 오르도록 유도
                 scored["ai_score"] = max(10, scored["ai_score"] - 35)
-                scored["reason"] = f"⚠️[1회 한도 {effective_single_limit:,}원 초과] · " + scored["reason"]
+                scored["reason"] = f"⚠️[1종목 배분한도 {effective_single_limit:,}원 초과] · " + scored["reason"]
 
         return scored
 
@@ -1635,14 +1677,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             ),
         )
     else:
-        order_budget = int(cfg.get("order_amount_krw", 2000000))
         max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
-        cfg_max = int(cfg.get("max_positions", 7) or 7)
-        if max_invest_cap <= 1000000 or cfg_max <= 3:
-            total_allowed_pos = cfg_max
-        else:
-            elastic_buffer = int(cfg.get("elastic_reserve_slots", 2) or 2)
-            total_allowed_pos = cfg_max + elastic_buffer
+        real_plan = _calc_real_allocation_plan(max_invest_cap, int(acct.get("cash_krw", 0) or 0))
+        cfg_max = real_plan["real_max_positions"]
+        total_allowed_pos = real_plan["real_max_positions"]
+        order_budget = real_plan["real_order_amount_krw"]
 
     # [리스크 방어 ①] 시장 전체 투매/폭락장 서킷브레이커 (전체 유니버스 평균 등락률이 -3.0% 이하일 때 신규 매수 일시 정지 및 현금 보존)
     avg_market_chg = (
@@ -1693,8 +1732,19 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 continue
 
             unit_price_krw = cand["price"] * (fx_rate if cand["is_us"] else 1.0)
-            alloc_krw = min(order_budget, acct["cash_krw"], rem_cap)
-            qty = int(alloc_krw // unit_price_krw) if unit_price_krw > 0 else 0
+            max_affordable_krw = min(acct["cash_krw"], rem_cap) if max_invest_cap > 0 else acct["cash_krw"]
+            alloc_krw = min(order_budget, max_affordable_krw)
+            if unit_price_krw <= 0:
+                continue
+            if alloc_krw >= unit_price_krw:
+                qty = max(1, int(round(alloc_krw / unit_price_krw)))
+                while qty > 1 and int(round(qty * unit_price_krw)) > max_affordable_krw:
+                    qty -= 1
+            elif unit_price_krw <= order_budget * 1.25 and unit_price_krw <= max_affordable_krw:
+                # 1종목 목표 배분액(예: 3만원)보다 주가가 소폭 높은 알짜 종목(예: 3만3천원)도 잔여 한도 내라면 1주 편입 허용
+                qty = 1
+            else:
+                qty = 0
             if qty <= 0:
                 continue
 
@@ -1916,7 +1966,6 @@ def reset_paper_account(initial_capital_krw: int = 20000000) -> Dict[str, Any]:
     seed_krw = max(50000, int(initial_capital_krw or 20000000))
     state["config"]["paper_seed_krw"] = seed_krw
     state["config"]["initial_capital_krw"] = seed_krw
-    state["config"]["max_total_invest_krw"] = seed_krw
     state["config"]["mode"] = "AI_PAPER"
     state["config"]["kis_order_enabled"] = False
     state["account"] = {
@@ -1961,29 +2010,18 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
                     continue
             state["config"][k] = v
 
-    # 1-1. 실전 계좌 최대 투자 한도 (max_total_invest_krw) 독립 설정 (가상 시드에 절대 영향 주지 않음!)
+    # 1-1. 실전 계좌 최대 투자 한도 (max_total_invest_krw) 설정 금액에 따른 맞춤형 자동 분산투자 설계 (10만 원 고정 절대 없음!)
     if "max_total_invest_krw" in new_cfg and new_cfg["max_total_invest_krw"] is not None:
         raw_limit = int(new_cfg["max_total_invest_krw"])
         real_limit = 0 if raw_limit == 0 else max(30000, raw_limit)
         state["config"]["max_total_invest_krw"] = real_limit
 
-        if real_limit == 0:
-            state["config"]["initial_capital_krw"] = int(state.get("account", {}).get("cash_krw", 10000000) or 10000000)
-            calc_real_pos = max(1, int(new_cfg.get("max_positions") or 10))
-            state["config"]["max_positions"] = calc_real_pos
-            state["config"]["order_amount_krw"] = max(10000, int(new_cfg.get("order_amount_krw") or 1000000))
-        else:
-            state["config"]["initial_capital_krw"] = real_limit
-            if "max_positions" in new_cfg and new_cfg["max_positions"] is not None:
-                calc_real_pos = max(1, int(new_cfg["max_positions"]))
-            else:
-                calc_real_pos = 2 if real_limit <= 200000 else 3 if real_limit <= 500000 else 5 if real_limit <= 1000000 else 7 if real_limit <= 4000000 else 10
-            state["config"]["max_positions"] = calc_real_pos
-
-            if "order_amount_krw" in new_cfg and new_cfg["order_amount_krw"] is not None:
-                state["config"]["order_amount_krw"] = max(10000, int(new_cfg["order_amount_krw"]))
-            else:
-                state["config"]["order_amount_krw"] = max(15000, real_limit // max(1, calc_real_pos))
+        real_plan = _calc_real_allocation_plan(real_limit, int(state.get("account", {}).get("cash_krw", 10000000) or 10000000))
+        state["config"]["real_max_positions"] = real_plan["real_max_positions"]
+        state["config"]["real_order_amount_krw"] = real_plan["real_order_amount_krw"]
+        state["config"]["order_amount_krw"] = real_plan["real_order_amount_krw"]
+        if state["config"].get("mode") == "KIS_REAL":
+            state["config"]["initial_capital_krw"] = real_plan["effective_cap_krw"]
 
     # 1-2. 가상 모의투자 시드머니 (paper_seed_krw) 완전 독립 설정 (실전 계좌 한도와 완전 분리!)
     if "paper_seed_krw" in new_cfg and new_cfg["paper_seed_krw"] is not None:
@@ -2005,10 +2043,11 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     # [가용 예수금(cash_krw) 실시간 즉시 재계산 — 모드별로 각각 독립 계산]
     if new_mode == "KIS_REAL":
         raw_cap = state["config"].get("max_total_invest_krw")
-        if raw_cap is not None and int(raw_cap) == 0:
-            effective_cap = int(state.get("account", {}).get("cash_krw", 10000000) or 10000000)
-        else:
-            effective_cap = int(raw_cap or 100000)
+        real_plan = _calc_real_allocation_plan(
+            int(raw_cap) if raw_cap is not None else 1000000,
+            int(state.get("account", {}).get("cash_krw", 10000000) or 10000000),
+        )
+        effective_cap = real_plan["effective_cap_krw"]
         current_invested = sum(
             int(round(float(p.get("avg_price", 0)) * int(p.get("qty", 0)) * (1355.0 if p.get("is_us") else 1.0)))
             for p in state.get("positions", [])
@@ -2665,8 +2704,14 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     if isinstance(state.get("config"), dict):
         state["config"]["paper_seed_krw"] = paper_seed_krw
     paper_summary = _calc_group_metrics(paper_positions, paper_seed_krw, realized_krw=int(acct.get("realized_pnl_krw", 0)))
-    real_cap = max_total_invest_krw if max_total_invest_krw > 0 else int(cfg.get("initial_capital_krw", 20000000) or 20000000)
+
+    real_plan = _calc_real_allocation_plan(max_total_invest_krw, int(acct.get("cash_krw", 20000000) or 20000000))
+    cfg["real_max_positions"] = real_plan["real_max_positions"]
+    cfg["real_order_amount_krw"] = real_plan["real_order_amount_krw"]
+    real_cap = real_plan["effective_cap_krw"]
     real_summary = _calc_group_metrics(real_positions, real_cap)
+    real_summary["real_max_positions"] = real_plan["real_max_positions"]
+    real_summary["real_order_amount_krw"] = real_plan["real_order_amount_krw"]
 
     all_logs = state.get("trade_logs", [])[:60]
     real_trade_logs = [lg for lg in all_logs if "[한투주문 완료" in str(lg.get("reason", ""))][:40]
