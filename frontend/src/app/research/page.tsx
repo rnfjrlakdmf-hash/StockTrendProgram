@@ -239,7 +239,7 @@ export default function DomesticStockResearchPage() {
                     } else {
                         setItems(data.items.length > 0 ? data.items : (q ? [] : FALLBACK_REPORTS));
                         setConsensus(data.consensus || null);
-                        setTotalCount(data.total_count || data.items.length);
+                        setTotalCount(Number(data.total_count) || data.items.length);
                         setSelectedBroker("ALL");
                     }
                 }
