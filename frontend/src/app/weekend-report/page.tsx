@@ -653,14 +653,14 @@ export default function WeekendReportPage() {
                                             <div className="mt-3.5 pt-3.5 border-t border-white/10 space-y-3">
                                                 <div className="flex items-center gap-2 text-xs font-black text-zinc-300">
                                                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                                                    <span>이 일정이 증시에 미치는 실전 파급효과 & 투자 전략</span>
+                                                    <span>이 일정이 증시에 미치는 파급효과 & 데이터 관찰 포인트</span>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     <div className="p-3.5 rounded-xl bg-gradient-to-br from-blue-950/40 to-indigo-950/20 border border-blue-500/20 space-y-1.5">
                                                         <div className="flex items-center gap-2 text-xs font-black text-blue-300">
                                                             <Globe className="w-3.5 h-3.5 text-blue-400" />
-                                                            <span>🇺🇸 해외(미국) 증시 영향</span>
+                                                            <span>🇺🇸 해외(미국) 증시 파급 경로</span>
                                                         </div>
                                                         <p className="text-xs text-zinc-300 leading-relaxed font-normal">
                                                             {impact.globalImpact}
@@ -670,7 +670,7 @@ export default function WeekendReportPage() {
                                                     <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/20 space-y-1.5">
                                                         <div className="flex items-center gap-2 text-xs font-black text-emerald-300">
                                                             <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                                                            <span>🇰🇷 국내(한국) 증시 영향</span>
+                                                            <span>🇰🇷 국내(한국) 증시 파급 경로</span>
                                                         </div>
                                                         <p className="text-xs text-zinc-300 leading-relaxed font-normal">
                                                             {impact.domesticImpact}
@@ -680,7 +680,7 @@ export default function WeekendReportPage() {
 
                                                 {impact.keyTip && (
                                                     <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2 text-xs text-amber-200/90 leading-relaxed">
-                                                        <span className="font-black text-amber-400 shrink-0">🎯 핵심 관전 팁:</span>
+                                                        <span className="font-black text-amber-400 shrink-0">🔍 핵심 데이터 관찰 팁:</span>
                                                         <span>{impact.keyTip}</span>
                                                     </div>
                                                 )}
@@ -744,7 +744,7 @@ export default function WeekendReportPage() {
                                                 </div>
 
                                                 <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-2 text-xs text-blue-200/90 leading-relaxed">
-                                                    <span className="font-black text-blue-400 shrink-0">🎯 차주 실전 체크포인트:</span>
+                                                    <span className="font-black text-blue-400 shrink-0">🔍 차주 수급·지표 관찰 포인트:</span>
                                                     <span>{sectorDive.nextWeekCheckpoint}</span>
                                                 </div>
 
@@ -783,14 +783,6 @@ export default function WeekendReportPage() {
     };
 
     const report = data?.report || FALLBACK_WEEKEND_REPORT.report!;
-    const researchList: SecuritiesResearchItem[] =
-        report?.securities_research && report.securities_research.length > 0
-            ? report.securities_research
-            : DEFAULT_SECURITIES_RESEARCH;
-
-    const filteredResearch = selectedResearchCat === "ALL"
-        ? researchList
-        : researchList.filter(r => r.category === selectedResearchCat);
 
     const summaryCombinedText = (report?.week_summary_bullets || []).join(" ");
     const summaryTerms = getRelevantEconomicTerms(summaryCombinedText, 4);
@@ -816,7 +808,7 @@ export default function WeekendReportPage() {
                     <span>
                         {(data as any)?.is_current_weekend 
                             ? "🔥 주말 특별 라이브 리포트 (일요일 자정 마감)" 
-                            : "주간 마켓 & 증권사 리서치 통합 브리핑"}
+                            : "주간 글로벌 매크로 & 수급 복기 브리핑"}
                     </span>
                 </div>
             </div>
@@ -839,14 +831,14 @@ export default function WeekendReportPage() {
                                     {(data as any)?.is_current_weekend ? "VVIP WEEKEND BRIEFING" : "VVIP MARKET BRIEFING"}
                                 </span>
                                 <span className="text-xs font-mono font-bold text-gray-300">
-                                    {(data as any)?.is_current_weekend ? "WEEKEND EDITION" : "WEEKLY EDITION"}
+                                    {(data as any)?.is_current_weekend ? "WEEKEND EDITION" : "WEEKLY MACRO EDITION"}
                                 </span>
                             </div>
                             <h1 className="text-2xl md:text-3xl lg:text-[28px] font-black text-white tracking-tight leading-snug">
-                                {report?.title || "주말 마켓 인사이트: 지난주 시장 데이터와 다음 주 경제 일정"}
+                                {report?.title || "주말 마켓 인사이트: 지난주 시장 수급 복기와 다음 주 거시경제 일정"}
                             </h1>
                             <p className="text-sm text-zinc-300 mt-1 font-medium">
-                                {report?.subtitle || "이번 주 시장 핵심 팩트 요약, 주요 증권사 리서치 브리핑 및 다음 주 주요 경제 캘린더"}
+                                한 주간 시장 전체의 큰 흐름(지수·환율·금리·테마 수급)과 다음 주 주요 경제 캘린더를 복기합니다.
                             </p>
                         </div>
                     </div>
@@ -882,16 +874,16 @@ export default function WeekendReportPage() {
                     {/* 주간 핵심 마켓 펄스 요약 배지 바 */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-emerald-400 uppercase">🇰🇷 국내 수급 핵심</span>
-                            <span className="text-xs sm:text-sm font-black text-white">기관 순매수 · 하방 지지</span>
+                            <span className="text-[10px] font-bold text-emerald-400 uppercase">🇰🇷 국내 수급 흐름</span>
+                            <span className="text-xs sm:text-sm font-black text-white">기관 순매수 · 하방 지지력</span>
                         </div>
                         <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex flex-col gap-1">
                             <span className="text-[10px] font-bold text-blue-400 uppercase">🇺🇸 글로벌 모멘텀</span>
                             <span className="text-xs sm:text-sm font-black text-white">AI 설비투자(CapEx) 지속</span>
                         </div>
                         <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col gap-1">
-                            <span className="text-[10px] font-bold text-purple-400 uppercase">📑 증권사 컨센서스</span>
-                            <span className="text-xs sm:text-sm font-black text-white">조정 시 실적주 분할매수</span>
+                            <span className="text-[10px] font-bold text-purple-400 uppercase">📊 시장 밸류에이션</span>
+                            <span className="text-xs sm:text-sm font-black text-white">실적·수급 펀더멘털 중심</span>
                         </div>
                         <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col gap-1">
                             <span className="text-[10px] font-bold text-amber-400 uppercase">🎯 주목 밸류체인</span>
@@ -976,7 +968,7 @@ export default function WeekendReportPage() {
                                     </div>
                                 </div>
                                 <span className="text-[11px] font-bold text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-3 py-1 rounded-full self-start sm:self-auto">
-                                    수급 배경 · 핵심 밸류체인 · 차주 대응 팁 포함
+                                    수급 배경 · 핵심 밸류체인 · 차주 관찰 포인트 포함
                                 </span>
                             </div>
 
@@ -985,184 +977,113 @@ export default function WeekendReportPage() {
                     </section>
                 )}
 
-                {/* SECTION 03. 주요 증권사 최신 리서치 & 애널리스트 브리핑 (NEW!) */}
+                {/* SECTION 03. 주간 글로벌 매크로 온도계 & 수급·환율·금리 3대 관찰 포인트 (리서치 센터와 100% 역할 분리!) */}
                 <section className="relative rounded-3xl p-6 md:p-8 shadow-2xl border bg-gradient-to-br from-purple-950/25 via-zinc-950 to-zinc-950 border-purple-500/35 overflow-hidden space-y-6">
                     <div className="absolute -top-10 -right-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
                         <div className="flex items-center gap-3.5">
                             <div className="p-3 bg-gradient-to-br from-purple-500/25 to-indigo-600/15 border border-purple-500/40 rounded-2xl text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                                <FileText className="w-6 h-6" />
+                                <Target className="w-6 h-6" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-[11px] font-mono font-bold text-purple-400 tracking-widest uppercase">
-                                        SECTION 03 · SECURITIES FIRM RESEARCH
+                                        SECTION 03 · WEEKLY MACRO & FLOW PLAYBOOK
                                     </span>
                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-400/30">
-                                        실시간 증권사 컨센서스 연동
+                                        시장 전체 숲(Macro) 점검
                                     </span>
                                 </div>
                                 <h2 className="text-lg md:text-xl font-black text-white mt-0.5">
-                                    주요 증권사 최신 리서치 & 초보자 눈높이 브리핑
+                                    차주 시장을 움직일 3대 매크로 변수 (환율 · 금리 · 수출/실적)
                                 </h2>
                                 <p className="text-xs text-zinc-400 mt-0.5">
-                                    국내 주요 증권사 애널리스트들이 발표한 시황·산업·종목 리포트 핵심과 쉬운 해설을 한눈에 확인하세요.
+                                    개별 종목을 보기 전에 반드시 먼저 확인해야 할 시장 전체의 자금 물줄기 3가지입니다.
                                 </p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* 카테고리 필터 탭 */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            {[
-                                { id: "ALL", label: "전체 리포트" },
-                                { id: "시황·투자전략", label: "📊 시황·투자전략" },
-                                { id: "산업·섹터분석", label: "🏭 산업·섹터분석" },
-                                { id: "종목·목표주가", label: "🏢 종목·목표주가" },
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setSelectedResearchCat(tab.id)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
-                                        selectedResearchCat === tab.id
-                                            ? "bg-purple-500 text-white border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]"
-                                            : "bg-zinc-900/80 text-zinc-300 border-white/10 hover:bg-zinc-800"
-                                    }`}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-5 rounded-2xl bg-gradient-to-b from-purple-950/35 to-zinc-900/60 border border-purple-500/25 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    변수 01 · 외국인 수급 나침반
+                                </span>
+                                <span className="text-lg">💱</span>
+                            </div>
+                            <h4 className="text-base font-black text-white">
+                                원/달러 환율 & 외국인 선물 수급
+                            </h4>
+                            <p className="text-xs text-zinc-300 leading-relaxed">
+                                외국인 투자자 입장에서 원/달러 환율이 급등(원화 약세)하면 가만히 있어도 환차손이 발생하기 때문에 코스피200 선물과 대형주를 기계적으로 매도하는 경향이 있습니다. 반대로 환율 상승세가 진정되면 반도체·자동차 등 시가총액 상위주로 외국인 패시브 자금이 가장 먼저 복귀합니다.
+                            </p>
+                            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-purple-200">
+                                <strong className="text-purple-400">🔍 관찰 지표:</strong> 장중 원/달러 환율의 고점 돌파 여부 및 외국인 코스피200 선물 순매수 전환 시점
+                            </div>
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-gradient-to-b from-blue-950/35 to-zinc-900/60 border border-blue-500/25 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    변수 02 · 기술주 밸류에이션 기준
+                                </span>
+                                <span className="text-lg">🏦</span>
+                            </div>
+                            <h4 className="text-base font-black text-white">
+                                미국 10년물 국채금리 & 빅테크 CapEx
+                            </h4>
+                            <p className="text-xs text-zinc-300 leading-relaxed">
+                                미국 10년물 국채 금리는 전 세계 위험자산의 ‘할인율(이자 부담)’ 역할을 합니다. 국채 금리가 안정세를 유지하고 미국 빅테크(엔비디아·MS·구글 등)의 AI 데이터센터 설비투자(CapEx) 지출이 유지될수록 국내 HBM 반도체 및 초고압 전력기기 밸류체인의 실적 가시성이 높아집니다.
+                            </p>
+                            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-blue-200">
+                                <strong className="text-blue-400">🔍 관찰 지표:</strong> 미국 10년물 국채 금리 추이 및 필라델피아 반도체 지수(SOX) 동조화 여부
+                            </div>
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-gradient-to-b from-emerald-950/35 to-zinc-900/60 border border-emerald-500/25 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    변수 03 · 펀더멘털 성적표 검증
+                                </span>
+                                <span className="text-lg">📦</span>
+                            </div>
+                            <h4 className="text-base font-black text-white">
+                                관세청 수출 잠정치 & 실적 컨센서스
+                            </h4>
+                            <p className="text-xs text-zinc-300 leading-relaxed">
+                                매월 11일·21일 발표되는 관세청 수출입 잠정치는 기업들의 분기 실적이 발표되기 전에 실제 해외 판매량을 가장 먼저 알려주는 선행 성적표입니다. 반도체, 변압기, 선박, 바이오(CDMO), 화장품 등 핵심 품목의 전년 동기 대비 수출 증가율이 유지되는지 비교합니다.
+                            </p>
+                            <div className="p-2.5 rounded-xl bg-black/40 border border-white/10 text-[11px] text-emerald-200">
+                                <strong className="text-emerald-400">🔍 관찰 지표:</strong> 품목별 수출 증가율(YoY) 및 일회성 비용을 제외한 본업 영업이익률(OPM) 추이
+                            </div>
                         </div>
                     </div>
 
-                    {/* 리서치 카드 리스트 */}
-                    <div className="grid grid-cols-1 gap-5">
-                        {filteredResearch.map((item, rIdx) => {
-                            const researchCombined = `${item.title} ${item.raw_points.join(" ")} ${item.easy_summary} ${item.checkpoint}`;
-                            const rTerms = getRelevantEconomicTerms(researchCombined, 3);
-
-                            const isCompany = item.category.includes("종목");
-                            const isIndustry = item.category.includes("산업");
-
-                            return (
-                                <div
-                                    key={item.id || rIdx}
-                                    className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-purple-950/30 via-zinc-900/60 to-zinc-900/40 border border-purple-500/25 hover:border-purple-400/50 transition-all shadow-lg space-y-4"
-                                >
-                                    {/* 상단 메타 배지 줄 */}
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="text-xs font-black px-3 py-1 rounded-xl bg-purple-500/25 text-purple-200 border border-purple-400/40 flex items-center gap-1.5">
-                                                <Award className="w-3.5 h-3.5 text-purple-300" />
-                                                {item.broker}
-                                            </span>
-                                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border ${
-                                                isCompany
-                                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                                                    : isIndustry
-                                                        ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                                                        : "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                                            }`}>
-                                                {item.category}
-                                            </span>
-                                            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-lg bg-white/10 text-white border border-white/15">
-                                                대상: {item.target}
-                                            </span>
-                                            {item.opinion && (
-                                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                                                    투자의견: {item.opinion}
-                                                </span>
-                                            )}
-                                            {item.goal_price && (
-                                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                                    🎯 목표주가: {item.goal_price}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-2.5">
-                                            <span className="text-[11px] font-mono text-zinc-400">
-                                                발행일: {item.date}
-                                            </span>
-                                            {item.naver_url && (
-                                                <a
-                                                    href={item.naver_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-purple-300 border border-purple-500/30 transition-colors"
-                                                >
-                                                    <span>원문 리포트</span>
-                                                    <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* 리포트 제목 */}
-                                    <h4 className="text-base sm:text-lg font-black text-white tracking-tight leading-snug">
-                                        {item.title}
-                                    </h4>
-
-                                    {/* 증권사 원문 핵심 요약 불릿 */}
-                                    {item.raw_points && item.raw_points.length > 0 && (
-                                        <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-1.5">
-                                            <div className="text-[11px] font-black text-zinc-400 uppercase tracking-wider">
-                                                📋 증권사 리포트 원문 핵심 요약
-                                            </div>
-                                            <ul className="space-y-1">
-                                                {item.raw_points.map((pt, pIdx) => (
-                                                    <li key={pIdx} className="text-xs sm:text-[13px] text-zinc-300 leading-relaxed flex items-start gap-2">
-                                                        <span className="text-purple-400 font-bold shrink-0">•</span>
-                                                        <span>{pt}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {/* 💡 AI 금융 멘토의 초보자 눈높이 쉬운 해설 & 체크포인트 */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div className="md:col-span-2 p-3.5 rounded-xl bg-gradient-to-br from-purple-950/50 to-indigo-950/30 border border-purple-500/30 space-y-1.5">
-                                            <div className="flex items-center gap-1.5 text-xs font-black text-purple-300">
-                                                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                                                <span>💡 초보자를 위한 1분 눈높이 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
-                                            </div>
-                                            <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
-                                                {item.easy_summary}
-                                            </p>
-                                        </div>
-
-                                        <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/25 space-y-1.5 flex flex-col justify-center">
-                                            <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
-                                                <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                                <span>🎯 실전 투자 체크포인트</span>
-                                            </div>
-                                            <p className="text-xs text-zinc-200 leading-relaxed">
-                                                {item.checkpoint}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* 📖 리포트 속 어려운 용어 자동 풀이 */}
-                                    {rTerms.length > 0 && (
-                                        <div className="pt-3 border-t border-white/10 space-y-2">
-                                            <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
-                                                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                                                <span>📖 이 리포트에 등장한 어려운 금융·산업 용어 풀이</span>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                {rTerms.map((t, tIdx) => (
-                                                    <div key={tIdx} className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/15 flex flex-col gap-1">
-                                                        <span className="text-xs font-black text-amber-300">• {t.term}</span>
-                                                        <span className="text-[11px] text-zinc-300 leading-relaxed">{t.easyMeaning}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    {/* 전용 리서치 센터(/research) 바로가기 브릿지 배너 */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-purple-950/50 to-zinc-900 border border-indigo-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                                    📑 종목별·자산군별 상세 리포트는 전용 메뉴에서!
+                                </span>
+                            </div>
+                            <h3 className="text-sm sm:text-base font-black text-white">
+                                국내 종목별 리포트 · 미국 해외주식 · ETF · 선물/원자재 리서치를 찾으시나요?
+                            </h3>
+                            <p className="text-xs text-zinc-300">
+                                주말 마켓 인사이트는 ‘주간 시장 전체 흐름과 경제 일정’에 집중하며, 개별 기업(두산에너빌리티·대한항공·엔비디아 등)과 ETF·선물 리서치는 전용 리서치 센터에서 실시간으로 제공합니다.
+                            </p>
+                        </div>
+                        <Link
+                            href="/research"
+                            className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg transition-all"
+                        >
+                            <FileText className="w-4 h-4" />
+                            <span>통합 리서치 센터 바로가기</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
                     </div>
                 </section>
 
@@ -1191,16 +1112,16 @@ export default function WeekendReportPage() {
                                     {renderParsedContent(report.sections[1].content.split('\n').slice(0, 2).join('\n'))}
                                     <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-950/40 via-zinc-900/90 to-zinc-950 border border-blue-500/30 text-center space-y-3 shadow-xl">
                                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black">
-                                            <Lock className="w-3.5 h-3.5" /> 회원 전용 차주 중·후반 실전 대응 전략
+                                            <Lock className="w-3.5 h-3.5" /> 회원 전용 차주 중·후반 거시경제 일정 해설
                                         </div>
                                         <p className="text-xs sm:text-sm text-zinc-300 max-w-lg mx-auto leading-relaxed">
-                                            수요일~금요일 핵심 거시경제 이벤트(CPI·금통위·옵션만기 등) 발표 시점별 기관·외국인 수급 시나리오와 현금 비중 조절 가이드는 회원 로그인 후 전체 열람하실 수 있습니다.
+                                            수요일~금요일 핵심 거시경제 이벤트(CPI·금통위·옵션만기 등) 발표 시점별 국내·해외 증시 파급 경로와 경제 용어 해설은 회원 로그인 후 전체 열람하실 수 있습니다.
                                         </p>
                                         <Link
                                             href="/login"
                                             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-lg transition-all"
                                         >
-                                            🔐 무료 로그인하고 차주 전체 일정 & 대응 전략 보기
+                                            🔐 무료 로그인하고 차주 전체 일정 & 파급효과 보기
                                         </Link>
                                     </div>
                                 </div>
