@@ -1426,7 +1426,14 @@ def get_stock_research_reports(
     import html as html_lib
     from korea_data import search_stock_code, get_korean_name
 
-    valid_cats = {"company": ("종목분석", "company"), "industry": ("산업분석", "industry"), "market": ("시황정보", "daily"), "invest": ("투자전략", "invest")}
+    valid_cats = {
+        "company": ("종목분석", "company"),
+        "industry": ("산업분석", "industry"),
+        "market": ("시황정보", "daily"),
+        "invest": ("투자전략", "invest"),
+        "economy": ("거시경제·환율", "economy"),
+        "debenture": ("채권·금리", "debenture"),
+    }
     cat_key = category if category in valid_cats else "company"
     cat_label, url_slug = valid_cats[cat_key]
 
@@ -1519,7 +1526,7 @@ def get_stock_research_reports(
         write_date = item.get("writeDate") or ""
         read_count = int(item.get("readCount") or 0) if str(item.get("readCount") or "").isdigit() else 0
 
-        item_name = item.get("itemName") or resolved_name or (item.get("industryKoreanName") if cat_key == "industry" else "국내 증시")
+        item_name = item.get("itemName") or resolved_name or (item.get("industryKoreanName") if cat_key == "industry" else cat_label)
         item_code = item.get("itemCode") or resolved_code or None
         industry_name = item.get("industryKoreanName") or None
 
@@ -1543,11 +1550,9 @@ def get_stock_research_reports(
                 opinion = op_raw
 
         pts = clean_html_to_points(item.get("content") or "")
-        # 첫 줄이 제목과 동일하면 제거
         if pts and pts[0] == title and len(pts) > 1:
             pts = pts[1:]
 
-        # 초보자 맞춤형 쉬운 해설 자동 생성
         if cat_key == "company":
             gp_phrase = f"목표주가를 {goal_price}으로 제시하며 " if goal_price else ""
             op_phrase = f"'{opinion}' 의견을 낸 " if opinion else ""
@@ -1560,6 +1565,12 @@ def get_stock_research_reports(
             target_ind = industry_name or "주요 산업"
             easy_exp = f"{broker}의 '{target_ind}' 업종 분석 리포트입니다. 업황 지표와 밸류체인 내 주요 기업들의 실적 방향성을 짚어주고 있습니다."
             check_tip = f"'{target_ind}' 업종 내 대장주의 수급 흐름과 수출·수주 데이터를 함께 점검하세요."
+        elif cat_key == "economy":
+            easy_exp = f"{broker}의 글로벌 거시경제(매크로)·환율·물가 분석 리포트입니다. 미국 연준 통화정책과 환율 흐름이 국내외 자산시장에 미치는 영향을 설명합니다."
+            check_tip = "미국 물가·고용 지표 발표에 따른 달러 인덱스와 원/달러 환율의 방향성을 함께 체크하세요."
+        elif cat_key == "debenture":
+            easy_exp = f"{broker}의 채권·금리 시장 분석 리포트입니다. 국고채 및 미국 국채 금리 움직임과 중앙은행 기준금리 전망을 다룹니다."
+            check_tip = "국채 금리 하락(채권 가격 상승) 시 성장주와 장기채 ETF의 매력도가 높아진다는 점을 참고하세요."
         else:
             easy_exp = f"{broker}에서 발표한 최신 증시 시황 및 투자전략 브리핑입니다. 거시경제 지표와 수급 변화를 바탕으로 시장 대응 방향을 제시합니다."
             check_tip = "환율·금리 흐름과 외국인 현·선물 매매 동향을 함께 체크하며 포트폴리오 비중을 조절하세요."
@@ -1609,4 +1620,310 @@ def get_stock_research_reports(
         "consensus": consensus,
         "items": formatted_items
     }
+
+
+# ==============================================================================
+# 글로벌 해외주식 · 국내외 ETF · 주요 선물(지수/원자재/금리/통화) 멀티에셋 리서치 엔진
+# ==============================================================================
+
+MULTI_ASSET_CATALOG = {
+    "us_stock": [
+        {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "AI 반도체 · GPU", "desc": "글로벌 AI 데이터센터 가속기 시장 점유율 1위 기업으로, 차세대 블랙웰(Blackwell)·루빈 아키텍처 수요가 실적을 견인하고 있습니다."},
+        {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "전기차 · 자율주행(FSD) · 로봇", "desc": "전기차뿐만 아니라 완전자율주행(FSD), 로보택시(Cybercab), 휴머노이드 로봇(옵티머스) 및 에너지저장장치(ESS)로 밸류에이션이 확장되는 핵심 빅테크입니다."},
+        {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "온디바이스 AI · IT 생태계", "desc": "전 세계 20억 대 이상의 활성 기기 생태계를 바탕으로 '애플 인텔리전스(온디바이스 AI)' 교체 수요와 고마진 서비스 매출 성장을 이어가고 있습니다."},
+        {"symbol": "MSFT", "name": "마이크로소프트 (Microsoft)", "sector": "클라우드(Azure) · 기업용 AI", "desc": "애저(Azure) 클라우드 인프라와 오피스 코파일럿(Copilot)을 통해 AI 수익화를 가장 안정적으로 실현하는 글로벌 대표 소프트웨어 기업입니다."},
+        {"symbol": "META", "name": "메타 (Meta Platforms)", "sector": "AI 타겟 광고 · 오픈소스 LLM", "desc": "인스타그램·페이스북에 AI 추천 및 광고 자동화 알고리즘을 적용하여 광고 단가와 영업이익률을 빠르게 끌어올리고 있습니다."},
+        {"symbol": "GOOGL", "name": "알파벳 / 구글 (Alphabet)", "sector": "검색 · 구글 클라우드 · 제미나이", "desc": "구글 검색 및 유튜브 광고 캐시카우에 더해 제미나이(Gemini) AI가 탑재된 구글 클라우드 부문의 영업이익 기여도가 급증하고 있습니다."},
+        {"symbol": "AMZN", "name": "아마존 (Amazon)", "sector": "AWS 클라우드 · 북미 이커머스", "desc": "글로벌 1위 클라우드 서비스인 AWS의 AI 서버 수요 호조와 물류 자동화를 통한 북미 유통 마진 개선이 동시에 나타나고 있습니다."},
+        {"symbol": "AVGO", "name": "브로드컴 (Broadcom)", "sector": "맞춤형 AI 칩(ASIC) · 네트워킹", "desc": "빅테크 기업들의 자체 AI 칩(ASIC) 설계 수요와 AI 데이터센터 초고속 통신 칩 시장을 선도하는 핵심 반도체 배당성장주입니다."},
+        {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 데이터 운영체제(AIP) · 국방", "desc": "미국 정부·국방부 및 글로벌 대기업들이 AI 플랫폼(AIP)을 실제 업무에 도입하면서 상업용 매출과 영업이익이 폭발적으로 성장 중입니다."},
+        {"symbol": "TSM", "name": "TSMC", "sector": "글로벌 파운드리 독점 1위", "desc": "엔비디아·애플·AMD의 최첨단 AI 칩과 CoWoS 첨단 패키징을 독점 위탁생산하는 글로벌 반도체 공급망의 심장입니다."},
+    ],
+    "etf": [
+        {"symbol": "QQQ", "name": "Invesco QQQ (미국 나스닥100 ETF)", "sector": "미국 빅테크 · 성장주 대표 지수", "desc": "애플, 엔비디아, 마이크로소프트 등 나스닥 상장 비금융 상위 100대 혁신 기술주에 분산 투자하는 전 세계 대표 성장형 ETF입니다."},
+        {"symbol": "SPY", "name": "SPDR S&P 500 (미국 대형주 500 ETF)", "sector": "미국 시장 전체 대표 지수", "desc": "미국 경제를 대표하는 우량 대기업 500개에 시가총액 비중대로 투자하여 장기 우상향 복리 효과를 누리는 스탠다드 ETF입니다."},
+        {"symbol": "SOXX", "name": "iShares Semiconductor (미국 반도체 ETF)", "sector": "글로벌 AI · 반도체 밸류체인", "desc": "엔비디아, 브로드컴, AMD, TSMC, 마이크론 등 미국 증시에 상장된 핵심 반도체 설계·장비·제조 기업 30곳에 집중 투자합니다."},
+        {"symbol": "SCHD", "name": "Schwab US Dividend Equity (미국 배당성장 ETF)", "sector": "10년 연속 배당증가 우량 가치주", "desc": "10년 이상 꾸준히 배당금을 지급하고 현금흐름과 자기자본이익률(ROE)이 우수한 미국 알짜 배당성장주 100개에 투자합니다."},
+        {"symbol": "TLT", "name": "iShares 20+ Year Treasury (미국 20년 장기국채 ETF)", "sector": "미국 장기 국채 · 금리인하 수혜", "desc": "만기 20년 이상의 미국 정부 장기 국채에 투자하여 매월 이자 분배금을 받으면서 기준금리 인하 시 채권 가격 상승(자본차익)을 노리는 ETF입니다."},
+        {"symbol": "JEPI", "name": "JPMorgan Equity Premium Income (커버드콜 월배당)", "sector": "고배당 월분배 · 변동성 방어", "desc": "저변동성 S&P500 우량주 보유와 콜옵션 매도(커버드콜) 전략을 결합해 연 7~8% 수준의 높은 월배당 현금흐름을 추구합니다."},
+        {"symbol": "069500.KS", "name": "KODEX 200 (한국 코스피200 대표 ETF)", "sector": "국내 대형주 200 지수", "desc": "삼성전자, SK하이닉스, 현대차, KB금융 등 대한민국 코스피 시장을 대표하는 상위 200개 핵심 우량주에 한 번에 투자합니다."},
+        {"symbol": "133690.KS", "name": "TIGER 미국나스닥100 (국내상장 나스닥 ETF)", "sector": "연금저축·ISA 계좌 필수 미국지수", "desc": "국내 계좌(연금저축·IRP·ISA)에서 환전 없이 원화로 미국 나스닥100 빅테크 기업들에 장기 절세 투자할 수 있는 대표 ETF입니다."},
+    ],
+    "futures": [
+        {"symbol": "NQ=F", "name": "나스닥 100 선물 (E-mini Nasdaq 100)", "sector": "미국 기술주 지수 선물", "desc": "미국 정규장 개장 전후 24시간 거래되며 엔비디아·애플 등 빅테크 실적과 미국 물가·금리 발표에 가장 민감하게 반응하는 글로벌 선행 지표입니다."},
+        {"symbol": "ES=F", "name": "S&P 500 선물 (E-mini S&P 500)", "sector": "미국 대형주 표준 지수 선물", "desc": "전 세계 기관 투자자와 헤지펀드가 포트폴리오 헤지 및 거시경제 방향성 베팅에 가장 많이 활용하는 유동성 1위 주가지수 선물입니다."},
+        {"symbol": "GC=F", "name": "국제 금 선물 (Gold Futures · COMEX)", "sector": "안전자산 · 인플레이션 헤지", "desc": "중앙은행들의 금 매입 확대, 지정학적 리스크, 실질금리 하락 및 달러 가치 변화에 따라 움직이는 대표 안전자산 선물입니다."},
+        {"symbol": "CL=F", "name": "WTI 원유 선물 (Crude Oil Futures · NYMEX)", "sector": "에너지 · 인플레이션 핵심 변수", "desc": "글로벌 경기 수요와 중동 지정학 이슈, OPEC+ 감산 정책을 즉각 반영하며 전 세계 물가지수(CPI)와 항공·정유·화학주 실적을 좌우합니다."},
+        {"symbol": "SI=F", "name": "국제 은 선물 (Silver Futures)", "sector": "귀금속 + 태양광·AI 전력 산업재", "desc": "금과 같은 귀금속 안전자산 성격과 AI 서버·태양광 패널·전기차 전도체 등 첨단 산업용 수요를 동시에 보유한 고변동성 원자재 선물입니다."},
+        {"symbol": "HG=F", "name": "구리 선물 (Copper · '닥터 코퍼')", "sector": "전력망·변압기·글로벌 제조업 선행지표", "desc": "AI 데이터센터 전력 케이블, 초고압 변압기, 전기차 및 중국·미국 인프라 투자의 실물 경기 건강 상태를 가장 먼저 알려주는 핵심 산업 금속입니다."},
+        {"symbol": "NG=F", "name": "천연가스 선물 (Natural Gas Futures)", "sector": "발전용 에너지 · 계절성 고변동 선물", "desc": "북미·유럽의 냉난방 기온 예보, LNG 수출 터미널 가동률, AI 데이터센터 가스발전 수요에 따라 큰 변동성을 보이는 에너지 선물입니다."},
+        {"symbol": "^TNX", "name": "미국 10년물 국채금리 (US 10Y Treasury Yield)", "sector": "글로벌 자산 가격의 중력(기준점)", "desc": "전 세계 대출 금리와 주식 밸류에이션 할인율의 기준점입니다. 금리가 급등하면 기술주가 압박받고, 안정되면 증시 전반에 유동성 훈풍이 붑니다."},
+        {"symbol": "DX-Y.NYB", "name": "달러 인덱스 선물 (US Dollar Index)", "sector": "글로벌 달러 강세·약세 척도", "desc": "주요 6개국 통화 대비 미국 달러의 가치를 나타냅니다. 달러 인덱스가 하락(약달러)할 때 한국 코스피로의 외국인 순매수 유입이 강해집니다."},
+        {"symbol": "^VIX", "name": "VIX 변동성 지수 (CBOE Volatility Index)", "sector": "월가 공포지수 · 옵션 헤지 지표", "desc": "S&P500 옵션 가격에 반영된 향후 30일간의 시장 기대 변동성입니다. 보통 20 이하이면 안정, 30 이상 급등 시 패닉 셀링(과매도 반등 임박) 구간으로 해석합니다."},
+    ]
+}
+
+KR_TO_GLOBAL_QUERY_MAP = {
+    "엔비디아": "NVDA", "테슬라": "TSLA", "애플": "AAPL", "마이크로소프트": "MSFT",
+    "메타": "META", "구글": "GOOGL", "알파벳": "GOOGL", "아마존": "AMZN",
+    "브로드컴": "AVGO", "팔란티어": "PLTR", "아이온큐": "IONQ", "일라이릴리": "LLY",
+    "넷플릭스": "NFLX", "코스트코": "COST", "버크셔": "BRK-B", "코인베이스": "COIN",
+    "마이크론": "MU", "인텔": "INTC", "퀄컴": "QCOM", "로켓랩": "RKLB",
+    "나스닥선물": "NQ=F", "나스닥 선물": "NQ=F", "나스닥": "QQQ",
+    "s&p선물": "ES=F", "s&p500선물": "ES=F", "금선물": "GC=F", "금 선물": "GC=F", "금": "GC=F",
+    "원유": "CL=F", "원유선물": "CL=F", "유가": "CL=F", "wti": "CL=F",
+    "은선물": "SI=F", "은 선물": "SI=F", "구리": "HG=F", "구리선물": "HG=F",
+    "천연가스": "NG=F", "국채": "^TNX", "미국채": "^TNX", "달러": "DX-Y.NYB", "빅스": "^VIX", "공포지수": "^VIX",
+}
+
+
+def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Dict[str, Any]:
+    import yfinance as yf
+    sym = meta["symbol"]
+    name = meta.get("name", sym)
+    sector = meta.get("sector", "글로벌 자산")
+    desc = meta.get("desc", "")
+
+    price = None
+    change_pct = 0.0
+    high_52w = None
+    low_52w = None
+    ma50 = None
+    ma200 = None
+    target_mean = None
+    target_high = None
+    target_low = None
+    upside_pct = None
+    rec_key = None
+    analyst_count = 0
+    forward_pe = None
+    div_yield = None
+    currency = "KRW" if sym.endswith(".KS") or sym.endswith(".KQ") else "USD"
+
+    try:
+        tk = yf.Ticker(sym)
+        hist = tk.history(period="6mo")
+        if hist is not None and not hist.empty:
+            closes = hist["Close"].dropna()
+            if len(closes) >= 1:
+                price = float(closes.iloc[-1])
+            if len(closes) >= 2 and closes.iloc[-2] > 0:
+                change_pct = float(((closes.iloc[-1] - closes.iloc[-2]) / closes.iloc[-2]) * 100.0)
+            if len(closes) >= 20:
+                high_52w = float(hist["High"].max())
+                low_52w = float(hist["Low"].min())
+            if len(closes) >= 50:
+                ma50 = float(closes.tail(50).mean())
+            if len(closes) >= 120:
+                ma200 = float(closes.mean())
+
+        if asset_type in ["us_stock", "etf"]:
+            info = {}
+            try:
+                info = tk.info or {}
+            except Exception:
+                info = {}
+            if not price and info.get("regularMarketPrice"):
+                price = float(info["regularMarketPrice"])
+            if info.get("fiftyTwoWeekHigh"):
+                high_52w = float(info["fiftyTwoWeekHigh"])
+            if info.get("fiftyTwoWeekLow"):
+                low_52w = float(info["fiftyTwoWeekLow"])
+            if info.get("fiftyDayAverage"):
+                ma50 = float(info["fiftyDayAverage"])
+            if info.get("twoHundredDayAverage"):
+                ma200 = float(info["twoHundredDayAverage"])
+
+            if info.get("targetMeanPrice"):
+                target_mean = float(info["targetMeanPrice"])
+            if info.get("targetHighPrice"):
+                target_high = float(info["targetHighPrice"])
+            if info.get("targetLowPrice"):
+                target_low = float(info["targetLowPrice"])
+            if price and target_mean and price > 0:
+                upside_pct = round(((target_mean - price) / price) * 100.0, 1)
+
+            rec_raw = (info.get("recommendationKey") or "").lower()
+            if rec_raw in ["strong_buy", "strongbuy"]:
+                rec_key = "Strong Buy (강력매수)"
+            elif rec_raw in ["buy", "outperform"]:
+                rec_key = "Buy (매수)"
+            elif rec_raw in ["hold", "neutral"]:
+                rec_key = "Hold (중립)"
+            elif rec_raw:
+                rec_key = rec_raw.upper()
+
+            analyst_count = int(info.get("numberOfAnalystOpinions") or 0)
+            if info.get("forwardPE"):
+                try:
+                    forward_pe = round(float(info["forwardPE"]), 1)
+                except Exception:
+                    pass
+            if info.get("dividendYield") or info.get("yield"):
+                try:
+                    raw_y = float(info.get("dividendYield") or info.get("yield") or 0)
+                    div_yield = round(raw_y * 100 if raw_y < 1 else raw_y, 2)
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"[MultiAssetResearch] yfinance error for {sym}: {e}")
+
+    def fmt_p(val):
+        if val is None:
+            return "-"
+        if currency == "KRW":
+            return f"{int(round(val)):,}원"
+        if sym in ["^TNX", "^VIX"]:
+            return f"{val:.2f}"
+        return f"${val:,.2f}"
+
+    trend_badge = "추세 중립 · 박스권 탐색"
+    if price and ma50:
+        if price >= ma50 * 1.01:
+            trend_badge = "📈 50일 이평선 상회 · 상승 추세 우위"
+        elif price <= ma50 * 0.99:
+            trend_badge = "📉 단기 조정 구간 · 분할 지지선 점검"
+
+    summary_points = []
+    if desc:
+        summary_points.append(desc)
+
+    if asset_type == "us_stock":
+        if target_mean and price:
+            up_str = f"+{upside_pct}%" if upside_pct and upside_pct > 0 else f"{upside_pct}%"
+            summary_points.append(
+                f"월가 투자은행(IB) 애널리스트 {analyst_count or '다수'}명의 평균 목표주가는 {fmt_p(target_mean)}(최고 {fmt_p(target_high)} ~ 최저 {fmt_p(target_low)})로, 현재가({fmt_p(price)}) 대비 {up_str} 수준입니다."
+            )
+        if ma50:
+            summary_points.append(
+                f"기술적 지표상 50일 이동평균선({fmt_p(ma50)}) 대비 현재가는 {fmt_p(price)}에 위치하며, { f'선행 PER은 약 {forward_pe}배 수준입니다.' if forward_pe else '분기 실적 가이던스가 핵심 모멘텀입니다.' }"
+            )
+        easy_summary = (
+            f"미국 증시에 상장된 '{name}'의 월가 IB 컨센서스 및 퀀트 분석 리포트입니다. "
+            f"{desc} 현재 월가 투자의견은 '{rec_key or 'Buy (매수 우위)'}'이며, 분기 실적 발표와 가이던스 상향 여부가 주가 추세의 핵심입니다."
+        )
+        checkpoint = "미국 국채 금리 및 나스닥 선물 흐름과 함께 분기 주당순이익(EPS)이 월가 컨센서스를 상회하는지 확인하세요."
+    elif asset_type == "etf":
+        if price and high_52w and low_52w:
+            summary_points.append(
+                f"현재가 {fmt_p(price)} 기준 최근 구간 최고가({fmt_p(high_52w)})와 최저가({fmt_p(low_52w)}) 사이에서 거래 중이며, 50일 평균선은 {fmt_p(ma50)}입니다."
+            )
+        summary_points.append(
+            "개별 종목의 급등락 위험(어닝 쇼크 등)을 줄이면서 해당 섹터·지수의 구조적 성장을 그대로 따라갈 수 있는 핵심 자산배분 수단입니다."
+        )
+        easy_summary = (
+            f"'{name}' ETF 리서치 분석입니다. {desc} "
+            f"개별 주식을 일일이 고르기 어려운 초보 투자자나 연금·적립식 투자자가 시장 주도 섹터에 안전하게 분산 투자하기에 적합합니다."
+        )
+        checkpoint = "ETF 매매 시에는 기초지수 추종 오차(괴리율), 총보수(운용수수료), 그리고 환헤지(H) 여부를 함께 확인하세요."
+    else:
+        # futures
+        if price and ma50:
+            summary_points.append(
+                f"현재 선물 시세는 {fmt_p(price)} (일일 변동 {change_pct:+.2f}%)이며, 50일 기준선({fmt_p(ma50)}) 대비 '{trend_badge}' 흐름을 보이고 있습니다."
+            )
+        summary_points.append(
+            "선물 시장은 현물 주식시장 개장 전 글로벌 기관과 헤지펀드들의 자금 방향성을 가장 먼저 보여주는 최전선 선행 지표입니다."
+        )
+        easy_summary = (
+            f"'{name}' 실시간 선물 리서치 브리핑입니다. {desc} "
+            f"직접 선물에 투자하지 않더라도 이 지표의 방향을 보면 오늘 밤 미국 증시와 내일 아침 한국 증시가 어떻게 움직일지 미리 읽을 수 있습니다."
+        )
+        checkpoint = "선물 투자는 레버리지(증거금) 효과가 크므로 만기 롤오버(월물 교체) 일정과 주요 경제지표(CPI·FOMC) 발표 시각의 급격한 변동성에 유의하세요."
+
+    return {
+        "id": f"{asset_type}_{sym}",
+        "asset_type": asset_type,
+        "symbol": sym,
+        "name": name,
+        "sector": sector,
+        "price": fmt_p(price),
+        "price_num": price,
+        "change_pct": round(change_pct, 2),
+        "high_52w": fmt_p(high_52w),
+        "low_52w": fmt_p(low_52w),
+        "ma50": fmt_p(ma50),
+        "trend_badge": trend_badge,
+        "target_mean": fmt_p(target_mean) if target_mean else None,
+        "target_high": fmt_p(target_high) if target_high else None,
+        "target_low": fmt_p(target_low) if target_low else None,
+        "upside_pct": upside_pct,
+        "opinion": rec_key or ("Buy (매수)" if asset_type == "us_stock" else None),
+        "analyst_count": analyst_count,
+        "forward_pe": forward_pe,
+        "div_yield": div_yield,
+        "summary_points": summary_points,
+        "easy_summary": easy_summary,
+        "checkpoint": checkpoint,
+    }
+
+
+@router.get("/multi-asset-research")
+@turbo_cache(ttl_seconds=180)
+def get_multi_asset_research(
+    asset_type: str = Query("us_stock", description="us_stock | etf | futures"),
+    q: str = Query("", description="티커 또는 종목명 검색 (예: NVDA, 엔비디아, QQQ, 나스닥 선물, 금 선물)")
+):
+    """
+    해외주식(월가 IB 컨센서스), 국내외 ETF, 글로벌 선물(지수·원자재·금리·환율) 심층 리서치 + 국내 증권사 연관 리포트 통합 API
+    """
+    import concurrent.futures
+
+    atype = asset_type if asset_type in MULTI_ASSET_CATALOG else "us_stock"
+    catalog = list(MULTI_ASSET_CATALOG[atype])
+
+    q_clean = (q or "").strip()
+    if q_clean:
+        mapped_sym = KR_TO_GLOBAL_QUERY_MAP.get(q_clean.lower()) or KR_TO_GLOBAL_QUERY_MAP.get(q_clean.replace(" ", "").lower())
+        q_upper = (mapped_sym or q_clean).upper()
+
+        matched = [
+            c for c in catalog
+            if q_upper in c["symbol"].upper() or q_clean.lower() in c["name"].lower() or q_clean.lower() in c["sector"].lower()
+        ]
+        if matched:
+            catalog = matched
+        else:
+            # 카탈로그에 없는 해외 티커/ETF를 직접 검색한 경우 실시간 동적 분석
+            custom_sym = mapped_sym or q_clean.upper()
+            catalog = [{
+                "symbol": custom_sym,
+                "name": f"{q_clean.upper()} ({custom_sym})",
+                "sector": "글로벌 상장 종목 · ETF · 선물",
+                "desc": f"'{q_clean}' 종목에 대한 실시간 시세, 이동평균 추세 및 월가 애널리스트 컨센서스 데이터를 기반으로 생성된 리서치 분석입니다."
+            }]
+
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        futures_map = [executor.submit(_fetch_single_yfinance_research, item_meta, atype) for item_meta in catalog[:8]]
+        for f in futures_map:
+            try:
+                results.append(f.result(timeout=8))
+            except Exception as e:
+                print(f"[MultiAssetResearch] Worker error: {e}")
+
+    # 해당 자산군과 관련된 국내 증권사 최신 리포트도 함께 제공
+    related_kr_reports = []
+    try:
+        if atype == "us_stock":
+            r_data = get_stock_research_reports(category="invest", q="미국", page=0, size=6)
+            related_kr_reports = r_data.get("items", [])[:4]
+        elif atype == "etf":
+            r_data = get_stock_research_reports(category="invest", q="ETF", page=0, size=6)
+            related_kr_reports = r_data.get("items", [])[:4]
+        else:
+            r_econ = get_stock_research_reports(category="economy", q="", page=0, size=4).get("items", [])[:3]
+            r_bond = get_stock_research_reports(category="debenture", q="", page=0, size=4).get("items", [])[:2]
+            related_kr_reports = r_econ + r_bond
+    except Exception as e:
+        print(f"[MultiAssetResearch] Related KR reports error: {e}")
+
+    return {
+        "status": "success",
+        "asset_type": atype,
+        "query": q_clean,
+        "items": results,
+        "related_securities_reports": related_kr_reports
+    }
+
 
