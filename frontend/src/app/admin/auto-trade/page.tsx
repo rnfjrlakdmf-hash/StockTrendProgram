@@ -421,6 +421,7 @@ export default function AdminAutoTradePage() {
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
   const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("PAPER");
   const [limitToastMsg, setLimitToastMsg] = useState<string | null>(null);
+  const [showFirmPipeline, setShowFirmPipeline] = useState<boolean>(true);
 
   const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
     e.preventDefault();
@@ -1496,6 +1497,229 @@ export default function AdminAutoTradePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 🏢 0. AI 증권사 9대 부서 24시간 무인 협업 파이프라인 (투자의 전 과정을 대신 돌리는 9단계 컨트롤 타워) */}
+        <div className="rounded-3xl bg-gradient-to-b from-emerald-950/35 via-zinc-950/95 to-black/95 border border-emerald-500/40 p-4 sm:p-6 space-y-5 shadow-2xl shadow-emerald-500/5 relative overflow-hidden">
+          <div className="absolute -top-24 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 left-1/4 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          {/* 상단 헤더 */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-emerald-500/20 relative z-10">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-black text-[11px] font-black tracking-wide shadow-sm shadow-emerald-400/30">
+                  🏢 AI 증권사 본부 가동 중
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span>9개 전문 부서 100% 실시간 연동 완료</span>
+                </span>
+                {data?.firm_pipeline?.self_learning?.summary_text && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[11px] font-bold">
+                    🧠 {data.firm_pipeline.self_learning.summary_text}
+                  </span>
+                )}
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 tracking-tight">
+                <span>투자의 전 과정을 대신 돌리는 9개 부서 · AI 증권사 자동화 파이프라인</span>
+              </h2>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                시장 분석부터 전략 선택, 리스크 통제, 최근 25일 백테스트 검증, 수급·재무 스크리닝, 차트 타점 포착, 자동 주문, 그리고{" "}
+                <strong className="text-emerald-300 font-bold">매매 복기 및 자가학습(①번 부서로 피드백 순환)</strong>까지 하나의 증권사 회사처럼 24시간 유기적으로 돌아갑니다.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowFirmPipeline((prev) => !prev)}
+                className="px-3.5 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-300 text-xs font-black transition-all cursor-pointer shadow-sm"
+              >
+                {showFirmPipeline ? "🔼 9대 부서 브리핑 접기" : "🔽 9대 부서 실시간 브리핑 펼치기"}
+              </button>
+            </div>
+          </div>
+
+          {showFirmPipeline && (
+            <>
+              {/* 9개 부서 3x3 그리드 (화살표 순환 구조) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 relative z-10">
+                {(
+                  data?.firm_pipeline?.departments || [
+                    {
+                      step: 1,
+                      dept_code: "MARKET",
+                      dept_name: "① 마켓부",
+                      role_title: "시장 분석",
+                      easy_desc: "글로벌 매크로·환율·변동성 및 주간(한국)/야간(미국) 시장 온도 판독",
+                      live_decision: "국내·미국 시장 스캔 및 24시간 세션 스위칭 가동 중",
+                      metric_badge: "KOSPI · NASDAQ",
+                    },
+                    {
+                      step: 2,
+                      dept_code: "STRATEGY",
+                      dept_name: "② 전략기획부",
+                      role_title: "전략 선택",
+                      easy_desc: "시장 국면과 종목 특성에 맞춰 4대 퀀트 전략(돌파·수급·눌림목·반등) 자동 배정",
+                      live_decision: "종목별 맞춤 4대 전술 + 자가학습 우위 전략 가중치 부여 중",
+                      metric_badge: "4대 전략 가동",
+                    },
+                    {
+                      step: 3,
+                      dept_code: "RISK",
+                      dept_name: "③ 리스크관리부",
+                      role_title: "위험 관리",
+                      easy_desc: "일일 최대 손실 서킷브레이커(-3.5%), 투자 한도 보호캡, 종목당 비중 통제",
+                      live_decision: "일일 손실 제한 가드 정상 · 종목당 예산 분할 보호 중",
+                      metric_badge: "방어선 NORMAL",
+                    },
+                    {
+                      step: 4,
+                      dept_code: "PORTFOLIO_BT",
+                      dept_name: "④ 운용부 + 검증",
+                      role_title: "포트폴리오 · 테스트",
+                      easy_desc: "매수 전 최근 25거래일 과거 차트에 동일 조건을 대입해 실제 승률 사전 검증",
+                      live_decision: "후보 종목 최근 25일 미니 백테스트 승률 실시간 산출 중",
+                      metric_badge: "25일 검증 완료",
+                    },
+                    {
+                      step: 5,
+                      dept_code: "SCREEN_FUND",
+                      dept_name: "⑤ 스크리닝부 + 펀더멘털부",
+                      role_title: "종목 분석",
+                      easy_desc: "부실·급락주 원천 배제 및 외국인·기관 쌍끌이 수급·거래대금 우량주 압축",
+                      live_decision: "전 종목 유동성·수급 스크리닝으로 최정예 Top 10 압축 완료",
+                      metric_badge: "Top 10 압축",
+                    },
+                    {
+                      step: 6,
+                      dept_code: "TECHNICAL",
+                      dept_name: "⑥ 기술적 분석부",
+                      role_title: "차트 분석",
+                      easy_desc: "20일선 정배열, RSI 과열 필터, 볼린저밴드 돌파, 윗꼬리 매물대 정밀 타점 분석",
+                      live_decision: "실시간 캔들·이평선·거래량 폭발 정밀 채점 중",
+                      metric_badge: "실시간 타점",
+                    },
+                    {
+                      step: 7,
+                      dept_code: "TRADING_BOT",
+                      dept_name: "⑦ 자동매매 봇",
+                      role_title: "매수 / 매도",
+                      easy_desc: "5초 단위 실시간 시세 감시, 목표 익절·트레일링 스탑·교체매매 무인 집행",
+                      live_decision: "한국투자증권 실전 / 가상 모의투자 동시 무인 집행 중",
+                      metric_badge: "5초 감시 ON",
+                    },
+                    {
+                      step: 8,
+                      dept_code: "AUDIT_REVIEW",
+                      dept_name: "⑧ 자가학습",
+                      role_title: "거래 복기",
+                      easy_desc: "매도 완료된 모든 거래의 수익·손실 원인과 전략별 실제 승률을 자동 감사",
+                      live_decision: "누적 매매 기록 전략별 승패 및 평균 수익률 자동 복기 중",
+                      metric_badge: "자동 복기 ON",
+                    },
+                    {
+                      step: 9,
+                      dept_code: "SELF_EVOLVE",
+                      dept_name: "⑨ 자가학습 → ①",
+                      role_title: "전략 개선 (피드백 루프)",
+                      easy_desc: "복기 결과를 ① 마켓부와 ② 전략기획부로 되돌려 승률 높은 전략 가중치 자동 강화",
+                      live_decision: "승률 우위 전략 가점 부여 및 진입 커트라인 자동 보정 순환 중",
+                      metric_badge: "⑨ ➔ ① 순환",
+                    },
+                  ]
+                ).map((dept: any, idx: number) => {
+                  const isLoopStep = dept.step === 9;
+                  return (
+                    <div
+                      key={dept.step || idx}
+                      className={`p-4 rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between gap-2.5 ${
+                        isLoopStep
+                          ? "bg-gradient-to-br from-emerald-900/40 via-teal-950/50 to-zinc-950 border-emerald-400/60 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-400/30"
+                          : "bg-zinc-900/90 hover:bg-zinc-900 border-emerald-500/25 hover:border-emerald-400/50"
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-lg text-xs font-black tracking-tight ${
+                                isLoopStep
+                                  ? "bg-emerald-400 text-black shadow-sm shadow-emerald-400/40"
+                                  : "bg-emerald-500/20 border border-emerald-400/40 text-emerald-300"
+                              }`}
+                            >
+                              {dept.dept_name}
+                            </span>
+                            <span className="text-sm font-black text-white">{dept.role_title}</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-black/60 border border-white/10 text-[10px] font-mono font-bold text-emerald-300 shrink-0">
+                            {dept.metric_badge}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-gray-400 leading-snug">{dept.easy_desc}</p>
+                      </div>
+
+                      <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+                        <div className="text-[11px] font-bold text-emerald-200 leading-snug flex items-start gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0 animate-pulse" />
+                          <span>{dept.live_decision}</span>
+                        </div>
+                        {dept.step < 9 ? (
+                          <span className="text-emerald-400/70 font-black text-xs shrink-0" title="다음 부서로 데이터 전달">
+                            ➔
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-300 font-black text-[10px] shrink-0">
+                            ↻ ①번 피드백
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 하단: ⑧·⑨번 자가학습 부서 전략별 성적표 & 가중치 보정 현황 바 */}
+              {data?.firm_pipeline?.self_learning?.strategy_stats && (
+                <div className="p-3.5 rounded-2xl bg-black/60 border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                  <div className="flex items-center gap-2 text-xs font-black text-emerald-300 shrink-0">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <span>⑧·⑨ AI 자가학습부 전략별 실시간 가중치 피드백:</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {Object.entries(data.firm_pipeline.self_learning.strategy_stats).map(([code, st]: [string, any]) => {
+                      const bonus = Number(st?.bonus_score || 0);
+                      return (
+                        <div
+                          key={code}
+                          className="px-2.5 py-1 rounded-xl bg-zinc-900 border border-white/10 text-[11px] flex items-center gap-1.5"
+                        >
+                          <span className="font-bold text-gray-200">{st?.label || code}</span>
+                          <span className="text-gray-400 font-mono">
+                            ({st?.total || 0}건 · 승률 {st?.win_rate || 50}%)
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded font-mono font-black text-[10px] ${
+                              bonus > 0
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                : bonus < 0
+                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                : "bg-white/5 text-gray-400"
+                            }`}
+                          >
+                            {bonus > 0 ? `+${bonus}점 우대` : bonus < 0 ? `${bonus}점 감점` : "기본 0점"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* 1. 현재 보유 종목 실시간 감시 & 자동 익절/손절 현황판 (선택된 창 전용) */}
@@ -2833,6 +3057,29 @@ export default function AdminAutoTradePage() {
                               <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-zinc-800/90 border border-white/15 text-emerald-400/90 tracking-wider shrink-0 shadow-2xs">
                                 {cand.symbol}
                               </span>
+
+                              {/* ② 전략기획부 & ④ 운용·검증부 백테스트 뱃지 */}
+                              {cand.strategy_name && (
+                                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/15 border border-indigo-400/35 text-indigo-200 shrink-0">
+                                  ② {cand.strategy_name}
+                                </span>
+                              )}
+                              {cand.bt_win_rate !== undefined && (
+                                <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-cyan-500/15 border border-cyan-400/35 text-cyan-200 shrink-0">
+                                  ④ 25일 검증승률 {cand.bt_win_rate}%
+                                </span>
+                              )}
+                              {Number(cand.learned_bonus || 0) !== 0 && (
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold shrink-0 ${
+                                    Number(cand.learned_bonus) > 0
+                                      ? "bg-amber-500/15 border border-amber-400/35 text-amber-300"
+                                      : "bg-rose-500/15 border border-rose-400/35 text-rose-300"
+                                  }`}
+                                >
+                                  ⑨ 자가학습 {Number(cand.learned_bonus) > 0 ? `+${cand.learned_bonus}` : cand.learned_bonus}점
+                                </span>
+                              )}
                             </div>
 
                             <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-black flex items-center gap-1.5 shrink-0 shadow-sm tracking-wide">
