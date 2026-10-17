@@ -1759,9 +1759,9 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
                     forward_pe = round(float(info["forwardPE"]), 1)
                 except Exception:
                     pass
-            if info.get("dividendYield") or info.get("yield"):
+            if info.get("trailingAnnualDividendYield") or info.get("yield"):
                 try:
-                    raw_y = float(info.get("dividendYield") or info.get("yield") or 0)
+                    raw_y = float(info.get("yield") or info.get("trailingAnnualDividendYield") or 0)
                     div_yield = round(raw_y * 100 if raw_y < 1 else raw_y, 2)
                 except Exception:
                     pass
