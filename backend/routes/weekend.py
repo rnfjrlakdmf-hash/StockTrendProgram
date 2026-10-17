@@ -40,6 +40,9 @@ async def get_weekend_report():
     is_stale = False
     if not report:
         is_stale = True
+    elif not report.get("securities_research"):
+        is_stale = True
+        print("[WeekendRoute] Stale detected: securities_research missing, regenerating upgraded report...")
     elif "generated_at" in report:
         try:
             gen_dt = datetime.fromisoformat(report["generated_at"])
