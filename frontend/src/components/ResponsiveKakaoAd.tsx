@@ -19,40 +19,28 @@ export default function ResponsiveKakaoAd({
   pcAdUnit,
   pcAdWidth = "728",
   pcAdHeight = "90",
-  className = ""
+  className = "",
 }: ResponsiveKakaoAdProps) {
-  // 구글 애드센스 최종 승인 심사 기간 동안 타사 광고 슬롯을 100% 비활성화하여 클린 레이아웃 유지
-  if (process.env.NEXT_PUBLIC_ENABLE_KAKAO_ADS !== "true") {
-    return null;
-  }
   const [isPC, setIsPC] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_ADS === 'true') {
+    if (process.env.NEXT_PUBLIC_DISABLE_ADS === "true") {
       return;
     }
 
     const ua = (navigator.userAgent || "").toLowerCase();
-    const isBot = ua.includes("googlebot") || 
-                  ua.includes("mediapartners-google") || 
-                  ua.includes("adsbot-google") || 
-                  ua.includes("feedfetcher-google") ||
-                  ua.includes("lighthouse") || 
-                  ua.includes("headless") ||
-                  ua.includes("crawler");
+    const isBot =
+      ua.includes("googlebot") ||
+      ua.includes("mediapartners-google") ||
+      ua.includes("adsbot-google") ||
+      ua.includes("feedfetcher-google") ||
+      ua.includes("lighthouse") ||
+      ua.includes("headless") ||
+      ua.includes("crawler");
 
     if (isBot) return;
-
-    // 2. 해외 구글 애드센스 심사관(아일랜드/미국/싱가포르) 심사 시 100% 클린 화면 제공
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      if (!isKorea) return;
-    } catch {
-      // ignore
-    }
 
     const checkIsPC = () => window.innerWidth >= 768;
     setIsPC(checkIsPC());
@@ -73,10 +61,20 @@ export default function ResponsiveKakaoAd({
   const currentHeight = isPC ? pcAdHeight : mobileAdHeight;
 
   useEffect(() => {
-    if (!mounted || !currentUnit || currentUnit === "DAN-PLACEHOLDER") return;
+    if (!mounted || isPC === null || !currentUnit || currentUnit === "DAN-PLACEHOLDER") return;
 
     const container = containerRef.current;
     if (!container) return;
+    if (container.offsetParent === null) return;
+
+    try {
+      const w = window as any;
+      if (w.adfit && typeof w.adfit.destroy === "function") {
+        w.adfit.destroy(currentUnit);
+      }
+    } catch {
+      // ignore
+    }
 
     container.innerHTML = "";
 
@@ -89,18 +87,26 @@ export default function ResponsiveKakaoAd({
 
     const script = document.createElement("script");
     script.type = "text/javascript";
-    script.src = "//t1.daumcdn.net/kas/static/ba.min.js";
+    script.src = "https://t1.daumcdn.net/kas/static/ba.min.js";
     script.async = true;
 
     container.appendChild(ins);
     container.appendChild(script);
 
     return () => {
+      try {
+        const w = window as any;
+        if (w.adfit && typeof w.adfit.destroy === "function") {
+          w.adfit.destroy(currentUnit);
+        }
+      } catch {
+        // ignore
+      }
       if (container) {
         container.innerHTML = "";
       }
     };
-  }, [mounted, currentUnit, currentWidth, currentHeight]);
+  }, [mounted, isPC, currentUnit, currentWidth, currentHeight]);
 
   if (!mounted || isPC === null || !currentUnit || currentUnit === "DAN-PLACEHOLDER") return null;
 
@@ -108,7 +114,7 @@ export default function ResponsiveKakaoAd({
   const numHeight = parseInt(currentHeight, 10);
 
   return (
-    <div 
+    <div
       className={`responsive-kakao-ad-wrapper flex justify-center items-center my-4 overflow-hidden ${className}`}
       style={{ minHeight: `${numHeight}px`, width: "100%" }}
     >
@@ -120,10 +126,11 @@ export default function ResponsiveKakaoAd({
           maxWidth: "100%",
           display: "flex",
           justifyContent: "center",
-          alignItems: "center"
+          alignItems: "center",
         }}
       />
     </div>
   );
 }
+
 

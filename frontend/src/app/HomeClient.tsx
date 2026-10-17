@@ -170,20 +170,27 @@ export default function HomeClient() {
               );
             })()}
 
+            {/* 상단 대시보드 하단 골든존 배너 광고 (모바일: 320x100, PC: 728x90) */}
+            <div className="my-2 flex justify-center">
+              <KakaoRevenueAd type="banner" />
+            </div>
+
             <div className="space-y-6">
               <MarketIndicators limit={10} />
+            </div>
+
+            {/* 중단 인피드 사각 배너 광고 (300x250) */}
+            <div className="my-2 flex justify-center">
+              <KakaoRevenueAd type="feed" />
             </div>
 
             {/* Recent Theory Posts Widget (AdSense SEO) */}
             <RecentTheoryWidget />
 
-
-            {/* 하단 통합 배너 광고 (모바일: 320x480 고단가 세로형, PC: 728x90, 35초 스마트 리프레시) */}
+            {/* 하단 통합 배너 광고 (모바일: 320x480 고단가 세로형, PC: 728x90) */}
             <div className="my-4 flex justify-center">
-              <KakaoRevenueAd type="bottom" autoRefreshInterval={35} />
+              <KakaoRevenueAd type="bottom" />
             </div>
-
-
 
           </div>
 

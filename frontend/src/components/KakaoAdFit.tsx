@@ -15,49 +15,66 @@ export default function KakaoAdFit({
   adHeight,
   className = "",
 }: KakaoAdFitProps) {
-  // 구글 애드센스 최종 승인 심사 기간 동안 타사 광고 슬롯 및 빈 여백(minHeight)을 100% 비활성화하여 클린 레이아웃 유지
-  if (process.env.NEXT_PUBLIC_ENABLE_KAKAO_ADS !== "true") {
-    return null;
-  }
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState<number>(1024);
+
+  const numWidth = typeof adWidth === "string" ? parseInt(adWidth, 10) : adWidth;
+  const numHeight = typeof adHeight === "string" ? parseInt(adHeight, 10) : adHeight;
 
   useEffect(() => {
-    // 1. 크롤러/검색엔진 봇 감지 (봇 방문 시 광고 호출 차단)
+    if (process.env.NEXT_PUBLIC_DISABLE_ADS === "true") {
+      return;
+    }
+
+    // 크롤러/검색엔진 봇 감지 (봇 방문 시에만 광고 호출 차단, 실사용자 100% 노출)
     const ua = (navigator.userAgent || "").toLowerCase();
-    const isBot = ua.includes("googlebot") || 
-                  ua.includes("mediapartners-google") || 
-                  ua.includes("adsbot-google") || 
-                  ua.includes("feedfetcher-google") ||
-                  ua.includes("lighthouse") || 
-                  ua.includes("headless") ||
-                  ua.includes("crawler");
+    const isBot =
+      ua.includes("googlebot") ||
+      ua.includes("mediapartners-google") ||
+      ua.includes("adsbot-google") ||
+      ua.includes("feedfetcher-google") ||
+      ua.includes("lighthouse") ||
+      ua.includes("headless") ||
+      ua.includes("crawler");
 
     if (isBot) return;
 
-    // 2. 해외 구글 애드센스 심사관(아일랜드/미국/싱가포르) 심사 시 100% 클린 화면 제공
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const isKorea = tz === "Asia/Seoul" || navigator.language.startsWith("ko");
-      if (!isKorea) return;
-    } catch {
-      // ignore
-    }
-
+    setViewportWidth(window.innerWidth);
     setMounted(true);
+
+    let resizeTimer: any;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => setViewportWidth(window.innerWidth), 250);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
     if (!mounted || !adUnit || adUnit === "DAN-PLACEHOLDER") return;
 
+    // 모바일 화면(<768px)에서 PC 전용 와이드 배너(728px)가 호출되거나,
+    // 부모 래퍼가 hidden(display:none) 상태일 때 0x0 무효 노출이 발생하는 것을 원천 차단
+    if (numWidth >= 700 && viewportWidth < 768) return;
+
     const container = containerRef.current;
     if (!container) return;
+    if (container.offsetParent === null) return;
 
-    // Next.js SPA 페이지 전환 시 깨끗하게 초기화
+    try {
+      const w = window as any;
+      if (w.adfit && typeof w.adfit.destroy === "function") {
+        w.adfit.destroy(adUnit);
+      }
+    } catch {
+      // ignore
+    }
+
     container.innerHTML = "";
 
-    // [카카오 공식 정석 규격] iframe(srcDoc)을 완전히 제거하고 순수 DOM에 직접 삽입!
-    // 이렇게 해야 카카오 애드핏 서버가 우리 매체 도메인을 100% 정상 인식하여 유효 노출/클릭 수익을 정상 집계합니다.
     const ins = document.createElement("ins");
     ins.className = "kakao_ad_area";
     ins.style.display = "none";
@@ -67,23 +84,29 @@ export default function KakaoAdFit({
 
     const script = document.createElement("script");
     script.type = "text/javascript";
-    script.src = "//t1.daumcdn.net/kas/static/ba.min.js";
+    script.src = "https://t1.daumcdn.net/kas/static/ba.min.js";
     script.async = true;
 
     container.appendChild(ins);
     container.appendChild(script);
 
     return () => {
+      try {
+        const w = window as any;
+        if (w.adfit && typeof w.adfit.destroy === "function") {
+          w.adfit.destroy(adUnit);
+        }
+      } catch {
+        // ignore
+      }
       if (container) {
         container.innerHTML = "";
       }
     };
-  }, [mounted, adUnit, adWidth, adHeight]);
+  }, [mounted, adUnit, adWidth, adHeight, numWidth, viewportWidth]);
 
-  if (!adUnit || adUnit === "DAN-PLACEHOLDER") return null;
-
-  const numWidth = typeof adWidth === "string" ? parseInt(adWidth, 10) : adWidth;
-  const numHeight = typeof adHeight === "string" ? parseInt(adHeight, 10) : adHeight;
+  if (!mounted || !adUnit || adUnit === "DAN-PLACEHOLDER") return null;
+  if (numWidth >= 700 && viewportWidth < 768) return null;
 
   return (
     <div
@@ -104,4 +127,5 @@ export default function KakaoAdFit({
     </div>
   );
 }
+
 

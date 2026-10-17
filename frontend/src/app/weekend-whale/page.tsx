@@ -235,7 +235,7 @@ export default function WeekendWhalePage() {
                         </div>
                     </section>
                 )}
-                <KakaoRevenueAd type="banner" />
+                <KakaoRevenueAd type="feed" />
 
                 {/* 3. Foreign & Institution Top 10 Facts Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
