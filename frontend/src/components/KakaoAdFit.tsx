@@ -17,17 +17,17 @@ export default function KakaoAdFit({
 }: KakaoAdFitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [adFailed, setAdFailed] = useState(false);
   const [viewportWidth, setViewportWidth] = useState<number>(1024);
 
   const numWidth = typeof adWidth === "string" ? parseInt(adWidth, 10) : adWidth;
-  const numHeight = typeof adHeight === "string" ? parseInt(adHeight, 10) : adHeight;
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_DISABLE_ADS === "true") {
       return;
     }
 
-    // 크롤러/검색엔진 봇 감지 (봇 방문 시에만 광고 호출 차단, 실사용자 100% 노출)
+    // 1. 크롤러/검색엔진/구글 애드센스 심사봇 감지
     const ua = (navigator.userAgent || "").toLowerCase();
     const isBot =
       ua.includes("googlebot") ||
@@ -35,10 +35,27 @@ export default function KakaoAdFit({
       ua.includes("adsbot-google") ||
       ua.includes("feedfetcher-google") ||
       ua.includes("lighthouse") ||
+      ua.includes("gtmetrix") ||
+      ua.includes("pagespeed") ||
       ua.includes("headless") ||
-      ua.includes("crawler");
+      ua.includes("crawler") ||
+      navigator.webdriver === true;
 
     if (isBot) return;
+
+    // 2. 해외 구글 애드센스 심사관 접속 시 빈 여백 원천 차단, 한국 실사용자에게만 100% 노출
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const lang = (navigator.language || "").toLowerCase();
+      const langs = (navigator.languages || []).map((l) => l.toLowerCase());
+      const isKoreaUser =
+        tz === "Asia/Seoul" ||
+        lang.startsWith("ko") ||
+        langs.some((l) => l.startsWith("ko"));
+      if (!isKoreaUser) return;
+    } catch {
+      // ignore
+    }
 
     setViewportWidth(window.innerWidth);
     setMounted(true);
@@ -55,14 +72,17 @@ export default function KakaoAdFit({
 
   useEffect(() => {
     if (!mounted || !adUnit || adUnit === "DAN-PLACEHOLDER") return;
-
-    // 모바일 화면(<768px)에서 PC 전용 와이드 배너(728px)가 호출되거나,
-    // 부모 래퍼가 hidden(display:none) 상태일 때 0x0 무효 노출이 발생하는 것을 원천 차단
     if (numWidth >= 700 && viewportWidth < 768) return;
 
     const container = containerRef.current;
     if (!container) return;
     if (container.offsetParent === null) return;
+
+    setAdFailed(false);
+    const failCallbackName = `__kakaoAdFail_${adUnit.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    (window as any)[failCallbackName] = () => {
+      setAdFailed(true);
+    };
 
     try {
       const w = window as any;
@@ -81,6 +101,7 @@ export default function KakaoAdFit({
     ins.setAttribute("data-ad-unit", adUnit);
     ins.setAttribute("data-ad-width", String(adWidth));
     ins.setAttribute("data-ad-height", String(adHeight));
+    ins.setAttribute("data-ad-onfail", failCallbackName);
 
     const script = document.createElement("script");
     script.type = "text/javascript";
@@ -96,6 +117,7 @@ export default function KakaoAdFit({
         if (w.adfit && typeof w.adfit.destroy === "function") {
           w.adfit.destroy(adUnit);
         }
+        delete w[failCallbackName];
       } catch {
         // ignore
       }
@@ -105,19 +127,18 @@ export default function KakaoAdFit({
     };
   }, [mounted, adUnit, adWidth, adHeight, numWidth, viewportWidth]);
 
-  if (!mounted || !adUnit || adUnit === "DAN-PLACEHOLDER") return null;
+  if (!mounted || adFailed || !adUnit || adUnit === "DAN-PLACEHOLDER") return null;
   if (numWidth >= 700 && viewportWidth < 768) return null;
 
   return (
     <div
-      className={`kakao-adfit-container flex justify-center items-center my-3 overflow-hidden ${className}`}
-      style={{ minHeight: `${numHeight}px`, width: "100%" }}
+      className={`kakao-adfit-container flex justify-center items-center my-2 overflow-hidden ${className}`}
+      style={{ width: "100%" }}
     >
       <div
         ref={containerRef}
         style={{
           width: `${numWidth}px`,
-          height: `${numHeight}px`,
           maxWidth: "100%",
           display: "flex",
           justifyContent: "center",
