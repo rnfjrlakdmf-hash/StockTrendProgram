@@ -15,6 +15,7 @@ const navigationGroups = [
     {
         groupName: "투자 아카데미 & 리서치",
         items: [
+            { name: "국내 종목별 증권사 리서치", href: "/research", icon: Newspaper, desc: "삼성전자, SK하이닉스 등 국내 전 종목의 증권사 애널리스트 리포트, 목표주가 및 초보자 눈높이 해설을 실시간 조회합니다.", badge: "LIVE" },
             { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "초보자를 위한 PER, PBR, 공매도, DART 등 46대 필수 주식 용어 해설 백과사전입니다.", badge: "필수" },
             { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 심층 리포트를 제공합니다.", badge: "칼럼" },
             { name: "1타 강사 차트 스터디", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론, 보조지표 매매타점을 쉽고 체계적으로 학습합니다.", badge: "인기" },

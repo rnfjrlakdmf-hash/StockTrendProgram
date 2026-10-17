@@ -1406,3 +1406,207 @@ def get_live_rankings(market: str = "KR", category: str = "amount"):
         return {"status": "success", "data": data}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@router.get("/research")
+@turbo_cache(ttl_seconds=180)
+def get_stock_research_reports(
+    category: str = Query("company", description="company | industry | market | invest"),
+    q: str = Query("", description="종목명, 6자리 종목코드 또는 검색 키워드"),
+    page: int = Query(0, ge=0),
+    size: int = Query(20, ge=1, le=50)
+):
+    """
+    국내 종목별·산업별·시황별 증권사 애널리스트 리서치 리포트 실시간 조회 API
+    - 종목명(예: 삼성전자, SK하이닉스, 두산에너빌리티) 또는 6자리 종목코드 검색 지원
+    - 목표주가 컨센서스(평균/최고/최저 목표주가) 및 초보자 눈높이 해설 자동 생성
+    """
+    import requests
+    import re
+    import html as html_lib
+    from korea_data import search_stock_code, get_korean_name
+
+    valid_cats = {"company": ("종목분석", "company"), "industry": ("산업분석", "industry"), "market": ("시황정보", "daily"), "invest": ("투자전략", "invest")}
+    cat_key = category if category in valid_cats else "company"
+    cat_label, url_slug = valid_cats[cat_key]
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Referer": "https://stock.naver.com/research/company"
+    }
+
+    def format_broker(name: str) -> str:
+        if not name:
+            return "주요 증권사"
+        n = name.strip()
+        if not n.endswith("증권") and not n.endswith("투자") and "금융" not in n and "경제" not in n:
+            return f"{n}증권"
+        if n.endswith("투자"):
+            return f"{n}증권"
+        return n
+
+    def clean_html_to_points(raw_html: str):
+        if not raw_html:
+            return []
+        text = re.sub(r'<br\s*/?>|</p>|</li>|</div>|</tr>', '\n', raw_html, flags=re.IGNORECASE)
+        text = re.sub(r'<[^>]+>', '', text)
+        text = html_lib.unescape(text)
+        pts = []
+        for raw_ln in text.splitlines():
+            ln = re.sub(r'^[\s•\-\*·:]+', '', raw_ln).strip()
+            if len(ln) >= 5:
+                pts.append(ln[:200])
+        return pts[:4]
+
+    q_clean = (q or "").strip()
+    resolved_code = None
+    resolved_name = None
+
+    if q_clean and cat_key == "company":
+        if re.match(r'^\d{6}$', q_clean):
+            resolved_code = q_clean
+            resolved_name = get_korean_name(q_clean) or q_clean
+        else:
+            try:
+                code_candidate = search_stock_code(q_clean)
+                if code_candidate and re.match(r'^\d{6}$', str(code_candidate)):
+                    resolved_code = str(code_candidate)
+                    resolved_name = get_korean_name(resolved_code) or q_clean
+            except Exception:
+                pass
+
+    base_url = f"https://stock.naver.com/api/stockSecurity/researches/v2/{cat_key}"
+    raw_items = []
+    total_count = 0
+
+    try:
+        # 1차: 종목코드(itemCodes)가 확인된 경우 해당 종목 전용 리포트 정확 조회
+        if resolved_code and cat_key == "company":
+            params = [("size", str(size)), ("index", str(page)), ("itemCodes", resolved_code)]
+            r = requests.get(base_url, params=params, headers=headers, timeout=6)
+            if r.status_code == 200:
+                payload = r.json()
+                raw_items = payload.get("items", [])
+                total_count = payload.get("totalCount", len(raw_items))
+
+        # 2차: 종목코드 조회 결과가 없거나 키워드 검색/타 카테고리인 경우 query 파라미터 사용
+        if not raw_items:
+            params = [("size", str(size)), ("index", str(page))]
+            if q_clean:
+                params.append(("query", q_clean))
+            r = requests.get(base_url, params=params, headers=headers, timeout=6)
+            if r.status_code == 200:
+                payload = r.json()
+                raw_items = payload.get("items", [])
+                total_count = payload.get("totalCount", len(raw_items))
+    except Exception as e:
+        print(f"[ResearchAPI] Fetch error: {e}")
+
+    formatted_items = []
+    goal_prices = []
+    buy_count = 0
+
+    for item in raw_items:
+        title = (item.get("title") or "").strip()
+        if not title:
+            continue
+        if cat_key == "industry" and ("디지털자산" in title or "비트코인" in title):
+            continue
+
+        nid = str(item.get("nid") or "")
+        broker = format_broker(item.get("brokerName") or "")
+        analyst = (item.get("analystName") or "").strip() or None
+        write_date = item.get("writeDate") or ""
+        read_count = int(item.get("readCount") or 0) if str(item.get("readCount") or "").isdigit() else 0
+
+        item_name = item.get("itemName") or resolved_name or (item.get("industryKoreanName") if cat_key == "industry" else "국내 증시")
+        item_code = item.get("itemCode") or resolved_code or None
+        industry_name = item.get("industryKoreanName") or None
+
+        gp_raw = item.get("goalPrice")
+        goal_price = None
+        goal_price_num = None
+        if gp_raw and str(gp_raw).isdigit() and int(gp_raw) > 0:
+            goal_price_num = int(gp_raw)
+            goal_price = f"{goal_price_num:,}원"
+            goal_prices.append(goal_price_num)
+
+        op_raw = (item.get("opinionText") or "").strip()
+        opinion = None
+        if op_raw:
+            if op_raw.lower() in ["buy", "매수", "strong buy", "outperform", "overweight"]:
+                opinion = "Buy (매수)"
+                buy_count += 1
+            elif op_raw.lower() in ["hold", "중립", "marketperform", "neutral"]:
+                opinion = "Hold (중립)"
+            else:
+                opinion = op_raw
+
+        pts = clean_html_to_points(item.get("content") or "")
+        # 첫 줄이 제목과 동일하면 제거
+        if pts and pts[0] == title and len(pts) > 1:
+            pts = pts[1:]
+
+        # 초보자 맞춤형 쉬운 해설 자동 생성
+        if cat_key == "company":
+            gp_phrase = f"목표주가를 {goal_price}으로 제시하며 " if goal_price else ""
+            op_phrase = f"'{opinion}' 의견을 낸 " if opinion else ""
+            easy_exp = (
+                f"{broker}에서 '{item_name}'에 대해 {gp_phrase}{op_phrase}기업 분석 리포트입니다. "
+                f"{pts[0] if pts else '핵심 사업의 분기 실적과 수주 모멘텀을 점검한 보고서입니다.'}"
+            )
+            check_tip = f"'{item_name}'의 분기 영업이익이 증권사 예상치(컨센서스)에 부합하는지와 기관·외국인 수급 유입 여부를 함께 확인하세요."
+        elif cat_key == "industry":
+            target_ind = industry_name or "주요 산업"
+            easy_exp = f"{broker}의 '{target_ind}' 업종 분석 리포트입니다. 업황 지표와 밸류체인 내 주요 기업들의 실적 방향성을 짚어주고 있습니다."
+            check_tip = f"'{target_ind}' 업종 내 대장주의 수급 흐름과 수출·수주 데이터를 함께 점검하세요."
+        else:
+            easy_exp = f"{broker}에서 발표한 최신 증시 시황 및 투자전략 브리핑입니다. 거시경제 지표와 수급 변화를 바탕으로 시장 대응 방향을 제시합니다."
+            check_tip = "환율·금리 흐름과 외국인 현·선물 매매 동향을 함께 체크하며 포트폴리오 비중을 조절하세요."
+
+        formatted_items.append({
+            "id": f"{cat_key}_{nid}",
+            "nid": nid,
+            "category": cat_label,
+            "broker": broker,
+            "analyst": analyst,
+            "date": write_date,
+            "read_count": read_count,
+            "title": title,
+            "item_name": item_name,
+            "item_code": item_code,
+            "industry_name": industry_name,
+            "goal_price": goal_price,
+            "goal_price_num": goal_price_num,
+            "opinion": opinion,
+            "summary_points": pts,
+            "easy_summary": easy_exp,
+            "checkpoint": check_tip,
+            "naver_url": f"https://stock.naver.com/research/{url_slug}/{nid}" if nid else "https://stock.naver.com/research/company"
+        })
+
+    consensus = None
+    if goal_prices:
+        avg_gp = int(round(sum(goal_prices) / len(goal_prices), -2))
+        consensus = {
+            "stock_name": resolved_name or (formatted_items[0]["item_name"] if formatted_items else q_clean),
+            "stock_code": resolved_code or (formatted_items[0]["item_code"] if formatted_items else None),
+            "avg_goal_price": f"{avg_gp:,}원",
+            "max_goal_price": f"{max(goal_prices):,}원",
+            "min_goal_price": f"{min(goal_prices):,}원",
+            "buy_count": buy_count,
+            "report_count": len(formatted_items),
+            "goal_sample_count": len(goal_prices)
+        }
+
+    return {
+        "status": "success",
+        "category": cat_key,
+        "query": q_clean,
+        "resolved_code": resolved_code,
+        "resolved_name": resolved_name,
+        "total_count": total_count,
+        "consensus": consensus,
+        "items": formatted_items
+    }
+

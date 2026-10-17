@@ -52,6 +52,9 @@ export default function HomeClient() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <Link href="/research" className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-black transition-all">
+              📑 종목별 증권사 리서치
+            </Link>
             <Link href="/calculator" className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black transition-all">
               🧮 주식 계산기
             </Link>
