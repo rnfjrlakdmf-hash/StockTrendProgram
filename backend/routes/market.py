@@ -1461,9 +1461,117 @@ def get_stock_research_reports(
         pts = []
         for raw_ln in text.splitlines():
             ln = re.sub(r'^[\s•\-\*·:]+', '', raw_ln).strip()
-            if len(ln) >= 5:
-                pts.append(ln[:200])
+            # 공백 정규화 (예: "3 조 1,724 억원" -> "3조 1,724억원")
+            ln = re.sub(r'(\d)\s+(조|억|만|원|배|%)', r'\1\2', ln)
+            ln = re.sub(r'(조|억)\s+(\d)', r'\1 \2', ln)
+            if len(ln) < 6:
+                continue
+            # 문장이 너무 길 경우 단어 중간에서 자르지 않고 마침표(.) 기준으로 완결된 문장만 보존
+            if len(ln) > 220:
+                sentences = re.split(r'(?<=[다음함망임됨]\.)\s+|(?<=\.)\s+', ln)
+                acc = ""
+                for s in sentences:
+                    s_clean = s.strip()
+                    if not s_clean:
+                        continue
+                    if len(acc) + len(s_clean) + 1 <= 240:
+                        acc = f"{acc} {s_clean}".strip() if acc else s_clean
+                    else:
+                        break
+                ln = acc if len(acc) >= 15 else (ln[:220].rsplit(' ', 1)[0] + "...")
+            pts.append(ln)
         return pts[:4]
+
+    def build_plain_korean_digest(
+        cat_k: str,
+        broker_name: str,
+        target_name: str,
+        rep_title: str,
+        pts_list: list,
+        gp_str: str | None,
+        op_str: str | None,
+    ):
+        joined = f"{rep_title} {' '.join(pts_list)}"
+        joined_low = joined.lower()
+
+        # 핵심 매출/영업이익 숫자 자동 추출
+        sales_m = re.search(r'매출(?:액)?\s*([0-9,]+조\s*[0-9,]*억?원?|[0-9,]+억\s*원?)', joined)
+        op_m = re.search(r'영업이익\s*([0-9,]+조\s*[0-9,]*억?원?|[0-9,]+억\s*원?)', joined)
+        num_snippets = []
+        if sales_m:
+            num_snippets.append(f"매출액 {sales_m.group(1).strip()}")
+        if op_m:
+            num_snippets.append(f"영업이익 {op_m.group(1).strip()}")
+        num_clause = f" ({' · '.join(num_snippets)})" if num_snippets else ""
+
+        # 내용 맥락 자동 번역
+        meaning_parts = []
+        if any(k in joined_low for k in ["preview", "프리뷰", "전망", "예상"]):
+            if any(k in joined for k in ["상회", "서프라이즈", "호실적", "최대"]):
+                meaning_parts.append(f"다가오는 실적 발표에서 시장 예상치(컨센서스)를 뛰어넘는 호실적{num_clause}이 기대된다고 분석했습니다.")
+            elif any(k in joined for k in ["부합", "선방", "견조"]):
+                meaning_parts.append(f"이번 분기 실적{num_clause}이 증권가 전문가들의 평균 예상치(컨센서스)에 부합하며 안정적으로 선방할 것으로 내다봤습니다.")
+            elif any(k in joined for k in ["하회", "부진", "둔화"]):
+                meaning_parts.append(f"일회성 비용이나 업황 영향으로 이번 분기 실적{num_clause}은 시장 눈높이보다 다소 낮을 것으로 예상했습니다.")
+            else:
+                meaning_parts.append(f"다가오는 분기 실적 성적표{num_clause}와 핵심 사업부문의 수익성을 사전 점검한 보고서입니다.")
+        elif any(k in joined_low for k in ["review", "리뷰", "잠정"]):
+            if any(k in joined for k in ["상회", "서프라이즈"]):
+                meaning_parts.append(f"발표된 실제 실적{num_clause}이 시장 기대치를 웃도는 깜짝 호실적을 기록했다고 평가했습니다.")
+            elif any(k in joined for k in ["하회", "아쉬운"]):
+                meaning_parts.append(f"발표된 실적{num_clause}이 일시적 요인으로 시장 예상치에는 못 미쳤으나 향후 본업 회복 여부를 짚었습니다.")
+            else:
+                meaning_parts.append(f"최근 발표된 분기 확정 실적{num_clause}의 세부 내용과 향후 이익 흐름을 분석했습니다.")
+
+        if any(k in joined for k in ["수주", "본계약", "계약", "백로그", "납품"]):
+            meaning_parts.append("특히 향후 매출 성장을 이끌 신규 수주 및 본계약 체결 기대감을 핵심 긍정 요인으로 꼽았습니다.")
+        elif any(k in joined for k in ["하향"]):
+            meaning_parts.append("시장 눈높이 조정을 반영해 목표주가는 일부 낮추었으나, 기업의 중장기 이익 체력은 유효하다고 평가했습니다.")
+        elif any(k in joined for k in ["상향"]):
+            meaning_parts.append("실적 추정치가 높아짐에 따라 목표주가를 기존보다 상향 조정한 점이 핵심입니다.")
+        elif any(k in joined for k in ["배당", "자사주", "밸류업", "주주환원"]):
+            meaning_parts.append("안정적인 현금 창출력을 바탕으로 배당 확대 및 주주환원(밸류업) 매력이 부각된다는 내용입니다.")
+
+        if not meaning_parts:
+            meaning_parts.append(f"'{rep_title}'를 주제로 핵심 사업의 실적 흐름과 업황 변화를 알기 쉽게 짚어낸 보고서입니다.")
+
+        if cat_k == "company":
+            meta_tags = []
+            if gp_str:
+                meta_tags.append(f"제시 목표가 {gp_str}")
+            if op_str:
+                meta_tags.append(f"의견 {op_str}")
+            meta_str = f" ({' · '.join(meta_tags)})" if meta_tags else ""
+            easy_text = f"{broker_name}에서 발표한 '{target_name}' 기업 분석 리포트{meta_str}입니다. {' '.join(meaning_parts)}"
+
+            if any(k in joined for k in ["수주", "본계약", "계약"]):
+                tip_text = f"실제 수주·본계약 공시(DART)가 발표되는 시점과 분기 영업이익률 추이를 함께 확인하면 좋습니다."
+            elif any(k in joined for k in ["환율", "환헷지", "수출"]):
+                tip_text = f"원/달러 환율 흐름에 따른 수출 채산성 변화와 외국인·기관 수급 유입 여부를 함께 살펴보세요."
+            else:
+                tip_text = f"'{target_name}'의 실제 분기 영업이익이 증권사 평균 예상치(컨센서스)를 넘어서는지 확인하는 것이 핵심입니다."
+            return easy_text, tip_text
+
+        if cat_k == "industry":
+            ind = target_name or "주요 산업"
+            return (
+                f"{broker_name}의 '{ind}' 업종 분석 리포트입니다. {' '.join(meaning_parts)}",
+                f"'{ind}' 업종 내 대표 기업들의 수출입 통관 데이터와 기관·외국인 동반 수급 흐름을 비교해 보세요.",
+            )
+        if cat_k == "economy":
+            return (
+                f"{broker_name}의 글로벌 경제·환율·물가 분석 리포트입니다. 금리와 환율 변화가 시장 자금 흐름에 주는 영향을 설명합니다.",
+                "미국 물가·고용 지표 발표 전후로 달러 인덱스와 원/달러 환율이 어떻게 움직이는지 관찰해 보세요.",
+            )
+        if cat_k == "debenture":
+            return (
+                f"{broker_name}의 채권·금리 시장 리포트입니다. 한국·미국 국채 금리 흐름과 기준금리 전망을 다룹니다.",
+                "국채 금리가 내려가면 채권 가격은 올라가는 역의 관계를 기억하며 시중 금리 추이를 확인해 보세요.",
+            )
+        return (
+            f"{broker_name}에서 발표한 증시 시황 브리핑입니다. {' '.join(meaning_parts)}",
+            "환율·금리 방향성과 외국인·기관의 현·선물 수급 변화를 핵심 지표로 참고해 보세요.",
+        )
 
     q_clean = (q or "").strip()
     resolved_code = None
@@ -1553,27 +1661,9 @@ def get_stock_research_reports(
         if pts and pts[0] == title and len(pts) > 1:
             pts = pts[1:]
 
-        if cat_key == "company":
-            gp_phrase = f"목표주가를 {goal_price}으로 발표한 " if goal_price else ""
-            op_phrase = f"'{opinion}' 의견의 " if opinion else ""
-            easy_exp = (
-                f"[제3자 공개 리포트 요약] {broker}에서 '{item_name}'에 대해 {gp_phrase}{op_phrase}기업 분석 보고서입니다. "
-                f"{pts[0] if pts else '핵심 사업의 분기 실적과 수주 데이터를 다룬 공개 자료입니다.'}"
-            )
-            check_tip = f"시장에서는 '{item_name}'의 분기 영업이익이 증권사 평균 추정치(컨센서스)에 부합하는지와 기관·외국인 수급 통계를 주요 지표로 참고합니다."
-        elif cat_key == "industry":
-            target_ind = industry_name or "주요 산업"
-            easy_exp = f"[제3자 공개 리포트 요약] {broker}의 '{target_ind}' 업종 분석 보고서입니다. 업황 통계와 밸류체인 내 주요 기업들의 실적 추이를 정리하고 있습니다."
-            check_tip = f"'{target_ind}' 업종 내 주요 기업의 수급 통계와 수출·수주 공시 데이터가 핵심 관찰 지표입니다."
-        elif cat_key == "economy":
-            easy_exp = f"[제3자 공개 리포트 요약] {broker}의 글로벌 거시경제(매크로)·환율·물가 분석 보고서입니다. 미국 연준 통화정책과 환율 추이가 자산시장에 미치는 영향을 정리한 자료입니다."
-            check_tip = "미국 물가·고용 지표 발표에 따른 달러 인덱스와 원/달러 환율 변동 추이가 주요 관찰 포인트입니다."
-        elif cat_key == "debenture":
-            easy_exp = f"[제3자 공개 리포트 요약] {broker}의 채권·금리 시장 분석 보고서입니다. 국고채 및 미국 국채 금리 추이와 중앙은행 기준금리 동향을 다룹니다."
-            check_tip = "국채 금리와 채권 가격은 역의 관계로 움직이며, 기준금리 기대 변화가 주요 관찰 지표입니다."
-        else:
-            easy_exp = f"[제3자 공개 리포트 요약] {broker}에서 발표한 증시 시황 및 시장 동향 브리핑입니다. 거시경제 지표와 수급 통계를 정리한 참고 자료입니다."
-            check_tip = "환율·금리 추이와 외국인·기관 현·선물 매매 통계가 시장의 주요 관찰 지표입니다."
+        easy_exp, check_tip = build_plain_korean_digest(
+            cat_key, broker, item_name, title, pts, goal_price, opinion
+        )
 
         formatted_items.append({
             "id": f"{cat_key}_{nid}",

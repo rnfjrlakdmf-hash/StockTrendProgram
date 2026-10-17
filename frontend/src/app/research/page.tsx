@@ -647,63 +647,72 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                             </div>
 
-                                            {/* 리서치 핵심 분석 포인트 */}
-                                            <div className="p-4 rounded-2xl bg-black/45 border border-white/10 space-y-2">
-                                                <div className="text-[11px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
-                                                    <span>
-                                                        {mainTab === "us_stock"
-                                                            ? "제3자 월가 투자은행(IB) 컨센서스 & 공개 지표 요약"
-                                                            : mainTab === "etf"
-                                                                ? "ETF 기초지수 구조 & 공개 시세 통계 요약"
-                                                                : "글로벌 선물 공개 시세 & 거시경제 상관관계 요약"}
-                                                    </span>
-                                                </div>
-                                                <ul className="space-y-1.5">
-                                                    {mItem.summary_points.map((pt, pIdx) => (
-                                                        <li key={pIdx} className="text-xs sm:text-sm text-zinc-200 leading-relaxed flex items-start gap-2">
-                                                            <span className="text-purple-400 font-bold shrink-0">•</span>
-                                                            <span>{pt}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-
-                                            {/* 💡 초보자 눈높이 쉬운 해설 & 🎯 관찰 지표 */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                <div className="md:col-span-2 p-3.5 rounded-2xl bg-gradient-to-br from-purple-950/40 to-indigo-950/25 border border-purple-500/25 space-y-1.5">
-                                                    <div className="flex items-center gap-1.5 text-xs font-black text-purple-300">
-                                                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                                                        <span>💡 초보자를 위한 쉬운 데이터 해설</span>
+                                            {/* 1순위: 초보자 3초 핵심 요약 & 관찰 포인트 (가장 먼저 눈에 들어오도록 상단 배치) */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+                                                <div className="lg:col-span-2 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/45 via-indigo-950/30 to-zinc-900/80 border border-purple-500/35 space-y-2 shadow-inner">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-purple-200">
+                                                            <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                                                            <span>한눈에 이해하는 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
+                                                        </span>
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-400/25">
+                                                            핵심 요약
+                                                        </span>
                                                     </div>
-                                                    <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
-                                                        {mItem.easy_summary}
+                                                    <p className="text-sm sm:text-[15px] text-white font-medium leading-relaxed">
+                                                        {mItem.easy_summary.replace(/^\[[^\]]+\]\s*/, "")}
                                                     </p>
                                                 </div>
 
-                                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/25 space-y-1.5 flex flex-col justify-center">
-                                                    <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
-                                                        <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                                        <span>🔍 객관적 데이터 관찰 포인트</span>
+                                                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-zinc-900/80 border border-emerald-500/30 space-y-2 flex flex-col justify-center">
+                                                    <div className="flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-emerald-300">
+                                                        <Target className="w-4 h-4 text-emerald-400 shrink-0" />
+                                                        <span>핵심 데이터 관찰 포인트</span>
                                                     </div>
-                                                    <p className="text-xs text-zinc-200 leading-relaxed">
+                                                    <p className="text-xs sm:text-sm text-zinc-100 leading-relaxed">
                                                         {mItem.checkpoint}
                                                     </p>
                                                 </div>
                                             </div>
 
-                                            {/* 📖 용어 자동 풀이 */}
+                                            {/* 2순위: 리서치 세부 수치 및 원문 핵심 포인트 */}
+                                            <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-white/10 space-y-2.5">
+                                                <div className="text-xs font-black text-zinc-300 flex items-center gap-1.5">
+                                                    <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                                                    <span>
+                                                        {mainTab === "us_stock"
+                                                            ? "월가 투자은행(IB) 컨센서스 & 핵심 재무 지표"
+                                                            : mainTab === "etf"
+                                                                ? "ETF 기초지수 구조 & 핵심 시세 통계"
+                                                                : "글로벌 선물 시세 & 거시경제 핵심 포인트"}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {mItem.summary_points.map((pt, pIdx) => (
+                                                        <div key={pIdx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                                                            <span className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[11px] font-black font-mono flex items-center justify-center shrink-0 mt-0.5">
+                                                                {pIdx + 1}
+                                                            </span>
+                                                            <span className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
+                                                                {pt}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 3순위: 용어 자동 풀이 */}
                                             {terms.length > 0 && (
-                                                <div className="pt-3 border-t border-white/10 space-y-2">
+                                                <div className="pt-3 border-t border-white/10 space-y-2.5">
                                                     <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
-                                                        <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                                                        <span>📖 리서치 속 어려운 금융·파생 용어 자동 풀이</span>
+                                                        <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                                                        <span>리포트 속 어려운 금융·파생 용어 1분 풀이</span>
                                                     </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                                         {terms.map((t, tIdx) => (
-                                                            <div key={tIdx} className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/15 flex flex-col gap-1">
+                                                            <div key={tIdx} className="p-3 rounded-xl bg-amber-500/[0.06] border border-amber-500/20 flex flex-col gap-1">
                                                                 <span className="text-xs font-black text-amber-300">• {t.term}</span>
-                                                                <span className="text-[11px] text-zinc-300 leading-relaxed">{t.easyMeaning}</span>
+                                                                <span className="text-xs text-zinc-200 leading-relaxed">{t.easyMeaning}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -825,16 +834,16 @@ export default function MultiAssetResearchPage() {
 
                     {/* 특정 국내 종목 검색 시: 🎯 목표주가 컨센서스 요약 보드 */}
                     {consensus && activeQuery && mainTab === "kr_company" && (
-                        <div className="mb-8 p-6 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-zinc-900/90 to-teal-950/30 border border-emerald-500/35 shadow-xl space-y-4">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                        <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/40 via-zinc-900/95 to-teal-950/30 border border-emerald-500/35 shadow-xl space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/10">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
                                         <Target className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono font-bold text-emerald-400 uppercase">
-                                                THIRD-PARTY BROKERAGE CONSENSUS SUMMARY
+                                            <span className="text-[11px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                증권사 컨센서스 요약
                                             </span>
                                             {consensus.stock_code && (
                                                 <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/10 text-zinc-200">
@@ -842,8 +851,8 @@ export default function MultiAssetResearchPage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <h2 className="text-lg sm:text-xl font-black text-white">
-                                            {consensus.stock_name} · 제3자 증권사 공개 목표주가 컨센서스 집계 (최근 {consensus.report_count}건 단순 평균)
+                                        <h2 className="text-lg sm:text-xl font-black text-white mt-1">
+                                            {consensus.stock_name} · 증권사 목표주가 한눈에 보기 (최근 {consensus.report_count}건 집계)
                                         </h2>
                                     </div>
                                 </div>
@@ -853,35 +862,39 @@ export default function MultiAssetResearchPage() {
                                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs shadow-md transition-all self-start sm:self-center"
                                 >
                                     <BarChart3 className="w-4 h-4" />
-                                    <span>{consensus.stock_name} 실시간 차트·수급 데이터 보기</span>
+                                    <span>{consensus.stock_name} 실시간 차트·수급 보기</span>
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/25">
-                                    <span className="text-xs text-zinc-400 block">🎯 증권사 평균 목표가</span>
-                                    <span className="text-lg sm:text-xl font-black text-emerald-300 font-mono mt-1 block">
+                                <div className="p-4 rounded-2xl bg-black/50 border border-emerald-500/30">
+                                    <span className="text-xs font-bold text-zinc-300 block">🎯 증권사 평균 목표가</span>
+                                    <span className="text-xl sm:text-2xl font-black text-emerald-300 font-mono mt-1 block">
                                         {consensus.avg_goal_price}
                                     </span>
+                                    <span className="text-[11px] text-zinc-400 mt-0.5 block">전문가 평균 눈높이</span>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-black/40 border border-rose-500/25">
-                                    <span className="text-xs text-zinc-400 block">📈 증권사 최고 목표가</span>
-                                    <span className="text-lg sm:text-xl font-black text-rose-300 font-mono mt-1 block">
+                                <div className="p-4 rounded-2xl bg-black/50 border border-rose-500/30">
+                                    <span className="text-xs font-bold text-zinc-300 block">📈 증권사 최고 목표가</span>
+                                    <span className="text-xl sm:text-2xl font-black text-rose-300 font-mono mt-1 block">
                                         {consensus.max_goal_price}
                                     </span>
+                                    <span className="text-[11px] text-zinc-400 mt-0.5 block">가장 긍정적인 목표치</span>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-black/40 border border-blue-500/25">
-                                    <span className="text-xs text-zinc-400 block">📉 증권사 최저 목표가</span>
-                                    <span className="text-lg sm:text-xl font-black text-blue-300 font-mono mt-1 block">
+                                <div className="p-4 rounded-2xl bg-black/50 border border-blue-500/30">
+                                    <span className="text-xs font-bold text-zinc-300 block">📉 증권사 최저 목표가</span>
+                                    <span className="text-xl sm:text-2xl font-black text-blue-300 font-mono mt-1 block">
                                         {consensus.min_goal_price}
                                     </span>
+                                    <span className="text-[11px] text-zinc-400 mt-0.5 block">가장 보수적인 목표치</span>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/25">
-                                    <span className="text-xs text-zinc-400 block">📊 증권사 Buy 의견 수</span>
-                                    <span className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1 block">
-                                        {consensus.buy_count}건 / {consensus.report_count}건
+                                <div className="p-4 rounded-2xl bg-black/50 border border-amber-500/30">
+                                    <span className="text-xs font-bold text-zinc-300 block">📊 매수(Buy) 의견 비율</span>
+                                    <span className="text-xl sm:text-2xl font-black text-amber-300 font-mono mt-1 block">
+                                        {consensus.buy_count}건 <span className="text-sm text-zinc-400">/ {consensus.report_count}건</span>
                                     </span>
+                                    <span className="text-[11px] text-zinc-400 mt-0.5 block">최근 발표 리포트 기준</span>
                                 </div>
                             </div>
                         </div>
@@ -911,149 +924,190 @@ export default function MultiAssetResearchPage() {
                             </button>
                         </div>
                     ) : (
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             {displayedKrItems.map((item, idx) => {
                                 const combinedText = `${item.title} ${(item.summary_points || []).join(" ")} ${item.easy_summary}`;
                                 const terms = getMatchedTerms(combinedText, 3);
+                                const cleanEasySummary = (item.easy_summary || "").replace(/^\[[^\]]+\]\s*/, "");
+
+                                // 원문 문장 내 영어 약어(3Q26 Preview 등)를 친절한 한글로 자동 병기
+                                const formatRawPoint = (rawPt: string) => {
+                                    return rawPt
+                                        .replace(/([1-4])Q(\d{2})\s*Preview\s*:?/gi, "[$2년 $1분기 실적 전망] ")
+                                        .replace(/([1-4])Q(\d{2})\s*Review\s*:?/gi, "[$2년 $1분기 실적 리뷰] ")
+                                        .replace(/(\d)\s+(조|억|만|원)/g, "$1$2");
+                                };
 
                                 return (
                                     <article
                                         key={`${item.id}_${idx}`}
-                                        className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-zinc-900/95 via-zinc-900/75 to-zinc-950 border border-white/10 hover:border-purple-500/40 transition-all shadow-xl space-y-4"
+                                        className="p-5 sm:p-7 rounded-3xl bg-gradient-to-b from-zinc-900/95 to-zinc-950 border border-white/15 hover:border-purple-500/45 transition-all shadow-2xl space-y-5"
                                     >
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                {item.item_name && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (mainTab === "kr_company") {
-                                                                handleQuickSelect(item.item_code || item.item_name);
-                                                            }
-                                                        }}
-                                                        className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-black flex items-center gap-1.5 cursor-pointer transition-colors"
-                                                    >
-                                                        <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                                                        <span>{item.item_name}</span>
-                                                        {item.item_code && (
-                                                            <span className="text-[11px] font-mono text-amber-200/80">
-                                                                ({item.item_code})
+                                        {/* 카드 상단: 좌측(종목·증권사·리포트 제목) + 우측(목표주가·투자의견 스코어보드 & 바로가기) */}
+                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                                            <div className="space-y-2.5">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    {item.item_name && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (mainTab === "kr_company") {
+                                                                    handleQuickSelect(item.item_code || item.item_name);
+                                                                }
+                                                            }}
+                                                            className="px-3 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs sm:text-sm font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                                                        >
+                                                            <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                                                            <span>{item.item_name}</span>
+                                                            {item.item_code && (
+                                                                <span className="text-[11px] font-mono text-amber-200/80">
+                                                                    ({item.item_code})
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    )}
+
+                                                    <span className="px-3 py-1 rounded-xl bg-purple-500/20 text-purple-200 border border-purple-500/35 text-xs font-black flex items-center gap-1.5">
+                                                        <Award className="w-3.5 h-3.5 text-purple-300" />
+                                                        <span>{item.broker}</span>
+                                                        {item.analyst && (
+                                                            <span className="text-[11px] text-purple-300/80 font-medium">
+                                                                · {item.analyst}
                                                             </span>
                                                         )}
-                                                    </button>
-                                                )}
+                                                    </span>
 
-                                                <span className="px-3 py-1 rounded-xl bg-purple-500/20 text-purple-200 border border-purple-500/35 text-xs font-black flex items-center gap-1.5">
-                                                    <Award className="w-3.5 h-3.5 text-purple-300" />
-                                                    <span>{item.broker} (외부 기관 발표)</span>
-                                                    {item.analyst && (
-                                                        <span className="text-[11px] text-purple-300/80 font-medium">
-                                                            · {item.analyst} 애널리스트
+                                                    <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-400 px-2 py-0.5 rounded-lg bg-white/5">
+                                                        <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                                                        {item.date}
+                                                    </span>
+
+                                                    {item.read_count > 0 && (
+                                                        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-zinc-400 px-2 py-0.5 rounded-lg bg-white/5">
+                                                            <Eye className="w-3.5 h-3.5" />
+                                                            {item.read_count.toLocaleString()}명 열람
                                                         </span>
                                                     )}
-                                                </span>
+                                                </div>
 
+                                                <h3 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight">
+                                                    {item.title}
+                                                </h3>
+                                            </div>
+
+                                            {/* 우측: 한눈에 보는 목표주가 · 의견 스코어보드 & 액션 버튼 */}
+                                            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                                                 {item.opinion && (
-                                                    <span className="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/35 text-xs font-black">
-                                                        증권사 의견: {item.opinion}
-                                                    </span>
+                                                    <div className="px-3.5 py-2 rounded-2xl bg-rose-500/15 border border-rose-500/35 flex flex-col">
+                                                        <span className="text-[10px] font-bold text-rose-300/80">증권사 투자의견</span>
+                                                        <span className="text-xs sm:text-sm font-black text-rose-300 mt-0.5">
+                                                            {item.opinion}
+                                                        </span>
+                                                    </div>
                                                 )}
 
                                                 {item.goal_price && (
-                                                    <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-xs font-black font-mono">
-                                                        🎯 증권사 목표가: {item.goal_price}
-                                                    </span>
+                                                    <div className="px-4 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex flex-col">
+                                                        <span className="text-[10px] font-bold text-emerald-300/80">🎯 증권사 제시 목표가</span>
+                                                        <span className="text-sm sm:text-base font-black text-emerald-300 font-mono mt-0.5">
+                                                            {item.goal_price}
+                                                        </span>
+                                                    </div>
                                                 )}
-                                            </div>
 
-                                            <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                                                <span className="inline-flex items-center gap-1 font-mono">
-                                                    <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-                                                    {item.date}
-                                                </span>
-                                                {item.read_count > 0 && (
-                                                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-zinc-500">
-                                                        <Eye className="w-3.5 h-3.5" />
-                                                        {item.read_count.toLocaleString()}
-                                                    </span>
-                                                )}
-                                                {item.item_code && (
-                                                    <Link
-                                                        href={`/discovery?q=${encodeURIComponent(item.item_code)}`}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-[11px] font-bold transition-colors"
-                                                    >
-                                                        <BarChart3 className="w-3 h-3" />
-                                                        <span>차트·수급</span>
-                                                    </Link>
-                                                )}
-                                                {item.naver_url && (
-                                                    <a
-                                                        href={item.naver_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-purple-300 border border-purple-500/30 text-[11px] font-bold transition-colors"
-                                                    >
-                                                        <span>원문 보기</span>
-                                                        <ExternalLink className="w-3 h-3" />
-                                                    </a>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    {item.item_code && (
+                                                        <Link
+                                                            href={`/discovery?q=${encodeURIComponent(item.item_code)}`}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-500/35 text-xs font-black transition-colors"
+                                                        >
+                                                            <BarChart3 className="w-3.5 h-3.5 text-blue-300" />
+                                                            <span>차트·수급</span>
+                                                        </Link>
+                                                    )}
+                                                    {item.naver_url && (
+                                                        <a
+                                                            href={item.naver_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/15 text-xs font-black transition-colors"
+                                                        >
+                                                            <span>원문 리포트</span>
+                                                            <ExternalLink className="w-3.5 h-3.5 text-purple-300" />
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <h3 className="text-base sm:text-lg font-black text-white leading-snug">
-                                            {item.title}
-                                        </h3>
-
-                                        {item.summary_points && item.summary_points.length > 0 && (
-                                            <div className="p-4 rounded-2xl bg-black/45 border border-white/10 space-y-2">
-                                                <div className="text-[11px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
-                                                    <span>제3자 증권사 리포트 원문 핵심 발췌</span>
+                                        {/* 1순위 (가장 먼저 눈에 들어오는 핵심 영역): 한눈에 이해하는 쉬운 해설 & 관찰 포인트 */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+                                            <div className="lg:col-span-2 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/45 via-indigo-950/30 to-zinc-900/85 border border-purple-500/35 space-y-2 shadow-inner">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-purple-200">
+                                                        <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                                                        <span>한눈에 이해하는 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
+                                                    </span>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-400/25">
+                                                        초보자 3초 요약
+                                                    </span>
                                                 </div>
-                                                <ul className="space-y-1.5">
-                                                    {item.summary_points.map((pt, pIdx) => (
-                                                        <li key={pIdx} className="text-xs sm:text-sm text-zinc-200 leading-relaxed flex items-start gap-2">
-                                                            <span className="text-purple-400 font-bold shrink-0">•</span>
-                                                            <span>{pt}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                            <div className="md:col-span-2 p-3.5 rounded-2xl bg-gradient-to-br from-purple-950/40 to-indigo-950/25 border border-purple-500/25 space-y-1.5">
-                                                <div className="flex items-center gap-1.5 text-xs font-black text-purple-300">
-                                                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                                                    <span>💡 초보자를 위한 쉬운 데이터 해설</span>
-                                                </div>
-                                                <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
-                                                    {item.easy_summary}
+                                                <p className="text-sm sm:text-[15px] text-white font-medium leading-relaxed">
+                                                    {cleanEasySummary}
                                                 </p>
                                             </div>
 
-                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/25 space-y-1.5 flex flex-col justify-center">
-                                                <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
-                                                    <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                                    <span>🔍 객관적 데이터 관찰 포인트</span>
+                                            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-zinc-900/85 border border-emerald-500/30 space-y-2 flex flex-col justify-center">
+                                                <div className="flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-emerald-300">
+                                                    <Target className="w-4 h-4 text-emerald-400 shrink-0" />
+                                                    <span>핵심 체크포인트</span>
                                                 </div>
-                                                <p className="text-xs text-zinc-200 leading-relaxed">
+                                                <p className="text-xs sm:text-sm text-zinc-100 leading-relaxed">
                                                     {item.checkpoint}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        {terms.length > 0 && (
-                                            <div className="pt-3 border-t border-white/10 space-y-2">
-                                                <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
-                                                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                                                    <span>📖 리포트 속 어려운 금융·회계 용어 자동 풀이</span>
+                                        {/* 2순위: 증권사 리포트 원문 핵심 수치 & 요약 (번호 매김 카드 리스트로 깔끔하게 정돈) */}
+                                        {item.summary_points && item.summary_points.length > 0 && (
+                                            <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-white/10 space-y-2.5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-xs font-black text-zinc-300 flex items-center gap-1.5">
+                                                        <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+                                                        <span>증권사 리포트 원문 핵심 발췌 ({item.broker})</span>
+                                                    </div>
+                                                    <span className="text-[11px] text-zinc-500 font-medium">외부 기관 발표 원문 요약</span>
                                                 </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                <div className="space-y-2">
+                                                    {item.summary_points.map((pt, pIdx) => (
+                                                        <div
+                                                            key={pIdx}
+                                                            className="flex items-start gap-2.5 p-3 rounded-xl bg-white/[0.025] border border-white/5"
+                                                        >
+                                                            <span className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[11px] font-black font-mono flex items-center justify-center shrink-0 mt-0.5">
+                                                                {pIdx + 1}
+                                                            </span>
+                                                            <span className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
+                                                                {formatRawPoint(pt)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 3순위: 어려운 금융·회계 용어 자동 풀이 */}
+                                        {terms.length > 0 && (
+                                            <div className="pt-3 border-t border-white/10 space-y-2.5">
+                                                <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                                                    <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                                                    <span>리포트에 등장한 어려운 금융·회계 용어 1분 풀이</span>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                                     {terms.map((t, tIdx) => (
-                                                        <div key={tIdx} className="p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/15 flex flex-col gap-1">
+                                                        <div key={tIdx} className="p-3 rounded-xl bg-amber-500/[0.06] border border-amber-500/20 flex flex-col gap-1">
                                                             <span className="text-xs font-black text-amber-300">• {t.term}</span>
-                                                            <span className="text-[11px] text-zinc-300 leading-relaxed">{t.easyMeaning}</span>
+                                                            <span className="text-xs text-zinc-200 leading-relaxed">{t.easyMeaning}</span>
                                                         </div>
                                                     ))}
                                                 </div>
