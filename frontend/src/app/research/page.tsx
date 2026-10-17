@@ -586,7 +586,7 @@ export default function MultiAssetResearchPage() {
                                                     {mItem.target_mean && (
                                                         <div className="px-4 py-2.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/35 flex flex-col">
                                                             <span className="text-[10px] text-emerald-300 font-bold">
-                                                                🎯 월가 IB 평균 목표주가 {mItem.analyst_count ? `(${mItem.analyst_count}명)` : ""}
+                                                                🎯 제3자 월가 IB 목표가 평균 {mItem.analyst_count ? `(${mItem.analyst_count}개 기관 집계)` : ""}
                                                             </span>
                                                             <div className="flex items-baseline gap-2 mt-0.5">
                                                                 <span className="text-base sm:text-lg font-black text-emerald-300 font-mono">
@@ -594,7 +594,7 @@ export default function MultiAssetResearchPage() {
                                                                 </span>
                                                                 {mItem.upside_pct !== null && mItem.upside_pct !== undefined && (
                                                                     <span className={`text-xs font-black font-mono ${mItem.upside_pct >= 0 ? "text-amber-300" : "text-zinc-400"}`}>
-                                                                        ({mItem.upside_pct >= 0 ? `+${mItem.upside_pct}% 여력` : `${mItem.upside_pct}%`})
+                                                                        (컨센서스 괴리율 {mItem.upside_pct >= 0 ? `+${mItem.upside_pct}%` : `${mItem.upside_pct}%`})
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -633,7 +633,7 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                                 <div className="p-3 rounded-xl bg-black/35 border border-white/5">
                                                     <span className="text-[11px] text-zinc-400 block">
-                                                        {mItem.target_high ? "월가 최고/최저 목표가" : mItem.div_yield ? "연간 배당(분배)수익률" : "선행 PER / 구분"}
+                                                        {mItem.target_high ? "월가 IB 최고/최저 컨센서스" : mItem.div_yield ? "연간 분배(배당)수익률" : "선행 PER / 구분"}
                                                     </span>
                                                     <span className="text-xs sm:text-sm font-black text-amber-300 font-mono mt-0.5 block">
                                                         {mItem.target_high
@@ -653,10 +653,10 @@ export default function MultiAssetResearchPage() {
                                                     <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
                                                     <span>
                                                         {mainTab === "us_stock"
-                                                            ? "월가 투자은행(IB) & 퀀트 리서치 핵심 요약"
+                                                            ? "제3자 월가 투자은행(IB) 컨센서스 & 공개 지표 요약"
                                                             : mainTab === "etf"
-                                                                ? "ETF 포트폴리오 구조 & 추세 분석 요약"
-                                                                : "글로벌 선물 수급 & 거시경제 모멘텀 분석"}
+                                                                ? "ETF 기초지수 구조 & 공개 시세 통계 요약"
+                                                                : "글로벌 선물 공개 시세 & 거시경제 상관관계 요약"}
                                                     </span>
                                                 </div>
                                                 <ul className="space-y-1.5">
@@ -669,12 +669,12 @@ export default function MultiAssetResearchPage() {
                                                 </ul>
                                             </div>
 
-                                            {/* 💡 초보자 눈높이 쉬운 해설 & 🎯 실전 체크포인트 */}
+                                            {/* 💡 초보자 눈높이 쉬운 해설 & 🎯 관찰 지표 */}
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                 <div className="md:col-span-2 p-3.5 rounded-2xl bg-gradient-to-br from-purple-950/40 to-indigo-950/25 border border-purple-500/25 space-y-1.5">
                                                     <div className="flex items-center gap-1.5 text-xs font-black text-purple-300">
                                                         <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                                                        <span>💡 초보자를 위한 1분 눈높이 쉬운 해설</span>
+                                                        <span>💡 초보자를 위한 쉬운 데이터 해설</span>
                                                     </div>
                                                     <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
                                                         {mItem.easy_summary}
@@ -684,7 +684,7 @@ export default function MultiAssetResearchPage() {
                                                 <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/25 space-y-1.5 flex flex-col justify-center">
                                                     <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
                                                         <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                                        <span>🎯 실전 투자 체크포인트</span>
+                                                        <span>🔍 객관적 데이터 관찰 포인트</span>
                                                     </div>
                                                     <p className="text-xs text-zinc-200 leading-relaxed">
                                                         {mItem.checkpoint}
@@ -720,10 +720,10 @@ export default function MultiAssetResearchPage() {
                                     <div className="flex items-center justify-between border-b border-white/10 pb-3">
                                         <div>
                                             <span className="text-[11px] font-mono font-bold text-blue-400 uppercase">
-                                                SECURITIES FIRM REPORTS ON THIS ASSET CLASS
+                                                THIRD-PARTY SECURITIES FIRM REPORTS
                                             </span>
                                             <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
-                                                📑 국내 주요 증권사가 발표한 {mainTab === "us_stock" ? "미국·글로벌 증시" : mainTab === "etf" ? "ETF·자산배분" : "거시경제·금리·선물"} 최신 리포트
+                                                📑 국내 제도권 증권사가 공개 발표한 {mainTab === "us_stock" ? "미국·글로벌 증시" : mainTab === "etf" ? "ETF·자산배분" : "거시경제·금리·선물"} 최신 리포트 인용
                                             </h3>
                                         </div>
                                     </div>
@@ -734,7 +734,7 @@ export default function MultiAssetResearchPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black">
-                                                            {rep.broker}
+                                                            {rep.broker} (외부 기관)
                                                         </span>
                                                         <span className="text-[11px] font-mono text-zinc-400">{rep.date}</span>
                                                     </div>
@@ -776,7 +776,7 @@ export default function MultiAssetResearchPage() {
                                 { id: "economy", label: "🌐 거시경제·환율·물가 분석" },
                                 { id: "debenture", label: "🏦 채권·국고채·금리 분석" },
                                 { id: "market", label: "📊 데일리 증시 시황" },
-                                { id: "invest", label: "🧭 포트폴리오·투자전략" },
+                                { id: "invest", label: "🧭 포트폴리오·시장동향" },
                             ].map((st) => (
                                 <button
                                     key={st.id}
@@ -834,7 +834,7 @@ export default function MultiAssetResearchPage() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-mono font-bold text-emerald-400 uppercase">
-                                                ANALYST TARGET PRICE CONSENSUS
+                                                THIRD-PARTY BROKERAGE CONSENSUS SUMMARY
                                             </span>
                                             {consensus.stock_code && (
                                                 <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/10 text-zinc-200">
@@ -843,7 +843,7 @@ export default function MultiAssetResearchPage() {
                                             )}
                                         </div>
                                         <h2 className="text-lg sm:text-xl font-black text-white">
-                                            {consensus.stock_name} · 증권사 목표주가 컨센서스 요약 (최근 {consensus.report_count}건 기준)
+                                            {consensus.stock_name} · 제3자 증권사 공개 목표주가 컨센서스 집계 (최근 {consensus.report_count}건 단순 평균)
                                         </h2>
                                     </div>
                                 </div>
@@ -853,32 +853,32 @@ export default function MultiAssetResearchPage() {
                                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs shadow-md transition-all self-start sm:self-center"
                                 >
                                     <BarChart3 className="w-4 h-4" />
-                                    <span>{consensus.stock_name} 실시간 차트·수급 분석 보기</span>
+                                    <span>{consensus.stock_name} 실시간 차트·수급 데이터 보기</span>
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/25">
-                                    <span className="text-xs text-zinc-400 block">🎯 평균 목표주가</span>
+                                    <span className="text-xs text-zinc-400 block">🎯 증권사 평균 목표가</span>
                                     <span className="text-lg sm:text-xl font-black text-emerald-300 font-mono mt-1 block">
                                         {consensus.avg_goal_price}
                                     </span>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-black/40 border border-rose-500/25">
-                                    <span className="text-xs text-zinc-400 block">📈 최고 목표주가</span>
+                                    <span className="text-xs text-zinc-400 block">📈 증권사 최고 목표가</span>
                                     <span className="text-lg sm:text-xl font-black text-rose-300 font-mono mt-1 block">
                                         {consensus.max_goal_price}
                                     </span>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-black/40 border border-blue-500/25">
-                                    <span className="text-xs text-zinc-400 block">📉 최저 목표주가</span>
+                                    <span className="text-xs text-zinc-400 block">📉 증권사 최저 목표가</span>
                                     <span className="text-lg sm:text-xl font-black text-blue-300 font-mono mt-1 block">
                                         {consensus.min_goal_price}
                                     </span>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/25">
-                                    <span className="text-xs text-zinc-400 block">👍 매수(Buy) 의견</span>
+                                    <span className="text-xs text-zinc-400 block">📊 증권사 Buy 의견 수</span>
                                     <span className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1 block">
                                         {consensus.buy_count}건 / {consensus.report_count}건
                                     </span>
@@ -892,7 +892,7 @@ export default function MultiAssetResearchPage() {
                         <div className="py-20 text-center space-y-3 bg-zinc-900/40 rounded-3xl border border-white/10">
                             <RefreshCw className="w-8 h-8 text-purple-400 animate-spin mx-auto" />
                             <p className="text-sm font-bold text-zinc-300">
-                                증권사 최신 리서치 리포트를 실시간으로 불러오는 중입니다...
+                                증권사 공개 리서치 리포트를 불러오는 중입니다...
                             </p>
                         </div>
                     ) : displayedKrItems.length === 0 ? (
@@ -945,7 +945,7 @@ export default function MultiAssetResearchPage() {
 
                                                 <span className="px-3 py-1 rounded-xl bg-purple-500/20 text-purple-200 border border-purple-500/35 text-xs font-black flex items-center gap-1.5">
                                                     <Award className="w-3.5 h-3.5 text-purple-300" />
-                                                    <span>{item.broker}</span>
+                                                    <span>{item.broker} (외부 기관 발표)</span>
                                                     {item.analyst && (
                                                         <span className="text-[11px] text-purple-300/80 font-medium">
                                                             · {item.analyst} 애널리스트
@@ -955,13 +955,13 @@ export default function MultiAssetResearchPage() {
 
                                                 {item.opinion && (
                                                     <span className="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/35 text-xs font-black">
-                                                        투자의견: {item.opinion}
+                                                        증권사 의견: {item.opinion}
                                                     </span>
                                                 )}
 
                                                 {item.goal_price && (
                                                     <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 text-xs font-black font-mono">
-                                                        🎯 목표주가: {item.goal_price}
+                                                        🎯 증권사 목표가: {item.goal_price}
                                                     </span>
                                                 )}
                                             </div>
@@ -1008,7 +1008,7 @@ export default function MultiAssetResearchPage() {
                                             <div className="p-4 rounded-2xl bg-black/45 border border-white/10 space-y-2">
                                                 <div className="text-[11px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                                     <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
-                                                    <span>증권사 리포트 원문 핵심 요약</span>
+                                                    <span>제3자 증권사 리포트 원문 핵심 발췌</span>
                                                 </div>
                                                 <ul className="space-y-1.5">
                                                     {item.summary_points.map((pt, pIdx) => (
@@ -1025,7 +1025,7 @@ export default function MultiAssetResearchPage() {
                                             <div className="md:col-span-2 p-3.5 rounded-2xl bg-gradient-to-br from-purple-950/40 to-indigo-950/25 border border-purple-500/25 space-y-1.5">
                                                 <div className="flex items-center gap-1.5 text-xs font-black text-purple-300">
                                                     <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                                                    <span>💡 초보자를 위한 쉬운 해설</span>
+                                                    <span>💡 초보자를 위한 쉬운 데이터 해설</span>
                                                 </div>
                                                 <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
                                                     {item.easy_summary}
@@ -1035,7 +1035,7 @@ export default function MultiAssetResearchPage() {
                                             <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-teal-950/20 border border-emerald-500/25 space-y-1.5 flex flex-col justify-center">
                                                 <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
                                                     <Target className="w-3.5 h-3.5 text-emerald-400" />
-                                                    <span>🎯 실전 체크포인트</span>
+                                                    <span>🔍 객관적 데이터 관찰 포인트</span>
                                                 </div>
                                                 <p className="text-xs text-zinc-200 leading-relaxed">
                                                     {item.checkpoint}
@@ -1090,7 +1090,19 @@ export default function MultiAssetResearchPage() {
                 </>
             )}
 
-            <div className="mt-10">
+            {/* 자본시장법 제101조 준수 법적 고지 배너 */}
+            <div className="mt-10 p-6 rounded-3xl bg-zinc-950/90 border border-amber-500/25 space-y-2 text-xs text-zinc-400 leading-relaxed">
+                <p className="text-amber-400 font-black text-xs sm:text-sm">
+                    ⚖️ 자본시장법 준수 및 제3자 공개 리서치 인용 안내 (법적 면책 고지)
+                </p>
+                <p>
+                    1. 본 리서치 센터는 이용자에게 어떠한 유료 회비나 대가도 받지 않는 <strong>100% 무료 금융 데이터·용어 교육 열람 도구</strong>입니다.<br />
+                    2. 화면에 표시되는 목표주가 및 투자의견(Buy/Hold 등)은 본 사이트의 자체 판단이나 매매 추천이 아니며, <strong>금융위원회 인가 국내 증권사 및 글로벌 투자은행(IB)이 공개 발표한 제3자 컨센서스 통계 데이터를 객관적으로 단순 인용·집계한 참고 자료</strong>입니다.<br />
+                    3. 본 서비스는 자본시장과 금융투자업에 관한 법률상 투자자문업 또는 유사투자자문업에 해당하지 않으며, 특정 금융투자상품의 매수·매도를 권유하지 않습니다. 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.
+                </p>
+            </div>
+
+            <div className="mt-8">
                 <KakaoRevenueAd type="feed" />
             </div>
 

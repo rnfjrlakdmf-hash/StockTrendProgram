@@ -1554,26 +1554,26 @@ def get_stock_research_reports(
             pts = pts[1:]
 
         if cat_key == "company":
-            gp_phrase = f"목표주가를 {goal_price}으로 제시하며 " if goal_price else ""
-            op_phrase = f"'{opinion}' 의견을 낸 " if opinion else ""
+            gp_phrase = f"목표주가를 {goal_price}으로 발표한 " if goal_price else ""
+            op_phrase = f"'{opinion}' 의견의 " if opinion else ""
             easy_exp = (
-                f"{broker}에서 '{item_name}'에 대해 {gp_phrase}{op_phrase}기업 분석 리포트입니다. "
-                f"{pts[0] if pts else '핵심 사업의 분기 실적과 수주 모멘텀을 점검한 보고서입니다.'}"
+                f"[제3자 공개 리포트 요약] {broker}에서 '{item_name}'에 대해 {gp_phrase}{op_phrase}기업 분석 보고서입니다. "
+                f"{pts[0] if pts else '핵심 사업의 분기 실적과 수주 데이터를 다룬 공개 자료입니다.'}"
             )
-            check_tip = f"'{item_name}'의 분기 영업이익이 증권사 예상치(컨센서스)에 부합하는지와 기관·외국인 수급 유입 여부를 함께 확인하세요."
+            check_tip = f"시장에서는 '{item_name}'의 분기 영업이익이 증권사 평균 추정치(컨센서스)에 부합하는지와 기관·외국인 수급 통계를 주요 지표로 참고합니다."
         elif cat_key == "industry":
             target_ind = industry_name or "주요 산업"
-            easy_exp = f"{broker}의 '{target_ind}' 업종 분석 리포트입니다. 업황 지표와 밸류체인 내 주요 기업들의 실적 방향성을 짚어주고 있습니다."
-            check_tip = f"'{target_ind}' 업종 내 대장주의 수급 흐름과 수출·수주 데이터를 함께 점검하세요."
+            easy_exp = f"[제3자 공개 리포트 요약] {broker}의 '{target_ind}' 업종 분석 보고서입니다. 업황 통계와 밸류체인 내 주요 기업들의 실적 추이를 정리하고 있습니다."
+            check_tip = f"'{target_ind}' 업종 내 주요 기업의 수급 통계와 수출·수주 공시 데이터가 핵심 관찰 지표입니다."
         elif cat_key == "economy":
-            easy_exp = f"{broker}의 글로벌 거시경제(매크로)·환율·물가 분석 리포트입니다. 미국 연준 통화정책과 환율 흐름이 국내외 자산시장에 미치는 영향을 설명합니다."
-            check_tip = "미국 물가·고용 지표 발표에 따른 달러 인덱스와 원/달러 환율의 방향성을 함께 체크하세요."
+            easy_exp = f"[제3자 공개 리포트 요약] {broker}의 글로벌 거시경제(매크로)·환율·물가 분석 보고서입니다. 미국 연준 통화정책과 환율 추이가 자산시장에 미치는 영향을 정리한 자료입니다."
+            check_tip = "미국 물가·고용 지표 발표에 따른 달러 인덱스와 원/달러 환율 변동 추이가 주요 관찰 포인트입니다."
         elif cat_key == "debenture":
-            easy_exp = f"{broker}의 채권·금리 시장 분석 리포트입니다. 국고채 및 미국 국채 금리 움직임과 중앙은행 기준금리 전망을 다룹니다."
-            check_tip = "국채 금리 하락(채권 가격 상승) 시 성장주와 장기채 ETF의 매력도가 높아진다는 점을 참고하세요."
+            easy_exp = f"[제3자 공개 리포트 요약] {broker}의 채권·금리 시장 분석 보고서입니다. 국고채 및 미국 국채 금리 추이와 중앙은행 기준금리 동향을 다룹니다."
+            check_tip = "국채 금리와 채권 가격은 역의 관계로 움직이며, 기준금리 기대 변화가 주요 관찰 지표입니다."
         else:
-            easy_exp = f"{broker}에서 발표한 최신 증시 시황 및 투자전략 브리핑입니다. 거시경제 지표와 수급 변화를 바탕으로 시장 대응 방향을 제시합니다."
-            check_tip = "환율·금리 흐름과 외국인 현·선물 매매 동향을 함께 체크하며 포트폴리오 비중을 조절하세요."
+            easy_exp = f"[제3자 공개 리포트 요약] {broker}에서 발표한 증시 시황 및 시장 동향 브리핑입니다. 거시경제 지표와 수급 통계를 정리한 참고 자료입니다."
+            check_tip = "환율·금리 추이와 외국인·기관 현·선물 매매 통계가 시장의 주요 관찰 지표입니다."
 
         formatted_items.append({
             "id": f"{cat_key}_{nid}",
@@ -1629,37 +1629,37 @@ def get_stock_research_reports(
 MULTI_ASSET_CATALOG = {
     "us_stock": [
         {"symbol": "NVDA", "name": "엔비디아 (NVIDIA)", "sector": "AI 반도체 · GPU", "desc": "글로벌 AI 데이터센터 가속기 시장 점유율 1위 기업으로, 차세대 블랙웰(Blackwell)·루빈 아키텍처 수요가 실적을 견인하고 있습니다."},
-        {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "전기차 · 자율주행(FSD) · 로봇", "desc": "전기차뿐만 아니라 완전자율주행(FSD), 로보택시(Cybercab), 휴머노이드 로봇(옵티머스) 및 에너지저장장치(ESS)로 밸류에이션이 확장되는 핵심 빅테크입니다."},
-        {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "온디바이스 AI · IT 생태계", "desc": "전 세계 20억 대 이상의 활성 기기 생태계를 바탕으로 '애플 인텔리전스(온디바이스 AI)' 교체 수요와 고마진 서비스 매출 성장을 이어가고 있습니다."},
-        {"symbol": "MSFT", "name": "마이크로소프트 (Microsoft)", "sector": "클라우드(Azure) · 기업용 AI", "desc": "애저(Azure) 클라우드 인프라와 오피스 코파일럿(Copilot)을 통해 AI 수익화를 가장 안정적으로 실현하는 글로벌 대표 소프트웨어 기업입니다."},
-        {"symbol": "META", "name": "메타 (Meta Platforms)", "sector": "AI 타겟 광고 · 오픈소스 LLM", "desc": "인스타그램·페이스북에 AI 추천 및 광고 자동화 알고리즘을 적용하여 광고 단가와 영업이익률을 빠르게 끌어올리고 있습니다."},
-        {"symbol": "GOOGL", "name": "알파벳 / 구글 (Alphabet)", "sector": "검색 · 구글 클라우드 · 제미나이", "desc": "구글 검색 및 유튜브 광고 캐시카우에 더해 제미나이(Gemini) AI가 탑재된 구글 클라우드 부문의 영업이익 기여도가 급증하고 있습니다."},
-        {"symbol": "AMZN", "name": "아마존 (Amazon)", "sector": "AWS 클라우드 · 북미 이커머스", "desc": "글로벌 1위 클라우드 서비스인 AWS의 AI 서버 수요 호조와 물류 자동화를 통한 북미 유통 마진 개선이 동시에 나타나고 있습니다."},
-        {"symbol": "AVGO", "name": "브로드컴 (Broadcom)", "sector": "맞춤형 AI 칩(ASIC) · 네트워킹", "desc": "빅테크 기업들의 자체 AI 칩(ASIC) 설계 수요와 AI 데이터센터 초고속 통신 칩 시장을 선도하는 핵심 반도체 배당성장주입니다."},
-        {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 데이터 운영체제(AIP) · 국방", "desc": "미국 정부·국방부 및 글로벌 대기업들이 AI 플랫폼(AIP)을 실제 업무에 도입하면서 상업용 매출과 영업이익이 폭발적으로 성장 중입니다."},
-        {"symbol": "TSM", "name": "TSMC", "sector": "글로벌 파운드리 독점 1위", "desc": "엔비디아·애플·AMD의 최첨단 AI 칩과 CoWoS 첨단 패키징을 독점 위탁생산하는 글로벌 반도체 공급망의 심장입니다."},
+        {"symbol": "TSLA", "name": "테슬라 (Tesla)", "sector": "전기차 · 자율주행(FSD) · 로봇", "desc": "전기차뿐만 아니라 완전자율주행(FSD), 로보택시(Cybercab), 휴머노이드 로봇(옵티머스) 및 에너지저장장치(ESS) 사업을 전개하는 빅테크 기업입니다."},
+        {"symbol": "AAPL", "name": "애플 (Apple)", "sector": "온디바이스 AI · IT 생태계", "desc": "전 세계 20억 대 이상의 활성 기기 생태계를 바탕으로 '애플 인텔리전스(온디바이스 AI)' 및 서비스 매출 비중을 확대하고 있습니다."},
+        {"symbol": "MSFT", "name": "마이크로소프트 (Microsoft)", "sector": "클라우드(Azure) · 기업용 AI", "desc": "애저(Azure) 클라우드 인프라와 오피스 코파일럿(Copilot)을 중심으로 기업용 AI 소프트웨어를 공급하는 글로벌 기업입니다."},
+        {"symbol": "META", "name": "메타 (Meta Platforms)", "sector": "AI 타겟 광고 · 오픈소스 LLM", "desc": "인스타그램·페이스북에 AI 추천 및 광고 자동화 알고리즘을 적용하고 자체 LLM(Llama) 생태계를 확장하고 있습니다."},
+        {"symbol": "GOOGL", "name": "알파벳 / 구글 (Alphabet)", "sector": "검색 · 구글 클라우드 · 제미나이", "desc": "구글 검색 및 유튜브 광고 플랫폼과 함께 제미나이(Gemini) AI 기반 구글 클라우드 사업을 영위하고 있습니다."},
+        {"symbol": "AMZN", "name": "아마존 (Amazon)", "sector": "AWS 클라우드 · 북미 이커머스", "desc": "글로벌 클라우드 서비스 AWS와 북미·글로벌 이커머스 물류 네트워크를 운영하는 대표 빅테크 기업입니다."},
+        {"symbol": "AVGO", "name": "브로드컴 (Broadcom)", "sector": "맞춤형 AI 칩(ASIC) · 네트워킹", "desc": "빅테크 기업들의 자체 AI 칩(ASIC) 설계와 AI 데이터센터 초고속 통신 반도체 솔루션을 공급하고 있습니다."},
+        {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 데이터 운영체제(AIP) · 국방", "desc": "미국 정부·국방부 및 글로벌 민간 기업을 대상으로 AI 데이터 분석 운영체제(AIP)를 공급하는 소프트웨어 기업입니다."},
+        {"symbol": "TSM", "name": "TSMC", "sector": "글로벌 파운드리 1위", "desc": "엔비디아·애플·AMD 등의 최첨단 AI 칩과 CoWoS 첨단 패키징을 위탁생산하는 글로벌 파운드리 기업입니다."},
     ],
     "etf": [
-        {"symbol": "QQQ", "name": "Invesco QQQ (미국 나스닥100 ETF)", "sector": "미국 빅테크 · 성장주 대표 지수", "desc": "애플, 엔비디아, 마이크로소프트 등 나스닥 상장 비금융 상위 100대 혁신 기술주에 분산 투자하는 전 세계 대표 성장형 ETF입니다."},
-        {"symbol": "SPY", "name": "SPDR S&P 500 (미국 대형주 500 ETF)", "sector": "미국 시장 전체 대표 지수", "desc": "미국 경제를 대표하는 우량 대기업 500개에 시가총액 비중대로 투자하여 장기 우상향 복리 효과를 누리는 스탠다드 ETF입니다."},
-        {"symbol": "SOXX", "name": "iShares Semiconductor (미국 반도체 ETF)", "sector": "글로벌 AI · 반도체 밸류체인", "desc": "엔비디아, 브로드컴, AMD, TSMC, 마이크론 등 미국 증시에 상장된 핵심 반도체 설계·장비·제조 기업 30곳에 집중 투자합니다."},
-        {"symbol": "SCHD", "name": "Schwab US Dividend Equity (미국 배당성장 ETF)", "sector": "10년 연속 배당증가 우량 가치주", "desc": "10년 이상 꾸준히 배당금을 지급하고 현금흐름과 자기자본이익률(ROE)이 우수한 미국 알짜 배당성장주 100개에 투자합니다."},
-        {"symbol": "TLT", "name": "iShares 20+ Year Treasury (미국 20년 장기국채 ETF)", "sector": "미국 장기 국채 · 금리인하 수혜", "desc": "만기 20년 이상의 미국 정부 장기 국채에 투자하여 매월 이자 분배금을 받으면서 기준금리 인하 시 채권 가격 상승(자본차익)을 노리는 ETF입니다."},
-        {"symbol": "JEPI", "name": "JPMorgan Equity Premium Income (커버드콜 월배당)", "sector": "고배당 월분배 · 변동성 방어", "desc": "저변동성 S&P500 우량주 보유와 콜옵션 매도(커버드콜) 전략을 결합해 연 7~8% 수준의 높은 월배당 현금흐름을 추구합니다."},
-        {"symbol": "069500.KS", "name": "KODEX 200 (한국 코스피200 대표 ETF)", "sector": "국내 대형주 200 지수", "desc": "삼성전자, SK하이닉스, 현대차, KB금융 등 대한민국 코스피 시장을 대표하는 상위 200개 핵심 우량주에 한 번에 투자합니다."},
-        {"symbol": "133690.KS", "name": "TIGER 미국나스닥100 (국내상장 나스닥 ETF)", "sector": "연금저축·ISA 계좌 필수 미국지수", "desc": "국내 계좌(연금저축·IRP·ISA)에서 환전 없이 원화로 미국 나스닥100 빅테크 기업들에 장기 절세 투자할 수 있는 대표 ETF입니다."},
+        {"symbol": "QQQ", "name": "Invesco QQQ (미국 나스닥100 ETF)", "sector": "미국 빅테크 · 나스닥100 지수 추종", "desc": "애플, 엔비디아, 마이크로소프트 등 나스닥 상장 비금융 상위 100대 기술주 지수(NASDAQ-100)를 추종하는 패시브 ETF입니다."},
+        {"symbol": "SPY", "name": "SPDR S&P 500 (미국 대형주 500 ETF)", "sector": "미국 S&P 500 지수 추종", "desc": "미국 증시에 상장된 대형 우량기업 500개로 구성된 S&P 500 지수를 시가총액 가중 방식으로 추종하는 대표 지수 ETF입니다."},
+        {"symbol": "SOXX", "name": "iShares Semiconductor (미국 반도체 ETF)", "sector": "글로벌 AI · 반도체 지수 추종", "desc": "엔비디아, 브로드컴, AMD, TSMC, 마이크론 등 미국 증시 상장 주요 반도체 설계·장비·제조 기업 30곳으로 구성된 지수를 추종합니다."},
+        {"symbol": "SCHD", "name": "Schwab US Dividend Equity (미국 배당성장 ETF)", "sector": "미국 배당다우존스 지수 추종", "desc": "10년 이상 연속 배당을 지급하고 현금흐름과 자기자본이익률(ROE) 요건을 충족한 미국 배당주 100개 지수를 추종합니다."},
+        {"symbol": "TLT", "name": "iShares 20+ Year Treasury (미국 20년 장기국채 ETF)", "sector": "미국 장기 국채 지수 추종", "desc": "만기 20년 이상의 미국 재무부 장기 국채 지수를 추종하며 시중 금리 변동에 따라 가격이 연동되는 채권형 ETF입니다."},
+        {"symbol": "JEPI", "name": "JPMorgan Equity Premium Income (커버드콜 월배당)", "sector": "S&P500 저변동 + 커버드콜 전략", "desc": "저변동성 S&P500 주식 포트폴리오와 콜옵션 매도(커버드콜) 전략을 결합하여 월 단위 분배금을 지급하는 구조의 ETF입니다."},
+        {"symbol": "069500.KS", "name": "KODEX 200 (한국 코스피200 대표 ETF)", "sector": "한국 코스피200 지수 추종", "desc": "삼성전자, SK하이닉스, 현대차, KB금융 등 한국거래소 코스피 시장 상위 200개 종목으로 구성된 KOSPI 200 지수를 추종합니다."},
+        {"symbol": "133690.KS", "name": "TIGER 미국나스닥100 (국내상장 나스닥 ETF)", "sector": "국내 상장 · 미국 나스닥100 추종", "desc": "한국거래소에 상장되어 원화로 거래되며 미국 나스닥100 지수(환노출형)의 일간 수익률을 추종하는 ETF입니다."},
     ],
     "futures": [
-        {"symbol": "NQ=F", "name": "나스닥 100 선물 (E-mini Nasdaq 100)", "sector": "미국 기술주 지수 선물", "desc": "미국 정규장 개장 전후 24시간 거래되며 엔비디아·애플 등 빅테크 실적과 미국 물가·금리 발표에 가장 민감하게 반응하는 글로벌 선행 지표입니다."},
-        {"symbol": "ES=F", "name": "S&P 500 선물 (E-mini S&P 500)", "sector": "미국 대형주 표준 지수 선물", "desc": "전 세계 기관 투자자와 헤지펀드가 포트폴리오 헤지 및 거시경제 방향성 베팅에 가장 많이 활용하는 유동성 1위 주가지수 선물입니다."},
-        {"symbol": "GC=F", "name": "국제 금 선물 (Gold Futures · COMEX)", "sector": "안전자산 · 인플레이션 헤지", "desc": "중앙은행들의 금 매입 확대, 지정학적 리스크, 실질금리 하락 및 달러 가치 변화에 따라 움직이는 대표 안전자산 선물입니다."},
-        {"symbol": "CL=F", "name": "WTI 원유 선물 (Crude Oil Futures · NYMEX)", "sector": "에너지 · 인플레이션 핵심 변수", "desc": "글로벌 경기 수요와 중동 지정학 이슈, OPEC+ 감산 정책을 즉각 반영하며 전 세계 물가지수(CPI)와 항공·정유·화학주 실적을 좌우합니다."},
-        {"symbol": "SI=F", "name": "국제 은 선물 (Silver Futures)", "sector": "귀금속 + 태양광·AI 전력 산업재", "desc": "금과 같은 귀금속 안전자산 성격과 AI 서버·태양광 패널·전기차 전도체 등 첨단 산업용 수요를 동시에 보유한 고변동성 원자재 선물입니다."},
-        {"symbol": "HG=F", "name": "구리 선물 (Copper · '닥터 코퍼')", "sector": "전력망·변압기·글로벌 제조업 선행지표", "desc": "AI 데이터센터 전력 케이블, 초고압 변압기, 전기차 및 중국·미국 인프라 투자의 실물 경기 건강 상태를 가장 먼저 알려주는 핵심 산업 금속입니다."},
-        {"symbol": "NG=F", "name": "천연가스 선물 (Natural Gas Futures)", "sector": "발전용 에너지 · 계절성 고변동 선물", "desc": "북미·유럽의 냉난방 기온 예보, LNG 수출 터미널 가동률, AI 데이터센터 가스발전 수요에 따라 큰 변동성을 보이는 에너지 선물입니다."},
-        {"symbol": "^TNX", "name": "미국 10년물 국채금리 (US 10Y Treasury Yield)", "sector": "글로벌 자산 가격의 중력(기준점)", "desc": "전 세계 대출 금리와 주식 밸류에이션 할인율의 기준점입니다. 금리가 급등하면 기술주가 압박받고, 안정되면 증시 전반에 유동성 훈풍이 붑니다."},
-        {"symbol": "DX-Y.NYB", "name": "달러 인덱스 선물 (US Dollar Index)", "sector": "글로벌 달러 강세·약세 척도", "desc": "주요 6개국 통화 대비 미국 달러의 가치를 나타냅니다. 달러 인덱스가 하락(약달러)할 때 한국 코스피로의 외국인 순매수 유입이 강해집니다."},
-        {"symbol": "^VIX", "name": "VIX 변동성 지수 (CBOE Volatility Index)", "sector": "월가 공포지수 · 옵션 헤지 지표", "desc": "S&P500 옵션 가격에 반영된 향후 30일간의 시장 기대 변동성입니다. 보통 20 이하이면 안정, 30 이상 급등 시 패닉 셀링(과매도 반등 임박) 구간으로 해석합니다."},
+        {"symbol": "NQ=F", "name": "나스닥 100 선물 (E-mini Nasdaq 100)", "sector": "미국 기술주 지수 선물", "desc": "미국 정규장 개장 전후 24시간 거래되며 빅테크 실적과 거시경제 지표 발표에 실시간으로 반응하는 시카고상품거래소(CME) 지수 선물입니다."},
+        {"symbol": "ES=F", "name": "S&P 500 선물 (E-mini S&P 500)", "sector": "미국 대형주 표준 지수 선물", "desc": "글로벌 기관 투자자들이 포트폴리오 위험 관리(헤지) 및 미국 증시 전반의 유동성 흐름을 확인할 때 참고하는 대표 지수 선물입니다."},
+        {"symbol": "GC=F", "name": "국제 금 선물 (Gold Futures · COMEX)", "sector": "귀금속 · 인플레이션 지표", "desc": "중앙은행 금 보유량 변화, 지정학적 이슈, 실질금리 및 달러 가치 변동에 연동되어 거래되는 뉴욕상품거래소(COMEX) 금 선물입니다."},
+        {"symbol": "CL=F", "name": "WTI 원유 선물 (Crude Oil Futures · NYMEX)", "sector": "에너지 · 물가 핵심 변수", "desc": "글로벌 에너지 수요와 산유국(OPEC+) 공급 정책을 반영하며 소비자물가지수(CPI)와 산업 원가에 영향을 미치는 원유 선물입니다."},
+        {"symbol": "SI=F", "name": "국제 은 선물 (Silver Futures)", "sector": "귀금속 및 태양광·전력 산업재", "desc": "귀금속 자산 성격과 태양광 패널·전기전자 부품 등 산업용 금속 수요가 동시에 반영되는 원자재 선물입니다."},
+        {"symbol": "HG=F", "name": "구리 선물 (Copper · '닥터 코퍼')", "sector": "전력망·제조업 실물 경기 지표", "desc": "전력 케이블, 변압기, 건설 및 제조업 전반에 광범위하게 사용되어 글로벌 실물 경기의 선행 지표로 불리는 산업 금속 선물입니다."},
+        {"symbol": "NG=F", "name": "천연가스 선물 (Natural Gas Futures)", "sector": "발전·난방용 에너지 선물", "desc": "계절별 기온 변화, LNG 수출입 물동량, 가스 발전소 가동률에 따라 가격이 변동하는 에너지 선물입니다."},
+        {"symbol": "^TNX", "name": "미국 10년물 국채금리 (US 10Y Treasury Yield)", "sector": "글로벌 장기 시장금리 벤치마크", "desc": "글로벌 대출 금리와 자산 가치 평가(할인율)의 기준이 되는 미국 재무부 10년 만기 국채 수익률 지표입니다."},
+        {"symbol": "DX-Y.NYB", "name": "달러 인덱스 선물 (US Dollar Index)", "sector": "글로벌 달러 가치 지표", "desc": "유로, 엔, 파운드 등 주요 6개국 통화 대비 미국 달러화의 상대적 가치를 측정하는 글로벌 외환 지표입니다."},
+        {"symbol": "^VIX", "name": "VIX 변동성 지수 (CBOE Volatility Index)", "sector": "옵션 시장 기대 변동성 지표", "desc": "S&P500 지수 옵션 가격에 내재된 향후 30일간의 시장 기대 변동성을 수치화한 시카고옵션거래소(CBOE) 통계 지표입니다."},
     ]
 }
 
@@ -1745,13 +1745,13 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
 
             rec_raw = (info.get("recommendationKey") or "").lower()
             if rec_raw in ["strong_buy", "strongbuy"]:
-                rec_key = "Strong Buy (강력매수)"
+                rec_key = "Strong Buy (월가 IB 집계)"
             elif rec_raw in ["buy", "outperform"]:
-                rec_key = "Buy (매수)"
+                rec_key = "Buy (월가 IB 집계)"
             elif rec_raw in ["hold", "neutral"]:
-                rec_key = "Hold (중립)"
+                rec_key = "Hold (월가 IB 집계)"
             elif rec_raw:
-                rec_key = rec_raw.upper()
+                rec_key = f"{rec_raw.upper()} (월가 IB 집계)"
 
             analyst_count = int(info.get("numberOfAnalystOpinions") or 0)
             if info.get("forwardPE"):
@@ -1777,12 +1777,12 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
             return f"{val:.2f}"
         return f"${val:,.2f}"
 
-    trend_badge = "추세 중립 · 박스권 탐색"
+    trend_badge = "📊 50일 이동평균선 근접 구간"
     if price and ma50:
         if price >= ma50 * 1.01:
-            trend_badge = "📈 50일 이평선 상회 · 상승 추세 우위"
+            trend_badge = "📈 50일 이동평균선 상회 구간"
         elif price <= ma50 * 0.99:
-            trend_badge = "📉 단기 조정 구간 · 분할 지지선 점검"
+            trend_badge = "📉 50일 이동평균선 하회 구간"
 
     summary_points = []
     if desc:
@@ -1792,44 +1792,43 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
         if target_mean and price:
             up_str = f"+{upside_pct}%" if upside_pct and upside_pct > 0 else f"{upside_pct}%"
             summary_points.append(
-                f"월가 투자은행(IB) 애널리스트 {analyst_count or '다수'}명의 평균 목표주가는 {fmt_p(target_mean)}(최고 {fmt_p(target_high)} ~ 최저 {fmt_p(target_low)})로, 현재가({fmt_p(price)}) 대비 {up_str} 수준입니다."
+                f"[외부 기관 컨센서스 통계] 월가 투자은행(IB) 애널리스트 {analyst_count or '다수'}명이 제시한 목표주가 평균치는 {fmt_p(target_mean)}(최고 {fmt_p(target_high)} ~ 최저 {fmt_p(target_low)})이며, 현재 시세({fmt_p(price)})와의 컨센서스 괴리율은 {up_str}입니다."
             )
         if ma50:
             summary_points.append(
-                f"기술적 지표상 50일 이동평균선({fmt_p(ma50)}) 대비 현재가는 {fmt_p(price)}에 위치하며, { f'선행 PER은 약 {forward_pe}배 수준입니다.' if forward_pe else '분기 실적 가이던스가 핵심 모멘텀입니다.' }"
+                f"[객관적 지표] 50일 단순이동평균선({fmt_p(ma50)}) 대비 현재가는 {fmt_p(price)}이며, { f'월가 추정 선행 PER은 약 {forward_pe}배입니다.' if forward_pe else '분기 실적 공시가 주요 변수입니다.' }"
             )
         easy_summary = (
-            f"미국 증시에 상장된 '{name}'의 월가 IB 컨센서스 및 퀀트 분석 리포트입니다. "
-            f"{desc} 현재 월가 투자의견은 '{rec_key or 'Buy (매수 우위)'}'이며, 분기 실적 발표와 가이던스 상향 여부가 주가 추세의 핵심입니다."
+            f"미국 증시에 상장된 '{name}'의 공개 재무 지표 및 제3자 월가 IB 컨센서스 집계 데이터입니다. "
+            f"{desc} 외부 기관들의 투자의견 집계치는 '{rec_key or '집계 중'}'입니다."
         )
-        checkpoint = "미국 국채 금리 및 나스닥 선물 흐름과 함께 분기 주당순이익(EPS)이 월가 컨센서스를 상회하는지 확인하세요."
+        checkpoint = "미국 국채 금리 추이 및 분기 실적 발표 시 주당순이익(EPS)의 컨센서스 부합 여부가 주요 관찰 지표입니다."
     elif asset_type == "etf":
         if price and high_52w and low_52w:
             summary_points.append(
-                f"현재가 {fmt_p(price)} 기준 최근 구간 최고가({fmt_p(high_52w)})와 최저가({fmt_p(low_52w)}) 사이에서 거래 중이며, 50일 평균선은 {fmt_p(ma50)}입니다."
+                f"[객관적 시세 통계] 현재가 {fmt_p(price)} 기준 최근 52주 최고가({fmt_p(high_52w)})와 최저가({fmt_p(low_52w)}) 범위 내에 위치하며, 50일 평균 가격선은 {fmt_p(ma50)}입니다."
             )
         summary_points.append(
-            "개별 종목의 급등락 위험(어닝 쇼크 등)을 줄이면서 해당 섹터·지수의 구조적 성장을 그대로 따라갈 수 있는 핵심 자산배분 수단입니다."
+            "특정 개별 기업이 아닌 기초지수(Index)나 섹터 바스켓 전체의 가격 변동을 추종하도록 설계된 상장지수펀드(ETF)입니다."
         )
         easy_summary = (
-            f"'{name}' ETF 리서치 분석입니다. {desc} "
-            f"개별 주식을 일일이 고르기 어려운 초보 투자자나 연금·적립식 투자자가 시장 주도 섹터에 안전하게 분산 투자하기에 적합합니다."
+            f"'{name}' ETF의 기초자산 구성 및 시세 통계 요약입니다. {desc} "
+            f"개별 종목 대신 특정 산업이나 시장 지수 전체의 움직임을 추종하는 금융상품입니다."
         )
-        checkpoint = "ETF 매매 시에는 기초지수 추종 오차(괴리율), 총보수(운용수수료), 그리고 환헤지(H) 여부를 함께 확인하세요."
+        checkpoint = "ETF 데이터 확인 시에는 순자산가치(NAV) 대비 괴리율, 운용 총보수, 환노출/환헤지(H) 구조가 주요 확인 항목입니다."
     else:
-        # futures
         if price and ma50:
             summary_points.append(
-                f"현재 선물 시세는 {fmt_p(price)} (일일 변동 {change_pct:+.2f}%)이며, 50일 기준선({fmt_p(ma50)}) 대비 '{trend_badge}' 흐름을 보이고 있습니다."
+                f"[실시간 시세 통계] 현재 시세는 {fmt_p(price)} (일일 변동률 {change_pct:+.2f}%)이며, 50일 이동평균({fmt_p(ma50)}) 대비 '{trend_badge}'에 위치해 있습니다."
             )
         summary_points.append(
-            "선물 시장은 현물 주식시장 개장 전 글로벌 기관과 헤지펀드들의 자금 방향성을 가장 먼저 보여주는 최전선 선행 지표입니다."
+            "글로벌 파생상품 거래소(CME·NYMEX·COMEX 등)에서 24시간 거래되는 표준 선물·거시 지표로, 현물 주식시장과 높은 상관관계를 가집니다."
         )
         easy_summary = (
-            f"'{name}' 실시간 선물 리서치 브리핑입니다. {desc} "
-            f"직접 선물에 투자하지 않더라도 이 지표의 방향을 보면 오늘 밤 미국 증시와 내일 아침 한국 증시가 어떻게 움직일지 미리 읽을 수 있습니다."
+            f"'{name}' 공개 시세 및 거시경제 상관관계 설명 자료입니다. {desc} "
+            f"글로벌 자금 흐름과 원자재·금리 환경 변화를 파악할 때 참고하는 대표적인 시장 지표입니다."
         )
-        checkpoint = "선물 투자는 레버리지(증거금) 효과가 크므로 만기 롤오버(월물 교체) 일정과 주요 경제지표(CPI·FOMC) 발표 시각의 급격한 변동성에 유의하세요."
+        checkpoint = "선물·파생상품은 만기 월물 교체(롤오버) 구조와 레버리지(증거금) 특성이 존재하며, 주요 경제지표 발표 시 변동성이 확대되는 특징이 있습니다."
 
     return {
         "id": f"{asset_type}_{sym}",
@@ -1848,7 +1847,7 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
         "target_high": fmt_p(target_high) if target_high else None,
         "target_low": fmt_p(target_low) if target_low else None,
         "upside_pct": upside_pct,
-        "opinion": rec_key or ("Buy (매수)" if asset_type == "us_stock" else None),
+        "opinion": rec_key,
         "analyst_count": analyst_count,
         "forward_pe": forward_pe,
         "div_yield": div_yield,
