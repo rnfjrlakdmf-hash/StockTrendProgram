@@ -160,6 +160,8 @@ const QUICK_TOPICS = [
     { label: '✈️ 대한항공', topic: '대한항공', message: '대한항공 3분기 실적 리포트랑 수급 분석 보고해' },
     { label: '🟢 엔비디아 (NVDA)', topic: 'NVDA', message: '엔비디아(NVDA) 글로벌 AI 추세랑 밸류에이션 토론해봐' },
     { label: '⚡ 테슬라 (TSLA)', topic: 'TSLA', message: '테슬라(TSLA) 변동성이랑 모멘텀 임원 토론해봐' },
+    { label: '🍎 애플 (AAPL)', topic: 'AAPL', message: '애플(AAPL) 온디바이스 AI랑 실적 전망 임원 토론해봐' },
+    { label: '🛡️ 팔란티어 (PLTR)', topic: 'PLTR', message: '팔란티어(PLTR) AI 국방 수주랑 성장성 보고해봐' },
     { label: '📊 나스닥100 선물', topic: 'NQ=F', message: '나스닥100 선물(NQ=F) 야간 추세랑 헤지 전략 보고해' },
 ];
 
@@ -213,11 +215,11 @@ const FALLBACK_EXECUTIVES: Executive[] = [
         name: '이준호',
         role: '이사 (글로벌·파생본부장)',
         dept: '해외주식·ETF·선물파생본부',
-        badge: '미국장 · 나스닥 선물 온도계',
+        badge: '미국 10대 빅테크 순환 · 선물 지수',
         avatar: '🌎',
         color: 'blue',
-        style: '밤사이 뉴욕 증시(엔비디아·테슬라), 나스닥100 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.',
-        status: '미국 엔비디아 · 나스닥 선물 온도계 24시간 연동 분석 완료',
+        style: '밤사이 뉴욕 증시 10대 빅테크(NVDA·TSLA·AAPL·MSFT·GOOGL·AMZN 등) 순환 분석과 나스닥 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.',
+        status: '미국 10대 빅테크 데일리 순환 분석 & 나스닥 선물·원자재 24시간 연동 완료',
     },
 ];
 
