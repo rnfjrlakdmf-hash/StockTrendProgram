@@ -411,6 +411,7 @@ export default function AdminAutoTradePage() {
   const [autoAveragingDown, setAutoAveragingDown] = useState(true);
   const [stopLossPct, setStopLossPct] = useState(2.0);
   const [trailingStopPct, setTrailingStopPct] = useState(1.0);
+  const [minHoldMinutesForLossCut, setMinHoldMinutesForLossCut] = useState(5);
   const [kisOrderEnabled, setKisOrderEnabled] = useState(true);
   const [kisAppKey, setKisAppKey] = useState("");
   const [kisAppSecret, setKisAppSecret] = useState("");
@@ -486,6 +487,7 @@ export default function AdminAutoTradePage() {
     setUseStopLoss(Boolean(cfg.use_stop_loss ?? true));
     setAutoAveragingDown(Boolean(cfg.auto_averaging_down ?? true));
     setStopLossPct(Number(cfg.stop_loss_pct || 2.0));
+    setMinHoldMinutesForLossCut(Number(cfg.min_hold_minutes_for_loss_cut || 5));
     setTrailingStopPct(Number(cfg.trailing_stop_pct || 1.0));
     setKisOrderEnabled(Boolean(cfg.kis_order_enabled ?? true));
     setKisAppKey(cfg.kis_app_key || "");
@@ -602,6 +604,7 @@ export default function AdminAutoTradePage() {
           use_stop_loss: Boolean(useStopLoss),
           auto_averaging_down: Boolean(autoAveragingDown),
           stop_loss_pct: Number(stopLossPct),
+          min_hold_minutes_for_loss_cut: Number(minHoldMinutesForLossCut),
           trailing_stop_pct: Number(trailingStopPct),
           kis_order_enabled: Boolean(kisOrderEnabled),
           kis_app_key: kisAppKey,
@@ -2148,7 +2151,12 @@ export default function AdminAutoTradePage() {
                           );
                         })()}
                         <div className="text-[11px] text-gray-400 mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <span>매수일시: {pos.buy_time || "실시간 체결"}</span>
+                          <span>매수일시: {pos.bought_at || pos.buy_time || "실시간 체결"}</span>
+                          {pos.is_grace_period && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 border border-amber-500/40 text-amber-300 animate-pulse">
+                              ⏳ 관망 보호 중 (진입 {Math.max(1, Math.ceil((pos.holding_seconds || 0) / 60))}분차 · 조기손절 보류)
+                            </span>
+                          )}
                           <span>·</span>
                           <span>환율: 1,355원 기준</span>
                         </div>
@@ -2712,8 +2720,8 @@ export default function AdminAutoTradePage() {
                 </label>
               )}
 
-              {/* 수치 입력: 익절률 / 손절률 / 보유 종목수 */}
-              <div className="grid grid-cols-3 gap-2.5 pt-1">
+              {/* 수치 입력: 익절률 / 손절률 / 최소 관망 시간 / 보유 종목수 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
                 <div className="p-3 rounded-xl bg-zinc-950 border border-rose-500/30">
                   <label className="text-[11px] font-bold text-rose-300 block mb-1">
                     🎯 목표 익절률 (%)
@@ -2741,6 +2749,37 @@ export default function AdminAutoTradePage() {
                     className="w-full bg-zinc-900 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs font-mono font-black text-blue-300 focus:outline-none"
                   />
                   <div className="text-[9px] text-gray-400 mt-1">추천: -2.0% (원금 손실 철통 방어)</div>
+                </div>
+
+                {/* ⏳ 진입 후 최소 관망 시간 설정 */}
+                <div className={`p-3 rounded-xl bg-zinc-950 border ${useStopLoss ? "border-amber-500/40" : "border-white/10 opacity-50"}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
+                      <span>⏳</span>
+                      <span>최소 관망 시간</span>
+                    </label>
+                    <div className="flex gap-1">
+                      {[3, 5, 10].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          disabled={!useStopLoss}
+                          onClick={() => setMinHoldMinutesForLossCut(m)}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            minHoldMinutesForLossCut === m
+                              ? "bg-amber-400 text-black font-black"
+                              : "bg-white/10 text-gray-300 hover:text-white"
+                          }`}
+                        >
+                          {m}분
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-full bg-zinc-900 border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono font-black text-amber-300">
+                    진입 후 {minHoldMinutesForLossCut}분간 조기손절 보류
+                  </div>
+                  <div className="text-[9px] text-gray-400 mt-1">호가 잔파도 방어 (익절은 상시 체결)</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-zinc-950 border border-emerald-500/30">

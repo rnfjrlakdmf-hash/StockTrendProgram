@@ -300,6 +300,7 @@ def _default_state() -> Dict[str, Any]:
             "use_stop_loss": True,  # [수익 극대화 추천형] 엄격한 손절 가동 (손실은 -2.0%로 짧게 잘라내고 원금 철통 방어)
             "auto_averaging_down": True,  # True = -5% 하락 시 1회 자동 물타기(평단가 낮추기)
             "stop_loss_pct": 2.0,  # [수익 극대화 추천형] 손절선 -2.0% 엄격 준수
+            "min_hold_minutes_for_loss_cut": 5,  # [최소 관망 시간] 매수 체결 후 최소 3~5분(기본 5분) 동안은 호가 출렁임으로 인한 섣부른 조기 손절 보류
             "trailing_stop_pct": 1.0,
             "min_ai_score": 68,
             "allow_off_hours_sim": False,  # 대표님 원칙: 모의투자도 실전과 100% 동일하게 정규장 거래시간만 엄수!
@@ -1708,14 +1709,17 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                         )
 
 
-        sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct, use_sl=use_sl)
+        min_hold_secs = float(cfg.get("min_hold_minutes_for_loss_cut", 5) or 5) * 60.0
+        sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct, use_sl=use_sl, min_hold_seconds=min_hold_secs, state=state)
         if not sell_reason:
             if pnl_pct >= tp_pct:
                 sell_reason = f"목표 익절가 도달 (+{pnl_pct:.2f}%)"
             elif peak_pct >= max(1.4, tp_pct * 0.7) and drop_from_peak >= ts_pct and pnl_pct > 0.4:
                 sell_reason = f"트레일링 수익 보존 (+{pnl_pct:.2f}%)"
             elif use_sl and pnl_pct <= -abs(sl_pct):
-                sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
+                holding_secs = _get_position_holding_seconds(pos, state=state)
+                if holding_secs >= min_hold_secs or pnl_pct <= -5.0:
+                    sell_reason = f"손절선 작동 ({pnl_pct:.2f}%)"
 
         if sell_reason and (cfg.get("enabled") or force_buy):
             # 자동 매도 체결! (국내주식/ETF 및 해외주식/ETF 모두 KIS 주문 지원)
@@ -2159,6 +2163,9 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     elif not state["config"].get("paper_seed_krw"):
         state["config"]["paper_seed_krw"] = 20000000
 
+    if "min_hold_minutes_for_loss_cut" in new_cfg and new_cfg["min_hold_minutes_for_loss_cut"] is not None:
+        state["config"]["min_hold_minutes_for_loss_cut"] = max(1, int(new_cfg["min_hold_minutes_for_loss_cut"]))
+
     for k, v in new_cfg.items():
         if k in state["config"] and v is not None:
             if k in ("kis_app_secret", "kis_app_key", "kis_account_no"):
@@ -2262,6 +2269,43 @@ def update_auto_trader_config(new_cfg: Dict[str, Any]) -> Dict[str, Any]:
     return get_dashboard_summary(state)
 
 
+def _get_position_holding_seconds(pos: Dict[str, Any], state: Optional[Dict[str, Any]] = None) -> float:
+    """보유 종목의 매수 체결 시각(bought_at)으로부터 현재까지 경과한 시간(초)을 반환합니다."""
+    b_at = pos.get("bought_at") or pos.get("buy_time")
+    if b_at:
+        try:
+            clean_str = str(b_at).strip().replace("T", " ")[:19]
+            dt = datetime.strptime(clean_str, "%Y-%m-%d %H:%M:%S")
+            now_dt = datetime.now(KST)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=KST)
+            return max(0.0, (now_dt - dt).total_seconds())
+        except Exception:
+            pass
+
+    # bought_at이 없는 포지션인 경우 trade_logs에서 해당 종목의 가장 최근 BUY 타임스탬프 탐색
+    if state and state.get("trade_logs"):
+        sym = pos.get("symbol")
+        for lg in state.get("trade_logs", []):
+            if lg.get("symbol") == sym and lg.get("action") == "BUY":
+                ts = lg.get("timestamp")
+                if ts:
+                    try:
+                        clean_str = str(ts).strip().replace("T", " ")[:19]
+                        dt = datetime.strptime(clean_str, "%Y-%m-%d %H:%M:%S")
+                        now_dt = datetime.now(KST)
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=KST)
+                        pos["bought_at"] = clean_str
+                        pos["buy_time"] = clean_str
+                        return max(0.0, (now_dt - dt).total_seconds())
+                    except Exception:
+                        pass
+                break
+
+    return 999999.0
+
+
 def _evaluate_ai_smart_exit(
     pos: Dict[str, Any],
     quote: Dict[str, Any],
@@ -2269,13 +2313,17 @@ def _evaluate_ai_smart_exit(
     sl_pct: float,
     ts_pct: float,
     use_sl: bool = False,
+    min_hold_seconds: float = 300.0,
+    state: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
     """
     [🧠 AI 실시간 상승탄력 둔화 감지 & 자율 리스크 관리 매도 판단 엔진]
     1) 목표 익절가(+2.0%) 달성 시 즉시 전량 익절 확정!
     2) 고점 도달 후 고점 대비 ts_pct(1.0%p) 이상 밀릴 때 트레일링 스탑으로 수익 보존!
     3) 소폭 수익권(+1.0% 이상)에서 고점 대비 0.5%p 이상 밀리며 탄력 둔화 시 선제 조기 익절!
-    4) 원금 손절 모드(use_sl=True)일 때만 손실 컷 가동 (use_sl=False 시 무손절 원칙 엄수!)
+    4) 원금 손절 모드(use_sl=True)일 때만 손실 컷 가동
+       - ⏳ [최소 관망 시간 가드]: 매수 후 최소 3~5분(기본 300초) 동안은
+         호가의 1~2틱 잔파도 출렁임이나 일시 슬리피지로 인한 섣부른 조기 손절을 철저히 보류!
     """
     avg_p = float(pos.get("avg_price", 0) or 0)
     cur_p = float(pos.get("current_price", avg_p) or avg_p)
@@ -2288,6 +2336,10 @@ def _evaluate_ai_smart_exit(
     peak_pct = round(((high_p - avg_p) / avg_p) * 100.0, 2)
     drop_from_peak = round(peak_pct - pnl_pct, 2)
     intraday_chg = float((quote or {}).get("change_pct", 0.0) or 0.0)
+
+    # ⏳ 진입 후 최소 관망 시간(기본 3~5분, 300초) 경과 여부 확인
+    holding_secs = _get_position_holding_seconds(pos, state=state)
+    is_in_grace_period = (holding_secs < min_hold_seconds)
 
     # 📊 실시간 차트 기술적 지표 (RSI, 20일선 이격도) 연동
     chart_info = {}
@@ -2302,7 +2354,17 @@ def _evaluate_ai_smart_exit(
     # [1] 🛡️ 시장 상황 맞춤형 손실 최소화 (Adaptive Loss Minimization)
     # =========================================================================
     if use_sl:
-        # 1-A. [지지선 붕괴 & 하락 압력 조기 탈출 (Early Risk Cut)]
+        # [핵심] 진입 후 최소 관망 시간 가드 (Grace Period Guard)
+        # 매수 체결 직후 3~5분 동안은 호가 잔파도(1~2틱 슬리피지)로 인한 섣부른 조기 손절을 전면 보류합니다.
+        if is_in_grace_period:
+            # 단, 시스템 비상사태(-5.0% 초과 비정상 폭락) 시에만 최후의 안전 방어선 작동
+            emergency_sl = max(5.0, abs(sl_pct) * 2.0)
+            if pnl_pct <= -emergency_sl:
+                return f"🚨 [비상 리스크 차단] 진입 직후 비정상 급락(-{emergency_sl:.1f}% 초과) 감지 ({pnl_pct:+.2f}%) 즉시 긴급 탈출"
+            # 일반적인 잔파도 손절은 관망 시간(3~5분) 동안 철저히 보류하고 관망!
+            return None
+
+        # 1-A. [지지선 붕괴 & 하락 압력 조기 탈출 (Early Risk Cut)] - 3~5분 관망 시간 경과 후 발동
         # 고정 손절선(-2.0%)까지 멍하니 기다리지 않고, -0.6% ~ -1.0% 수준이라도:
         #  - 20일선(생명선)을 뚜렷하게 이탈 중이거나 (ma20_gap < -1.0%)
         #  - 당일 장중 마이너스 심화 (intraday_chg <= -0.5%) 또는 고점 대비 급락 (drop_from_peak >= 1.5%p) 시:
@@ -2312,7 +2374,7 @@ def _evaluate_ai_smart_exit(
         if pnl_pct <= -1.0 and (intraday_chg <= -0.2 or drop_from_peak >= 1.0):
             return f"🛡️ [AI 위험감지 조기탈출] 추가 하락 위험 포착 ({pnl_pct:+.2f}%) → 더 큰 손실 방지를 위해 선제 매도"
 
-        # 1-B. [최대 허용 손절 방어선]
+        # 1-B. [최대 허용 손절 방어선] - 3~5분 관망 시간 경과 후 발동
         # 급락장 등에서 자산을 보호하기 위한 최종 마지노선
         effective_max_loss = abs(sl_pct) if sl_pct > 0 else 2.0
         if pnl_pct <= -effective_max_loss:
@@ -2537,8 +2599,9 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
 
         # [핵심] 장이 열려 있을 때 AI 스마트 탄력·리스크 판단 엔진(_evaluate_ai_smart_exit) 가동!
         sell_reason = ""
+        min_hold_secs = float(cfg.get("min_hold_minutes_for_loss_cut", 5) or 5) * 60.0
         if is_market_open_for_pos:
-            sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct, use_sl=use_sl)
+            sell_reason = _evaluate_ai_smart_exit(pos, q, tp_pct, sl_pct, ts_pct, use_sl=use_sl, min_hold_seconds=min_hold_secs, state=state)
 
         if sell_reason:
             proceeds_krw = int(round(cur_p_calc * int(pos.get("qty", 1)) * unit_m))
@@ -2882,8 +2945,16 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     # 종목별 거래소 시장 뱃지(코스피/코스닥/나스닥/NYSE/AMEX) 주입
     try:
         from market_tag_helper import get_clean_market_name
+        min_hold_secs = float(cfg.get("min_hold_minutes_for_loss_cut", 5) or 5) * 60.0
         for p in positions + paper_positions + real_positions:
             p["market_tag"] = get_clean_market_name(p.get("symbol", ""))
+            b_str = p.get("bought_at") or p.get("buy_time") or ""
+            p["bought_at"] = b_str
+            p["buy_time"] = b_str
+            h_secs = _get_position_holding_seconds(p, state=state)
+            p["holding_seconds"] = int(h_secs)
+            p["is_grace_period"] = bool(h_secs < min_hold_secs)
+            p["grace_remaining_seconds"] = max(0, int(min_hold_secs - h_secs)) if h_secs < min_hold_secs else 0
         for c in curr_cands:
             c["market_tag"] = get_clean_market_name(c.get("symbol", ""))
         for lg in all_logs:
