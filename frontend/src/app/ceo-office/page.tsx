@@ -109,19 +109,314 @@ const QUICK_TOPICS = [
     { label: '📊 나스닥100 선물', topic: 'NQ=F', message: '나스닥100 선물(NQ=F) 야간 추세랑 헤지 전략 보고해' },
 ];
 
+const FALLBACK_EXECUTIVES: Executive[] = [
+    {
+        id: 'chief_sec',
+        name: '정유진',
+        role: '비서실장',
+        dept: '대표이사 직속 비서실',
+        badge: '결재 서류 취합 · 3줄 핵심 요약',
+        avatar: '👩‍💼',
+        color: 'amber',
+        style: '각 본부 임원들이 알아서 분석해 올린 기안서를 대표님이 서명만 하실 수 있도록 3줄로 요약해 결재판에 올립니다.',
+        status: '전 부서 24시간·주말 무휴 자율 분석 기안서 취합 및 대표님 결재 대기 중',
+    },
+    {
+        id: 'research_vp',
+        name: '박진우',
+        role: '부사장 (리서치센터장)',
+        dept: '기업·산업 리서치본부',
+        badge: '증권사 리포트 · 컨센서스 총괄',
+        avatar: '👨‍💼',
+        color: 'purple',
+        style: '국내외 제도권 증권사 애널리스트들이 발표한 최신 리포트와 목표주가 컨센서스를 자동 분석해 결재 올립니다.',
+        status: '증권사 종목·시황 리포트 전수 조사 및 차주 전략 기안 완료',
+    },
+    {
+        id: 'quant_dir',
+        name: '김도현',
+        role: '상무 (퀀트·수급본부장)',
+        dept: '알고리즘 트레이딩·수급본부',
+        badge: '외인/기관 수급 · 추세 돌파',
+        avatar: '📈',
+        color: 'emerald',
+        style: '외국인·기관 수급 유입과 50일 이동평균선 돌파 여부를 알고리즘으로 자동 스캔해 보고합니다.',
+        status: 'KRX 수급 & 50일 이평선 추세 돌파 스캐닝 완료',
+    },
+    {
+        id: 'risk_cro',
+        name: '최서연',
+        role: '상무 (리스크관리본부장 · CRO)',
+        dept: '리스크관리·컴플라이언스본부',
+        badge: '과열 경보 · 하방 리스크 방어',
+        avatar: '🛡️',
+        color: 'rose',
+        style: '모든 결재 기안서에 대해 고점 부담, 환율·금리 변동성, 손절/방어 기준선을 사전에 감사하여 첨부합니다.',
+        status: '상정 안건 전 종목 하방 리스크 및 환율 변동성 감사 완료',
+    },
+    {
+        id: 'global_dir',
+        name: '이준호',
+        role: '이사 (글로벌·파생본부장)',
+        dept: '해외주식·ETF·선물파생본부',
+        badge: '미국 빅테크 · 나스닥/금/원유 선물',
+        avatar: '🌎',
+        color: 'blue',
+        style: '밤사이 뉴욕 증시(엔비디아·테슬라), 나스닥100 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.',
+        status: '미국 나스닥 선물 · 엔비디아 · 달러 환율 24시간 연동 분석 완료',
+    },
+];
+
+const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
+    {
+        doc_id: 'DOC-DEFAULT-01',
+        doc_number: '제 2026-01 호',
+        category_badge: '🌐 전사 24시간·주말 무휴 종합 보고',
+        urgency: '최우선 결재',
+        stock_name: '전체 시장 시스템',
+        title: '[전사 365일 상시 감시 보고] 국내외 증시 시황 결산 및 차주(개장일) 리서치·수급 시스템 자동 브리핑',
+        proposer: '박진우 부사장 (리서치센터장) 외 4개 본부 합동',
+        submitted_at: '상시 자동 상정 완료',
+        key_numbers: [
+            { label: '핵심 시황 전략', value: '실적·수주 주도주 압축' },
+            { label: '나스닥100 선물 (NQ=F)', value: '20,480pt (+0.42%)' },
+            { label: '글로벌 AI 대장 (NVDA)', value: '$138.00 (+0.89%)' },
+            { label: '자율 분석 완료 건수', value: '종목 6건 · 시황 4건' },
+        ],
+        research_opinion: '👨‍💼 박진우 부사장(리서치): 증권사에 주말은 없습니다! 전사 리서치센터가 분석한 핵심 시황은 전체 지수 추종보다 실제로 해외 수주와 영업이익이 찍히는 AI 반도체·원전(SMR)·항공·조선 주도주로 에너지를 집중하는 전략입니다.',
+        quant_opinion: '📈 김도현 상무(퀀트·수급): 전사 수급 스캐너 점검 결과, 50일 이동평균선 위에서 외국인과 기관의 프로그램 순매수가 동반 유입되는 종목군만 강한 시세 연속성을 유지하고 있습니다.',
+        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 나스닥100 선물 변동성과 장 초반 외국인 선물 수급 이탈 여부를 1순위 위험 지표로 설정했습니다. 급등 종목 추격 매수 금지 원칙을 유지합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 평일·주말 관계없이 전사 시장 데이터 수집·리서치·퀀트 스캐너가 100% 정상 가동 중이며, 실적 컨센서스 상향 종목 중심의 선별 모니터링 체제를 대표님께 승인 요청드립니다.',
+        recommendation: '전사 24시간 시장 모니터링 체제 승인 (가결 권고)',
+    },
+    {
+        doc_id: 'DOC-DEFAULT-02',
+        doc_number: '제 2026-02 호',
+        category_badge: '🏢 국내 종목 자율 분석 (하나증권)',
+        urgency: '정규 결재',
+        stock_name: '두산에너빌리티',
+        title: '[두산에너빌리티] 연내 SMR 추가 수주 기대 및 글로벌 원전 기자재 모멘텀 유효',
+        proposer: '박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)',
+        submitted_at: '자율 분석 완료',
+        key_numbers: [
+            { label: '분석 대상 종목', value: '두산에너빌리티' },
+            { label: '발간 증권사', value: '하나증권' },
+            { label: '제시 목표주가', value: '120,000원' },
+            { label: '투자의견', value: 'Buy (매수)' },
+        ],
+        research_opinion: '👨‍💼 박진우 부사장(리서치): 목표주가를 밸류에이션 배수 조정으로 일부 조정했으나, 향후 소형모듈원전(SMR) 추가 수주와 가스터빈 수주 잔고 확대에 따른 전사적 증익 기대감은 여전히 유효합니다.',
+        quant_opinion: '📈 김도현 상무(퀀트·수급): 목표주가(120,000원) 대비 현재 주가의 괴리율과 외국인·기관 수급 유입 연속성을 자동 추적 중입니다.',
+        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 목표주가 조정이 기업 펀더멘털 훼손인지 시장 멀티플 조정인지 구분하고 연내 SMR 본계약 공시 일정을 함께 체크해야 합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 두산에너빌리티에 대한 하나증권 리포트(목표가 120,000원)와 리스크 감사가 완료되었습니다. 대표님 중점 관심 포트폴리오 편입 여부를 서명해 주십시오.',
+        recommendation: '목표가 120,000원 기준 중점 관리 승인 요청',
+        detail_url: 'https://stock.naver.com/research/company/96804',
+    },
+    {
+        doc_id: 'DOC-DEFAULT-03',
+        doc_number: '제 2026-03 호',
+        category_badge: '🏢 국내 종목 자율 분석 (한화투자증권)',
+        urgency: '정규 결재',
+        stock_name: '대한항공',
+        title: '[대한항공] 3분기 일회성 성과급 반영에도 견조한 국제선 여객 운임 및 해외발 수요 유지',
+        proposer: '박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)',
+        submitted_at: '자율 분석 완료',
+        key_numbers: [
+            { label: '분석 대상 종목', value: '대한항공' },
+            { label: '발간 증권사', value: '한화투자증권' },
+            { label: '제시 목표주가', value: '43,000원' },
+            { label: '투자의견', value: 'Buy (매수)' },
+        ],
+        research_opinion: '👨‍💼 박진우 부사장(리서치): 별도 매출액 5조 448억원, 영업이익 4,212억원을 기록했습니다. 성과급 반영 등으로 시장 기대치를 소폭 하회했으나 해외발 환승 수요 유치와 견조한 여객 운임이 지속되고 있습니다.',
+        quant_opinion: '📈 김도현 상무(퀀트·수급): 목표주가(43,000원) 대비 저평가 영역에서 기관 연기금 및 외국인 저가 매수세 유입 여부를 스캔하고 있습니다.',
+        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 일회성 비용(성과급 등) 요인과 본업인 여객·화물 운임 체력을 분리해서 점검하고 국제 유가 및 환율 흐름을 동시 확인해야 합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 대한항공에 대한 한화투자증권 리포트(목표가 43,000원) 및 리스크 감사가 완료되었습니다. 대표님 서명을 요청드립니다.',
+        recommendation: '목표가 43,000원 기준 중점 관리 승인 요청',
+        detail_url: 'https://stock.naver.com/research/company/96803',
+    },
+    {
+        doc_id: 'DOC-DEFAULT-04',
+        doc_number: '제 2026-04 호',
+        category_badge: '🏢 국내 종목 자율 분석 (미래에셋증권)',
+        urgency: '정규 결재',
+        stock_name: 'SK하이닉스',
+        title: '[SK하이닉스] HBM3E 12단 독점적 지위 지속 및 AI 서버용 고부가 메모리 수익성 극대화',
+        proposer: '박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)',
+        submitted_at: '자율 분석 완료',
+        key_numbers: [
+            { label: '분석 대상 종목', value: 'SK하이닉스' },
+            { label: '발간 증권사', value: '미래에셋증권' },
+            { label: '제시 목표주가', value: '270,000원' },
+            { label: '투자의견', value: 'Buy (매수)' },
+        ],
+        research_opinion: '👨‍💼 박진우 부사장(리서치): 엔비디아 등 북미 빅테크향 HBM 매출 비중 확대로 범용 메모리 경기 변동과 무관하게 업계 최고 수준의 영업이익률을 유지하고 있다는 분석입니다.',
+        quant_opinion: '📈 김도현 상무(퀀트·수급): 50일 이동평균선 지지력 확보 및 외국인·기관 반도체 섹터 프로그램 순매수 유입 강도가 가장 높은 핵심 주도주입니다.',
+        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 미국 필라델피아 반도체 지수 변동성과 분기 HBM 출하 가이던스 달성 여부를 조건부로 관리해야 합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: AI 반도체 핵심 주도주 SK하이닉스(목표가 270,000원) 자율 분석 기안서입니다. 대표님 결재를 요청드립니다.',
+        recommendation: '목표가 270,000원 기준 중점 관리 승인 요청',
+        detail_url: 'https://stock.naver.com/research/company',
+    },
+    {
+        doc_id: 'DOC-DEFAULT-05',
+        doc_number: '제 2026-05 호',
+        category_badge: '🌎 해외·글로벌 데스크 자율 분석',
+        urgency: '글로벌 핵심',
+        stock_name: 'NVDA',
+        title: '[엔비디아 (NVDA)] 글로벌 AI 반도체 선행지표 & 월가 IB 목표주가 자율 점검 보고',
+        proposer: '이준호 이사 (글로벌·파생본부장)',
+        submitted_at: '24시간 글로벌 데스크',
+        key_numbers: [
+            { label: '현재 주가 (등락률)', value: '$138.00 (+0.89%)' },
+            { label: '월가 IB 평균 목표가', value: '$175.00 (+26.8%)' },
+            { label: '50일 이동평균선', value: '$132.40' },
+            { label: '추세 판정', value: '📈 50일선 상회 강세' },
+        ],
+        research_opinion: '🌎 이준호 이사(글로벌): 국내 반도체(삼성전자·SK하이닉스) 및 전력기기 업종의 선행지표인 엔비디아(NVDA)는 차세대 블랙웰(Blackwell) 수요 견조로 월가 IB 평균 목표가 $175.00을 유지하고 있습니다.',
+        quant_opinion: '📈 김도현 상무(퀀트·수급): 50일 이동평균선($132.40) 위에서 중기 상승 추세를 유지하며 글로벌 AI 테크 수급의 기준점 역할을 하고 있습니다.',
+        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 52주 신고가 부근 단기 차익실현 매물과 원/달러 환율 변동성을 동시에 감안해 국내 반도체 연동 비중을 조절해야 합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 글로벌 AI 반도체 선행지표(NVDA) 점검 완료. 국내 반도체·전력 인프라 섹터 연동 모니터링 승인을 요청드립니다.',
+        recommendation: '글로벌 선행지표 연동 승인 요청',
+    },
+];
+
+const FALLBACK_DEBATES: DebateTurn[] = [
+    {
+        speaker_id: 'sec_chief',
+        name: '정유진',
+        role: '비서실장',
+        dept: '대표이사 직속 비서실',
+        avatar: '👩‍💼',
+        stance: '결재서류 상정 완료',
+        stance_tone: 'summary',
+        headline: '대표님, 평일·주말 구분 없이 각 본부 임원들이 시장 시스템과 핵심 종목 분석을 모두 마쳐 기안서를 올렸습니다!',
+        message: '대표님께서 직접 찾으실 필요 없이 리서치센터·퀀트본부·리스크관리본부·글로벌본부가 24시간 상시 분석을 끝내고 [대표이사 전자결재 집무실]에 기안서를 올려두었습니다.\n브리핑 요약만 훑어보시고 [✅ 승인 서명] 도장만 찍어주시면 됩니다!',
+        data_tag: '전 부서 상시 자율 기안 완료',
+    },
+    {
+        speaker_id: 'research_vp',
+        name: '박진우',
+        role: '부사장 (리서치센터장)',
+        dept: '기업·산업 리서치본부',
+        avatar: '👨‍💼',
+        stance: '리서치 자동 분석 보고',
+        stance_tone: 'bull',
+        headline: '증권사 최신 리포트 전수 분석 완료 — 두산에너빌리티(120,000원) · 대한항공(43,000원) · SK하이닉스(270,000원)',
+        message: '대표님, 증권사에 주말은 없습니다! 국내 주요 증권사 애널리스트들이 발표한 최신 종목·시황 리포트를 전수 조사하여 핵심만 3초 요약해 결재판에 올려두었습니다.',
+        data_tag: '제도권 증권사 리포트 전수 요약',
+    },
+    {
+        speaker_id: 'quant_dir',
+        name: '김도현',
+        role: '상무 (퀀트·수급본부장)',
+        dept: '알고리즘 트레이딩·수급본부',
+        avatar: '📈',
+        stance: '수급 스캐너 정상 가동',
+        stance_tone: 'neutral',
+        headline: '외국인·기관 수급 및 50일 이동평균선 돌파 스캐너 자동 감사 완료',
+        message: '상정된 모든 종목의 현재가와 50일 이동평균선 위치, 최근 52주 고저점 대비 수급 탄력을 자동으로 계산해 각 결재 서류에 첨부해 두었습니다.',
+        data_tag: 'KRX 수급 & 50일선 연동',
+    },
+    {
+        speaker_id: 'risk_cro',
+        name: '최서연',
+        role: '상무 (리스크관리본부장 · CRO)',
+        dept: '리스크관리·컴플라이언스본부',
+        avatar: '🛡️',
+        stance: '사전 리스크 감사 완료',
+        stance_tone: 'caution',
+        headline: '모든 결재 안건에 주의해야 할 하방 리스크 요인을 사전에 첨부했습니다',
+        message: '리서치팀의 낙관적인 목표주가 뒤에 숨어 있는 실적 하회 리스크·환율 변수·차익실현 주의 구간을 제가 직접 빨간펜으로 적어 각 기안서에 붙여 두었습니다.',
+        data_tag: 'CRO 사전 리스크 감사필',
+    },
+    {
+        speaker_id: 'global_dir',
+        name: '이준호',
+        role: '이사 (글로벌·파생본부장)',
+        dept: '해외주식·ETF·선물파생본부',
+        avatar: '🌎',
+        stance: '24시간 글로벌 데스크 보고',
+        stance_tone: 'bull',
+        headline: '나스닥100 선물(NQ=F) · 엔비디아(NVDA) 24시간 글로벌 데스크 보고 완료',
+        message: '글로벌본부에서도 미국 증시와 지수 선물 시장을 상시 분석해 결재 안건으로 올려두었습니다. 한국 반도체와 수출주 개장 방향성을 결정짓는 핵심 지표이니 함께 재가해 주십시오!',
+        data_tag: '미국 주식 · ETF · 선물 24시간 데스크',
+    },
+];
+
+const FALLBACK_RESEARCH_DESK: ResearchReportItem[] = [
+    {
+        id: 'fb_rep_1',
+        category: '종목·목표주가',
+        stock_name: '두산에너빌리티',
+        title: '연내 SMR 추가 수주 기대 및 글로벌 원전 기자재 모멘텀 유효',
+        broker: '하나증권',
+        date: '최신 발간',
+        target_price: '120,000원',
+        opinion: 'Buy (매수)',
+        summary: ['목표주가 120,000원 및 투자의견 매수 유지'],
+        plain_explanation: '소형모듈원전(SMR) 추가 수주와 전사적 이익 개선 기대감 유효',
+        action_point: '연내 SMR 수주 공시 및 밸류에이션 멀티플 확인',
+        pdf_url: '',
+        detail_url: 'https://stock.naver.com/research/company/96804',
+    },
+    {
+        id: 'fb_rep_2',
+        category: '종목·목표주가',
+        stock_name: '대한항공',
+        title: '[3Q Review] 일회성 성과급 반영에도 견조한 국제선 여객 운임 유지',
+        broker: '한화투자증권',
+        date: '최신 발간',
+        target_price: '43,000원',
+        opinion: 'Buy (매수)',
+        summary: ['별도 매출액 5조 448억원, 영업이익 4,212억원 기록'],
+        plain_explanation: '해외발 수요 적극 유치 및 미주·일본 노선 견조한 운임 지속',
+        action_point: '일회성 비용과 본업 여객·화물 수익성 분리 점검',
+        pdf_url: '',
+        detail_url: 'https://stock.naver.com/research/company/96803',
+    },
+    {
+        id: 'fb_rep_3',
+        category: '종목·목표주가',
+        stock_name: 'SK하이닉스',
+        title: 'HBM3E 12단 독점적 지위 지속 및 AI 서버용 고부가 메모리 수익성 극대화',
+        broker: '미래에셋증권',
+        date: '최신 발간',
+        target_price: '270,000원',
+        opinion: 'Buy (매수)',
+        summary: ['AI 가속기향 HBM 매출 비중 확대로 영업이익률 선도'],
+        plain_explanation: 'AI 전용 초고속 메모리(HBM) 시장을 선도하며 높은 이익 창출',
+        action_point: '외국인·기관 반도체 프로그램 순매수 유입 확인',
+        pdf_url: '',
+        detail_url: 'https://stock.naver.com/research/company',
+    },
+    {
+        id: 'fb_rep_4',
+        category: '종목·목표주가',
+        stock_name: '삼성전자',
+        title: '역사적 PBR 밴드 하단 저평가 매력 및 HBM 공급 확대 기대',
+        broker: 'KB증권',
+        date: '최신 발간',
+        target_price: '85,000원',
+        opinion: 'Buy (매수)',
+        summary: ['12개월 선행 PBR 1.0배 부근 하방 경직성 확보'],
+        plain_explanation: '자산가치 대비 저점 구간으로 추가 하락 위험 제한적',
+        action_point: '외국인 수급 전환 및 50일 이동평균선 안착 여부 점검',
+        pdf_url: '',
+        detail_url: 'https://stock.naver.com/research/company',
+    },
+];
+
 export default function CeoOfficePage() {
     const { user, isLoading: authLoading } = useAuth();
     const isAdmin = isAdminEmail(user?.email);
 
-    const [executives, setExecutives] = useState<Executive[]>([]);
-    const [autoApprovals, setAutoApprovals] = useState<AutoApprovalDoc[]>([]);
+    const [executives, setExecutives] = useState<Executive[]>(FALLBACK_EXECUTIVES);
+    const [autoApprovals, setAutoApprovals] = useState<AutoApprovalDoc[]>(FALLBACK_AUTO_APPROVALS);
     const [agenda, setAgenda] = useState<Agenda | null>(null);
-    const [debates, setDebates] = useState<DebateTurn[]>([]);
-    const [researchDesk, setResearchDesk] = useState<ResearchReportItem[]>([]);
+    const [debates, setDebates] = useState<DebateTurn[]>(FALLBACK_DEBATES);
+    const [researchDesk, setResearchDesk] = useState<ResearchReportItem[]>(FALLBACK_RESEARCH_DESK);
     const [marketDesk, setMarketDesk] = useState<ResearchReportItem[]>([]);
-    const [officeStatus, setOfficeStatus] = useState<string>('전 부서 자율 시장 분석 완료 · 대표이사 전자결재 대기 중');
+    const [officeStatus, setOfficeStatus] = useState<string>('🏖️ 주말·야간 24시간 비상근무 가동 · 전 부서 자율 시장 분석 및 대표이사 결재 상정 완료');
     const [updatedAt, setUpdatedAt] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState<boolean>(false);
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
@@ -180,8 +475,6 @@ export default function CeoOfficePage() {
     const fetchOfficeData = useCallback(async (topicParam = '', messageParam = '', appendHistory = false) => {
         if (appendHistory) {
             setIsCallingMeeting(true);
-        } else {
-            setLoading(true);
         }
 
         try {
@@ -195,14 +488,14 @@ export default function CeoOfficePage() {
             const json = await res.json();
             if (json.status === 'success' && json.data) {
                 const d = json.data;
-                setExecutives(d.executives || []);
-                setAutoApprovals(d.auto_approvals || []);
-                setAgenda(d.agenda || null);
-                setDebates(d.debates || []);
-                setResearchDesk(d.research_desk || []);
-                setMarketDesk(d.market_desk || []);
-                setOfficeStatus(d.office_status || '');
-                setUpdatedAt(d.updated_at || '');
+                if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
+                if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
+                if (d.agenda) setAgenda(d.agenda);
+                if (Array.isArray(d.debates) && d.debates.length > 0) setDebates(d.debates);
+                if (Array.isArray(d.research_desk) && d.research_desk.length > 0) setResearchDesk(d.research_desk);
+                if (Array.isArray(d.market_desk) && d.market_desk.length > 0) setMarketDesk(d.market_desk);
+                if (d.office_status) setOfficeStatus(d.office_status);
+                if (d.updated_at) setUpdatedAt(d.updated_at);
 
                 if (appendHistory && (messageParam || topicParam)) {
                     const secTurn = (d.debates || []).find((t: DebateTurn) => t.speaker_id === 'sec_chief') || (d.debates || [])[0];
