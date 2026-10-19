@@ -77,6 +77,120 @@ US_UNIVERSE = [
     {"symbol": "COIN", "name": "코인베이스 (Coinbase)", "sector": "미국 디지털자산 거래소 대장", "tier": "MID_MOMENTUM", "exchange": "NASD"},
 ]
 
+_SECTOR_CACHE: Dict[str, str] = {}
+
+def _clean_korean_sector_name(raw: str) -> str:
+    mapping = {
+        "디스플레이장비및부품": "디스플레이/IT부품",
+        "건강관리장비와용품": "의료기기/헬스케어",
+        "반도체와반도체장비": "반도체/소부장",
+        "전기제품": "전기/전자/배터리",
+        "전자장비와기기": "전자/IT기기",
+        "제약": "바이오/제약",
+        "생물공학": "바이오/생명공학",
+        "화장품": "화장품/K-뷰티",
+        "자동차부품": "자동차/모빌리티 부품",
+        "자동차": "완성차/모빌리티",
+        "소프트웨어": "소프트웨어/AI",
+        "IT서비스": "IT플랫폼/서비스",
+        "기계": "기계/원전/플랜트",
+        "화학": "화학/소재",
+        "철강": "철강/금속",
+        "조선": "조선/해양",
+        "해운사": "해운/물류",
+        "항공사": "항공/우주",
+        "엔터테인먼트와미디어": "K-콘텐츠/엔터",
+        "게임엔터테인먼트": "게임/콘텐츠",
+        "통신서비스": "통신/인프라",
+        "전기유틸리티": "전기/전력인프라",
+    }
+    for k, v in mapping.items():
+        if k in raw:
+            return v
+    return raw
+
+
+def get_stock_sector(symbol: str, name: str = "") -> str:
+    """
+    종목 코드 또는 이름을 기반으로 대략적인 업종/섹터/테마를 반환합니다.
+    (FCM 푸시 알림 및 대시보드 브리핑에 깔끔하고 직관적으로 표시)
+    """
+    clean_sym = str(symbol or "").strip().upper().split(".")[0]
+    if not clean_sym:
+        return "AI 주도주"
+    if clean_sym in _SECTOR_CACHE:
+        return _SECTOR_CACHE[clean_sym]
+
+    # 1. 기정의된 KR_UNIVERSE / US_UNIVERSE 에서 탐색
+    for u in KR_UNIVERSE + US_UNIVERSE:
+        if u.get("symbol") == clean_sym:
+            raw_sec = u.get("sector", "")
+            sec = raw_sec.split("(")[0].replace("🚀 해외신생 ·", "").strip()
+            if sec:
+                _SECTOR_CACHE[clean_sym] = sec
+                return sec
+
+    # 2. 이름 기반 ETF 및 주요 테마 판별
+    nm = str(name or "").upper()
+    if any(k in nm for k in ["TIGER", "KODEX", "ACE", "SOL", "PLUS", "RISE", "KOSEF", "KBSTAR"]):
+        if any(b in nm for b in ["반도체", "AI", "HBM"]):
+            sec = "AI 반도체 ETF"
+        elif any(b in nm for b in ["2차전지", "배터리"]):
+            sec = "2차전지 ETF"
+        elif any(b in nm for b in ["바이오", "헬스케어"]):
+            sec = "바이오/헬스케어 ETF"
+        elif any(b in nm for b in ["미국", "나스닥", "S&P", "빅테크"]):
+            sec = "해외지수/빅테크 ETF"
+        elif any(b in nm for b in ["레버리지", "인버스"]):
+            sec = "지수 레버리지 ETF"
+        else:
+            sec = "테마형 ETF"
+        _SECTOR_CACHE[clean_sym] = sec
+        return sec
+
+    # 3. 미국 종목 (영문 티커)
+    if not clean_sym.isdigit():
+        us_known = {
+            "NVDA": "AI 반도체 대장", "TSLA": "전기차/자율주행", "AAPL": "빅테크/IT",
+            "MSFT": "클라우드/AI", "PLTR": "AI 국방 빅데이터", "AMD": "AI GPU 반도체",
+            "IONQ": "양자컴퓨팅", "RKLB": "우주항공/로켓", "OKLO": "차세대 SMR 원전",
+            "SOUN": "음성인식 AI", "ASTS": "위성 스마트폰 통신", "JOBY": "UAM 에어택시",
+            "SERV": "자율주행 로봇", "LUNR": "달 탐사선/우주", "RGTI": "초전도 양자컴",
+            "BBAI": "국방 AI 솔루션", "SOFI": "디지털 금융/핀테크", "MARA": "AI 데이터센터/채굴",
+            "MSTR": "비트코인/인프라", "AVGO": "통신/AI ASIC", "COIN": "가상자산 거래소",
+            "SOXL": "반도체 3배 레버리지 ETF", "TQQQ": "나스닥 3배 레버리지 ETF", "NVDL": "엔비디아 2배 ETF",
+        }
+        if clean_sym in us_known:
+            _SECTOR_CACHE[clean_sym] = us_known[clean_sym]
+            return us_known[clean_sym]
+        try:
+            import yfinance as yf
+            t = yf.Ticker(clean_sym)
+            ind = t.info.get("industry") or t.info.get("sector")
+            if ind:
+                _SECTOR_CACHE[clean_sym] = str(ind)
+                return str(ind)
+        except Exception:
+            pass
+        return "미국 기술주"
+
+    # 4. 국내 종목 (6자리 숫자) - WiseReport WICS 업종 조회
+    try:
+        import urllib.request, re
+        url = f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={clean_sym}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        html = urllib.request.urlopen(req, timeout=3).read().decode("utf-8", errors="ignore")
+        m = re.findall(r"WICS\s*:\s*([^<]+)", html)
+        if m:
+            raw_wics = m[0].strip()
+            friendly = _clean_korean_sector_name(raw_wics)
+            _SECTOR_CACHE[clean_sym] = friendly
+            return friendly
+    except Exception:
+        pass
+
+    return "AI 주도주"
+
 
 _LIVE_HOLIDAY_CACHE: Dict[str, Any] = {"date": None, "is_holiday": False, "reason": ""}
 
@@ -1182,6 +1296,7 @@ def _send_batch_trade_notification(
             it = items[0]
             sym = it.get("symbol", "")
             name = it.get("name", sym)
+            sec = it.get("sector") or get_stock_sector(sym, name)
             amt = it.get("amount_krw", 0)
             qty = it.get("qty", 0)
             is_us = bool(it.get("is_us"))
@@ -1190,19 +1305,19 @@ def _send_batch_trade_notification(
             if is_us:
                 p_val = float(it.get("price", 0))
                 unit_lbl = f"${p_val:.2f}" if p_val < 100 else f"${p_val:,.1f}"
-                detail_lbl = f"[{mkt_tag}] {unit_lbl} × {qty}주 매입 완료 (≈ ₩{amt:,})"
+                detail_lbl = f"[{mkt_tag} · {sec}] {unit_lbl} × {qty}주 매입 완료 (≈ ₩{amt:,})"
             else:
                 unit_lbl = f"{int(it.get('price', 0)):,}원"
-                detail_lbl = f"[{mkt_tag}] {unit_lbl} × {qty}주 매입 완료"
+                detail_lbl = f"[{mkt_tag} · {sec}] {unit_lbl} × {qty}주 매입 완료"
             _send_admin_trade_notification(
-                f"🟢{mode_tag} 매수 완료 {name} {amt:,}원",
+                f"🟢{mode_tag} 매수 완료 {name} ({sec}) {amt:,}원",
                 f"{detail_lbl}\n목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
                 symbol=sym,
                 market=mkt_tag,
                 force=True,
             )
         else:
-            names_summary = ", ".join(it.get("name", it.get("symbol")) for it in items[:2])
+            names_summary = ", ".join(f"{it.get('name', it.get('symbol'))}({it.get('sector') or get_stock_sector(it.get('symbol', ''), it.get('name', ''))})" for it in items[:2])
             if len(items) > 2:
                 names_summary += f" 외 {len(items)-2}건"
             title = f"🟢{mode_tag} {len(items)}개 종목 포트폴리오 일괄 매수 ({names_summary})"
@@ -1211,9 +1326,10 @@ def _send_batch_trade_notification(
             for it in items:
                 sym = it.get("symbol", "")
                 name = it.get("name", sym)
+                sec = it.get("sector") or get_stock_sector(sym, name)
                 amt = it.get("amount_krw", 0)
                 qty = it.get("qty", 0)
-                lines.append(f"• {name}: {qty}주 ({amt:,}원)")
+                lines.append(f"• {name} ({sec}): {qty}주 ({amt:,}원)")
             lines.append(f"💰 {c_lbl}: {c_val:,}원 | 목표 +{tp_pct}%")
             body = "\n".join(lines)
 
@@ -1237,6 +1353,7 @@ def _send_batch_trade_notification(
             it = items[0]
             sym = it.get("symbol", "")
             name = it.get("name", sym)
+            sec = it.get("sector") or get_stock_sector(sym, name)
             pnl_krw = it.get("pnl_krw", 0)
             pnl_pct = it.get("pnl_pct", 0.0)
             proceeds = it.get("proceeds_krw", 0)
@@ -1246,8 +1363,8 @@ def _send_batch_trade_notification(
             tag = "🔴익절" if pnl_krw >= 0 else "🛡️손절"
             pnl_label = "수익" if pnl_krw >= 0 else "손실"
             _send_admin_trade_notification(
-                f"{tag}{mode_tag} {name} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                f"[{mkt_tag}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds:,}원){kis_tag}\n"
+                f"{tag}{mode_tag} {name} ({sec}) {pnl_krw:+,}원({pnl_pct:+.1f}%)",
+                f"[{mkt_tag} · {sec}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds:,}원){kis_tag}\n"
                 f"잔여 {c_lbl} {c_val:,}원",
                 symbol=sym,
                 market=mkt_tag,
@@ -1255,17 +1372,19 @@ def _send_batch_trade_notification(
             )
         else:
             tag = "🔴일괄 익절" if total_pnl_krw >= 0 else "🛡️일괄 손절"
-            names_summary = ", ".join(it.get("name", it.get("symbol")) for it in items[:2])
+            names_summary = ", ".join(f"{it.get('name', it.get('symbol'))}({it.get('sector') or get_stock_sector(it.get('symbol', ''), it.get('name', ''))})" for it in items[:2])
             if len(items) > 2:
                 names_summary += f" 외 {len(items)-2}건"
             title = f"{tag}{mode_tag} {len(items)}개 종목 체결 완료 (총손익 {total_pnl_krw:+,}원)"
 
             lines = [f"📌 [포트폴리오 일괄 매도 완료 · 총 회수금 {total_proceeds:,}원]"]
             for it in items:
-                name = it.get("name", it.get("symbol"))
+                sym = it.get("symbol", "")
+                name = it.get("name", sym)
+                sec = it.get("sector") or get_stock_sector(sym, name)
                 pnl_krw = it.get("pnl_krw", 0)
                 pnl_pct = it.get("pnl_pct", 0.0)
-                lines.append(f"• {name}: {pnl_krw:+,}원 ({pnl_pct:+.1f}%)")
+                lines.append(f"• {name} ({sec}): {pnl_krw:+,}원 ({pnl_pct:+.1f}%)")
             lines.append(f"💰 잔여 {c_lbl}: {c_val:,}원")
             body = "\n".join(lines)
 
@@ -1696,12 +1815,13 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                         "mode": cfg.get("mode", "AI_PAPER"),
                     })
                     actions_taken.append(f"💧 [물타기 추매] {pos['name']} +{add_qty}주 (평단 낮춤){kis_tag}")
+                    pos_sec = pos.get("sector") or get_stock_sector(sym, pos.get("name", sym))
                     if cfg.get("telegram_notify", True):
                         from market_tag_helper import get_clean_market_name
                         mkt_tag = get_clean_market_name(sym)
                         _send_admin_trade_notification(
-                            f"💧추매 {pos['name']} {add_cost:,}원",
-                            f"[{mkt_tag}] +{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
+                            f"💧추매 {pos['name']} ({pos_sec}) {add_cost:,}원",
+                            f"[{mkt_tag} · {pos_sec}] +{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
                             f"남은 예수금 {acct.get('cash_krw', 0):,}원",
                             symbol=sym,
                             market=mkt_tag,
@@ -1743,12 +1863,14 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 else:
                     acct["loss_trades"] = int(acct.get("loss_trades", 0) + 1)
 
+                pos_sec = pos.get("sector") or get_stock_sector(sym, pos.get("name", sym))
                 log_entry = {
                     "id": f"TRD-{int(time.time()*1000)}",
                     "timestamp": now_str,
                     "action": "SELL",
                     "symbol": sym,
                     "name": pos["name"],
+                    "sector": pos_sec,
                     "qty": pos["qty"],
                     "price": live_price,
                     "amount_krw": proceeds_krw,
@@ -1758,7 +1880,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                     "mode": cfg.get("mode", "AI_PAPER"),
                 }
                 state["trade_logs"].insert(0, log_entry)
-                actions_taken.append(f"🔴 [매도] {pos['name']} ({pnl_pct:+.2f}% / {pnl_krw:+,}원){kis_sell_tag}")
+                actions_taken.append(f"🔴 [매도] {pos['name']} ({pos_sec}) ({pnl_pct:+.2f}% / {pnl_krw:+,}원){kis_sell_tag}")
                 sold_symbols.add(sym)
 
                 # 단건/일괄 스마트 통합 브리핑 발송
@@ -1770,6 +1892,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                         [{
                             "symbol": sym,
                             "name": pos["name"],
+                            "sector": pos_sec,
                             "proceeds_krw": proceeds_krw,
                             "pnl_krw": pnl_krw,
                             "pnl_pct": pnl_pct,
@@ -1931,10 +2054,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
             tp_pct = float(cfg.get("take_profit_pct", 2.0))
             sl_pct = float(cfg.get("stop_loss_pct", 2.5))
 
+            c_sector = cand.get("sector") or get_stock_sector(cand["symbol"], cand["name"])
             new_pos = {
                 "symbol": cand["symbol"],
                 "name": cand["name"],
-                "sector": cand["sector"],
+                "sector": c_sector,
                 "qty": qty,
                 "avg_price": cand["price"],
                 "current_price": cand["price"],
@@ -1962,6 +2086,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "action": "BUY",
                 "symbol": cand["symbol"],
                 "name": cand["name"],
+                "sector": c_sector,
                 "qty": qty,
                 "price": cand["price"],
                 "amount_krw": buy_amount_krw,
@@ -1971,10 +2096,11 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 "mode": cfg.get("mode", "AI_PAPER"),
             }
             state["trade_logs"].insert(0, log_entry)
-            actions_taken.append(f"🟢 [자동 매수] {cand['name']} {qty}주 ({buy_amount_krw:,}원){kis_buy_tag}")
+            actions_taken.append(f"🟢 [자동 매수] {cand['name']} ({c_sector}) {qty}주 ({buy_amount_krw:,}원){kis_buy_tag}")
             newly_bought_real.append({
                 "symbol": cand["symbol"],
                 "name": cand["name"],
+                "sector": c_sector,
                 "qty": qty,
                 "price": cand["price"],
                 "amount_krw": buy_amount_krw,
@@ -2046,9 +2172,10 @@ def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 �
             c_val, c_lbl = _get_current_effective_cash(state)
             from market_tag_helper import get_clean_market_name
             mkt_tag = get_clean_market_name(symbol)
+            sec = pos.get("sector") or get_stock_sector(symbol, pos.get("name", ""))
             _send_admin_trade_notification(
-                f"{tag} {pos['name']} {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                f"[{mkt_tag}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
+                f"{tag} {pos['name']} ({sec}) {pnl_krw:+,}원({pnl_pct:+.1f}%)",
+                f"[{mkt_tag} · {sec}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds_krw:,}원)\n"
                 f"누적수익 {acct.get('realized_pnl_krw', 0):+,}원 | {c_lbl} {c_val:,}원",
                 symbol=symbol,
                 market=mkt_tag,
@@ -2091,9 +2218,10 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
 
     # 1) 🟢 매수 시 알림 (대표님 전용 기기 단독 1통 즉시 발송 - 테스트 명시)
     c_val, c_lbl = _get_current_effective_cash(state)
+    sample_sec = get_stock_sector(sample_sym, sample_name)
     _send_admin_trade_notification(
-        f"🧪[테스트 알림] 🟢매수 {sample_name} {buy_amt:,}원",
-        f"[모바일 알림 수신 테스트]\n{avg_p:,}원 × {qty}주 매입 시뮬레이션\n"
+        f"🧪[테스트 알림] 🟢매수 {sample_name} ({sample_sec}) {buy_amt:,}원",
+        f"[코스닥 · {sample_sec}] 모바일 알림 수신 테스트\n{avg_p:,}원 × {qty}주 매입 시뮬레이션\n"
         f"목표 +4.0% | {c_lbl} {c_val:,}원",
         symbol=sample_sym,
         force=True,
@@ -2101,8 +2229,8 @@ def send_test_auto_trade_fcm() -> Dict[str, Any]:
     time.sleep(0.15)
     # 2) 🔴 익절 시 알림 (대표님 전용 기기 단독 1통 즉시 발송 - 테스트 명시)
     res = _send_admin_trade_notification(
-        f"🧪[테스트 알림] 🔴익절 {sample_name} +{est_profit:,}원(+4.0%)",
-        f"[모바일 알림 수신 테스트]\n수익 +{est_profit:,}원 확정 시뮬레이션 (회수 {buy_amt + est_profit:,}원)\n"
+        f"🧪[테스트 알림] 🔴익절 {sample_name} ({sample_sec}) +{est_profit:,}원(+4.0%)",
+        f"[코스닥 · {sample_sec}] 수익 +{est_profit:,}원 확정 시뮬레이션 (회수 {buy_amt + est_profit:,}원)\n"
         f"누적수익 +{est_profit:,}원 | {c_lbl} {c_val + buy_amt + est_profit:,}원",
         symbol=sample_sym,
         force=True,
@@ -2611,12 +2739,14 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 acct["win_trades"] = int(acct.get("win_trades", 0) + 1)
             else:
                 acct["loss_trades"] = int(acct.get("loss_trades", 0) + 1)
+            pos_sec = pos.get("sector") or get_stock_sector(sym, pos.get("name", sym))
             state.setdefault("trade_logs", []).insert(0, {
                 "id": f"TRD-PAPER-SELL-{int(time.time()*1000)}-{sym}",
                 "timestamp": now_str,
                 "action": "SELL",
                 "symbol": sym,
                 "name": pos.get("name", sym),
+                "sector": pos_sec,
                 "qty": pos.get("qty", 1),
                 "price": cur_p_calc,
                 "amount_krw": proceeds_krw,
@@ -2628,6 +2758,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             paper_sold_items.append({
                 "symbol": sym,
                 "name": pos.get("name", sym),
+                "sector": pos_sec,
                 "proceeds_krw": proceeds_krw,
                 "pnl_krw": pnl_krw,
                 "pnl_pct": pnl_pct,
@@ -2703,10 +2834,11 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                     continue
                 buy_amt_krw = int(round(qty * unit_krw))
 
+            c_sector = cand.get("sector") or get_stock_sector(c_sym, cand.get("name", c_sym))
             new_paper_pos = {
                 "symbol": c_sym,
                 "name": cand.get("name", c_sym),
-                "sector": cand.get("sector", "AI 주도주"),
+                "sector": c_sector,
                 "qty": qty,
                 "avg_price": c_price,
                 "current_price": c_price,
@@ -2730,6 +2862,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
                 "action": "BUY",
                 "symbol": c_sym,
                 "name": cand.get("name", c_sym),
+                "sector": c_sector,
                 "qty": qty,
                 "price": c_price,
                 "amount_krw": buy_amt_krw,
@@ -2741,6 +2874,7 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
             newly_bought_items.append({
                 "symbol": c_sym,
                 "name": cand.get("name", c_sym),
+                "sector": c_sector,
                 "qty": qty,
                 "price": c_price,
                 "amount_krw": buy_amt_krw,
@@ -2948,6 +3082,10 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         min_hold_secs = float(cfg.get("min_hold_minutes_for_loss_cut", 5) or 5) * 60.0
         for p in positions + paper_positions + real_positions:
             p["market_tag"] = get_clean_market_name(p.get("symbol", ""))
+            sec_val = p.get("sector")
+            if not sec_val or sec_val in ("Unknown", "AI 주도주", "기타"):
+                sec_val = get_stock_sector(p.get("symbol", ""), p.get("name", ""))
+            p["sector"] = sec_val
             b_str = p.get("bought_at") or p.get("buy_time") or ""
             p["bought_at"] = b_str
             p["buy_time"] = b_str
@@ -2957,8 +3095,12 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
             p["grace_remaining_seconds"] = max(0, int(min_hold_secs - h_secs)) if h_secs < min_hold_secs else 0
         for c in curr_cands:
             c["market_tag"] = get_clean_market_name(c.get("symbol", ""))
+            c_sec = c.get("sector")
+            if not c_sec or c_sec in ("Unknown", "AI 주도주", "기타") or "수급포착" in str(c_sec):
+                c["sector"] = get_stock_sector(c.get("symbol", ""), c.get("name", ""))
         for lg in all_logs:
             lg["market_tag"] = get_clean_market_name(lg.get("symbol", ""))
+            lg["sector"] = lg.get("sector") or get_stock_sector(lg.get("symbol", ""), lg.get("name", ""))
     except Exception as e:
         print(f"[AutoTrader] Market tag injection warning: {e}")
 
