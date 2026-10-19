@@ -19,6 +19,7 @@ import { TrendingUp, Zap, AlertCircle, Loader2, Coins, Globe, BarChart3, Droplet
 
 import { API_BASE_URL } from "@/lib/config";
 import Link from 'next/link';
+import { useAuth, isAdminEmail } from "@/context/AuthContext";
 
 
 
@@ -26,6 +27,8 @@ import Link from 'next/link';
 
 export default function HomeClient() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isAdmin = isAdminEmail(user?.email);
 
 
 
@@ -52,9 +55,11 @@ export default function HomeClient() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <Link href="/ceo-office" className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all shadow-md shadow-amber-500/20">
-              🏛️ 대표이사 집무실 · 임원회의
-            </Link>
+            {isAdmin && (
+              <Link href="/ceo-office" className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all shadow-md shadow-amber-500/20">
+                🏛️ 대표이사 집무실 · 임원회의
+              </Link>
+            )}
             <Link href="/research" className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-black transition-all">
               📑 국내·해외·ETF·선물 리서치
             </Link>

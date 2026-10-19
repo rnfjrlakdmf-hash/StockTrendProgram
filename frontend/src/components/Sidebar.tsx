@@ -8,14 +8,14 @@ import { usePathname } from "next/navigation";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
 import { requestPayment } from "@/lib/payment";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, isAdminEmail } from "@/context/AuthContext";
 import LoginModal from "./LoginModal";
 
 const navigationGroups = [
     {
         groupName: "투자 아카데미 & 리서치",
         items: [
-            { name: "대표이사 집무실 · 임원회의", href: "/ceo-office", icon: Crown, desc: "리서치센터장·퀀트본부장·리스크관리본부장(CRO) 등 5인의 AI 임원진이 대표님께 대면 보고하고 종목별 끝장 토론 및 리포트 결재를 올리는 살아있는 증권사 시스템입니다.", badge: "대표전용" },
+            { name: "대표이사 집무실 · 임원회의", href: "/ceo-office", icon: Crown, desc: "리서치센터장·퀀트본부장·리스크관리본부장(CRO) 등 5인의 AI 임원진이 대표님께 대면 보고하고 종목별 끝장 토론 및 리포트 결재를 올리는 살아있는 증권사 시스템입니다.", badge: "대표전용", adminOnly: true },
             { name: "국내·해외·ETF·선물 리서치", href: "/research", icon: Newspaper, desc: "국내 종목, 미국 해외주식(월가 IB 목표주가), 국내외 ETF, 나스닥·금·원유 선물까지 전 자산군 리서치 분석을 실시간 조회합니다.", badge: "LIVE" },
             { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "초보자를 위한 PER, PBR, 공매도, DART 등 46대 필수 주식 용어 해설 백과사전입니다.", badge: "필수" },
             { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 심층 리포트를 제공합니다.", badge: "칼럼" },
@@ -573,7 +573,7 @@ export default function Sidebar() {
                                     
                                     {isOpen && (
                                         <div className="space-y-1 animate-in slide-in-from-top-1 fade-in duration-200">
-                                            {group.items.filter(item => !(item as any).hidden).map((item: any) => {
+                                            {group.items.filter(item => !(item as any).hidden && (!(item as any).adminOnly || isAdminEmail(user?.email))).map((item: any) => {
                                                 const isActive = pathname === item.href;
 
                                                 return (

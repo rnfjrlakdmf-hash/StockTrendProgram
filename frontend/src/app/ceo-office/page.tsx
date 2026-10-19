@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
+import { useAuth, isAdminEmail } from '@/context/AuthContext';
 
 interface Executive {
     id: string;
@@ -89,6 +90,9 @@ const QUICK_TOPICS = [
 ];
 
 export default function CeoOfficePage() {
+    const { user, isLoading: authLoading } = useAuth();
+    const isAdmin = isAdminEmail(user?.email);
+
     const [executives, setExecutives] = useState<Executive[]>([]);
     const [agenda, setAgenda] = useState<Agenda | null>(null);
     const [debates, setDebates] = useState<DebateTurn[]>([]);
@@ -157,8 +161,10 @@ export default function CeoOfficePage() {
     }, []);
 
     useEffect(() => {
-        fetchOfficeData('', '', false);
-    }, [fetchOfficeData]);
+        if (!authLoading && isAdmin) {
+            fetchOfficeData('', '', false);
+        }
+    }, [authLoading, isAdmin, fetchOfficeData]);
 
     const handleSendDirective = (e: React.FormEvent) => {
         e.preventDefault();
@@ -237,6 +243,53 @@ export default function CeoOfficePage() {
     };
 
     const approvedCount = Object.values(approvedIds).filter(Boolean).length;
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#070b14] text-white flex items-center justify-center p-6">
+                <div className="text-center">
+                    <div className="inline-block w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-sm font-bold text-gray-300">대표이사 보안 인가 확인 중...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="min-h-screen bg-[#070b14] text-white flex items-center justify-center p-6">
+                <div className="max-w-md w-full bg-[#0d1526] border border-amber-500/30 rounded-3xl p-8 text-center shadow-2xl">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-3xl mx-auto mb-4">
+                        🔒
+                    </div>
+                    <div className="inline-block px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-black mb-3">
+                        CEO SECURITY CLEARANCE REQUIRED
+                    </div>
+                    <h1 className="text-xl font-black text-white mb-2">
+                        대표이사 전용 보안 구역입니다
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-400 leading-relaxed mb-6">
+                        이 집무실과 임원 회의실은 등록된 관리자(대표이사) 계정으로 로그인했을 때만 표시되고 입장할 수 있습니다.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
+                        <button
+                            type="button"
+                            onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
+                            className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer"
+                        >
+                            🔑 관리자 계정으로 로그인
+                        </button>
+                        <Link
+                            href="/"
+                            className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-gray-200 font-bold text-xs sm:text-sm transition-all"
+                        >
+                            홈 대시보드로 이동
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#070b14] text-white pb-20">

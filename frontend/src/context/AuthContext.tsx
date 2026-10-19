@@ -28,7 +28,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const isAdminEmail = (email: string | undefined | null): boolean => {
+export const isAdminEmail = (email: string | undefined | null): boolean => {
     if (!email) return false;
     const lower = email.toLowerCase();
     return lower === "rnfjr@gmail.com" || lower === "rnfjrlakdmf@gmail.com";
