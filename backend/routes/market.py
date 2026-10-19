@@ -2529,6 +2529,100 @@ def get_ceo_office_boardroom(
                 {"label": "미국장 온도계(선물)", "value": nq_info["price"] if nq_info else "20,480pt", "sub": f"등락 {nq_info['change_pct']:+.2f}%" if nq_info else "24시간 감시 중", "tone": "positive" if (nq_info and nq_info["change_pct"] >= 0) else "negative"},
                 {"label": "AI 대장(엔비디아)", "value": nvda_info["price"] if nvda_info else "$138.00", "sub": f"월가 목표가 {nvda_info.get('target_mean') or '$175.00'}" if nvda_info else "AI 선행지표", "tone": "positive" if (nvda_info and nvda_info["change_pct"] >= 0) else "negative"},
             ],
+            "discovery_reason": {
+                "badge": "🔍 전사 안건 상정 배경 (왜 시장 전체를 분석했는가?)",
+                "trigger": "평일·주말 24시간 실시간 글로벌 매크로 및 전사 9개 부서 파이프라인 정기 총괄 점검",
+                "summary": (
+                    f"현재 주식시장은 모든 종목이 다 함께 오르는 장세가 아니며, "
+                    f"실제로 수주와 실적이 나오는 알짜 대장주로만 큰손 자금이 압축되는 차별화 장세입니다. "
+                    f"대표님의 전체 자산을 안전하게 불리기 위해, 리서치·퀀트·리스크 4대 본부가 합동으로 시장 방향성과 최우선 결재 안건 {len(auto_approvals)}건을 엄선하여 상정했습니다."
+                ),
+                "key_drivers": [
+                    f"국내 증권사 최신 리포트 {len(desk_company_reports)}건 및 시황 리포트 {len(desk_market_reports)}건 전수 분석",
+                    f"미국 나스닥 선물({nq_price_str}) 및 엔비디아({nvda_price_str}) 24시간 글로벌 연동",
+                    f"50일 이동평균선 상회 주도주 중심의 압축 포트폴리오 운용 전략 수립",
+                ],
+            },
+            "buy_reasons": {
+                "title": "🎯 전사 투자 전략 3대 핵심 방향 & 포트폴리오 가이드",
+                "cards": [
+                    {
+                        "icon": "🏆",
+                        "title": "실적·수주 대장주 압축 집중",
+                        "highlight": "소문주 배제, 알짜 실적주만 선별",
+                        "desc": "테마나 뜬소문으로 급등락하는 부실주는 원천 배제하고, 분기 영업이익이 확실하게 증가하는 수출·수주 대장주만 엄선하여 매수를 권고합니다.",
+                        "badge": "품질 엄선"
+                    },
+                    {
+                        "icon": "📈",
+                        "title": "50일 이동평균선 추세 추종",
+                        "highlight": "두 달 평균가격 위에서만 매수",
+                        "desc": "최근 50거래일 동안 매수한 투자자들의 평균단가(50일선) 위에서 외국인과 기관이 함께 사들이는 강세 종목에만 집중합니다.",
+                        "badge": "추세 추종"
+                    },
+                    {
+                        "icon": "🛡️",
+                        "title": "4중 안전망 및 분할 매매",
+                        "highlight": "추격 매수 절대 금지 & 분할 매수",
+                        "desc": "하루에 급등한 종목을 따라 사지 않고, 눌림목에서 분할 매수하며 -3.5% 손절선을 엄격히 적용해 원금을 철저히 보존합니다.",
+                        "badge": "원금 보호"
+                    }
+                ]
+            },
+            "meeting_minutes": {
+                "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-총괄호",
+                "title": "전 부서 임원 합동 주간·야간 시장 전략회의록",
+                "date_time": f"{now_kst.strftime('%Y년 %m월 %d일 %H:%M')} KST",
+                "location": "AI 증권사 본사 임원 회의실 (대표이사 집무실 직속)",
+                "chairperson": "정유진 비서실장 (대표이사 주재 대행)",
+                "attendees": [
+                    {"name": "박진우", "role": "부사장", "dept": "기업·산업 리서치본부장", "avatar": "👨‍💼"},
+                    {"name": "김도현", "role": "상무", "dept": "알고리즘 퀀트·수급본부장", "avatar": "📈"},
+                    {"name": "최서연", "role": "상무", "dept": "리스크관리본부장 (CRO)", "avatar": "🛡️"},
+                    {"name": "이준호", "role": "이사", "dept": "글로벌·파생본부장", "avatar": "🌎"},
+                    {"name": "정유진", "role": "실장", "dept": "대표이사 직속 비서실장", "avatar": "👩‍💼"},
+                ],
+                "dialogue": [
+                    {
+                        "speaker": "정유진 비서실장",
+                        "role": "간사",
+                        "avatar": "👩‍💼",
+                        "text": "오늘 전 부서 임원 전략회의를 시작하겠습니다. 각 본부에서 분석한 시장 현황과 결재 준비 상태를 보고해 주십시오."
+                    },
+                    {
+                        "speaker": "박진우 부사장",
+                        "role": "리서치센터장",
+                        "avatar": "👨‍💼",
+                        "text": f"국내 증권사 최신 리포트 {len(desk_company_reports)}건을 전수 검토했습니다. 1순위 추천 종목인 '{top_stock_name}'을 비롯해 실적 턴어라운드가 확인된 종목들로 결재 서류를 구성했습니다."
+                    },
+                    {
+                        "speaker": "김도현 상무",
+                        "role": "퀀트·수급본부장",
+                        "avatar": "📈",
+                        "text": "수급 통계상 외국인과 기관의 자금이 실적주로 쏠리고 있습니다. 50일선 지지선이 확고한 종목들만 골라 담아 승률을 극대화하겠습니다."
+                    },
+                    {
+                        "speaker": "최서연 CRO",
+                        "role": "리스크본부장",
+                        "avatar": "🛡️",
+                        "text": "추격 매수는 원천 금지하며, 각 기안서마다 주의해야 할 리스크를 빨간펜으로 첨부했습니다. 분할 매수 원칙을 지키는 조건으로 승인 서명을 건의합니다."
+                    },
+                    {
+                        "speaker": "이준호 이사",
+                        "role": "글로벌본부장",
+                        "avatar": "🌎",
+                        "text": f"미국 나스닥 선물({nq_price_str})과 엔비디아({nvda_price_str})의 글로벌 연동 상태가 양호합니다. 한국 증시 개장에도 긍정적입니다."
+                    },
+                    {
+                        "speaker": "정유진 비서실장",
+                        "role": "비서실장",
+                        "avatar": "👩‍💼",
+                        "text": "모든 임원진의 검토가 완료되었습니다. 대표님께서 준비된 기안서에 서명만 하시면 즉시 감시 및 집행에 착수하겠습니다."
+                    }
+                ],
+                "verdict_badge": "만장일치 [시장 집중 감시 및 결재 상정] 가결",
+                "verdict_summary": f"총 {len(auto_approvals)}건 기안서 상정 · 알짜 실적주 집중 · 50일선 추세 분할 매매 체제",
+            },
         }
 
         debates = [
@@ -2645,6 +2739,94 @@ def get_ceo_office_boardroom(
                     {"label": "50일 이동평균선", "value": t_ma50, "sub": g_data["trend_badge"], "tone": "neutral"},
                     {"label": "52주 최고 / 최저", "value": f"{t_high}", "sub": f"52주 최저 {t_low}", "tone": "neutral"},
                 ],
+                "discovery_reason": {
+                    "badge": "🔍 글로벌 안건 발굴 배경 (왜 이 자산을 분석했는가?)",
+                    "trigger": f"미국 나스닥 및 글로벌 테크 선행 자산 '{t_name}' 24시간 연동 분석",
+                    "summary": (
+                        f"미국 나스닥 시장의 핵심 주도주인 '{t_name}'의 주가 흐름은 국내 반도체(삼성전자·SK하이닉스) 및 글로벌 시장 전반에 직접적인 영향을 줍니다. "
+                        f"24시간 글로벌 데스크 분석 결과, 현재 시세 {t_price} 대비 월가 투자은행(IB)들의 평균 목표주가가 {t_mean} (상승 여력 {t_up_str})으로 집계되어 "
+                        f"글로벌 자산 배분 1순위 안건으로 상정되었습니다."
+                    ),
+                    "key_drivers": [
+                        f"월가 IB 목표주가 컨센서스 {t_mean} ({t_up_str} 추가 상승 가능)",
+                        f"50일 이동평균선({t_ma50}) 기준 '{g_data['trend_badge']}' 추세 유지",
+                        "글로벌 AI 및 데이터센터 투자 확대의 최대 수혜 지속",
+                    ],
+                },
+                "buy_reasons": {
+                    "title": f"🎯 '{t_name}' 투자 추천 3대 핵심 근거 & 글로벌 가이드",
+                    "cards": [
+                        {
+                            "icon": "🌎",
+                            "title": "월가 IB 컨센서스 상승 여력",
+                            "highlight": f"목표가 {t_mean} ({t_up_str})",
+                            "desc": f"골드만삭스, 모건스탠리 등 주요 글로벌 투자은행들의 평균 목표가가 {t_mean}으로 현재가 대비 {t_up_str}의 추가 상승 잠재력을 가지고 있습니다.",
+                            "badge": "월가 컨센서스"
+                        },
+                        {
+                            "icon": "🤖",
+                            "title": "글로벌 AI 독점적 시장 지배력",
+                            "highlight": "AI 인프라 필수재",
+                            "desc": g_data['desc'],
+                            "badge": "시장 지배력"
+                        },
+                        {
+                            "icon": "🛡️",
+                            "title": "환율 및 50일선 리스크 통제",
+                            "highlight": f"50일선: {t_ma50} 지지선",
+                            "desc": f"원/달러 환율 변동과 미국 국채 금리 흐름을 모니터링하며, 50일선({t_ma50}) 지지선을 바탕으로 한 분할 매수 전략이 유효합니다.",
+                            "badge": "리스크 통제"
+                        }
+                    ]
+                },
+                "meeting_minutes": {
+                    "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-02호",
+                    "title": f"[{t_name}] 글로벌 자산배분 투자심의 회의록",
+                    "date_time": f"{now_kst.strftime('%Y년 %m월 %d일 %H:%M')} KST",
+                    "location": "AI 증권사 24시간 글로벌 트레이딩 데스크 (대표이사 집무실 직속)",
+                    "chairperson": "정유진 비서실장 (대표이사 주재 대행)",
+                    "attendees": [
+                        {"name": "이준호", "role": "이사", "dept": "해외주식·선물파생본부장", "avatar": "🌎"},
+                        {"name": "박진우", "role": "부사장", "dept": "기업·산업 리서치본부장", "avatar": "👨‍💼"},
+                        {"name": "김도현", "role": "상무", "dept": "알고리즘 퀀트·수급본부장", "avatar": "📈"},
+                        {"name": "최서연", "role": "상무", "dept": "리스크관리본부장 (CRO)", "avatar": "🛡️"},
+                        {"name": "정유진", "role": "실장", "dept": "대표이사 직속 비서실장", "avatar": "👩‍💼"},
+                    ],
+                    "dialogue": [
+                        {
+                            "speaker": "정유진 비서실장",
+                            "role": "간사",
+                            "avatar": "👩‍💼",
+                            "text": f"글로벌 데스크에서 상정한 [{t_name}] 안건에 대해 심의를 시작하겠습니다. 이준호 글로벌본부장께서 브리핑해 주십시오."
+                        },
+                        {
+                            "speaker": "이준호 이사",
+                            "role": "글로벌본부장",
+                            "avatar": "🌎",
+                            "text": f"'{t_name}'의 현재 시세는 {t_price}이며, 월가 주요 IB들의 평균 목표가는 {t_mean}으로 {t_up_str}의 상승 여력을 보유 중입니다. 전 세계 AI 수요가 유지되고 있어 글로벌 포트폴리오의 최우선 편입 대상입니다."
+                        },
+                        {
+                            "speaker": "김도현 상무",
+                            "role": "퀀트·수급본부장",
+                            "avatar": "📈",
+                            "text": f"50일 이동평균선은 {t_ma50}이며 현재 '{g_data['trend_badge']}' 흐름을 보이고 있습니다. 알고리즘 수급상 외국계 기관의 장기 보유 포지션이 탄탄합니다."
+                        },
+                        {
+                            "speaker": "최서연 CRO",
+                            "role": "리스크본부장",
+                            "avatar": "🛡️",
+                            "text": f"해외 자산인 만큼 원/달러 환율 및 나스닥 지수 변동성에 유의해야 합니다. 50일선({t_ma50})을 이탈하지 않는 선에서 비중 10% 수준의 분할 매수를 권고합니다."
+                        },
+                        {
+                            "speaker": "정유진 비서실장",
+                            "role": "비서실장",
+                            "avatar": "👩‍💼",
+                            "text": f"종합적으로 월가 목표가 {t_mean} 기준 우상향 기대치가 높으므로, 환율 및 50일선 리스크를 감안한 [분할 매수 승인]으로 결론을 내리고 대표님께 결재를 올립니다."
+                        }
+                    ],
+                    "verdict_badge": "만장일치 [글로벌 분할 매수] 권고",
+                    "verdict_summary": f"월가 평균 목표가 {t_mean} ({t_up_str}) · 50일선({t_ma50}) 지지 확인 · 환율 변동성 대비 분할 매수",
+                },
             }
 
             debates = [
@@ -2781,6 +2963,118 @@ def get_ceo_office_boardroom(
                 )
             else:
                 rep_line = f"현재 '{res_name}'에 대해 주요 증권사들의 업황 및 실적 수급 모니터링이 진행 중입니다."
+
+            upside_pct = None
+            if cur_price_num and avg_gp_str and avg_gp_str != "집계 중":
+                try:
+                    clean_gp = int(re.sub(r'[^0-9]', '', avg_gp_str))
+                    if clean_gp > 0 and cur_price_num > 0:
+                        upside_pct = round(((clean_gp - cur_price_num) / cur_price_num) * 100, 1)
+                except Exception:
+                    pass
+            upside_str = f"+{upside_pct}%" if (upside_pct and upside_pct > 0) else (f"{upside_pct}%" if upside_pct else "상승 여력 충분")
+
+            discovery_reason = {
+                "badge": "🔍 종목 발굴 배경 (왜 이 종목을 분석했는가?)",
+                "trigger": f"국내 10대 주요 증권사에서 '{res_name}' 관련 분석 리포트 {rep_cnt}건 집중 발간",
+                "summary": (
+                    f"최근 증권가에서 '{res_name}'에 대한 실적 개선 및 수주 턴어라운드 리포트가 {rep_cnt}건 연속 발표되었습니다. "
+                    f"리서치센터 크롤러가 수집한 데이터를 AI 퀀트 엔진이 분석한 결과, "
+                    f"증권사 평균 목표가({avg_gp_str}) 대비 현재 주가({cur_price_str})의 기대 상승 여력({upside_str})이 "
+                    f"시장 최상위권으로 집계되어 오늘 대표이사 결재 안건 1순위로 긴급 상정되었습니다."
+                ),
+                "key_drivers": [
+                    f"증권사 전수 리포트 {rep_cnt}건 정밀 분석 완료 (평균 목표주가 {avg_gp_str})",
+                    f"현재가({cur_price_str}) 대비 최고 {max_gp_str}까지 폭넓은 상승 여력 확보",
+                    f"50일 이동평균선({ma50_str}) 부근 바닥 다지기 및 외인·기관 수급 유입 포착",
+                ],
+            }
+
+            buy_reasons = {
+                "title": f"🎯 '{res_name}' 매수 추천 3대 핵심 근거 & 투자 전략 가이드",
+                "cards": [
+                    {
+                        "icon": "🚀",
+                        "title": f"압도적 상승 여력 ({upside_str}) & 저평가 매력",
+                        "highlight": f"목표가 {avg_gp_str} vs 현재가 {cur_price_str}",
+                        "desc": f"국내 주요 증권사들의 평균 목표가는 {avg_gp_str}(최고 {max_gp_str})으로, 현재 주가는 기업의 펀더멘털과 수주 잔고 대비 과도하게 저평가되어 있어 중장기 투자 시 높은 안전마진과 수익률을 기대할 수 있습니다.",
+                        "badge": f"상승 여력 {upside_str}"
+                    },
+                    {
+                        "icon": "📊",
+                        "title": "실적 턴어라운드 및 핵심 수주 모멘텀",
+                        "highlight": f"{latest_rep['broker'] if latest_rep else '증권사'} 분석 호실적 전망",
+                        "desc": latest_rep['easy_summary'] if latest_rep else f"핵심 사업 부문의 견조한 매출 성장과 해외 수주 확대로 향후 분기별 영업이익 증가세가 뚜렷할 것으로 전망됩니다.",
+                        "badge": "실적 모멘텀"
+                    },
+                    {
+                        "icon": "🛡️",
+                        "title": "정석 분할 매수 및 50일선 리스크 통제",
+                        "highlight": f"1차 분할 매수 (포트폴리오 비중 15% 이내)",
+                        "desc": f"현재 주가가 50일선({ma50_str}) {trend_note} 구간이므로, 한 번에 전액 매수하기보다 [1차 분할 매수] 후 50일선 안착을 확인하며 비중을 늘리는 안전한 정석 분할 매수를 권장합니다.",
+                        "badge": "리스크 방어선"
+                    }
+                ]
+            }
+
+            meeting_minutes = {
+                "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-01호",
+                "title": f"[{res_name}] 임원 합동 투자심의 위원회 회의록",
+                "date_time": f"{now_kst.strftime('%Y년 %m월 %d일 %H:%M')} KST",
+                "location": "AI 증권사 본사 8층 대회의실 (대표이사 집무실 직속)",
+                "chairperson": "정유진 비서실장 (대표이사 주재 대행)",
+                "attendees": [
+                    {"name": "박진우", "role": "부사장", "dept": "기업·산업 리서치본부장", "avatar": "👨‍💼"},
+                    {"name": "김도현", "role": "상무", "dept": "알고리즘 퀀트·수급본부장", "avatar": "📈"},
+                    {"name": "최서연", "role": "상무", "dept": "리스크관리본부장 (CRO)", "avatar": "🛡️"},
+                    {"name": "이준호", "role": "이사", "dept": "글로벌·파생본부장", "avatar": "🌎"},
+                    {"name": "정유진", "role": "실장", "dept": "대표이사 직속 비서실장", "avatar": "👩‍💼"},
+                ],
+                "dialogue": [
+                    {
+                        "speaker": "정유진 비서실장",
+                        "role": "간사",
+                        "avatar": "👩‍💼",
+                        "text": f"지금부터 오늘 대표이사 결재 상정 안건인 [{res_name}] 종목에 대한 임원 합동 투자심의 회의를 시작합니다. 먼저 리서치본부 박진우 부사장께서 펀더멘털 분석과 증권가 목표주가를 브리핑해 주십시오."
+                    },
+                    {
+                        "speaker": "박진우 부사장",
+                        "role": "리서치센터장",
+                        "avatar": "👨‍💼",
+                        "text": f"국내 주요 10대 증권사가 최근 발간한 '{res_name}' 리포트 {rep_cnt}건을 전수 취합했습니다. 평균 목표주가는 {avg_gp_str}이며, 최고가는 {max_gp_str}까지 제시되었습니다. 현재가({cur_price_str}) 대비 기대 상승 여력이 {upside_str}에 달합니다. {rep_line} 밸류에이션 매력도가 극대화된 구간이므로 적극 매수를 강력히 추천합니다."
+                    },
+                    {
+                        "speaker": "김도현 상무",
+                        "role": "퀀트·수급본부장",
+                        "avatar": "📈",
+                        "text": f"기술적 차트와 알고리즘 수급 현황을 말씀드리겠습니다. 50일 이동평균선({period_50d_str} 평균)은 {ma50_str}이며 현재 주가는 '{trend_note}' 구간입니다. 현재 자리는 바닥권을 다지며 저가 매수세가 유입되는 타점입니다. 매물 소화 과정을 고려하여 한 번에 전액 진입하기보다는 [1차 분할 매수 30~50%]로 진입하고, 50일선 안착을 확인한 뒤 2차 매수를 진행하는 것이 통계적으로 승률이 가장 높습니다."
+                    },
+                    {
+                        "speaker": "최서연 CRO",
+                        "role": "리스크본부장",
+                        "avatar": "🛡️",
+                        "text": f"리스크 관리 관점에서 보완하겠습니다. 가장 보수적인 증권사의 최저 목표가도 {min_gp_str}으로 현재가보다 높지만, 시장 전체 변동성을 감안해 50일선({ma50_str}) 또는 -3.5%를 명확한 손절선으로 지정해야 합니다. 또한 대표님 계좌 총자산 대비 비중은 15% 이내로 엄격히 제한하는 조건부 승인을 제안합니다."
+                    },
+                    {
+                        "speaker": "이준호 이사",
+                        "role": "글로벌본부장",
+                        "avatar": "🌎",
+                        "text": f"글로벌 매크로 환경도 긍정적입니다. 원/달러 환율과 미국 연준의 금리 안정화로 외국인 패시브 자금이 국내 대표 우량주로 유입될 수 있는 여건이 조성되어 있습니다. 대외 거시 리스크는 크지 않습니다."
+                    },
+                    {
+                        "speaker": "정유진 비서실장",
+                        "role": "비서실장",
+                        "avatar": "👩‍💼",
+                        "text": f"각 본부 의견이 완벽히 조율되었습니다. [평균 목표주가 {avg_gp_str} ({upside_str}) 기준 1차 분할 매수 승인, 50일선({ma50_str}) 손절 방어, 포트폴리오 비중 15% 이내] 조건으로 만장일치 의결하여 대표님께 최종 결재 기안을 올리겠습니다."
+                    }
+                ],
+                "verdict_badge": "만장일치 [조건부 분할 매수] 권고",
+                "verdict_summary": f"목표가 {avg_gp_str} ({upside_str} 상승 여력) · 50일선({ma50_str}) 지지 확인 분할 매수 · 포트폴리오 비중 15% 이내 제한",
+            }
+
+            agenda_summary["discovery_reason"] = discovery_reason
+            agenda_summary["buy_reasons"] = buy_reasons
+            agenda_summary["meeting_minutes"] = meeting_minutes
 
             debates = [
                 {

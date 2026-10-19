@@ -25,6 +25,52 @@ interface KeyMetric {
     tone: 'positive' | 'negative' | 'neutral';
 }
 
+interface DiscoveryReason {
+    badge: string;
+    trigger: string;
+    summary: string;
+    key_drivers: string[];
+}
+
+interface BuyReasonCard {
+    icon: string;
+    title: string;
+    highlight: string;
+    desc: string;
+    badge: string;
+}
+
+interface BuyReasons {
+    title: string;
+    cards: BuyReasonCard[];
+}
+
+interface MeetingAttendee {
+    name: string;
+    role: string;
+    dept: string;
+    avatar: string;
+}
+
+interface MeetingDialogue {
+    speaker: string;
+    role: string;
+    avatar: string;
+    text: string;
+}
+
+interface MeetingMinutes {
+    meeting_no: string;
+    title: string;
+    date_time: string;
+    location: string;
+    chairperson: string;
+    attendees: MeetingAttendee[];
+    dialogue: MeetingDialogue[];
+    verdict_badge: string;
+    verdict_summary: string;
+}
+
 interface Agenda {
     topic_type: string;
     title: string;
@@ -35,6 +81,9 @@ interface Agenda {
     timestamp: string;
     key_metrics: KeyMetric[];
     ceo_question?: string | null;
+    discovery_reason?: DiscoveryReason;
+    buy_reasons?: BuyReasons;
+    meeting_minutes?: MeetingMinutes;
 }
 
 interface DebateTurn {
@@ -1180,6 +1229,175 @@ export default function CeoOfficePage() {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* 1. 🔍 종목 발굴 배경 (왜 하필 이 종목을 분석했는가?) */}
+                                    {agenda.discovery_reason && (
+                                        <div className="bg-gradient-to-br from-[#121c33] via-[#0f172a] to-[#0a1224] border-2 border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                                                    <span className="text-xs sm:text-sm font-black text-amber-300">
+                                                        {agenda.discovery_reason.badge}
+                                                    </span>
+                                                </div>
+                                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-200">
+                                                    🎯 발굴 계기: {agenda.discovery_reason.trigger}
+                                                </span>
+                                            </div>
+
+                                            <p className="text-sm sm:text-base text-white font-bold leading-relaxed">
+                                                {agenda.discovery_reason.summary}
+                                            </p>
+
+                                            {agenda.discovery_reason.key_drivers && agenda.discovery_reason.key_drivers.length > 0 && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4 pt-3.5 border-t border-white/10">
+                                                    {agenda.discovery_reason.key_drivers.map((kd, idx) => (
+                                                        <div key={idx} className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-start gap-2">
+                                                            <span className="text-amber-400 font-black text-xs shrink-0 mt-0.5">#{idx + 1}</span>
+                                                            <span className="text-xs text-gray-200 font-semibold leading-snug">{kd}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* 2. 🎯 매수 추천 3대 핵심 근거 & 투자 전략 가이드 */}
+                                    {agenda.buy_reasons && (
+                                        <div className="bg-gradient-to-br from-[#0c1a2e] via-[#0d1726] to-[#09121f] border border-emerald-500/35 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg">🎯</span>
+                                                    <h4 className="text-base sm:text-lg font-black text-white">
+                                                        {agenda.buy_reasons.title}
+                                                    </h4>
+                                                </div>
+                                                <span className="text-xs text-emerald-400 font-bold hidden sm:inline">
+                                                    전 부서 합동 평가 완료
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                                {agenda.buy_reasons.cards.map((c, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="bg-[#080e1a]/85 border border-white/10 hover:border-emerald-400/40 rounded-xl p-4 flex flex-col justify-between transition-all"
+                                                    >
+                                                        <div>
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-2xl">{c.icon}</span>
+                                                                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                                    {c.badge}
+                                                                </span>
+                                                            </div>
+                                                            <h5 className="text-sm font-black text-white mb-1">
+                                                                {c.title}
+                                                            </h5>
+                                                            <div className="text-xs font-bold text-amber-300 mb-2">
+                                                                {c.highlight}
+                                                            </div>
+                                                            <p className="text-xs text-gray-300 leading-relaxed">
+                                                                {c.desc}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 3. 📋 임원 합동 대면 회의록 (Executive Meeting Minutes) */}
+                                    {agenda.meeting_minutes && (
+                                        <div className="bg-[#0b1322] border-2 border-indigo-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl relative overflow-hidden space-y-5">
+                                            {/* 회의록 헤더 */}
+                                            <div className="border-b border-white/15 pb-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/25 border border-indigo-400/40 text-indigo-300 font-mono text-xs font-black">
+                                                            {agenda.meeting_minutes.meeting_no}
+                                                        </span>
+                                                        <span className="text-xs text-indigo-200/80 font-bold">
+                                                            공식 임원 회의록
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 font-mono">
+                                                        {agenda.meeting_minutes.date_time}
+                                                    </span>
+                                                </div>
+
+                                                <h4 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
+                                                    <span>📋</span>
+                                                    <span>{agenda.meeting_minutes.title}</span>
+                                                </h4>
+
+                                                <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-gray-400">
+                                                    <span>📍 장소: <strong className="text-gray-200">{agenda.meeting_minutes.location}</strong></span>
+                                                    <span>👤 주재/간사: <strong className="text-gray-200">{agenda.meeting_minutes.chairperson}</strong></span>
+                                                </div>
+
+                                                {/* 참석 임원 명단 */}
+                                                <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-white/10">
+                                                    <span className="text-[11px] text-gray-400 font-bold">참석 임원:</span>
+                                                    {agenda.meeting_minutes.attendees.map((att, i) => (
+                                                        <span
+                                                            key={i}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-xs text-gray-200"
+                                                        >
+                                                            <span>{att.avatar}</span>
+                                                            <strong className="font-extrabold text-white">{att.name}</strong>
+                                                            <span className="text-[10px] text-gray-400">({att.dept})</span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 생생한 회의 토론록 (대화체 버블) */}
+                                            <div className="space-y-3">
+                                                <div className="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                                                    <span>🎙️</span>
+                                                    <span>임원진 심층 토론 및 발언 기록 (Transcript)</span>
+                                                </div>
+
+                                                <div className="space-y-2.5">
+                                                    {agenda.meeting_minutes.dialogue.map((dlg, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="bg-black/35 border border-white/10 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-start gap-3 hover:border-white/20 transition-all"
+                                                        >
+                                                            <div className="flex items-center gap-2 shrink-0 sm:w-36">
+                                                                <span className="text-xl">{dlg.avatar}</span>
+                                                                <div>
+                                                                    <div className="text-xs font-black text-white">{dlg.speaker}</div>
+                                                                    <div className="text-[10px] text-amber-400/90 font-bold">{dlg.role}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-xs sm:text-sm text-gray-200 leading-relaxed sm:border-l sm:border-white/10 sm:pl-3.5">
+                                                                {dlg.text}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 회의 최종 의결 주문 */}
+                                            <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-emerald-900/30 border-2 border-emerald-400/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                <div className="flex items-start gap-2.5">
+                                                    <span className="text-2xl mt-0.5">💮</span>
+                                                    <div>
+                                                        <div className="text-xs font-black text-emerald-300">
+                                                            투자심의위원회 최종 의결 주문
+                                                        </div>
+                                                        <div className="text-xs sm:text-sm text-white font-extrabold mt-0.5">
+                                                            {agenda.meeting_minutes.verdict_summary}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black text-xs shrink-0 shadow-md">
+                                                    {agenda.meeting_minutes.verdict_badge}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* 임원진 릴레이 대면 보고 */}
                                     <div className="space-y-4">
