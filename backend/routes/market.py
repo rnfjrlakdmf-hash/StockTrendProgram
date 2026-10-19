@@ -2016,3 +2016,521 @@ def get_multi_asset_research(
     }
 
 
+# ==============================================================================
+# 🏛️ AI 증권사 대표이사 집무실 & 임원 회의실 (CEO Office & Executive Boardroom)
+# ==============================================================================
+
+CEO_OFFICE_EXECUTIVES = [
+    {
+        "id": "chief_sec",
+        "name": "정유진",
+        "title": "비서실장",
+        "dept": "대표이사 직속 비서실",
+        "badge": "회의 진행 · 3줄 핵심 요약",
+        "avatar": "👩‍💼",
+        "color": "amber",
+        "style": "대표님의 시간을 아껴드리기 위해 임원들의 찬반 토론 핵심만 3줄로 명쾌하게 요약·정리해 보고합니다.",
+    },
+    {
+        "id": "research_vp",
+        "name": "박진우",
+        "title": "부사장 (리서치센터장)",
+        "dept": "기업·산업 리서치본부",
+        "badge": "증권사 리포트 · 컨센서스 총괄",
+        "avatar": "👨‍💼",
+        "color": "purple",
+        "style": "국내외 제도권 증권사 애널리스트들이 발표한 최신 리포트와 목표주가 컨센서스, 영업이익 성적표를 근거로 보고합니다.",
+    },
+    {
+        "id": "quant_dir",
+        "name": "김도현",
+        "title": "상무 (퀀트·수급본부장)",
+        "dept": "알고리즘 트레이딩·수급본부",
+        "badge": "외인/기관 수급 · 추세 돌파",
+        "avatar": "📈",
+        "color": "emerald",
+        "style": "뉴스보다 실제 찍히는 현재가, 50일 이동평균선 돌파 여부, 외국인·기관 수급 데이터를 최우선으로 판단합니다.",
+    },
+    {
+        "id": "risk_cro",
+        "name": "최서연",
+        "title": "상무 (리스크관리본부장 · CRO)",
+        "dept": "리스크관리·컴플라이언스본부",
+        "badge": "과열 경보 · 하방 리스크 방어",
+        "avatar": "🛡️",
+        "color": "rose",
+        "style": "다른 임원들이 낙관론을 펼칠 때 고점 대비 부담, 환율·금리 변동성, 실적 하회 가능성 등 반대 시나리오를 냉철하게 짚어냅니다.",
+    },
+    {
+        "id": "global_dir",
+        "name": "이준호",
+        "title": "이사 (글로벌·파생본부장)",
+        "dept": "해외주식·ETF·선물파생본부",
+        "badge": "미국 빅테크 · 나스닥/금/원유 선물",
+        "avatar": "🌎",
+        "color": "blue",
+        "style": "밤사이 뉴욕 증시(엔비디아·테슬라), 나스닥100 선물, 미국 10년물 국채금리와 한국 증시 간 연결고리를 보고합니다.",
+    },
+]
+
+
+def _extract_topic_from_ceo_message(raw_msg: str) -> str:
+    """
+    대표님이 자연어로 입력한 지시문(예: '삼성중공업 지금 어때? 임원들끼리 토론해봐')에서
+    핵심 종목명이나 글로벌 티커를 자동으로 추출합니다.
+    """
+    if not raw_msg:
+        return ""
+    cleaned = raw_msg.strip()
+
+    # 글로벌 키워드 우선 매칭
+    for k_word, g_sym in KR_TO_GLOBAL_QUERY_MAP.items():
+        if k_word in cleaned.lower():
+            return g_sym
+
+    # 흔한 대화형 접미사/명령어 제거 후 핵심 단어 추출
+    noise_words = [
+        "대표님", "임원들끼리", "임원들", "임원", "박부사장", "박 부사장", "김상무", "김 상무",
+        "최상무", "최 상무", "이이사", "이 이사", "정실장", "정 실장", "비서실장", "리서치팀",
+        "지금", "오늘", "어때", "어떰", "토론해봐", "토론해", "토론", "보고해봐", "보고해",
+        "보고서", "올려봐", "가져와", "분석해봐", "분석해", "분석", "설명해봐", "설명해",
+        "브리핑해봐", "브리핑", "점검해봐", "점검해", "알려줘", "봐봐", "대해서", "에 대해",
+        "좀", "한번", "빨리", "긴급", "회의", "소집해", "소집",
+    ]
+    temp = cleaned
+    for nw in noise_words:
+        temp = temp.replace(nw, " ")
+    temp = re.sub(r'[?!.,~"\'\(\)\[\]]+', ' ', temp).strip()
+
+    tokens = [t.strip() for t in temp.split() if len(t.strip()) >= 2]
+    for tok in tokens:
+        # 조사 제거 (은/는/이/가/을/를/의/로)
+        tok_clean = re.sub(r'(은|는|이|가|을|를|의|로|랑|하고)$', '', tok)
+        if len(tok_clean) >= 2 and tok_clean not in ["출근", "전체", "시황", "시장", "리스크", "현황"]:
+            return tok_clean
+    return ""
+
+
+@router.get("/ceo-office")
+def get_ceo_office_boardroom(
+    topic: str = Query("", description="안건 종목명/티커 또는 빈 문자열(전사 시황 브리핑)"),
+    message: str = Query("", description="대표님이 대화창에 직접 입력한 지시 말씀"),
+):
+    """
+    AI 증권사 대표이사 집무실 & 임원 회의실 통합 API
+    - 리서치팀 실시간 상정 보고서 결재함 (국내 종목·산업·시황 최신 리포트)
+    - 대표님 지시 안건(특정 종목 또는 전체 시황)에 대한 5인 임원 실시간 찬반 토론 및 보고
+    """
+    import yfinance as yf
+
+    now_kst = datetime.now(KST)
+    time_str = now_kst.strftime("%H:%M")
+    hour = now_kst.hour
+    weekday = now_kst.weekday()
+
+    if weekday >= 5:
+        office_mode = "🏖️ 주말 글로벌 매크로 & 차주 준비 비상근무 체제"
+    elif 8 <= hour < 9:
+        office_mode = "🌅 장전 모닝 브리핑 & 동시호가 수급 점검 체제"
+    elif 9 <= hour < 16:
+        office_mode = "🔥 정규장 실시간 외국인·기관 수급 & 리포트 감시 체제"
+    elif 16 <= hour < 22:
+        office_mode = "📊 장마감 수급 결산 & 애널리스트 리포트 검수 체제"
+    else:
+        office_mode = "🌎 야간 뉴욕 증시 · 나스닥 선물 24시간 글로벌 데스크 체제"
+
+    # 1. 리서치팀이 오늘 대표님 결재함에 올린 최신 증권사 리포트 수집
+    desk_company_reports = []
+    desk_market_reports = []
+    try:
+        comp_res = get_stock_research_reports(category="company", q="", page=0, size=8)
+        desk_company_reports = comp_res.get("items", [])[:6]
+        mkt_res = get_stock_research_reports(category="market", q="", page=0, size=4)
+        desk_market_reports = mkt_res.get("items", [])[:3]
+    except Exception as e:
+        print(f"[CEOOffice] Desk report fetch error: {e}")
+
+    # 2. 대표님 지시어(message) 또는 선택 안건(topic) 해석
+    raw_directive = (message or "").strip()
+    extracted_target = (topic or "").strip()
+    if not extracted_target and raw_directive:
+        extracted_target = _extract_topic_from_ceo_message(raw_directive)
+
+    # 기본 안건: 아무 입력이 없으면 오늘 리서치 결재함 1호 종목 또는 전사 시황 브리핑
+    is_general_briefing = False
+    if not extracted_target or extracted_target in ["출근", "시황", "전체", "전사브리핑"]:
+        is_general_briefing = True
+
+    debates = []
+    agenda_summary = {}
+
+    if is_general_briefing:
+        top_rep = desk_company_reports[0] if desk_company_reports else None
+        top_mkt = desk_market_reports[0] if desk_market_reports else None
+        top_stock_name = top_rep["item_name"] if top_rep else "주요 대형 실적주"
+        top_broker = top_rep["broker"] if top_rep else "주요 증권사"
+        top_gp = top_rep.get("goal_price") or "컨센서스 집계 중"
+        top_title = top_rep["title"] if top_rep else "실적 시즌 수급 차별화 진행"
+        mkt_title = top_mkt["title"] if top_mkt else "글로벌 매크로 지표 및 외국인 수급 연동 장세"
+
+        agenda_summary = {
+            "agenda_type": "company_wide",
+            "title": "전사 모닝·일일 시장 종합 보고 & 리서치 결재 안건",
+            "subtitle": f"현재 시각 {time_str} 기준 · 리서치팀 신규 상정 보고서 {len(desk_company_reports)}건 대기 중",
+            "highlight_badge": office_mode,
+            "key_metrics": [
+                {"label": "리서치팀 결재 대기", "value": f"{len(desk_company_reports)}건 (실시간 연동)"},
+                {"label": "오늘의 1호 안건 종목", "value": f"{top_stock_name} ({top_broker})"},
+                {"label": "1호 안건 제시 목표가", "value": top_gp},
+                {"label": "글로벌 중점 모니터링", "value": "나스닥100 선물 · 원/달러 환율"},
+            ],
+        }
+
+        debates = [
+            {
+                "exec_id": "chief_sec",
+                "speaker": "정유진 비서실장",
+                "role": "대표이사 비서실 · 회의 진행",
+                "avatar": "👩‍💼",
+                "stance": "사회 · 요약",
+                "color": "amber",
+                "message": (
+                    f"대표님, 좋은 하루입니다! 현재 시각 {time_str} 기준 전 부서 임원 일일 보고를 시작하겠습니다. "
+                    f"오늘 리서치팀에서 '{top_stock_name}' 등 총 {len(desk_company_reports)}건의 최신 증권사 분석 보고서를 대표님 결재함에 올려두었습니다."
+                ),
+            },
+            {
+                "exec_id": "research_vp",
+                "speaker": "박진우 부사장 (리서치센터장)",
+                "role": "기업·산업 리서치 총괄",
+                "avatar": "👨‍💼",
+                "stance": "펀더멘털 · 실적 중심",
+                "color": "purple",
+                "message": (
+                    f"대표님, 리서치센터장 박진우 부사장 보고드립니다. 오늘 증권가 시황 핵심은 '{mkt_title}'입니다. "
+                    f"특히 종목 리포트 중에서는 {top_broker}이 발표한 '{top_stock_name}' 보고서('{top_title}', 제시 목표가 {top_gp})가 가장 눈에 띕니다. "
+                    f"실적 컨센서스가 뒷받침되는 AI 반도체, 전력·원전 인프라, 수주 산업 중심으로 기관의 눈높이가 유지되고 있습니다."
+                ),
+            },
+            {
+                "exec_id": "quant_dir",
+                "speaker": "김도현 상무 (퀀트·수급본부장)",
+                "role": "외국인·기관 수급 & 알고리즘 총괄",
+                "avatar": "📈",
+                "stance": "수급 · 추세 중시",
+                "color": "emerald",
+                "message": (
+                    f"퀀트본부 김도현 상무입니다. 박 부사장님 말씀처럼 리포트 내용이 좋아도 결국 '실제 수급'이 찍혀야 주가가 갑니다. "
+                    f"저희 퀀트 스캐너로 확인해 보면, 지수가 흔들릴 때도 50일 이동평균선 위에서 외국인과 기관 양매수가 들어오는 실적주만 강하게 치고 나가고 있습니다. "
+                    f"아래 결재함에서 종목을 클릭해 주시면 제가 즉시 수급과 이평선 위치부터 브리핑하겠습니다."
+                ),
+            },
+            {
+                "exec_id": "risk_cro",
+                "speaker": "최서연 상무 (리스크관리본부장)",
+                "role": "CRO · 변동성 & 리스크 통제",
+                "avatar": "🛡️",
+                "stance": "신중 · 리스크 방어",
+                "color": "rose",
+                "message": (
+                    "잠시만요 대표님! 리스크관리본부 최서연 상무입니다. 박 부사장님과 김 상무님은 항상 긍정적인 수급만 강조하시는데, "
+                    "제 입장에서는 원/달러 환율 변동성과 단기 급등주의 차익실현 매물 출회 가능성을 먼저 경고드려야 합니다. "
+                    "특히 증권사 목표주가만 보고 급등한 날 추격 매수하는 것은 위험하므로, 반드시 컨센서스 대비 괴리율과 하방 지지선을 먼저 점검하셔야 합니다."
+                ),
+            },
+            {
+                "exec_id": "global_dir",
+                "speaker": "이준호 이사 (글로벌·파생본부장)",
+                "role": "미국주식 · ETF · 선물 총괄",
+                "avatar": "🌎",
+                "stance": "글로벌 매크로 연동",
+                "color": "blue",
+                "message": (
+                    "글로벌본부 이준호 이사입니다. 한국 장 방향키를 쥐고 있는 미국 엔비디아(NVDA)·나스닥100 선물(NQ=F) 및 미국 10년물 국채 금리 데이터를 상시 추적 중입니다. "
+                    "대표님께서 대화창에 국내 종목이든 '엔비디아', '테슬라', '나스닥 선물', 'SCHD' 같은 해외 자산이든 말씀만 하시면 즉시 월가 IB 컨센서스까지 대조해 보고드리겠습니다!"
+                ),
+            },
+            {
+                "exec_id": "chief_sec",
+                "speaker": "정유진 비서실장",
+                "role": "대표님 전용 3줄 결론 요약",
+                "avatar": "👩‍💼",
+                "stance": "최종 정리 보고",
+                "color": "amber",
+                "message": (
+                    f"📌 [대표님 3줄 요약 보고]\n"
+                    f"1️⃣ 리서치본부(박 부사장): 오늘 '{top_stock_name}' 등 신규 증권사 리포트 {len(desk_company_reports)}건이 상정되었으며 실적·수주 모멘텀 유효\n"
+                    f"2️⃣ 퀀트(김 상무) vs 리스크(최 상무): 50일 이평선 상회 수급주 선호 의견과 환율·단기 과열 경계 의견이 대립 중\n"
+                    f"3️⃣ 대표님 지시 대기: 아래 대화창에 궁금하신 종목명을 입력하시거나 우측 리서치 결재함에서 [임원 토론 소집]을 눌러주세요!"
+                ),
+            },
+        ]
+    else:
+        # 특정 종목 또는 글로벌 자산에 대한 임원진 집중 끝장 토론!
+        mapped_global = KR_TO_GLOBAL_QUERY_MAP.get(extracted_target.lower()) or KR_TO_GLOBAL_QUERY_MAP.get(extracted_target.replace(" ", "").lower())
+        is_global = bool(mapped_global) or bool(re.match(r'^[A-Za-z\^=\-\.]{1,10}$', extracted_target))
+
+        if is_global:
+            g_sym = (mapped_global or extracted_target).upper()
+            atype = "futures" if ("=F" in g_sym or g_sym.startswith("^") or "DX-Y" in g_sym) else ("etf" if g_sym in ["QQQ", "SPY", "SOXX", "SCHD", "TLT", "JEPI"] else "us_stock")
+            catalog_match = next((c for c in MULTI_ASSET_CATALOG.get(atype, []) if c["symbol"].upper() == g_sym), None)
+            meta = catalog_match or {
+                "symbol": g_sym,
+                "name": f"{extracted_target.upper()} ({g_sym})",
+                "sector": "글로벌 상장 자산",
+                "desc": f"글로벌 시장에서 거래되는 '{extracted_target}' 자산입니다."
+            }
+            g_data = _fetch_single_yfinance_research(meta, atype)
+            t_name = g_data["name"]
+            t_price = g_data["price"]
+            t_chg = g_data["change_pct"]
+            t_ma50 = g_data["ma50"]
+            t_high = g_data["high_52w"]
+            t_low = g_data["low_52w"]
+            t_mean = g_data.get("target_mean") or "집계 대상 외(ETF/선물)"
+            t_up = g_data.get("upside_pct")
+            t_up_str = f"{t_up:+.1f}%" if t_up is not None else "-"
+
+            agenda_summary = {
+                "agenda_type": "global_asset",
+                "title": f"[{t_name}] 글로벌·임원 합동 긴급 분석 회의",
+                "subtitle": f"대표님 특별 지시 안건 · 실시간 시세 {t_price} ({t_chg:+.2f}%)",
+                "highlight_badge": g_data["trend_badge"],
+                "key_metrics": [
+                    {"label": "현재 시세 (등락률)", "value": f"{t_price} ({t_chg:+.2f}%)"},
+                    {"label": "월가 IB 평균 목표가", "value": f"{t_mean} ({t_up_str})"},
+                    {"label": "50일 이동평균선", "value": t_ma50},
+                    {"label": "52주 최고 / 최저", "value": f"{t_high} / {t_low}"},
+                ],
+            }
+
+            debates = [
+                {
+                    "exec_id": "chief_sec",
+                    "speaker": "정유진 비서실장",
+                    "role": "대표이사 비서실 · 회의 진행",
+                    "avatar": "👩‍💼",
+                    "stance": "안건 상정",
+                    "color": "amber",
+                    "message": f"대표님, 지시하신 해외·글로벌 자산 '{t_name}'에 대해 전 임원 긴급 점검 회의를 소집했습니다. 글로벌본부 이준호 이사부터 보고드리겠습니다.",
+                },
+                {
+                    "exec_id": "global_dir",
+                    "speaker": "이준호 이사 (글로벌·파생본부장)",
+                    "role": "미국주식 · ETF · 선물 총괄",
+                    "avatar": "🌎",
+                    "stance": "글로벌 모멘텀 분석",
+                    "color": "blue",
+                    "message": (
+                        f"대표님! 이준호 이사 보고드립니다. '{t_name}'의 현재 시세는 {t_price}(일일 변동 {t_chg:+.2f}%)입니다. "
+                        f"{g_data['desc']} "
+                        f"{f'현재 월가 투자은행(IB)들이 제시한 평균 목표주가는 {t_mean}으로 현재가 대비 괴리율은 {t_up_str} 수준입니다.' if g_data.get('target_mean') else '글로벌 기관 자금의 핵심 벤치마크 지표로 활발히 거래되고 있습니다.'}"
+                    ),
+                },
+                {
+                    "exec_id": "quant_dir",
+                    "speaker": "김도현 상무 (퀀트·수급본부장)",
+                    "role": "알고리즘 · 추세 분석",
+                    "avatar": "📈",
+                    "stance": "기술적 추세 점검",
+                    "color": "emerald",
+                    "message": (
+                        f"퀀트본부 김도현 상무입니다. 차트와 추세 데이터로 말씀드리면, '{t_name}'의 50일 이동평균선은 {t_ma50}이며 현재 '{g_data['trend_badge']}'에 위치해 있습니다. "
+                        f"최근 52주 저점({t_low})과 고점({t_high}) 사이에서 중기 추세선이 지지되는지가 알고리즘 수급의 핵심 분기점입니다."
+                    ),
+                },
+                {
+                    "exec_id": "risk_cro",
+                    "speaker": "최서연 상무 (리스크관리본부장)",
+                    "role": "CRO · 환율 & 변동성 통제",
+                    "avatar": "🛡️",
+                    "stance": "신중 · 리스크 점검",
+                    "color": "rose",
+                    "message": (
+                        f"대표님, 리스크관리본부 최서연 상무입니다! 해외 자산이나 선물은 가격 자체 변동성뿐 아니라 '원/달러 환율 변동(환노출)'과 '미국 국채 금리' 영향을 동시에 받습니다. "
+                        f"특히 52주 최고가({t_high}) 부근에서는 차익실현 매물이 나올 수 있으므로 50일선({t_ma50}) 지지 여부를 꼭 확인하셔야 합니다."
+                    ),
+                },
+                {
+                    "exec_id": "chief_sec",
+                    "speaker": "정유진 비서실장",
+                    "role": "대표님 전용 3줄 결론 요약",
+                    "avatar": "👩‍💼",
+                    "stance": "최종 요약 보고",
+                    "color": "amber",
+                    "message": (
+                        f"📌 ['{t_name}' 임원 회의 3줄 요약]\n"
+                        f"1️⃣ 글로벌/리서치(이 이사): 현재가 {t_price} ({t_chg:+.2f}%), 월가 컨센서스 평균 {t_mean}\n"
+                        f"2️⃣ 퀀트본부(김 상무): 50일 이동평균선({t_ma50}) 기준 '{g_data['trend_badge']}' 흐름\n"
+                        f"3️⃣ 리스크본부(최 상무): 52주 고점({t_high}) 부근 차익실현 압력 및 달러 환율 변동성 동시 체크 필요"
+                    ),
+                },
+            ]
+        else:
+            # 국내 종목 심층 리서치 + 실시간 주가/수급 조회
+            kr_res = get_stock_research_reports(category="company", q=extracted_target, page=0, size=10)
+            kr_items = kr_res.get("items", [])
+            cons = kr_res.get("consensus")
+            res_code = kr_res.get("resolved_code") or (kr_items[0].get("item_code") if kr_items else None)
+            res_name = kr_res.get("resolved_name") or (kr_items[0].get("item_name") if kr_items else extracted_target)
+
+            # 실시간 국내 주가 & 50일 이평선 조회 (yfinance .KS / .KQ)
+            cur_price_str = "장중 실시간 연동"
+            chg_pct_val = 0.0
+            ma50_str = "-"
+            high52_str = "-"
+            low52_str = "-"
+            trend_note = "보합·박스권 흐름"
+            cur_price_num = None
+
+            if res_code:
+                for suffix in [".KS", ".KQ"]:
+                    try:
+                        tk = yf.Ticker(f"{res_code}{suffix}")
+                        hist = tk.history(period="6mo")
+                        if hist is not None and not hist.empty:
+                            closes = hist["Close"].dropna()
+                            if len(closes) >= 1:
+                                cur_price_num = int(round(float(closes.iloc[-1])))
+                                cur_price_str = f"{cur_price_num:,}원"
+                                if len(closes) >= 2:
+                                    prev_p = float(closes.iloc[-2])
+                                    if prev_p > 0:
+                                        chg_pct_val = round(((cur_price_num - prev_p) / prev_p) * 100, 2)
+                                if len(closes) >= 20:
+                                    ma_val = int(round(float(closes.tail(min(50, len(closes))).mean())))
+                                    ma50_str = f"{ma_val:,}원"
+                                    if cur_price_num >= ma_val * 1.01:
+                                        trend_note = "📈 50일 이동평균선 상회 (강세 구간)"
+                                    elif cur_price_num <= ma_val * 0.99:
+                                        trend_note = "📉 50일 이동평균선 하회 (조정 구간)"
+                                high52_str = f"{int(round(float(hist['High'].max()))):,}원"
+                                low52_str = f"{int(round(float(hist['Low'].min()))):,}원"
+                                break
+                    except Exception:
+                        pass
+
+            avg_gp_str = cons["avg_goal_price"] if cons else (kr_items[0].get("goal_price") if kr_items else "집계 중")
+            max_gp_str = cons["max_goal_price"] if cons else avg_gp_str
+            min_gp_str = cons["min_goal_price"] if cons else avg_gp_str
+            rep_cnt = len(kr_items)
+            latest_rep = kr_items[0] if kr_items else None
+
+            agenda_summary = {
+                "agenda_type": "kr_stock",
+                "stock_name": res_name,
+                "stock_code": res_code,
+                "title": f"[{res_name}{f' ({res_code})' if res_code else ''}] 임원진 합동 끝장 토론 & 리서치 보고",
+                "subtitle": f"증권사 리포트 {rep_cnt}건 분석 · 현재가 {cur_price_str} ({chg_pct_val:+.2f}%)",
+                "highlight_badge": trend_note,
+                "key_metrics": [
+                    {"label": "현재 주가 (등락률)", "value": f"{cur_price_str} ({chg_pct_val:+.2f}%)"},
+                    {"label": "증권사 평균 목표주가", "value": avg_gp_str or "집계 중"},
+                    {"label": "최고 / 최저 목표주가", "value": f"{max_gp_str} / {min_gp_str}" if cons else (avg_gp_str or "-")},
+                    {"label": "50일 이동평균선", "value": ma50_str},
+                ],
+                "related_reports": kr_items[:4],
+            }
+
+            if latest_rep:
+                rep_line = (
+                    f"가장 최근에는 {latest_rep['broker']}에서 '{latest_rep['title']}'라는 제목으로 보고서를 올렸으며, "
+                    f"{latest_rep['easy_summary']}"
+                )
+            else:
+                rep_line = f"현재 '{res_name}'에 대해 주요 증권사들의 업황 및 실적 수급 모니터링이 진행 중입니다."
+
+            debates = [
+                {
+                    "exec_id": "chief_sec",
+                    "speaker": "정유진 비서실장",
+                    "role": "대표이사 비서실 · 회의 진행",
+                    "avatar": "👩‍💼",
+                    "stance": "안건 상정",
+                    "color": "amber",
+                    "message": (
+                        f"대표님! 지시하신 '{res_name}{f'({res_code})' if res_code else ''}' 종목에 대해 리서치센터, 퀀트본부, 리스크관리본부, 글로벌본부 임원 전원을 소집했습니다. "
+                        f"먼저 리서치센터장 박진우 부사장부터 증권사 리포트 분석 결과를 보고드리겠습니다."
+                    ),
+                },
+                {
+                    "exec_id": "research_vp",
+                    "speaker": "박진우 부사장 (리서치센터장)",
+                    "role": "기업·산업 리서치 총괄",
+                    "avatar": "👨‍💼",
+                    "stance": f"목표가 평균 {avg_gp_str}",
+                    "color": "purple",
+                    "message": (
+                        f"대표님, 리서치센터장 박진우 부사장입니다! 국내 증권사들이 최근 발표한 '{res_name}' 리포트 {rep_cnt}건을 전수 취합했습니다. "
+                        f"{f'현재 증권사 평균 목표주가는 {avg_gp_str}(최고 {max_gp_str} ~ 최저 {min_gp_str})으로 형성되어 있습니다. ' if cons else ''}"
+                        f"{rep_line}"
+                    ),
+                },
+                {
+                    "exec_id": "quant_dir",
+                    "speaker": "김도현 상무 (퀀트·수급본부장)",
+                    "role": "외국인·기관 수급 & 알고리즘 총괄",
+                    "avatar": "📈",
+                    "stance": trend_note,
+                    "color": "emerald",
+                    "message": (
+                        f"퀀트본부 김도현 상무입니다! 박 부사장님이 짚어주신 목표주가({avg_gp_str})와 실제 현재 주가({cur_price_str}, {chg_pct_val:+.2f}%)를 비교해 보겠습니다. "
+                        f"현재 50일 이동평균선은 {ma50_str}이며 기술적으로는 '{trend_note}'에 있습니다. "
+                        f"최근 6개월 고점({high52_str})과 저점({low52_str}) 사이에서 기관과 외국인의 프로그램 순매수가 연속 유입되는지가 가장 중요한 실전 타점 신호입니다."
+                    ),
+                },
+                {
+                    "exec_id": "risk_cro",
+                    "speaker": "최서연 상무 (리스크관리본부장)",
+                    "role": "CRO · 리스크 & 반대논리 점검",
+                    "avatar": "🛡️",
+                    "stance": "신중 · 리스크 점검",
+                    "color": "rose",
+                    "message": (
+                        f"잠깐만요 박 부사장님! 대표님께 증권사 최고 목표가({max_gp_str})만 강조하시면 안 됩니다. "
+                        f"리스크관리본부장으로서 말씀드리면, 가장 보수적인 증권사는 최저 목표가를 {min_gp_str}으로 잡고 있습니다. "
+                        f"만약 다음 분기 실제 영업이익이 시장 예상치(컨센서스)에 못 미치거나 환율·업황 변수가 흔들리면 목표주가가 하향 조정될 수 있으니, "
+                        f"50일선({ma50_str}) 지지 여부와 수주·실적 공시를 반드시 확인하며 접근해야 합니다."
+                    ),
+                },
+                {
+                    "exec_id": "global_dir",
+                    "speaker": "이준호 이사 (글로벌·파생본부장)",
+                    "role": "해외 동종업계 · 매크로 연동",
+                    "avatar": "🌎",
+                    "stance": "글로벌 동조화 체크",
+                    "color": "blue",
+                    "message": (
+                        f"글로벌본부 이준호 이사 덧붙여 보고드립니다. '{res_name}'의 외국인 패시브 자금 유입은 밤사이 미국 나스닥100 선물과 원/달러 환율 흐름에 직결됩니다. "
+                        f"해외 동종 섹터 ETF와 달러 인덱스가 안정세를 보일 때 외국인 매수세가 훨씬 강하게 유입됩니다."
+                    ),
+                },
+                {
+                    "exec_id": "chief_sec",
+                    "speaker": "정유진 비서실장",
+                    "role": "대표님 전용 3줄 결론 요약",
+                    "avatar": "👩‍💼",
+                    "stance": "최종 결재 요약",
+                    "color": "amber",
+                    "message": (
+                        f"📌 [대표님 전용 '{res_name}' 임원 토론 3줄 최종 보고]\n"
+                        f"1️⃣ 리서치 컨센서스(박 부사장): 최근 리포트 {rep_cnt}건 기준 증권사 평균 목표가 {avg_gp_str} (최고 {max_gp_str} / 최저 {min_gp_str})\n"
+                        f"2️⃣ 수급·기술적 위치(김 상무): 현재가 {cur_price_str} ({chg_pct_val:+.2f}%), 50일 이평선({ma50_str}) 대비 '{trend_note}'\n"
+                        f"3️⃣ 리스크 관리(최 상무): 보수적 목표가({min_gp_str}) 및 분기 실제 영업이익의 컨센서스 부합 여부를 핵심 기준으로 관찰"
+                    ),
+                },
+            ]
+
+    return {
+        "status": "success",
+        "timestamp": now_kst.strftime("%Y-%m-%d %H:%M:%S KST"),
+        "office_mode": office_mode,
+        "executives": CEO_OFFICE_EXECUTIVES,
+        "agenda": agenda_summary,
+        "debates": debates,
+        "research_desk": desk_company_reports,
+        "market_desk": desk_market_reports,
+    }
+
+
+
