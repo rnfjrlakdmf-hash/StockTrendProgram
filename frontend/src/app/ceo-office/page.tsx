@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
@@ -223,6 +225,7 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
     {
         doc_id: 'DOC-DEFAULT-01',
         doc_number: '제 2026-01 호',
+        category_type: 'kr_stock',
         category_badge: '🌐 전사 24시간·주말 무휴 종합 보고',
         urgency: '최우선 결재',
         stock_name: '전체 시장 시스템',
@@ -250,6 +253,7 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
     {
         doc_id: 'DOC-DEFAULT-02',
         doc_number: '제 2026-02 호',
+        category_type: 'kr_stock',
         category_badge: '🏢 종목 쉽게 읽기 (하나증권)',
         urgency: '정규 결재',
         stock_name: '두산에너빌리티',
@@ -278,6 +282,7 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
     {
         doc_id: 'DOC-DEFAULT-03',
         doc_number: '제 2026-03 호',
+        category_type: 'kr_stock',
         category_badge: '🏢 종목 쉽게 읽기 (한화투자증권)',
         urgency: '정규 결재',
         stock_name: '대한항공',
@@ -305,6 +310,7 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
     {
         doc_id: 'DOC-DEFAULT-04',
         doc_number: '제 2026-04 호',
+        category_type: 'kr_stock',
         category_badge: '🏢 종목 쉽게 읽기 (미래에셋증권)',
         urgency: '정규 결재',
         stock_name: 'SK하이닉스',
@@ -332,6 +338,7 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
     {
         doc_id: 'DOC-DEFAULT-05',
         doc_number: '제 2026-05 호',
+        category_type: 'us_stock',
         category_badge: '🌎 미국 주식 쉽게 읽기',
         urgency: '글로벌 핵심',
         stock_name: 'NVDA',

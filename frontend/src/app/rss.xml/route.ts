@@ -5,7 +5,10 @@ export const revalidate = 3600; // 1 hour caching for RSS
 export async function GET() {
     let posts = [];
     try {
-        const res = await fetch(`${API_BASE_URL}/api/blog/posts?page=1&limit=20`, { next: { revalidate: 3600 } });
+        const res = await fetch(`${API_BASE_URL}/api/blog/posts?page=1&limit=20`, { 
+            next: { revalidate: 3600 },
+            signal: AbortSignal.timeout(4000)
+        });
         if (res.ok) {
             const data = await res.json();
             if (data && data.status === 'ok' && Array.isArray(data.posts)) {

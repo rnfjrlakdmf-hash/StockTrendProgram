@@ -2121,6 +2121,10 @@ def _extract_topic_from_ceo_message(raw_msg: str) -> str:
     return ""
 
 
+_CEO_OFFICE_CACHE: Dict[str, Any] = {}
+_CEO_OFFICE_CACHE_TIME: float = 0.0
+
+
 @router.get("/ceo-office")
 def get_ceo_office_boardroom(
     topic: str = Query("", description="안건 종목명/티커 또는 빈 문자열(전사 자동 결재 브리핑)"),
@@ -2131,9 +2135,15 @@ def get_ceo_office_boardroom(
     - 직원(5인 임원 및 리서치·퀀트·글로벌팀)들이 평일·주말 구분 없이 알아서 시장 시스템과 종목을 분석해 결재판(auto_approvals)에 상정
     - 대표님은 올라온 시장 종합 보고서와 종목별 기안서를 읽고 [승인 서명], [보류], [재검토 지시]만 내리는 구조
     """
+    import time
     from datetime import datetime, timezone, timedelta
     import yfinance as yf
     import concurrent.futures
+
+    global _CEO_OFFICE_CACHE, _CEO_OFFICE_CACHE_TIME
+    if not topic and not message:
+        if _CEO_OFFICE_CACHE and (time.time() - _CEO_OFFICE_CACHE_TIME < 60):
+            return _CEO_OFFICE_CACHE
 
     kst_tz = timezone(timedelta(hours=9))
     now_kst = datetime.now(kst_tz)
@@ -2193,30 +2203,17 @@ def get_ceo_office_boardroom(
             f_tsla = ex.submit(_task_tsla)
             f_nq = ex.submit(_task_nq)
             f_es = ex.submit(_task_es)
-            try:
-                raw_company_reports = f_comp.result(timeout=6) or []
-            except Exception as e:
-                print(f"[CEOOffice] comp report err: {e}")
-            try:
-                raw_market_reports = f_mkt.result(timeout=6) or []
-            except Exception as e:
-                print(f"[CEOOffice] mkt report err: {e}")
-            try:
-                nvda_info = f_nvda.result(timeout=6)
-            except Exception as e:
-                print(f"[CEOOffice] nvda err: {e}")
-            try:
-                tsla_info = f_tsla.result(timeout=6)
-            except Exception as e:
-                print(f"[CEOOffice] tsla err: {e}")
-            try:
-                nq_info = f_nq.result(timeout=6)
-            except Exception as e:
-                print(f"[CEOOffice] nq err: {e}")
-            try:
-                es_info = f_es.result(timeout=6)
-            except Exception as e:
-                print(f"[CEOOffice] es err: {e}")
+
+            done, _ = concurrent.futures.wait(
+                [f_comp, f_mkt, f_nvda, f_tsla, f_nq, f_es],
+                timeout=4.0
+            )
+            raw_company_reports = f_comp.result() if (f_comp in done and not f_comp.exception()) else []
+            raw_market_reports = f_mkt.result() if (f_mkt in done and not f_mkt.exception()) else []
+            nvda_info = f_nvda.result() if (f_nvda in done and not f_nvda.exception()) else None
+            tsla_info = f_tsla.result() if (f_tsla in done and not f_tsla.exception()) else None
+            nq_info = f_nq.result() if (f_nq in done and not f_nq.exception()) else None
+            es_info = f_es.result() if (f_es in done and not f_es.exception()) else None
     except Exception as e:
         print(f"[CEOOffice] Parallel executor error: {e}")
 
@@ -3297,7 +3294,7 @@ def get_ceo_office_boardroom(
                 },
             ]
 
-    return {
+    resp_data = {
         "status": "success",
         "data": {
             "updated_at": now_kst.strftime("%H:%M:%S"),
@@ -3310,6 +3307,10 @@ def get_ceo_office_boardroom(
             "market_desk": desk_market_reports,
         },
     }
+    if not topic and not message:
+        _CEO_OFFICE_CACHE = resp_data
+        _CEO_OFFICE_CACHE_TIME = time.time()
+    return resp_data
 
 
 

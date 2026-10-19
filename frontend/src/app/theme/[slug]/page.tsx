@@ -11,7 +11,10 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const resolvedParams = await params;
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { next: { revalidate: 21600 } });
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { 
+            next: { revalidate: 21600 },
+            signal: AbortSignal.timeout(4000)
+        });
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
@@ -89,7 +92,10 @@ export default async function ThemeDetailPage({ params }: Props) {
     let themeData = null;
     const resolvedParams = await params;
     try {
-        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { next: { revalidate: 21600 } });
+        const res = await fetch(`${API_BASE_URL}/api/seo/themes/${resolvedParams.slug}?v=2`, { 
+            next: { revalidate: 21600 },
+            signal: AbortSignal.timeout(4000)
+        });
         if (res.ok) {
             const data = await res.json();
             if (data.status === 'success') {
