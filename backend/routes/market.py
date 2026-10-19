@@ -1945,6 +1945,7 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
         "analyst_count": analyst_count,
         "forward_pe": forward_pe,
         "div_yield": div_yield,
+        "desc": desc,
         "summary_points": summary_points,
         "easy_summary": easy_summary,
         "checkpoint": checkpoint,
@@ -3220,7 +3221,7 @@ def get_ceo_office_boardroom(
                             "icon": "🤖",
                             "title": "글로벌 AI 독점적 시장 지배력",
                             "highlight": "AI 인프라 필수재",
-                            "desc": g_data['desc'],
+                            "desc": g_data.get('desc') or g_data.get('easy_summary') or meta.get('desc', ''),
                             "badge": "시장 지배력"
                         },
                         {
