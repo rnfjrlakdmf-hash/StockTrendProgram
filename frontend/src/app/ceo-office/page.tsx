@@ -685,44 +685,85 @@ export default function CeoOfficePage() {
                 <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-                        <div>
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-extrabold mb-3">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                🏛️ CEO ELECTRONIC APPROVAL SYSTEM · 전 부서 자율 분석 & 대표이사 결재실
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                        <div className="flex-1">
+                            {/* 상단 럭셔리 인가 뱃지 */}
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-black shadow-sm">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                    <span>🏛️ AI 증권사 대표이사 전자결재실</span>
+                                    <span className="text-gray-500">|</span>
+                                    <span className="text-emerald-300 font-extrabold">전 부서 자율 분석 완료</span>
+                                </div>
+                                <span className="text-[11px] text-gray-400 bg-white/5 px-2.5 py-0.5 rounded-md border border-white/5 font-mono">
+                                    {officeStatus}
+                                </span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
-                                대표님, 직원들이 오늘 시장 분석을 마치고 결재 서류를 올렸습니다
+
+                            {/* 메인 헤드라인 (눈에 확 들어오는 타이포그래피 & 골드 그라디언트) */}
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-black tracking-tight text-white leading-tight">
+                                대표님, 오늘 시장 분석이 완료되었습니다 <br className="hidden sm:inline" />
+                                <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent underline decoration-amber-500/40 decoration-2">
+                                    총 {totalDocs}건의 결재 기안서
+                                </span>
+                                를 검토 후 서명해 주십시오 🖋️
                             </h1>
-                            <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed max-w-3xl">
-                                대표님께서 직접 검색하거나 지시하실 필요 없습니다. 리서치센터·퀀트수급본부·리스크관리본부(CRO)·글로벌파생본부가 알아서 시장 시스템과 핵심 종목을 분석해 결재판에 올려두었으니, 보고를 읽으시고 <span className="text-amber-300 font-bold">[승인 서명]</span>만 눌러주십시오.
-                            </p>
+
+                            {/* 3대 핵심 포인트 가이드 바 (한눈에 확 들어오는 깔끔한 3단 카드) */}
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-w-4xl">
+                                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-black/45 border border-emerald-500/30 text-xs text-gray-200 font-bold backdrop-blur-sm shadow-sm">
+                                    <span className="text-base text-emerald-400 shrink-0">⚡</span>
+                                    <div>
+                                        <div className="text-[10px] text-emerald-300 font-extrabold uppercase">자율 시장 분석</div>
+                                        <div className="text-white font-extrabold">리서치·수급·리스크 4대 본부 기안</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-black/45 border border-amber-500/35 text-xs text-gray-200 font-bold backdrop-blur-sm shadow-sm">
+                                    <span className="text-base text-amber-400 shrink-0">💡</span>
+                                    <div>
+                                        <div className="text-[10px] text-amber-300 font-extrabold uppercase">대표님 결재 방식</div>
+                                        <div className="text-amber-200 font-extrabold">10초 요약 읽고 [승인 서명] 클릭</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-black/45 border border-rose-500/30 text-xs text-gray-200 font-bold backdrop-blur-sm shadow-sm">
+                                    <span className="text-base text-rose-400 shrink-0">🛡️</span>
+                                    <div>
+                                        <div className="text-[10px] text-rose-300 font-extrabold uppercase">안전 하방 검증</div>
+                                        <div className="text-white font-extrabold">50일선 지지선 & 위험 요인 감사</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {/* 우측 상단 전자결재 현황판 & 일괄 서명 버튼 */}
-                        <div className="bg-black/50 border border-amber-500/30 rounded-2xl p-4 min-w-[290px] backdrop-blur-md shadow-xl">
-                            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-                                <span className="font-bold text-amber-300">📋 오늘의 대표이사 결재판</span>
-                                <span>{updatedAt ? `${updatedAt} 자동 상정` : '실시간 자동 상정'}</span>
+                        <div className="bg-[#0b1222]/95 border-2 border-amber-500/35 rounded-2xl p-4 sm:p-5 min-w-[300px] lg:w-[320px] backdrop-blur-md shadow-2xl shrink-0">
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-2.5">
+                                <span className="font-extrabold text-amber-300 flex items-center gap-1.5">
+                                    <span>📋</span>
+                                    <span>오늘의 결재 집무판</span>
+                                </span>
+                                <span className="text-[11px] font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded">
+                                    {updatedAt ? `${updatedAt} 상정` : '실시간 상정'}
+                                </span>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                            <div className="grid grid-cols-3 gap-2 text-center mb-3.5">
                                 <div className="bg-white/5 rounded-xl py-2 px-2 border border-white/5">
-                                    <div className="text-[10px] text-gray-400">총 상정 서류</div>
-                                    <div className="text-base font-black text-white">{totalDocs}건</div>
+                                    <div className="text-[10px] text-gray-400 font-bold">총 상정</div>
+                                    <div className="text-lg font-black text-white">{totalDocs}건</div>
                                 </div>
-                                <div className="bg-amber-500/10 rounded-xl py-2 px-2 border border-amber-500/25">
-                                    <div className="text-[10px] text-amber-200">서명 대기</div>
-                                    <div className="text-base font-black text-amber-300">{pendingDocsCount}건</div>
+                                <div className="bg-amber-500/10 rounded-xl py-2 px-2 border border-amber-500/30">
+                                    <div className="text-[10px] text-amber-200 font-bold">서명 대기</div>
+                                    <div className="text-lg font-black text-amber-300">{pendingDocsCount}건</div>
                                 </div>
-                                <div className="bg-emerald-500/10 rounded-xl py-2 px-2 border border-emerald-500/25">
-                                    <div className="text-[10px] text-emerald-200">승인 완료</div>
-                                    <div className="text-base font-black text-emerald-400">{approvedDocsCount}건</div>
+                                <div className="bg-emerald-500/10 rounded-xl py-2 px-2 border border-emerald-500/30">
+                                    <div className="text-[10px] text-emerald-200 font-bold">승인 완료</div>
+                                    <div className="text-lg font-black text-emerald-400">{approvedDocsCount}건</div>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={handleApproveAll}
-                                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
                             >
                                 <span>🖋️ 상정된 안건 전체 일괄 승인 서명하기</span>
                             </button>
