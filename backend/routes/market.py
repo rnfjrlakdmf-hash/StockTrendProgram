@@ -2311,7 +2311,26 @@ def get_ceo_office_boardroom(
             }
         ]
 
-    # 3. 직원들이 알아서 분석해 대표님 책상에 올린 「자동 상정 전자결재 기안서 (auto_approvals)」 7건 생성!
+    # 3. 직원들이 알아서 분석해 대표님 책상에 올린 「자동 상정 전자결재 기안서 (auto_approvals)」 — 초보자·대표님 눈높이 쉬운 해설 적용!
+    def _extract_easy_terms(text_blob: str) -> List[Dict[str, str]]:
+        terms = []
+        t_up = (text_blob or "").upper()
+        if "SMR" in t_up or "원전" in text_blob or "두산에너빌리티" in text_blob:
+            terms.append({"term": "SMR (소형모듈원전)", "desc": "기존 거대한 원자력발전소를 작게 줄여서 공장에서 찍어내듯 만들어 설치하는 차세대 안전 발전소입니다."})
+        if "HBM" in t_up or "하이닉스" in text_blob or "엔비디아" in text_blob or "NVDA" in t_up:
+            terms.append({"term": "HBM (고대역폭 메모리)", "desc": "일반 D램을 아파트처럼 여러 층 쌓아 올려 AI 칩이 엄청난 속도로 데이터를 처리하게 돕는 'AI 전용 최고급 메모리'입니다."})
+        if "컨센서스" in text_blob or "추정치" in text_blob or "기대치" in text_blob:
+            terms.append({"term": "컨센서스 (시장 예상치)", "desc": "여러 증권사 전문가들이 '이번 분기에 이 회사가 돈을 얼마나 벌까?' 미리 계산해 놓은 평균 예상 점수입니다."})
+        if "PBR" in t_up or "PER" in t_up or "밸류에이션" in text_blob or "배수" in text_blob:
+            terms.append({"term": "밸류에이션 (주가 가성비)", "desc": "회사가 버는 돈이나 가진 재산에 비해 지금 주가가 비싼지 싼지 따져보는 '가격표 점수'입니다."})
+        if "선물" in text_blob or "NQ=F" in t_up:
+            terms.append({"term": "나스닥100 선물", "desc": "미국 시장이 열리기 전에도 24시간 거래되는 '미리 보는 미국 기술주 온도계'로, 한국 주식시장 출발 분위기를 좌우합니다."})
+        if len(terms) < 2:
+            terms.append({"term": "목표주가", "desc": "증권사 애널리스트가 기업의 미래 실적을 계산해 '앞으로 6개월~1년 안에 이 가격까지는 갈 수 있다'고 제시한 목표 가격입니다."})
+        if len(terms) < 3:
+            terms.append({"term": "50일선 (50일 이동평균선)", "desc": "최근 약 두 달(50거래일) 동안 거래된 주가의 평균 가격선입니다. 주가가 이 선 위에 있으면 사는 힘이 더 강하다는 뜻입니다."})
+        return terms[:3]
+
     auto_approvals = []
 
     top_mkt = desk_market_reports[0] if desk_market_reports else None
@@ -2324,136 +2343,146 @@ def get_ceo_office_boardroom(
     nvda_trend_str = (nvda_info.get("trend_badge") if nvda_info else None) or "📈 중기 상승 추세 (50일선 상회)"
     nvda_high52_str = (nvda_info.get("high_52w") if nvda_info else None) or "$143.71"
 
-    day_label = "주말 특별 비상근무" if weekday >= 5 else "일일 시장 시스템"
+    day_label = "주말 24시간 비상근무" if weekday >= 5 else "일일 시장 시스템"
 
-    # [기안 제1호] 전사 시장 시스템 & 매크로 종합 보고서 (평일/주말 무휴)
+    # [기안 제1호] 전사 시장 시스템 & 매크로 종합 보고서 (누구나 10초 만에 이해하는 쉬운 브리핑)
     auto_approvals.append({
         "doc_id": f"DOC-{date_doc_str}-01",
         "doc_number": f"제 {date_doc_str}-01 호",
         "category_badge": f"🌐 전사 {day_label} 종합 보고",
         "urgency": "최우선 결재",
         "stock_name": "전체 시장 시스템",
-        "title": f"[{day_label} 종합 보고] 국내외 증시 시황 결산 및 차주(개장일) 리서치·수급 시스템 자동 브리핑",
+        "title": f"[{day_label} 종합 보고] 지금 주식시장 분위기 & 돈이 몰리는 핵심 업종 브리핑",
         "proposer": "박진우 부사장 (리서치센터장) 외 4개 본부 합동",
         "submitted_at": f"{time_str} 상정 (365일 무휴 가동)",
+        "easy_headline": "지금 시장은 모든 주식이 다 같이 오르는 장이 아닙니다! 실제로 해외 일감(수주)을 많이 따내고 돈을 잘 버는 '알짜 우량주(AI 반도체·원전·조선·항공)'로만 큰손들의 돈이 몰리고 있으니, 이 종목들만 콕 집어서 관리하자는 보고서입니다.",
         "key_numbers": [
-            {"label": "핵심 시황 리포트", "value": top_mkt["broker"] if top_mkt else "제도권 컨센서스"},
-            {"label": "나스닥100 선물 (NQ=F)", "value": nq_price_str},
-            {"label": "글로벌 AI 대장 (NVDA)", "value": nvda_price_str},
-            {"label": "자율 분석 완료 건수", "value": f"종목 {len(desk_company_reports)}건 · 시황 {len(desk_market_reports)}건"},
+            {"label": "오늘의 시장 핵심 키워드", "value": "실적 좋은 알짜주 집중"},
+            {"label": "미리 보는 미국장 (나스닥선물)", "value": nq_price_str},
+            {"label": "글로벌 AI 대장 (엔비디아)", "value": nvda_price_str},
+            {"label": "직원들이 분석 마친 보고서", "value": f"종목 {len(desk_company_reports)}건 · 시황 {len(desk_market_reports)}건"},
         ],
         "research_opinion": (
-            f"👨‍💼 박진우 부사장(리서치): 증권사에 주말은 없습니다! 저희 리서치센터가 분석한 핵심 시황 화두는 '{top_mkt['title'] if top_mkt else '실적 및 수급 중심 차별화 장세'}'입니다. "
-            f"쉽게 말씀드리면 {top_mkt['plain_explanation'] if top_mkt and top_mkt['plain_explanation'] else '기업 실적 눈높이가 유지되는 핵심 수출·수주 업종 위주로 시장 에너지를 집중해야 하는 구간입니다.'}"
+            f"👍 [왜 이렇게 봐야 하나요? · 박진우 리서치센터장]: 오늘 증권가 핵심 리포트('{top_mkt['title'] if top_mkt else '실적 및 수급 중심 차별화 장세'}')를 쉽게 풀면, "
+            f"소문으로만 오르는 주식은 피하고 분기 성적표(영업이익)가 잘 나오는 수출·수주 대장주만 골라 담아야 안전하다는 뜻입니다."
         ),
         "quant_opinion": (
-            f"📈 김도현 상무(퀀트·수급): 전사 수급 스캐너 전수 점검 결과, 지수 등락과 무관하게 50일 이동평균선 위에서 외국인과 기관의 프로그램 순매수가 동반 유입되는 종목군만 강한 시세 연속성을 보이고 있습니다."
+            "📊 [큰손들 돈의 흐름은? · 김도현 수급본부장]: 저희 자동 수급 기계로 시장을 돌려보니, 최근 두 달 평균 가격(50일선) 위에서 외국인과 기관 부자들이 함께 사들이는 종목들만 주가가 계속 힘을 내고 있습니다."
         ),
         "risk_opinion": (
-            f"🛡️ 최서연 상무(리스크 CRO): 나스닥100 선물({nq_price_str}) 변동성과 외국인 선물 수급 이탈 여부를 1순위 위험 지표로 설정했습니다. 추격 매수 금지 및 분할 대응 원칙을 유지합니다."
+            f"⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 이미 하루에 급등한 주식을 뒤늦게 따라 사는 것(추격 매수)은 절대 금물입니다! 미국 나스닥 선물({nq_price_str})이 흔들릴 때는 나누어서 천천히 접근해야 안전합니다."
         ),
         "secretary_conclusion": (
-            f"👩‍💼 정유진 비서실장 [결재 요약]: 주말·야간에도 전사 시장 데이터 수집·리서치·퀀트 스캐너가 100% 정상 가동 중이며, 실적 컨센서스 상향 종목 중심의 선별 모니터링 체제를 대표님께 승인 요청드립니다."
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 현재 우리 회사 모든 자동 분석 시스템이 주말·야간 상관없이 100% 정상 작동 중입니다. '실적 좋은 알짜 종목 위주로 집중 감시하라'는 지침에 [승인 서명]만 눌러주십시오!"
         ),
-        "recommendation": "전사 24시간 시장 모니터링 체제 승인 (가결 권고)",
+        "recommendation": "알짜 실적주 집중 감시 체제 승인",
+        "easy_terms": _extract_easy_terms("컨센서스 나스닥 선물 50일선"),
     })
 
-    # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (4건 보장)
+    # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (초보자 눈높이 번역!)
     for idx, rep in enumerate(desk_company_reports[:4], start=2):
         s_name = rep["stock_name"]
         s_broker = rep["broker"]
         s_gp = rep["target_price"]
         s_title = rep["title"]
-        s_easy = rep["plain_explanation"] or f"{s_broker}에서 {s_name}에 대해 목표주가 {s_gp}을 제시하며 실적 모멘텀을 분석했습니다."
-        s_check = rep["action_point"] or "분기 실제 영업이익이 증권사 예상치에 부합하는지 확인이 필요합니다."
+        s_easy = rep["plain_explanation"] or f"{s_broker} 전문가가 '{s_name}'의 앞으로 돈 벌 능력(실적)을 긍정적으로 보고 목표주가 {s_gp}을 제시했습니다."
+        s_check = rep["action_point"] or "다음 분기 성적표(영업이익)가 전문가 예상만큼 잘 나오는지 꼭 확인해야 합니다."
+
+        gp_explain = f"{s_broker}에서 '{s_name}' 주가가 앞으로 {s_gp}까지 갈 수 있다고 분석했습니다. " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else f"{s_broker}에서 '{s_name}'의 최근 사업 현황과 실적을 분석했습니다. "
 
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-0{idx}",
             "doc_number": f"제 {date_doc_str}-0{idx} 호",
-            "category_badge": f"🏢 국내 종목 자율 분석 ({s_broker})",
+            "category_badge": f"🏢 종목 쉽게 읽기 ({s_broker})",
             "urgency": "정규 결재",
             "stock_name": s_name,
             "title": f"[{s_name}] {s_title}",
-            "proposer": f"박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)",
-            "submitted_at": f"{rep['date']} 발간 · 자율 분석 완료",
+            "proposer": "박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)",
+            "submitted_at": f"{rep['date']} 발간 · 쉬운 해설 완료",
+            "easy_headline": f"{gp_explain}{s_easy}",
             "key_numbers": [
-                {"label": "분석 대상 종목", "value": s_name},
-                {"label": "발간 증권사", "value": s_broker},
-                {"label": "제시 목표주가", "value": s_gp if s_gp != "제시안함" else "컨센서스 유지"},
-                {"label": "투자의견", "value": rep["opinion"]},
+                {"label": "분석한 회사 이름", "value": s_name},
+                {"label": "보고서 낸 증권사", "value": s_broker},
+                {"label": "전문가 목표주가", "value": s_gp if s_gp != "제시안함" else "긍정적 유지"},
+                {"label": "전문가 결론", "value": "사도 좋음 (매수)" if "Buy" in rep["opinion"] or "매수" in rep["opinion"] else rep["opinion"]},
             ],
-            "research_opinion": f"👨‍💼 박진우 부사장(리서치): {s_easy}",
-            "quant_opinion": f"📈 김도현 상무(퀀트·수급): 목표주가({s_gp}) 대비 현재 주가의 괴리율과 외국인·기관 수급 유입 연속성을 자동 추적 중입니다.",
-            "risk_opinion": f"🛡️ 최서연 상무(리스크 CRO): {s_check}",
+            "research_opinion": f"👍 [왜 좋은가요? · 박진우 리서치센터장]: {s_easy}",
+            "quant_opinion": f"📊 [돈의 흐름은? · 김도현 수급본부장]: 증권사가 부른 목표 가격({s_gp})에 비해 지금 주가가 얼마나 저렴한지, 그리고 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다.",
+            "risk_opinion": f"⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 무조건 좋다고 바로 사기보다는, {s_check}",
             "secretary_conclusion": (
-                f"👩‍💼 정유진 비서실장 [결재 요약]: '{s_name}'에 대한 {s_broker}의 최신 리포트(목표가 {s_gp})와 리스크 감사가 완료되었습니다. 대표님 중점 관심 포트폴리오 편입 여부를 서명해 주십시오."
+                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: '{s_name}'(목표주가 {s_gp})의 좋은 점과 주의할 점을 모두 정리했습니다. 우리 회사 중점 관심 종목으로 등록할지 [승인 서명]을 눌러 결정해 주십시오!"
             ),
-            "recommendation": f"목표가 {s_gp} 기준 중점 관리 승인 요청",
+            "recommendation": f"목표주가 {s_gp} 기준 관심종목 등록 승인",
             "detail_url": rep["detail_url"],
+            "easy_terms": _extract_easy_terms(f"{s_name} {s_title} {s_easy}"),
         })
 
-    # [기안 제6호] 글로벌 데스크 자율 분석 안건 (엔비디아 NVDA & 월가 목표주가)
+    # [기안 제6호] 글로벌 데스크 자율 분석 안건 (엔비디아 NVDA — 쉬운 눈높이 해설)
     auto_approvals.append({
         "doc_id": f"DOC-{date_doc_str}-06",
         "doc_number": f"제 {date_doc_str}-06 호",
-        "category_badge": "🌎 해외·글로벌 데스크 자율 분석",
+        "category_badge": "🌎 미국 주식 쉽게 읽기",
         "urgency": "글로벌 핵심",
         "stock_name": "NVDA",
-        "title": "[엔비디아 (NVDA)] 글로벌 AI 반도체 선행지표 & 월가 IB 목표주가 자율 점검 보고",
+        "title": "[엔비디아 (NVDA)] 전 세계 AI 대장주 분위기 & 한국 반도체(삼전·하이닉스) 영향 보고",
         "proposer": "이준호 이사 (글로벌·파생본부장)",
         "submitted_at": f"{time_str} 24시간 글로벌 데스크",
+        "easy_headline": f"전 세계 AI 칩 1등 회사인 미국 '엔비디아'가 잘 가야 한국 삼성전자·SK하이닉스도 같이 힘을 받습니다! 현재 엔비디아 주가는 {nvda_price_str}이며, 미국 월스트리트 전문가들은 앞으로 평균 {nvda_mean_str}(지금보다 {nvda_up_str} 더 상승 가능)까지 갈 수 있다고 보고 있습니다.",
         "key_numbers": [
-            {"label": "현재 주가 (등락률)", "value": nvda_price_str},
-            {"label": "월가 IB 평균 목표가", "value": f"{nvda_mean_str} ({nvda_up_str})"},
-            {"label": "50일 이동평균선", "value": nvda_ma50_str},
-            {"label": "추세 판정", "value": nvda_trend_str},
+            {"label": "엔비디아 현재 주가", "value": nvda_price_str},
+            {"label": "미국 전문가 평균 목표가", "value": f"{nvda_mean_str} ({nvda_up_str})"},
+            {"label": "최근 두 달 평균가격(50일선)", "value": nvda_ma50_str},
+            {"label": "현재 주가 힘(추세)", "value": nvda_trend_str},
         ],
         "research_opinion": (
-            f"🌎 이준호 이사(글로벌): 국내 반도체(삼성전자·SK하이닉스) 및 전력기기 업종의 선행지표인 엔비디아(NVDA)는 현재 {nvda_price_str}이며, 월가 IB 평균 목표가는 {nvda_mean_str}(괴리율 {nvda_up_str})입니다."
+            f"👍 [왜 중요한가요? · 이준호 글로벌이사]: 엔비디아는 구글·마이크로소프트 같은 전 세계 빅테크 기업들이 서로 사려고 줄을 서는 AI 반도체의 대장입니다. 미국 전문가 평균 목표가가 {nvda_mean_str}로 아직도 상승 여력({nvda_up_str})이 남아 있어 한국 반도체 주식에도 좋은 신호입니다."
         ),
         "quant_opinion": (
-            f"📈 김도현 상무(퀀트·수급): 50일 이동평균선({nvda_ma50_str}) 기준 '{nvda_trend_str}' 흐름을 기록하고 있어 글로벌 AI 테크 수급의 기준점 역할을 하고 있습니다."
+            f"📊 [차트 흐름은? · 김도현 수급본부장]: 최근 두 달 평균 가격({nvda_ma50_str})보다 주가가 위에서 튼튼하게 버티고({nvda_trend_str}) 있어서, 글로벌 큰손 자금이 AI 기술주에서 빠져나가지 않고 계속 머물러 있습니다."
         ),
         "risk_opinion": (
-            f"🛡️ 최서연 상무(리스크 CRO): 52주 최고가({nvda_high52_str}) 부근 차익실현 매물과 원/달러 환율 변동성을 동시에 감안해 국내 반도체 연동 비중을 조절해야 합니다."
+            f"⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 최근 1년 최고가({nvda_high52_str}) 근처에서는 수익을 챙기려는 매도 물량이 나올 수 있으니, 엔비디아가 쉬어갈 때는 한국 반도체 주식도 무리해서 추격 매수하지 않도록 조절해야 합니다."
         ),
         "secretary_conclusion": (
-            "👩‍💼 정유진 비서실장 [결재 요약]: 글로벌 AI 반도체 선행지표(NVDA) 점검 완료. 국내 반도체·전력 인프라 섹터 연동 모니터링 승인을 요청드립니다."
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 한국 반도체와 전력설비 주식의 길잡이 역할을 하는 엔비디아(NVDA) 점검 보고서입니다. 확인하셨으면 [승인 서명]을 눌러주십시오!"
         ),
-        "recommendation": "글로벌 선행지표 연동 승인 요청",
+        "recommendation": "글로벌 AI 대장주 연동 감시 승인",
+        "easy_terms": _extract_easy_terms("엔비디아 NVDA HBM 목표주가 50일선"),
     })
 
-    # [기안 제7호] 나스닥100 선물(NQ=F) 및 차주 개장 리스크 관리 특별 기안서
+    # [기안 제7호] 나스닥100 선물(NQ=F) 및 개장 리스크 방어 기안서 (쉬운 눈높이 해설)
     nq_ma50_str = (nq_info.get("ma50") if nq_info else None) or "19,980.00"
     nq_trend_str = (nq_info.get("trend_badge") if nq_info else None) or "📈 중기 상승 추세 (50일선 상회)"
     auto_approvals.append({
         "doc_id": f"DOC-{date_doc_str}-07",
         "doc_number": f"제 {date_doc_str}-07 호",
-        "category_badge": "🛡️ 파생·리스크관리본부 합동 기안",
+        "category_badge": "🛡️ 시장 안전벨트 점검",
         "urgency": "리스크 점검",
         "stock_name": "NQ=F",
-        "title": "[나스닥100 선물 (NQ=F)] 주말·야간 글로벌 지수 선물 추세 및 개장 수급 방어 전략 기안",
+        "title": "[나스닥100 선물 (NQ=F)] 미리 보는 미국 증시 온도계 & 한국 시장 안전 방어 전략",
         "proposer": "최서연 상무 (CRO) · 이준호 이사 (글로벌·파생본부장)",
         "submitted_at": f"{time_str} 상시 감시 완료",
+        "easy_headline": f"'나스닥 선물({nq_price_str})'은 미국 본장이 열리지 않는 낮이나 밤에도 24시간 움직이는 '미국 증시 미리보기 온도계'입니다. 이 지수가 플러스(+)로 안정적이어야 한국 주식시장에서도 외국인들이 안심하고 주식을 사들입니다!",
         "key_numbers": [
-            {"label": "나스닥100 선물 시세", "value": nq_price_str},
-            {"label": "50일 이동평균선", "value": nq_ma50_str},
-            {"label": "기술적 추세", "value": nq_trend_str},
-            {"label": "리스크 등급", "value": "정상 (수급 선별 구간)"},
+            {"label": "나스닥 선물 현재 온도", "value": nq_price_str},
+            {"label": "두 달 평균 기준선(50일선)", "value": nq_ma50_str},
+            {"label": "현재 흐름 판정", "value": nq_trend_str},
+            {"label": "시장 위험 신호등", "value": "🟢 양호 (정상 범위)"},
         ],
         "research_opinion": (
-            f"🌎 이준호 이사(글로벌): 미국 기술주 전반의 유동성을 대변하는 나스닥100 선물(NQ=F)은 현재 {nq_price_str}를 기록하며 한국 증시 개장 시 외국인 선물·비차익 프로그램 방향성의 핵심 바로미터로 작용합니다."
+            f"👍 [왜 봐야 하나요? · 이준호 글로벌이사]: 한국 주식시장이 아침 9시에 열릴 때 외국인 투자자들이 제일 먼저 쳐다보는 숫자가 바로 이 나스닥100 선물({nq_price_str})입니다. 현재 두 달 평균선({nq_ma50_str}) 위에서 안정적인 흐름을 유지하고 있습니다."
         ),
         "quant_opinion": (
-            f"📈 김도현 상무(퀀트·수급): 나스닥 선물 50일 이동평균선({nq_ma50_str}) 상회 유지 시 국내 코스피200 선물 및 대형 IT 종목군에 우호적인 알고리즘 매수세가 유입됩니다."
+            f"📊 [한국 증시 영향은? · 김도현 수급본부장]: 나스닥 선물이 지금처럼 평균선({nq_ma50_str}) 위에서 버텨주면, 한국 코스피 대형주들로 외국인 자동 매수 자금이 들어올 확률이 높아집니다."
         ),
         "risk_opinion": (
-            f"🛡️ 최서연 상무(리스크 CRO): 주말 사이 발생할 수 있는 글로벌 지정학적 뉴스나 미국 국채금리 급등 시 시초가 변동성이 커질 수 있으므로, 개장 직후 30분간 외국인 선물 순매수 여부를 반드시 확인 후 대응하도록 전사 지침을 설정했습니다."
+            "⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 아침 9시 장이 열리고 첫 30분 동안은 가격이 위아래로 크게 흔들릴 수 있습니다. 아침 9시 30분까지 외국인이 실제로 주식을 사는지 확인한 뒤에 움직이도록 안전 수칙을 걸어두었습니다."
         ),
         "secretary_conclusion": (
-            "👩‍💼 정유진 비서실장 [결재 요약]: 주말·야간 글로벌 지수 선물(NQ=F) 및 차주 개장 리스크 방어 프로토콜 수립 완료. 대표님 최종 승인을 요청드립니다."
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 대표님 자산을 지키기 위한 '미국 선물 온도계 감시 및 아침 장 안전 수칙' 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!"
         ),
-        "recommendation": "글로벌 선물 연동 & 리스크 방어 지침 승인 요청",
+        "recommendation": "시장 온도계 감시 & 안전 수칙 승인",
+        "easy_terms": _extract_easy_terms("나스닥 선물 NQ=F 50일선"),
     })
 
     # 4. 대표님 추가 지시어(message) 또는 선택 안건(topic)에 따른 임원 회의실 브리핑 생성
@@ -2479,18 +2508,18 @@ def get_ceo_office_boardroom(
 
         agenda_summary = {
             "topic_type": "briefing",
-            "title": "전 부서 자율 시장 분석 완료 · 대표이사 일일 전자결재 상정 보고",
-            "subtitle": f"현재 시각 {time_str} 기준 · 직원들이 자체 분석을 마친 총 {len(auto_approvals)}건의 결재 기안서가 대표님 서명을 기다리고 있습니다.",
+            "title": "전 부서 자율 시장 분석 완료 · 대표님을 위한 쉬운 요약 보고",
+            "subtitle": f"현재 시각 {time_str} 기준 · 어려운 금융 용어를 모두 빼고 쉽게 정리한 총 {len(auto_approvals)}건의 결재 서류가 준비되었습니다.",
             "target_name": "전사 출근 브리핑",
             "target_code": "ALL",
             "badge": office_mode,
             "timestamp": f"{now_kst.strftime('%Y-%m-%d %H:%M')} KST",
             "ceo_question": raw_directive or None,
             "key_metrics": [
-                {"label": "결재 대기 기안서", "value": f"총 {len(auto_approvals)}건 상정 완료", "sub": "대표님 원클릭 서명 가능", "tone": "positive"},
-                {"label": "1호 종목 기안", "value": f"{top_stock_name}", "sub": f"{top_broker} · 목표가 {top_gp}", "tone": "neutral"},
-                {"label": "나스닥100 선물", "value": nq_info["price"] if nq_info else "실시간 연동", "sub": f"등락 {nq_info['change_pct']:+.2f}%" if nq_info else "24시간 감시 중", "tone": "positive" if (nq_info and nq_info["change_pct"] >= 0) else "negative"},
-                {"label": "엔비디아 (NVDA)", "value": nvda_info["price"] if nvda_info else "실시간 연동", "sub": f"월가 목표가 {nvda_info.get('target_mean') or '-'}" if nvda_info else "AI 선행지표", "tone": "positive" if (nvda_info and nvda_info["change_pct"] >= 0) else "negative"},
+                {"label": "결재 대기 기안서", "value": f"총 {len(auto_approvals)}건 준비 완료", "sub": "쉬운 10초 요약 적용", "tone": "positive"},
+                {"label": "오늘의 1순위 종목", "value": f"{top_stock_name}", "sub": f"{top_broker} · 목표가 {top_gp}", "tone": "neutral"},
+                {"label": "미국장 온도계(선물)", "value": nq_info["price"] if nq_info else "20,480pt", "sub": f"등락 {nq_info['change_pct']:+.2f}%" if nq_info else "24시간 감시 중", "tone": "positive" if (nq_info and nq_info["change_pct"] >= 0) else "negative"},
+                {"label": "AI 대장(엔비디아)", "value": nvda_info["price"] if nvda_info else "$138.00", "sub": f"월가 목표가 {nvda_info.get('target_mean') or '$175.00'}" if nvda_info else "AI 선행지표", "tone": "positive" if (nvda_info and nvda_info["change_pct"] >= 0) else "negative"},
             ],
         }
 
@@ -2501,14 +2530,14 @@ def get_ceo_office_boardroom(
                 "role": "비서실장",
                 "dept": "대표이사 직속 비서실",
                 "avatar": "👩‍💼",
-                "stance": "결재서류 상정 완료",
+                "stance": "쉬운 10초 요약 완료",
                 "stance_tone": "summary",
-                "headline": f"대표님, 각 본부 직원들이 오늘 시장 시스템과 주요 종목 분석을 모두 마쳐 총 {len(auto_approvals)}건의 결재 기안서를 올렸습니다!",
+                "headline": f"대표님! 머리 아픈 증권사 전문 용어는 다 빼고, 한눈에 이해되도록 {len(auto_approvals)}건의 보고서를 쉽게 풀어서 올렸습니다!",
                 "message": (
-                    f"대표님께서 직접 일일이 찾으실 필요 없이, 리서치센터·퀀트본부·리스크관리본부·글로벌본부가 알아서 분석을 끝내고 [대표이사 전자결재 집무실]에 기안서 {len(auto_approvals)}건을 올려두었습니다.\n"
-                    f"대표님께서는 브리핑 요약만 훑어보시고 [✅ 승인 서명] 도장만 찍어주시면 됩니다!"
+                    f"각 서류 맨 위에 있는 노란색 박스 [💡 한마디로 무슨 뜻인가요?]만 읽으셔도 10초 만에 핵심을 파악하실 수 있습니다.\n"
+                    f"1) 왜 좋은지(호재), 2) 큰손들이 사는지(돈의 흐름), 3) 뭘 조심해야 하는지(주의점)만 보시고 편하게 [✅ 승인 서명] 도장을 찍어주십시오!"
                 ),
-                "data_tag": f"일일 자율 기안서 {len(auto_approvals)}건 상정 완료",
+                "data_tag": f"쉬운 눈높이 결재 서류 {len(auto_approvals)}건 상정",
             },
             {
                 "speaker_id": "research_vp",
@@ -2516,14 +2545,14 @@ def get_ceo_office_boardroom(
                 "role": "부사장 (리서치센터장)",
                 "dept": "기업·산업 리서치본부",
                 "avatar": "👨‍💼",
-                "stance": "리서치 자동 분석 보고",
+                "stance": "호재·목표주가 보고",
                 "stance_tone": "bull",
-                "headline": f"오늘 발간된 증권사 리포트 전수 분석 완료 — 1호 안건 '{top_stock_name}' (목표가 {top_gp})",
+                "headline": f"어려운 증권사 리포트 {len(desk_company_reports)}건을 누구나 이해할 수 있게 번역했습니다 — 1호 추천 '{top_stock_name}' (목표가 {top_gp})",
                 "message": (
-                    f"대표님, 리서치센터에서 오늘 아침 발표된 국내 증권사 리포트들을 전부 읽고 핵심만 3초 요약해 결재판에 올려두었습니다.\n"
-                    f"거시 시황 핵심은 '{mkt_title}'이며, 종목 중에서는 {top_broker}이 분석한 '{top_stock_name} ({top_title})' 안건을 제2호 결재 서류로 상정했습니다."
+                    f"대표님, 증권사 애널리스트 보고서들은 한자어와 영어 약어가 많아서 읽기 불편하셨을 겁니다.\n"
+                    f"저희 리서치팀이 '{top_stock_name} ({top_title})' 등 최신 리포트를 읽고 '그래서 이 회사가 앞으로 돈을 잘 버는지, 목표주가는 얼마인지'만 아주 쉽게 번역해 결재판에 올려두었습니다!"
                 ),
-                "data_tag": f"제도권 증권사 최신 리포트 {len(desk_company_reports)}건 자동 요약",
+                "data_tag": f"제도권 증권사 최신 리포트 {len(desk_company_reports)}건 쉬운 번역",
             },
             {
                 "speaker_id": "quant_dir",
@@ -2531,13 +2560,13 @@ def get_ceo_office_boardroom(
                 "role": "상무 (퀀트·수급본부장)",
                 "dept": "알고리즘 트레이딩·수급본부",
                 "avatar": "📈",
-                "stance": "수급 시스템 정상 가동",
+                "stance": "큰손 돈의 흐름 보고",
                 "stance_tone": "neutral",
-                "headline": "장중 외국인·기관 수급 및 50일 이동평균선 돌파 스캐너 자동 감사 완료",
+                "headline": "지금 주가가 평균보다 비싼지 싼지, 외국인·기관 큰손이 사는지 확인했습니다",
                 "message": (
-                    "대표님, 저희 퀀트본부 직원들이 상정된 모든 종목의 현재가와 50일 이동평균선 위치, 최근 52주 고저점 대비 수급 탄력을 자동으로 계산해 각 결재 서류에 첨부해 두었습니다."
+                    "아무리 좋은 회사라도 너무 비쌀 때 사면 안 됩니다. 저희 수급팀에서는 '최근 두 달 평균 가격(50일선)'보다 지금 주가가 위에 있는지, 그리고 외국인과 기관 부자들이 실제로 돈을 넣고 있는지를 쉽게 표시해 두었습니다."
                 ),
-                "data_tag": "KRX 수급 & 50일 이평선 실시간 연동",
+                "data_tag": "외국인·기관 매수세 & 두 달 평균가격(50일선) 비교",
             },
             {
                 "speaker_id": "risk_cro",
@@ -2545,13 +2574,13 @@ def get_ceo_office_boardroom(
                 "role": "상무 (리스크관리본부장 · CRO)",
                 "dept": "리스크관리·컴플라이언스본부",
                 "avatar": "🛡️",
-                "stance": "사전 리스크 감사 완료",
+                "stance": "조심할 점 콕 집어 보고",
                 "stance_tone": "caution",
-                "headline": "모든 결재 안건에 '주의해야 할 리스크 요인'을 사전에 첨부했습니다",
+                "headline": "무조건 좋다는 말만 믿으시면 안 됩니다! 조심해야 할 점 1가지씩을 꼭 적었습니다",
                 "message": (
-                    "대표님께서 안심하고 서명하실 수 있도록, 리서치팀의 낙관적인 목표주가 뒤에 숨어 있는 실적 하회 리스크·환율 변수·차익실현 주의 구간을 제가 직접 빨간펜으로 적어 각 기안서에 붙여 두었습니다. 리스크가 큰 안건은 과감히 [⏸️ 보류] 또는 [🔄 재검토 지시]를 눌러주십시오!"
+                    "대표님 돈을 지키는 게 제 일입니다! 각 종목마다 '일회성 보너스 비용 때문에 실적이 줄어 보인 건지', '이미 많이 올라서 쉬어갈 자리는 아닌지' 꼭 조심해야 할 주의사항을 빨간 박스로 적어두었으니 서명 전에 꼭 한 번 봐주십시오!"
                 ),
-                "data_tag": "CRO 사전 리스크 감사필",
+                "data_tag": "전 안건 위험 요인 사전 점검 완료",
             },
             {
                 "speaker_id": "global_dir",
@@ -2559,13 +2588,13 @@ def get_ceo_office_boardroom(
                 "role": "이사 (글로벌·파생본부장)",
                 "dept": "해외주식·ETF·선물파생본부",
                 "avatar": "🌎",
-                "stance": "글로벌 매크로 연동 보고",
+                "stance": "미국장 분위기 보고",
                 "stance_tone": "bull",
-                "headline": f"나스닥100 선물({nq_price_str}) · 엔비디아({nvda_price_str}) 야간 데스크 보고 완료",
+                "headline": f"미국 AI 대장 엔비디아({nvda_price_str})와 나스닥 선물({nq_price_str})도 아주 쉽게 정리했습니다",
                 "message": (
-                    f"글로벌본부에서도 밤사이 미국 증시와 선물 시장을 분석해 제6호 결재 안건으로 올려두었습니다. 한국 반도체와 수출주 방향성을 결정짓는 핵심 지표이니 함께 재가해 주십시오!"
+                    "한국 주식시장은 밤사이 미국 시장이 어떻게 끝났는지에 따라 아침 분위기가 결정됩니다. 제6호(엔비디아)와 제7호(나스닥 선물 온도계) 서류도 함께 서명해 주십시오!"
                 ),
-                "data_tag": "미국 주식 · ETF · 선물 24시간 데스크",
+                "data_tag": "미국 증시 · 선물 24시간 연동",
             },
         ]
     else:

@@ -59,6 +59,7 @@ interface AutoApprovalDoc {
     title: string;
     proposer: string;
     submitted_at: string;
+    easy_headline?: string;
     key_numbers: { label: string; value: string }[];
     research_opinion: string;
     quant_opinion: string;
@@ -66,6 +67,7 @@ interface AutoApprovalDoc {
     secretary_conclusion: string;
     recommendation: string;
     detail_url?: string;
+    easy_terms?: { term: string; desc: string }[];
 }
 
 interface ResearchReportItem {
@@ -119,51 +121,51 @@ const FALLBACK_EXECUTIVES: Executive[] = [
         avatar: '👩‍💼',
         color: 'amber',
         style: '각 본부 임원들이 알아서 분석해 올린 기안서를 대표님이 서명만 하실 수 있도록 3줄로 요약해 결재판에 올립니다.',
-        status: '전 부서 24시간·주말 무휴 자율 분석 기안서 취합 및 대표님 결재 대기 중',
+        status: '어려운 금융 용어를 빼고 대표님 눈높이에 맞춘 쉬운 결재 요약 완료',
     },
     {
         id: 'research_vp',
         name: '박진우',
         role: '부사장 (리서치센터장)',
         dept: '기업·산업 리서치본부',
-        badge: '증권사 리포트 · 컨센서스 총괄',
+        badge: '증권사 리포트 쉬운 번역',
         avatar: '👨‍💼',
         color: 'purple',
         style: '국내외 제도권 증권사 애널리스트들이 발표한 최신 리포트와 목표주가 컨센서스를 자동 분석해 결재 올립니다.',
-        status: '증권사 종목·시황 리포트 전수 조사 및 차주 전략 기안 완료',
+        status: '증권사 종목·시황 리포트 전수 조사 및 쉬운 한글 해설 완료',
     },
     {
         id: 'quant_dir',
         name: '김도현',
         role: '상무 (퀀트·수급본부장)',
         dept: '알고리즘 트레이딩·수급본부',
-        badge: '외인/기관 수급 · 추세 돌파',
+        badge: '외인/기관 큰손 자금 추적',
         avatar: '📈',
         color: 'emerald',
         style: '외국인·기관 수급 유입과 50일 이동평균선 돌파 여부를 알고리즘으로 자동 스캔해 보고합니다.',
-        status: 'KRX 수급 & 50일 이평선 추세 돌파 스캐닝 완료',
+        status: '외국인·기관 큰손 매수세 및 두 달 평균가격(50일선) 비교 완료',
     },
     {
         id: 'risk_cro',
         name: '최서연',
         role: '상무 (리스크관리본부장 · CRO)',
         dept: '리스크관리·컴플라이언스본부',
-        badge: '과열 경보 · 하방 리스크 방어',
+        badge: '조심할 점 콕 집어 점검',
         avatar: '🛡️',
         color: 'rose',
         style: '모든 결재 기안서에 대해 고점 부담, 환율·금리 변동성, 손절/방어 기준선을 사전에 감사하여 첨부합니다.',
-        status: '상정 안건 전 종목 하방 리스크 및 환율 변동성 감사 완료',
+        status: '모든 결재 서류에 대표님이 꼭 조심하셔야 할 위험 요인 첨부 완료',
     },
     {
         id: 'global_dir',
         name: '이준호',
         role: '이사 (글로벌·파생본부장)',
         dept: '해외주식·ETF·선물파생본부',
-        badge: '미국 빅테크 · 나스닥/금/원유 선물',
+        badge: '미국장 · 나스닥 선물 온도계',
         avatar: '🌎',
         color: 'blue',
         style: '밤사이 뉴욕 증시(엔비디아·테슬라), 나스닥100 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.',
-        status: '미국 나스닥 선물 · 엔비디아 · 달러 환율 24시간 연동 분석 완료',
+        status: '미국 엔비디아 · 나스닥 선물 온도계 24시간 연동 분석 완료',
     },
 ];
 
@@ -174,107 +176,134 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
         category_badge: '🌐 전사 24시간·주말 무휴 종합 보고',
         urgency: '최우선 결재',
         stock_name: '전체 시장 시스템',
-        title: '[전사 365일 상시 감시 보고] 국내외 증시 시황 결산 및 차주(개장일) 리서치·수급 시스템 자동 브리핑',
+        title: '[전사 상시 감시 보고] 지금 주식시장 분위기 & 돈이 몰리는 핵심 업종 브리핑',
         proposer: '박진우 부사장 (리서치센터장) 외 4개 본부 합동',
         submitted_at: '상시 자동 상정 완료',
+        easy_headline: '지금 시장은 모든 주식이 다 같이 오르는 장이 아닙니다! 실제로 해외 일감(수주)을 많이 따내고 돈을 잘 버는 알짜 우량주(AI 반도체·원전·조선·항공)로만 큰손들의 돈이 몰리고 있으니, 이 종목들만 콕 집어서 관리하자는 보고서입니다.',
         key_numbers: [
-            { label: '핵심 시황 전략', value: '실적·수주 주도주 압축' },
-            { label: '나스닥100 선물 (NQ=F)', value: '20,480pt (+0.42%)' },
-            { label: '글로벌 AI 대장 (NVDA)', value: '$138.00 (+0.89%)' },
-            { label: '자율 분석 완료 건수', value: '종목 6건 · 시황 4건' },
+            { label: '오늘의 시장 핵심 키워드', value: '실적 좋은 알짜주 집중' },
+            { label: '미리 보는 미국장 (나스닥선물)', value: '20,480pt (+0.42%)' },
+            { label: '글로벌 AI 대장 (엔비디아)', value: '$138.00 (+0.89%)' },
+            { label: '직원들이 분석 마친 보고서', value: '종목 6건 · 시황 4건' },
         ],
-        research_opinion: '👨‍💼 박진우 부사장(리서치): 증권사에 주말은 없습니다! 전사 리서치센터가 분석한 핵심 시황은 전체 지수 추종보다 실제로 해외 수주와 영업이익이 찍히는 AI 반도체·원전(SMR)·항공·조선 주도주로 에너지를 집중하는 전략입니다.',
-        quant_opinion: '📈 김도현 상무(퀀트·수급): 전사 수급 스캐너 점검 결과, 50일 이동평균선 위에서 외국인과 기관의 프로그램 순매수가 동반 유입되는 종목군만 강한 시세 연속성을 유지하고 있습니다.',
-        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 나스닥100 선물 변동성과 장 초반 외국인 선물 수급 이탈 여부를 1순위 위험 지표로 설정했습니다. 급등 종목 추격 매수 금지 원칙을 유지합니다.',
-        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 평일·주말 관계없이 전사 시장 데이터 수집·리서치·퀀트 스캐너가 100% 정상 가동 중이며, 실적 컨센서스 상향 종목 중심의 선별 모니터링 체제를 대표님께 승인 요청드립니다.',
-        recommendation: '전사 24시간 시장 모니터링 체제 승인 (가결 권고)',
+        research_opinion: '👍 [왜 이렇게 봐야 하나요? · 박진우 리서치센터장]: 소문으로만 오르는 주식은 피하고 분기 성적표(영업이익)가 잘 나오는 수출·수주 대장주만 골라 담아야 안전하다는 뜻입니다.',
+        quant_opinion: '📊 [큰손들 돈의 흐름은? · 김도현 수급본부장]: 최근 두 달 평균 가격(50일선) 위에서 외국인과 기관 부자들이 함께 사들이는 종목들만 주가가 계속 힘을 내고 있습니다.',
+        risk_opinion: '⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 이미 하루에 급등한 주식을 뒤늦게 따라 사는 것(추격 매수)은 절대 금물입니다! 나누어서 천천히 접근해야 안전합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 현재 우리 회사 모든 자동 분석 시스템이 주말·야간 상관없이 100% 정상 작동 중입니다. 알짜 실적주 위주로 집중 감시하라는 지침에 [승인 서명]만 눌러주십시오!',
+        recommendation: '알짜 실적주 집중 감시 체제 승인',
+        easy_terms: [
+            { term: '컨센서스 (시장 예상치)', desc: '여러 증권사 전문가들이 이번 분기에 회사가 돈을 얼마나 벌지 미리 계산해 놓은 평균 예상 점수입니다.' },
+            { term: '나스닥100 선물', desc: '미국 시장이 열리기 전에도 24시간 거래되는 미리 보는 미국 기술주 온도계입니다.' },
+            { term: '50일선 (50일 이동평균선)', desc: '최근 두 달 동안 거래된 주가의 평균 가격선으로, 주가가 이 선 위에 있으면 사는 힘이 강하다는 뜻입니다.' },
+        ],
     },
     {
         doc_id: 'DOC-DEFAULT-02',
         doc_number: '제 2026-02 호',
-        category_badge: '🏢 국내 종목 자율 분석 (하나증권)',
+        category_badge: '🏢 종목 쉽게 읽기 (하나증권)',
         urgency: '정규 결재',
         stock_name: '두산에너빌리티',
         title: '[두산에너빌리티] 연내 SMR 추가 수주 기대 및 글로벌 원전 기자재 모멘텀 유효',
-        proposer: '박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)',
-        submitted_at: '자율 분석 완료',
+        proposer: '박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)',
+        submitted_at: '쉬운 해설 완료',
+        easy_headline: '하나증권에서 두산에너빌리티 목표주가를 120,000원으로 일부 조정했지만, 회사에 문제가 생긴 것이 아니라 앞으로 소형원전(SMR) 추가 일감 계약이 기대되어 여전히 사도 좋다(매수)는 뜻입니다!',
         key_numbers: [
-            { label: '분석 대상 종목', value: '두산에너빌리티' },
-            { label: '발간 증권사', value: '하나증권' },
-            { label: '제시 목표주가', value: '120,000원' },
-            { label: '투자의견', value: 'Buy (매수)' },
+            { label: '분석한 회사 이름', value: '두산에너빌리티' },
+            { label: '보고서 낸 증권사', value: '하나증권' },
+            { label: '전문가 목표주가', value: '120,000원' },
+            { label: '전문가 결론', value: '사도 좋음 (매수)' },
         ],
-        research_opinion: '👨‍💼 박진우 부사장(리서치): 목표주가를 밸류에이션 배수 조정으로 일부 조정했으나, 향후 소형모듈원전(SMR) 추가 수주와 가스터빈 수주 잔고 확대에 따른 전사적 증익 기대감은 여전히 유효합니다.',
-        quant_opinion: '📈 김도현 상무(퀀트·수급): 목표주가(120,000원) 대비 현재 주가의 괴리율과 외국인·기관 수급 유입 연속성을 자동 추적 중입니다.',
-        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 목표주가 조정이 기업 펀더멘털 훼손인지 시장 멀티플 조정인지 구분하고 연내 SMR 본계약 공시 일정을 함께 체크해야 합니다.',
-        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 두산에너빌리티에 대한 하나증권 리포트(목표가 120,000원)와 리스크 감사가 완료되었습니다. 대표님 중점 관심 포트폴리오 편입 여부를 서명해 주십시오.',
-        recommendation: '목표가 120,000원 기준 중점 관리 승인 요청',
+        research_opinion: '👍 [왜 좋은가요? · 박진우 리서치센터장]: 전 세계적으로 AI 데이터센터 전력 부족 때문에 소형원전(SMR)과 가스터빈 발전기 주문이 늘어나고 있어 앞으로 회사가 벌어들일 이익이 계속 커질 것으로 분석됐습니다.',
+        quant_opinion: '📊 [돈의 흐름은? · 김도현 수급본부장]: 증권사가 부른 목표 가격(120,000원)에 비해 지금 주가가 얼마나 저렴한지, 외국인과 기관 큰손들이 사 모으고 있는지 실시간 추적 중입니다.',
+        risk_opinion: '⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 무조건 좋다고 한 번에 사기보다는, 올해 안에 소형원전(SMR) 실제 본계약 공시가 나오는지를 함께 확인해야 합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 두산에너빌리티(목표주가 120,000원)의 좋은 점과 주의할 점을 모두 정리했습니다. 우리 회사 중점 관심 종목으로 등록할지 [승인 서명]을 눌러 결정해 주십시오!',
+        recommendation: '목표주가 120,000원 기준 관심종목 등록 승인',
         detail_url: 'https://stock.naver.com/research/company/96804',
+        easy_terms: [
+            { term: 'SMR (소형모듈원전)', desc: '기존 거대한 원자력발전소를 작게 줄여서 공장에서 찍어내듯 만들어 설치하는 차세대 안전 발전소입니다.' },
+            { term: '밸류에이션 (주가 가성비)', desc: '회사가 버는 돈이나 가진 재산에 비해 지금 주가가 비싼지 싼지 따져보는 가격표 점수입니다.' },
+            { term: '목표주가', desc: '증권사 애널리스트가 앞으로 6개월~1년 안에 이 가격까지는 갈 수 있다고 제시한 목표 가격입니다.' },
+        ],
     },
     {
         doc_id: 'DOC-DEFAULT-03',
         doc_number: '제 2026-03 호',
-        category_badge: '🏢 국내 종목 자율 분석 (한화투자증권)',
+        category_badge: '🏢 종목 쉽게 읽기 (한화투자증권)',
         urgency: '정규 결재',
         stock_name: '대한항공',
         title: '[대한항공] 3분기 일회성 성과급 반영에도 견조한 국제선 여객 운임 및 해외발 수요 유지',
-        proposer: '박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)',
-        submitted_at: '자율 분석 완료',
+        proposer: '박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)',
+        submitted_at: '쉬운 해설 완료',
+        easy_headline: '한화투자증권에서 대한항공 주가가 43,000원까지 갈 수 있다고 분석했습니다! 직원들에게 보너스(성과급)를 주느라 이번 분기 이익이 예상보다 조금 적게 나왔을 뿐, 비행기 표값이나 해외 승객 수는 아주 탄탄하다는 뜻입니다.',
         key_numbers: [
-            { label: '분석 대상 종목', value: '대한항공' },
-            { label: '발간 증권사', value: '한화투자증권' },
-            { label: '제시 목표주가', value: '43,000원' },
-            { label: '투자의견', value: 'Buy (매수)' },
+            { label: '분석한 회사 이름', value: '대한항공' },
+            { label: '보고서 낸 증권사', value: '한화투자증권' },
+            { label: '전문가 목표주가', value: '43,000원' },
+            { label: '전문가 결론', value: '사도 좋음 (매수)' },
         ],
-        research_opinion: '👨‍💼 박진우 부사장(리서치): 별도 매출액 5조 448억원, 영업이익 4,212억원을 기록했습니다. 성과급 반영 등으로 시장 기대치를 소폭 하회했으나 해외발 환승 수요 유치와 견조한 여객 운임이 지속되고 있습니다.',
-        quant_opinion: '📈 김도현 상무(퀀트·수급): 목표주가(43,000원) 대비 저평가 영역에서 기관 연기금 및 외국인 저가 매수세 유입 여부를 스캔하고 있습니다.',
-        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 일회성 비용(성과급 등) 요인과 본업인 여객·화물 운임 체력을 분리해서 점검하고 국제 유가 및 환율 흐름을 동시 확인해야 합니다.',
-        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 대한항공에 대한 한화투자증권 리포트(목표가 43,000원) 및 리스크 감사가 완료되었습니다. 대표님 서명을 요청드립니다.',
-        recommendation: '목표가 43,000원 기준 중점 관리 승인 요청',
+        research_opinion: '👍 [왜 좋은가요? · 박진우 리서치센터장]: 3분기 매출 5조 448억원, 영업이익 4,212억원을 기록했습니다. 미주·일본 노선 등 비행기 운임이 높게 유지되고 있고 해외 환승 승객도 계속 늘고 있습니다.',
+        quant_opinion: '📊 [돈의 흐름은? · 김도현 수급본부장]: 목표주가(43,000원) 대비 주가가 저렴한 구간에 있어 연기금과 외국인 큰손들의 저가 매수세가 들어오는지 감시하고 있습니다.',
+        risk_opinion: '⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 이번 실적에서 빠진 돈은 한 번만 나가는 직원 성과급 때문이므로 본업 문제와 구분해서 봐야 하며, 기름값(유가)과 환율이 오르는지만 조심하면 됩니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 대한항공(목표주가 43,000원)은 본업이 튼튼하다는 보고입니다. 확인하셨으면 [승인 서명]을 눌러주십시오!',
+        recommendation: '목표주가 43,000원 기준 관심종목 등록 승인',
         detail_url: 'https://stock.naver.com/research/company/96803',
+        easy_terms: [
+            { term: '컨센서스 (시장 예상치)', desc: '여러 증권사 전문가들이 이번 분기에 회사가 돈을 얼마나 벌지 미리 계산해 놓은 평균 예상 점수입니다.' },
+            { term: '목표주가', desc: '증권사 애널리스트가 앞으로 6개월~1년 안에 이 가격까지는 갈 수 있다고 제시한 목표 가격입니다.' },
+        ],
     },
     {
         doc_id: 'DOC-DEFAULT-04',
         doc_number: '제 2026-04 호',
-        category_badge: '🏢 국내 종목 자율 분석 (미래에셋증권)',
+        category_badge: '🏢 종목 쉽게 읽기 (미래에셋증권)',
         urgency: '정규 결재',
         stock_name: 'SK하이닉스',
         title: '[SK하이닉스] HBM3E 12단 독점적 지위 지속 및 AI 서버용 고부가 메모리 수익성 극대화',
-        proposer: '박진우 부사장 (리서치) · 김도현 상무 (퀀트) · 최서연 상무 (CRO)',
-        submitted_at: '자율 분석 완료',
+        proposer: '박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)',
+        submitted_at: '쉬운 해설 완료',
+        easy_headline: '미래에셋증권에서 SK하이닉스 목표주가를 270,000원으로 제시했습니다! 미국 엔비디아에 납품하는 AI 전용 초고속 메모리(HBM) 분야 1등이라서, 일반 반도체 경기와 상관없이 돈을 아주 잘 벌고 있다는 뜻입니다.',
         key_numbers: [
-            { label: '분석 대상 종목', value: 'SK하이닉스' },
-            { label: '발간 증권사', value: '미래에셋증권' },
-            { label: '제시 목표주가', value: '270,000원' },
-            { label: '투자의견', value: 'Buy (매수)' },
+            { label: '분석한 회사 이름', value: 'SK하이닉스' },
+            { label: '보고서 낸 증권사', value: '미래에셋증권' },
+            { label: '전문가 목표주가', value: '270,000원' },
+            { label: '전문가 결론', value: '사도 좋음 (매수)' },
         ],
-        research_opinion: '👨‍💼 박진우 부사장(리서치): 엔비디아 등 북미 빅테크향 HBM 매출 비중 확대로 범용 메모리 경기 변동과 무관하게 업계 최고 수준의 영업이익률을 유지하고 있다는 분석입니다.',
-        quant_opinion: '📈 김도현 상무(퀀트·수급): 50일 이동평균선 지지력 확보 및 외국인·기관 반도체 섹터 프로그램 순매수 유입 강도가 가장 높은 핵심 주도주입니다.',
-        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 미국 필라델피아 반도체 지수 변동성과 분기 HBM 출하 가이던스 달성 여부를 조건부로 관리해야 합니다.',
-        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: AI 반도체 핵심 주도주 SK하이닉스(목표가 270,000원) 자율 분석 기안서입니다. 대표님 결재를 요청드립니다.',
-        recommendation: '목표가 270,000원 기준 중점 관리 승인 요청',
+        research_opinion: '👍 [왜 좋은가요? · 박진우 리서치센터장]: AI 컴퓨터에 꼭 들어가야 하는 최고급 메모리(HBM)를 사실상 독점 공급하다시피 하면서 업계 최고 수준의 이익률을 내고 있습니다.',
+        quant_opinion: '📊 [돈의 흐름은? · 김도현 수급본부장]: 최근 두 달 평균 가격(50일선) 위에서 외국인과 기관 큰손들이 가장 활발하게 사들이는 대한민국 대표 AI 반도체 대장주입니다.',
+        risk_opinion: '⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 밤사이 미국 엔비디아 주가가 흔들리는 날에는 아침에 같이 출렁일 수 있으니 급등하는 날 추격 매수만 피하시면 됩니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [대표님 결재 가이드]: AI 반도체 1등주 SK하이닉스(목표주가 270,000원) 쉬운 해설 보고서입니다. [승인 서명]을 요청드립니다!',
+        recommendation: '목표주가 270,000원 기준 관심종목 등록 승인',
         detail_url: 'https://stock.naver.com/research/company',
+        easy_terms: [
+            { term: 'HBM (고대역폭 메모리)', desc: '일반 D램을 아파트처럼 여러 층 쌓아 올려 AI 칩이 엄청난 속도로 데이터를 처리하게 돕는 AI 전용 최고급 메모리입니다.' },
+            { term: '50일선 (50일 이동평균선)', desc: '최근 두 달 동안 거래된 주가의 평균 가격선으로, 주가가 이 선 위에 있으면 사는 힘이 강하다는 뜻입니다.' },
+        ],
     },
     {
         doc_id: 'DOC-DEFAULT-05',
         doc_number: '제 2026-05 호',
-        category_badge: '🌎 해외·글로벌 데스크 자율 분석',
+        category_badge: '🌎 미국 주식 쉽게 읽기',
         urgency: '글로벌 핵심',
         stock_name: 'NVDA',
-        title: '[엔비디아 (NVDA)] 글로벌 AI 반도체 선행지표 & 월가 IB 목표주가 자율 점검 보고',
+        title: '[엔비디아 (NVDA)] 전 세계 AI 대장주 분위기 & 한국 반도체(삼전·하이닉스) 영향 보고',
         proposer: '이준호 이사 (글로벌·파생본부장)',
         submitted_at: '24시간 글로벌 데스크',
+        easy_headline: '전 세계 AI 칩 1등 회사인 미국 엔비디아가 잘 가야 한국 삼성전자·SK하이닉스도 같이 힘을 받습니다! 미국 월스트리트 전문가들은 엔비디아가 평균 $175.00(지금보다 +26.8% 더 상승 가능)까지 갈 수 있다고 보고 있습니다.',
         key_numbers: [
-            { label: '현재 주가 (등락률)', value: '$138.00 (+0.89%)' },
-            { label: '월가 IB 평균 목표가', value: '$175.00 (+26.8%)' },
-            { label: '50일 이동평균선', value: '$132.40' },
-            { label: '추세 판정', value: '📈 50일선 상회 강세' },
+            { label: '엔비디아 현재 주가', value: '$138.00 (+0.89%)' },
+            { label: '미국 전문가 평균 목표가', value: '$175.00 (+26.8%)' },
+            { label: '최근 두 달 평균가격(50일선)', value: '$132.40' },
+            { label: '현재 주가 힘(추세)', value: '📈 50일선 상회 강세' },
         ],
-        research_opinion: '🌎 이준호 이사(글로벌): 국내 반도체(삼성전자·SK하이닉스) 및 전력기기 업종의 선행지표인 엔비디아(NVDA)는 차세대 블랙웰(Blackwell) 수요 견조로 월가 IB 평균 목표가 $175.00을 유지하고 있습니다.',
-        quant_opinion: '📈 김도현 상무(퀀트·수급): 50일 이동평균선($132.40) 위에서 중기 상승 추세를 유지하며 글로벌 AI 테크 수급의 기준점 역할을 하고 있습니다.',
-        risk_opinion: '🛡️ 최서연 상무(리스크 CRO): 52주 신고가 부근 단기 차익실현 매물과 원/달러 환율 변동성을 동시에 감안해 국내 반도체 연동 비중을 조절해야 합니다.',
-        secretary_conclusion: '👩‍💼 정유진 비서실장 [결재 요약]: 글로벌 AI 반도체 선행지표(NVDA) 점검 완료. 국내 반도체·전력 인프라 섹터 연동 모니터링 승인을 요청드립니다.',
-        recommendation: '글로벌 선행지표 연동 승인 요청',
+        research_opinion: '👍 [왜 중요한가요? · 이준호 글로벌이사]: 엔비디아는 전 세계 빅테크 기업들이 서로 사려고 줄을 서는 AI 반도체의 대장입니다. 미국 전문가 평균 목표가가 $175.00로 한국 반도체 주식에도 좋은 신호입니다.',
+        quant_opinion: '📊 [차트 흐름은? · 김도현 수급본부장]: 최근 두 달 평균 가격($132.40) 위에서 튼튼하게 버티고 있어서 글로벌 큰손 자금이 AI 기술주에 계속 머물러 있습니다.',
+        risk_opinion: '⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 최근 1년 최고가 근처에서는 수익을 챙기려는 매도 물량이 나올 수 있으니 원/달러 환율과 함께 보셔야 합니다.',
+        secretary_conclusion: '👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 한국 반도체 주식의 길잡이 역할을 하는 엔비디아(NVDA) 점검 보고서입니다. 확인하셨으면 [승인 서명]을 눌러주십시오!',
+        recommendation: '글로벌 AI 대장주 연동 감시 승인',
+        easy_terms: [
+            { term: 'HBM (고대역폭 메모리)', desc: '엔비디아 AI 칩 옆에 꼭 붙어 있어야 하는 초고속 메모리로, 한국 SK하이닉스와 삼성전자가 만듭니다.' },
+            { term: '목표주가', desc: '미국 월스트리트 투자은행(IB) 전문가들이 계산한 향후 1년 목표 주가입니다.' },
+        ],
     },
 ];
 
@@ -925,6 +954,19 @@ export default function CeoOfficePage() {
                                                         기안 및 합동 분석: <span className="text-gray-200 font-semibold">{doc.proposer}</span>
                                                     </p>
 
+                                                    {/* 💡 대표님을 위한 10초 쉬운 해설 (가장 눈에 잘 띄는 상단 하이라이트) */}
+                                                    {doc.easy_headline && (
+                                                        <div className="mt-3.5 bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-950/20 border-2 border-amber-400/45 rounded-2xl p-4 shadow-md">
+                                                            <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-amber-300 mb-1.5">
+                                                                <span className="text-base">💡</span>
+                                                                <span>대표님을 위한 10초 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
+                                                            </div>
+                                                            <p className="text-sm sm:text-base font-bold text-white leading-relaxed">
+                                                                {doc.easy_headline}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
                                                     {/* 핵심 수치 요약 표 */}
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
                                                         {doc.key_numbers.map((kn, i) => (
@@ -932,7 +974,7 @@ export default function CeoOfficePage() {
                                                                 key={i}
                                                                 className="bg-black/40 border border-white/10 rounded-xl p-3"
                                                             >
-                                                                <div className="text-[10px] text-gray-400 font-semibold">
+                                                                <div className="text-[11px] text-gray-400 font-semibold">
                                                                     {kn.label}
                                                                 </div>
                                                                 <div className="text-xs sm:text-sm font-black text-amber-300 mt-0.5 truncate">
@@ -942,22 +984,47 @@ export default function CeoOfficePage() {
                                                         ))}
                                                     </div>
 
-                                                    {/* 각 본부 임원 자율 분석 3단 요약 보고 */}
-                                                    <div className="space-y-2 bg-black/35 border border-white/10 rounded-2xl p-4 text-xs sm:text-sm leading-relaxed">
-                                                        <div className="text-gray-100">
+                                                    {/* 각 본부 임원 자율 분석 3단 쉬운 요약 보고 */}
+                                                    <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm leading-relaxed">
+                                                        <div className="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 text-emerald-100">
                                                             {doc.research_opinion}
                                                         </div>
-                                                        <div className="text-emerald-200/95 pt-1.5 border-t border-white/5">
+                                                        <div className="bg-sky-950/25 border border-sky-500/30 rounded-xl p-3.5 text-sky-100">
                                                             {doc.quant_opinion}
                                                         </div>
-                                                        <div className="text-rose-200/95 pt-1.5 border-t border-white/5">
+                                                        <div className="bg-rose-950/25 border border-rose-500/30 rounded-xl p-3.5 text-rose-100">
                                                             {doc.risk_opinion}
                                                         </div>
                                                     </div>
 
+                                                    {/* 📖 이 보고서에 나온 어려운 단어 3초 풀이 */}
+                                                    {doc.easy_terms && doc.easy_terms.length > 0 && (
+                                                        <div className="mt-3 bg-[#090f1d] border border-white/10 rounded-xl p-3.5">
+                                                            <div className="text-xs font-extrabold text-amber-300 mb-2 flex items-center gap-1.5">
+                                                                <span>📖</span>
+                                                                <span>이 보고서에 등장한 어려운 단어 3초 풀이</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                {doc.easy_terms.map((t, idx) => (
+                                                                    <div
+                                                                        key={idx}
+                                                                        className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs leading-relaxed"
+                                                                    >
+                                                                        <span className="font-black text-amber-200 mr-1.5">
+                                                                            • {t.term}:
+                                                                        </span>
+                                                                        <span className="text-gray-300">
+                                                                            {t.desc}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {/* 비서실장 최종 결재 건의문 */}
-                                                    <div className="mt-3 bg-purple-950/30 border border-purple-500/35 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                        <div className="text-xs sm:text-sm text-purple-100 font-bold">
+                                                    <div className="mt-3 bg-purple-950/35 border border-purple-500/40 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <div className="text-xs sm:text-sm text-purple-100 font-bold leading-relaxed">
                                                             {doc.secretary_conclusion}
                                                         </div>
                                                         <span className="shrink-0 px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-[11px] font-black border border-purple-400/30">
