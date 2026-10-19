@@ -3083,7 +3083,7 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         for p in positions + paper_positions + real_positions:
             p["market_tag"] = get_clean_market_name(p.get("symbol", ""))
             sec_val = p.get("sector")
-            if not sec_val or sec_val in ("Unknown", "AI 주도주", "기타"):
+            if not sec_val or sec_val in ("Unknown", "AI 주도주", "기타") or "수급포착" in str(sec_val):
                 sec_val = get_stock_sector(p.get("symbol", ""), p.get("name", ""))
             p["sector"] = sec_val
             b_str = p.get("bought_at") or p.get("buy_time") or ""
