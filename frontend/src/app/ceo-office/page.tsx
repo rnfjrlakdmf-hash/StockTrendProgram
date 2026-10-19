@@ -50,6 +50,24 @@ interface DebateTurn {
     data_tag: string;
 }
 
+interface AutoApprovalDoc {
+    doc_id: string;
+    doc_number: string;
+    category_badge: string;
+    urgency: string;
+    stock_name: string;
+    title: string;
+    proposer: string;
+    submitted_at: string;
+    key_numbers: { label: string; value: string }[];
+    research_opinion: string;
+    quant_opinion: string;
+    risk_opinion: string;
+    secretary_conclusion: string;
+    recommendation: string;
+    detail_url?: string;
+}
+
 interface ResearchReportItem {
     id: string;
     category: string;
@@ -77,6 +95,8 @@ interface CeoChatLog {
     metrics: KeyMetric[];
 }
 
+type SignStatus = 'pending' | 'approved' | 'hold' | 'reexamine';
+
 const QUICK_TOPICS = [
     { label: '🌅 전사 출근 브리핑', topic: '', message: '오늘 전사 출근 브리핑 및 핵심 리포트 보고해줘' },
     { label: '⚡ 두산에너빌리티', topic: '두산에너빌리티', message: '두산에너빌리티 목표주가랑 수급·리스크 끝장 토론해봐' },
@@ -94,22 +114,68 @@ export default function CeoOfficePage() {
     const isAdmin = isAdminEmail(user?.email);
 
     const [executives, setExecutives] = useState<Executive[]>([]);
+    const [autoApprovals, setAutoApprovals] = useState<AutoApprovalDoc[]>([]);
     const [agenda, setAgenda] = useState<Agenda | null>(null);
     const [debates, setDebates] = useState<DebateTurn[]>([]);
     const [researchDesk, setResearchDesk] = useState<ResearchReportItem[]>([]);
     const [marketDesk, setMarketDesk] = useState<ResearchReportItem[]>([]);
-    const [officeStatus, setOfficeStatus] = useState<string>('전 부서 실시간 시장 모니터링 및 대표이사 결재 대기 중');
+    const [officeStatus, setOfficeStatus] = useState<string>('전 부서 자율 시장 분석 완료 · 대표이사 전자결재 대기 중');
     const [updatedAt, setUpdatedAt] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
-    // CEO Direct Command Input
+    // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'history'>('electronic_sign');
+    const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const [commandInput, setCommandInput] = useState<string>('');
-    const [activeTab, setActiveTab] = useState<'boardroom' | 'approval' | 'history'>('boardroom');
-    const [approvedIds, setApprovedIds] = useState<Record<string, boolean>>({});
+    const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
     const [chatLogs, setChatLogs] = useState<CeoChatLog[]>([]);
 
-    const boardroomRef = useRef<HTMLDivElement>(null);
+    const mainSectionRef = useRef<HTMLDivElement>(null);
+
+    // localStorage에서 오늘 서명한 결재 상태 복원
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('ceo_office_signatures_v1');
+            if (saved) {
+                setSignMap(JSON.parse(saved));
+            }
+        } catch (e) {
+            // ignore
+        }
+    }, []);
+
+    const updateSignature = (docId: string, status: SignStatus) => {
+        const nowStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        setSignMap(prev => {
+            const next = {
+                ...prev,
+                [docId]: { status, signedAt: nowStr },
+            };
+            try {
+                localStorage.setItem('ceo_office_signatures_v1', JSON.stringify(next));
+            } catch (e) {
+                // ignore
+            }
+            return next;
+        });
+    };
+
+    const handleApproveAll = () => {
+        const nowStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        setSignMap(prev => {
+            const next = { ...prev };
+            autoApprovals.forEach(doc => {
+                next[doc.doc_id] = { status: 'approved', signedAt: nowStr };
+            });
+            try {
+                localStorage.setItem('ceo_office_signatures_v1', JSON.stringify(next));
+            } catch (e) {
+                // ignore
+            }
+            return next;
+        });
+    };
 
     const fetchOfficeData = useCallback(async (topicParam = '', messageParam = '', appendHistory = false) => {
         if (appendHistory) {
@@ -130,6 +196,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 setExecutives(d.executives || []);
+                setAutoApprovals(d.auto_approvals || []);
                 setAgenda(d.agenda || null);
                 setDebates(d.debates || []);
                 setResearchDesk(d.research_desk || []);
@@ -142,7 +209,7 @@ export default function CeoOfficePage() {
                     const newLog: CeoChatLog = {
                         id: `${Date.now()}`,
                         timestamp: d.updated_at || new Date().toLocaleTimeString('ko-KR'),
-                        ceoMessage: messageParam || `${topicParam} 긴급 임원 안건 상정`,
+                        ceoMessage: messageParam || `${topicParam} 재검토 및 임원 심층 보고 지시`,
                         agendaTitle: d.agenda?.title || topicParam,
                         targetName: d.agenda?.target_name || '전사 브리핑',
                         secretaryReply: secTurn ? secTurn.message : '임원진 합동 보고가 완료되었습니다.',
@@ -174,7 +241,18 @@ export default function CeoOfficePage() {
         fetchOfficeData('', trimmed, true);
         setCommandInput('');
         setTimeout(() => {
-            boardroomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+    };
+
+    const handleReexamineDoc = (doc: AutoApprovalDoc) => {
+        updateSignature(doc.doc_id, 'reexamine');
+        const target = doc.stock_name === '전체 시장 시스템' ? '' : doc.stock_name;
+        const msg = `${doc.stock_name} 안건(${doc.doc_number}) 대표이사 재검토 지시 — 임원 전원 심층 대면 보고 실시!`;
+        setActiveTab('boardroom');
+        fetchOfficeData(target, msg, true);
+        setTimeout(() => {
+            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
     };
 
@@ -182,24 +260,8 @@ export default function CeoOfficePage() {
         setActiveTab('boardroom');
         fetchOfficeData(topic, message, true);
         setTimeout(() => {
-            boardroomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
-    };
-
-    const handleConveneFromReport = (stockName: string, title: string) => {
-        setActiveTab('boardroom');
-        const msg = `${stockName} 리서치 보고서("${title}") 기반으로 임원 끝장 토론 소집해!`;
-        fetchOfficeData(stockName, msg, true);
-        setTimeout(() => {
-            boardroomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 150);
-    };
-
-    const toggleApproveReport = (id: string) => {
-        setApprovedIds(prev => ({
-            ...prev,
-            [id]: !prev[id],
-        }));
     };
 
     const getStanceStyle = (tone: DebateTurn['stance_tone']) => {
@@ -242,7 +304,9 @@ export default function CeoOfficePage() {
         }
     };
 
-    const approvedCount = Object.values(approvedIds).filter(Boolean).length;
+    const totalDocs = autoApprovals.length;
+    const approvedDocsCount = autoApprovals.filter(d => signMap[d.doc_id]?.status === 'approved').length;
+    const pendingDocsCount = autoApprovals.filter(d => !signMap[d.doc_id] || signMap[d.doc_id]?.status === 'pending').length;
 
     if (authLoading) {
         return (
@@ -269,7 +333,7 @@ export default function CeoOfficePage() {
                         대표이사 전용 보안 구역입니다
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-400 leading-relaxed mb-6">
-                        이 집무실과 임원 회의실은 등록된 관리자(대표이사) 계정으로 로그인했을 때만 표시되고 입장할 수 있습니다.
+                        이 집무실과 전자결재 시스템은 등록된 관리자(대표이사) 계정으로 로그인했을 때만 표시되고 입장할 수 있습니다.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
                         <button
@@ -293,71 +357,75 @@ export default function CeoOfficePage() {
 
     return (
         <div className="min-h-screen bg-[#070b14] text-white pb-20">
-            {/* 상단 대표이사 집무실 헤더 배너 */}
-            <div className="relative overflow-hidden border-b border-amber-500/25 bg-gradient-to-r from-[#0d1527] via-[#131c33] to-[#0d1527]">
+            {/* 상단 대표이사 전자결재 집무실 헤더 배너 */}
+            <div className="relative overflow-hidden border-b border-amber-500/30 bg-gradient-to-r from-[#0d1527] via-[#131c33] to-[#0d1527]">
                 <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                         <div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-extrabold mb-3">
                                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                🏛️ EXECUTIVE BOARDROOM · AI 증권사 대표이사 집무실
+                                🏛️ CEO ELECTRONIC APPROVAL SYSTEM · 전 부서 자율 분석 & 대표이사 결재실
                             </div>
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white flex flex-wrap items-center gap-2.5">
-                                <span>대표님, 임원진 대면 보고 및 결재 준비 완료되었습니다</span>
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
+                                대표님, 직원들이 오늘 시장 분석을 마치고 결재 서류를 올렸습니다
                             </h1>
                             <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed max-w-3xl">
-                                리서치센터·퀀트수급본부·리스크관리본부(CRO)·글로벌파생본부 임원들이 실시간 시장 데이터와 증권사 리포트를 바탕으로 대표님께 직접 보고하고 치열하게 찬반 토론을 진행합니다.
+                                대표님께서 직접 검색하거나 지시하실 필요 없습니다. 리서치센터·퀀트수급본부·리스크관리본부(CRO)·글로벌파생본부가 알아서 시장 시스템과 핵심 종목을 분석해 결재판에 올려두었으니, 보고를 읽으시고 <span className="text-amber-300 font-bold">[승인 서명]</span>만 눌러주십시오.
                             </p>
                         </div>
 
-                        {/* 집무실 실시간 상태 위젯 */}
-                        <div className="bg-black/45 border border-white/10 rounded-2xl p-4 min-w-[260px] backdrop-blur-md">
-                            <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
-                                <span className="font-bold text-amber-300">📡 비서실 핫라인 가동 중</span>
-                                <span>{updatedAt ? `${updatedAt} 기준` : '실시간 연동'}</span>
+                        {/* 우측 상단 전자결재 현황판 & 일괄 서명 버튼 */}
+                        <div className="bg-black/50 border border-amber-500/30 rounded-2xl p-4 min-w-[290px] backdrop-blur-md shadow-xl">
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                                <span className="font-bold text-amber-300">📋 오늘의 대표이사 결재판</span>
+                                <span>{updatedAt ? `${updatedAt} 자동 상정` : '실시간 자동 상정'}</span>
                             </div>
-                            <p className="text-xs text-gray-200 font-semibold leading-snug mb-2.5">
-                                {officeStatus}
-                            </p>
-                            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center">
-                                <div className="bg-white/5 rounded-lg py-1.5 px-2">
-                                    <div className="text-[10px] text-gray-400">배석 임원</div>
-                                    <div className="text-sm font-black text-emerald-400">{executives.length || 5}명</div>
+                            <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                                <div className="bg-white/5 rounded-xl py-2 px-2 border border-white/5">
+                                    <div className="text-[10px] text-gray-400">총 상정 서류</div>
+                                    <div className="text-base font-black text-white">{totalDocs}건</div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg py-1.5 px-2">
-                                    <div className="text-[10px] text-gray-400">결재 대기 리포트</div>
-                                    <div className="text-sm font-black text-amber-300">{researchDesk.length + marketDesk.length}건</div>
+                                <div className="bg-amber-500/10 rounded-xl py-2 px-2 border border-amber-500/25">
+                                    <div className="text-[10px] text-amber-200">서명 대기</div>
+                                    <div className="text-base font-black text-amber-300">{pendingDocsCount}건</div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg py-1.5 px-2">
-                                    <div className="text-[10px] text-gray-400">오늘 결재 완료</div>
-                                    <div className="text-sm font-black text-sky-300">{approvedCount}건</div>
+                                <div className="bg-emerald-500/10 rounded-xl py-2 px-2 border border-emerald-500/25">
+                                    <div className="text-[10px] text-emerald-200">승인 완료</div>
+                                    <div className="text-base font-black text-emerald-400">{approvedDocsCount}건</div>
                                 </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={handleApproveAll}
+                                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                                <span>🖋️ 상정된 안건 전체 일괄 승인 서명하기</span>
+                            </button>
                         </div>
                     </div>
 
-                    {/* 5인 임원진 상시 대기석 카드 */}
+                    {/* 5인 임원진 자율 업무 완료 상태 카드 */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 mt-6">
                         {executives.map(exec => (
                             <div
                                 key={exec.id}
-                                className="bg-[#0b1222]/90 border border-white/10 hover:border-amber-500/40 rounded-xl p-3 transition-all flex flex-col justify-between"
+                                className="bg-[#0b1222]/90 border border-white/10 rounded-xl p-3 flex flex-col justify-between"
                             >
                                 <div>
-                                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                                    <div className="flex items-center justify-between gap-1 mb-1">
                                         <span className="text-xl">{exec.avatar}</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                            ● 대기중
+                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                            ✓ 분석·기안 완료
                                         </span>
                                     </div>
                                     <div className="text-sm font-extrabold text-white">{exec.name}</div>
                                     <div className="text-[11px] font-bold text-amber-300/90">{exec.role}</div>
                                     <div className="text-[10px] text-gray-400 mt-0.5">{exec.dept}</div>
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-white/5 text-[10px] text-gray-300 line-clamp-2">
+                                <div className="mt-2 pt-2 border-t border-white/5 text-[10px] text-emerald-200/90 line-clamp-2">
                                     {exec.status}
                                 </div>
                             </div>
@@ -366,104 +434,37 @@ export default function CeoOfficePage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-                {/* 💬 대표이사 직통 지시·대화창 (CEO Direct Command Box) */}
-                <div className="bg-gradient-to-br from-[#111a2e] via-[#0f172a] to-[#162038] border-2 border-amber-500/40 rounded-2xl p-4 sm:p-6 shadow-2xl shadow-amber-950/20">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl">🎙️</span>
-                            <h2 className="text-base sm:text-lg font-black text-white">
-                                대표이사 직통 지시 · 긴급 임원회의 소집창
-                            </h2>
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                실시간 대화형
-                            </span>
-                        </div>
-                        <span className="text-xs text-gray-400">
-                            국내주식 · 미국주식 · ETF · 선물 어떤 종목이나 질문이든 지시만 내려주세요
-                        </span>
-                    </div>
-
-                    <form onSubmit={handleSendDirective} className="flex flex-col sm:flex-row gap-2.5">
-                        <div className="relative flex-1">
-                            <input
-                                type="text"
-                                value={commandInput}
-                                onChange={e => setCommandInput(e.target.value)}
-                                placeholder="예: &quot;두산에너빌리티 임원들끼리 끝장 토론해봐&quot;, &quot;삼성전자 지금 수급 어때?&quot;, &quot;NVDA 리스크 보고해&quot;"
-                                className="w-full bg-[#070b14] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-3.5 text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={isCallingMeeting}
-                            className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm sm:text-base shadow-lg shadow-amber-500/20 transition-all shrink-0 cursor-pointer disabled:opacity-50"
-                        >
-                            {isCallingMeeting ? '⚡ 임원 긴급 소집 중...' : '📢 임원 소집 · 지시 내리기'}
-                        </button>
-                    </form>
-
-                    {/* 원클릭 긴급 안건 버튼 */}
-                    <div className="mt-4">
-                        <div className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1.5">
-                            <span>⚡ 대표님 자주 찾으시는 원클릭 안건 상정:</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                            {QUICK_TOPICS.map(item => {
-                                const isCurrent =
-                                    (item.topic === '' && agenda?.topic_type === 'briefing') ||
-                                    (item.topic !== '' &&
-                                        (agenda?.target_name?.includes(item.topic) ||
-                                            agenda?.target_code === item.topic));
-                                return (
-                                    <button
-                                        key={item.label}
-                                        type="button"
-                                        onClick={() => handleQuickTopic(item.topic, item.message)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                                            isCurrent
-                                                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
-                                                : 'bg-white/5 hover:bg-white/10 text-gray-200 border-white/10'
-                                        }`}
-                                    >
-                                        {item.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* 탭 전환 바 */}
-                <div ref={boardroomRef} className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div ref={mainSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+                {/* 상단 탭 & 선택형 특별 지시 토글 바 */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
                     <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('electronic_sign')}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                                activeTab === 'electronic_sign'
+                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                            }`}
+                        >
+                            <span>🖋️ 대표이사 전자결재 서류함 (자동 상정)</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25 font-extrabold">
+                                대기 {pendingDocsCount}건
+                            </span>
+                        </button>
+
                         <button
                             type="button"
                             onClick={() => setActiveTab('boardroom')}
                             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
                                 activeTab === 'boardroom'
-                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
+                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
                                     : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                             }`}
                         >
-                            <span>🎙️ 임원 끝장 토론 · 대면 보고실</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20">
-                                {debates.length}명 발언
-                            </span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('approval')}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
-                                activeTab === 'approval'
-                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
-                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                            }`}
-                        >
-                            <span>📑 리서치팀 상정 보고서 결재함</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20">
-                                {researchDesk.length + marketDesk.length}건
+                            <span>🎙️ 임원 대면 브리핑 · 심층 토론실</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25">
+                                {debates.length}명 보고
                             </span>
                         </button>
 
@@ -472,41 +473,263 @@ export default function CeoOfficePage() {
                             onClick={() => setActiveTab('history')}
                             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
                                 activeTab === 'history'
-                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
+                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
                                     : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                             }`}
                         >
-                            <span>🗂️ 오늘의 대표님 지시·보고 회의록</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/20">
-                                {chatLogs.length}건
+                            <span>🗂️ 결재 및 특별 지시 기록</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25">
+                                {approvedDocsCount + chatLogs.length}건
                             </span>
                         </button>
                     </div>
 
-                    <Link
-                        href="/research"
-                        className="text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
-                    >
-                        <span>📚 전체 리서치 자료실 바로가기</span>
-                        <span>→</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowCommandDrawer(prev => !prev)}
+                            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-amber-500/30 text-amber-300 text-xs font-extrabold transition-all cursor-pointer"
+                        >
+                            {showCommandDrawer ? '▲ 특별 지시창 닫기' : '💬 대표님 특별 지시 내리기 (선택)'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => fetchOfficeData('', '', false)}
+                            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold transition-all cursor-pointer"
+                        >
+                            🔄 최신 보고 갱신
+                        </button>
+                    </div>
                 </div>
 
-                {/* 메인 콘텐츠 영역 */}
+                {/* 대표님이 원하실 때만 여는 선택형 특별 지시창 */}
+                {showCommandDrawer && (
+                    <div className="bg-gradient-to-br from-[#111a2e] via-[#0f172a] to-[#162038] border border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-xl animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs sm:text-sm font-black text-amber-300">
+                                💬 대표이사 특별 하달 지시창 (평소에는 직원들이 알아서 올린 결재만 서명하시면 됩니다)
+                            </span>
+                        </div>
+                        <form onSubmit={handleSendDirective} className="flex flex-col sm:flex-row gap-2.5">
+                            <input
+                                type="text"
+                                value={commandInput}
+                                onChange={e => setCommandInput(e.target.value)}
+                                placeholder="추가로 보고받고 싶은 종목이 있을 때만 입력하세요 (예: 삼성중공업 다시 분석해와)"
+                                className="flex-1 bg-[#070b14] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isCallingMeeting}
+                                className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0"
+                            >
+                                {isCallingMeeting ? '⚡ 임원 소집 중...' : '📢 특별 보고 지시'}
+                            </button>
+                        </form>
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                            {QUICK_TOPICS.map(item => (
+                                <button
+                                    key={item.label}
+                                    type="button"
+                                    onClick={() => handleQuickTopic(item.topic, item.message)}
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 cursor-pointer"
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="bg-[#0d1526] border border-white/10 rounded-2xl p-12 text-center">
                         <div className="inline-block w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4" />
                         <p className="text-base font-bold text-white">
-                            비서실장이 각 본부 임원들과 최신 증권사 리포트를 소집하고 있습니다...
+                            전 부서 임원들이 오늘의 시장 시스템과 리서치 기안서를 대표님 책상에 올리고 있습니다...
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                            실시간 주가·외국인/기관 수급·애널리스트 목표가를 집계 중입니다.
+                            잠시만 기다려 주시면 서명만 하실 수 있도록 정리된 전자결재판이 열립니다.
                         </p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* 좌측 8컬럼: 임원 회의실 또는 탭 콘텐츠 */}
+                        {/* 좌측 8컬럼: 대표이사 전자결재 서류함 (기본 탭) */}
                         <div className="lg:col-span-8 space-y-5">
+                            {activeTab === 'electronic_sign' && (
+                                <>
+                                    {/* 비서실장 브리핑 안내 배너 */}
+                                    <div className="bg-gradient-to-r from-amber-500/15 via-indigo-950/40 to-slate-900 border border-amber-500/35 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl shrink-0">
+                                                👩‍💼
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-extrabold text-amber-300">
+                                                    정유진 비서실장 · 일일 결재 브리핑
+                                                </div>
+                                                <p className="text-xs sm:text-sm text-white font-bold mt-0.5 leading-relaxed">
+                                                    &ldquo;대표님! 오늘 각 본부 임원들이 알아서 시장 시스템과 주요 종목 분석을 마쳐 총 <span className="text-amber-300 underline">{totalDocs}건의 기안서</span>를 올렸습니다. 각 서류의 3줄 핵심 보고만 보시고 아래 <span className="text-emerald-300">[✅ 대표이사 승인 서명]</span> 버튼만 눌러주시면 됩니다!&rdquo;
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 자동 상정된 전자결재 기안서 리스트 */}
+                                    <div className="space-y-5">
+                                        {autoApprovals.map((doc) => {
+                                            const signInfo = signMap[doc.doc_id];
+                                            const status: SignStatus = signInfo?.status || 'pending';
+
+                                            return (
+                                                <div
+                                                    key={doc.doc_id}
+                                                    className={`relative overflow-hidden rounded-3xl border-2 transition-all p-5 sm:p-6 shadow-xl ${
+                                                        status === 'approved'
+                                                            ? 'border-emerald-500/50 bg-gradient-to-br from-[#0b1d19] via-[#0c1626] to-[#09101d]'
+                                                            : status === 'hold'
+                                                            ? 'border-rose-500/40 bg-[#170f18]'
+                                                            : 'border-white/15 hover:border-amber-500/40 bg-gradient-to-br from-[#10192e] to-[#0a101f]'
+                                                    }`}
+                                                >
+                                                    {/* 우측 상단 대표이사 결재 도장 스탬프 */}
+                                                    {status === 'approved' && (
+                                                        <div className="sm:absolute sm:top-5 sm:right-6 mb-3 sm:mb-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-emerald-400 bg-emerald-500/20 text-emerald-300 font-black text-xs shadow-lg">
+                                                            <span>💮 대표이사 결재완료</span>
+                                                            <span className="text-[10px] text-emerald-200/80">
+                                                                ({signInfo?.signedAt})
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {status === 'hold' && (
+                                                        <div className="sm:absolute sm:top-5 sm:right-6 mb-3 sm:mb-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-rose-400 bg-rose-500/20 text-rose-300 font-black text-xs">
+                                                            <span>⏸️ 대표이사 보류 지시 ({signInfo?.signedAt})</span>
+                                                        </div>
+                                                    )}
+                                                    {status === 'reexamine' && (
+                                                        <div className="sm:absolute sm:top-5 sm:right-6 mb-3 sm:mb-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-amber-400 bg-amber-500/20 text-amber-300 font-black text-xs">
+                                                            <span>🔄 심층 재검토 지시됨 ({signInfo?.signedAt})</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 문서 번호 & 카테고리 헤더 */}
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                                                        <span className="px-2.5 py-0.5 rounded-md bg-white/10 text-gray-200 font-mono text-xs font-bold">
+                                                            문서번호 {doc.doc_number}
+                                                        </span>
+                                                        <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-extrabold">
+                                                            {doc.category_badge}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">
+                                                            · {doc.submitted_at}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* 안건 제목 & 기안자 */}
+                                                    <h3 className="text-lg sm:text-xl font-black text-white leading-snug pr-0 sm:pr-44">
+                                                        {doc.title}
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        기안 및 합동 분석: <span className="text-gray-200 font-semibold">{doc.proposer}</span>
+                                                    </p>
+
+                                                    {/* 핵심 수치 요약 표 */}
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
+                                                        {doc.key_numbers.map((kn, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="bg-black/40 border border-white/10 rounded-xl p-3"
+                                                            >
+                                                                <div className="text-[10px] text-gray-400 font-semibold">
+                                                                    {kn.label}
+                                                                </div>
+                                                                <div className="text-xs sm:text-sm font-black text-amber-300 mt-0.5 truncate">
+                                                                    {kn.value}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* 각 본부 임원 자율 분석 3단 요약 보고 */}
+                                                    <div className="space-y-2 bg-black/35 border border-white/10 rounded-2xl p-4 text-xs sm:text-sm leading-relaxed">
+                                                        <div className="text-gray-100">
+                                                            {doc.research_opinion}
+                                                        </div>
+                                                        <div className="text-emerald-200/95 pt-1.5 border-t border-white/5">
+                                                            {doc.quant_opinion}
+                                                        </div>
+                                                        <div className="text-rose-200/95 pt-1.5 border-t border-white/5">
+                                                            {doc.risk_opinion}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 비서실장 최종 결재 건의문 */}
+                                                    <div className="mt-3 bg-purple-950/30 border border-purple-500/35 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <div className="text-xs sm:text-sm text-purple-100 font-bold">
+                                                            {doc.secretary_conclusion}
+                                                        </div>
+                                                        <span className="shrink-0 px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-[11px] font-black border border-purple-400/30">
+                                                            건의: {doc.recommendation}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* 하단 대표이사 전자서명 버튼 바 */}
+                                                    <div className="mt-4 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSignature(doc.doc_id, 'approved')}
+                                                                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                                    status === 'approved'
+                                                                        ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25'
+                                                                        : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-md shadow-amber-500/20'
+                                                                }`}
+                                                            >
+                                                                <span>
+                                                                    {status === 'approved'
+                                                                        ? '✅ 대표이사 승인 서명 완료'
+                                                                        : '🖋️ 대표이사 승인 서명 (재가)'}
+                                                                </span>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => updateSignature(doc.doc_id, 'hold')}
+                                                                className={`px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
+                                                                    status === 'hold'
+                                                                        ? 'bg-rose-500 text-white border-rose-400'
+                                                                        : 'bg-white/5 hover:bg-white/10 text-gray-300 border-white/15'
+                                                                }`}
+                                                            >
+                                                                ⏸️ 보류 처리
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleReexamineDoc(doc)}
+                                                                className="px-3.5 py-2.5 rounded-xl text-xs font-extrabold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 transition-all cursor-pointer"
+                                                            >
+                                                                🎙️ 임원 대면 심층보고 소집
+                                                            </button>
+                                                        </div>
+
+                                                        {doc.detail_url && (
+                                                            <a
+                                                                href={doc.detail_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs text-sky-400 hover:underline font-bold"
+                                                            >
+                                                                증권사 원문 리포트 열람 ↗
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+
                             {activeTab === 'boardroom' && agenda && (
                                 <>
                                     {/* 현재 상정 안건 전광판 */}
@@ -516,7 +739,7 @@ export default function CeoOfficePage() {
                                                 📌 {agenda.badge}
                                             </span>
                                             <span className="text-xs text-gray-400">
-                                                안건 상정 시각: {agenda.timestamp}
+                                                보고 시각: {agenda.timestamp}
                                             </span>
                                         </div>
 
@@ -527,21 +750,6 @@ export default function CeoOfficePage() {
                                             {agenda.subtitle}
                                         </p>
 
-                                        {agenda.ceo_question && (
-                                            <div className="mt-3 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2.5">
-                                                <span className="text-lg">👔</span>
-                                                <div>
-                                                    <div className="text-[11px] font-bold text-amber-300">
-                                                        대표이사 하달 지시사항
-                                                    </div>
-                                                    <div className="text-sm font-extrabold text-white">
-                                                        &ldquo;{agenda.ceo_question}&rdquo;
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* 핵심 지표 전광판 */}
                                         {agenda.key_metrics && agenda.key_metrics.length > 0 && (
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-4 border-t border-white/10">
                                                 {agenda.key_metrics.map((m, idx) => (
@@ -572,7 +780,7 @@ export default function CeoOfficePage() {
                                         )}
                                     </div>
 
-                                    {/* 임원진 릴레이 대면 보고 & 찬반 토론 */}
+                                    {/* 임원진 릴레이 대면 보고 */}
                                     <div className="space-y-4">
                                         {debates.map((turn, idx) => {
                                             const st = getStanceStyle(turn.stance_tone);
@@ -603,13 +811,11 @@ export default function CeoOfficePage() {
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-2">
-                                                            <span
-                                                                className={`px-2.5 py-1 rounded-full text-xs font-extrabold border ${st.badge}`}
-                                                            >
-                                                                {turn.stance}
-                                                            </span>
-                                                        </div>
+                                                        <span
+                                                            className={`px-2.5 py-1 rounded-full text-xs font-extrabold border ${st.badge}`}
+                                                        >
+                                                            {turn.stance}
+                                                        </span>
                                                     </div>
 
                                                     <div className="pl-2">
@@ -621,7 +827,7 @@ export default function CeoOfficePage() {
                                                         </div>
                                                         <div className="mt-2.5 flex items-center justify-between text-[11px] text-gray-400">
                                                             <span>📊 근거 데이터: {turn.data_tag}</span>
-                                                            <span>발언 순서 #{idx + 1}</span>
+                                                            <span>보고 순서 #{idx + 1}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -631,261 +837,146 @@ export default function CeoOfficePage() {
                                 </>
                             )}
 
-                            {activeTab === 'approval' && (
-                                <div className="space-y-4">
-                                    <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-4 sm:p-5">
-                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                                            <div>
-                                                <h3 className="text-lg font-black text-white">
-                                                    📑 리서치센터 상정 종목 리포트 결재함
-                                                </h3>
-                                                <p className="text-xs text-gray-400 mt-0.5">
-                                                    리서치팀이 대표님 책상에 올린 최신 증권사 원문 요약 보고서입니다. 결재 도장을 찍거나 즉시 임원 토론에 부칠 수 있습니다.
-                                                </p>
-                                            </div>
-                                            <span className="text-xs font-bold text-amber-300 bg-amber-500/15 px-3 py-1 rounded-full border border-amber-500/30">
-                                                결재 완료 {approvedCount} / {researchDesk.length}건
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-3.5">
-                                            {researchDesk.map(rep => {
-                                                const isApproved = !!approvedIds[rep.id];
-                                                return (
-                                                    <div
-                                                        key={rep.id}
-                                                        className={`rounded-2xl border p-4 transition-all ${
-                                                            isApproved
-                                                                ? 'border-emerald-500/40 bg-emerald-950/10'
-                                                                : 'border-white/10 bg-[#090f1d]'
-                                                        }`}
-                                                    >
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className="px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 text-xs font-extrabold border border-blue-500/30">
-                                                                    {rep.broker}
-                                                                </span>
-                                                                <span className="text-base font-black text-white">
-                                                                    {rep.stock_name}
-                                                                </span>
-                                                                {rep.target_price && rep.target_price !== '제시안함' && (
-                                                                    <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-xs font-extrabold border border-amber-500/30">
-                                                                        🎯 목표주가 {rep.target_price}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <span className="text-xs text-gray-400">{rep.date}</span>
-                                                        </div>
-
-                                                        <h4 className="text-sm sm:text-base font-bold text-gray-100 mb-2">
-                                                            {rep.title}
-                                                        </h4>
-
-                                                        {rep.plain_explanation && (
-                                                            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 text-xs sm:text-sm text-emerald-100 mb-2.5">
-                                                                <span className="font-black text-emerald-300 mr-1.5">
-                                                                    💡 비서실 1줄 요약 보고:
-                                                                </span>
-                                                                {rep.plain_explanation}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
-                                                            <div className="flex flex-wrap gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleApproveReport(rep.id)}
-                                                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                                                                        isApproved
-                                                                            ? 'bg-emerald-500 text-slate-950'
-                                                                            : 'bg-white/10 hover:bg-white/20 text-white'
-                                                                    }`}
-                                                                >
-                                                                    {isApproved ? '✅ 대표이사 결재 완료' : '🖋️ 결재 승인 도장 찍기'}
-                                                                </button>
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        handleConveneFromReport(rep.stock_name, rep.title)
-                                                                    }
-                                                                    className="px-3.5 py-1.5 rounded-lg text-xs font-black bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-all cursor-pointer"
-                                                                >
-                                                                    🎙️ 이 종목 임원 끝장토론 소집
-                                                                </button>
-                                                            </div>
-
-                                                            {rep.detail_url && (
-                                                                <a
-                                                                    href={rep.detail_url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-xs text-sky-400 hover:underline font-semibold"
-                                                                >
-                                                                    원문 리포트 보기 ↗
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
                             {activeTab === 'history' && (
-                                <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5">
-                                    <h3 className="text-lg font-black text-white mb-1">
-                                        🗂️ 오늘 대표님 하달 지시 & 임원 보고 회의록
-                                    </h3>
-                                    <p className="text-xs text-gray-400 mb-4">
-                                        상단 지시창에서 대표님이 질문하거나 소집한 모든 임원 회의 기록이 순서대로 보관됩니다.
-                                    </p>
+                                <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
+                                    <div>
+                                        <h3 className="text-lg font-black text-white mb-1">
+                                            🗂️ 오늘 대표님 전자결재 서명 및 지시 기록부
+                                        </h3>
+                                        <p className="text-xs text-gray-400">
+                                            오늘 대표님께서 서명(승인·보류·재검토)하신 기안서 내역이 자동 보관됩니다.
+                                        </p>
+                                    </div>
 
-                                    {chatLogs.length === 0 ? (
-                                        <div className="text-center py-10 bg-black/30 rounded-xl border border-white/5">
-                                            <p className="text-sm text-gray-300 font-bold">
-                                                아직 오늘 추가로 하달하신 특별 지시 내역이 없습니다.
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                위 지시창에 종목명이나 질문을 입력하시면 회의록이 자동 기록됩니다.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {chatLogs.map(log => (
+                                    <div className="space-y-2.5">
+                                        {autoApprovals.map(doc => {
+                                            const info = signMap[doc.doc_id];
+                                            const st = info?.status || 'pending';
+                                            return (
                                                 <div
-                                                    key={log.id}
-                                                    className="bg-black/40 border border-white/10 rounded-xl p-4 space-y-2.5"
+                                                    key={doc.doc_id}
+                                                    className="bg-black/40 border border-white/10 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2"
                                                 >
-                                                    <div className="flex items-center justify-between text-xs text-gray-400">
-                                                        <span className="font-bold text-amber-300">
-                                                            👔 대표이사 지시 ({log.targetName})
-                                                        </span>
-                                                        <span>{log.timestamp}</span>
+                                                    <div>
+                                                        <div className="text-xs text-gray-400 font-mono">
+                                                            {doc.doc_number} · {doc.stock_name}
+                                                        </div>
+                                                        <div className="text-sm font-bold text-white">
+                                                            {doc.title}
+                                                        </div>
                                                     </div>
-                                                    <div className="text-sm font-extrabold text-white">
-                                                        &ldquo;{log.ceoMessage}&rdquo;
-                                                    </div>
-                                                    <div className="bg-purple-950/25 border border-purple-500/30 rounded-lg p-3 text-xs text-gray-200 whitespace-pre-line">
-                                                        {log.secretaryReply}
+                                                    <div>
+                                                        {st === 'approved' && (
+                                                            <span className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">
+                                                                💮 승인 완료 ({info?.signedAt})
+                                                            </span>
+                                                        )}
+                                                        {st === 'hold' && (
+                                                            <span className="px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-black">
+                                                                ⏸️ 보류 ({info?.signedAt})
+                                                            </span>
+                                                        )}
+                                                        {st === 'reexamine' && (
+                                                            <span className="px-3 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">
+                                                                🔄 재검토 지시 ({info?.signedAt})
+                                                            </span>
+                                                        )}
+                                                        {st === 'pending' && (
+                                                            <span className="px-3 py-1 rounded-lg bg-white/10 text-gray-400 text-xs font-bold">
+                                                                서명 대기 중
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* 우측 4컬럼: 대표님 전용 결재 데스크 요약 (항상 표시) */}
+                        {/* 우측 4컬럼: 전사 시장 시스템 가동 현황 & 빠른 서명 요약 */}
                         <div className="lg:col-span-4 space-y-5">
-                            {/* 책상 위 긴급 결재 서류함 */}
-                            <div className="bg-[#0d1526] border border-white/15 rounded-2xl p-4 sm:p-5">
+                            {/* 전사 자동 시스템 가동 모니터 */}
+                            <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
-                                        <span>📥 리서치팀 방금 올린 보고서</span>
+                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                                        <span>🖥️ 전사 자동화 시스템 상태</span>
                                     </h3>
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveTab('approval')}
-                                        className="text-xs font-bold text-amber-300 hover:underline cursor-pointer"
-                                    >
-                                        전체 결재함 ({researchDesk.length}건) →
-                                    </button>
+                                    <span className="text-[11px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                                        100% 정상 가동
+                                    </span>
                                 </div>
-                                <p className="text-xs text-gray-400 mb-3">
-                                    종목을 클릭하면 즉시 임원 5명이 해당 종목을 놓고 찬반 토론을 시작합니다.
-                                </p>
 
-                                <div className="space-y-2.5">
-                                    {researchDesk.slice(0, 6).map(rep => {
-                                        const isApproved = !!approvedIds[rep.id];
-                                        return (
-                                            <div
-                                                key={rep.id}
-                                                className="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-amber-500/40 rounded-xl p-3 transition-all"
-                                            >
-                                                <div className="flex items-center justify-between gap-1 mb-1">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-xs font-black text-white">
-                                                            {rep.stock_name}
-                                                        </span>
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
-                                                            {rep.broker}
-                                                        </span>
-                                                    </div>
-                                                    {rep.target_price && rep.target_price !== '제시안함' && (
-                                                        <span className="text-[11px] font-extrabold text-amber-300">
-                                                            🎯 {rep.target_price}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <p className="text-xs text-gray-300 line-clamp-1 mb-2">
-                                                    {rep.title}
-                                                </p>
-
-                                                <div className="flex items-center justify-between gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleConveneFromReport(rep.stock_name, rep.title)
-                                                        }
-                                                        className="flex-1 py-1.5 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/30 text-[11px] font-extrabold transition-all cursor-pointer"
-                                                    >
-                                                        🎙️ 이 종목 임원회의 소집
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleApproveReport(rep.id)}
-                                                        className={`py-1.5 px-2.5 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
-                                                            isApproved
-                                                                ? 'bg-emerald-500 text-slate-950'
-                                                                : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                                                        }`}
-                                                    >
-                                                        {isApproved ? '결재됨' : '결재'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="space-y-2 text-xs">
+                                    <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-bold text-white">리서치센터 크롤러</div>
+                                            <div className="text-[11px] text-gray-400">국내 증권사 리포트 자동 수집·요약</div>
+                                        </div>
+                                        <span className="text-emerald-400 font-black">정상 ({researchDesk.length}건)</span>
+                                    </div>
+                                    <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-bold text-white">퀀트 수급 스캐너</div>
+                                            <div className="text-[11px] text-gray-400">외인·기관 수급 및 50일선 자동 판독</div>
+                                        </div>
+                                        <span className="text-emerald-400 font-black">정상 가동</span>
+                                    </div>
+                                    <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-bold text-white">글로벌 24시 데스크</div>
+                                            <div className="text-[11px] text-gray-400">미국주식 · ETF · 나스닥선물 연동</div>
+                                        </div>
+                                        <span className="text-emerald-400 font-black">실시간 동기화</span>
+                                    </div>
+                                    <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                                        <div>
+                                            <div className="font-bold text-white">CRO 리스크 감사봇</div>
+                                            <div className="text-[11px] text-gray-400">전 기안서 하방 위험 자동 첨부</div>
+                                        </div>
+                                        <span className="text-emerald-400 font-black">감사 완료</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* 거시 시황·산업 브리핑 서류함 */}
-                            {marketDesk.length > 0 && (
-                                <div className="bg-[#0d1526] border border-white/15 rounded-2xl p-4 sm:p-5">
-                                    <h3 className="text-sm sm:text-base font-black text-white mb-2">
-                                        🌐 거시 시황 · 산업전략실 보고서
+                            {/* 리서치팀 추가 참고 원문 서류함 */}
+                            <div className="bg-[#0d1526] border border-white/15 rounded-2xl p-4 sm:p-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-sm sm:text-base font-black text-white">
+                                        📑 오늘 수집된 리포트 원문 목록
                                     </h3>
-                                    <div className="space-y-2.5">
-                                        {marketDesk.slice(0, 4).map(m => (
-                                            <div
-                                                key={m.id}
-                                                className="bg-black/35 border border-white/10 rounded-xl p-3"
-                                            >
-                                                <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1">
-                                                    <span className="font-bold text-sky-300">{m.broker}</span>
-                                                    <span>{m.date}</span>
-                                                </div>
-                                                <div className="text-xs font-bold text-white line-clamp-1">
-                                                    {m.title}
-                                                </div>
-                                                {m.plain_explanation && (
-                                                    <p className="text-[11px] text-gray-300 mt-1 line-clamp-2">
-                                                        {m.plain_explanation}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <Link
+                                        href="/research"
+                                        className="text-xs font-bold text-sky-400 hover:underline"
+                                    >
+                                        자료실 전체보기 →
+                                    </Link>
                                 </div>
-                            )}
+                                <div className="space-y-2">
+                                    {researchDesk.slice(0, 5).map(rep => (
+                                        <div
+                                            key={rep.id}
+                                            className="bg-black/40 border border-white/10 rounded-xl p-3"
+                                        >
+                                            <div className="flex items-center justify-between gap-1 mb-1">
+                                                <span className="text-xs font-black text-white">
+                                                    {rep.stock_name}
+                                                </span>
+                                                <span className="text-[11px] font-bold text-amber-300">
+                                                    🎯 {rep.target_price}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-300 line-clamp-1">
+                                                [{rep.broker}] {rep.title}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                            {/* 광고 슬롯 (한국 유저 대상 카카오 애드핏) */}
+                            {/* 광고 슬롯 */}
                             <div className="flex justify-center">
                                 <KakaoRevenueAd type="feed" />
                             </div>
@@ -896,7 +987,7 @@ export default function CeoOfficePage() {
                 {/* 자본시장법 준수 고지 */}
                 <div className="bg-[#0b1120] border border-white/10 rounded-xl p-4 text-[11px] text-gray-400 leading-relaxed">
                     <span className="font-bold text-gray-300">⚖️ 준법감시인 안내 (자본시장법 제101조 준수):</span>{' '}
-                    본 「AI 증권사 대표이사 집무실 & 임원 회의실」은 제도권 증권사 리서치센터가 발간한 공개 컨센서스 리포트와 한국거래소(KRX)·글로벌 거래소의 객관적 시세·수급 데이터를 이용자가 입체적으로 비교·검토할 수 있도록 돕기 위해 구성된 시뮬레이션 브리핑 시스템입니다. 개별 투자자에 대한 1:1 맞춤형 투자자문이나 매수·매도 권유가 아니며, 모든 최종 투자 판단(결재)과 책임은 이용자 본인에게 있습니다.
+                    본 「AI 증권사 대표이사 전자결재 & 자율 보고 시스템」은 제도권 증권사 리서치센터가 발간한 공개 컨센서스 리포트와 거래소의 객관적 시세·수급 데이터를 자동으로 요약·상정하는 시뮬레이션 시스템입니다. 모든 최종 투자 판단(결재)과 책임은 이용자 본인에게 있습니다.
                 </div>
             </div>
         </div>
