@@ -1634,6 +1634,11 @@ export default function AdminAutoTradePage() {
                   ]
                 ).map((dept: any, idx: number) => {
                   const isLoopStep = dept.step === 9;
+                  const deptName = dept.dept_name || (dept.dept ? String(dept.dept).split(" - ")[0] : `부서 ${dept.step || idx + 1}`);
+                  const roleTitle = dept.role_title || (dept.dept && String(dept.dept).includes(" - ") ? String(dept.dept).split(" - ")[1] : "");
+                  const metricBadge = dept.metric_badge || dept.badge || "정상 가동";
+                  const easyDesc = dept.easy_desc || dept.desc || "";
+                  const liveDecision = dept.live_decision || dept.live_summary || "실시간 분석 중";
                   return (
                     <div
                       key={dept.step || idx}
@@ -1653,22 +1658,22 @@ export default function AdminAutoTradePage() {
                                   : "bg-emerald-500/20 border border-emerald-400/40 text-emerald-300"
                               }`}
                             >
-                              {dept.dept_name}
+                              {deptName}
                             </span>
-                            <span className="text-sm font-black text-white">{dept.role_title}</span>
+                            {roleTitle && <span className="text-sm font-black text-white">{roleTitle}</span>}
                           </div>
                           <span className="px-2 py-0.5 rounded-full bg-black/60 border border-white/10 text-[10px] font-mono font-bold text-emerald-300 shrink-0">
-                            {dept.metric_badge}
+                            {metricBadge}
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-gray-400 leading-snug">{dept.easy_desc}</p>
+                        <p className="text-[11px] text-gray-400 leading-snug">{easyDesc}</p>
                       </div>
 
                       <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
                         <div className="text-[11px] font-bold text-emerald-200 leading-snug flex items-start gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0 animate-pulse" />
-                          <span>{dept.live_decision}</span>
+                          <span>{liveDecision}</span>
                         </div>
                         {dept.step < 9 ? (
                           <span className="text-emerald-400/70 font-black text-xs shrink-0" title="다음 부서로 데이터 전달">
