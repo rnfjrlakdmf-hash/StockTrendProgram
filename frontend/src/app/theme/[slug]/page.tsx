@@ -2,6 +2,7 @@ import { API_BASE_URL } from '@/lib/config';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Layers, AlertTriangle, TrendingUp, ShieldAlert, ArrowLeft } from 'lucide-react';
+import SeoContentBlock from '@/components/SeoContentBlock';
 
 export const revalidate = 21600;
 
@@ -179,10 +180,23 @@ export default async function ThemeDetailPage({ params }: Props) {
                 </div>
                 
                 {/* SEO Text */}
-                <div className="mt-12 p-8 border-t border-white/10 text-gray-500 text-sm leading-relaxed">
-                    본 페이지는 {themeData.name} 테마와 관련된 국내 증시(코스피, 코스닥) 상장 기업들의 정보를 모아놓은 페이지입니다. {themeData.name} 관련주, 대장주, 수혜주 정보를 실시간으로 확인하고 AI 기반의 투자 매력도를 분석해 보세요. StockTrend는 방대한 금융 데이터와 뉴스 플로우를 분석하여 객관적인 테마 동향을 제공합니다.
+                <div className="mt-12 p-8 border-t border-white/10 text-gray-400 text-sm leading-relaxed space-y-4">
+                    <h3 className="text-lg font-bold text-white">
+                        {themeData.name} 섹터 밸류체인 및 실전 투자 체크리스트
+                    </h3>
+                    <p>
+                        본 페이지는 {themeData.name} 테마와 관련된 국내 증시(코스피, 코스닥) 상장 기업들의 밸류체인과 대장주·관련주 분류를 정리한 섹터 리포트입니다. 테마주 투자 시에는 단순 뉴스 모멘텀에만 의존하기보다 실제 해당 사업부에서 유의미한 매출 비중(최소 15~20% 이상)과 수주 잔고가 발생하고 있는지 금융감독원 전자공시시스템(DART) 분기보고서를 통해 반드시 교차 검증해야 합니다.
+                    </p>
+                    <p>
+                        특히 섹터 순환매(Sector Rotation) 국면에서는 시가총액과 거래대금이 가장 먼저 집중되는 <strong>대장주(Leaders)</strong>가 20일·50일 이동평균선을 돌파하며 추세를 선도하고, 이후 후발주(Followers)로 온기가 확산되는 패턴이 나타납니다. 대장주의 외국인·기관 연속 순매수 기조가 꺾이거나 거래량이 급감할 경우 섹터 전체의 차익실현 매물이 출회될 수 있으므로 리스크 요인을 상시 점검하시기 바랍니다.
+                    </p>
                 </div>
             </div>
+            <SeoContentBlock
+                asH1={false}
+                pageTitle={`${themeData.name} 테마 수급 분석 방법론 및 퀀트 검증 가이드`}
+                pageDescription={`${themeData.name} 대장주 및 밸류체인 기업의 재무 건전성(PER·PBR·ROE), 외국인·기관 수급 추적, 그리고 테마 변동성 방어 전략을 안내합니다.`}
+            />
         </div>
     );
 }

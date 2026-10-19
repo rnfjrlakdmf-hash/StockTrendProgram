@@ -79,7 +79,7 @@ async function getSeoPosts(page: number, limitPerPage: number) {
             throw new Error("No posts from API");
         }
 
-        const posts: SeoPost[] = data.posts.map((p: any) => ({
+        const rawPosts: SeoPost[] = data.posts.map((p: any) => ({
             id: p.id,
             title: p.title,
             content: p.content,
@@ -89,7 +89,24 @@ async function getSeoPosts(page: number, limitPerPage: number) {
             viewCount: p.viewCount || 0,
         }));
 
-        return { posts, totalPages: data.totalPages || 1 };
+        // 동일 종목의 반복 자동생성 리포트 중복 제거 (종목당 최신 1건만 노출 + 독립 주제형 qa-seo 칼럼 전수 보존)
+        const seenTopicKeys = new Set<string>();
+        const posts = rawPosts.filter((p) => {
+            const slug = String(p.slug || '');
+            if (slug.startsWith('qa-seo-')) {
+                const titleKey = p.title.slice(0, 18);
+                if (seenTopicKeys.has(titleKey)) return false;
+                seenTopicKeys.add(titleKey);
+                return true;
+            }
+            const m = slug.match(/^(?:seo|mass)-([^-]+)-/);
+            const tickerKey = m ? m[1].replace('삼전', '삼성전자').replace('하이닉스', 'SK하이닉스') : p.title.slice(0, 8);
+            if (seenTopicKeys.has(tickerKey)) return false;
+            seenTopicKeys.add(tickerKey);
+            return true;
+        });
+
+        return { posts, totalPages: 1 };
     } catch (error) {
         console.error("SEO 포스트 로딩 에러, 정적 대체 데이터 제공:", error);
         return {

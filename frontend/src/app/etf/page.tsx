@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { API_BASE_URL } from '@/lib/config';
 import { Activity, Globe, RefreshCcw, TrendingUp, TrendingDown, ArrowRight, Sparkles, Filter, Zap, BarChart } from 'lucide-react';
 import EtfRankingWidget from '@/components/EtfRankingWidget';
+import SeoContentBlock from '@/components/SeoContentBlock';
 
 export default function EtfAnalysisPage() {
     const [market, setMarket] = useState<'KR' | 'US'>('KR');
@@ -320,6 +321,11 @@ export default function EtfAnalysisPage() {
                         </p>
                     </div>
             </div>
+            <SeoContentBlock
+                asH1={false}
+                pageTitle="국내외 ETF 포트폴리오 비교 및 총보수율·분배금 분석 가이드"
+                pageDescription="KODEX·TIGER 등 국내 상장 ETF와 SPY·QQQ·SCHD·JEPI 등 미국 대표 지수·배당 ETF의 거래대금, 수익률, 총보수율(TER) 및 세후 분배금 현금흐름을 체계적으로 비교합니다."
+            />
         </div>
     );
 }

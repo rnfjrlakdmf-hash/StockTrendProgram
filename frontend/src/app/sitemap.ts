@@ -81,6 +81,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             changeFrequency: 'daily',
             priority: 0.85,
         },
+        {
+            url: `${baseUrl}/research`,
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
         // 애드센스 및 검색엔진 필수 5대 정책/신뢰성 페이지
         {
             url: `${baseUrl}/about`,
@@ -147,10 +153,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
     });
 
-    const backendApiUrl = 'http://13.209.99.170:8000';
     const frontendApiUrl = baseUrl;
 
-    // 4~7. 동적 포스트들을 병렬 수집 (여유로운 5초 타임아웃으로 누락 방지)
+    // 4~6. 엄선된 오리지널 칼럼만 사이트맵에 등록 (대량 자동생성 중복 종목글은 사이트맵에서 제외하여 애드센스 '가치 없는 인벤토리/중복 콘텐츠' 판정 원천 차단)
     try {
         const fetchWithFastTimeout = async (url: string, timeoutMs: number = 5000) => {
             const controller = new AbortController();
@@ -165,41 +170,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }
         };
 
-        const [themeData, blogData, theoryData, seoData] = await Promise.all([
-            fetchWithFastTimeout(`${backendApiUrl}/api/seo/themes`),
-            fetchWithFastTimeout(`${frontendApiUrl}/api/blog/posts?page=1&limit=100`),
-            fetchWithFastTimeout(`${frontendApiUrl}/api/theory/posts?page=1&limit=100`),
-            fetchWithFastTimeout(`${frontendApiUrl}/api/seo_posts?page=1&limit=200`),
+        const [blogData, theoryData, seoData] = await Promise.all([
+            fetchWithFastTimeout(`${frontendApiUrl}/api/blog/posts?page=1&limit=40`),
+            fetchWithFastTimeout(`${frontendApiUrl}/api/theory/posts?page=1&limit=70`),
+            fetchWithFastTimeout(`${frontendApiUrl}/api/seo_posts?page=1&limit=80`),
         ]);
 
-        // 테마 페이지
-        if (themeData?.data && Array.isArray(themeData.data)) {
-            themeData.data.forEach((theme: any) => {
-                routes.push({
-                    url: `${baseUrl}/theme/${theme.slug}`,
-                    lastModified: new Date(),
-                    changeFrequency: 'weekly',
-                    priority: 0.8,
-                });
-            });
-        }
-
-        // 블로그 포스트
+        // 블로그 포스트 (일자별 중복 제거, 최대 30편 엄선)
         if (blogData?.status === 'ok' && Array.isArray(blogData.posts)) {
+            const seenBlogDates = new Set<string>();
             blogData.posts.forEach((post: any) => {
-                const slug = post.slug || post.id;
-                routes.push({
-                    url: `${baseUrl}/blog/${encodeURIComponent(slug)}`,
-                    lastModified: new Date(post.createdAt || Date.now()),
-                    changeFrequency: 'daily',
-                    priority: 0.9,
-                });
+                const slug = String(post.slug || post.id || '');
+                const datePrefix = slug.slice(0, 8);
+                if (seenBlogDates.size < 30 && !seenBlogDates.has(slug)) {
+                    seenBlogDates.add(slug);
+                    routes.push({
+                        url: `${baseUrl}/blog/${encodeURIComponent(slug)}`,
+                        lastModified: new Date(post.createdAt || Date.now()),
+                        changeFrequency: 'daily',
+                        priority: 0.9,
+                    });
+                }
             });
         }
 
-        // 이론 포스트
+        // 이론 포스트 (22,000자 이상의 고품질 교육 아티클)
         if (theoryData?.status === 'ok' && Array.isArray(theoryData.posts)) {
-            theoryData.posts.forEach((post: any) => {
+            theoryData.posts.slice(0, 60).forEach((post: any) => {
                 const slug = post.slug || post.id;
                 routes.push({
                     url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
@@ -210,17 +207,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             });
         }
 
-        // 실시간 SEO 포스트
+        // 실시간 SEO 포스트 중에서는 종목 반복형(mass-*, seo-*)을 제외하고 독립 주제형 교육 칼럼(qa-seo-*)만 엄선 등록
         if (seoData?.status === 'ok' && Array.isArray(seoData.posts)) {
-            seoData.posts.forEach((post: any) => {
-                const slug = post.slug || post.id;
-                routes.push({
-                    url: `${baseUrl}/post/${encodeURIComponent(slug)}`,
-                    lastModified: new Date(post.createdAt || Date.now()),
-                    changeFrequency: 'daily',
-                    priority: 0.85,
+            seoData.posts
+                .filter((post: any) => String(post.slug || post.id || '').startsWith('qa-seo-'))
+                .slice(0, 25)
+                .forEach((post: any) => {
+                    const slug = post.slug || post.id;
+                    routes.push({
+                        url: `${baseUrl}/post/${encodeURIComponent(slug)}`,
+                        lastModified: new Date(post.createdAt || Date.now()),
+                        changeFrequency: 'weekly',
+                        priority: 0.85,
+                    });
                 });
-            });
         }
     } catch (e) {
         console.error("Fast sitemap extra fetch failed safely:", e);
