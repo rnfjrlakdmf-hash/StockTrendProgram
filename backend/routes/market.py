@@ -2312,6 +2312,11 @@ def get_ceo_office_boardroom(
         ]
 
     # 3. 직원들이 알아서 분석해 대표님 책상에 올린 「자동 상정 전자결재 기안서 (auto_approvals)」 — 초보자·대표님 눈높이 쉬운 해설 적용!
+    start_50d = now_kst - timedelta(days=72)
+    start_50d_m = start_50d.month
+    start_50d_part = "초" if start_50d.day <= 10 else ("중순" if start_50d.day <= 20 else "말")
+    period_50d_str = f"대략 {start_50d_m}월 {start_50d_part}부터 지금까지(약 2.5개월간)"
+
     def _extract_easy_terms(text_blob: str) -> List[Dict[str, str]]:
         terms = []
         t_up = (text_blob or "").upper()
@@ -2328,7 +2333,10 @@ def get_ceo_office_boardroom(
         if len(terms) < 2:
             terms.append({"term": "목표주가", "desc": "증권사 애널리스트가 기업의 미래 실적을 계산해 '앞으로 6개월~1년 안에 이 가격까지는 갈 수 있다'고 제시한 목표 가격입니다."})
         if len(terms) < 3:
-            terms.append({"term": "50일선 (50일 이동평균선)", "desc": "최근 약 두 달(50거래일) 동안 거래된 주가의 평균 가격선입니다. 주가가 이 선 위에 있으면 사는 힘이 더 강하다는 뜻입니다."})
+            terms.append({
+                "term": f"50일선 ({period_50d_str})",
+                "desc": f"오늘을 기준으로 거꾸로 계산해 {period_50d_str} 동안 실제로 주식시장이 열린 날들의 평균 매수단가입니다. 현재 주가가 이 선 위에 있으면 사는 힘이 강한 안전 구간입니다."
+            })
         return terms[:3]
 
     auto_approvals = []
@@ -2762,7 +2770,7 @@ def get_ceo_office_boardroom(
                     {"label": "현재 주가 (등락률)", "value": f"{cur_price_str}", "sub": f"전일 대비 {chg_pct_val:+.2f}%", "tone": "positive" if chg_pct_val >= 0 else "negative"},
                     {"label": "증권사 평균 목표주가", "value": avg_gp_str or "집계 중", "sub": f"최근 리포트 {rep_cnt}건 평균", "tone": "positive"},
                     {"label": "최고 / 최저 목표주가", "value": f"{max_gp_str}", "sub": f"보수적 최저 {min_gp_str}", "tone": "neutral"},
-                    {"label": "50일 이동평균선", "value": ma50_str, "sub": trend_note, "tone": "neutral"},
+                    {"label": f"50일선 ({start_50d_m}월 {start_50d_part}~현재)", "value": ma50_str, "sub": trend_note, "tone": "neutral"},
                 ],
             }
 
@@ -2799,10 +2807,11 @@ def get_ceo_office_boardroom(
                     "avatar": "📈",
                     "stance": trend_note,
                     "stance_tone": "neutral",
-                    "headline": f"현재가 {cur_price_str} ({chg_pct_val:+.2f}%) · 50일 이평선({ma50_str}) 대비 '{trend_note}'",
+                    "headline": f"현재가 {cur_price_str} ({chg_pct_val:+.2f}%) · 50일선({period_50d_str} 평균 {ma50_str}) 대비 '{trend_note}'",
                     "message": (
                         f"퀀트본부 김도현 상무입니다! 목표주가({avg_gp_str})와 실제 현재 주가({cur_price_str})를 대조해 보면, "
-                        f"현재 50일 이동평균선은 {ma50_str}이며 최근 6개월 고점({high52_str})과 저점({low52_str}) 사이에서 외국인과 기관의 프로그램 순매수가 연속 유입되는지가 가장 중요한 실전 시그널입니다."
+                        f"현재 50일 이동평균선({period_50d_str} 주식을 매수한 사람들의 평균단가)은 {ma50_str}이며, "
+                        f"현재 주가가 이 평균선 위에 머무르며 외국인·기관 큰손의 프로그램 순매수가 계속 유입되는지가 핵심 기준점입니다."
                     ),
                     "data_tag": f"현재가 {cur_price_str} · 50일선 {ma50_str}",
                 },
@@ -2814,10 +2823,10 @@ def get_ceo_office_boardroom(
                     "avatar": "🛡️",
                     "stance": f"보수적 하단 {min_gp_str} 점검",
                     "stance_tone": "bear",
-                    "headline": f"최고 목표가({max_gp_str})만 보지 마시고 보수적 목표가({min_gp_str})와 50일선 지지 여부를 함께 보셔야 합니다!",
+                    "headline": f"최고 목표가({max_gp_str})만 보지 마시고 50일선({period_50d_str} 평균단가 {ma50_str}) 지지 여부를 함께 보셔야 합니다!",
                     "message": (
-                        f"대표님, 리스크관리본부장 최서연 상무입니다. 박 부사장님이 긍정적 모멘텀을 보고하셨지만, 가장 보수적인 증권사는 최저 목표가를 {min_gp_str}으로 잡고 있습니다. "
-                        f"다음 분기 실제 영업이익이 시장 예상치(컨센서스)에 부합하는지, 그리고 50일선({ma50_str})을 이탈하지 않는지 반드시 확인 후 결재하셔야 합니다."
+                        f"대표님, 리스크관리본부장 최서연 상무입니다. 박 부사장님이 긍정적 모멘텀을 보고하셨지만, 가장 보수적인 증권사는 최저 목표가를 {min_gp_str}으로 잡고 있습니다.\n"
+                        f"다음 분기 실제 영업이익이 시장 예상치(컨센서스)에 부합하는지, 그리고 50일선({period_50d_str} 동안 매수한 사람들의 평균 가격인 {ma50_str}) 밑으로 주가가 떨어지지 않는지(이탈 방어 여부)를 반드시 확인 후 결재하셔야 합니다."
                     ),
                     "data_tag": "CRO 하방 리스크 및 밸류에이션 감사",
                 },
@@ -2832,8 +2841,8 @@ def get_ceo_office_boardroom(
                     "headline": f"📌 [대표님 전용 '{res_name}' 최종 결재 3줄 요약]",
                     "message": (
                         f"1️⃣ 리서치본부(박 부사장): 최근 리포트 {rep_cnt}건 기준 평균 목표가 {avg_gp_str} (최고 {max_gp_str} / 최저 {min_gp_str})\n"
-                        f"2️⃣ 퀀트본부(김 상무): 현재가 {cur_price_str} ({chg_pct_val:+.2f}%), 50일 이평선({ma50_str}) 대비 '{trend_note}'\n"
-                        f"3️⃣ 리스크본부(최 상무): 보수적 목표가({min_gp_str}) 및 분기 실적 컨센서스 부합 여부를 조건으로 결재 권고"
+                        f"2️⃣ 퀀트본부(김 상무): 현재가 {cur_price_str} ({chg_pct_val:+.2f}%), 50일선({period_50d_str} 평균단가 {ma50_str}) 대비 '{trend_note}'\n"
+                        f"3️⃣ 리스크본부(최 상무): 보수적 목표가({min_gp_str}) 및 50일선({ma50_str}) 지지 여부를 조건으로 결재 권고"
                     ),
                     "data_tag": "비서실 종합 요약필",
                 },
