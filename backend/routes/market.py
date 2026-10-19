@@ -2154,14 +2154,18 @@ def get_ceo_office_boardroom(
     else:
         office_mode = "🌎 야간 글로벌·미국 증시 24시간 데스크 자율 분석 및 결재 상정 완료"
 
-    # 1. 병렬 스레드로 국내 증권사 리포트(종목/시황) + 글로벌 선행지표(NVDA, NQ=F) 초고속 동시 수집
+    # 1. 병렬 스레드로 국내 증권사 리포트(종목/시황) + 글로벌 선행지표(NVDA, TSLA, NQ=F, ES=F) 초고속 동시 수집
     nvda_meta = next((c for c in MULTI_ASSET_CATALOG.get("us_stock", []) if c["symbol"] == "NVDA"), None)
+    tsla_meta = next((c for c in MULTI_ASSET_CATALOG.get("us_stock", []) if c["symbol"] == "TSLA"), None)
     nq_meta = next((c for c in MULTI_ASSET_CATALOG.get("futures", []) if c["symbol"] == "NQ=F"), None)
+    es_meta = next((c for c in MULTI_ASSET_CATALOG.get("futures", []) if c["symbol"] == "ES=F"), None)
 
     raw_company_reports = []
     raw_market_reports = []
     nvda_info = None
+    tsla_info = None
     nq_info = None
+    es_info = None
 
     def _task_comp():
         return get_stock_research_reports(category="company", q="", page=0, size=8).get("items", [])[:6]
@@ -2172,15 +2176,23 @@ def get_ceo_office_boardroom(
     def _task_nvda():
         return _fetch_single_yfinance_research(nvda_meta, "us_stock") if nvda_meta else None
 
+    def _task_tsla():
+        return _fetch_single_yfinance_research(tsla_meta, "us_stock") if tsla_meta else None
+
     def _task_nq():
         return _fetch_single_yfinance_research(nq_meta, "futures") if nq_meta else None
 
+    def _task_es():
+        return _fetch_single_yfinance_research(es_meta, "futures") if es_meta else None
+
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
             f_comp = ex.submit(_task_comp)
             f_mkt = ex.submit(_task_mkt)
             f_nvda = ex.submit(_task_nvda)
+            f_tsla = ex.submit(_task_tsla)
             f_nq = ex.submit(_task_nq)
+            f_es = ex.submit(_task_es)
             try:
                 raw_company_reports = f_comp.result(timeout=6) or []
             except Exception as e:
@@ -2194,9 +2206,17 @@ def get_ceo_office_boardroom(
             except Exception as e:
                 print(f"[CEOOffice] nvda err: {e}")
             try:
+                tsla_info = f_tsla.result(timeout=6)
+            except Exception as e:
+                print(f"[CEOOffice] tsla err: {e}")
+            try:
                 nq_info = f_nq.result(timeout=6)
             except Exception as e:
                 print(f"[CEOOffice] nq err: {e}")
+            try:
+                es_info = f_es.result(timeout=6)
+            except Exception as e:
+                print(f"[CEOOffice] es err: {e}")
     except Exception as e:
         print(f"[CEOOffice] Parallel executor error: {e}")
 
@@ -2343,6 +2363,13 @@ def get_ceo_office_boardroom(
 
     top_mkt = desk_market_reports[0] if desk_market_reports else None
     nq_price_str = f"{nq_info['price']} ({nq_info['change_pct']:+.2f}%)" if (nq_info and nq_info.get("price")) else "20,480.00 (+0.42%)"
+    nq_ma50_str = (nq_info.get("ma50") if nq_info else None) or "19,980.00"
+    nq_trend_str = (nq_info.get("trend_badge") if nq_info else None) or "📈 중기 상승 추세 (50일선 상회)"
+
+    es_price_str = f"{es_info['price']} ({es_info['change_pct']:+.2f}%)" if (es_info and es_info.get("price")) else "5,860.25 (+0.35%)"
+    es_ma50_str = (es_info.get("ma50") if es_info else None) or "5,810.00"
+    es_trend_str = (es_info.get("trend_badge") if es_info else None) or "📈 중기 상승 추세 (50일선 상회)"
+
     nvda_price_str = f"{nvda_info['price']} ({nvda_info['change_pct']:+.2f}%)" if (nvda_info and nvda_info.get("price")) else "$138.00 (+0.89%)"
     nvda_mean_str = (nvda_info.get("target_mean") if nvda_info else None) or "$175.00"
     nvda_up_val = nvda_info.get("upside_pct") if nvda_info else 26.8
@@ -2351,12 +2378,20 @@ def get_ceo_office_boardroom(
     nvda_trend_str = (nvda_info.get("trend_badge") if nvda_info else None) or "📈 중기 상승 추세 (50일선 상회)"
     nvda_high52_str = (nvda_info.get("high_52w") if nvda_info else None) or "$143.71"
 
+    tsla_price_str = f"{tsla_info['price']} ({tsla_info['change_pct']:+.2f}%)" if (tsla_info and tsla_info.get("price")) else "$224.50 (+1.45%)"
+    tsla_mean_str = (tsla_info.get("target_mean") if tsla_info else None) or "$285.00"
+    tsla_up_val = tsla_info.get("upside_pct") if tsla_info else 27.0
+    tsla_up_str = f"{tsla_up_val:+.1f}%" if tsla_up_val is not None else "+27.0%"
+    tsla_ma50_str = (tsla_info.get("ma50") if tsla_info else None) or "$218.30"
+    tsla_trend_str = (tsla_info.get("trend_badge") if tsla_info else None) or "📈 중기 상승 추세 (50일선 상회)"
+
     day_label = "주말 24시간 비상근무" if weekday >= 5 else "일일 시장 시스템"
 
     # [기안 제1호] 전사 시장 시스템 & 매크로 종합 보고서 (누구나 10초 만에 이해하는 쉬운 브리핑)
     auto_approvals.append({
         "doc_id": f"DOC-{date_doc_str}-01",
         "doc_number": f"제 {date_doc_str}-01 호",
+        "category_type": "all",
         "category_badge": f"🌐 전사 {day_label} 종합 보고",
         "urgency": "최우선 결재",
         "stock_name": "전체 시장 시스템",
@@ -2401,7 +2436,8 @@ def get_ceo_office_boardroom(
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-0{idx}",
             "doc_number": f"제 {date_doc_str}-0{idx} 호",
-            "category_badge": f"🏢 종목 쉽게 읽기 ({s_broker})",
+            "category_type": "kr_stock",
+            "category_badge": f"🏢 국내 주식 ({s_broker})",
             "urgency": "정규 결재",
             "stock_name": s_name,
             "title": f"[{s_name}] {s_title}",
@@ -2429,7 +2465,8 @@ def get_ceo_office_boardroom(
     auto_approvals.append({
         "doc_id": f"DOC-{date_doc_str}-06",
         "doc_number": f"제 {date_doc_str}-06 호",
-        "category_badge": "🌎 미국 주식 쉽게 읽기",
+        "category_type": "us_stock",
+        "category_badge": "🌎 미국 빅테크 (NVDA)",
         "urgency": "글로벌 핵심",
         "stock_name": "NVDA",
         "title": "[엔비디아 (NVDA)] 전 세계 AI 대장주 분위기 & 한국 반도체(삼전·하이닉스) 영향 보고",
@@ -2455,16 +2492,16 @@ def get_ceo_office_boardroom(
             "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 한국 반도체와 전력설비 주식의 길잡이 역할을 하는 엔비디아(NVDA) 점검 보고서입니다. 확인하셨으면 [승인 서명]을 눌러주십시오!"
         ),
         "recommendation": "글로벌 AI 대장주 연동 감시 승인",
+        "detail_url": "https://finance.yahoo.com/quote/NVDA",
         "easy_terms": _extract_easy_terms("엔비디아 NVDA HBM 목표주가 50일선"),
     })
 
     # [기안 제7호] 나스닥100 선물(NQ=F) 및 개장 리스크 방어 기안서 (쉬운 눈높이 해설)
-    nq_ma50_str = (nq_info.get("ma50") if nq_info else None) or "19,980.00"
-    nq_trend_str = (nq_info.get("trend_badge") if nq_info else None) or "📈 중기 상승 추세 (50일선 상회)"
     auto_approvals.append({
         "doc_id": f"DOC-{date_doc_str}-07",
         "doc_number": f"제 {date_doc_str}-07 호",
-        "category_badge": "🛡️ 시장 안전벨트 점검",
+        "category_type": "global_futures",
+        "category_badge": "📊 글로벌 선물·지수 (NQ=F)",
         "urgency": "리스크 점검",
         "stock_name": "NQ=F",
         "title": "[나스닥100 선물 (NQ=F)] 미리 보는 미국 증시 온도계 & 한국 시장 안전 방어 전략",
@@ -2490,7 +2527,125 @@ def get_ceo_office_boardroom(
             "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 대표님 자산을 지키기 위한 '미국 선물 온도계 감시 및 아침 장 안전 수칙' 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!"
         ),
         "recommendation": "시장 온도계 감시 & 안전 수칙 승인",
+        "detail_url": "https://finance.yahoo.com/quote/NQ=F",
         "easy_terms": _extract_easy_terms("나스닥 선물 NQ=F 50일선"),
+    })
+
+    # [기안 제8호] 전세계 글로벌 경제뉴스 & 매크로 인텔리전스 (미 연준 금리·환율·국제유가)
+    auto_approvals.append({
+        "doc_id": f"DOC-{date_doc_str}-08",
+        "doc_number": f"제 {date_doc_str}-08 호",
+        "category_type": "world_news",
+        "category_badge": "📰 전세계 경제뉴스 · 글로벌 매크로",
+        "urgency": "글로벌 거시경제",
+        "stock_name": "글로벌 매크로",
+        "title": "[전세계 글로벌 경제뉴스] 미국 연준(Fed) 금리 전망 & 환율·국제유가 글로벌 경제 지형 분석",
+        "proposer": "박진우 부사장 (리서치) · 최서연 상무 (CRO) · 이준호 이사 (글로벌)",
+        "submitted_at": f"{time_str} 글로벌 외신·경제지표 24시간 실시간 감시",
+        "easy_headline": "미국 연방준비제도(Fed)의 금리 인하 속도와 원/달러 환율, 국제유가(WTI) 등 전 세계 돈의 큰 줄기를 짚어보는 보고서입니다. 세계 경제의 자금 흐름이 안정되어야 국내 주식과 미국 빅테크 주식 모두 안심하고 상승 탄력을 받을 수 있습니다!",
+        "key_numbers": [
+            {"label": "미 연준(Fed) 금리 기조", "value": "점진적 완화 & 물가 안정 추적"},
+            {"label": "원/달러 환율 방향성", "value": "1,380~1,420원 수급 방어선"},
+            {"label": "WTI 국제유가 (CL=F)", "value": "$70~$75 배럴당 박스권"},
+            {"label": "글로벌 투자 심리", "value": "🟢 위험자산 선호 (Risk-On) 우세"},
+        ],
+        "research_opinion": (
+            "👍 [왜 중요한가요? · 박진우 리서치센터장]: 전 세계 경제 뉴스와 거시지표는 주식 시장의 '날씨'와 같습니다. 미국 금리와 국제유가가 안정된 맑은 날씨라야 반도체, 조선, 방산 등 수출 대장주들이 실적대로 주가를 낼 수 있습니다."
+        ),
+        "quant_opinion": (
+            "📊 [외국인 자금 흐름은? · 김도현 수급본부장]: 달러화 강세 압력이 완화될 때마다 글로벌 패시브 자금이 한국 코스피 대형주 및 미국 대표 성장주 ETF로 빠르게 유입되는 퀀트 시그널이 확인됩니다."
+        ),
+        "risk_opinion": (
+            "⚠️ [어떤 리스크를 보나요? · 최서연 리스크본부장]: 중동 지정학적 충돌로 인한 유가 급등이나 급격한 원/달러 환율 상승(원화 약세) 국면에는 안전자산 선호가 짙어질 수 있으므로, 비상 방어 라인을 상시 가동 중입니다."
+        ),
+        "secretary_conclusion": (
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 증권사다운 깊이 있는 시각으로 전 세계 경제뉴스와 환율·금리 영향을 알기 쉽게 정리했습니다. 글로벌 거시경제 감시 체제 승인을 위해 [승인 서명]을 눌러주십시오!"
+        ),
+        "recommendation": "글로벌 매크로 & 환율·금리 상시 감시 승인",
+        "detail_url": "https://stock.naver.com/research/economy",
+        "easy_terms": [
+            {"term": "연준 (Fed)", "desc": "미국의 중앙은행으로 전 세계 금리와 달러 유동성의 수도꼭지를 조절하는 기관입니다."},
+            {"term": "달러 인덱스 (DXY)", "desc": "유로, 엔 등 주요 6개국 통화 대비 미국 달러화의 상대적 가치를 나타내는 지수입니다."},
+            {"term": "리스크온 (Risk-On)", "desc": "시장 참여자들이 경제 불안을 덜고 주식 같은 성장 자산에 적극적으로 투자하는 분위기입니다."},
+        ],
+    })
+
+    # [기안 제9호] 미국 빅테크 (테슬라 TSLA — 자율주행·로보택시 & 2차전지 연동)
+    auto_approvals.append({
+        "doc_id": f"DOC-{date_doc_str}-09",
+        "doc_number": f"제 {date_doc_str}-09 호",
+        "category_type": "us_stock",
+        "category_badge": "🌎 미국 빅테크 (TSLA)",
+        "urgency": "미국 빅테크 핵심",
+        "stock_name": "TSLA",
+        "title": "[테슬라 (TSLA)] FSD(자율주행)·로보택시 모멘텀 & 한국 2차전지 밸류체인 영향 분석",
+        "proposer": "이준호 이사 (글로벌·파생본부장) · 박진우 부사장 (리서치)",
+        "submitted_at": f"{time_str} 24시간 나스닥 데스크",
+        "easy_headline": f"테슬라는 단순 전기차 제조사를 넘어 완전자율주행(FSD)과 로보택시, 휴머노이드 로봇(옵티머스)을 이끄는 글로벌 AI 빅테크입니다. 현재 주가는 {tsla_price_str}이며, 테슬라의 반등 흐름은 한국 2차전지(LG에너지솔루션·에코프로) 수급 회복에도 핵심 열쇠가 됩니다.",
+        "key_numbers": [
+            {"label": "테슬라 현재 주가", "value": tsla_price_str},
+            {"label": "월가 전문가 평균 목표가", "value": f"{tsla_mean_str} ({tsla_up_str})"},
+            {"label": "최근 두 달 평균가격(50일선)", "value": tsla_ma50_str},
+            {"label": "현재 주가 힘(추세)", "value": tsla_trend_str},
+        ],
+        "research_opinion": (
+            f"👍 [왜 중요한가요? · 이준호 글로벌이사]: 테슬라는 전기차 캐즘(일시적 수요 둔화)을 넘어 자율주행 소프트웨어와 AI 로보틱스로 기업가치 재평가를 받고 있습니다. 미국 월스트리트 평균 목표가는 {tsla_mean_str}입니다."
+        ),
+        "quant_opinion": (
+            f"📊 [차트 흐름은? · 김도현 수급본부장]: 테슬라가 두 달 평균선({tsla_ma50_str})을 뚫고 지지력을 확보하면, 테슬라에 납품하는 한국 2차전지 및 전장 부품 관련주로 외국인·기관 프로그램 순매수가 즉각 확산됩니다."
+        ),
+        "risk_opinion": (
+            "⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 미국 트럼프 정부의 전기차 보조금 정책 변화나 규제 승인 속도에 따라 일시적 급등락 변동성이 커질 수 있으므로, 분할 매수 원칙을 준수해야 합니다."
+        ),
+        "secretary_conclusion": (
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 미국 모빌리티 혁신의 상징 테슬라(TSLA)와 한국 배터리 연동 점검 보고서입니다. 확인하셨으면 [승인 서명]을 눌러주십시오!"
+        ),
+        "recommendation": "글로벌 자율주행·2차전지 연동 감시 승인",
+        "detail_url": "https://finance.yahoo.com/quote/TSLA",
+        "easy_terms": [
+            {"term": "FSD (완전자율주행)", "desc": "운전자의 조작 없이 차량 스스로 주변 환경을 인식해 주행하는 테슬라의 AI 자율주행 소프트웨어입니다."},
+            {"term": "캐즘 (Chasm)", "desc": "새로운 첨단 제품(전기차 등)이 초기 시장에서 대중화로 넘어가기 전 겪는 일시적 수요 정체 현상입니다."},
+            {"term": "밸류체인 (가치사슬)", "desc": "완성품(테슬라 차량)을 만들기 위해 부품(배터리, 양극재, 센서)을 납품하는 국내외 협력업체 생태계입니다."},
+        ],
+    })
+
+    # [기안 제10호] 글로벌 선물·지수 (S&P500 선물 ES=F & 미국 10년물 국채금리)
+    auto_approvals.append({
+        "doc_id": f"DOC-{date_doc_str}-10",
+        "doc_number": f"제 {date_doc_str}-10 호",
+        "category_type": "global_futures",
+        "category_badge": "📊 글로벌 선물·지수 (ES=F)",
+        "urgency": "글로벌 기관 동향",
+        "stock_name": "ES=F",
+        "title": "[S&P500 선물 (ES=F)] 글로벌 헤지펀드·연기금 자금 방향성 및 미국 10년물 국채금리 연동 분석",
+        "proposer": "최서연 상무 (CRO) · 이준호 이사 (글로벌·파생본부장)",
+        "submitted_at": f"{time_str} 시카고상품거래소(CME) 실시간 점검",
+        "easy_headline": f"S&P 500 지수 선물({es_price_str})은 전 세계에서 가장 큰 기관 투자자(헤지펀드, 연기금)들이 돈을 넣거나 빼는 미국 대형주 표준 지수입니다. 이 지수가 튼튼해야 글로벌 자금이 아시아와 한국 증시로도 안정적으로 유입됩니다.",
+        "key_numbers": [
+            {"label": "S&P500 선물 현재가", "value": es_price_str},
+            {"label": "두 달 평균선(50일선)", "value": es_ma50_str},
+            {"label": "현재 흐름 판정", "value": es_trend_str},
+            {"label": "미국 10년물 국채금리", "value": "^TNX 4.2~4.4% 밴드"},
+        ],
+        "research_opinion": (
+            f"👍 [왜 봐야 하나요? · 이준호 글로벌이사]: S&P 500 지수 선물({es_price_str})은 미국 500대 우량기업의 종합 체력입니다. 두 달 평균선({es_ma50_str}) 위에서 지지받고 있어 글로벌 기관들의 주식 매수 심리가 견고합니다."
+        ),
+        "quant_opinion": (
+            "📊 [한국 증시 영향은? · 김도현 수급본부장]: S&P500 선물이 상승할 때 외국인 투자자들은 한국 코스피200 대형주를 장바구니에 담는 '바스켓 매수'를 집행합니다."
+        ),
+        "risk_opinion": (
+            "⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 미국 10년물 국채 금리가 급등할 때는 고밸류 성장주 위주로 차익 실현 매물이 나올 수 있으니, 국채 금리 움직임에 따른 비중 조절 수칙을 설정했습니다."
+        ),
+        "secretary_conclusion": (
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 글로벌 기관 자금의 풍향계인 S&P500 선물(ES=F)과 국채금리 점검 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!"
+        ),
+        "recommendation": "글로벌 기관 자금 흐름 & 국채금리 연동 승인",
+        "detail_url": "https://finance.yahoo.com/quote/ES=F",
+        "easy_terms": [
+            {"term": "S&P 500 선물", "desc": "미국 대표 500대 기업 주가 지수를 기초로 전 세계 기관들이 24시간 거래하는 핵심 파생상품입니다."},
+            {"term": "미국 10년물 국채금리", "desc": "미국 정부가 발행한 10년 만기 채권의 금리로, 전 세계 모든 대출 및 주식 가치 평가의 기준이 됩니다."},
+            {"term": "바스켓 매수", "desc": "개별 종목 하나씩 사지 않고 여러 대표 종목들을 바구니에 담듯 한 번에 수백억 원씩 사들이는 기관의 프로그램 매매입니다."},
+        ],
     })
 
     # 4. 대표님 추가 지시어(message) 또는 선택 안건(topic)에 따른 임원 회의실 브리핑 생성
