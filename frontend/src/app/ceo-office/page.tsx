@@ -7,6 +7,36 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
+import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight } from 'lucide-react';
+
+
+// [Smart Executive Opinion Parser]
+// 긴 줄글 형태의 임원 보고서를 [화자 뱃지] + [핵심 질문 헤드라인] + [상세 해설]로 깔끔 분리
+function parseExecutiveOpinion(raw: string, defaultRole: string = "분석본부", defaultIcon: string = "💡") {
+    if (!raw) return { badge: defaultRole, title: "", body: "", icon: defaultIcon };
+    
+    // Pattern: [Title · Role]: Body  or  Emoji [Title · Role]: Body
+    const match = raw.match(/^([^\w\s\[]*)\s*\[([^·\]]+)(?:·\s*([^\]]+))?\]\s*:\s*([\s\S]*)$/);
+    if (match) {
+        const icon = match[1]?.trim() || defaultIcon;
+        const title = match[2]?.trim() || "";
+        const badge = match[3]?.trim() || defaultRole;
+        const body = match[4]?.trim() || "";
+        return { icon, title, badge, body };
+    }
+    
+    const colonIdx = raw.indexOf(":");
+    if (colonIdx > 0 && colonIdx < 50) {
+        return {
+            icon: defaultIcon,
+            title: raw.substring(0, colonIdx).replace(/[\[\]]/g, '').trim(),
+            badge: defaultRole,
+            body: raw.substring(colonIdx + 1).trim()
+        };
+    }
+    
+    return { badge: defaultRole, title: "", body: raw, icon: defaultIcon };
+}
 
 interface Executive {
     id: string;
@@ -1280,75 +1310,188 @@ export default function CeoOfficePage() {
                                                     </div>
 
                                                     {/* 안건 제목 & 기안자 */}
-                                                    <h3 className="text-lg sm:text-xl font-black text-white leading-snug pr-0 sm:pr-44">
+                                                    <h3 className="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight pr-0 sm:pr-44">
                                                         {activeDoc.title}
                                                     </h3>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        기안 및 합동 분석: <span className="text-gray-200 font-semibold">{activeDoc.proposer}</span>
-                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400">
+                                                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300 font-bold">기안</span>
+                                                        <span className="text-zinc-200 font-semibold">{activeDoc.proposer}</span>
+                                                    </div>
 
-                                                    {/* 💡 대표님을 위한 10초 쉬운 해설 */}
+                                                    {/* 💡 대표님을 위한 10초 쉬운 해설 (가독성 극대화 프리미엄 박스) */}
                                                     {activeDoc.easy_headline && (
-                                                        <div className="mt-4 bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-950/20 border-2 border-amber-400/45 rounded-2xl p-4 sm:p-5 shadow-md">
-                                                            <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-amber-300 mb-1.5">
-                                                                <span className="text-base">💡</span>
-                                                                <span>대표님을 위한 10초 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
+                                                        <div className="mt-4 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-zinc-950 border-2 border-amber-400/40 rounded-2xl p-4 sm:p-5 shadow-xl shadow-amber-950/30 relative overflow-hidden">
+                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+                                                            <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs inline-flex items-center gap-1.5 shadow-md">
+                                                                        <span>💡</span>
+                                                                        <span>대표님을 위한 10초 쉬운 해설</span>
+                                                                    </span>
+                                                                    <span className="text-amber-300/90 text-xs font-bold">
+                                                                        (쉽게 말해 무슨 뜻인가요?)
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[11px] font-mono text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/25">
+                                                                    EXECUTIVE SUMMARY
+                                                                </span>
                                                             </div>
-                                                            <p className="text-sm sm:text-base font-bold text-white leading-relaxed">
+                                                            <p className="text-base sm:text-lg font-black text-white leading-relaxed tracking-tight">
                                                                 {activeDoc.easy_headline}
                                                             </p>
                                                         </div>
                                                     )}
 
-                                                    {/* 핵심 수치 요약 표 */}
+                                                    {/* 핵심 수치 요약 표 (상승/하락 직관적 컬러 반영) */}
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
-                                                        {activeDoc.key_numbers.map((kn, i) => (
-                                                            <div
-                                                                key={i}
-                                                                className="bg-black/40 border border-white/10 rounded-xl p-3"
-                                                            >
-                                                                <div className="text-[11px] text-gray-400 font-semibold">
-                                                                    {kn.label}
+                                                        {activeDoc.key_numbers.map((kn, i) => {
+                                                            const valStr = String(kn.value || "");
+                                                            const isDown = valStr.includes("-") && (valStr.includes("%") || valStr.includes("하락") || valStr.includes("▼"));
+                                                            const isUp = valStr.includes("+") && (valStr.includes("%") || valStr.includes("상승") || valStr.includes("▲"));
+
+                                                            const valColor = isDown 
+                                                                ? "text-blue-400 font-mono" 
+                                                                : isUp 
+                                                                ? "text-rose-400 font-mono" 
+                                                                : "text-amber-300 font-sans";
+
+                                                            const cardBorder = isDown 
+                                                                ? "border-blue-500/25 bg-blue-950/20" 
+                                                                : isUp 
+                                                                ? "border-rose-500/25 bg-rose-950/20" 
+                                                                : "border-white/10 bg-zinc-900/60";
+
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    className={`rounded-2xl p-3.5 border transition-all shadow-sm ${cardBorder}`}
+                                                                >
+                                                                    <div className="text-[11px] text-zinc-400 font-bold tracking-tight">
+                                                                        {kn.label}
+                                                                    </div>
+                                                                    <div className={`text-xs sm:text-sm md:text-base font-black mt-1 truncate ${valColor}`}>
+                                                                        {kn.value}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="text-xs sm:text-sm font-black text-amber-300 mt-0.5 truncate">
-                                                                    {kn.value}
-                                                                </div>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
 
-                                                    {/* 각 본부 임원 자율 분석 3단 쉬운 요약 보고 */}
-                                                    <div className="grid grid-cols-1 gap-2.5 text-xs sm:text-sm leading-relaxed">
-                                                        <div className="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 text-emerald-100">
-                                                            {activeDoc.research_opinion}
-                                                        </div>
-                                                        <div className="bg-sky-950/25 border border-sky-500/30 rounded-xl p-3.5 text-sky-100">
-                                                            {activeDoc.quant_opinion}
-                                                        </div>
-                                                        <div className="bg-rose-950/25 border border-rose-500/30 rounded-xl p-3.5 text-rose-100">
-                                                            {activeDoc.risk_opinion}
-                                                        </div>
+                                                    {/* 각 본부 임원 자율 분석 3단 프리미엄 카드 보고 */}
+                                                    <div className="grid grid-cols-1 gap-3.5 my-4">
+                                                        {/* 1. 리서치센터 의견 */}
+                                                        {(() => {
+                                                            const p = parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡");
+                                                            return (
+                                                                <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 via-zinc-900/80 to-zinc-950 p-4 sm:p-5 shadow-lg shadow-emerald-950/20">
+                                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-emerald-500/20">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-black text-xs border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                                                                                <Compass className="w-3.5 h-3.5 text-emerald-400" />
+                                                                                <span>{p.badge}</span>
+                                                                            </span>
+                                                                            {p.title && (
+                                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                                    <span>{p.icon}</span>
+                                                                                    <span>{p.title}</span>
+                                                                                </h4>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-[11px] text-emerald-400/80 font-bold hidden sm:inline">
+                                                                            증권가 리포트 팩트 해설
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
+                                                                        {p.body}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* 2. 수급분석본부 의견 */}
+                                                        {(() => {
+                                                            const p = parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊");
+                                                            return (
+                                                                <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/30 via-zinc-900/80 to-zinc-950 p-4 sm:p-5 shadow-lg shadow-cyan-950/20">
+                                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-cyan-500/20">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 font-black text-xs border border-cyan-500/40 flex items-center gap-1.5 shadow-sm">
+                                                                                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                                                                                <span>{p.badge}</span>
+                                                                            </span>
+                                                                            {p.title && (
+                                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                                    <span>{p.icon}</span>
+                                                                                    <span>{p.title}</span>
+                                                                                </h4>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-[11px] text-cyan-400/80 font-bold hidden sm:inline">
+                                                                            외인·기관 자금 유입 진단
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
+                                                                        {p.body}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })()}
+
+                                                        {/* 3. 리스크관리본부 의견 */}
+                                                        {(() => {
+                                                            const p = parseExecutiveOpinion(activeDoc.risk_opinion, "리스크본부", "⚠️");
+                                                            return (
+                                                                <div className="rounded-2xl border border-rose-500/35 bg-gradient-to-br from-rose-950/30 via-zinc-900/80 to-zinc-950 p-4 sm:p-5 shadow-lg shadow-rose-950/20">
+                                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-rose-500/20">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-black text-xs border border-rose-500/40 flex items-center gap-1.5 shadow-sm">
+                                                                                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                                                                                <span>{p.badge}</span>
+                                                                            </span>
+                                                                            {p.title && (
+                                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                                    <span>{p.icon}</span>
+                                                                                    <span>{p.title}</span>
+                                                                                </h4>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-[11px] text-rose-400/80 font-bold hidden sm:inline">
+                                                                            원금 보호 & 추격매수 경보
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
+                                                                        {p.body}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
 
-                                                    {/* 📖 이 보고서에 나온 어려운 단어 3초 풀이 */}
+                                                    {/* 📖 이 보고서에 나온 어려운 단어 3초 풀이 (사전형 카드 그리드) */}
                                                     {activeDoc.easy_terms && activeDoc.easy_terms.length > 0 && (
-                                                        <div className="mt-4 bg-[#090f1d] border border-white/10 rounded-xl p-3.5">
-                                                            <div className="text-xs font-extrabold text-amber-300 mb-2 flex items-center gap-1.5">
-                                                                <span>📖</span>
-                                                                <span>이 보고서에 등장한 어려운 단어 3초 풀이</span>
+                                                        <div className="mt-5 bg-gradient-to-br from-zinc-900/90 via-slate-950 to-zinc-950 border border-white/15 rounded-2xl p-4 sm:p-5 shadow-lg">
+                                                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                                                                <div className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-2">
+                                                                    <span className="text-base">📖</span>
+                                                                    <span>이 보고서에 등장한 어려운 단어 3초 풀이</span>
+                                                                </div>
+                                                                <span className="text-[11px] text-zinc-400 font-bold hidden sm:inline">
+                                                                    초보자를 위한 친절한 금융 용어집
+                                                                </span>
                                                             </div>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                                                 {activeDoc.easy_terms.map((t, idx) => (
                                                                     <div
                                                                         key={idx}
-                                                                        className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs leading-relaxed"
+                                                                        className="bg-zinc-900/70 border border-white/10 hover:border-amber-400/30 rounded-xl p-3 text-xs leading-relaxed transition-all"
                                                                     >
-                                                                        <span className="font-black text-amber-200 mr-1.5">
-                                                                            • {t.term}:
-                                                                        </span>
-                                                                        <span className="text-gray-300">
+                                                                        <div className="font-black text-amber-300 mb-1 flex items-center gap-1.5">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                                                            <span>{t.term}</span>
+                                                                        </div>
+                                                                        <div className="text-zinc-300 font-medium pl-3 border-l-2 border-amber-400/30">
                                                                             {t.desc}
-                                                                        </span>
+                                                                        </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -1356,11 +1499,16 @@ export default function CeoOfficePage() {
                                                     )}
 
                                                     {/* 비서실장 최종 결재 건의문 */}
-                                                    <div className="mt-4 bg-purple-950/35 border border-purple-500/40 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                        <div className="text-xs sm:text-sm text-purple-100 font-bold leading-relaxed">
-                                                            {activeDoc.secretary_conclusion}
+                                                    <div className="mt-5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-950/20">
+                                                        <div className="flex items-start gap-3">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-xs font-black border border-purple-400/40 shrink-0 mt-0.5">
+                                                                비서실장 최종 검토
+                                                            </span>
+                                                            <div className="text-xs sm:text-sm text-purple-100 font-bold leading-relaxed">
+                                                                {activeDoc.secretary_conclusion}
+                                                            </div>
                                                         </div>
-                                                        <span className="shrink-0 px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-[11px] font-black border border-purple-400/30">
+                                                        <span className="shrink-0 px-3 py-1.5 rounded-xl bg-purple-500/30 text-purple-200 text-xs font-black border border-purple-400/50 shadow-sm self-start sm:self-auto">
                                                             건의: {activeDoc.recommendation}
                                                         </span>
                                                     </div>
