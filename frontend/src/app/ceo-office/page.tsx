@@ -1310,7 +1310,7 @@ export default function CeoOfficePage() {
                                                     </div>
 
                                                     {/* 안건 제목 & 기안자 */}
-                                                    <h3 className="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight pr-0 sm:pr-44">
+                                                    <h3 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight pr-0 sm:pr-48">
                                                         {activeDoc.title}
                                                     </h3>
                                                     <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400">
@@ -1336,13 +1336,13 @@ export default function CeoOfficePage() {
                                                                     EXECUTIVE SUMMARY
                                                                 </span>
                                                             </div>
-                                                            <p className="text-base sm:text-lg font-black text-white leading-relaxed tracking-tight">
+                                                            <p className="text-sm sm:text-[15px] font-bold text-zinc-100 leading-relaxed tracking-normal">
                                                                 {activeDoc.easy_headline}
                                                             </p>
                                                         </div>
                                                     )}
 
-                                                    {/* 핵심 수치 요약 표 (상승/하락 직관적 컬러 반영) */}
+                                                    {/* 핵심 수치 요약 표 (상승/하락 직관적 컬러 반영 & 말줄임 없이 전체 표기) */}
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
                                                         {activeDoc.key_numbers.map((kn, i) => {
                                                             const valStr = String(kn.value || "");
@@ -1364,12 +1364,12 @@ export default function CeoOfficePage() {
                                                             return (
                                                                 <div
                                                                     key={i}
-                                                                    className={`rounded-2xl p-3.5 border transition-all shadow-sm ${cardBorder}`}
+                                                                    className={`rounded-2xl p-3 sm:p-3.5 border transition-all shadow-sm flex flex-col justify-between min-h-[78px] sm:min-h-[84px] ${cardBorder}`}
                                                                 >
-                                                                    <div className="text-[11px] text-zinc-400 font-bold tracking-tight">
+                                                                    <div className="text-[11px] text-zinc-400 font-bold tracking-tight leading-snug mb-1">
                                                                         {kn.label}
                                                                     </div>
-                                                                    <div className={`text-xs sm:text-sm md:text-base font-black mt-1 truncate ${valColor}`}>
+                                                                    <div className={`text-xs sm:text-[13px] font-black leading-snug break-words ${valColor}`}>
                                                                         {kn.value}
                                                                     </div>
                                                                 </div>
