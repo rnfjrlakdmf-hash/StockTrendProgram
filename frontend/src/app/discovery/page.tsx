@@ -431,7 +431,7 @@ const formatChangeDisplay = (val: any) => {
     if (isPos) return { colorText: 'text-red-500', colorBg: 'bg-red-500/10', text: label ? `${label} ▲ ${cleanText}` : `▲ ${cleanText}` };
     if (isNeg) return { colorText: 'text-blue-500', colorBg: 'bg-blue-500/10', text: label ? `${label} ▼ ${cleanText}` : `▼ ${cleanText}` };
     
-    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: label ? `${label} ${cleanText}` : `${cleanText}` };
+    return { colorText: 'text-slate-400', colorBg: 'bg-slate-400/20', text: label ? `${label} 보합 ${cleanText}` : (cleanText ? `보합 ${cleanText}` : '보합 0.00%') };
 };
 
 // Extended helper combining Amount + Percentage (e.g., ▲ 11,000 (1.01%))
@@ -479,10 +479,10 @@ const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, pre
     }
     
     const textStr = String(finalFormat.text || "");
-    const icon = calculatedDiff > 0 ? '▲ ' : calculatedDiff < 0 ? '▼ ' : '';
+    const icon = calculatedDiff > 0 ? '▲ ' : calculatedDiff < 0 ? '▼ ' : '보합 ';
     
     // [Fix] Ensure we never output 'undefined%' or '(undefined%)'
-    let pct = textStr.replace(/^[▲▼]\s*/, '').trim();
+    let pct = textStr.replace(/^[▲▼]\s*/, '').replace(/^보합\s*/, '').trim();
     if (!pct || pct === 'undefined' || pct === 'null' || pct === '0.00%') {
         if (calculatedDiff !== 0 && pVal > 0) {
             // Manually calculate pct if it's missing or undefined
@@ -500,6 +500,9 @@ const formatChangeWithAmountDisplay = (changePctStr: any, currentPrice: any, pre
 
     if (amtStr) {
        return { ...finalFormat, text: label ? `${label} ${icon}${amtStr}(${cleanPct})` : `${icon}${amtStr}(${cleanPct})` };
+    }
+    if (calculatedDiff === 0) {
+       return { ...finalFormat, text: label ? `${label} 보합 0 (${cleanPct})` : `보합 0 (${cleanPct})` };
     }
     return { ...finalFormat, text: label ? `${label} ${icon}${cleanPct}` : `${icon}${cleanPct}` };
 };
@@ -1840,14 +1843,15 @@ function DiscoveryContent() {
 
                                                                 const isUp = changeVal > 0 || (changeVal === 0 && changePct > 0);
                                                                 const isDown = changeVal < 0 || (changeVal === 0 && changePct < 0);
+                                                                const isFlat = !isUp && !isDown;
 
                                                                 return (
-                                                                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm border shadow-sm whitespace-nowrap shrink-0 ${
+                                                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm border shadow-sm whitespace-nowrap shrink-0 ${
                                                                         isUp ? 'bg-rose-500/15 border-rose-500/35 text-rose-400' :
                                                                         isDown ? 'bg-blue-500/15 border-blue-500/35 text-blue-400' :
-                                                                        'bg-zinc-800 border-white/10 text-zinc-400'
+                                                                        'bg-zinc-800/90 border-white/15 text-zinc-300'
                                                                     }`}>
-                                                                        <span>{isUp ? '▲' : isDown ? '▼' : ''} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                        <span>{isUp ? '▲' : isDown ? '▼' : '보합'} {stock.currency === 'KRW' ? '' : '$'}{Math.abs(changeVal).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2, maximumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
                                                                         <span className="opacity-90 font-mono">({`${isUp ? '+' : isDown ? '-' : ''}${Math.abs(changePct).toFixed(2)}%`})</span>
                                                                     </div>
                                                                 );
@@ -1898,7 +1902,7 @@ function DiscoveryContent() {
                                                                             {stock.currency === 'KRW' ? '₩' : '$'}{extP.toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}
                                                                         </span>
                                                                         <span className={`font-mono text-xs sm:text-sm font-black flex items-center gap-0.5 whitespace-nowrap ${isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-zinc-400'}`}>
-                                                                            <span>{isUp ? '▲' : isDown ? '▼' : ''}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
+                                                                            <span>{isUp ? '▲' : isDown ? '▼' : '보합 '}{Math.abs(val || 0).toLocaleString(undefined, {minimumFractionDigits: stock.currency === 'KRW' ? 0 : 2})}</span>
                                                                             <span className="opacity-90">({pct !== undefined ? `${pct > 0 ? '+' : ''}${Number(pct).toFixed(2)}%` : '0.00%'})</span>
                                                                         </span>
                                                                     </div>

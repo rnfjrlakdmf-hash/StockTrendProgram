@@ -153,8 +153,8 @@ export default async function StockSeoPage({ params }: Props) {
     const isUp = priceDiff > 0;
     const isDown = priceDiff < 0;
     const formattedPriceDiff = isUs 
-        ? (isUp ? `▲ $${Math.abs(priceDiff).toFixed(2)}` : isDown ? `▼ $${Math.abs(priceDiff).toFixed(2)}` : '$0.00')
-        : (isUp ? `▲ ${priceDiff.toLocaleString()}원` : isDown ? `▼ ${Math.abs(priceDiff).toLocaleString()}원` : '- 0원');
+        ? (isUp ? `▲ $${Math.abs(priceDiff).toFixed(2)}` : isDown ? `▼ $${Math.abs(priceDiff).toFixed(2)}` : '보합 $0.00')
+        : (isUp ? `▲ ${priceDiff.toLocaleString()}원` : isDown ? `▼ ${Math.abs(priceDiff).toLocaleString()}원` : '보합 0원');
     const perNum = typeof data.per === 'number' ? data.per : 0;
     const pbrNum = typeof data.pbr === 'number' ? data.pbr : 0;
     const divNum = typeof data.dividendYield === 'number' ? data.dividendYield : 0;
@@ -304,7 +304,7 @@ export default async function StockSeoPage({ params }: Props) {
                                     <div className="flex items-center justify-between text-xs sm:text-sm font-medium text-slate-400 mb-2">
                                         <span>실시간 현재가</span>
                                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${isUp ? 'text-rose-400 bg-rose-500/10 border border-rose-500/20' : isDown ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20' : 'text-slate-400 bg-slate-700/50'}`}>
-                                            {isUp ? `+${priceDiffRate}%` : isDown ? `${priceDiffRate}%` : '0.00%'}
+                                            {isUp ? `+${priceDiffRate}%` : isDown ? `${priceDiffRate}%` : '보합 0.00%'}
                                         </span>
                                     </div>
                                     <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
