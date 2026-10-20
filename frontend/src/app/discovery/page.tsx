@@ -10,7 +10,7 @@ import KakaoAdFit from "@/components/KakaoAdFit";
 import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import SeoContentBlock from "@/components/SeoContentBlock";
-import { TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, Coins, Activity, Building2, ChevronDown, ChevronRight, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin, Rocket } from "lucide-react";
+import { RotateCw, TrendingUp, ShieldCheck, Loader2, PlayCircle, Swords, Bell, Star, Save, LineChart as LineChartIcon, TrendingDown, AlertTriangle, Info, ArrowRight, Share2, BookOpen, Clock, Calendar, Cpu, Zap, Globe, BarChart2, Search, Lock, Coins, Activity, Building2, ChevronDown, ChevronRight, Layers, Sparkles, Database, AlertCircle, CheckCircle2, Flame, ExternalLink, Crown, MapPin, Rocket } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, Legend } from 'recharts';
 import ComponentErrorBoundary from '@/components/ComponentErrorBoundary';
 import { useStockSocket } from "@/hooks/useStockSocket";
@@ -819,6 +819,56 @@ function DiscoveryContent() {
     const [extendedHours, setExtendedHours] = useState<any>(null);
     const [extendedLoading, setExtendedLoading] = useState(false);
 
+    // [Real-time Live Price Refresh & Polling] MTS 실시간 시세 연동 및 15초 자동 갱신
+    const [isRefreshingPrice, setIsRefreshingPrice] = useState(false);
+
+    const refreshLivePrice = useCallback(async (silent = false) => {
+        if (!stock?.symbol) return;
+        const sym = stock.symbol;
+        const cleanTicker = sym.includes('.') ? sym.split('.')[0] : sym;
+        const safeTicker = encodeURIComponent(cleanTicker);
+        if (!silent) setIsRefreshingPrice(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${Date.now()}&skip_ai=true`, {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            });
+            if (res.ok) {
+                const fresh = await res.json();
+                if (fresh.status === 'success' && fresh.data?.price) {
+                    setStock(prev => {
+                        if (!prev || prev.symbol !== sym) return prev;
+                        return {
+                            ...prev,
+                            price: fresh.data.price,
+                            change: fresh.data.change,
+                            change_val: fresh.data.change_val,
+                            change_percent: fresh.data.change_percent,
+                            regular_change_val: fresh.data.regular_change_val,
+                            regular_change_pct: fresh.data.regular_change_pct,
+                            market_status: fresh.data.market_status || prev.market_status,
+                            details: {
+                                ...(prev.details || {}),
+                                ...(fresh.data.details || {}),
+                            }
+                        };
+                    });
+                }
+            }
+        } catch (_) {
+        } finally {
+            if (!silent) setTimeout(() => setIsRefreshingPrice(false), 500);
+        }
+    }, [stock?.symbol]);
+
+    useEffect(() => {
+        if (!stock?.symbol) return;
+        const interval = setInterval(() => {
+            refreshLivePrice(true);
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [stock?.symbol, refreshLivePrice]);
+
     useEffect(() => {
         setMounted(true);
         console.log("[Discovery] Mounted. API_BASE_URL:", API_BASE_URL);
@@ -1040,12 +1090,14 @@ function DiscoveryContent() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // [New] Handle URL Query Params - Trigger search when query param differs from last searched query (prevents infinite loops)
+    // [Stay on Stock on Refresh] 새로고침(F5) 시 현재 보던 종목 화면 유지
     useEffect(() => {
-        const query = searchParams.get("q");
-        if (query && query.toUpperCase() !== lastSearchedQuery.current.toUpperCase()) {
-            setSearchInput(query);
-            handleSearch(query);
+        const urlQ = searchParams?.get("q") || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get("q") : null);
+        const storedTicker = typeof window !== 'undefined' ? sessionStorage.getItem("discovery_last_ticker") : null;
+        const target = (urlQ || storedTicker || "").trim();
+        if (target && target.toUpperCase() !== lastSearchedQuery.current.toUpperCase()) {
+            setSearchInput(target);
+            handleSearch(target);
         }
     }, [searchParams]);
 
@@ -1134,20 +1186,57 @@ function DiscoveryContent() {
                 router.push(`${pathname}?q=${targetSymbol}`);
             }
 
+            // [Reload Retention] 새로고침(F5) 시에도 이 종목을 기억하여 복원
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem("discovery_last_ticker", targetSymbol);
+                try {
+                    window.history.replaceState(null, '', `${pathname}?q=${encodeURIComponent(targetSymbol)}`);
+                } catch (_) {}
+            }
+
             // 검색 진행이 확정되었으므로 마지막 검색 기록 갱신 (useEffect 중복 호출 방지)
             lastSearchedQuery.current = targetSymbol;
 
-            // [Instant Load] Check global STOCK_CACHE first
+            // [Instant Load] Check global STOCK_CACHE first for 0ms initial render
             const cachedData = STOCK_CACHE[targetSymbol.toUpperCase()];
             if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
                 console.log("[Search] Cache hit! Instant render for:", targetSymbol);
                 setStock(cachedData.data);
                 setLoading(false);
                 
+                // [Real-time Price Refresh] 캐시로 화면을 즉시 띄우되, 실시간 시세는 백그라운드에서 즉시 최신화
+                fetch(`${API_BASE_URL}/api/analysis/stock/${safeTicker}?t=${timestamp}&cb=${cacheBuster}&skip_ai=true`, {
+                    cache: 'no-store',
+                    headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+                })
+                .then(r => r.ok ? r.json() : null)
+                .then(freshJson => {
+                    if (freshJson?.status === 'success' && freshJson.data?.price) {
+                        setStock(prev => {
+                            if (!prev || prev.symbol?.toUpperCase() !== targetSymbol.toUpperCase()) return prev;
+                            return {
+                                ...prev,
+                                price: freshJson.data.price,
+                                change: freshJson.data.change,
+                                change_val: freshJson.data.change_val,
+                                change_percent: freshJson.data.change_percent,
+                                regular_change_val: freshJson.data.regular_change_val,
+                                regular_change_pct: freshJson.data.regular_change_pct,
+                                market_status: freshJson.data.market_status || prev.market_status,
+                                details: {
+                                    ...(prev.details || {}),
+                                    ...(freshJson.data.details || {}),
+                                }
+                            };
+                        });
+                    }
+                })
+                .catch(() => {});
+
                 // [Optimized] 캐시에 이미 AI 분석 결과(score)가 있으면 백그라운드 재요청 스킵
                 const hasAiData = cachedData.data?.score !== undefined && cachedData.data?.rationale;
                 if (hasAiData) {
-                    console.log("[Search] Cache hit with AI data! No background fetch needed.", targetSymbol);
+                    console.log("[Search] Cache hit with AI data! Background AI fetch not needed, price refreshed.", targetSymbol);
                     setLoading(false);
                 } else {
                     // AI 데이터 없으면 백그라운드에서 AI 분석 요청
@@ -1504,7 +1593,17 @@ function DiscoveryContent() {
                     <div className="animate-in fade-in slide-in-from-right-8 duration-500">
                         {/* Theme Analysis View */}
                         <button
-                            onClick={() => { setStock(null); setSearchInput(""); }}
+                            onClick={() => {
+                                if (typeof window !== 'undefined') {
+                                    sessionStorage.removeItem("discovery_last_ticker");
+                                    try {
+                                        window.history.replaceState(null, '', pathname);
+                                    } catch (_) {}
+                                }
+                                setStock(null);
+                                setSearchInput("");
+                                router.replace(pathname);
+                            }}
                             className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10"
                         >
                             <span><span>←</span> <span>뒤로 가기</span></span>
@@ -1599,7 +1698,17 @@ function DiscoveryContent() {
                     <div className="animate-in fade-in slide-in-from-right-8 duration-500">
                         {/* Back Button */}
                         <button
-                            onClick={() => { setStock(null); setSearchInput(""); }}
+                            onClick={() => {
+                                if (typeof window !== 'undefined') {
+                                    sessionStorage.removeItem("discovery_last_ticker");
+                                    try {
+                                        window.history.replaceState(null, '', pathname);
+                                    } catch (_) {}
+                                }
+                                setStock(null);
+                                setSearchInput("");
+                                router.replace(pathname);
+                            }}
                             className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10"
                         >
                             <span><span>←</span> <span>다른 종목 검색하기</span></span>
@@ -1724,6 +1833,18 @@ function DiscoveryContent() {
                                                                         </div>
                                                                     );
                                                                 })()}
+
+                                                                {/* [실시간 시세 수동 새로고침 버튼] */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => refreshLivePrice(false)}
+                                                                    disabled={isRefreshingPrice}
+                                                                    title="MTS 최신 시세 실시간 동기화"
+                                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white border border-white/10 transition-all active:scale-95 shrink-0 whitespace-nowrap"
+                                                                >
+                                                                    <RotateCw className={`w-3.5 h-3.5 ${isRefreshingPrice ? 'animate-spin text-cyan-400' : 'text-zinc-400'}`} />
+                                                                    <span>{isRefreshingPrice ? '시세 갱신 중...' : '시세 새로고침'}</span>
+                                                                </button>
                                                             </div>
 
                                                             {/* 우측 상단: 장 상태 뱃지 (장중 / 프리마켓 / 동시호가 / 휴장 / 장마감) */}

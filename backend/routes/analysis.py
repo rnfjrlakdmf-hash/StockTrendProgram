@@ -234,7 +234,29 @@ async def read_stock(symbol: str, skip_ai: bool = False):
     from turbo_engine import CACHE_VERSION
     cache_key = f"{CACHE_VERSION}_v2_stock_full_{symbol}_{skip_ai}"
     cached = turbo_engine.get_cache(cache_key)
-    if cached: return {"status": "success", "data": cached, "turbo": True}
+    if cached:
+        # [실시간 시세 보정] AI 분석 및 재무 정보는 캐시를 초고속(0ms)으로 재사용하되,
+        # 현재가/등락률은 항상 실시간 시세를 조회하여 패치합니다.
+        try:
+            from stock_data import get_simple_quote
+            quote = await asyncio.to_thread(get_simple_quote, symbol)
+            if quote and quote.get("price"):
+                cached["price"] = quote.get("price")
+                cached["change"] = quote.get("change")
+                cached["change_val"] = quote.get("change_val")
+                cached["change_percent"] = quote.get("change_percent")
+                cached["regular_change_val"] = quote.get("regular_change_val", quote.get("change_val"))
+                cached["regular_change_pct"] = quote.get("regular_change_pct", 0)
+                cached["regular_close"] = quote.get("regular_close", quote.get("price"))
+                if quote.get("prev_close"):
+                    if not cached.get("details"):
+                        cached["details"] = {}
+                    cached["details"]["prev_close"] = quote.get("prev_close")
+                if quote.get("market_status"):
+                    cached["market_status"] = quote.get("market_status")
+        except Exception as q_err:
+            print(f"[read_stock] Real-time quote patch warning for {symbol}: {q_err}")
+        return {"status": "success", "data": cached, "turbo": True}
     
     # Lazy Imports
     from stock_data import get_stock_info
@@ -326,7 +348,7 @@ async def read_stock(symbol: str, skip_ai: bool = False):
             data["related_stocks"] = peers
 
         # [메모리 캐시] TTL 60분 (skip_ai=False), 10분 (skip_ai=True), 에러시 캐시 안함 (0초)
-        mem_ttl = 3600 if not skip_ai else 600
+        mem_ttl = 3600 if not skip_ai else 5
         if not skip_ai and locals().get('is_ai_error', False):
             mem_ttl = 10  # 에러 발생 시 10초만 캐시해서 빠른 재시도 유도
             
