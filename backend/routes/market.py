@@ -2787,40 +2787,55 @@ def get_ceo_office_boardroom(
 
     day_label = "주말 24시간 비상근무" if weekday >= 5 else "일일 시장 시스템"
 
-    # [기안 제1호] 전사 시장 시스템 & 매크로 종합 보고서 (누구나 10초 만에 이해하는 쉬운 브리핑)
-    auto_approvals.append({
-        "doc_id": f"DOC-{date_doc_str}-01",
-        "doc_number": f"제 {date_doc_str}-01 호",
-        "category_type": "all",
-        "category_badge": f"🌐 전사 {day_label} 종합 보고",
-        "urgency": "최우선 결재",
-        "stock_name": "전체 시장 시스템",
-        "title": f"[{day_label} 종합 보고] 지금 주식시장 분위기 & 돈이 몰리는 핵심 업종 브리핑",
-        "proposer": "박진우 부사장 (리서치센터장) 외 4개 본부 합동",
-        "submitted_at": f"{time_str} 상정 (365일 무휴 가동)",
-        "easy_headline": "지금 시장은 모든 주식이 다 같이 오르는 장이 아닙니다! 실제로 해외 일감(수주)을 많이 따내고 돈을 잘 버는 '알짜 우량주(AI 반도체·원전·조선·항공)'로만 큰손들의 돈이 몰리고 있으니, 이 종목들만 콕 집어서 관리하자는 보고서입니다.",
-        "key_numbers": [
-            {"label": "오늘의 시장 핵심 키워드", "value": "실적 좋은 알짜주 집중"},
-            {"label": "미리 보는 미국장 (나스닥선물)", "value": nq_price_str},
-            {"label": f"글로벌 빅테크 ({us1_name_ko})", "value": us1_price_str},
-            {"label": "직원들이 분석 마친 보고서", "value": f"종목 {len(desk_company_reports)}건 · 시황 {len(desk_market_reports)}건"},
-        ],
-        "research_opinion": (
-            f"👍 [왜 이렇게 봐야 하나요? · 박진우 리서치센터장]: 오늘 증권가 핵심 리포트('{top_mkt['title'] if top_mkt else '실적 및 수급 중심 차별화 장세'}')를 쉽게 풀면, "
-            f"소문으로만 오르는 주식은 피하고 분기 성적표(영업이익)가 잘 나오는 수출·수주 대장주만 골라 담아야 안전하다는 뜻입니다."
-        ),
-        "quant_opinion": (
-            "📊 [큰손들 돈의 흐름은? · 김도현 수급본부장]: 저희 자동 수급 기계로 시장을 돌려보니, 최근 두 달 평균 가격(50일선) 위에서 외국인과 기관 부자들이 함께 사들이는 종목들만 주가가 계속 힘을 내고 있습니다."
-        ),
-        "risk_opinion": (
-            f"⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 이미 하루에 급등한 주식을 뒤늦게 따라 사는 것(추격 매수)은 절대 금물입니다! 미국 나스닥 선물({nq_price_str})이 흔들릴 때는 나누어서 천천히 접근해야 안전합니다."
-        ),
-        "secretary_conclusion": (
-            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 현재 우리 회사 모든 자동 분석 시스템이 주말·야간 상관없이 100% 정상 작동 중입니다. '실적 좋은 알짜 종목 위주로 집중 감시하라'는 지침에 [승인 서명]만 눌러주십시오!"
-        ),
-        "recommendation": "알짜 실적주 집중 감시 체제 승인",
-        "easy_terms": _extract_easy_terms("컨센서스 나스닥 선물 50일선"),
-    })
+    # [기안 제1호] 07:20 모닝 글로벌 특보가 있으면 최우선 상정, 없으면 표준 종합 보고서 상정
+    macro_doc_injected = False
+    try:
+        from morning_macro_service import get_latest_morning_macro_doc
+        macro_doc = get_latest_morning_macro_doc()
+        if macro_doc:
+            m_copy = dict(macro_doc)
+            m_copy["doc_id"] = f"DOC-{date_doc_str}-01"
+            m_copy["doc_number"] = f"제 {date_doc_str}-01 호"
+            m_copy["submitted_at"] = m_copy.get("submitted_at") or f"{time_str} 상정 (07:20 모닝 특보)"
+            auto_approvals.append(m_copy)
+            macro_doc_injected = True
+    except Exception as e:
+        print(f"[CEOOffice] Morning macro doc load error: {e}")
+
+    if not macro_doc_injected:
+        auto_approvals.append({
+            "doc_id": f"DOC-{date_doc_str}-01",
+            "doc_number": f"제 {date_doc_str}-01 호",
+            "category_type": "all",
+            "category_badge": f"🌐 전사 {day_label} 종합 보고",
+            "urgency": "최우선 결재",
+            "stock_name": "전체 시장 시스템",
+            "title": f"[{day_label} 종합 보고] 지금 주식시장 분위기 & 돈이 몰리는 핵심 업종 브리핑",
+            "proposer": "박진우 부사장 (리서치센터장) 외 4개 본부 합동",
+            "submitted_at": f"{time_str} 상정 (365일 무휴 가동)",
+            "easy_headline": "지금 시장은 모든 주식이 다 같이 오르는 장이 아닙니다! 실제로 해외 일감(수주)을 많이 따내고 돈을 잘 버는 '알짜 우량주(AI 반도체·원전·조선·항공)'로만 큰손들의 돈이 몰리고 있으니, 이 종목들만 콕 집어서 관리하자는 보고서입니다.",
+            "key_numbers": [
+                {"label": "오늘의 시장 핵심 키워드", "value": "실적 좋은 알짜주 집중"},
+                {"label": "미리 보는 미국장 (나스닥선물)", "value": nq_price_str},
+                {"label": f"글로벌 빅테크 ({us1_name_ko})", "value": us1_price_str},
+                {"label": "직원들이 분석 마친 보고서", "value": f"종목 {len(desk_company_reports)}건 · 시황 {len(desk_market_reports)}건"},
+            ],
+            "research_opinion": (
+                f"👍 [왜 이렇게 봐야 하나요? · 박진우 리서치센터장]: 오늘 증권가 핵심 리포트('{top_mkt['title'] if top_mkt else '실적 및 수급 중심 차별화 장세'}')를 쉽게 풀면, "
+                f"소문으로만 오르는 주식은 피하고 분기 성적표(영업이익)가 잘 나오는 수출·수주 대장주만 골라 담아야 안전하다는 뜻입니다."
+            ),
+            "quant_opinion": (
+                "📊 [큰손들 돈의 흐름은? · 김도현 수급본부장]: 저희 자동 수급 기계로 시장을 돌려보니, 최근 두 달 평균 가격(50일선) 위에서 외국인과 기관 부자들이 함께 사들이는 종목들만 주가가 계속 힘을 내고 있습니다."
+            ),
+            "risk_opinion": (
+                f"⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 이미 하루에 급등한 주식을 뒤늦게 따라 사는 것(추격 매수)은 절대 금물입니다! 미국 나스닥 선물({nq_price_str})이 흔들릴 때는 나누어서 천천히 접근해야 안전합니다."
+            ),
+            "secretary_conclusion": (
+                "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 현재 우리 회사 모든 자동 분석 시스템이 주말·야간 상관없이 100% 정상 작동 중입니다. '실적 좋은 알짜 종목 위주로 집중 감시하라'는 지침에 [승인 서명]만 눌러주십시오!"
+            ),
+            "recommendation": "알짜 실적주 집중 감시 체제 승인",
+            "easy_terms": _extract_easy_terms("컨센서스 나스닥 선물 50일선"),
+        })
 
     # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (초보자 눈높이 번역!)
     for idx, rep in enumerate(desk_company_reports[:4], start=2):
@@ -3615,4 +3630,15 @@ def get_ceo_office_boardroom(
     return resp_data
 
 
-
+@router.post("/ceo-office/trigger-morning-macro")
+@router.get("/ceo-office/trigger-morning-macro")
+def trigger_morning_macro_endpoint(force: bool = True):
+    """
+    대표님 전용 07:20 모닝 글로벌 특보 즉시 생성 및 푸시 발송 트리거
+    """
+    from morning_macro_service import run_daily_morning_macro_job
+    global _CEO_OFFICE_CACHE, _CEO_OFFICE_CACHE_TIME
+    _CEO_OFFICE_CACHE = {}
+    _CEO_OFFICE_CACHE_TIME = 0.0
+    res = run_daily_morning_macro_job(force=force)
+    return res

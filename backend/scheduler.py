@@ -2009,3 +2009,37 @@ async def calendar_alerts_scheduler_loop():
             logger.error(f"[Calendar D-Day Alert] Loop error: {e}")
             await asyncio.sleep(60)
 
+
+async def morning_macro_scheduler_loop():
+    """
+    🌅 [대표님 전용] 매일 아침 07:20 KST 글로벌 거시경제 분석 & 국내·해외 주식 파급 영향 기안서 자동 상정 및 푸시 발송
+    """
+    import asyncio
+    from datetime import datetime
+    import pytz
+    kst_tz = pytz.timezone("Asia/Seoul")
+    logger.info("[MorningMacro] Scheduler Loop Active. Checking every 30 seconds for 07:20 KST.")
+    while True:
+        try:
+            now = datetime.now(kst_tz)
+            current_date = now.strftime("%Y-%m-%d")
+
+            # 매일 아침 07:20 ~ 07:35 사이에 1회 실행
+            if now.hour == 7 and 20 <= now.minute <= 35:
+                from morning_macro_service import MACRO_STATE_PATH, run_daily_morning_macro_job
+                state = {}
+                if os.path.exists(MACRO_STATE_PATH):
+                    try:
+                        with open(MACRO_STATE_PATH, "r", encoding="utf-8") as f:
+                            state = json.load(f)
+                    except:
+                        pass
+
+                if state.get("last_run_date") != current_date:
+                    logger.info(f"[MorningMacro] It is 07:20 KST! Triggering daily morning macro briefing for {current_date}...")
+                    await asyncio.to_thread(run_daily_morning_macro_job, False)
+
+            await asyncio.sleep(30)
+        except Exception as e:
+            logger.error(f"[MorningMacro] Scheduler loop error: {e}")
+            await asyncio.sleep(30)
