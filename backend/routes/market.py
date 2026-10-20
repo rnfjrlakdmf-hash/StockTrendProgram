@@ -2980,6 +2980,8 @@ def get_ceo_office_boardroom(
     debates = []
     agenda_summary = {}
 
+    is_reexamine = ("재검토" in raw_directive) or ("심층 대면 보고" in raw_directive) or ("대면 보고" in raw_directive)
+
     if is_general_briefing:
         top_rep = desk_company_reports[0] if desk_company_reports else None
         top_stock_name = top_rep["stock_name"] if top_rep else "주요 대형 실적주"
@@ -2988,18 +2990,22 @@ def get_ceo_office_boardroom(
         top_title = top_rep["title"] if top_rep else "실적 시즌 수급 차별화 진행"
         mkt_title = top_mkt["title"] if top_mkt else "글로벌 매크로 지표 및 외국인 수급 연동 장세"
 
+        briefing_title = f"🚨 [대표이사 특별 재검토 지시] '{extracted_target or '글로벌 매크로 종합'}' 안건 임원 긴급 심층 대면 보고" if is_reexamine else "전 부서 자율 시장 분석 완료 · 대표님을 위한 쉬운 요약 보고"
+        briefing_sub = f"대표님의 재검토 지시 접수 완료 · 5개 본부 임원 전원이 긴급 소집되어 핵심 쟁점(리포트 0건 사유 및 환차익·수급)을 소명하고 대면 보고를 진행합니다." if is_reexamine else f"현재 시각 {time_str} 기준 · 어려운 금융 용어를 모두 빼고 쉽게 정리한 총 {len(auto_approvals)}건의 결재 서류가 준비되었습니다."
+        briefing_badge = "🚨 대표이사 긴급 심층 대면 보고 소집" if is_reexamine else office_mode
+
         agenda_summary = {
             "topic_type": "briefing",
-            "title": "전 부서 자율 시장 분석 완료 · 대표님을 위한 쉬운 요약 보고",
-            "subtitle": f"현재 시각 {time_str} 기준 · 어려운 금융 용어를 모두 빼고 쉽게 정리한 총 {len(auto_approvals)}건의 결재 서류가 준비되었습니다.",
-            "target_name": "전사 출근 브리핑",
+            "title": briefing_title,
+            "subtitle": briefing_sub,
+            "target_name": f"{extracted_target or '시장 종합'} 긴급 대면 보고" if is_reexamine else "전사 출근 브리핑",
             "target_code": "ALL",
-            "badge": office_mode,
+            "badge": briefing_badge,
             "timestamp": f"{now_kst.strftime('%Y-%m-%d %H:%M')} KST",
             "ceo_question": raw_directive or None,
             "key_metrics": [
-                {"label": "결재 대기 기안서", "value": f"총 {len(auto_approvals)}건 준비 완료", "sub": "쉬운 10초 요약 적용", "tone": "positive"},
-                {"label": "오늘의 1순위 종목", "value": f"{top_stock_name}", "sub": f"{top_broker} · 목표가 {top_gp}", "tone": "neutral"},
+                {"label": "대표이사 결재 지시", "value": "🚨 긴급 심층 재검토" if is_reexamine else f"총 {len(auto_approvals)}건 준비 완료", "sub": "5개 본부 임원 전원 소집" if is_reexamine else "쉬운 10초 요약 적용", "tone": "positive"},
+                {"label": "보고 안건 타겟", "value": f"{extracted_target or top_stock_name}", "sub": "거시지표 및 수급 정밀 소명" if is_reexamine else f"{top_broker} · 목표가 {top_gp}", "tone": "neutral"},
                 {"label": "미국장 온도계(선물)", "value": nq_info["price"] if nq_info else "20,480pt", "sub": f"등락 {nq_info['change_pct']:+.2f}%" if nq_info else "24시간 감시 중", "tone": "positive" if (nq_info and nq_info["change_pct"] >= 0) else "negative"},
                 {"label": f"글로벌 빅테크({us1_sym})", "value": us1_info["price"] if us1_info else "$150.00", "sub": f"월가 목표가 {us1_info.get('target_mean') or '$180.00'}" if us1_info else "빅테크 선행지표", "tone": "positive" if (us1_info and us1_info.get("change_pct", 0) >= 0) else "negative"},
             ],
@@ -3044,8 +3050,8 @@ def get_ceo_office_boardroom(
                 ]
             },
             "meeting_minutes": {
-                "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-총괄호",
-                "title": "전 부서 임원 합동 주간·야간 시장 전략회의록",
+                "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-긴급소집호" if is_reexamine else f"제{now_kst.strftime('%Y%m%d')}-총괄호",
+                "title": f"🚨 대표이사 재검토 지시 대응 긴급 임원 전략회의록 ({extracted_target or '글로벌 매크로 종합'})" if is_reexamine else "전 부서 임원 합동 주간·야간 시장 전략회의록",
                 "date_time": f"{now_kst.strftime('%Y년 %m월 %d일 %H:%M')} KST",
                 "location": "AI 증권사 본사 임원 회의실 (대표이사 집무실 직속)",
                 "chairperson": "정유진 비서실장 (대표이사 주재 대행)",
@@ -3061,9 +3067,19 @@ def get_ceo_office_boardroom(
                         "speaker": "정유진 비서실장",
                         "role": "간사",
                         "avatar": "👩‍💼",
+                        "text": f"대표님께서 '{extracted_target or '글로벌 매크로 종합'}' 안건에 대해 임원 대면 심층보고를 긴급 소집하셨습니다. 각 본부장은 대표님의 의문 사항과 쟁점에 대해 즉시 소명해 주십시오."
+                    } if is_reexamine else {
+                        "speaker": "정유진 비서실장",
+                        "role": "간사",
+                        "avatar": "👩‍💼",
                         "text": "오늘 전 부서 임원 전략회의를 시작하겠습니다. 각 본부에서 분석한 시장 현황과 결재 준비 상태를 보고해 주십시오."
                     },
                     {
+                        "speaker": "박진우 부사장",
+                        "role": "리서치센터장",
+                        "avatar": "👨‍💼",
+                        "text": "대표님, 해당 안건은 개별 종목이 아닌 '전세계 거시경제·환율·금리' 종합 감시 안건이라 개별 기업 목표주가 리포트가 0건으로 잡혔던 것입니다. 혼선을 드려 송구합니다! 증권사 거시경제 리포트와 외신 데이터를 기반으로 전세계 자금 흐름을 완벽히 보강 브리핑드리겠습니다."
+                    } if is_reexamine else {
                         "speaker": "박진우 부사장",
                         "role": "리서치센터장",
                         "avatar": "👨‍💼",
@@ -3073,9 +3089,19 @@ def get_ceo_office_boardroom(
                         "speaker": "김도현 상무",
                         "role": "퀀트·수급본부장",
                         "avatar": "📈",
+                        "text": "수급 측면에서 원/달러 환율이 1,320원대 안착 시 외국인의 환차익(환율 하락으로 얻는 부가 이익) 기대감으로 국내 IT·반도체로 큰손 자금이 유입됩니다. 50일선 추세 지지선을 엄격히 감시 중입니다."
+                    } if is_reexamine else {
+                        "speaker": "김도현 상무",
+                        "role": "퀀트·수급본부장",
+                        "avatar": "📈",
                         "text": "수급 통계상 외국인과 기관의 자금이 실적주로 쏠리고 있습니다. 50일선 지지선이 확고한 종목들만 골라 담아 승률을 극대화하겠습니다."
                     },
                     {
+                        "speaker": "최서연 CRO",
+                        "role": "리스크본부장",
+                        "avatar": "🛡️",
+                        "text": "대표님의 지시대로 추격 매수는 전면 차단하고, 유가나 금리 급변 시 즉각 작동하는 비상 방어 라인을 점검 완료했습니다. 분할 매수 원칙이 지켜질 때만 승인 서명을 건의드립니다."
+                    } if is_reexamine else {
                         "speaker": "최서연 CRO",
                         "role": "리스크본부장",
                         "avatar": "🛡️",
@@ -3085,17 +3111,27 @@ def get_ceo_office_boardroom(
                         "speaker": "이준호 이사",
                         "role": "글로벌본부장",
                         "avatar": "🌎",
+                        "text": f"미국 나스닥 선물({nq_price_str})과 글로벌 빅테크 지표를 24시간 추적하여 야간 시장 충격을 사전에 방어할 수 있도록 실시간 감시망을 재가동했습니다."
+                    } if is_reexamine else {
+                        "speaker": "이준호 이사",
+                        "role": "글로벌본부장",
+                        "avatar": "🌎",
                         "text": f"미국 나스닥 선물({nq_price_str})과 미국 빅테크 {us1_name_ko}({us1_price_str})의 글로벌 연동 상태가 양호합니다. 한국 증시 개장에도 긍정적입니다."
                     },
                     {
                         "speaker": "정유진 비서실장",
                         "role": "비서실장",
                         "avatar": "👩‍💼",
+                        "text": "전 부서 임원진의 재검토 및 소명이 완료되었습니다. 대표님께서 안심하시고 재가하실 수 있도록 결재판에 보강 사항을 충실히 반영하겠습니다."
+                    } if is_reexamine else {
+                        "speaker": "정유진 비서실장",
+                        "role": "비서실장",
+                        "avatar": "👩‍💼",
                         "text": "모든 임원진의 검토가 완료되었습니다. 대표님께서 준비된 기안서에 서명만 하시면 즉시 감시 및 집행에 착수하겠습니다."
                     }
                 ],
-                "verdict_badge": "만장일치 [시장 집중 감시 및 결재 상정] 가결",
-                "verdict_summary": f"총 {len(auto_approvals)}건 기안서 상정 · 알짜 실적주 집중 · 50일선 추세 분할 매매 체제",
+                "verdict_badge": "대표이사 재검토 소명 완료" if is_reexamine else "만장일치 [시장 집중 감시 및 결재 상정] 가결",
+                "verdict_summary": f"'{extracted_target or '글로벌 매크로 종합'}' 쟁점 전원 소명 · 환차익 및 거시 수급 보강 · 재가 건의" if is_reexamine else f"총 {len(auto_approvals)}건 기안서 상정 · 알짜 실적주 집중 · 50일선 추세 분할 매매 체제",
             },
         }
 
@@ -3106,14 +3142,16 @@ def get_ceo_office_boardroom(
                 "role": "비서실장",
                 "dept": "대표이사 직속 비서실",
                 "avatar": "👩‍💼",
-                "stance": "쉬운 10초 요약 완료",
+                "stance": "대표님 재검토 소명 완료" if is_reexamine else "쉬운 10초 요약 완료",
                 "stance_tone": "summary",
-                "headline": f"대표님! 머리 아픈 증권사 전문 용어는 다 빼고, 한눈에 이해되도록 {len(auto_approvals)}건의 보고서를 쉽게 풀어서 올렸습니다!",
+                "headline": f"대표님! '{extracted_target or '글로벌 매크로 종합'}' 재검토 지시를 접수하여 5개 본부 임원이 쟁점을 전원 소명했습니다!" if is_reexamine else f"대표님! 머리 아픈 증권사 전문 용어는 다 빼고, 한눈에 이해되도록 {len(auto_approvals)}건의 보고서를 쉽게 풀어서 올렸습니다!",
                 "message": (
+                    f"대표님께서 궁금해하셨던 1) 리포트 0건 집계 사유(종목이 아닌 거시경제 안건), 2) 환차익과 외국인 수급 원리, 3) 향후 리스크 방어 계획을 5인 임원이 대면으로 완벽히 소명했습니다. 안심하시고 서명을 진행하셔도 좋습니다!"
+                    if is_reexamine else
                     f"각 서류 맨 위에 있는 노란색 박스 [💡 한마디로 무슨 뜻인가요?]만 읽으셔도 10초 만에 핵심을 파악하실 수 있습니다.\n"
                     f"1) 왜 좋은지(호재), 2) 큰손들이 사는지(돈의 흐름), 3) 뭘 조심해야 하는지(주의점)만 보시고 편하게 [✅ 승인 서명] 도장을 찍어주십시오!"
                 ),
-                "data_tag": f"쉬운 눈높이 결재 서류 {len(auto_approvals)}건 상정",
+                "data_tag": "대표이사 긴급 소집 대면 보고필" if is_reexamine else f"쉬운 눈높이 결재 서류 {len(auto_approvals)}건 상정",
             },
             {
                 "speaker_id": "research_vp",
@@ -3121,14 +3159,16 @@ def get_ceo_office_boardroom(
                 "role": "부사장 (리서치센터장)",
                 "dept": "기업·산업 리서치본부",
                 "avatar": "👨‍💼",
-                "stance": "호재·목표주가 보고",
+                "stance": "거시경제 감시 특성 보고" if is_reexamine else "호재·목표주가 보고",
                 "stance_tone": "bull",
-                "headline": f"어려운 증권사 리포트 {len(desk_company_reports)}건을 누구나 이해할 수 있게 번역했습니다 — 1호 추천 '{top_stock_name}' (목표가 {top_gp})",
+                "headline": "거시경제 감시 안건 특성 및 전세계 자금 흐름 재점검 완료" if is_reexamine else f"어려운 증권사 리포트 {len(desk_company_reports)}건을 누구나 이해할 수 있게 번역했습니다 — 1호 추천 '{top_stock_name}' (목표가 {top_gp})",
                 "message": (
+                    "본 안건은 삼성전자 같은 개별 기업이 아니라, 주식시장 전체의 날씨(금리, 환율, 유가)를 살피는 전사 시스템 안건입니다. 기업 목표주가가 없는 이유를 보강 설명드렸으며, 해외 거시 리포트를 전수 취합해 올렸습니다."
+                    if is_reexamine else
                     f"대표님, 증권사 애널리스트 보고서들은 한자어와 영어 약어가 많아서 읽기 불편하셨을 겁니다.\n"
                     f"저희 리서치팀이 '{top_stock_name} ({top_title})' 등 최신 리포트를 읽고 '그래서 이 회사가 앞으로 돈을 잘 버는지, 목표주가는 얼마인지'만 아주 쉽게 번역해 결재판에 올려두었습니다!"
                 ),
-                "data_tag": f"제도권 증권사 최신 리포트 {len(desk_company_reports)}건 쉬운 번역",
+                "data_tag": "거시지표 및 외신 종합 브리핑" if is_reexamine else f"제도권 증권사 최신 리포트 {len(desk_company_reports)}건 쉬운 번역",
             },
             {
                 "speaker_id": "quant_dir",
@@ -3136,13 +3176,15 @@ def get_ceo_office_boardroom(
                 "role": "상무 (퀀트·수급본부장)",
                 "dept": "알고리즘 트레이딩·수급본부",
                 "avatar": "📈",
-                "stance": "큰손 돈의 흐름 보고",
+                "stance": "환차익·외인 수급 해설" if is_reexamine else "큰손 돈의 흐름 보고",
                 "stance_tone": "neutral",
-                "headline": "지금 주가가 평균보다 비싼지 싼지, 외국인·기관 큰손이 사는지 확인했습니다",
+                "headline": "환차익(환율 하락 시 외인 이익)과 50일선 수급 시그널 브리핑" if is_reexamine else "지금 주가가 평균보다 비싼지 싼지, 외국인·기관 큰손이 사는지 확인했습니다",
                 "message": (
+                    "환율이 1,320원으로 내려가면 외국인은 달러로 환전할 때 추가 이익(환차익)을 얻으므로 한국 주식을 더 적극적으로 삽니다. 퀀트 알고리즘으로 이 큰손 자금 유입 경로를 실시간 추적하고 있습니다."
+                    if is_reexamine else
                     "아무리 좋은 회사라도 너무 비쌀 때 사면 안 됩니다. 저희 수급팀에서는 '최근 두 달 평균 가격(50일선)'보다 지금 주가가 위에 있는지, 그리고 외국인과 기관 부자들이 실제로 돈을 넣고 있는지를 쉽게 표시해 두었습니다."
                 ),
-                "data_tag": "외국인·기관 매수세 & 두 달 평균가격(50일선) 비교",
+                "data_tag": "환율 연동 퀀트 알고리즘 가동" if is_reexamine else "외국인·기관 매수세 & 두 달 평균가격(50일선) 비교",
             },
             {
                 "speaker_id": "risk_cro",
@@ -3150,13 +3192,15 @@ def get_ceo_office_boardroom(
                 "role": "상무 (리스크관리본부장 · CRO)",
                 "dept": "리스크관리·컴플라이언스본부",
                 "avatar": "🛡️",
-                "stance": "조심할 점 콕 집어 보고",
+                "stance": "리스크 방어선 재점검" if is_reexamine else "조심할 점 콕 집어 보고",
                 "stance_tone": "caution",
-                "headline": "무조건 좋다는 말만 믿으시면 안 됩니다! 조심해야 할 점 1가지씩을 꼭 적었습니다",
+                "headline": "대표님 재검토 지시에 따른 리스크 방어선 재점검 완료" if is_reexamine else "무조건 좋다는 말만 믿으시면 안 됩니다! 조심해야 할 점 1가지씩을 꼭 적었습니다",
                 "message": (
+                    "거시경제 지표가 흔들릴 때 발생할 수 있는 시장 충격을 사전에 차단하기 위해 -3.5% 손절선과 안전자산 헤지 라인을 강화했습니다."
+                    if is_reexamine else
                     "대표님 돈을 지키는 게 제 일입니다! 각 종목마다 '일회성 보너스 비용 때문에 실적이 줄어 보인 건지', '이미 많이 올라서 쉬어갈 자리는 아닌지' 꼭 조심해야 할 주의사항을 빨간 박스로 적어두었으니 서명 전에 꼭 한 번 봐주십시오!"
                 ),
-                "data_tag": "전 안건 위험 요인 사전 점검 완료",
+                "data_tag": "긴급 재검토 리스크 점검 완료" if is_reexamine else "전 안건 위험 요인 사전 점검 완료",
             },
             {
                 "speaker_id": "global_dir",
@@ -3164,13 +3208,15 @@ def get_ceo_office_boardroom(
                 "role": "이사 (글로벌·파생본부장)",
                 "dept": "해외주식·ETF·선물파생본부",
                 "avatar": "🌎",
-                "stance": "미국장 분위기 보고",
+                "stance": "글로벌 24시 감시망 재가동" if is_reexamine else "미국장 분위기 보고",
                 "stance_tone": "bull",
-                "headline": f"미국 핵심 빅테크 {us1_name_ko}({us1_price_str})와 나스닥 선물({nq_price_str})도 아주 쉽게 정리했습니다",
+                "headline": "미국 나스닥 선물 및 글로벌 24시 데스크 방어선 가동" if is_reexamine else f"미국 핵심 빅테크 {us1_name_ko}({us1_price_str})와 나스닥 선물({nq_price_str})도 아주 쉽게 정리했습니다",
                 "message": (
+                    "밤사이 열리는 미국 증시와 유럽 지표를 24시간 실시간 모니터링하여 대표님의 자산이 안전하게 보호되도록 조치했습니다."
+                    if is_reexamine else
                     f"한국 주식시장은 밤사이 미국 시장이 어떻게 끝났는지에 따라 아침 분위기가 결정됩니다. 제6호({us1_name_ko})와 제7호(나스닥 선물 온도계), 제9호({us2_name_ko}) 서류도 함께 서명해 주십시오!"
                 ),
-                "data_tag": "미국 증시 · 선물 24시간 연동",
+                "data_tag": "글로벌 24시간 비상근무 데스크" if is_reexamine else "미국 증시 · 선물 24시간 연동",
             },
         ]
     else:
@@ -3198,13 +3244,16 @@ def get_ceo_office_boardroom(
             t_up = g_data.get("upside_pct")
             t_up_str = f"{t_up:+.1f}%" if t_up is not None else "-"
 
+            g_title = f"🚨 [대표이사 특별 재검토 지시] [{t_name}] 임원 긴급 심층 대면 보고" if is_reexamine else f"[{t_name}] 임원진 자율 심층 분석 & 특별 결재 보고"
+            g_sub = f"대표님의 재검토 지시 접수 · 5개 본부 임원이 회의실에 소집되어 월가 IB 컨센서스 및 리스크 방어선을 대면 보고합니다." if is_reexamine else f"실시간 시세 {t_price} ({t_chg:+.2f}%) · 월가 IB 컨센서스 및 기술적 추세 합동 보고"
+
             agenda_summary = {
                 "topic_type": "global_asset",
-                "title": f"[{t_name}] 임원진 자율 심층 분석 & 특별 결재 보고",
-                "subtitle": f"실시간 시세 {t_price} ({t_chg:+.2f}%) · 월가 IB 컨센서스 및 기술적 추세 합동 보고",
+                "title": g_title,
+                "subtitle": g_sub,
                 "target_name": t_name,
                 "target_code": g_sym,
-                "badge": g_data["trend_badge"],
+                "badge": "🚨 대표이사 긴급 대면 보고" if is_reexamine else g_data["trend_badge"],
                 "timestamp": f"{now_kst.strftime('%Y-%m-%d %H:%M')} KST",
                 "ceo_question": raw_directive or f"{t_name} 심층 분석 및 결재 보고",
                 "key_metrics": [
@@ -3413,13 +3462,16 @@ def get_ceo_office_boardroom(
             rep_cnt = len(kr_items)
             latest_rep = kr_items[0] if kr_items else None
 
+            kr_title = f"🚨 [대표이사 특별 재검토 지시] [{res_name}{f' ({res_code})' if res_code else ''}] 임원 긴급 심층 대면 보고" if is_reexamine else f"[{res_name}{f' ({res_code})' if res_code else ''}] 임원진 합동 분석 보고 & 결재 심의"
+            kr_sub = f"대표님의 재검토 지시 접수 · 5개 본부 임원이 회의실에 긴급 소집되어 펀더멘털 및 수급 쟁점을 대면 보고합니다." if is_reexamine else f"증권사 리포트 {rep_cnt}건 전수 분석 · 현재가 {cur_price_str} ({chg_pct_val:+.2f}%)"
+
             agenda_summary = {
                 "topic_type": "kr_stock",
-                "title": f"[{res_name}{f' ({res_code})' if res_code else ''}] 임원진 합동 분석 보고 & 결재 심의",
-                "subtitle": f"증권사 리포트 {rep_cnt}건 전수 분석 · 현재가 {cur_price_str} ({chg_pct_val:+.2f}%)",
+                "title": kr_title,
+                "subtitle": kr_sub,
                 "target_name": res_name,
                 "target_code": res_code or "",
-                "badge": trend_note,
+                "badge": "🚨 대표이사 긴급 대면 보고" if is_reexamine else trend_note,
                 "timestamp": f"{now_kst.strftime('%Y-%m-%d %H:%M')} KST",
                 "ceo_question": raw_directive or f"{res_name} 임원 합동 분석 보고",
                 "key_metrics": [
@@ -3492,8 +3544,8 @@ def get_ceo_office_boardroom(
             }
 
             meeting_minutes = {
-                "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-01호",
-                "title": f"[{res_name}] 임원 합동 투자심의 위원회 회의록",
+                "meeting_no": f"제{now_kst.strftime('%Y%m%d')}-재검토호" if is_reexamine else f"제{now_kst.strftime('%Y%m%d')}-01호",
+                "title": f"🚨 [{res_name}] 대표이사 재검토 지시 대응 긴급 임원 회의록" if is_reexamine else f"[{res_name}] 임원 합동 투자심의 위원회 회의록",
                 "date_time": f"{now_kst.strftime('%Y년 %m월 %d일 %H:%M')} KST",
                 "location": "AI 증권사 본사 8층 대회의실 (대표이사 집무실 직속)",
                 "chairperson": "정유진 비서실장 (대표이사 주재 대행)",
@@ -3509,7 +3561,9 @@ def get_ceo_office_boardroom(
                         "speaker": "정유진 비서실장",
                         "role": "간사",
                         "avatar": "👩‍💼",
-                        "text": f"지금부터 오늘 대표이사 결재 상정 안건인 [{res_name}] 종목에 대한 임원 합동 투자심의 회의를 시작합니다. 먼저 리서치본부 박진우 부사장께서 펀더멘털 분석과 증권가 목표주가를 브리핑해 주십시오."
+                        "text": f"대표님께서 [{res_name}] 안건에 대해 임원 대면 심층보고를 긴급 소집하셨습니다. 리서치본부 박진우 부사장께서 펀더멘털과 재검토 쟁점을 즉시 소명해 주십시오."
+                        if is_reexamine else
+                        f"지금부터 오늘 대표이사 결재 상정 안건인 [{res_name}] 종목에 대한 임원 합동 투자심의 회의를 시작합니다. 먼저 리서치본부 박진우 부사장께서 펀더멘털 분석과 증권가 목표주가를 브리핑해 주십시오."
                     },
                     {
                         "speaker": "박진우 부사장",

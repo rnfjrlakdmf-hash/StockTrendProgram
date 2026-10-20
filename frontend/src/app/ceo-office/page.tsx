@@ -549,8 +549,10 @@ export default function CeoOfficePage() {
     const [categoryFilter, setCategoryFilter] = useState<'all' | 'kr_stock' | 'us_stock' | 'global_futures' | 'world_news'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved'>('all');
     const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(false);
+    const [toastMessage, setToastMessage] = useState<{ title: string; desc: string } | null>(null);
 
     const mainSectionRef = useRef<HTMLDivElement>(null);
+    const boardroomDebateRef = useRef<HTMLDivElement>(null);
 
     // localStorage에서 오늘 서명한 결재 상태 복원
     useEffect(() => {
@@ -666,11 +668,22 @@ export default function CeoOfficePage() {
         updateSignature(doc.doc_id, 'reexamine');
         const target = doc.stock_name === '전체 시장 시스템' ? '' : doc.stock_name;
         const msg = `${doc.stock_name} 안건(${doc.doc_number}) 대표이사 재검토 지시 — 임원 전원 심층 대면 보고 실시!`;
+        
+        // 대표이사 재검토 지시 토스트 알림 팝업
+        setToastMessage({
+            title: "📢 [정유진 비서실장] 대표님의 재검토 지시 접수 완료!",
+            desc: `"${doc.stock_name}" 안건 재검토를 위해 5개 본부 임원을 회의실로 긴급 소집했습니다.`
+        });
+        setTimeout(() => setToastMessage(null), 6000);
+
         setActiveTab('boardroom');
+        setMobileDetailOpen(false);
         fetchOfficeData(target, msg, true);
+
+        // 5인 임원 대면 토론 & 회의록으로 부드럽고 정확하게 자동 스크롤
         setTimeout(() => {
-            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 150);
+            boardroomDebateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 250);
     };
 
     const handleQuickTopic = (topic: string, message: string) => {
@@ -798,6 +811,28 @@ export default function CeoOfficePage() {
 
     return (
         <div className="min-h-screen bg-[#070b14] text-white pb-20">
+            {/* 대표이사 긴급 지시 토스트 플로팅 배너 */}
+            {toastMessage && (
+                <div className="fixed top-20 right-4 left-4 sm:left-auto sm:w-[420px] z-50 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-amber-400/90 rounded-2xl p-4 shadow-2xl shadow-amber-500/25 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl mt-0.5 animate-bounce">📢</span>
+                            <div>
+                                <div className="text-xs sm:text-sm font-black text-amber-300">{toastMessage.title}</div>
+                                <p className="text-xs text-gray-200 font-bold mt-1 leading-snug">{toastMessage.desc}</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setToastMessage(null)}
+                            className="text-gray-400 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* 상단 대표이사 전자결재 집무실 헤더 배너 */}
             <div className="relative overflow-hidden border-b border-amber-500/30 bg-gradient-to-r from-[#0d1527] via-[#131c33] to-[#0d1527]">
                 <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
@@ -1291,8 +1326,20 @@ export default function CeoOfficePage() {
                                                         </div>
                                                     )}
                                                     {signMap[activeDoc.doc_id]?.status === 'reexamine' && (
-                                                        <div className="sm:absolute sm:top-6 sm:right-7 mb-3 sm:mb-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-amber-400 bg-amber-500/20 text-amber-300 font-black text-xs">
+                                                        <div className="sm:absolute sm:top-6 sm:right-7 mb-3 sm:mb-0 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-2 border-sky-400 bg-sky-500/20 text-sky-200 font-black text-xs shadow-lg">
                                                             <span>🔄 심층 재검토 지시됨 ({signMap[activeDoc.doc_id]?.signedAt})</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setActiveTab('boardroom');
+                                                                    setTimeout(() => {
+                                                                        boardroomDebateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                                    }, 200);
+                                                                }}
+                                                                className="underline text-amber-300 hover:text-amber-200 font-extrabold text-[11px] ml-1 cursor-pointer"
+                                                            >
+                                                                대면 회의실 입장 →
+                                                            </button>
                                                         </div>
                                                     )}
 
@@ -1547,10 +1594,21 @@ export default function CeoOfficePage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleReexamineDoc(activeDoc)}
-                                                                className="px-3.5 py-2.5 rounded-xl text-xs font-extrabold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 transition-all cursor-pointer"
+                                                                className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-sky-500/20 via-indigo-500/25 to-sky-500/20 hover:from-sky-500/35 hover:to-indigo-500/35 text-sky-200 border border-sky-400/50 shadow-lg shadow-sky-500/15 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                                                                title="5개 본부 임원을 회의실로 긴급 소집하여 대면 심층 보고 및 질의응답을 받습니다"
                                                             >
-                                                                🎙️ 임원 대면 심층보고 소집
+                                                                <span className="text-base">👥</span>
+                                                                <span>임원 대면 심층보고 소집</span>
                                                             </button>
+                                                        </div>
+
+                                                        <div className="w-full mt-2.5 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+                                                            <span className="flex items-center gap-1.5">
+                                                                <span className="text-amber-400 text-xs">💡</span>
+                                                                <span>
+                                                                    <strong className="text-gray-200 font-bold">[임원 대면 심층보고 소집]</strong>을 누르시면 5개 본부 임원이 회의실로 즉각 소집되어 해당 안건의 쟁점과 분석을 실시간 대면 보고합니다.
+                                                                </span>
+                                                            </span>
                                                         </div>
 
                                                         {activeDoc.detail_url && (
@@ -1727,7 +1785,7 @@ export default function CeoOfficePage() {
 
                                     {/* 3. 📋 임원 합동 대면 회의록 (Executive Meeting Minutes) */}
                                     {agenda.meeting_minutes && (
-                                        <div className="bg-[#0b1322] border-2 border-indigo-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl relative overflow-hidden space-y-5">
+                                        <div ref={boardroomDebateRef} className="scroll-mt-6 bg-[#0b1322] border-2 border-indigo-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl relative overflow-hidden space-y-5">
                                             {/* 회의록 헤더 */}
                                             <div className="border-b border-white/15 pb-4">
                                                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
