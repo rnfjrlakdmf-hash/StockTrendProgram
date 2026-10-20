@@ -745,7 +745,7 @@ export default function CeoOfficePage() {
     const countKr = autoApprovals.filter(d => d.category_type === 'kr_stock').length;
     const countUs = autoApprovals.filter(d => d.category_type === 'us_stock').length;
     const countFutures = autoApprovals.filter(d => d.category_type === 'global_futures').length;
-    const countNews = autoApprovals.filter(d => d.category_type === 'world_news').length;
+    const countNews = autoApprovals.filter(d => d.category_type === 'world_news' || d.category_type === 'all' || d.doc_id.endsWith('-01')).length;
 
     // 필터링 적용된 결재 서류 목록
     const filteredDocs = autoApprovals.filter(doc => {
@@ -753,7 +753,7 @@ export default function CeoOfficePage() {
             if (categoryFilter === 'kr_stock' && doc.category_type !== 'kr_stock') return false;
             if (categoryFilter === 'us_stock' && doc.category_type !== 'us_stock') return false;
             if (categoryFilter === 'global_futures' && doc.category_type !== 'global_futures') return false;
-            if (categoryFilter === 'world_news' && doc.category_type !== 'world_news') return false;
+            if (categoryFilter === 'world_news' && doc.category_type !== 'world_news' && doc.category_type !== 'all' && !doc.doc_id.endsWith('-01')) return false;
         }
         const signStatus = signMap[doc.doc_id]?.status || 'pending';
         if (statusFilter === 'pending' && signStatus !== 'pending') return false;
@@ -1124,7 +1124,7 @@ export default function CeoOfficePage() {
                                                         type="button"
                                                         onClick={() => {
                                                             setCategoryFilter(tab.key as any);
-                                                            const match = autoApprovals.find(d => tab.key === 'all' || d.category_type === tab.key);
+                                                            const match = autoApprovals.find(d => tab.key === 'all' || d.category_type === tab.key || (tab.key === 'world_news' && (d.category_type === 'all' || d.doc_id.endsWith('-01'))));
                                                             if (match) setSelectedDocId(match.doc_id);
                                                         }}
                                                         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${

@@ -2232,6 +2232,21 @@ US_STOCK_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
 }
 
 FUTURES_MACRO_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
+    "NQ=F": {
+        "name": "나스닥 100 선물 (NQ=F)",
+        "badge": "📊 글로벌 기술주 지수 (NQ=F)",
+        "title": "[나스닥100 선물 (NQ=F)] 미리 보는 미국 증시 온도계 & 한국 시장 안전 방어 전략",
+        "why_important": "미국 본장이 열리지 않는 낮이나 밤에도 24시간 움직이는 '미국 증시 미리보기 온도계'입니다. 이 지수가 안정적이어야 한국 주식시장에서도 외국인들이 안심하고 주식을 사들입니다.",
+        "quant_point": "나스닥 선물이 50일 이동평균선 위에서 버텨주면, 한국 코스피 IT/반도체 대형주들로 외국인 자동 매수 자금이 유입될 확률이 높아집니다.",
+        "risk_point": "아침 9시 장이 열리고 첫 30분 동안은 가격이 위아래로 크게 흔들릴 수 있으므로 외국인 실질 수급 확인 후 진입하는 안전 수칙을 적용합니다.",
+        "secretary_guide": "미국 선물 온도계 감시 및 아침 장 안전 수칙 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!",
+        "recommendation": "나스닥 선물 시장 온도계 감시 & 안전 수칙 승인",
+        "terms": [
+            {"term": "나스닥 100 선물 (NQ=F)", "desc": "미국 100대 비금융 혁신 기술주 지수를 24시간 선반영하여 거래하는 글로벌 파생상품입니다."},
+            {"term": "선행 지표", "desc": "한국 시장이 열리기 전이나 장중에 미국 시장의 향후 움직임을 미리 엿볼 수 있는 나침반 역할을 합니다."},
+            {"term": "외국인 수급 연동", "desc": "글로벌 기술주 심리가 좋을 때 한국 삼성전자, SK하이닉스 등으로 이어지는 외국인 매수세입니다."}
+        ],
+    },
     "ES=F": {
         "name": "S&P 500 선물 (ES=F)",
         "badge": "📊 글로벌 기관 표준 지수",
@@ -2567,23 +2582,37 @@ def get_ceo_office_boardroom(
     futures_catalog = MULTI_ASSET_CATALOG.get("futures", [])
     day_num = now_kst.timetuple().tm_yday
 
-    # 일자별로 10대 미국 빅테크 중 2종목 자동 순환 선정 (매일 다른 2개 종목 자동 심층 분석)
-    us_idx1 = day_num % len(us_catalog) if us_catalog else 0
-    us_idx2 = (day_num + 5) % len(us_catalog) if us_catalog else 1
-    us1_meta = us_catalog[us_idx1] if us_catalog else None
-    us2_meta = us_catalog[us_idx2] if us_catalog else None
+    # 일자별로 10대 미국 빅테크 중 4종목 자동 순환 선정 (매일 다른 4개 빅테크 종목 자동 심층 분석)
+    selected_us_metas = []
+    step_offsets = [0, 2, 5, 7]
+    for offset in step_offsets:
+        idx = (day_num + offset) % len(us_catalog) if us_catalog else 0
+        cand = us_catalog[idx]
+        if cand not in selected_us_metas:
+            selected_us_metas.append(cand)
+    for cand in us_catalog:
+        if cand not in selected_us_metas:
+            selected_us_metas.append(cand)
+        if len(selected_us_metas) >= 4:
+            break
 
-    # 글로벌 선물/거시 지표: 1순위는 나스닥100(NQ=F, 고정 선행지표), 2순위는 일자별 로테이션(S&P선물, 금, 원유, 미 국채금리, 달러 등)
+    # 글로벌 선물/거시 지표: 4종목 엄선 (나스닥100 선물, S&P500 선물, WTI 원유 선물 + 일자별 로테이션 지표[금, 구리, 달러, 국채금리])
     nq_meta = next((c for c in futures_catalog if c["symbol"] == "NQ=F"), None)
-    alt_futures = [c for c in futures_catalog if c["symbol"] != "NQ=F"]
-    fut2_meta = alt_futures[day_num % len(alt_futures)] if alt_futures else None
+    es_meta = next((c for c in futures_catalog if c["symbol"] == "ES=F"), None)
+    cl_meta = next((c for c in futures_catalog if c["symbol"] == "CL=F"), None)
+    rot_candidates = [c for c in futures_catalog if c["symbol"] not in ["NQ=F", "ES=F", "CL=F"]]
+    rot_idx = day_num % len(rot_candidates) if rot_candidates else 0
+    fourth_meta = rot_candidates[rot_idx] if rot_candidates else None
+    selected_futures_metas = [m for m in [nq_meta, es_meta, cl_meta, fourth_meta] if m is not None]
+
+    us1_meta = selected_us_metas[0] if selected_us_metas else None
+    us2_meta = selected_us_metas[1] if len(selected_us_metas) > 1 else None
+    fut2_meta = selected_futures_metas[1] if len(selected_futures_metas) > 1 else None
 
     raw_company_reports = []
     raw_market_reports = []
-    us1_info = None
-    us2_info = None
-    nq_info = None
-    fut2_info = None
+    us_infos = [None] * len(selected_us_metas)
+    futures_infos = [None] * len(selected_futures_metas)
 
     def _task_comp():
         return get_stock_research_reports(category="company", q="", page=0, size=8).get("items", [])[:6]
@@ -2591,42 +2620,50 @@ def get_ceo_office_boardroom(
     def _task_mkt():
         return get_stock_research_reports(category="market", q="", page=0, size=4).get("items", [])[:4]
 
-    def _task_us1():
-        return _fetch_single_yfinance_research(us1_meta, "us_stock") if us1_meta else None
+    def _task_us(idx_meta):
+        idx, meta = idx_meta
+        return idx, _fetch_single_yfinance_research(meta, "us_stock")
 
-    def _task_us2():
-        return _fetch_single_yfinance_research(us2_meta, "us_stock") if us2_meta else None
-
-    def _task_nq():
-        return _fetch_single_yfinance_research(nq_meta, "futures") if nq_meta else None
-
-    def _task_fut2():
+    def _task_fut(idx_meta):
+        idx, meta = idx_meta
         atype = "futures"
-        if fut2_meta and (fut2_meta["symbol"].startswith("^") or fut2_meta["symbol"] == "DX-Y.NYB"):
+        if meta and (meta["symbol"].startswith("^") or meta["symbol"] == "DX-Y.NYB"):
             atype = "macro"
-        return _fetch_single_yfinance_research(fut2_meta, atype) if fut2_meta else None
+        return idx, _fetch_single_yfinance_research(meta, atype)
 
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
             f_comp = ex.submit(_task_comp)
             f_mkt = ex.submit(_task_mkt)
-            f_us1 = ex.submit(_task_us1)
-            f_us2 = ex.submit(_task_us2)
-            f_nq = ex.submit(_task_nq)
-            f_fut2 = ex.submit(_task_fut2)
+            f_us_list = [ex.submit(_task_us, (i, m)) for i, m in enumerate(selected_us_metas)]
+            f_fut_list = [ex.submit(_task_fut, (i, m)) for i, m in enumerate(selected_futures_metas)]
 
-            done, _ = concurrent.futures.wait(
-                [f_comp, f_mkt, f_us1, f_us2, f_nq, f_fut2],
-                timeout=4.0
-            )
+            all_tasks = [f_comp, f_mkt] + f_us_list + f_fut_list
+            done, _ = concurrent.futures.wait(all_tasks, timeout=4.5)
+
             raw_company_reports = f_comp.result() if (f_comp in done and not f_comp.exception()) else []
             raw_market_reports = f_mkt.result() if (f_mkt in done and not f_mkt.exception()) else []
-            us1_info = f_us1.result() if (f_us1 in done and not f_us1.exception()) else None
-            us2_info = f_us2.result() if (f_us2 in done and not f_us2.exception()) else None
-            nq_info = f_nq.result() if (f_nq in done and not f_nq.exception()) else None
-            fut2_info = f_fut2.result() if (f_fut2 in done and not f_fut2.exception()) else None
+            for f in f_us_list:
+                if f in done and not f.exception():
+                    try:
+                        i, info = f.result()
+                        us_infos[i] = info
+                    except Exception:
+                        pass
+            for f in f_fut_list:
+                if f in done and not f.exception():
+                    try:
+                        i, info = f.result()
+                        futures_infos[i] = info
+                    except Exception:
+                        pass
     except Exception as e:
         print(f"[CEOOffice] Parallel executor error: {e}")
+
+    us1_info = us_infos[0] if us_infos else None
+    us2_info = us_infos[1] if len(us_infos) > 1 else None
+    nq_info = futures_infos[0] if futures_infos else None
+    fut2_info = futures_infos[1] if len(futures_infos) > 1 else None
 
     def _normalize_desk_item(r: Dict[str, Any], idx: int, prefix: str) -> Dict[str, Any]:
         return {
@@ -2876,49 +2913,22 @@ def get_ceo_office_boardroom(
             "easy_terms": _extract_easy_terms(f"{s_name} {s_title} {s_easy}"),
         })
 
-    # [기안 제6호] 글로벌 데스크 자율 분석 안건 (미국 10대 빅테크 #1 — 일자별 다이내믹 순환 분석)
-    if us1_meta:
-        auto_approvals.append(_create_us_stock_approval_doc(6, us1_meta, us1_info, date_doc_str, time_str))
+    # [기안 제6호 ~ 9호] 미국 10대 빅테크 데일리 순환 분석 4종목 (NVDA, TSLA, AAPL, MSFT 등)
+    for i, meta in enumerate(selected_us_metas):
+        seq = 6 + i
+        info = us_infos[i] if i < len(us_infos) else None
+        auto_approvals.append(_create_us_stock_approval_doc(seq, meta, info, date_doc_str, time_str))
 
-    # [기안 제7호] 나스닥100 선물(NQ=F) 및 개장 리스크 방어 기안서 (쉬운 눈높이 해설)
-    auto_approvals.append({
-        "doc_id": f"DOC-{date_doc_str}-07",
-        "doc_number": f"제 {date_doc_str}-07 호",
-        "category_type": "global_futures",
-        "category_badge": "📊 글로벌 선물·지수 (NQ=F)",
-        "urgency": "리스크 점검",
-        "stock_name": "NQ=F",
-        "title": "[나스닥100 선물 (NQ=F)] 미리 보는 미국 증시 온도계 & 한국 시장 안전 방어 전략",
-        "proposer": "최서연 상무 (CRO) · 이준호 이사 (글로벌·파생본부장)",
-        "submitted_at": f"{time_str} 상시 감시 완료",
-        "easy_headline": f"'나스닥 선물({nq_price_str})'은 미국 본장이 열리지 않는 낮이나 밤에도 24시간 움직이는 '미국 증시 미리보기 온도계'입니다. 이 지수가 플러스(+)로 안정적이어야 한국 주식시장에서도 외국인들이 안심하고 주식을 사들입니다!",
-        "key_numbers": [
-            {"label": "나스닥 선물 현재 온도", "value": nq_price_str},
-            {"label": "두 달 평균 기준선(50일선)", "value": nq_ma50_str},
-            {"label": "현재 흐름 판정", "value": nq_trend_str},
-            {"label": "시장 위험 신호등", "value": "🟢 양호 (정상 범위)"},
-        ],
-        "research_opinion": (
-            f"👍 [왜 봐야 하나요? · 이준호 글로벌이사]: 한국 주식시장이 아침 9시에 열릴 때 외국인 투자자들이 제일 먼저 쳐다보는 숫자가 바로 이 나스닥100 선물({nq_price_str})입니다. 현재 두 달 평균선({nq_ma50_str}) 위에서 안정적인 흐름을 유지하고 있습니다."
-        ),
-        "quant_opinion": (
-            f"📊 [한국 증시 영향은? · 김도현 수급본부장]: 나스닥 선물이 지금처럼 평균선({nq_ma50_str}) 위에서 버텨주면, 한국 코스피 대형주들로 외국인 자동 매수 자금이 들어올 확률이 높아집니다."
-        ),
-        "risk_opinion": (
-            "⚠️ [이것만 조심하세요! · 최서연 리스크본부장]: 아침 9시 장이 열리고 첫 30분 동안은 가격이 위아래로 크게 흔들릴 수 있습니다. 아침 9시 30분까지 외국인이 실제로 주식을 사는지 확인한 뒤에 움직이도록 안전 수칙을 걸어두었습니다."
-        ),
-        "secretary_conclusion": (
-            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 대표님 자산을 지키기 위한 '미국 선물 온도계 감시 및 아침 장 안전 수칙' 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!"
-        ),
-        "recommendation": "시장 온도계 감시 & 안전 수칙 승인",
-        "detail_url": "https://finance.yahoo.com/quote/NQ=F",
-        "easy_terms": _extract_easy_terms("나스닥 선물 NQ=F 50일선"),
-    })
+    # [기안 제10호 ~ 13호] 글로벌 선물·거시지표 4종목 (나스닥100 선물, S&P500 선물, WTI 원유 선물, 금/구리/달러/국채)
+    for i, meta in enumerate(selected_futures_metas):
+        seq = 10 + i
+        info = futures_infos[i] if i < len(futures_infos) else None
+        auto_approvals.append(_create_futures_approval_doc(seq, meta, info, date_doc_str, time_str))
 
-    # [기안 제8호] 전세계 글로벌 경제뉴스 & 매크로 인텔리전스 (미 연준 금리·환율·국제유가)
+    # [기안 제14호] 전세계 글로벌 경제뉴스 & 매크로 인텔리전스 (미 연준 금리·환율·국제유가)
     auto_approvals.append({
-        "doc_id": f"DOC-{date_doc_str}-08",
-        "doc_number": f"제 {date_doc_str}-08 호",
+        "doc_id": f"DOC-{date_doc_str}-14",
+        "doc_number": f"제 {date_doc_str}-14 호",
         "category_type": "world_news",
         "category_badge": "📰 전세계 경제뉴스 · 글로벌 매크로",
         "urgency": "글로벌 거시경제",
@@ -2953,14 +2963,6 @@ def get_ceo_office_boardroom(
             {"term": "리스크온 (Risk-On)", "desc": "시장 참여자들이 경제 불안을 덜고 주식 같은 성장 자산에 적극적으로 투자하는 분위기입니다."},
         ],
     })
-
-    # [기안 제9호] 미국 10대 빅테크 (#2 — 일자별 다이내믹 순환 분석)
-    if us2_meta:
-        auto_approvals.append(_create_us_stock_approval_doc(9, us2_meta, us2_info, date_doc_str, time_str))
-
-    # [기안 제10호] 글로벌 선물·거시 지표 (일자별 다이내믹 순환 분석)
-    if fut2_meta:
-        auto_approvals.append(_create_futures_approval_doc(10, fut2_meta, fut2_info, date_doc_str, time_str))
 
     # 4. 대표님 추가 지시어(message) 또는 선택 안건(topic)에 따른 임원 회의실 브리핑 생성
     raw_directive = (message or "").strip()
@@ -3220,7 +3222,7 @@ def get_ceo_office_boardroom(
                 "message": (
                     "밤사이 열리는 미국 증시와 유럽 지표를 24시간 실시간 모니터링하여 대표님의 자산이 안전하게 보호되도록 조치했습니다."
                     if is_reexamine else
-                    f"한국 주식시장은 밤사이 미국 시장이 어떻게 끝났는지에 따라 아침 분위기가 결정됩니다. 제6호({us1_name_ko})와 제7호(나스닥 선물 온도계), 제9호({us2_name_ko}) 서류도 함께 서명해 주십시오!"
+                    f"한국 주식시장은 밤사이 미국 시장이 어떻게 끝났는지에 따라 아침 분위기가 결정됩니다. 미국 4대 빅테크(제6~9호)와 글로벌 선물·지수 4대 지표(제10~13호) 기안서도 함께 서명해 주십시오!"
                 ),
                 "data_tag": "글로벌 24시간 비상근무 데스크" if is_reexamine else "미국 증시 · 선물 24시간 연동",
             },
