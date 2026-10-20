@@ -242,7 +242,7 @@ def generate_morning_macro_doc() -> Dict[str, Any]:
         "category_type": "all",
         "category_badge": "🌅 07:20 모닝 글로벌 특보",
         "urgency": "최우선 결재 (07:20 상정)",
-        "stock_name": "글로벌 매크로 종합",
+        "stock_name": "전체 시장 시스템",
         "title": doc_data.get("title", f"[오전 07:20 모닝 글로벌 특보] {date_hyphen} 글로벌 매크로 분석"),
         "proposer": "박진우 부사장 (리서치센터장) · 최서연 상무 (CRO) · 이준호 이사 (글로벌)",
         "submitted_at": f"{date_hyphen} 07:20 상정 완료",

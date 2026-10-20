@@ -2968,8 +2968,13 @@ def get_ceo_office_boardroom(
     if not extracted_target and raw_directive:
         extracted_target = _extract_topic_from_ceo_message(raw_directive)
 
+    macro_keywords = [
+        "출근", "시황", "전체", "전사브리핑", "전체 시장 시스템", 
+        "글로벌 매크로 종합", "글로벌 매크로", "글로벌", "매크로", "모닝특보",
+        "시장 종합", "전체 시장", "일일 시장 시스템", "모닝 글로벌 특보"
+    ]
     is_general_briefing = False
-    if not extracted_target or extracted_target in ["출근", "시황", "전체", "전사브리핑", "전체 시장 시스템"]:
+    if not extracted_target or any(k in extracted_target for k in macro_keywords):
         is_general_briefing = True
 
     debates = []
@@ -3510,7 +3515,11 @@ def get_ceo_office_boardroom(
                         "speaker": "박진우 부사장",
                         "role": "리서치센터장",
                         "avatar": "👨‍💼",
-                        "text": f"국내 주요 10대 증권사가 최근 발간한 '{res_name}' 리포트 {rep_cnt}건을 전수 취합했습니다. 평균 목표주가는 {avg_gp_str}이며, 최고가는 {max_gp_str}까지 제시되었습니다. 현재가({cur_price_str}) 대비 기대 상승 여력이 {upside_str}에 달합니다. {rep_line} 밸류에이션 매력도가 극대화된 구간이므로 적극 매수를 강력히 추천합니다."
+                        "text": (
+                            f"국내 주요 10대 증권사가 최근 발간한 '{res_name}' 리포트 {rep_cnt}건을 전수 취합했습니다. 평균 목표주가는 {avg_gp_str}이며, 최고가는 {max_gp_str}까지 제시되었습니다. 현재가({cur_price_str}) 대비 기대 상승 여력이 {upside_str}에 달합니다. {rep_line} 밸류에이션 매력도가 양호한 구간으로 판단됩니다."
+                            if rep_cnt > 0 else
+                            f"국내 주요 증권사에서 현재 '{res_name}'에 대해 발간한 공식 목표주가 리포트는 부재한 상태입니다. 증권사 공식 컨센서스가 없으므로 무리한 추격 매수를 지양하고, {rep_line} 실질 펀더멘털과 수급 동향을 철저히 확인하며 신중히 분할 접근해야 합니다."
+                        )
                     },
                     {
                         "speaker": "김도현 상무",
@@ -3554,13 +3563,20 @@ def get_ceo_office_boardroom(
                     "avatar": "👨‍💼",
                     "stance": f"목표주가 평균 {avg_gp_str}",
                     "stance_tone": "bull",
-                    "headline": f"'{res_name}' 증권사 리포트 {rep_cnt}건 전수 분석 — 평균 목표주가 {avg_gp_str}",
+                    "headline": (
+                        f"'{res_name}' 증권사 리포트 {rep_cnt}건 전수 분석 — 평균 목표주가 {avg_gp_str}"
+                        if rep_cnt > 0 else
+                        f"'{res_name}' 증권사 공식 리포트 미발간 — 팩트 점검 및 신중 접근 권고"
+                    ),
                     "message": (
                         f"대표님, 리서치센터장 박진우 부사장입니다! 국내 증권사들이 최근 발표한 '{res_name}' 리포트 {rep_cnt}건을 전수 취합했습니다.\n"
                         f"{f'현재 증권사 평균 목표주가는 {avg_gp_str}(최고 {max_gp_str} ~ 최저 {min_gp_str})으로 형성되어 있습니다. ' if cons else ''}"
                         f"{rep_line}"
+                        if rep_cnt > 0 else
+                        f"대표님, 리서치센터장 박진우 부사장입니다. '{res_name}'은 현재 국내 증권사의 공식 커버리지 목표주가 리포트가 발간되지 않은 상태입니다.\n"
+                        f"시장 뜬소문 매매를 경계하고, 50일선({ma50_str}) 지지력과 실질 수급을 면밀히 관찰한 뒤 신중히 대응하셔야 합니다."
                     ),
-                    "data_tag": f"증권사 리포트 {rep_cnt}건 컨센서스",
+                    "data_tag": f"증권사 리포트 {rep_cnt}건" if rep_cnt > 0 else "공식 리포트 미발간",
                 },
                 {
                     "speaker_id": "quant_dir",
