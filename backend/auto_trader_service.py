@@ -549,7 +549,7 @@ def load_state() -> Dict[str, Any]:
     except Exception:
         pass
     if not str(state["config"].get("kis_account_no", "") or "").strip():
-        state["config"]["kis_account_no"] = "43880949-22"
+        state["config"]["kis_account_no"] = "10148196-01"
 
     # [모의투자 시드머니 영구 보존] 대표님이 설정한 시드머니가 서버 재시작/일자변경 시 1,000만원 기본값으로 되돌아가지 않도록 완벽 보존
     current_seed = state["config"].get("paper_seed_krw")

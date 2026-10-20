@@ -1162,7 +1162,7 @@ export default function AdminAutoTradePage() {
                       <span>KIS REAL ACCOUNT</span>
                     </span>
                     <span className="text-[11px] text-gray-400 font-mono">
-                      계좌번호 43880949-22
+                      계좌번호 10148196-01
                     </span>
                   </div>
 
@@ -2032,7 +2032,7 @@ export default function AdminAutoTradePage() {
               </h2>
               <p className="text-xs text-gray-300 mt-1">
                 {isRealView
-                  ? "한국투자증권 실제 계좌(43880949-22)에서 체결된 보유 종목만 표시됩니다. (야간 미국장 7개 풀가동 + 주간 국내장 예비 3슬롯 탄력 매수)"
+                  ? "한국투자증권 실제 계좌(10148196-01)에서 체결된 보유 종목만 표시됩니다. (야간 미국장 7개 풀가동 + 주간 국내장 예비 3슬롯 탄력 매수)"
                   : `실제 계좌 돈이 아닌 [${paperSeedLabel}] 가상 시드머니 한도에 맞춰 AI가 매매 검증 중인 종목 목록입니다. (야간 미국장 ${configuredMaxPos}개 풀가동 운용 중 · 🇰🇷국내 개장(09:00) 시 시드머니 여유에 맞춰 탄력 예비 슬롯으로 국내 주도주 즉시 자동 매수)`}
               </p>
             </div>
@@ -2857,17 +2857,17 @@ export default function AdminAutoTradePage() {
                 <div className="space-y-2.5 pt-3 border-t border-white/10">
                   {summary.kis_configured ? (
                     <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-xs text-emerald-200 font-bold">
-                      ✅ 현재 서버 보안 금고(`kis_credentials_vault`)에 대표님의 계좌번호(`{kisAccountNo || "43880949-22"}`)와 API 키가 안전하게 영구 암호화 저장되어 있습니다. 다시 입력하지 않으셔도 24시간 자동 유지됩니다!
+                      ✅ 현재 서버 보안 금고(`kis_credentials_vault`)에 대표님의 계좌번호(`{kisAccountNo || "10148196-01"}`)와 API 키가 안전하게 영구 암호화 저장되어 있습니다. 다시 입력하지 않으셔도 24시간 자동 유지됩니다!
                     </div>
                   ) : (
                     <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-400/40 text-xs text-amber-200 font-bold">
-                      💡 계좌번호(`43880949-22`)는 자동 입력되어 있습니다. 아래 <b>APP KEY</b>와 <b>APP SECRET</b>을 딱 한 번만 붙여넣고 <b>[💾 저장하기]</b>를 눌러주시면, 영구 금고 파일에 잠금 보관되어 다시는 지워지지 않습니다!
+                      💡 계좌번호(`10148196-01`)는 자동 입력되어 있습니다. 아래 <b>APP KEY</b>와 <b>APP SECRET</b>을 딱 한 번만 붙여넣고 <b>[💾 저장하기]</b>를 눌러주시면, 영구 금고 파일에 잠금 보관되어 다시는 지워지지 않습니다!
                     </div>
                   )}
                   <input
                     type="text"
-                    placeholder="KIS 계좌번호 (예: 43880949-22)"
-                    value={kisAccountNo || "43880949-22"}
+                    placeholder="KIS 계좌번호 (예: 10148196-01)"
+                    value={kisAccountNo || "10148196-01"}
                     onChange={(e) => setKisAccountNo(e.target.value)}
                     className="w-full bg-zinc-900 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white focus:outline-none"
                   />
