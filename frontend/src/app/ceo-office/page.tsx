@@ -666,13 +666,15 @@ export default function CeoOfficePage() {
 
     const handleReexamineDoc = (doc: AutoApprovalDoc) => {
         updateSignature(doc.doc_id, 'reexamine');
-        const target = doc.stock_name === '전체 시장 시스템' ? '' : doc.stock_name;
-        const msg = `${doc.stock_name} 안건(${doc.doc_number}) 대표이사 재검토 지시 — 임원 전원 심층 대면 보고 실시!`;
+        const isMacro = doc.category_type === 'world_news' || doc.category_badge?.includes('모닝') || doc.title?.includes('모닝 글로벌 특보') || doc.stock_name === '전체 시장 시스템' || doc.stock_name?.includes('매크로');
+        const target = isMacro ? '07:20 모닝 글로벌 특보' : (doc.stock_name === '전체 시장 시스템' ? '' : doc.stock_name);
+        const targetDisplay = isMacro ? '07:20 모닝 글로벌 특보' : doc.stock_name;
+        const msg = `${targetDisplay} 안건(${doc.doc_number}) 대표이사 재검토 지시 — 임원 전원 심층 대면 보고 실시!`;
         
         // 대표이사 재검토 지시 토스트 알림 팝업
         setToastMessage({
             title: "📢 [정유진 비서실장] 대표님의 재검토 지시 접수 완료!",
-            desc: `"${doc.stock_name}" 안건 재검토를 위해 5개 본부 임원을 회의실로 긴급 소집했습니다.`
+            desc: `"${doc.title || targetDisplay}" 안건 재검토를 위해 5개 본부 임원을 회의실로 긴급 소집했습니다.`
         });
         setTimeout(() => setToastMessage(null), 6000);
 

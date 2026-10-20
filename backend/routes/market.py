@@ -2990,22 +2990,28 @@ def get_ceo_office_boardroom(
         top_title = top_rep["title"] if top_rep else "실적 시즌 수급 차별화 진행"
         mkt_title = top_mkt["title"] if top_mkt else "글로벌 매크로 지표 및 외국인 수급 연동 장세"
 
-        briefing_title = f"🚨 [대표이사 특별 재검토 지시] '{extracted_target or '글로벌 매크로 종합'}' 안건 임원 긴급 심층 대면 보고" if is_reexamine else "전 부서 자율 시장 분석 완료 · 대표님을 위한 쉬운 요약 보고"
-        briefing_sub = f"대표님의 재검토 지시 접수 완료 · 5개 본부 임원 전원이 긴급 소집되어 핵심 쟁점(리포트 0건 사유 및 환차익·수급)을 소명하고 대면 보고를 진행합니다." if is_reexamine else f"현재 시각 {time_str} 기준 · 어려운 금융 용어를 모두 빼고 쉽게 정리한 총 {len(auto_approvals)}건의 결재 서류가 준비되었습니다."
+        m_headline = macro_doc.get("easy_headline", "") if macro_doc else ""
+        m_title = macro_doc.get("title", "") if macro_doc else ""
+        m_key_numbers = macro_doc.get("key_numbers", []) if macro_doc else []
+        is_0720_macro = bool(macro_doc and ("07:20" in extracted_target or "모닝" in extracted_target or "특보" in extracted_target or "전체" in extracted_target or not extracted_target))
+
+        target_display_name = (m_title or "07:20 모닝 글로벌 특보") if is_0720_macro else (extracted_target or "글로벌 매크로 종합")
+        briefing_title = f"🚨 [대표이사 특별 재검토 지시] '{target_display_name}' 안건 임원 긴급 심층 대면 보고" if is_reexamine else "전 부서 자율 시장 분석 완료 · 대표님을 위한 쉬운 요약 보고"
+        briefing_sub = f"대표님의 재검토 지시 접수 완료 · 07:20 모닝 글로벌 특보의 밤사이 뉴욕증시·환율·유가 지표 및 국내외 증시 파급 영향을 5개 본부 임원이 대면으로 정밀 소명합니다." if is_reexamine else f"현재 시각 {time_str} 기준 · 어려운 금융 용어를 모두 빼고 쉽게 정리한 총 {len(auto_approvals)}건의 결재 서류가 준비되었습니다."
         briefing_badge = "🚨 대표이사 긴급 심층 대면 보고 소집" if is_reexamine else office_mode
 
         agenda_summary = {
             "topic_type": "briefing",
             "title": briefing_title,
             "subtitle": briefing_sub,
-            "target_name": f"{extracted_target or '시장 종합'} 긴급 대면 보고" if is_reexamine else "전사 출근 브리핑",
+            "target_name": f"{target_display_name} 긴급 대면 보고" if is_reexamine else "전사 출근 브리핑",
             "target_code": "ALL",
             "badge": briefing_badge,
             "timestamp": f"{now_kst.strftime('%Y-%m-%d %H:%M')} KST",
             "ceo_question": raw_directive or None,
             "key_metrics": [
                 {"label": "대표이사 결재 지시", "value": "🚨 긴급 심층 재검토" if is_reexamine else f"총 {len(auto_approvals)}건 준비 완료", "sub": "5개 본부 임원 전원 소집" if is_reexamine else "쉬운 10초 요약 적용", "tone": "positive"},
-                {"label": "보고 안건 타겟", "value": f"{extracted_target or top_stock_name}", "sub": "거시지표 및 수급 정밀 소명" if is_reexamine else f"{top_broker} · 목표가 {top_gp}", "tone": "neutral"},
+                {"label": "보고 안건 타겟", "value": "07:20 모닝 특보" if is_0720_macro else f"{extracted_target or top_stock_name}", "sub": "거시지표 및 수급 정밀 소명" if is_reexamine else f"{top_broker} · 목표가 {top_gp}", "tone": "neutral"},
                 {"label": "미국장 온도계(선물)", "value": nq_info["price"] if nq_info else "20,480pt", "sub": f"등락 {nq_info['change_pct']:+.2f}%" if nq_info else "24시간 감시 중", "tone": "positive" if (nq_info and nq_info["change_pct"] >= 0) else "negative"},
                 {"label": f"글로벌 빅테크({us1_sym})", "value": us1_info["price"] if us1_info else "$150.00", "sub": f"월가 목표가 {us1_info.get('target_mean') or '$180.00'}" if us1_info else "빅테크 선행지표", "tone": "positive" if (us1_info and us1_info.get("change_pct", 0) >= 0) else "negative"},
             ],
@@ -3067,7 +3073,7 @@ def get_ceo_office_boardroom(
                         "speaker": "정유진 비서실장",
                         "role": "간사",
                         "avatar": "👩‍💼",
-                        "text": f"대표님께서 '{extracted_target or '글로벌 매크로 종합'}' 안건에 대해 임원 대면 심층보고를 긴급 소집하셨습니다. 각 본부장은 대표님의 의문 사항과 쟁점에 대해 즉시 소명해 주십시오."
+                        "text": f"오늘 대표님께서 아침 [07:20 모닝 글로벌 특보] 안건에 대해 임원 대면 심층보고를 긴급 소집하셨습니다. 밤사이 발표된 글로벌 경제뉴스와 환율, 국제유가 급변이 오늘 한국 증시 및 해외 투자 포트폴리오에 미치는 파급 영향을 각 본부장님들께서 즉시 상세히 소명해 주십시오."
                     } if is_reexamine else {
                         "speaker": "정유진 비서실장",
                         "role": "간사",
@@ -3078,7 +3084,7 @@ def get_ceo_office_boardroom(
                         "speaker": "박진우 부사장",
                         "role": "리서치센터장",
                         "avatar": "👨‍💼",
-                        "text": "대표님, 해당 안건은 개별 종목이 아닌 '전세계 거시경제·환율·금리' 종합 감시 안건이라 개별 기업 목표주가 리포트가 0건으로 잡혔던 것입니다. 혼선을 드려 송구합니다! 증권사 거시경제 리포트와 외신 데이터를 기반으로 전세계 자금 흐름을 완벽히 보강 브리핑드리겠습니다."
+                        "text": f"대표님, 밤사이 발표된 글로벌 경제뉴스와 거시 지표를 긴급 재점검했습니다. {m_headline if m_headline else '빅테크 실적 기대감과 유가 급락으로 거시경제 환경이 안정세를 보이고 있습니다.'} 특히 개별 기업 리포트 건수(0건)는 특정 단일 회사가 아닌 거시경제 전체를 감시하는 시스템 특보이기 때문이며, 글로벌 외신과 증권가 매크로 분석을 전수 취합해 거시 환경의 호재를 완벽히 확인했습니다."
                     } if is_reexamine else {
                         "speaker": "박진우 부사장",
                         "role": "리서치센터장",
@@ -3089,7 +3095,7 @@ def get_ceo_office_boardroom(
                         "speaker": "김도현 상무",
                         "role": "퀀트·수급본부장",
                         "avatar": "📈",
-                        "text": "수급 측면에서 원/달러 환율이 1,320원대 안착 시 외국인의 환차익(환율 하락으로 얻는 부가 이익) 기대감으로 국내 IT·반도체로 큰손 자금이 유입됩니다. 50일선 추세 지지선을 엄격히 감시 중입니다."
+                        "text": "수급 퀀트 시그널 관점에서 가장 중요한 핵심은 '원/달러 환율 하락과 외국인 환차익 기대감'입니다. 환율이 1,320원대로 안착하면 외국인은 환차익(달러 환전 시 추가 차익)을 노리고 한국 IT·반도체 대형주를 집중 매수하는 경향이 통계적으로 매우 강합니다. 오늘 장 시작과 함께 외국인 프로그램 순매수 유입 경로를 50일선 기준으로 집중 추적하겠습니다."
                     } if is_reexamine else {
                         "speaker": "김도현 상무",
                         "role": "퀀트·수급본부장",
@@ -3100,7 +3106,7 @@ def get_ceo_office_boardroom(
                         "speaker": "최서연 CRO",
                         "role": "리스크본부장",
                         "avatar": "🛡️",
-                        "text": "대표님의 지시대로 추격 매수는 전면 차단하고, 유가나 금리 급변 시 즉각 작동하는 비상 방어 라인을 점검 완료했습니다. 분할 매수 원칙이 지켜질 때만 승인 서명을 건의드립니다."
+                        "text": "리스크 측면에서도 국제유가(WTI) 급락은 인플레이션 압력을 낮추어 주식시장에 큰 호재로 작용합니다. 다만 거시경제 변동성 속에서도 추격 매수는 엄격히 통제하고, -3.5% 손절선과 비상 방어 라인을 철저히 가동하여 대표님의 원금을 보호하는 조건으로 재가를 건의드립니다."
                     } if is_reexamine else {
                         "speaker": "최서연 CRO",
                         "role": "리스크본부장",
@@ -3111,7 +3117,7 @@ def get_ceo_office_boardroom(
                         "speaker": "이준호 이사",
                         "role": "글로벌본부장",
                         "avatar": "🌎",
-                        "text": f"미국 나스닥 선물({nq_price_str})과 글로벌 빅테크 지표를 24시간 추적하여 야간 시장 충격을 사전에 방어할 수 있도록 실시간 감시망을 재가동했습니다."
+                        "text": f"미국 24시 데스크에서도 나스닥 선물({nq_price_str})과 글로벌 빅테크({us1_name_ko})의 야간 거래 추이를 실시간 모니터링한 결과, 미국 기술주 훈풍이 오늘 한국 코스피 및 코스닥 개장 초반에 강력한 상승 모멘텀을 줄 것으로 확인되었습니다."
                     } if is_reexamine else {
                         "speaker": "이준호 이사",
                         "role": "글로벌본부장",
@@ -3122,7 +3128,7 @@ def get_ceo_office_boardroom(
                         "speaker": "정유진 비서실장",
                         "role": "비서실장",
                         "avatar": "👩‍💼",
-                        "text": "전 부서 임원진의 재검토 및 소명이 완료되었습니다. 대표님께서 안심하시고 재가하실 수 있도록 결재판에 보강 사항을 충실히 반영하겠습니다."
+                        "text": "5개 본부 임원진의 07:20 모닝 특보 심층 대면 보고 및 소명이 완료되었습니다. 대표님께서 안심하시고 재가하실 수 있도록 보강된 분석 내용을 전자결재판에 완벽히 반영하겠습니다."
                     } if is_reexamine else {
                         "speaker": "정유진 비서실장",
                         "role": "비서실장",
