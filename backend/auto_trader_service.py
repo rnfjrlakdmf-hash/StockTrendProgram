@@ -1660,10 +1660,15 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
                     if cvd_bull or obv_bull:
                         closing_scanner_map[code] = s_item
                         if code not in existing_syms:
+                            m_buyer = s_item.get("majorBuyer", "외인·기관")
+                            if "스마트머니" in m_buyer:
+                                sec_lbl = "스마트머니 집중수급 (큰손 순매수)"
+                            else:
+                                sec_lbl = f"스마트머니 집중수급 ({m_buyer})"
                             universe.append({
                                 "symbol": code,
                                 "name": s_item.get("name", code),
-                                "sector": f"장마감 수급포착 ({s_item.get('majorBuyer', '기관·외인')})",
+                                "sector": sec_lbl,
                                 "tier": "MID_MOMENTUM",
                             })
                             existing_syms.add(code)
@@ -1684,7 +1689,7 @@ def _build_session_candidates(state: Dict[str, Any], active_market: str) -> List
                 obv_lbl = scan_hit.get("obv", {}).get("label", "OBV 매집")
                 buyer = scan_hit.get("majorBuyer", "외인·기관")
                 scored["ai_score"] = min(99, scored["ai_score"] + 10)
-                scored["reason"] = f"🔥[장마감 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
+                scored["reason"] = f"🔥[스마트머니 수급스캐너 포착: {buyer} · {cvd_lbl} · {obv_lbl}] · " + scored["reason"]
             scored["reason"] = "🇰🇷[주간 한국장 실시간 타점] · " + scored["reason"]
         else:
             scored["ai_score"] = min(99, scored["ai_score"] + 8)
