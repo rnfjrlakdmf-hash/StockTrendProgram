@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
-import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight } from 'lucide-react';
+import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame } from 'lucide-react';
 
 
 // [Smart Executive Opinion Parser]
@@ -538,7 +538,7 @@ export default function CeoOfficePage() {
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
-    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'history'>('electronic_sign');
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history'>('electronic_sign');
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const [commandInput, setCommandInput] = useState<string>('');
     const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
@@ -580,6 +580,16 @@ export default function CeoOfficePage() {
             }
             return next;
         });
+
+        if (status === 'approved') {
+            const doc = autoApprovals.find(d => d.doc_id === docId);
+            const stockName = doc?.stock_name || '안건';
+            setToastMessage({
+                title: `🎉 [정유진 비서실장] 대표님 재가 완료!`,
+                desc: `'${stockName}' 특별 집중 분석 전담 TFT가 발족되었습니다! 상단 [재가 종목 전담 TFT] 탭에서 24시간 실시간 감시 현황을 확인하실 수 있습니다.`
+            });
+            setTimeout(() => setToastMessage(null), 6000);
+        }
     };
 
     const handleApproveAll = () => {
@@ -596,6 +606,11 @@ export default function CeoOfficePage() {
             }
             return next;
         });
+        setToastMessage({
+            title: `🎉 [정유진 비서실장] 전 안건 일괄 재가 완료!`,
+            desc: `총 ${autoApprovals.length}건 기안서에 대한 승인 서명이 완료되었으며, 각 종목별 특별 집중 분석 전담 TFT가 가동되었습니다.`
+        });
+        setTimeout(() => setToastMessage(null), 6000);
     };
 
     const fetchOfficeData = useCallback(async (topicParam = '', messageParam = '', appendHistory = false) => {
@@ -865,8 +880,8 @@ export default function CeoOfficePage() {
                                 를 검토 후 서명해 주십시오 🖋️
                             </h1>
 
-                            {/* 3대 핵심 포인트 가이드 바 (한눈에 확 들어오는 깔끔한 3단 카드) */}
-                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-w-4xl">
+                            {/* 4대 핵심 포인트 가이드 바 */}
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 max-w-5xl">
                                 <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-black/45 border border-emerald-500/30 text-xs text-gray-200 font-bold backdrop-blur-sm shadow-sm">
                                     <span className="text-base text-emerald-400 shrink-0">⚡</span>
                                     <div>
@@ -886,6 +901,13 @@ export default function CeoOfficePage() {
                                     <div>
                                         <div className="text-[10px] text-rose-300 font-extrabold uppercase">안전 하방 검증</div>
                                         <div className="text-white font-extrabold">50일선 지지선 & 위험 요인 감사</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-950/40 border border-emerald-400/40 text-xs text-emerald-100 font-bold backdrop-blur-sm shadow-sm">
+                                    <span className="text-base text-emerald-300 shrink-0">🏛️</span>
+                                    <div>
+                                        <div className="text-[10px] text-emerald-300 font-extrabold uppercase">재가 연동 특명</div>
+                                        <div className="text-white font-extrabold">승인 시 전담 분석 TFT 신설 가동</div>
                                     </div>
                                 </div>
                             </div>
@@ -984,6 +1006,24 @@ export default function CeoOfficePage() {
                             <span>🎙️ 임원 대면 브리핑 · 심층 토론실</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25">
                                 {debates.length}명 보고
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('approved_tf')}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                                activeTab === 'approved_tf'
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/25'
+                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                            }`}
+                        >
+                            <span>🏛️</span>
+                            <span>재가 종목 전담 TFT</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            }`}>
+                                {approvedDocsCount}개 종목 가동 중
                             </span>
                         </button>
 
@@ -1390,6 +1430,134 @@ export default function CeoOfficePage() {
                                                             </p>
                                                         </div>
                                                     )}
+
+                                                    {/* 🎯 대표님을 위한 종목 심층 3대 핵심 분석 & 팩트체크 */}
+                                                    <div className="mt-4 bg-gradient-to-br from-[#0c1427] via-[#09101f] to-[#0d162b] border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-3 border-b border-white/10">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
+                                                                    <span>🎯</span>
+                                                                    <span>[{activeDoc.stock_name}] 대표님 전용 세부 심층 분석 & 투자 팩트체크</span>
+                                                                </h4>
+                                                            </div>
+                                                            <span className="text-[11px] font-extrabold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/25">
+                                                                💡 초보자 눈높이 맞춤 해설
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                            {/* 1. 핵심 호재 & 왜 오르나요? */}
+                                                            <div className="bg-gradient-to-b from-emerald-950/25 via-zinc-900/60 to-zinc-950 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                <div>
+                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300 mb-2">
+                                                                        <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-400">🚀</span>
+                                                                        <span>1. 왜 오를까요? (성장 동력)</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                        {parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡").body || activeDoc.easy_headline}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="mt-3 pt-2 border-t border-emerald-500/15 flex items-center justify-between text-[11px] text-emerald-400 font-bold">
+                                                                    <span>실적 모멘텀</span>
+                                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 font-black">🟢 성장성 우수</span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 2. 외인/기관 큰손 수급 상태 */}
+                                                            <div className="bg-gradient-to-b from-cyan-950/25 via-zinc-900/60 to-zinc-950 border border-cyan-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                <div>
+                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-cyan-300 mb-2">
+                                                                        <span className="p-1 rounded-md bg-cyan-500/20 text-cyan-400">📈</span>
+                                                                        <span>2. 큰손들은 사고 있나요? (수급)</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                        {parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊").body || "최근 두 달 평균선(50일선) 위에서 외국인과 기관 큰손들의 수급 지지력을 정밀 감시하고 있습니다."}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between text-[11px] text-cyan-400 font-bold">
+                                                                    <span>50일선 추세</span>
+                                                                    <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 font-black">📊 지지력 확보</span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 3. 목표가와 안전마진 */}
+                                                            <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                <div>
+                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-purple-300 mb-2">
+                                                                        <span className="p-1 rounded-md bg-purple-500/20 text-purple-400">🎯</span>
+                                                                        <span>3. 목표가와 기대 상승 여력</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                        {activeDoc.key_numbers.find(k => k.label.includes("목표가") || k.label.includes("온도"))?.value 
+                                                                            ? `전문가 제시 목표치(${activeDoc.key_numbers.find(k => k.label.includes("목표가") || k.label.includes("온도"))?.value})까지 충분한 상승 안전마진을 확보한 매수 유효 구간입니다.`
+                                                                            : `국내외 제도권 증권사들의 긍정적 투자의견과 함께 추가 상승 여력이 충분한 구간으로 분석됩니다.`}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
+                                                                    <span>가격 매력도</span>
+                                                                    <span className="px-1.5 py-0.5 rounded bg-purple-500/20 font-black">💎 상승 여력 충분</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 4. 대표이사 리스크 방어선 배너 */}
+                                                        <div className="mt-3 bg-rose-950/20 border border-rose-500/30 rounded-xl p-3 flex items-start gap-2.5">
+                                                            <span className="text-sm shrink-0 mt-0.5">🛡️</span>
+                                                            <div className="text-xs text-rose-200/90 leading-relaxed font-medium">
+                                                                <span className="font-black text-rose-300 mr-1.5">[리스크 방어선 · 최서연 상무]:</span>
+                                                                {parseExecutiveOpinion(activeDoc.risk_opinion, "리스크본부", "⚠️").body || "하루에 급등한 주식을 무리하게 추격 매수하지 않고, 50일선 지지 확인 후 분할 매수하며 -3.5% 손절선을 엄수합니다."}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 🏛️ 대표이사 재가 연동: 전담 TFT 신설 안내 배너 */}
+                                                    <div className={`mt-4 rounded-2xl p-4 sm:p-4.5 border transition-all ${
+                                                        (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                                            ? 'bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border-emerald-500/50 shadow-lg shadow-emerald-950/20'
+                                                            : 'bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-950 border-amber-500/30'
+                                                    }`}>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl shrink-0 ${
+                                                                    (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                                                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                                                }`}>
+                                                                    {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' ? '🚀' : '🏛️'}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs sm:text-sm font-black flex items-center gap-2">
+                                                                        <span className={(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' ? 'text-emerald-300' : 'text-amber-300'}>
+                                                                            {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                                                                ? `[대표이사 재가 완료] '${activeDoc.stock_name}' 특별 집중 분석 전담 TFT 가동 중!`
+                                                                                : `[대표이사 특명 권한] 서명(재가) 시 '${activeDoc.stock_name}' 전담 분석 TFT 자동 신설`}
+                                                                        </span>
+                                                                        {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' && (
+                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 font-bold animate-pulse">
+                                                                                24시간 밀착 감시
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[11px] sm:text-xs text-gray-300 font-medium mt-0.5 leading-relaxed">
+                                                                        {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                                                            ? '리서치센터(박진우)·수급퀀트(김도현)·리스크(최서연) 4대 전담관이 배치되어 목표가 도달 및 실시간 수급을 밀착 추적합니다.'
+                                                                            : '대표님께서 하단 [승인 서명 (재가)]을 누르시면, 즉시 이 종목만을 24시간 전담하는 특별 분석 TFT가 발족됩니다.'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setActiveTab('approved_tf')}
+                                                                    className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
+                                                                >
+                                                                    <span>🏛️</span>
+                                                                    <span>전담 TFT 지휘본부 입장 →</span>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
 
                                                     {/* 핵심 수치 요약 표 (상승/하락 직관적 컬러 반영 & 말줄임 없이 전체 표기) */}
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
@@ -1933,6 +2101,215 @@ export default function CeoOfficePage() {
                                         })}
                                     </div>
                                 </>
+                            )}
+
+                            {/* 🏛️ [대표이사 특명] 재가 종목 특별 집중 분석 전담 TFT 지휘본부 */}
+                            {activeTab === 'approved_tf' && (
+                                <div className="space-y-6">
+                                    {/* 상단 TFT 총괄 브리핑 배너 */}
+                                    <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border-2 border-emerald-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-emerald-500/30 font-black">
+                                                    🏛️
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">
+                                                            대표이사 직속 특명 기구
+                                                        </span>
+                                                        <span className="text-xs text-gray-400 font-semibold">
+                                                            · 4대 본부 정예 전담관 배치
+                                                        </span>
+                                                    </div>
+                                                    <h2 className="text-lg sm:text-2xl font-black text-white mt-1">
+                                                        재가 종목 특별 집중 분석 전담 TFT (Task Force Team)
+                                                    </h2>
+                                                    <p className="text-xs sm:text-sm text-zinc-300 font-medium mt-1 leading-relaxed">
+                                                        &ldquo;대표님께서 [승인 서명 (재가)]을 내리신 핵심 유망 종목들만 모아, 리서치·퀀트·리스크 4대 본부 전담관이 24시간 실시간 호가·수급·목표가를 밀착 추적합니다.&rdquo;
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                <div className="px-4 py-2.5 rounded-2xl bg-[#070b14] border border-emerald-500/30 text-center">
+                                                    <div className="text-[10px] text-gray-400 font-bold">가동 중인 TFT</div>
+                                                    <div className="text-lg font-black text-emerald-400">{approvedDocsCount}개 종목</div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('electronic_sign')}
+                                                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-xs transition-all cursor-pointer"
+                                                >
+                                                    + 추가 종목 재가하기
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 재가된 종목 목록 카드 */}
+                                    {approvedDocsCount === 0 ? (
+                                        <div className="bg-[#0f172a] border border-white/10 rounded-3xl p-12 text-center space-y-4">
+                                            <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl">
+                                                🏛️
+                                            </div>
+                                            <h3 className="text-lg font-black text-white">
+                                                아직 대표님께서 재가(승인)하신 종목이 없습니다
+                                            </h3>
+                                            <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+                                                [🖋️ 전자결재 서류함]에서 유망 종목 기안서를 확인하시고 <span className="text-amber-300 font-bold">[승인 서명 (재가)]</span> 도장을 찍으시면, 즉시 해당 종목만을 전담하는 특별 분석 TFT가 신설되어 실시간 감시를 시작합니다.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab('electronic_sign')}
+                                                className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-300 cursor-pointer transition-all"
+                                            >
+                                                🖋️ 전자결재 서류함으로 이동하기
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 gap-5">
+                                            {autoApprovals
+                                                .filter(doc => signMap[doc.doc_id]?.status === 'approved')
+                                                .map(doc => {
+                                                    const targetKn = doc.key_numbers.find(k => k.label.includes("목표가") || k.label.includes("온도"))?.value || "상승 여력 충분";
+                                                    const priceKn = doc.key_numbers[0]?.value || "장중 실시간";
+                                                    const ma50Kn = doc.key_numbers.find(k => k.label.includes("50일선"))?.value || "추세 지지";
+                                                    return (
+                                                        <div
+                                                            key={doc.doc_id}
+                                                            className="bg-gradient-to-br from-[#0e1628] via-[#0b1222] to-[#080d19] border-2 border-emerald-500/35 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4"
+                                                        >
+                                                            {/* 상단 종목 헤더 */}
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-2xl font-black shrink-0">
+                                                                        🚀
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30">
+                                                                                전담 TFT 가동 중
+                                                                            </span>
+                                                                            <span className="text-xs text-gray-400">
+                                                                                {doc.doc_number} · {doc.category_badge}
+                                                                            </span>
+                                                                        </div>
+                                                                        <h3 className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                                                                            {doc.stock_name}
+                                                                            <span className="text-xs sm:text-sm font-bold text-gray-400 ml-2">
+                                                                                (대표이사 재가 일시: {signMap[doc.doc_id]?.signedAt})
+                                                                            </span>
+                                                                        </h3>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            handleReexamineDoc(doc);
+                                                                        }}
+                                                                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                                                                    >
+                                                                        <span>🎙️</span>
+                                                                        <span>임원 대면 심층보고 소집</span>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setSelectedDocId(doc.doc_id);
+                                                                            setActiveTab('electronic_sign');
+                                                                        }}
+                                                                        className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 font-bold text-xs cursor-pointer transition-all"
+                                                                    >
+                                                                        기안서 보기
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => updateSignature(doc.doc_id, 'hold')}
+                                                                        className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 font-bold text-xs cursor-pointer transition-all"
+                                                                        title="TFT 일시 보류"
+                                                                    >
+                                                                        보류 전환
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 핵심 수치 요약 */}
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                                <div className="bg-[#060a14] border border-white/10 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-gray-400 font-bold">현재 가격대</div>
+                                                                    <div className="text-sm font-black text-white mt-0.5">{priceKn}</div>
+                                                                </div>
+                                                                <div className="bg-[#060a14] border border-emerald-500/30 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-emerald-400 font-bold">목표 가격치</div>
+                                                                    <div className="text-sm font-black text-emerald-300 mt-0.5">{targetKn}</div>
+                                                                </div>
+                                                                <div className="bg-[#060a14] border border-cyan-500/30 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-cyan-400 font-bold">50일 기준선</div>
+                                                                    <div className="text-sm font-black text-cyan-300 mt-0.5">{ma50Kn}</div>
+                                                                </div>
+                                                                <div className="bg-[#060a14] border border-amber-500/30 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-amber-400 font-bold">TFT 관제 상태</div>
+                                                                    <div className="text-sm font-black text-amber-300 mt-0.5">🟢 집중 밀착 감시</div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* TFT 4인 전담관 실시간 밀착 업무 현황 */}
+                                                            <div className="bg-[#070c17] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
+                                                                <div className="text-xs font-black text-emerald-300 flex items-center gap-2">
+                                                                    <span>👥</span>
+                                                                    <span>TFT 4인 전담관 실시간 포지션 배정 및 밀착 감시 현황</span>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                    {/* 박진우 부사장 */}
+                                                                    <div className="bg-zinc-900/50 border border-purple-500/25 rounded-xl p-3 flex items-start gap-2.5">
+                                                                        <span className="text-lg">👨‍💼</span>
+                                                                        <div className="text-xs">
+                                                                            <div className="font-black text-purple-300">박진우 부사장 (리서치 총괄)</div>
+                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
+                                                                                증권사 최신 리포트와 분기 실적 컨센서스를 실시간 스캐닝 중이며, 목표가 도달 시 추가 상승 여력을 즉시 보고합니다.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* 김도현 상무 */}
+                                                                    <div className="bg-zinc-900/50 border border-cyan-500/25 rounded-xl p-3 flex items-start gap-2.5">
+                                                                        <span className="text-lg">📈</span>
+                                                                        <div className="text-xs">
+                                                                            <div className="font-black text-cyan-300">김도현 상무 (퀀트·수급 전담)</div>
+                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
+                                                                                외국인 및 기관의 장중 프로그램 순매수 강도와 50일선 지지력을 분단위로 추적하여 자금 이탈을 감시합니다.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* 최서연 상무 */}
+                                                                    <div className="bg-zinc-900/50 border border-rose-500/25 rounded-xl p-3 flex items-start gap-2.5">
+                                                                        <span className="text-lg">🛡️</span>
+                                                                        <div className="text-xs">
+                                                                            <div className="font-black text-rose-300">최서연 상무 (리스크 관제)</div>
+                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
+                                                                                단기 급등 시 분할 익절 라인과 -3.5% 손절 방어 매뉴얼을 24시간 상시 가동하여 대표님의 원금을 보호합니다.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* 정유진 비서실장 */}
+                                                                    <div className="bg-zinc-900/50 border border-amber-500/25 rounded-xl p-3 flex items-start gap-2.5">
+                                                                        <span className="text-lg">👩‍💼</span>
+                                                                        <div className="text-xs">
+                                                                            <div className="font-black text-amber-300">정유진 실장 (대표이사 직속)</div>
+                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
+                                                                                대표님의 추가 지시사항을 1순위로 TFT에 전달하며, 특이사항 발생 시 즉각 대면 보고를 올릴 수 있도록 준비 중입니다.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {activeTab === 'history' && (
