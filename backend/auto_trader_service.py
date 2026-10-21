@@ -1305,10 +1305,10 @@ def _send_batch_trade_notification(
             if is_us:
                 p_val = float(it.get("price", 0))
                 unit_lbl = f"${p_val:.2f}" if p_val < 100 else f"${p_val:,.1f}"
-                detail_lbl = f"[{mkt_tag} · {sec}] {unit_lbl} × {qty}주 매입 완료 (≈ ₩{amt:,})"
+                detail_lbl = f"[{name} · {mkt_tag} · {sec}] {unit_lbl} × {qty}주 매입 완료 (≈ ₩{amt:,})"
             else:
                 unit_lbl = f"{int(it.get('price', 0)):,}원"
-                detail_lbl = f"[{mkt_tag} · {sec}] {unit_lbl} × {qty}주 매입 완료"
+                detail_lbl = f"[{name} · {mkt_tag} · {sec}] {unit_lbl} × {qty}주 매입 완료"
             _send_admin_trade_notification(
                 f"🟢{mode_tag} 매수 완료 {name} ({sec}) {amt:,}원",
                 f"{detail_lbl}\n목표 +{tp_pct}% | {c_lbl} {c_val:,}원",
@@ -1364,7 +1364,7 @@ def _send_batch_trade_notification(
             pnl_label = "수익" if pnl_krw >= 0 else "손실"
             _send_admin_trade_notification(
                 f"{tag}{mode_tag} {name} ({sec}) {pnl_krw:+,}원({pnl_pct:+.1f}%)",
-                f"[{mkt_tag} · {sec}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds:,}원){kis_tag}\n"
+                f"[{name} · {mkt_tag} · {sec}] {pnl_label} {pnl_krw:+,}원 확정 (회수 {proceeds:,}원){kis_tag}\n"
                 f"잔여 {c_lbl} {c_val:,}원",
                 symbol=sym,
                 market=mkt_tag,
@@ -1821,7 +1821,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                         mkt_tag = get_clean_market_name(sym)
                         _send_admin_trade_notification(
                             f"💧추매 {pos['name']} ({pos_sec}) {add_cost:,}원",
-                            f"[{mkt_tag} · {pos_sec}] +{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
+                            f"[{pos['name']} · {mkt_tag} · {pos_sec}] +{add_qty}주 추매 (신평단 {new_avg:,}원){kis_tag}\n"
                             f"남은 예수금 {acct.get('cash_krw', 0):,}원",
                             symbol=sym,
                             market=mkt_tag,

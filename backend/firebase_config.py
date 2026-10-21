@@ -509,11 +509,14 @@ def sanitize_notification_text(title: str, body: str):
     if "수급 스캐너" in clean_title or "모닝 마켓 레이더" in clean_title or "개장 15분 전" in clean_title or "차트 스터디" in clean_title or "1타 강사" in clean_title:
         # 매력적인 전용 헤드라인 원형 보존
         pass
+    elif any(k in clean_title for k in ["매수", "매도", "익절", "손절", "체결", "모의투자", "실전매매", "물타기", "추매"]):
+        # [CRITICAL FIX] 자동매매 체결/익절/손절 알림 원형 철저 보존 (종목명, 액션, 금액 손상 방지)
+        pass
     elif "장시작" in clean_title:
         market_name = "국내" if "국내" in clean_title else "미국" if "미국" in clean_title else ""
         clean_title = f"☀️ 장시작: {market_name}" if market_name else "☀️ 장시작 알림"
         
-    elif "장마감" in clean_title or "결산" in clean_title:
+    elif clean_title.startswith("장마감") or "장마감 브리핑" in clean_title or "장마감 시황" in clean_title or "결산" in clean_title:
         market_name = "국내" if "국내" in clean_title else "해외" if ("해외" in clean_title or "미국" in clean_title) else ""
         emoji = "📈" if "📈" in clean_title else "📉" if "📉" in clean_title else ""
         if "관심종목" in clean_title:
