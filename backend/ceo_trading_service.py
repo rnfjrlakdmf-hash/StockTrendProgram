@@ -235,7 +235,8 @@ def execute_ceo_approved_stock_trade(doc_data: Dict[str, Any]) -> Dict[str, Any]
     time_short = now_kst.strftime("%H:%M:%S")
     
     # 실시간 현재가 파싱
-    curr_str = doc_data.get("current_price") or ""
+    curr_raw = doc_data.get("current_price") or ""
+    curr_str = str(curr_raw)
     digits = re.sub(r'[^\d.]', '', curr_str.split(' ')[0] if curr_str else '')
     curr_num = float(digits) if digits else (100000.0 if cat_type == "kr_stock" else 150.0)
     
