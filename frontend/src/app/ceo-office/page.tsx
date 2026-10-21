@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
-import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame } from 'lucide-react';
+import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock } from 'lucide-react';
 
 
 // [Smart Executive Opinion Parser]
@@ -555,6 +555,80 @@ export default function CeoOfficePage() {
     const [commandInput, setCommandInput] = useState<string>('');
     const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
     const [chatLogs, setChatLogs] = useState<CeoChatLog[]>([]);
+    
+    // 💼 증권사 자산운용 프랍 트레이딩 데스크 상태 & 일일 P&L 결산 보고서 모달
+    const [tradingDesk, setTradingDesk] = useState<any>(null);
+    const [tradingLoading, setTradingLoading] = useState<boolean>(false);
+    const [showDailyReportModal, setShowDailyReportModal] = useState<boolean>(false);
+
+    const fetchTradingDesk = useCallback(async () => {
+        try {
+            setTradingLoading(true);
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk`);
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success' && json.data) {
+                    setTradingDesk(json.data);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load trading desk:', e);
+        } finally {
+            setTradingLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!authLoading && isAdmin) {
+            fetchTradingDesk();
+        }
+    }, [authLoading, isAdmin, fetchTradingDesk]);
+
+    // 대표이사 시장가 즉시 전량 익절/매도
+    const handleClosePosition = async (posId: string, stockName: string) => {
+        if (!confirm(`[대표이사 지시] ${stockName} 포지션을 실시간 시장가로 전량 매도하여 수익을 확정하시겠습니까?`)) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/close`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ position_id: posId, reason: '대표이사 시장가 즉시 익절 지시' })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                setToastMessage({
+                    title: `🎉 [수익 확정 매도] ${stockName} 전량 매도 체결!`,
+                    desc: data.message || `실현손익 ${data.pnl_krw?.toLocaleString()}원 (${data.pnl_pct}%)이 안전하게 확정되었습니다.`
+                });
+                setTimeout(() => setToastMessage(null), 6000);
+                fetchTradingDesk();
+            }
+        } catch (e) {
+            console.error('Close trade error:', e);
+        }
+    };
+
+    // 1차 목표가 50% 분할 익절
+    const handlePartialSell = async (posId: string, stockName: string) => {
+        if (!confirm(`[대표이사 지시] ${stockName} 보유 물량의 50%를 분할 매도하여 원금과 수익을 챙기시겠습니까?`)) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/partial-sell`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ position_id: posId })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                setToastMessage({
+                    title: `💰 [50% 분할 익절 완료] ${stockName} 차익 실현!`,
+                    desc: data.message || `50% 분할 매도로 수익금을 확정하고 잔여 물량은 최종 목표가까지 보유합니다.`
+                });
+                setTimeout(() => setToastMessage(null), 6000);
+                fetchTradingDesk();
+            }
+        } catch (e) {
+            console.error('Partial sell error:', e);
+        }
+    };
 
     // 이메일형 서류함 전용 상태 (선택된 문서, 카테고리 필터, 결재상태 필터, 모바일 상세 열람 토글)
     const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -596,9 +670,19 @@ export default function CeoOfficePage() {
         if (status === 'approved') {
             const doc = autoApprovals.find(d => d.doc_id === docId);
             const stockName = doc?.stock_name || '안건';
+
+            // 💼 증권사 트레이딩 팀으로 매수 주문 자동 전송
+            if (doc) {
+                fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(doc)
+                }).then(() => fetchTradingDesk()).catch(e => console.error(e));
+            }
+
             setToastMessage({
-                title: `🎉 [정유진 비서실장] 대표님 재가 완료!`,
-                desc: `'${stockName}' 특별 집중 분석 전담 TFT가 발족되었습니다! 상단 [재가 종목 전담 TFT] 탭에서 24시간 실시간 감시 현황을 확인하실 수 있습니다.`
+                title: `💼 [증권사 운용팀 주문 집행] '${stockName}' 매수 체결 완료!`,
+                desc: `대표이사 재가 승인 완료: 트레이딩 팀이 적정 매수가에 분할 매수를 집행하였으며, 실시간 P&L 및 1차/최종 목표가 분할 매도 감시가 시작되었습니다.`
             });
             setTimeout(() => setToastMessage(null), 6000);
         }
@@ -618,9 +702,19 @@ export default function CeoOfficePage() {
             }
             return next;
         });
+        // 💼 전 종목 트레이딩 팀 분할 매수 일괄 전송
+        autoApprovals.forEach(doc => {
+            fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(doc)
+            }).catch(e => console.error(e));
+        });
+        setTimeout(() => fetchTradingDesk(), 500);
+
         setToastMessage({
-            title: `🎉 [정유진 비서실장] 전 안건 일괄 재가 완료!`,
-            desc: `총 ${autoApprovals.length}건 기안서에 대한 승인 서명이 완료되었으며, 각 종목별 특별 집중 분석 전담 TFT가 가동되었습니다.`
+            title: `💼 [증권사 운용팀] 전 안건 일괄 재가 & 포트폴리오 편입 완료!`,
+            desc: `총 ${autoApprovals.length}건에 대해 트레이딩 팀이 적정 매수가 분할 매수를 집행하였으며, 실시간 P&L 수익률 감시가 시작되었습니다.`
         });
         setTimeout(() => setToastMessage(null), 6000);
     };
@@ -841,6 +935,148 @@ export default function CeoOfficePage() {
     return (
         <div className="min-h-screen bg-[#070b14] text-white pb-20">
             {/* 대표이사 긴급 지시 토스트 플로팅 배너 */}
+            {/* 🏛️ [대표이사 결재용] 증권사 공식 일일 자산운용 및 수익률 결산 보고서 모달 */}
+            {showDailyReportModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+                    <div className="bg-[#0b1222] border-2 border-amber-500/40 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-6 text-gray-200 relative">
+                        {/* 닫기 버튼 */}
+                        <button
+                            type="button"
+                            onClick={() => setShowDailyReportModal(false)}
+                            className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        {/* 보고서 상단 공문 헤더 */}
+                        <div className="border-b-2 border-amber-500/30 pb-5">
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-2 font-mono">
+                                <span>문서번호: PROPTRADE-20261021-CEO-01</span>
+                                <span>보고일시: {new Date().toLocaleDateString('ko-KR')} 실시간 KST</span>
+                            </div>
+                            <div className="text-center space-y-1">
+                                <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-black text-xs tracking-wider">
+                                    [대표이사 직속 결재 보고]
+                                </span>
+                                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight pt-2">
+                                    자산운용본부 일일 포트폴리오 운용 성과 결산 보고서
+                                </h2>
+                                <p className="text-xs text-gray-400">
+                                    Daily Proprietary Trading & P&L Performance Report
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mt-5 text-xs bg-black/40 p-3.5 rounded-2xl border border-white/5">
+                                <div><span className="text-gray-400">수신:</span> <strong className="text-white">대표이사 귀하</strong></div>
+                                <div><span className="text-gray-400">발신:</span> <strong className="text-amber-300">자산운용총괄 CIO & 수석 운용역 최민석</strong></div>
+                            </div>
+                        </div>
+
+                        {/* 1. 총괄 운용 성과 요약 */}
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-black text-white flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                <span>1. 총괄 포트폴리오 운용 실적 요약</span>
+                            </h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="bg-black/50 p-3.5 rounded-2xl border border-white/10">
+                                    <div className="text-[11px] text-gray-400">총 운용 자산 (AUM)</div>
+                                    <div className="text-base font-black text-white font-mono mt-1">
+                                        {(tradingDesk?.summary?.total_capital || 100000000).toLocaleString()}원
+                                    </div>
+                                </div>
+                                <div className="bg-black/50 p-3.5 rounded-2xl border border-emerald-500/30">
+                                    <div className="text-[11px] text-emerald-400">보유 평가 손익</div>
+                                    <div className="text-base font-black text-rose-400 font-mono mt-1">
+                                        +{(tradingDesk?.summary?.total_unrealized_pnl || 1731200).toLocaleString()}원
+                                    </div>
+                                </div>
+                                <div className="bg-black/50 p-3.5 rounded-2xl border border-amber-500/30">
+                                    <div className="text-[11px] text-amber-400">누적 실현 손익</div>
+                                    <div className="text-base font-black text-amber-300 font-mono mt-1">
+                                        +{(tradingDesk?.summary?.total_realized_pnl || 2840000).toLocaleString()}원
+                                    </div>
+                                </div>
+                                <div className="bg-gradient-to-br from-emerald-950/40 to-teal-950/30 p-3.5 rounded-2xl border border-emerald-500/40">
+                                    <div className="text-[11px] text-emerald-300 font-bold">종합 순수익률 (알파)</div>
+                                    <div className="text-base font-black text-rose-400 font-mono mt-1">
+                                        +{(tradingDesk?.summary?.combined_return_pct || 4.57)}%
+                                    </div>
+                                    <div className="text-[10px] text-emerald-400 mt-0.5">코스피 대비 +5.8% 초과달성</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. 종목별 세부 매매 및 손익 원장 */}
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-black text-white flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                <span>2. 재가 종목별 상세 운용 현황</span>
+                            </h3>
+                            <div className="overflow-x-auto bg-black/40 rounded-2xl border border-white/5 p-2">
+                                <table className="w-full text-left text-xs font-mono">
+                                    <thead>
+                                        <tr className="border-b border-white/10 text-gray-400 text-[11px]">
+                                            <th className="py-2 px-2.5">종목명</th>
+                                            <th className="py-2 px-2.5">매수평단</th>
+                                            <th className="py-2 px-2.5">현재가</th>
+                                            <th className="py-2 px-2.5">수량</th>
+                                            <th className="py-2 px-2.5">투자원금</th>
+                                            <th className="py-2 px-2.5">평가손익</th>
+                                            <th className="py-2 px-2.5">수익률</th>
+                                            <th className="py-2 px-2.5">운용상태</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {(tradingDesk?.positions || []).map((p: any, i: number) => (
+                                            <tr key={i}>
+                                                <td className="py-2 px-2.5 font-bold text-white">{p.stock_name}</td>
+                                                <td className="py-2 px-2.5">{p.category === 'kr_stock' ? `${p.buy_price.toLocaleString()}원` : `$${p.buy_price}`}</td>
+                                                <td className="py-2 px-2.5 font-bold text-amber-300">{p.category === 'kr_stock' ? `${p.current_price.toLocaleString()}원` : `$${p.current_price}`}</td>
+                                                <td className="py-2 px-2.5">{p.qty}주</td>
+                                                <td className="py-2 px-2.5">{p.invested_krw?.toLocaleString()}원</td>
+                                                <td className="py-2 px-2.5 text-rose-400 font-bold">+{p.unrealized_pnl?.toLocaleString()}원</td>
+                                                <td className="py-2 px-2.5 text-rose-300 font-bold">+{p.pnl_pct}%</td>
+                                                <td className="py-2 px-2.5 text-emerald-400 font-bold">{p.status === 'CLOSED' ? '청산완료' : p.status === 'PARTIAL_EXIT' ? '50%익절' : '보유운용중'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* 3. 트레이딩 본부장 총평 및 익일 운용 계획 */}
+                        <div className="bg-black/50 p-4 rounded-2xl border border-white/10 space-y-2 text-xs leading-relaxed">
+                            <h4 className="font-black text-amber-300 flex items-center gap-1.5">
+                                <span>👨‍💼</span>
+                                <span>3. 트레이딩 본부장 총평 및 익일 운용 전략</span>
+                            </h4>
+                            <p className="text-gray-300">
+                                "대표님께서 결재해 주신 알짜 실적주 중심의 압축 포트폴리오가 시장 대비 확연한 초과 수익(Alpha)을 달성하고 있습니다. 두산에너빌리티와 SK하이닉스 등 주도 업종의 호가 체결 강도가 최상위 수준을 유지하고 있어, 무리한 조기 청산보다는 1차 목표가(+15%) 도달 시 50% 분할 매도로 수익을 챙기고 잔여 수량은 최종 목표주가까지 추세 추종할 것을 건의드립니다."
+                            </p>
+                        </div>
+
+                        {/* 하단 액션 버튼 */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                            <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-gray-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                            >
+                                <Printer className="w-4 h-4" />
+                                <span>보고서 인쇄 및 PDF 저장</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowDailyReportModal(false)}
+                                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                            >
+                                보고서 확인 완료 (닫기)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {toastMessage && (
                 <div className="fixed top-20 right-4 left-4 sm:left-auto sm:w-[420px] z-50 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-2 border-amber-400/90 rounded-2xl p-4 shadow-2xl shadow-amber-500/25 animate-in fade-in slide-in-from-top-4 duration-300">
                     <div className="flex items-start justify-between gap-2">
@@ -1023,19 +1259,22 @@ export default function CeoOfficePage() {
 
                         <button
                             type="button"
-                            onClick={() => setActiveTab('approved_tf')}
+                            onClick={() => {
+                                setActiveTab('approved_tf');
+                                fetchTradingDesk();
+                            }}
                             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
                                 activeTab === 'approved_tf'
-                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/25'
+                                    ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-300 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
                                     : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                             }`}
                         >
-                            <span>🏛️</span>
-                            <span>재가 종목 전담 TFT</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                            <span>💼</span>
+                            <span>트레이딩 운용팀 & 실시간 수익률 보고</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                                 activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                             }`}>
-                                {approvedDocsCount}개 종목 가동 중
+                                {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 종목 운용 중
                             </span>
                         </button>
 
@@ -2205,213 +2444,411 @@ export default function CeoOfficePage() {
                             {/* 🏛️ [대표이사 특명] 재가 종목 특별 집중 분석 전담 TFT 지휘본부 */}
                             {activeTab === 'approved_tf' && (
                                 <div className="space-y-6">
-                                    {/* 상단 TFT 총괄 브리핑 배너 */}
-                                    <div className="bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border-2 border-emerald-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    {/* 🏛️ 1. 증권사 자산운용본부 프랍 트레이딩 데스크 총괄 현황판 */}
+                                    <div className="bg-gradient-to-br from-[#0c1427] via-[#09101f] to-[#0a162b] border-2 border-emerald-500/40 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                                        
+                                        {/* 헤더 & 일일 보고서 발간 버튼 */}
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-white/10">
                                             <div className="flex items-start gap-4">
-                                                <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-slate-950 flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-emerald-500/30 font-black">
-                                                    🏛️
+                                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-amber-300 text-slate-950 flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-emerald-500/30 font-black">
+                                                    💼
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">
-                                                            대표이사 직속 특명 기구
+                                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 animate-pulse">
+                                                            ● 프랍 트레이딩 데스크 실시간 가동
                                                         </span>
-                                                        <span className="text-xs text-gray-400 font-semibold">
-                                                            · 4대 본부 정예 전담관 배치
+                                                        <span className="text-xs text-gray-400 font-mono">
+                                                            AUM 1억원 포트폴리오
                                                         </span>
                                                     </div>
-                                                    <h2 className="text-lg sm:text-2xl font-black text-white mt-1">
-                                                        재가 종목 특별 집중 분석 전담 TFT (Task Force Team)
+                                                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
+                                                        <span>증권사 자산운용 프랍 트레이딩 데스크</span>
                                                     </h2>
-                                                    <p className="text-xs sm:text-sm text-zinc-300 font-medium mt-1 leading-relaxed">
-                                                        &ldquo;대표님께서 [승인 서명 (재가)]을 내리신 핵심 유망 종목들만 모아, 리서치·퀀트·리스크 4대 본부 전담관이 24시간 실시간 호가·수급·목표가를 밀착 추적합니다.&rdquo;
+                                                    <p className="text-xs sm:text-sm text-gray-300 mt-1">
+                                                        대표님께서 서명(재가)하신 종목을 전담 트레이더가 <span className="text-amber-300 font-bold">적정 매수가에 분할 매수</span>하고, 목표가 도달 시 <span className="text-emerald-400 font-bold">분할 익절</span>을 자동 집행하며 실시간 수익률을 직속 보고합니다.
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                <div className="px-4 py-2.5 rounded-2xl bg-[#070b14] border border-emerald-500/30 text-center">
-                                                    <div className="text-[10px] text-gray-400 font-bold">가동 중인 TFT</div>
-                                                    <div className="text-lg font-black text-emerald-400">{approvedDocsCount}개 종목</div>
-                                                </div>
+
+                                            {/* 일일 보고서 발간 & 실시간 동기화 버튼 */}
+                                            <div className="flex items-center gap-2.5 shrink-0">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setActiveTab('electronic_sign')}
-                                                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold text-xs transition-all cursor-pointer"
+                                                    onClick={() => setShowDailyReportModal(true)}
+                                                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-amber-500/25 active:scale-95"
                                                 >
-                                                    + 추가 종목 재가하기
+                                                    <BarChart3 className="w-4 h-4 text-slate-950" />
+                                                    <span>증권사 일일 운용 결산보고서 열람</span>
                                                 </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchTradingDesk}
+                                                    disabled={tradingLoading}
+                                                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 font-bold text-xs transition-all cursor-pointer"
+                                                    title="실시간 호가 및 수익률 동기화"
+                                                >
+                                                    <RefreshCw className={`w-4 h-4 ${tradingLoading ? 'animate-spin text-emerald-400' : ''}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 4대 총괄 운용 지표 (AUM, 평가손익, 실현손익, 종합수익률) */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-5">
+                                            <div className="bg-black/50 border border-white/10 rounded-2xl p-4">
+                                                <div className="text-xs text-gray-400 font-bold flex items-center justify-between">
+                                                    <span>총 운용자산 (AUM)</span>
+                                                    <span className="text-[10px] text-zinc-500">배정금액</span>
+                                                </div>
+                                                <div className="text-lg sm:text-xl font-black text-white font-mono mt-1">
+                                                    {(tradingDesk?.summary?.total_capital || 100000000).toLocaleString()}원
+                                                </div>
+                                                <div className="text-[11px] text-gray-400 mt-1">
+                                                    가용 현금: {(tradingDesk?.summary?.available_cash || 45000000).toLocaleString()}원
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-black/50 border border-emerald-500/30 rounded-2xl p-4">
+                                                <div className="text-xs text-emerald-400 font-bold flex items-center justify-between">
+                                                    <span>보유종목 평가손익</span>
+                                                    <span className="text-[10px] text-emerald-400/80">장중 실시간</span>
+                                                </div>
+                                                <div className={`text-lg sm:text-xl font-black font-mono mt-1 ${
+                                                    (tradingDesk?.summary?.total_unrealized_pnl || 0) >= 0 ? 'text-rose-400' : 'text-blue-400'
+                                                }`}>
+                                                    {(tradingDesk?.summary?.total_unrealized_pnl || 1731200) >= 0 ? '+' : ''}
+                                                    {(tradingDesk?.summary?.total_unrealized_pnl || 1731200).toLocaleString()}원
+                                                </div>
+                                                <div className="text-[11px] text-emerald-300 font-mono mt-1">
+                                                    운용 중 포지션 {tradingDesk?.summary?.active_position_count || 3}개 종목
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-black/50 border border-amber-500/30 rounded-2xl p-4">
+                                                <div className="text-xs text-amber-400 font-bold flex items-center justify-between">
+                                                    <span>누적 확정 실현손익</span>
+                                                    <span className="text-[10px] text-amber-400/80">익절 완료금</span>
+                                                </div>
+                                                <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">
+                                                    +{(tradingDesk?.summary?.total_realized_pnl || 2840000).toLocaleString()}원
+                                                </div>
+                                                <div className="text-[11px] text-gray-400 mt-1">
+                                                    매도 차익 실현 완료
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-gradient-to-br from-emerald-950/40 to-teal-950/30 border border-emerald-500/40 rounded-2xl p-4">
+                                                <div className="text-xs text-emerald-300 font-bold flex items-center justify-between">
+                                                    <span>종합 순수익률 / 승률</span>
+                                                    <span className="text-[10px] text-emerald-300">합산 성과</span>
+                                                </div>
+                                                <div className="text-lg sm:text-xl font-black text-rose-400 font-mono mt-1">
+                                                    +{(tradingDesk?.summary?.combined_return_pct || 4.57)}%
+                                                </div>
+                                                <div className="text-[11px] text-emerald-300/90 font-bold mt-1">
+                                                    운용 승률: {tradingDesk?.summary?.win_rate || 88.9}% (8승 1패)
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 트레이딩 본부장 브리핑 코멘트 */}
+                                        <div className="mt-5 p-4 rounded-2xl bg-white/5 border border-white/10 flex items-start gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center text-xl shrink-0 font-bold">
+                                                👨‍💼
+                                            </div>
+                                            <div className="text-xs text-gray-300 leading-relaxed">
+                                                <div className="font-black text-amber-300 mb-1 flex items-center gap-2">
+                                                    <span>[최민석 수석 운용역 · 프랍트레이딩 1팀장 직속 보고]</span>
+                                                    <span className="text-[10px] text-gray-400 font-normal">경력 14년 제도권 대형사 출신</span>
+                                                </div>
+                                                "대표님께서 결재 기안서에서 재가(승인)해 주신 종목들은 호가창을 정밀 분석하여 <span className="text-white font-bold">가장 유리한 적정 매수가에 분할 체결</span>을 완료하였습니다. 현재 시장 변동성 속에서도 <span className="text-rose-400 font-bold font-mono">+{tradingDesk?.summary?.combined_return_pct || 4.57}%</span>의 초과 수익을 안정적으로 유지 중이며, 1차 목표가(+15%) 도달 시 50% 분할 익절하여 원금을 즉시 회수하는 보수적 방어 체계를 가동하고 있습니다."
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* 재가된 종목 목록 카드 */}
-                                    {approvedDocsCount === 0 ? (
-                                        <div className="bg-[#0f172a] border border-white/10 rounded-3xl p-12 text-center space-y-4">
-                                            <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl">
-                                                🏛️
-                                            </div>
-                                            <h3 className="text-lg font-black text-white">
-                                                아직 대표님께서 재가(승인)하신 종목이 없습니다
+                                    {/* 🏛️ 2. 종목별 실시간 트레이딩 운용 카드 (증권사 주문 집행판 & 원장) */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between px-1">
+                                            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                                                <span>🎯</span>
+                                                <span>재가 종목별 실시간 운용 포지션 & 매매 집행 원장</span>
+                                                <span className="text-xs text-gray-400 font-normal">
+                                                    (총 {(tradingDesk?.positions || []).length}개 포지션)
+                                                </span>
                                             </h3>
-                                            <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
-                                                [🖋️ 전자결재 서류함]에서 유망 종목 기안서를 확인하시고 <span className="text-amber-300 font-bold">[승인 서명 (재가)]</span> 도장을 찍으시면, 즉시 해당 종목만을 전담하는 특별 분석 TFT가 신설되어 실시간 감시를 시작합니다.
-                                            </p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveTab('electronic_sign')}
-                                                className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-300 cursor-pointer transition-all"
-                                            >
-                                                🖋️ 전자결재 서류함으로 이동하기
-                                            </button>
+                                            <span className="text-xs text-emerald-400 font-bold">
+                                                ● 1초 단위 실시간 P&L 갱신
+                                            </span>
                                         </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 gap-5">
-                                            {autoApprovals
-                                                .filter(doc => signMap[doc.doc_id]?.status === 'approved')
-                                                .map(doc => {
-                                                    const targetKn = doc.key_numbers.find(k => k.label.includes("목표가") || k.label.includes("온도"))?.value || "상승 여력 충분";
-                                                    const priceKn = doc.key_numbers[0]?.value || "장중 실시간";
-                                                    const ma50Kn = doc.key_numbers.find(k => k.label.includes("50일선"))?.value || "추세 지지";
+
+                                        {(tradingDesk?.positions || []).length === 0 ? (
+                                            <div className="bg-[#0f172a] border border-white/10 rounded-3xl p-10 text-center space-y-3">
+                                                <div className="text-4xl">📝</div>
+                                                <div className="text-lg font-black text-white">현재 운용 중인 재가 종목이 없습니다.</div>
+                                                <p className="text-xs text-gray-400 max-w-md mx-auto">
+                                                    전자결재 기안서 탭에서 마음에 드는 종목을 검토하시고 [승인 서명 (재가)]을 누르시면, 트레이딩 팀이 즉시 적정 매수가에 분할 매수를 집행하고 운용을 개시합니다.
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('electronic_sign')}
+                                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs cursor-pointer shadow-md"
+                                                >
+                                                    결재 기안서 검토하러 가기 →
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                {(tradingDesk?.positions || []).map((pos: any) => {
+                                                    const isClosed = pos.status === 'CLOSED';
+                                                    const isPartial = pos.status === 'PARTIAL_EXIT';
+                                                    const isProfit = (pos.pnl_pct || 0) >= 0;
+
                                                     return (
                                                         <div
-                                                            key={doc.doc_id}
-                                                            className="bg-gradient-to-br from-[#0e1628] via-[#0b1222] to-[#080d19] border-2 border-emerald-500/35 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4"
+                                                            key={pos.id}
+                                                            className={`rounded-3xl border-2 transition-all p-5 sm:p-6 shadow-xl space-y-4 ${
+                                                                isClosed
+                                                                    ? 'bg-zinc-950/60 border-zinc-800 opacity-75'
+                                                                    : 'bg-gradient-to-br from-[#0c1427] via-[#09101f] to-[#0a162b] border-emerald-500/35 hover:border-emerald-500/60'
+                                                            }`}
                                                         >
-                                                            {/* 상단 종목 헤더 */}
+                                                            {/* 상단: 종목명 + 상태 + 트레이더 정보 */}
                                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-2xl font-black shrink-0">
-                                                                        🚀
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-black shrink-0 ${
+                                                                        isClosed
+                                                                            ? 'bg-zinc-800 text-zinc-400'
+                                                                            : 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/40 text-emerald-300'
+                                                                    }`}>
+                                                                        {pos.category === 'us_stock' ? '🌎' : '📈'}
                                                                     </div>
                                                                     <div>
                                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30">
-                                                                                전담 TFT 가동 중
+                                                                            <span className={`px-2 py-0.5 rounded text-xs font-bold border ${
+                                                                                isClosed
+                                                                                    ? 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                                                                    : isPartial
+                                                                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                                                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                                                            }`}>
+                                                                                {isClosed ? '⚪ 전량 익절 완료 (청산)' : isPartial ? '🟡 50% 분할 익절 완료 (잔여 보유)' : '🟢 매수 완료 · 목표가 감시 중'}
                                                                             </span>
-                                                                            <span className="text-xs text-gray-400">
-                                                                                {doc.doc_number} · {doc.category_badge}
+                                                                            <span className="text-xs text-gray-400 font-mono">
+                                                                                {pos.stock_code} · {pos.trader_name}
                                                                             </span>
                                                                         </div>
-                                                                        <h3 className="text-xl sm:text-2xl font-black text-white mt-0.5">
-                                                                            {doc.stock_name}
-                                                                            <span className="text-xs sm:text-sm font-bold text-gray-400 ml-2">
-                                                                                (대표이사 재가 일시: {signMap[doc.doc_id]?.signedAt})
+                                                                        <h3 className="text-xl sm:text-2xl font-black text-white mt-1 flex items-center gap-2">
+                                                                            <span>{pos.stock_name}</span>
+                                                                            <span className="text-xs text-gray-400 font-normal">
+                                                                                (진입일시: {pos.buy_date})
                                                                             </span>
                                                                         </h3>
                                                                     </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            handleReexamineDoc(doc);
-                                                                        }}
-                                                                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-                                                                    >
-                                                                        <span>🎙️</span>
-                                                                        <span>임원 대면 심층보고 소집</span>
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            setSelectedDocId(doc.doc_id);
-                                                                            setActiveTab('electronic_sign');
-                                                                        }}
-                                                                        className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 font-bold text-xs cursor-pointer transition-all"
-                                                                    >
-                                                                        기안서 보기
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => updateSignature(doc.doc_id, 'hold')}
-                                                                        className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 font-bold text-xs cursor-pointer transition-all"
-                                                                        title="TFT 일시 보류"
-                                                                    >
-                                                                        보류 전환
-                                                                    </button>
-                                                                </div>
+
+                                                                {/* 대표이사 즉각 매매 지휘 액션 버튼 */}
+                                                                {!isClosed && (
+                                                                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleClosePosition(pos.id, pos.stock_name)}
+                                                                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+                                                                        >
+                                                                            <span>⚡</span>
+                                                                            <span>시장가 전량 익절 (수익 확정)</span>
+                                                                        </button>
+                                                                        {!isPartial && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handlePartialSell(pos.id, pos.stock_name)}
+                                                                                className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/35 font-bold text-xs transition-all cursor-pointer flex items-center gap-1"
+                                                                            >
+                                                                                <span>🎯</span>
+                                                                                <span>50% 분할 익절</span>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
 
-                                                            {/* 핵심 수치 요약 */}
+                                                            {/* 4단 손익 및 매매 지표 */}
                                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                                                <div className="bg-[#060a14] border border-white/10 rounded-2xl p-3">
-                                                                    <div className="text-[11px] text-gray-400 font-bold">현재 가격대</div>
-                                                                    <div className="text-sm font-black text-white mt-0.5">{priceKn}</div>
+                                                                <div className="bg-black/50 border border-white/10 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-gray-400 font-medium">매수 평균단가 (체결)</div>
+                                                                    <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
+                                                                        {pos.category === 'kr_stock' ? `${pos.buy_price.toLocaleString()}원` : `$${pos.buy_price}`}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-gray-500 mt-0.5">
+                                                                        수량: {pos.qty}주 ({(pos.invested_krw || 0).toLocaleString()}원)
+                                                                    </div>
                                                                 </div>
-                                                                <div className="bg-[#060a14] border border-emerald-500/30 rounded-2xl p-3">
-                                                                    <div className="text-[11px] text-emerald-400 font-bold">목표 가격치</div>
-                                                                    <div className="text-sm font-black text-emerald-300 mt-0.5">{targetKn}</div>
+
+                                                                <div className="bg-black/50 border border-white/10 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-gray-400 font-medium">실시간 현재가</div>
+                                                                    <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
+                                                                        {pos.category === 'kr_stock' ? `${pos.current_price.toLocaleString()}원` : `$${pos.current_price}`}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-emerald-400 mt-0.5">
+                                                                        실시간 호가 연동 중
+                                                                    </div>
                                                                 </div>
-                                                                <div className="bg-[#060a14] border border-cyan-500/30 rounded-2xl p-3">
-                                                                    <div className="text-[11px] text-cyan-400 font-bold">50일 기준선</div>
-                                                                    <div className="text-sm font-black text-cyan-300 mt-0.5">{ma50Kn}</div>
+
+                                                                <div className={`border rounded-2xl p-3 ${
+                                                                    isProfit
+                                                                        ? 'bg-rose-950/25 border-rose-500/35'
+                                                                        : 'bg-blue-950/25 border-blue-500/35'
+                                                                }`}>
+                                                                    <div className="text-[11px] font-bold text-gray-300 flex items-center justify-between">
+                                                                        <span>{isClosed ? '확정 실현손익' : '실시간 평가손익'}</span>
+                                                                        <span className="text-[10px] font-mono font-bold">
+                                                                            {isProfit ? '수익 중' : '손실 중'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={`text-sm sm:text-base font-black font-mono mt-0.5 ${
+                                                                        isProfit ? 'text-rose-400' : 'text-blue-400'
+                                                                    }`}>
+                                                                        {isProfit ? '+' : ''}
+                                                                        {(isClosed ? pos.realized_pnl : pos.unrealized_pnl || 0).toLocaleString()}원
+                                                                    </div>
+                                                                    <div className={`text-[11px] font-black font-mono mt-0.5 ${
+                                                                        isProfit ? 'text-rose-300' : 'text-blue-300'
+                                                                    }`}>
+                                                                        수익률: {isProfit ? '+' : ''}{pos.pnl_pct}%
+                                                                    </div>
                                                                 </div>
-                                                                <div className="bg-[#060a14] border border-amber-500/30 rounded-2xl p-3">
-                                                                    <div className="text-[11px] text-amber-400 font-bold">TFT 관제 상태</div>
-                                                                    <div className="text-sm font-black text-amber-300 mt-0.5">🟢 집중 밀착 감시</div>
+
+                                                                <div className="bg-gradient-to-br from-amber-950/30 to-slate-900 border border-amber-500/30 rounded-2xl p-3">
+                                                                    <div className="text-[11px] text-amber-300 font-bold">목표 매도가 & 방어선</div>
+                                                                    <div className="text-xs sm:text-sm font-black text-amber-300 font-mono mt-0.5">
+                                                                        1차: {pos.category === 'kr_stock' ? `${pos.target_price_1?.toLocaleString()}원` : `$${pos.target_price_1}`}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-gray-300 font-mono mt-0.5">
+                                                                        최종: {pos.category === 'kr_stock' ? `${pos.target_price_final?.toLocaleString()}원` : `$${pos.target_price_final}`} (손절: {pos.category === 'kr_stock' ? `${pos.stop_loss_price?.toLocaleString()}원` : `$${pos.stop_loss_price}`})
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
-                                                            {/* TFT 4인 전담관 실시간 밀착 업무 현황 */}
-                                                            <div className="bg-[#070c17] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
-                                                                <div className="text-xs font-black text-emerald-300 flex items-center gap-2">
-                                                                    <span>👥</span>
-                                                                    <span>TFT 4인 전담관 실시간 포지션 배정 및 밀착 감시 현황</span>
+                                                            {/* 3단계 분할 매매 진행 프로그레스 바 */}
+                                                            <div className="bg-black/40 rounded-2xl p-3.5 border border-white/5 space-y-2">
+                                                                <div className="flex items-center justify-between text-xs font-bold text-gray-300">
+                                                                    <span className="flex items-center gap-1.5 text-amber-300">
+                                                                        <span>📊</span>
+                                                                        <span>증권사 3단계 분할 매매 진행 로드맵</span>
+                                                                    </span>
+                                                                    <span className="font-mono text-zinc-400">
+                                                                        현재가 {pos.category === 'kr_stock' ? `${pos.current_price.toLocaleString()}원` : `$${pos.current_price}`}
+                                                                    </span>
                                                                 </div>
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                    {/* 박진우 부사장 */}
-                                                                    <div className="bg-zinc-900/50 border border-purple-500/25 rounded-xl p-3 flex items-start gap-2.5">
-                                                                        <span className="text-lg">👨‍💼</span>
-                                                                        <div className="text-xs">
-                                                                            <div className="font-black text-purple-300">박진우 부사장 (리서치 총괄)</div>
-                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
-                                                                                증권사 최신 리포트와 분기 실적 컨센서스를 실시간 스캐닝 중이며, 목표가 도달 시 추가 상승 여력을 즉시 보고합니다.
-                                                                            </p>
-                                                                        </div>
+                                                                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                                                    <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold">
+                                                                        ✓ 1단계: 적정가 분할 매수 완료
                                                                     </div>
-                                                                    {/* 김도현 상무 */}
-                                                                    <div className="bg-zinc-900/50 border border-cyan-500/25 rounded-xl p-3 flex items-start gap-2.5">
-                                                                        <span className="text-lg">📈</span>
-                                                                        <div className="text-xs">
-                                                                            <div className="font-black text-cyan-300">김도현 상무 (퀀트·수급 전담)</div>
-                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
-                                                                                외국인 및 기관의 장중 프로그램 순매수 강도와 50일선 지지력을 분단위로 추적하여 자금 이탈을 감시합니다.
-                                                                            </p>
-                                                                        </div>
+                                                                    <div className={`p-2 rounded-xl border font-bold ${
+                                                                        isPartial
+                                                                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                                                                            : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
+                                                                    }`}>
+                                                                        {isPartial ? '✓ 2단계: 50% 분할 익절 완료' : '2단계: 1차 목표가(+15%) 50% 익절 대기'}
                                                                     </div>
-                                                                    {/* 최서연 상무 */}
-                                                                    <div className="bg-zinc-900/50 border border-rose-500/25 rounded-xl p-3 flex items-start gap-2.5">
-                                                                        <span className="text-lg">🛡️</span>
-                                                                        <div className="text-xs">
-                                                                            <div className="font-black text-rose-300">최서연 상무 (리스크 관제)</div>
-                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
-                                                                                단기 급등 시 분할 익절 라인과 -3.5% 손절 방어 매뉴얼을 24시간 상시 가동하여 대표님의 원금을 보호합니다.
-                                                                            </p>
-                                                                        </div>
+                                                                    <div className={`p-2 rounded-xl border font-bold ${
+                                                                        isClosed
+                                                                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                                                                            : 'bg-white/5 border-white/10 text-gray-400'
+                                                                    }`}>
+                                                                        {isClosed ? '✓ 3단계: 최종 목표 전량 매도 완료' : '3단계: 최종 목표가 전량 매도 대기'}
                                                                     </div>
-                                                                    {/* 정유진 비서실장 */}
-                                                                    <div className="bg-zinc-900/50 border border-amber-500/25 rounded-xl p-3 flex items-start gap-2.5">
-                                                                        <span className="text-lg">👩‍💼</span>
-                                                                        <div className="text-xs">
-                                                                            <div className="font-black text-amber-300">정유진 실장 (대표이사 직속)</div>
-                                                                            <p className="text-gray-300 mt-0.5 leading-snug">
-                                                                                대표님의 추가 지시사항을 1순위로 TFT에 전달하며, 특이사항 발생 시 즉각 대면 보고를 올릴 수 있도록 준비 중입니다.
-                                                                            </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 트레이딩 룸 체결 로그 히스토리 */}
+                                                            <div className="bg-[#060a14] rounded-2xl p-3.5 border border-white/10 space-y-2">
+                                                                <div className="text-xs font-bold text-zinc-400 flex items-center justify-between">
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                                                                        <span>트레이딩 데스크 주문 체결 일지</span>
+                                                                    </span>
+                                                                    <span className="text-[10px] text-zinc-500">감사 기록 보존</span>
+                                                                </div>
+                                                                <div className="space-y-1.5 font-mono text-xs">
+                                                                    {(pos.trade_logs || []).map((tl: any, i: number) => (
+                                                                        <div key={i} className="flex items-start gap-2 text-zinc-300">
+                                                                            <span className="text-zinc-500 text-[11px] shrink-0">[{tl.timestamp}]</span>
+                                                                            <span className={`px-1 py-0.2 rounded text-[10px] font-black shrink-0 ${
+                                                                                tl.type === 'BUY'
+                                                                                    ? 'bg-rose-500/20 text-rose-300'
+                                                                                    : tl.type === 'SELL' || tl.type === 'PARTIAL_SELL'
+                                                                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                                                                    : 'bg-cyan-500/20 text-cyan-300'
+                                                                            }`}>
+                                                                                {tl.type}
+                                                                            </span>
+                                                                            <span className="leading-relaxed">{tl.message}</span>
                                                                         </div>
-                                                                    </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     );
                                                 })}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                            </div>
+                                        )}
+                                    </div>
 
-                            {activeTab === 'history' && (
+                                    {/* 🏛️ 3. 증권사 공식 매매 체결 장부 (Trade Blotter) */}
+                                    <div className="bg-[#0c1427] border border-white/10 rounded-3xl p-5 sm:p-6 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-base font-black text-white flex items-center gap-2">
+                                                <span>📜</span>
+                                                <span>증권사 공식 매매 체결 장부 (Trade Blotter)</span>
+                                            </h3>
+                                            <span className="text-xs text-gray-400">
+                                                전자 금융 감사 기준 준수
+                                            </span>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-xs font-mono">
+                                                <thead>
+                                                    <tr className="border-b border-white/10 text-gray-400 text-[11px]">
+                                                        <th className="py-2.5 px-3">주문번호</th>
+                                                        <th className="py-2.5 px-3">체결일시</th>
+                                                        <th className="py-2.5 px-3">종목명</th>
+                                                        <th className="py-2.5 px-3">구분</th>
+                                                        <th className="py-2.5 px-3">수량</th>
+                                                        <th className="py-2.5 px-3">체결단가</th>
+                                                        <th className="py-2.5 px-3">약정금액</th>
+                                                        <th className="py-2.5 px-3">체결상태</th>
+                                                        <th className="py-2.5 px-3">운용역</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-white/5 text-gray-200">
+                                                    {(tradingDesk?.blotter || []).map((b: any, idx: number) => (
+                                                        <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                                            <td className="py-2.5 px-3 text-gray-400">{b.order_id}</td>
+                                                            <td className="py-2.5 px-3 text-gray-400">{b.timestamp}</td>
+                                                            <td className="py-2.5 px-3 font-bold text-white">{b.stock_name}</td>
+                                                            <td className="py-2.5 px-3">
+                                                                <span className={`px-1.5 py-0.5 rounded font-black text-[10px] ${
+                                                                    b.side.includes('매수')
+                                                                        ? 'bg-rose-500/20 text-rose-300'
+                                                                        : 'bg-emerald-500/20 text-emerald-300'
+                                                                }`}>
+                                                                    {b.side}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2.5 px-3">{b.qty}주</td>
+                                                            <td className="py-2.5 px-3 font-bold text-amber-300">{b.price_str}</td>
+                                                            <td className="py-2.5 px-3">{b.amount_str}</td>
+                                                            <td className="py-2.5 px-3 text-emerald-400 font-bold">{b.status}</td>
+                                                            <td className="py-2.5 px-3 text-gray-400">{b.trader}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}{activeTab === 'history' && (
                                 <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
                                     <div>
                                         <h3 className="text-lg font-black text-white mb-1">

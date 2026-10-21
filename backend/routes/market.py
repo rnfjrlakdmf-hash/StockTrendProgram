@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Header, HTTPException
+from fastapi import APIRouter, Query, Header, HTTPException, Body
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 import time
@@ -3801,4 +3801,48 @@ def trigger_morning_macro_endpoint(force: bool = True):
     _CEO_OFFICE_CACHE = {}
     _CEO_OFFICE_CACHE_TIME = 0.0
     res = run_daily_morning_macro_job(force=force)
+    return res
+
+
+@router.get("/ceo-office/trading-desk")
+def get_ceo_office_trading_desk():
+    """
+    증권사 자산운용 프랍 트레이딩 데스크 현황 및 실시간 포지션/수익률 조회 API
+    """
+    from ceo_trading_service import load_trading_state, update_realtime_quotes_for_positions
+    state = load_trading_state()
+    state = update_realtime_quotes_for_positions(state)
+    return {"status": "success", "data": state}
+
+
+@router.post("/ceo-office/trading-desk/order")
+def execute_trading_desk_order(payload: Dict[str, Any] = Body(...)):
+    """
+    대표이사 재가 승인 시 트레이딩 팀에서 적정 매수가 분할 매수 주문 자동 집행
+    """
+    from ceo_trading_service import execute_ceo_approved_stock_trade
+    res = execute_ceo_approved_stock_trade(payload)
+    return res
+
+
+@router.post("/ceo-office/trading-desk/close")
+def close_trading_desk_position(payload: Dict[str, Any] = Body(...)):
+    """
+    대표이사 지시에 따른 시장가 전량 익절/매도 처리
+    """
+    from ceo_trading_service import close_trading_position
+    pos_id = payload.get("position_id") or payload.get("id") or ""
+    reason = payload.get("reason", "대표이사 시장가 즉시 익절 지시")
+    res = close_trading_position(pos_id, reason)
+    return res
+
+
+@router.post("/ceo-office/trading-desk/partial-sell")
+def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...)):
+    """
+    1차 목표가 도달 또는 대표이사 지시에 따른 50% 분할 익절 처리
+    """
+    from ceo_trading_service import partial_sell_position
+    pos_id = payload.get("position_id") or payload.get("id") or ""
+    res = partial_sell_position(pos_id)
     return res
