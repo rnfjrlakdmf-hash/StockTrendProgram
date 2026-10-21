@@ -2378,6 +2378,16 @@ def _create_us_stock_approval_doc(
     analyst_cnt = info.get("analyst_count") if info else 40
     opinion_key = info.get("opinion") if info else "Buy (월가 IB 집계)"
 
+    # 미국 주식 예상 차익 계산 (환율 약 1,380원 환산)
+    p_digits = re.sub(r'[^\d.]', '', str(info['price'] if info and info.get("price") else "150"))
+    p_num = float(p_digits) if p_digits else 150.0
+    m_digits = re.sub(r'[^\d.]', '', str(mean_str))
+    m_num = float(m_digits) if m_digits else 180.0
+    diff_usd = m_num - p_num
+    diff_krw = int(diff_usd * 1380)
+    us_profit_10m = f"약 {int(10000000 * ((up_val or 20.0) / 100)):+,}원"
+    us_profit_share = f"주당 +${diff_usd:.2f} (약 +{diff_krw:,}원)" if diff_usd >= 0 else f"주당 ${diff_usd:.2f}"
+
     seq_str = f"{seq:02d}"
     return {
         "doc_id": f"DOC-{date_doc_str}-{seq_str}",
@@ -2386,6 +2396,12 @@ def _create_us_stock_approval_doc(
         "category_badge": f"🌎 미국 빅테크 ({sym})",
         "urgency": "미국 빅테크 핵심",
         "stock_name": sym,
+        "stock_code": sym,
+        "current_price": price_str,
+        "target_price": mean_str,
+        "upside_pct": up_str,
+        "profit_per_share": us_profit_share,
+        "profit_10m": us_profit_10m,
         "title": f"[{name_ko} ({sym})] {know.get('badge', sector)} & 한국 {know.get('kr_link', '공급망')} 연동 분석",
         "proposer": "이준호 이사 (글로벌·파생본부장) · 박진우 부사장 (리서치)",
         "submitted_at": f"{time_str} 24시간 나스닥 글로벌 데스크",
@@ -2394,10 +2410,10 @@ def _create_us_stock_approval_doc(
             f"현재 주가는 {price_str}이며, 미국 월스트리트 전문가 {analyst_cnt or '다수'}명의 평균 목표가는 {mean_str}(지금보다 {up_str} 추가 상승 가능, 투자의견 {opinion_key})로 제시되어 있습니다."
         ),
         "key_numbers": [
-            {"label": f"{name_ko} 현재 주가", "value": price_str},
-            {"label": "월가 전문가 평균 목표가", "value": f"{mean_str} ({up_str})"},
-            {"label": "최근 두 달 평균가격(50일선)", "value": ma50_str},
-            {"label": "현재 주가 힘(추세)", "value": trend_str},
+            {"label": f"{name_ko} 실시간 현재가", "value": price_str},
+            {"label": "월가 전문가 평균 목표가", "value": f"{mean_str} (상승여력 {up_str})"},
+            {"label": "주당 예상 기대차익", "value": us_profit_share},
+            {"label": "1,000만원 투자 시 기대수익", "value": us_profit_10m},
         ],
         "research_opinion": (
             f"👍 [왜 중요한가요? · 이준호 글로벌이사]: {know['why_important']} "
@@ -2670,6 +2686,7 @@ def get_ceo_office_boardroom(
             "id": str(r.get("id") or f"{prefix}_{idx}"),
             "category": r.get("category") or r.get("category_label") or prefix,
             "stock_name": r.get("item_name") or r.get("stock_name") or "시장 종합",
+            "item_code": r.get("item_code") or "",
             "title": r.get("title") or "",
             "broker": r.get("broker") or "주요 증권사",
             "date": r.get("date") or date_hyphen,
@@ -2691,6 +2708,7 @@ def get_ceo_office_boardroom(
             "id": "wk_comp_1",
             "category": "종목·목표주가",
             "stock_name": "두산에너빌리티",
+            "item_code": "034020",
             "title": "연내 SMR 추가 수주 기대 및 글로벌 원전 기자재 모멘텀 유효",
             "broker": "하나증권",
             "date": date_hyphen,
@@ -2706,6 +2724,7 @@ def get_ceo_office_boardroom(
             "id": "wk_comp_2",
             "category": "종목·목표주가",
             "stock_name": "대한항공",
+            "item_code": "003490",
             "title": "견조한 국제선 여객 운임 유지 및 해외발 환승 수요 적극 유치",
             "broker": "한화투자증권",
             "date": date_hyphen,
@@ -2721,6 +2740,7 @@ def get_ceo_office_boardroom(
             "id": "wk_comp_3",
             "category": "종목·목표주가",
             "stock_name": "SK하이닉스",
+            "item_code": "000660",
             "title": "HBM3E 12단 독점적 지위 지속 및 AI 서버용 고부가 메모리 수익성 극대화",
             "broker": "미래에셋증권",
             "date": date_hyphen,
@@ -2736,6 +2756,7 @@ def get_ceo_office_boardroom(
             "id": "wk_comp_4",
             "category": "종목·목표주가",
             "stock_name": "삼성전자",
+            "item_code": "005930",
             "title": "역사적 PBR 밴드 최하단 부근 저평가 매력 및 주주환원·HBM 공급 확대 기대",
             "broker": "KB증권",
             "date": date_hyphen,
@@ -2874,7 +2895,36 @@ def get_ceo_office_boardroom(
             "easy_terms": _extract_easy_terms("컨센서스 나스닥 선물 50일선"),
         })
 
-    # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (초보자 눈높이 번역!)
+    # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (실시간 현재가 & 기대수익금 정밀 계산!)
+    from stock_names import STOCK_MAP
+    kr_poll_codes = []
+    for rep in desk_company_reports[:4]:
+        c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name"))
+        if c and c not in kr_poll_codes:
+            kr_poll_codes.append(c)
+
+    kr_realtime_quotes = {}
+    if kr_poll_codes:
+        try:
+            import requests
+            syms_str = ",".join(kr_poll_codes)
+            p_resp = requests.get(f"https://polling.finance.naver.com/api/realtime/domestic/stock/{syms_str}", headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+            if p_resp.status_code == 200:
+                for it in p_resp.json().get("datas", []):
+                    code = it.get("itemCode")
+                    p_raw = float(it.get("closePriceRaw") or str(it.get("closePrice", "0")).replace(",", ""))
+                    ratio = float(it.get("fluctuationsRatio") or 0.0)
+                    cmp_obj = it.get("compareToPreviousPrice") or {}
+                    if cmp_obj.get("name") in ["FALLING", "DOWN"] or str(cmp_obj.get("code")) in ["4", "5"]:
+                        ratio = -ratio
+                    kr_realtime_quotes[code] = {
+                        "price": p_raw,
+                        "ratio": ratio,
+                        "display": f"{int(p_raw):,}원 ({ratio:+.2f}%)"
+                    }
+        except Exception as e:
+            print(f"[CEOOffice] Realtime price polling error: {e}")
+
     for idx, rep in enumerate(desk_company_reports[:4], start=2):
         s_name = rep["stock_name"]
         s_broker = rep["broker"]
@@ -2882,8 +2932,34 @@ def get_ceo_office_boardroom(
         s_title = rep["title"]
         s_easy = rep["plain_explanation"] or f"{s_broker} 전문가가 '{s_name}'의 앞으로 돈 벌 능력(실적)을 긍정적으로 보고 목표주가 {s_gp}을 제시했습니다."
         s_check = rep["action_point"] or "다음 분기 성적표(영업이익)가 전문가 예상만큼 잘 나오는지 꼭 확인해야 합니다."
+        s_code = rep.get("item_code") or STOCK_MAP.get(s_name) or ""
 
-        gp_explain = f"{s_broker}에서 '{s_name}' 주가가 앞으로 {s_gp}까지 갈 수 있다고 분석했습니다. " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else f"{s_broker}에서 '{s_name}'의 최근 사업 현황과 실적을 분석했습니다. "
+        # 실시간 현재가 및 기대 수익률/수익금 계산
+        q = kr_realtime_quotes.get(s_code)
+        s_gp_digits = re.sub(r'[^\d]', '', str(s_gp or ''))
+        s_gp_num = int(s_gp_digits) if s_gp_digits else 0
+
+        if q and q["price"] > 0:
+            curr_price_str = q["display"]
+            curr_price_num = q["price"]
+            if s_gp_num > 0:
+                upside_num = round(((s_gp_num - curr_price_num) / curr_price_num) * 100, 1)
+                diff_amount = int(s_gp_num - curr_price_num)
+                upside_str = f"{upside_num:+.1f}%"
+                profit_per_share = f"주당 {diff_amount:+,}원 ({upside_str})"
+                profit_10m = f"약 {int(10000000 * (upside_num / 100)):+,}원"
+            else:
+                upside_str = "컨센서스 유지"
+                profit_per_share = "실시간 산출 중"
+                profit_10m = "모니터링 중"
+        else:
+            curr_price_str = "실시간 연동 중"
+            curr_price_num = 0
+            upside_str = "집계 중"
+            profit_per_share = "집계 중"
+            profit_10m = "집계 중"
+
+        gp_explain = f"{s_broker}에서 '{s_name}'의 현재가({curr_price_str}) 대비 목표가를 {s_gp}(기대 상승 여력 {upside_str})로 제시했습니다. " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else f"{s_broker}에서 '{s_name}'의 최근 사업 현황과 실적을 분석했습니다. "
 
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-0{idx}",
@@ -2892,23 +2968,29 @@ def get_ceo_office_boardroom(
             "category_badge": f"🏢 국내 주식 ({s_broker})",
             "urgency": "정규 결재",
             "stock_name": s_name,
+            "stock_code": s_code,
+            "current_price": curr_price_str,
+            "target_price": s_gp,
+            "upside_pct": upside_str,
+            "profit_per_share": profit_per_share,
+            "profit_10m": profit_10m,
             "title": f"[{s_name}] {s_title}",
             "proposer": "박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)",
             "submitted_at": f"{rep['date']} 발간 · 쉬운 해설 완료",
             "easy_headline": f"{gp_explain}{s_easy}",
             "key_numbers": [
-                {"label": "분석한 회사 이름", "value": s_name},
-                {"label": "보고서 낸 증권사", "value": s_broker},
-                {"label": "전문가 목표주가", "value": s_gp if s_gp != "제시안함" else "긍정적 유지"},
-                {"label": "전문가 결론", "value": "사도 좋음 (매수)" if "Buy" in rep["opinion"] or "매수" in rep["opinion"] else rep["opinion"]},
+                {"label": "실시간 현재가", "value": curr_price_str},
+                {"label": "전문가 목표주가", "value": f"{s_gp} (상승여력 {upside_str})" if upside_str not in ["집계 중", "컨센서스 유지"] else s_gp},
+                {"label": "주당 예상 기대차익", "value": profit_per_share},
+                {"label": "1,000만원 투자 시 기대수익", "value": profit_10m},
             ],
             "research_opinion": f"👍 [왜 좋은가요? · 박진우 리서치센터장]: {s_easy}",
-            "quant_opinion": f"📊 [돈의 흐름은? · 김도현 수급본부장]: 증권사가 부른 목표 가격({s_gp})에 비해 지금 주가가 얼마나 저렴한지, 그리고 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다.",
+            "quant_opinion": f"📊 [돈의 흐름은? · 김도현 수급본부장]: 현재가 {curr_price_str} 대비 목표 가격({s_gp})까지 {upside_str}의 매력적인 상승 여력이 열려 있으며, 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다.",
             "risk_opinion": f"⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 무조건 좋다고 바로 사기보다는, {s_check}",
             "secretary_conclusion": (
-                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: '{s_name}'(목표주가 {s_gp})의 좋은 점과 주의할 점을 모두 정리했습니다. 우리 회사 중점 관심 종목으로 등록할지 [승인 서명]을 눌러 결정해 주십시오!"
+                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: '{s_name}'(현재가 {curr_price_str} ➔ 목표가 {s_gp}, 기대수익 {upside_str})의 투자 가치를 정리했습니다. 우리 회사 중점 관심 종목으로 등록할지 [승인 서명]을 눌러 결정해 주십시오!"
             ),
-            "recommendation": f"목표주가 {s_gp} 기준 관심종목 등록 승인",
+            "recommendation": f"현재가 {curr_price_str} / 목표가 {s_gp} 관심종목 등록 승인",
             "detail_url": rep["detail_url"],
             "easy_terms": _extract_easy_terms(f"{s_name} {s_title} {s_easy}"),
         })
