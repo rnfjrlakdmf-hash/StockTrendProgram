@@ -101,7 +101,12 @@ export default function KakaoRevenueAd({
     if (!container) return;
 
     // 부모 요소가 display: none 상태인 경우 0x0 무효 노출 요청 방지
-    if (container.offsetParent === null) return;
+    try {
+      const comp = window.getComputedStyle(container);
+      if (comp.display === "none" || comp.visibility === "hidden") return;
+    } catch {
+      // ignore
+    }
 
     const unitId = config.unit;
     setAdFailed(false);
@@ -172,6 +177,7 @@ export default function KakaoRevenueAd({
         style={{
           width: `${numWidth}px`,
           maxWidth: "100%",
+          minHeight: `${config.height}px`,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",

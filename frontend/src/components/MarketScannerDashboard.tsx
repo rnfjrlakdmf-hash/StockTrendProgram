@@ -4,7 +4,7 @@ import { Activity, Radio, AlertCircle, TrendingUp, TrendingDown, Minus, RefreshC
 import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from './KakaoShareButton';
 import { MarketScannerSkeleton } from './SkeletonCard';
-import KakaoAdFit from './KakaoAdFit';
+import KakaoRevenueAd from './KakaoRevenueAd';
 
 interface MarketStats {
     up: number;
@@ -539,12 +539,7 @@ export default function MarketScannerDashboard() {
 
             {/* 네이티브 인피드 스폰서 배너 (골든존: 수급 분포도와 공시 속보 사이) */}
             <div className="flex justify-center my-4 overflow-hidden">
-                <div className="block md:hidden">
-                    <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-                </div>
-                <div className="hidden md:block">
-                    <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-                </div>
+                <KakaoRevenueAd type="feed" />
             </div>
 
             {/* 3. 특이 공시 속보 (Breaking Disclosures) - Executive Radar */}

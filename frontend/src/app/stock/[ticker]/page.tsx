@@ -482,6 +482,11 @@ export default async function StockSeoPage({ params }: Props) {
                     </PremiumContent>
                 </div>
 
+                {/* 🌟 [골든존 2] 리포트 정독 후 자연스러운 중간 인피드 배너 (300x250) */}
+                <div className="my-6 flex justify-center">
+                    <KakaoRevenueAd type="feed" />
+                </div>
+
                 {/* AI 초보자 맞춤형 재무제표 3분 완벽 해설기 */}
                 <EasyFinancialReader 
                     stockName={name}
@@ -548,7 +553,7 @@ export default async function StockSeoPage({ params }: Props) {
 
                 {/* Stock Voting Board */}
                 <div className="mb-8">
-                    <div className="mb-6"><KakaoRevenueAd type="box" /></div>
+                    <div className="mb-6 flex justify-center"><KakaoRevenueAd type="bottom" /></div>
                     <StockVotingBoard ticker={decodedTicker} stockName={name} />
                 </div>
             </main>

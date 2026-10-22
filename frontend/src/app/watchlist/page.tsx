@@ -571,7 +571,7 @@ export default function WatchlistPage() {
     return (
         <div className="p-4 md:p-8 pt-4 md:pt-8 max-w-7xl mx-auto min-h-screen space-y-6">
             {/* 상단 스마트 반응형 광고 */}
-            <KakaoRevenueAd type="feed" />
+            <KakaoRevenueAd type="banner" />
 
             {/* Header & Quick Summary - Executive Portfolio Master */}
             <div className="bg-gradient-to-b from-zinc-900/95 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.7)] backdrop-blur-xl relative overflow-hidden">
@@ -1759,9 +1759,9 @@ export default function WatchlistPage() {
                 )}
             </div>
 
-            {/* 하단 세로 배너 광고 (320x480) */}
+            {/* 하단 세로 배너 광고 */}
             <div className="mt-8 flex justify-center">
-                <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+                <KakaoRevenueAd type="bottom" />
             </div>
 
             {alertStock && (

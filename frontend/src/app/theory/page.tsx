@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { BookOpen, Sparkles, GraduationCap, Flame, TrendingUp } from "lucide-react";
-import KakaoAdFit from "@/components/KakaoAdFit";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import TheoryListClient, { TheoryPost } from "./TheoryListClient";
 
 export const metadata: Metadata = {
@@ -80,12 +80,9 @@ export default async function TheoryListPage(props: Props) {
 
     return (
         <div className="min-h-screen pt-20 pb-20 px-4 md:px-8 max-w-6xl mx-auto animate-in fade-in duration-500 text-white">
-            {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
-            <div className="flex md:hidden justify-center -mt-2 mb-6">
-                <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-            </div>
-            <div className="hidden md:flex justify-center -mt-2 mb-6">
-                <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+            {/* 상단 띠배너 광고 */}
+            <div className="flex justify-center -mt-2 mb-6">
+                <KakaoRevenueAd type="banner" />
             </div>
 
             {/* Hero Header Section */}
@@ -124,12 +121,9 @@ export default async function TheoryListPage(props: Props) {
             {/* Interactive Client Component (검색, 카테고리 필터, 2열 카드 그리드, 내부 링크) */}
             <TheoryListClient initialPosts={posts} totalPages={totalPages} currentPage={page} />
 
-            {/* 하단 광고 슬롯 */}
-            <div className="w-full flex justify-center mt-14 mb-4">
-                <KakaoAdFit adUnit="DAN-b9cY6ogHFZTTD0Sl" adWidth="320" adHeight="50" />
-            </div>
-            <div className="w-full flex justify-center mb-8">
-                <KakaoAdFit adUnit="DAN-8TxTsrWjI6Q4SOt0" adWidth="320" adHeight="100" />
+            {/* 하단 통합 배너 광고 */}
+            <div className="w-full flex justify-center mt-14 mb-8">
+                <KakaoRevenueAd type="bottom" />
             </div>
 
             <SeoContentBlock

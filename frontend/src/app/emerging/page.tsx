@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import UsEmergingStocksShowcase from "@/components/UsEmergingStocksShowcase";
-import KakaoAdFit from "@/components/KakaoAdFit";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import SeoContentBlock from "@/components/SeoContentBlock";
 import { Rocket, Sparkles, Search, Compass, ShieldCheck, ArrowRight, ArrowLeft, Zap, Info, ChevronRight, TrendingUp, Star } from "lucide-react";
 
@@ -43,12 +43,9 @@ function EmergingStocksContent() {
             />
 
             <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8 animate-in fade-in duration-500">
-                {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
-                <div className="flex md:hidden justify-center -mt-2 mb-2">
-                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-                </div>
-                <div className="hidden md:flex justify-center -mt-2 mb-2">
-                    <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                {/* 상단 띠배너 광고 */}
+                <div className="flex justify-center -mt-2 mb-2">
+                    <KakaoRevenueAd type="banner" />
                 </div>
 
                 {/* 상단 네비게이션 & 빠른 검색 바 */}
@@ -135,14 +132,9 @@ function EmergingStocksContent() {
                     </div>
                 </div>
 
-                {/* 인피드 광고 */}
+                {/* 하단 인피드 광고 */}
                 <div className="flex justify-center my-4 overflow-hidden">
-                    <div className="block md:hidden">
-                        <KakaoAdFit adUnit="DAN-4lZ2zEzbyDJ1Yva6" adWidth="300" adHeight="250" />
-                    </div>
-                    <div className="hidden md:block">
-                        <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
-                    </div>
+                    <KakaoRevenueAd type="bottom" />
                 </div>
 
             </div>

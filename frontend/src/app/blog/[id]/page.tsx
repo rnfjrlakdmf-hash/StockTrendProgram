@@ -6,8 +6,7 @@ import { notFound } from "next/navigation";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import BlogViewTracker from "@/components/BlogViewTracker";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
-import KakaoAdFit from "@/components/KakaoAdFit";
-import ResponsiveKakaoAd from "@/components/ResponsiveKakaoAd";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
@@ -206,10 +205,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
 
             {/* 본문 최상단 광고 (Above the Fold - 반응형) */}
             <div className="w-full flex justify-center mt-8 mb-10">
-                <ResponsiveKakaoAd 
-                    mobileAdUnit="DAN-4lZ2zEzbyDJ1Yva6" mobileAdWidth="300" mobileAdHeight="250"
-                    pcAdUnit="DAN-eeR4RhnpmQaeIlYm" pcAdWidth="728" pcAdHeight="90" 
-                />
+                <KakaoRevenueAd type="banner" />
             </div>
 
             {/* Content Section (HTML Rendered) */}
@@ -288,10 +284,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ id: s
 
             {/* 본문 하단 광고 (반응형) */}
             <div className="w-full flex justify-center mb-12">
-                <ResponsiveKakaoAd 
-                    mobileAdUnit="DAN-4lZ2zEzbyDJ1Yva6" mobileAdWidth="300" mobileAdHeight="250"
-                    pcAdUnit="DAN-kfR4SXJubdA0vEcm" pcAdWidth="728" pcAdHeight="90" 
-                />
+                <KakaoRevenueAd type="bottom" />
             </div>
             
             {/* Global Styles specific to Blog Content */}

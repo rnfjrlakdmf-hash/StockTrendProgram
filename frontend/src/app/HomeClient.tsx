@@ -89,6 +89,11 @@ export default function HomeClient() {
               <LiveMarketHub />
             </div>
 
+            {/* 🌟 [골든존 1] 최상단 실시간 허브 하단 (시선 집중 1위 구역: 모바일 320x100 / PC 728x90) */}
+            <div className="my-2 flex justify-center">
+              <KakaoRevenueAd type="banner" />
+            </div>
+
             {/* [New] 장마감 수급 퀀트 스캐너 메인 하이라이트 배너 */}
             <Link 
               href="/signals?tab=scanner" 
@@ -177,11 +182,6 @@ export default function HomeClient() {
                 </div>
               );
             })()}
-
-            {/* 상단 대시보드 하단 골든존 배너 광고 (모바일: 320x100, PC: 728x90) */}
-            <div className="my-2 flex justify-center">
-              <KakaoRevenueAd type="banner" />
-            </div>
 
             <div className="space-y-6">
               <MarketIndicators limit={10} />

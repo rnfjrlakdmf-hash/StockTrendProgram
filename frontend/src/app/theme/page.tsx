@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
-import KakaoAdFit from "@/components/KakaoAdFit";
+import KakaoRevenueAd from "@/components/KakaoRevenueAd";
 import SeoContentBlock from "@/components/SeoContentBlock";
 import { API_BASE_URL } from "@/lib/config";
 import { 
@@ -461,12 +461,9 @@ function ThemePageContent() {
             <Header title="실시간 주도 테마 레이더 (테마 발굴)" subtitle="시장 주도 테마와 대장주를 한눈에 파악하세요." />
 
             <div className="max-w-4xl mx-auto p-6 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {/* 상단 띠배너 광고 (모바일: 320x50, PC: 728x90) */}
-                <div className="flex md:hidden justify-center -mt-2 mb-4">
-                    <KakaoAdFit adUnit="DAN-g3wzyZlZ4hBiYyRA" adWidth="320" adHeight="50" />
-                </div>
-                <div className="hidden md:flex justify-center -mt-2 mb-4">
-                    <KakaoAdFit adUnit="DAN-eeR4RhnpmQaeIlYm" adWidth="728" adHeight="90" />
+                {/* 상단 띠배너 광고 */}
+                <div className="flex justify-center -mt-2 mb-4">
+                    <KakaoRevenueAd type="banner" />
                 </div>
                 {/* Search Hero - Ultra Luxury VIP Design */}
                 <div className="text-center space-y-8 py-8 relative overflow-hidden">
@@ -1332,9 +1329,9 @@ function ThemePageContent() {
                     </div>
                 )}
 
-                {/* 하단 세로 배너 광고 (320x480) */}
+                {/* 하단 통합 배너 광고 */}
                 <div className="mt-8 flex justify-center">
-                    <KakaoAdFit adUnit="DAN-b946L75vYgFilyWy" adWidth="320" adHeight="480" />
+                    <KakaoRevenueAd type="bottom" />
                 </div>
             </div>
         </div>
