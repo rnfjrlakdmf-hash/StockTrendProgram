@@ -234,11 +234,35 @@ def execute_ceo_approved_stock_trade(doc_data: Dict[str, Any]) -> Dict[str, Any]
     now_str = now_kst.strftime("%Y-%m-%d %H:%M:%S")
     time_short = now_kst.strftime("%H:%M:%S")
     
-    # 실시간 현재가 파싱
-    curr_raw = doc_data.get("current_price") or ""
-    curr_str = str(curr_raw)
-    digits = re.sub(r'[^\d.]', '', curr_str.split(' ')[0] if curr_str else '')
-    curr_num = float(digits) if digits else (100000.0 if cat_type == "kr_stock" else 150.0)
+    # 실시간 현재가 조회 (네이버/야후 실시간 호가 최우선 연동)
+    live_price = None
+    if cat_type == "kr_stock" and stock_code:
+        try:
+            import requests
+            resp = requests.get(f"https://polling.finance.naver.com/api/realtime/domestic/stock/{stock_code}", headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+            if resp.status_code == 200:
+                datas = resp.json().get("datas", [])
+                if datas:
+                    p_raw = float(datas[0].get("closePriceRaw") or str(datas[0].get("closePrice", "0")).replace(",", "") or 0)
+                    if p_raw > 0:
+                        live_price = p_raw
+        except Exception as e:
+            print(f"[TradingOrder] live quote fetch error: {e}")
+    elif cat_type != "kr_stock" and stock_code:
+        try:
+            import yfinance as yf
+            t = yf.Ticker(stock_code)
+            live_price = round(float(t.fast_info.last_price), 2)
+        except Exception as e:
+            print(f"[TradingOrder] US quote fetch error: {e}")
+            
+    if live_price and live_price > 0:
+        curr_num = live_price
+    else:
+        curr_raw = doc_data.get("current_price") or ""
+        curr_str = str(curr_raw)
+        digits = re.sub(r'[^\d.]', '', curr_str.split(' ')[0] if curr_str else '')
+        curr_num = float(digits) if digits else (100000.0 if cat_type == "kr_stock" else 150.0)
     
     # 증권사 트레이딩 팀의 최적 분할 매수가 계산 (호가 매수 최적화: 현재가 대비 약 -0.3%~0% 유리한 가격에 체결)
     buy_price = curr_num if cat_type != "kr_stock" else float(int(curr_num * 0.997))

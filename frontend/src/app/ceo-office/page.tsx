@@ -2775,12 +2775,14 @@ export default function CeoOfficePage() {
                                                                 </div>
 
                                                                 <div className="bg-black/50 border border-white/10 rounded-2xl p-3">
-                                                                    <div className="text-[11px] text-gray-400 font-medium">실시간 현재가</div>
+                                                                    <div className="text-[11px] text-gray-400 font-medium">
+                                                                        {isClosed ? '매도 청산단가' : '실시간 현재가'}
+                                                                    </div>
                                                                     <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
                                                                         {pos.category === 'kr_stock' ? `${pos.current_price.toLocaleString()}원` : `$${pos.current_price}`}
                                                                     </div>
-                                                                    <div className="text-[10px] text-emerald-400 mt-0.5">
-                                                                        실시간 호가 연동 중
+                                                                    <div className={`text-[10px] mt-0.5 ${isClosed ? 'text-gray-400' : 'text-emerald-400'}`}>
+                                                                        {isClosed ? '전량 매도 청산 완료' : '실시간 호가 연동 중'}
                                                                     </div>
                                                                 </div>
 
