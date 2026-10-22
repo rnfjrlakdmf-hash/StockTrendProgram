@@ -9,125 +9,20 @@ KST = timezone(timedelta(hours=9))
 STATE_FILE = os.path.join(os.path.dirname(__file__), "ceo_trading_state.json")
 
 DEFAULT_STATE = {
-    "total_capital": 100000000, # 1억원 초기 운용 자산
-    "available_cash": 45000000,
-    "realized_pnl": 2840000,
-    "win_count": 8,
-    "loss_count": 1,
+    "total_capital": 100000000,  # 1억원 초기 운용 자산 (가상)
+    "available_cash": 100000000,
+    "realized_pnl": 0,
+    "win_count": 0,
+    "loss_count": 0,
     "desk_lead": {
         "name": "최민석",
         "title": "수석 운용역 (자산운용 프랍트레이딩 1팀장)",
         "badge": "경력 14년 · 대형 증권사 프랍트레이더 출신",
         "avatar": "👨‍💼",
-        "status": "정규장 실시간 호가 감시 및 적정 분할 매매 실행 중"
+        "status": "대표이사 재가 종목 대기 중"
     },
-    "positions": [
-        {
-            "id": "POS-034020",
-            "stock_name": "두산에너빌리티",
-            "stock_code": "034020",
-            "category": "kr_stock",
-            "status": "HOLDING",
-            "trader_name": "최민석 수석 운용역 (프랍 1팀)",
-            "buy_date": "2026-10-21 09:12:34",
-            "buy_price": 61200,
-            "qty": 200,
-            "invested_krw": 12240000,
-            "current_price": 64100,
-            "unrealized_pnl": 580000,
-            "pnl_pct": 4.74,
-            "target_price_1": 70400,
-            "target_price_final": 120000,
-            "stop_loss_price": 59000,
-            "strategy_note": "SMR 수주 모멘텀 유효. 적정 매수가 61,200원에 분할 매수 완료. 1차 목표가 70,400원(+15%) 도달 시 50% 분할 익절 주문 예약 중.",
-            "trade_logs": [
-                {"timestamp": "09:12:34", "type": "BUY", "message": "대표이사 재가 승인 → 1차 적정 매수가 분할 매수 100주 @ 61,000원 체결"},
-                {"timestamp": "09:45:10", "type": "BUY", "message": "50일선 지지 확인 → 2차 추가 매수 100주 @ 61,400원 체결 (평균단가 61,200원 확정)"},
-                {"timestamp": "12:30:00", "type": "STATUS", "message": "현재 수익률 +4.74% 순항 중. 1차 목표가(70,400원) 호가 감시 지속"}
-            ]
-        },
-        {
-            "id": "POS-000660",
-            "stock_name": "SK하이닉스",
-            "stock_code": "000660",
-            "category": "kr_stock",
-            "status": "HOLDING",
-            "trader_name": "이소연 책임 운용역 (반도체/IT 전담)",
-            "buy_date": "2026-10-21 09:20:15",
-            "buy_price": 1220000,
-            "qty": 10,
-            "invested_krw": 12200000,
-            "current_price": 1274500,
-            "unrealized_pnl": 545000,
-            "pnl_pct": 4.47,
-            "target_price_1": 1380000,
-            "target_price_final": 1700000,
-            "stop_loss_price": 1180000,
-            "strategy_note": "HBM3E 독점 공급망 모멘텀. 기관 프로그램 순매수 유입 확인 후 진입. +12% 구간에서 1차 차익 실현 예정.",
-            "trade_logs": [
-                {"timestamp": "09:20:15", "type": "BUY", "message": "대표이사 재가 승인 → 최적 호가 분할 매수 10주 @ 1,220,000원 체결 완료"},
-                {"timestamp": "11:15:00", "type": "STATUS", "message": "외국인·기관 대량 매집 확인, +4.47% 평가익 유지 중"}
-            ]
-        },
-        {
-            "id": "POS-NVDA",
-            "stock_name": "NVDA",
-            "stock_code": "NVDA",
-            "category": "us_stock",
-            "status": "HOLDING",
-            "trader_name": "David Kim 운용역 (글로벌 테크)",
-            "buy_date": "2026-10-20 22:35:10",
-            "buy_price": 132.50,
-            "qty": 70,
-            "invested_krw": 12800000,
-            "current_price": 138.00,
-            "unrealized_pnl": 530000,
-            "pnl_pct": 4.15,
-            "target_price_1": 150.00,
-            "target_price_final": 180.00,
-            "stop_loss_price": 127.00,
-            "strategy_note": "블랙웰 아키텍처 서버 수요 폭증. $132.50에 분할 매수 완료. 월가 목표가 $180까지 단계적 분할 매도 전략.",
-            "trade_logs": [
-                {"timestamp": "22:35:10", "type": "BUY", "message": "대표이사 재가 승인 → 나스닥 정규장 분할 매수 70주 @ $132.50 체결 완료"},
-                {"timestamp": "04:00:00", "type": "STATUS", "message": "뉴욕 증시 마감: +4.15% 평가익 확정, 목표가 $150 감시 중"}
-            ]
-        }
-    ],
-    "blotter": [
-        {
-            "order_id": "ORD-20261021-01",
-            "timestamp": "2026-10-21 09:12:34",
-            "stock_name": "두산에너빌리티",
-            "side": "매수",
-            "qty": 200,
-            "price_str": "61,200원",
-            "amount_str": "12,240,000원",
-            "status": "체결완료",
-            "trader": "최민석 수석"
-        },
-        {
-            "order_id": "ORD-20261021-02",
-            "timestamp": "2026-10-21 09:20:15",
-            "stock_name": "SK하이닉스",
-            "side": "매수",
-            "qty": 10,
-            "price_str": "1,220,000원",
-            "amount_str": "12,200,000원",
-            "status": "체결완료",
-            "trader": "이소연 책임"
-        },
-        {
-            "order_id": "ORD-20261020-03",
-            "timestamp": "2026-10-20 22:35:10",
-            "stock_name": "NVDA",
-            "side": "매수",
-            "qty": 70,
-            "price_str": "$132.50",
-            "amount_str": "12,800,000원",
-            "status": "체결완료",
-            "trader": "David Kim"
-        }
-    ]
+    "positions": [],
+    "blotter": []
 }
 
 def load_trading_state() -> Dict[str, Any]:
@@ -205,13 +100,15 @@ def update_realtime_quotes_for_positions(state: Dict[str, Any]) -> Dict[str, Any
     state["summary"] = {
         "total_capital": state.get("total_capital", 100000000),
         "total_invested": total_invested,
-        "available_cash": state.get("available_cash", 45000000),
+        "available_cash": state.get("available_cash", 100000000),
         "total_unrealized_pnl": total_unrealized_pnl,
-        "total_realized_pnl": state.get("realized_pnl", 2840000),
-        "combined_profit": total_unrealized_pnl + state.get("realized_pnl", 2840000),
-        "combined_return_pct": round(((total_unrealized_pnl + state.get("realized_pnl", 2840000)) / state.get("total_capital", 100000000)) * 100, 2),
+        "total_realized_pnl": state.get("realized_pnl", 0),
+        "combined_profit": total_unrealized_pnl + state.get("realized_pnl", 0),
+        "combined_return_pct": round(((total_unrealized_pnl + state.get("realized_pnl", 0)) / state.get("total_capital", 100000000)) * 100, 2),
         "active_position_count": len([p for p in state.get("positions", []) if p.get("status") in ["HOLDING", "PARTIAL_EXIT"]]),
-        "win_rate": round((state.get("win_count", 8) / max(1, (state.get("win_count", 8) + state.get("loss_count", 1)))) * 100, 1)
+        "win_count": state.get("win_count", 0),
+        "loss_count": state.get("loss_count", 0),
+        "win_rate": round((state.get("win_count", 0) / max(1, (state.get("win_count", 0) + state.get("loss_count", 0)))) * 100, 1)
     }
     return state
 
@@ -324,7 +221,7 @@ def execute_ceo_approved_stock_trade(doc_data: Dict[str, Any]) -> Dict[str, Any]
     
     state["positions"].insert(0, new_pos)
     state["blotter"].insert(0, new_blotter)
-    state["available_cash"] = max(0, state.get("available_cash", 45000000) - actual_invested)
+    state["available_cash"] = max(0, state.get("available_cash", 100000000) - actual_invested)
     
     save_trading_state(state)
     return {"status": "success", "message": f"[{stock_name}] 트레이딩 팀 매수 주문 체결 완료!", "position": new_pos}

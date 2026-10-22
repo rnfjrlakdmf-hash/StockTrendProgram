@@ -1077,19 +1077,19 @@ export default function CeoOfficePage() {
                                 <div className="bg-black/50 p-3.5 rounded-2xl border border-emerald-500/30">
                                     <div className="text-[11px] text-emerald-400">보유 평가 손익</div>
                                     <div className="text-base font-black text-rose-400 font-mono mt-1">
-                                        +{(tradingDesk?.summary?.total_unrealized_pnl || 1731200).toLocaleString()}원
+                                        +{(tradingDesk?.summary?.total_unrealized_pnl || 0).toLocaleString()}원
                                     </div>
                                 </div>
                                 <div className="bg-black/50 p-3.5 rounded-2xl border border-amber-500/30">
                                     <div className="text-[11px] text-amber-400">누적 실현 손익</div>
                                     <div className="text-base font-black text-amber-300 font-mono mt-1">
-                                        +{(tradingDesk?.summary?.total_realized_pnl || 2840000).toLocaleString()}원
+                                        +{(tradingDesk?.summary?.total_realized_pnl || 0).toLocaleString()}원
                                     </div>
                                 </div>
                                 <div className="bg-gradient-to-br from-emerald-950/40 to-teal-950/30 p-3.5 rounded-2xl border border-emerald-500/40">
                                     <div className="text-[11px] text-emerald-300 font-bold">종합 순수익률 (알파)</div>
                                     <div className="text-base font-black text-rose-400 font-mono mt-1">
-                                        +{(tradingDesk?.summary?.combined_return_pct || 4.57)}%
+                                        +{(tradingDesk?.summary?.combined_return_pct || 0)}%
                                     </div>
                                     <div className="text-[10px] text-emerald-400 mt-0.5">코스피 대비 +5.8% 초과달성</div>
                                 </div>
@@ -2595,7 +2595,7 @@ export default function CeoOfficePage() {
                                                     {(tradingDesk?.summary?.total_capital || 100000000).toLocaleString()}원
                                                 </div>
                                                 <div className="text-[11px] text-gray-400 mt-1">
-                                                    가용 현금: {(tradingDesk?.summary?.available_cash || 45000000).toLocaleString()}원
+                                                    가용 현금: {(tradingDesk?.summary?.available_cash || 100000000).toLocaleString()}원
                                                 </div>
                                             </div>
 
@@ -2607,11 +2607,11 @@ export default function CeoOfficePage() {
                                                 <div className={`text-lg sm:text-xl font-black font-mono mt-1 ${
                                                     (tradingDesk?.summary?.total_unrealized_pnl || 0) >= 0 ? 'text-rose-400' : 'text-blue-400'
                                                 }`}>
-                                                    {(tradingDesk?.summary?.total_unrealized_pnl || 1731200) >= 0 ? '+' : ''}
-                                                    {(tradingDesk?.summary?.total_unrealized_pnl || 1731200).toLocaleString()}원
+                                                    {(tradingDesk?.summary?.total_unrealized_pnl || 0) >= 0 ? '+' : ''}
+                                                    {(tradingDesk?.summary?.total_unrealized_pnl || 0).toLocaleString()}원
                                                 </div>
                                                 <div className="text-[11px] text-emerald-300 font-mono mt-1">
-                                                    운용 중 포지션 {tradingDesk?.summary?.active_position_count || 3}개 종목
+                                                    운용 중 포지션 {tradingDesk?.summary?.active_position_count || 0}개 종목
                                                 </div>
                                             </div>
 
@@ -2621,7 +2621,7 @@ export default function CeoOfficePage() {
                                                     <span className="text-[10px] text-amber-400/80">익절 완료금</span>
                                                 </div>
                                                 <div className="text-lg sm:text-xl font-black text-amber-300 font-mono mt-1">
-                                                    +{(tradingDesk?.summary?.total_realized_pnl || 2840000).toLocaleString()}원
+                                                    +{(tradingDesk?.summary?.total_realized_pnl || 0).toLocaleString()}원
                                                 </div>
                                                 <div className="text-[11px] text-gray-400 mt-1">
                                                     매도 차익 실현 완료
@@ -2634,10 +2634,10 @@ export default function CeoOfficePage() {
                                                     <span className="text-[10px] text-emerald-300">합산 성과</span>
                                                 </div>
                                                 <div className="text-lg sm:text-xl font-black text-rose-400 font-mono mt-1">
-                                                    +{(tradingDesk?.summary?.combined_return_pct || 4.57)}%
+                                                    +{(tradingDesk?.summary?.combined_return_pct || 0)}%
                                                 </div>
                                                 <div className="text-[11px] text-emerald-300/90 font-bold mt-1">
-                                                    운용 승률: {tradingDesk?.summary?.win_rate || 88.9}% (8승 1패)
+                                                    운용 승률: {tradingDesk?.summary?.win_rate || 0}% ({tradingDesk?.summary?.win_count || 0}승 {tradingDesk?.summary?.loss_count || 0}패)
                                                 </div>
                                             </div>
                                         </div>
@@ -2652,7 +2652,7 @@ export default function CeoOfficePage() {
                                                     <span>[최민석 수석 운용역 · 프랍트레이딩 1팀장 직속 보고]</span>
                                                     <span className="text-[10px] text-gray-400 font-normal">경력 14년 제도권 대형사 출신</span>
                                                 </div>
-                                                "대표님께서 결재 기안서에서 재가(승인)해 주신 종목들은 호가창을 정밀 분석하여 <span className="text-white font-bold">가장 유리한 적정 매수가에 분할 체결</span>을 완료하였습니다. 현재 시장 변동성 속에서도 <span className="text-rose-400 font-bold font-mono">+{tradingDesk?.summary?.combined_return_pct || 4.57}%</span>의 초과 수익을 안정적으로 유지 중이며, 1차 목표가(+15%) 도달 시 50% 분할 익절하여 원금을 즉시 회수하는 보수적 방어 체계를 가동하고 있습니다."
+                                                "대표님께서 결재 기안서에서 재가(승인)해 주신 종목들은 호가창을 정밀 분석하여 <span className="text-white font-bold">가장 유리한 적정 매수가에 분할 체결</span>을 완료하였습니다. 현재 시장 변동성 속에서도 <span className="text-rose-400 font-bold font-mono">+{tradingDesk?.summary?.combined_return_pct || 0}%</span>의 초과 수익을 안정적으로 유지 중이며, 1차 목표가(+15%) 도달 시 50% 분할 익절하여 원금을 즉시 회수하는 보수적 방어 체계를 가동하고 있습니다."
                                             </div>
                                         </div>
                                     </div>
