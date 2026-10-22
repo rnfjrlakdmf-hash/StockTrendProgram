@@ -3848,6 +3848,21 @@ def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...)):
     return res
 
 
+@router.post("/ceo-office/watchlist-research")
+def post_watchlist_research(
+    payload: Dict[str, Any] = Body(default={}),
+    x_user_id: Optional[str] = Header(None)
+):
+    """
+    관심종목별 리서치 보고서 (시세·수급·증권사 컨센서스·재무지표·뉴스 + 쉬운 말 종합의견)
+    """
+    from watchlist_research_service import build_watchlist_research
+    syms = payload.get("symbols", [])
+    if isinstance(syms, str):
+        syms = [s.strip() for s in syms.split(",") if s.strip()]
+    return build_watchlist_research(user_id=x_user_id, requested_symbols=syms)
+
+
 @router.get("/ceo-office/trading-desk/watchlist-analysis")
 def get_watchlist_trading_analysis(
     symbols: Optional[str] = Query(None),

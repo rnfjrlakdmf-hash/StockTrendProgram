@@ -550,7 +550,7 @@ export default function CeoOfficePage() {
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
-    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history'>('electronic_sign');
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const [commandInput, setCommandInput] = useState<string>('');
     const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
@@ -565,6 +565,45 @@ export default function CeoOfficePage() {
     const [watchlistAnalysis, setWatchlistAnalysis] = useState<any[]>([]);
     const [isWatchlistLoading, setIsWatchlistLoading] = useState<boolean>(false);
     const [watchlistSearchInput, setWatchlistSearchInput] = useState<string>('');
+
+    // 📚 관심종목 리서치 보고서 상태
+    const [researchReports, setResearchReports] = useState<any[]>([]);
+    const [researchLoading, setResearchLoading] = useState<boolean>(false);
+    const [researchGeneratedAt, setResearchGeneratedAt] = useState<string>('');
+    const [researchRequested, setResearchRequested] = useState<number>(0);
+
+    const fetchWatchlistResearch = useCallback(async () => {
+        try {
+            setResearchLoading(true);
+            const uid = user?.id || (user as any)?.uid || '';
+            let cachedSymbols: string[] = [];
+            if (typeof window !== 'undefined') {
+                try {
+                    const raw = localStorage.getItem('cached_watchlist');
+                    if (raw) {
+                        cachedSymbols = JSON.parse(raw).map((it: any) => typeof it === 'string' ? it : it.symbol);
+                    }
+                } catch (e) {}
+            }
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/watchlist-research`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-ID': uid },
+                body: JSON.stringify({ symbols: cachedSymbols })
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success') {
+                    setResearchReports(json.reports || []);
+                    setResearchGeneratedAt(json.generated_at || '');
+                    setResearchRequested(json.requested_count || 0);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load watchlist research:', err);
+        } finally {
+            setResearchLoading(false);
+        }
+    }, [user]);
 
     const fetchWatchlistAnalysis = useCallback(async (customSymbols?: string[]) => {
         try {
@@ -671,6 +710,10 @@ export default function CeoOfficePage() {
         }
         if (typeof window !== 'undefined' && window.location.search.includes('tab=trading')) {
             setActiveTab('approved_tf');
+        }
+        if (typeof window !== 'undefined' && window.location.search.includes('tab=research')) {
+            setActiveTab('watchlist_research');
+            fetchWatchlistResearch();
         }
     }, [authLoading, isAdmin, fetchTradingDesk]);
 
@@ -1366,6 +1409,26 @@ export default function CeoOfficePage() {
                             }`}>
                                 {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 종목 운용 중
                             </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setActiveTab('watchlist_research');
+                                if (researchReports.length === 0) fetchWatchlistResearch();
+                            }}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                                activeTab === 'watchlist_research'
+                                    ? 'bg-gradient-to-r from-sky-500 to-indigo-400 text-slate-950 shadow-lg shadow-sky-500/25'
+                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                            }`}
+                        >
+                            <span>📚 내 관심종목 리서치 보고서</span>
+                            {researchReports.length > 0 && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25 font-extrabold">
+                                    {researchReports.length}종목
+                                </span>
+                            )}
                         </button>
 
                         <button
@@ -3123,6 +3186,171 @@ export default function CeoOfficePage() {
                                             </div>
                                         )}
                                     </div>
+                                </div>
+                            )}{activeTab === 'watchlist_research' && (
+                                <div className="space-y-4">
+                                    <div className="bg-[#0f172a] border border-sky-500/25 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                                                <span>📚</span>
+                                                <span>내 관심종목 리서치 보고서</span>
+                                            </h3>
+                                            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                                관심종목으로 설정하신 종목의 시세·수급·증권사 목표가·재무지표·최신 뉴스를 한곳에 모아 쉬운 말로 정리했습니다.
+                                                {researchGeneratedAt && (
+                                                    <span className="text-sky-300 font-bold"> (작성 시각 {researchGeneratedAt})</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={fetchWatchlistResearch}
+                                            disabled={researchLoading}
+                                            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:bg-gray-700 text-white text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${researchLoading ? 'animate-spin' : ''}`} />
+                                            <span>{researchLoading ? '보고서 작성 중...' : '최신 보고서로 새로고침'}</span>
+                                        </button>
+                                    </div>
+
+                                    {researchLoading && researchReports.length === 0 ? (
+                                        <div className="py-14 flex flex-col items-center gap-2 text-gray-400">
+                                            <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
+                                            <span className="text-xs">관심종목별 시세·수급·컨센서스·뉴스를 모아 보고서를 작성하고 있습니다...</span>
+                                        </div>
+                                    ) : researchReports.length === 0 ? (
+                                        <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-10 text-center space-y-3">
+                                            <div className="text-4xl">⭐</div>
+                                            <div className="text-base font-black text-white">작성할 관심종목이 없습니다</div>
+                                            <p className="text-xs text-gray-400">관심종목을 먼저 등록하시면 종목별 리서치 보고서가 자동으로 만들어집니다.</p>
+                                            <Link href="/watchlist" className="inline-block px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-black">
+                                                관심종목 설정하러 가기 →
+                                            </Link>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {researchReports.map((r: any) => {
+                                                const isKr = r.category === 'kr_stock';
+                                                const fmtFlow = (v: number | null | undefined) =>
+                                                    v === null || v === undefined ? '-' : `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}주`;
+                                                const flowColor = (v: number | null | undefined) =>
+                                                    !v ? 'text-gray-300' : v > 0 ? 'text-rose-400' : 'text-blue-400';
+                                                const badge: Record<string, string> = {
+                                                    emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                                                    blue: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+                                                    slate: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+                                                    rose: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                                                };
+                                                return (
+                                                    <div key={r.stock_code} className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
+                                                        <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-white/10">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${isKr ? 'bg-blue-500/15 text-blue-300' : 'bg-purple-500/15 text-purple-300'}`}>
+                                                                        {isKr ? '국내주식' : '미국주식'}
+                                                                    </span>
+                                                                    <h4 className="text-lg font-black text-white">{r.stock_name}</h4>
+                                                                    <span className="text-xs font-mono text-gray-400">{r.stock_code}</span>
+                                                                </div>
+                                                                <p className="text-xs text-gray-300 mt-1.5">{r.headline}</p>
+                                                            </div>
+                                                            <span className={`px-3 py-1.5 rounded-xl text-xs font-black border ${badge[r.opinion?.color] || badge.slate}`}>
+                                                                종합 의견 · {r.opinion?.label}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
+                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
+                                                                <div className="text-[11px] text-gray-400">현재가</div>
+                                                                <div className="text-sm font-black font-mono text-white mt-0.5">{r.price_str}</div>
+                                                                <div className={`text-[11px] font-bold font-mono ${r.change_pct > 0 ? 'text-rose-400' : r.change_pct < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                                    {r.change_pct > 0 ? '+' : ''}{r.change_pct}%
+                                                                </div>
+                                                            </div>
+                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
+                                                                <div className="text-[11px] text-gray-400">증권사 평균 목표가</div>
+                                                                <div className="text-sm font-black font-mono text-amber-300 mt-0.5">{r.consensus?.target_mean_str || '-'}</div>
+                                                                <div className="text-[11px] text-gray-400">
+                                                                    {r.consensus?.upside_pct !== null && r.consensus?.upside_pct !== undefined ? `현재가 대비 ${r.consensus.upside_pct > 0 ? '+' : ''}${r.consensus.upside_pct}%` : '자료 없음'}
+                                                                </div>
+                                                            </div>
+                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
+                                                                <div className="text-[11px] text-gray-400">PER (이익 대비 주가)</div>
+                                                                <div className="text-sm font-black font-mono text-white mt-0.5">{r.per ? `${Number(r.per).toFixed(1)}배` : '-'}</div>
+                                                                <div className="text-[11px] text-gray-400">{r.market_cap ? `시총 ${r.market_cap}` : ''}</div>
+                                                            </div>
+                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
+                                                                <div className="text-[11px] text-gray-400">52주 가격 위치</div>
+                                                                <div className="text-sm font-black font-mono text-white mt-0.5">{r.range_pos !== null && r.range_pos !== undefined ? `${r.range_pos}%` : '-'}</div>
+                                                                <div className="text-[11px] text-gray-400">0%=최저 · 100%=최고</div>
+                                                            </div>
+                                                        </div>
+
+                                                        {r.flow && (
+                                                            <div className="bg-black/30 border border-white/10 rounded-xl p-3">
+                                                                <div className="text-[11px] font-bold text-gray-300 mb-2">💰 오늘 누가 샀을까요? (순매수)</div>
+                                                                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                                                    <div><div className="text-gray-400 text-[11px]">외국인</div><div className={`font-black font-mono ${flowColor(r.flow.foreign_today)}`}>{fmtFlow(r.flow.foreign_today)}</div></div>
+                                                                    <div><div className="text-gray-400 text-[11px]">기관</div><div className={`font-black font-mono ${flowColor(r.flow.organ_today)}`}>{fmtFlow(r.flow.organ_today)}</div></div>
+                                                                    <div><div className="text-gray-400 text-[11px]">개인</div><div className={`font-black font-mono ${flowColor(r.flow.individual_today)}`}>{fmtFlow(r.flow.individual_today)}</div></div>
+                                                                </div>
+                                                                <div className="text-[11px] text-gray-500 mt-2">
+                                                                    최근 3거래일 합계 — 외국인 {fmtFlow(r.flow.foreign_3d)} · 기관 {fmtFlow(r.flow.organ_3d)}
+                                                                    {r.flow.foreign_hold_ratio ? ` · 외국인 보유율 ${r.flow.foreign_hold_ratio}` : ''}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="grid md:grid-cols-2 gap-2.5">
+                                                            <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-xl p-3">
+                                                                <div className="text-[11px] font-black text-emerald-300 mb-1.5">👍 좋은 점</div>
+                                                                {(r.opinion?.good || []).length === 0 ? (
+                                                                    <div className="text-[11px] text-gray-500">특별히 눈에 띄는 호재 지표가 없습니다.</div>
+                                                                ) : (
+                                                                    <ul className="space-y-1 text-[11px] text-emerald-100/90 list-disc pl-4">
+                                                                        {r.opinion.good.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                                                                    </ul>
+                                                                )}
+                                                            </div>
+                                                            <div className="bg-rose-950/20 border border-rose-500/20 rounded-xl p-3">
+                                                                <div className="text-[11px] font-black text-rose-300 mb-1.5">⚠️ 주의할 점</div>
+                                                                {(r.opinion?.warn || []).length === 0 ? (
+                                                                    <div className="text-[11px] text-gray-500">특별히 눈에 띄는 위험 신호가 없습니다.</div>
+                                                                ) : (
+                                                                    <ul className="space-y-1 text-[11px] text-rose-100/90 list-disc pl-4">
+                                                                        {r.opinion.warn.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                                                                    </ul>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-black/30 border border-white/10 rounded-xl p-3">
+                                                            <div className="text-[11px] font-bold text-gray-300 mb-2">📰 최신 뉴스</div>
+                                                            {(r.news || []).length === 0 ? (
+                                                                <div className="text-[11px] text-gray-500">최근 뉴스가 없습니다.</div>
+                                                            ) : (
+                                                                <ul className="space-y-1.5">
+                                                                    {r.news.map((n: any, i: number) => (
+                                                                        <li key={i} className="text-[12px] leading-snug">
+                                                                            {n.url ? (
+                                                                                <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:text-sky-200 hover:underline">{n.title}</a>
+                                                                            ) : (
+                                                                                <span className="text-gray-200">{n.title}</span>
+                                                                            )}
+                                                                            {n.press && <span className="text-[10px] text-gray-500 ml-1.5">· {n.press}</span>}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            <p className="text-[11px] text-gray-500 px-1 leading-relaxed">
+                                                ※ 공개된 시세·수급·증권사 컨센서스·뉴스를 자동으로 요약한 참고 자료이며 투자 권유가 아닙니다. 최종 판단과 책임은 투자자 본인에게 있습니다.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}{activeTab === 'history' && (
                                 <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
