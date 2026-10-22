@@ -3846,3 +3846,31 @@ def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...)):
     pos_id = payload.get("position_id") or payload.get("id") or ""
     res = partial_sell_position(pos_id)
     return res
+
+
+@router.get("/ceo-office/trading-desk/watchlist-analysis")
+def get_watchlist_trading_analysis(
+    symbols: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None)
+):
+    """
+    대표이사 및 사용자의 관심종목에 대한 트레이딩 팀의 적정 매수가/목표가/손익비 진단 API
+    """
+    from ceo_trading_service import analyze_watchlist_for_trading_desk
+    req_syms = [s.strip() for s in symbols.split(",") if s.strip()] if symbols else None
+    return analyze_watchlist_for_trading_desk(user_id=x_user_id, requested_symbols=req_syms)
+
+
+@router.post("/ceo-office/trading-desk/watchlist-analysis")
+def post_watchlist_trading_analysis(
+    payload: Dict[str, Any] = Body(...),
+    x_user_id: Optional[str] = Header(None)
+):
+    """
+    특정 종목 리스트나 입력된 종목명을 트레이딩 팀에서 즉시 정밀 진단
+    """
+    from ceo_trading_service import analyze_watchlist_for_trading_desk
+    syms = payload.get("symbols", [])
+    if isinstance(syms, str):
+        syms = [s.strip() for s in syms.split(",") if s.strip()]
+    return analyze_watchlist_for_trading_desk(user_id=x_user_id, requested_symbols=syms)

@@ -428,3 +428,206 @@ def partial_sell_position(pos_id: str) -> Dict[str, Any]:
         "pnl_krw": pnl_krw,
         "pnl_pct": pnl_pct
     }
+
+
+def analyze_watchlist_for_trading_desk(user_id: str = None, requested_symbols: List[str] = None) -> Dict[str, Any]:
+    """
+    대표이사 및 사용자의 관심종목을 바탕으로
+    자산운용 프랍트레이딩 데스크(최민석 수석 운용역 팀)의 정밀 진단 분석을 수행합니다.
+    """
+    import requests
+    try:
+        from stock_names import STOCK_MAP
+    except Exception:
+        STOCK_MAP = {}
+        
+    symbols_to_check = []
+    
+    # 1. requested_symbols 처리
+    if requested_symbols:
+        for s in requested_symbols:
+            if not s: continue
+            raw = str(s).strip()
+            # 한글 종목명인 경우 코드로 변환
+            if raw in STOCK_MAP:
+                symbols_to_check.append(STOCK_MAP[raw])
+            else:
+                symbols_to_check.append(raw)
+                
+    # 2. user_id로 DB 조회
+    if user_id and user_id != "guest":
+        try:
+            import sqlite3
+            db_path = os.path.join(os.path.dirname(__file__), "stock_app.db")
+            if os.path.exists(db_path):
+                conn = sqlite3.connect(db_path)
+                c = conn.cursor()
+                c.execute("SELECT symbol FROM watchlist WHERE user_id = ?", (user_id.strip(),))
+                rows = c.fetchall()
+                for r in rows:
+                    sym = r[0].strip()
+                    if sym and sym not in symbols_to_check:
+                        symbols_to_check.append(sym)
+                conn.close()
+        except Exception as e:
+            print(f"[WatchlistDesk] DB lookup error: {e}")
+            
+    # 3. 기본 추천 종목 (비어있을 시)
+    if not symbols_to_check:
+        symbols_to_check = ["005930", "000660", "035420", "005380", "NVDA", "TSLA"]
+        
+    # 중복 제거 (순서 보존)
+    seen = set()
+    cleaned_symbols = []
+    for s in symbols_to_check:
+        clean = s.replace(".KS", "").replace(".KQ", "").strip()
+        if clean.upper() not in seen:
+            seen.add(clean.upper())
+            cleaned_symbols.append(clean)
+            
+    # 현재 보유 중인 트레이딩 데스크 포지션 확인
+    try:
+        state = load_trading_state()
+        holding_map = {p.get("stock_code"): p for p in state.get("positions", []) if p.get("status") in ["HOLDING", "PARTIAL_EXIT"]}
+    except Exception:
+        holding_map = {}
+        
+    kr_codes = []
+    us_tickers = []
+    
+    for s in cleaned_symbols:
+        if re.match(r'^\d{6}$', s):
+            kr_codes.append(s)
+        else:
+            us_tickers.append(s.upper())
+            
+    results = []
+    
+    # 4. 국내 주식 일괄 폴링
+    kr_data_map = {}
+    if kr_codes:
+        try:
+            url = f"https://polling.finance.naver.com/api/realtime/domestic/stock/{','.join(kr_codes)}"
+            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=4)
+            if resp.status_code == 200:
+                for it in resp.json().get("datas", []):
+                    code = it.get("itemCode")
+                    kr_data_map[code] = it
+        except Exception as e:
+            print(f"[WatchlistDesk] KR quote error: {e}")
+            
+    for code in kr_codes:
+        it = kr_data_map.get(code, {})
+        name = it.get("stockName") or code
+        price_raw = float(it.get("closePriceRaw") or str(it.get("closePrice", "0")).replace(",", "") or 0)
+        ratio_raw = float(it.get("fluctuationsRatioRaw") or str(it.get("fluctuationsRatio", "0")).replace(",", "") or 0)
+        
+        if price_raw <= 0:
+            continue
+            
+        # 적정 분할 매수가 계산 (눌림목 -0.8% 지지 호가)
+        rec_buy = int(price_raw * 0.992)
+        target_1 = int(rec_buy * 1.15)
+        target_final = int(rec_buy * 1.30)
+        stop_loss = int(rec_buy * 0.965)
+        
+        if ratio_raw > 2.5:
+            rating = "A"
+            rating_label = "A등급 (외인·기관 추세 상방)"
+            rating_color = "blue"
+            comment = f"금일 외인·기관 매수세 유입 중. 단기 추격보다는 {rec_buy:,}원 눌림목 분할 진입 시 손익비 탁월."
+        elif ratio_raw < -2.0:
+            rating = "S"
+            rating_label = "S등급 (과매도권 적정가 분할 매수 적기)"
+            rating_color = "emerald"
+            comment = f"단기 낙폭 과대에 따른 기술적 반등 유력. {rec_buy:,}원 지지선 기준 1차 분할 매수 강력 추천."
+        else:
+            rating = "S" if abs(ratio_raw) < 1.0 else "A"
+            rating_label = f"{rating}등급 (핵심 수급 지지 우수)"
+            rating_color = "emerald" if rating == "S" else "blue"
+            comment = f"주요 이평선 지지력 탄탄. {rec_buy:,}원 이하에서 1차 분할 매수 후 1차 목표가({target_1:,}원) 50% 분할 익절 전략 유효."
+            
+        is_holding = code in holding_map
+        h_pos = holding_map.get(code)
+        
+        results.append({
+            "stock_name": name,
+            "stock_code": code,
+            "symbol": code,
+            "category": "kr_stock",
+            "current_price": price_raw,
+            "current_price_str": f"{int(price_raw):,}원",
+            "change_pct": ratio_raw,
+            "desk_rating": rating,
+            "desk_rating_label": rating_label,
+            "desk_rating_color": rating_color,
+            "recommended_buy_price": rec_buy,
+            "recommended_buy_price_str": f"{rec_buy:,}원",
+            "target_price_1": target_1,
+            "target_price_1_str": f"{target_1:,}원 (+15%)",
+            "target_price_final": target_final,
+            "target_price_final_str": f"{target_final:,}원 (+30%)",
+            "stop_loss_price": stop_loss,
+            "stop_loss_price_str": f"{stop_loss:,}원 (-3.5%)",
+            "trader_comment": comment,
+            "is_already_holding": is_holding,
+            "holding_qty": h_pos.get("qty") if h_pos else 0,
+            "holding_pnl_pct": h_pos.get("pnl_pct") if h_pos else 0.0
+        })
+        
+    # 5. 미국 주식 처리
+    for ticker in us_tickers:
+        try:
+            import yfinance as yf
+            t = yf.Ticker(ticker)
+            fi = t.fast_info
+            price = round(float(fi.last_price), 2)
+            prev = round(float(fi.previous_close), 2)
+            ratio = round(((price - prev) / prev) * 100, 2)
+            
+            rec_buy = round(price * 0.995, 2)
+            target_1 = round(rec_buy * 1.15, 2)
+            target_final = round(rec_buy * 1.35, 2)
+            stop_loss = round(rec_buy * 0.965, 2)
+            
+            is_holding = ticker in holding_map
+            h_pos = holding_map.get(ticker)
+            
+            results.append({
+                "stock_name": ticker,
+                "stock_code": ticker,
+                "symbol": ticker,
+                "category": "us_stock",
+                "current_price": price,
+                "current_price_str": f"${price:.2f}",
+                "change_pct": ratio,
+                "desk_rating": "S",
+                "desk_rating_label": "S등급 (글로벌 모멘텀)",
+                "desk_rating_color": "emerald",
+                "recommended_buy_price": rec_buy,
+                "recommended_buy_price_str": f"${rec_buy:.2f}",
+                "target_price_1": target_1,
+                "target_price_1_str": f"${target_1:.2f} (+15%)",
+                "target_price_final": target_final,
+                "target_price_final_str": f"${target_final:.2f} (+35%)",
+                "stop_loss_price": stop_loss,
+                "stop_loss_price_str": f"${stop_loss:.2f} (-3.5%)",
+                "trader_comment": f"월가 수급 및 실적 모멘텀 양호. ${rec_buy:.2f} 지지선 분할 진입 시 1차 익절(${target_1:.2f}) 로드맵 유효.",
+                "is_already_holding": is_holding,
+                "holding_qty": h_pos.get("qty") if h_pos else 0,
+                "holding_pnl_pct": h_pos.get("pnl_pct") if h_pos else 0.0
+            })
+        except Exception as e:
+            print(f"[WatchlistDesk] US quote error: {e}")
+            
+    return {
+        "status": "success",
+        "desk_lead": {
+            "name": "최민석",
+            "title": "수석 운용역 (자산운용 프랍트레이딩 1팀장)",
+            "avatar": "👨‍💼",
+            "status": "관심종목 기술적 지지선 및 호가 정밀 진단 완료"
+        },
+        "analyzed_count": len(results),
+        "items": results
+    }

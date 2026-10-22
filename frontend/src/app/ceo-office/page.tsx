@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
-import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock } from 'lucide-react';
+import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock, Loader2 } from 'lucide-react';
 
 
 // [Smart Executive Opinion Parser]
@@ -561,6 +561,92 @@ export default function CeoOfficePage() {
     const [tradingLoading, setTradingLoading] = useState<boolean>(false);
     const [showDailyReportModal, setShowDailyReportModal] = useState<boolean>(false);
 
+    // ⭐ [NEW] 관심종목 트레이딩팀 특별 진단 & 포트폴리오 편입 심사 상태
+    const [watchlistAnalysis, setWatchlistAnalysis] = useState<any[]>([]);
+    const [isWatchlistLoading, setIsWatchlistLoading] = useState<boolean>(false);
+    const [watchlistSearchInput, setWatchlistSearchInput] = useState<string>('');
+
+    const fetchWatchlistAnalysis = useCallback(async (customSymbols?: string[]) => {
+        try {
+            setIsWatchlistLoading(true);
+            const uid = user?.id || (user as any)?.uid || (typeof window !== 'undefined' ? localStorage.getItem('guest_user_id') : '');
+            let cachedSymbols: string[] = [];
+            if (typeof window !== 'undefined') {
+                try {
+                    const raw = localStorage.getItem('cached_watchlist');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        cachedSymbols = parsed.map((it: any) => typeof it === 'string' ? it : it.symbol);
+                    }
+                } catch (e) {}
+            }
+            const symbolsToSend = customSymbols && customSymbols.length > 0 
+                ? customSymbols 
+                : (cachedSymbols.length > 0 ? cachedSymbols : ['005930', '000660', '035420', '005380', 'NVDA', 'TSLA']);
+                
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/watchlist-analysis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-ID': uid || ''
+                },
+                body: JSON.stringify({ symbols: symbolsToSend })
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success' && json.items) {
+                    setWatchlistAnalysis(json.items);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load watchlist analysis:', err);
+        } finally {
+            setIsWatchlistLoading(false);
+        }
+    }, [user]);
+
+    const handleApproveWatchlistStock = async (item: any) => {
+        if (!confirm(`[대표이사 재가] '${item.stock_name}' 종목을 트레이딩팀 운용 포트폴리오에 정식 편입하고 1,000만원 분할 매수를 집행하시겠습니까?`)) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    stock_name: item.stock_name,
+                    stock_code: item.stock_code,
+                    category: item.category,
+                    current_price: item.current_price,
+                    target_price: item.target_price_final,
+                    confidence_score: 95
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                setToastMessage({
+                    title: `🚀 [포트폴리오 편입 완료] ${item.stock_name}`,
+                    desc: data.message || `트레이딩팀 최민석 수석이 호가창 감시 및 1차 분할 매수를 체결하였습니다!`
+                });
+                fetchTradingDesk();
+                fetchWatchlistAnalysis();
+            } else if (data.status === 'already_exists') {
+                alert(data.message);
+            }
+        } catch (e) {
+            console.error('Watchlist trade order error:', e);
+            alert('주문 처리 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleAddCustomWatchlistStock = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!watchlistSearchInput.trim()) return;
+        const target = watchlistSearchInput.trim();
+        setWatchlistSearchInput('');
+        const currentCodes = watchlistAnalysis.map(a => a.stock_code || a.symbol);
+        const nextList = [target, ...currentCodes.filter(c => c !== target)];
+        await fetchWatchlistAnalysis(nextList);
+    };
+
     const fetchTradingDesk = useCallback(async () => {
         try {
             setTradingLoading(true);
@@ -581,6 +667,10 @@ export default function CeoOfficePage() {
     useEffect(() => {
         if (!authLoading && isAdmin) {
             fetchTradingDesk();
+            fetchWatchlistAnalysis();
+        }
+        if (typeof window !== 'undefined' && window.location.search.includes('tab=trading')) {
+            setActiveTab('approved_tf');
         }
     }, [authLoading, isAdmin, fetchTradingDesk]);
 
@@ -2846,6 +2936,190 @@ export default function CeoOfficePage() {
                                                 </tbody>
                                             </table>
                                         </div>
+                                    </div>
+
+                                    {/* ⭐ [NEW] 대표이사 관심종목 트레이딩팀 특별 진단 & 포트폴리오 편입 심사대 */}
+                                    <div className="bg-[#0f172a] border border-blue-500/20 rounded-2xl p-5 space-y-4 shadow-xl">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xl">⭐</span>
+                                                    <h3 className="text-base font-black text-white">
+                                                        대표이사 관심종목 트레이딩팀 특별 진단 & 포트폴리오 편입 심사대
+                                                    </h3>
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                                        최민석 수석 전담 진단
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    대표님의 관심종목을 자산운용 프랍트레이딩 데스크에서 기술적 지지선·적정 매수가·3단계 분할 익절 로드맵을 정밀 진단했습니다. 재가(승인) 시 1,000만 원 규모로 즉시 분할 매수 체결됩니다.
+                                                </p>
+                                            </div>
+
+                                            {/* 종목 직접 추가 진단 입력폼 */}
+                                            <form onSubmit={handleAddCustomWatchlistStock} className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={watchlistSearchInput}
+                                                    onChange={(e) => setWatchlistSearchInput(e.target.value)}
+                                                    placeholder="종목명 또는 코드 (예: 카카오, 현대차, TSLA)"
+                                                    className="px-3 py-1.5 bg-black/50 border border-white/15 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 w-56"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isWatchlistLoading || !watchlistSearchInput.trim()}
+                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white text-xs font-black rounded-xl transition-all shadow flex items-center gap-1 shrink-0"
+                                                >
+                                                    <span>🔍 진단 의뢰</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fetchWatchlistAnalysis()}
+                                                    disabled={isWatchlistLoading}
+                                                    className="p-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl transition-colors border border-white/10"
+                                                    title="새로고침"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${isWatchlistLoading ? 'animate-spin text-blue-400' : ''}`} />
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        {/* 관심종목 진단 카드 리스트 */}
+                                        {isWatchlistLoading && watchlistAnalysis.length === 0 ? (
+                                            <div className="py-12 flex flex-col items-center justify-center gap-2 text-gray-400">
+                                                <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                                                <span className="text-xs">트레이딩팀 최민석 수석이 관심종목 실시간 호가 및 지지선을 분석 중입니다...</span>
+                                            </div>
+                                        ) : watchlistAnalysis.length === 0 ? (
+                                            <div className="py-8 text-center text-gray-400 text-xs">
+                                                진단된 관심종목이 없습니다. 상단에서 종목명을 입력하여 트레이딩팀에 진단을 의뢰해 보세요.
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                                {watchlistAnalysis.map((item: any, idx: number) => {
+                                                    const isHolding = item.is_already_holding;
+                                                    const isPlus = item.change_pct > 0;
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`bg-black/40 border ${
+                                                                isHolding ? 'border-emerald-500/30' : 'border-white/10 hover:border-blue-500/40'
+                                                            } rounded-xl p-4 transition-all flex flex-col justify-between gap-3 shadow`}
+                                                        >
+                                                            {/* 상단: 종목 정보 및 배지 */}
+                                                            <div>
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <div>
+                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                                                                                item.category === 'kr_stock'
+                                                                                    ? 'bg-blue-500/15 text-blue-300 border border-blue-500/20'
+                                                                                    : 'bg-purple-500/15 text-purple-300 border border-purple-500/20'
+                                                                            }`}>
+                                                                                {item.category === 'kr_stock' ? '국내주식' : '미국주식'}
+                                                                            </span>
+                                                                            <h4 className="text-sm font-black text-white">
+                                                                                {item.stock_name}
+                                                                            </h4>
+                                                                            <span className="text-[11px] font-mono text-gray-400">
+                                                                                {item.stock_code}
+                                                                            </span>
+                                                                        </div>
+                                                                        {/* 현재가 및 등락률 */}
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <span className="text-base font-black font-mono text-white">
+                                                                                {item.current_price_str}
+                                                                            </span>
+                                                                            <span className={`text-xs font-bold font-mono px-1.5 py-0.2 rounded ${
+                                                                                isPlus
+                                                                                    ? 'bg-rose-500/15 text-rose-400'
+                                                                                    : item.change_pct < 0
+                                                                                    ? 'bg-blue-500/15 text-blue-400'
+                                                                                    : 'bg-zinc-800 text-gray-400'
+                                                                            }`}>
+                                                                                {isPlus ? '+' : ''}{item.change_pct}%
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* 진단 등급 배지 */}
+                                                                    <div className={`px-2 py-1 rounded-lg text-right shrink-0 ${
+                                                                        item.desk_rating === 'S'
+                                                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                                                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                                                    }`}>
+                                                                        <div className="text-[10px] font-black">{item.desk_rating_label}</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* 4분할 트레이딩 로드맵 */}
+                                                                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/5 text-xs">
+                                                                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                                                                        <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                            <span>🎯</span>
+                                                                            <span>추천 적정 매수가</span>
+                                                                        </div>
+                                                                        <div className="text-xs font-black font-mono text-amber-300 mt-0.5">
+                                                                            {item.recommended_buy_price_str}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                                                                        <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                            <span>🚀</span>
+                                                                            <span>1차 목표가 (50% 익절)</span>
+                                                                        </div>
+                                                                        <div className="text-xs font-black font-mono text-emerald-400 mt-0.5">
+                                                                            {item.target_price_1_str}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                                                                        <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                            <span>🏆</span>
+                                                                            <span>최종 목표가</span>
+                                                                        </div>
+                                                                        <div className="text-xs font-black font-mono text-rose-300 mt-0.5">
+                                                                            {item.target_price_final_str}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                                                                        <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                                            <span>🛡️</span>
+                                                                            <span>손절 방어선</span>
+                                                                        </div>
+                                                                        <div className="text-xs font-black font-mono text-gray-400 mt-0.5">
+                                                                            {item.stop_loss_price_str}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* 운용역 코멘트 */}
+                                                                <div className="mt-2.5 p-2 bg-blue-950/20 border border-blue-500/15 rounded-lg text-[11px] text-blue-200/90 leading-relaxed">
+                                                                    <span className="font-bold text-blue-300 mr-1">👨‍💼 수석 운용역 분석:</span>
+                                                                    {item.trader_comment}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 액션 버튼 */}
+                                                            <div className="pt-2 border-t border-white/5">
+                                                                {isHolding ? (
+                                                                    <div className="w-full py-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-black rounded-xl text-center flex items-center justify-center gap-1.5">
+                                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                        <span>트레이딩팀 포트폴리오 운용 중 (현재 수익률: {item.holding_pnl_pct > 0 ? '+' : ''}{item.holding_pnl_pct}%)</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => handleApproveWatchlistStock(item)}
+                                                                        className="w-full py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-xs font-black rounded-xl transition-all shadow-lg flex items-center justify-center gap-1.5"
+                                                                    >
+                                                                        <span>🚀 대표이사 재가 & 트레이딩팀 즉시 편입 (1,000만원 분할 매수)</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}{activeTab === 'history' && (

@@ -798,8 +798,39 @@ export default function WatchlistPage() {
                                 </Link>
                             </div>
                         ) : (
-                            <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                                <CleanStockList
+                            <div className="space-y-4">
+                                {/* 💼 [대표이사 전용] 트레이딩팀 관심종목 심층 진단 연동 배너 */}
+                                <div className="bg-gradient-to-r from-blue-950/70 via-indigo-950/60 to-purple-950/70 border border-blue-500/30 rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-xl shadow-lg shrink-0">
+                                            👨‍💼
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                                    증권사 프랍트레이딩 데스크 연동
+                                                </span>
+                                                <span className="text-xs text-gray-400">최민석 수석 운용역 전담</span>
+                                            </div>
+                                            <h4 className="text-sm sm:text-base font-black text-white mt-1">
+                                                내 관심종목, 트레이딩팀에서 적정 매수가 & 3단계 분할 익절 진단받기
+                                            </h4>
+                                            <p className="text-xs text-gray-300 mt-0.5">
+                                                대표이사실에서 관심종목을 재가(승인)하시면 트레이딩팀이 1,000만 원 규모로 즉시 분할 매수를 집행하고 실시간 P&L을 관리합니다.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Link
+                                        href="/ceo-office?tab=trading"
+                                        className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-black rounded-xl transition-all shadow-lg shrink-0 flex items-center gap-1.5"
+                                    >
+                                        <span>💼 트레이딩팀 진단 심사대 이동</span>
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Link>
+                                </div>
+
+                                <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+                                    <CleanStockList
                                     items={watchlist.map(item => {
                                         const data = quotes[item.symbol];
                                         const sessionBadge = data?.market_status
@@ -841,6 +872,7 @@ export default function WatchlistPage() {
                                         setPurchaseModalSymbol(symbol);
                                     }}
                                 />
+                                </div>
                             </div>
                         )}
                     </div>
