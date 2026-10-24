@@ -38,6 +38,17 @@ function parseExecutiveOpinion(raw: string, defaultRole: string = "분석본부"
     return { badge: defaultRole, title: "", body: raw, icon: defaultIcon };
 }
 
+// 긴 줄글을 깔끔한 개조식(불릿 포인트) 문장 배열로 분리하는 헬퍼
+function splitIntoBullets(raw: string): string[] {
+    if (!raw) return [];
+    const cleaned = raw.replace(/\s+/g, ' ').trim();
+    const parts = cleaned
+        .split(/(?<=[.!?다요음함])\s+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    return parts.length > 0 ? parts : [cleaned];
+}
+
 interface Executive {
     id: string;
     name: string;
@@ -1052,12 +1063,21 @@ export default function CeoOfficePage() {
 
         const approvalRate = totalDocs > 0 ? Math.round((approvedDocsCount / totalDocs) * 100) : 0;
 
+        const krDocs = autoApprovals.filter(d => d.category_type === 'kr_stock');
+        const usDocs = autoApprovals.filter(d => d.category_type === 'us_stock');
+        const futuresDocs = autoApprovals.filter(d => d.category_type === 'global_futures');
+        const newsDocs = autoApprovals.filter(d => d.category_type === 'world_news' || d.category_type === 'all' || d.doc_id.endsWith('-01'));
+
         return {
             topStock: topStock || { name: '두산에너빌리티', upside: '+87.2%', target: '120,000원', upsideNum: 87.2, profit10m: '약 +8,720,000원' },
             avgUpside,
             nqPrice,
             bigTechPrice,
             approvalRate,
+            krDocs,
+            usDocs,
+            futuresDocs,
+            newsDocs,
         };
     }, [autoApprovals, totalDocs, approvedDocsCount]);
 
@@ -1307,7 +1327,7 @@ export default function CeoOfficePage() {
                                 </span>
                             </div>
 
-                            {/* 메인 헤드라인 (눈에 확 들어오는 타이포그래피 & 골드 그라디언트) */}
+                            {/* 메인 헤드라인 (한눈에 들어오는 깔끔 요약형) */}
                             <div>
                                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-black tracking-tight text-white leading-tight">
                                     대표님, 오늘 시장 분석이 완료되었습니다 <br className="hidden sm:inline" />
@@ -1316,117 +1336,153 @@ export default function CeoOfficePage() {
                                     </span>
                                     를 검토 후 서명해 주십시오 🖋️
                                 </h1>
-                                <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed">
-                                    5개 본부 임원들이 밤사이 미국 빅테크, 글로벌 선물·환율 및 국내 전 종목 공시를 전수 조사하여, <br className="hidden md:inline" />
-                                    <strong className="text-white">실적 턴어라운드와 50일선 수급 지지력이 검증된 핵심 안건</strong>만을 대표님 책상에 직보 상정했습니다.
-                                </p>
+                                <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs text-gray-200">
+                                    <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 font-extrabold text-amber-300">
+                                        📌 핵심 요약
+                                    </span>
+                                    <span>5개 본부 전수 조사 완료</span>
+                                    <span className="text-gray-500">·</span>
+                                    <strong className="text-emerald-300">실적 흑자 + 50일선 수급 돌파</strong>
+                                    <span>검증 안건만 엄선 상정</span>
+                                </div>
                             </div>
 
-                            {/* 🌟 [1] 글로벌 4대 실시간 거시 나침반 (Real-time Macro Compass) */}
+                            {/* 🌟 [1] 글로벌 4대 핵심 지표 한눈에 보기 (Real-time Macro Compass) */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm flex flex-col justify-between">
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm">
                                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span>🇺🇸 나스닥 100 선물</span>
-                                        <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">24H 연동</span>
+                                        <span>🇺🇸 미국 나스닥선물</span>
+                                        <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.2 rounded">24H</span>
                                     </div>
                                     <div className="text-sm sm:text-base font-black text-white font-mono">
                                         {intelligenceMetrics.nqPrice}
                                     </div>
-                                    <div className="text-[10px] text-emerald-300 mt-1 flex items-center gap-1 font-semibold">
-                                        <span>📈</span>
-                                        <span>중기 50일선 지지선 상회</span>
+                                    <div className="text-[10px] text-emerald-300 mt-1 font-bold">
+                                        ✓ 50일 평균선 위 (상승 추세)
                                     </div>
                                 </div>
 
-                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm flex flex-col justify-between">
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm">
                                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
                                         <span>🤖 글로벌 AI 대장</span>
-                                        <span className="text-[10px] text-sky-400 font-mono bg-sky-500/10 px-1.5 py-0.2 rounded border border-sky-500/20">NVDA</span>
+                                        <span className="text-[10px] text-sky-400 font-mono bg-sky-500/10 px-1.5 py-0.2 rounded">NVDA</span>
                                     </div>
                                     <div className="text-sm sm:text-base font-black text-white font-mono">
                                         {intelligenceMetrics.bigTechPrice}
                                     </div>
-                                    <div className="text-[10px] text-sky-300 mt-1 flex items-center gap-1 font-semibold">
-                                        <span>⚡</span>
-                                        <span>빅테크 AI 인프라 수혜</span>
+                                    <div className="text-[10px] text-sky-300 mt-1 font-bold">
+                                        ✓ AI 반도체·전력 수혜 지속
                                     </div>
                                 </div>
 
-                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm flex flex-col justify-between">
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm">
                                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span>💵 원/달러 & 거시 환경</span>
-                                        <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">외환</span>
+                                        <span>💵 원/달러 환율</span>
+                                        <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.2 rounded">외환</span>
                                     </div>
                                     <div className="text-sm sm:text-base font-black text-amber-300 font-mono">
                                         1,380~1,420원
                                     </div>
-                                    <div className="text-[10px] text-amber-200/90 mt-1 flex items-center gap-1 font-semibold">
-                                        <span>🛡️</span>
-                                        <span>외국인 패시브 수급 방어</span>
+                                    <div className="text-[10px] text-amber-200/90 mt-1 font-bold">
+                                        ✓ 외국인 수급 안정권 유지
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-amber-950/30 via-slate-900 to-rose-950/30 border border-amber-500/35 rounded-xl p-3 backdrop-blur-sm shadow-sm flex flex-col justify-between">
+                                <div className="bg-gradient-to-br from-amber-950/30 via-slate-900 to-rose-950/30 border border-amber-500/35 rounded-xl p-3 backdrop-blur-sm shadow-sm">
                                     <div className="flex items-center justify-between text-[11px] text-amber-300 font-bold mb-1">
-                                        <span>🎯 상정 종목 평균 상승여력</span>
-                                        <span className="text-[10px] text-rose-300 font-mono bg-rose-500/20 px-1.5 py-0.2 rounded font-black">ALPHA</span>
+                                        <span>🎯 상정 종목 평균 기대수익</span>
+                                        <span className="text-[10px] text-rose-300 font-mono bg-rose-500/20 px-1.5 py-0.2 rounded font-black">TOP</span>
                                     </div>
                                     <div className="text-sm sm:text-base font-black text-rose-400 font-mono">
-                                        +{intelligenceMetrics.avgUpside}%
+                                        평균 +{intelligenceMetrics.avgUpside}%
                                     </div>
-                                    <div className="text-[10px] text-rose-300 mt-1 flex items-center gap-1 font-bold truncate">
-                                        <span>🚀</span>
-                                        <span>최고: {intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside})</span>
+                                    <div className="text-[10px] text-rose-300 mt-1 font-bold truncate">
+                                        🚀 1위: {intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside})
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 🌟 [2] 오늘 시장 심층 분석 브리핑 패널 (Executive Market Intelligence Briefing) */}
-                            <div className="bg-gradient-to-br from-[#0c162c] via-[#0b1222] to-[#0d162a] border border-amber-500/35 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
-                                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-white/10">
+                            {/* 🌟 [2] 오늘의 시장 핵심 3줄 요약 브리핑 (개조식 깔끔 정리) */}
+                            <div className="bg-gradient-to-br from-[#0c162c] via-[#0b1222] to-[#0d162a] border border-amber-500/35 rounded-2xl p-4 shadow-xl">
+                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-3 border-b border-white/10">
                                     <div className="flex items-center gap-2">
-                                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-black text-xs border border-amber-500/40 flex items-center gap-1.5 shadow-sm">
-                                            <span>📊</span>
-                                            <span>오늘의 시장 심층 진단 총평</span>
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                                            📊 오늘 시장 3줄 핵심 요약
                                         </span>
                                         <span className="text-xs sm:text-sm font-black text-white">
-                                            실적 우량 대장주 수급 압축 장세 & 50일 이동평균선 상회 주도주 선별
+                                            &ldquo;테마주는 빼고, 돈 잘 버는 실적 대장주만 골랐습니다&rdquo;
                                         </span>
                                     </div>
-                                    <span className="text-[11px] text-gray-400 font-mono bg-white/5 px-2 py-0.5 rounded">
-                                        리서치·수급·리스크 4대 본부 합동 진단
+                                    <span className="text-[11px] text-gray-400 font-bold">
+                                        읽기 쉬운 개조식 요약
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                                    <div className="bg-black/40 border border-emerald-500/25 rounded-xl p-3">
-                                        <div className="flex items-center gap-1.5 text-emerald-300 font-black mb-1.5">
-                                            <span className="text-sm">💡</span>
-                                            <span>1. 왜 이 종목들인가요? (성장·수주)</span>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                                    {/* 카드 1 */}
+                                    <div className="bg-black/45 border border-emerald-500/25 rounded-xl p-3 space-y-1.5">
+                                        <div className="text-emerald-300 font-black flex items-center justify-between">
+                                            <span>💡 1. 어떤 종목을 골랐나요?</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">실적 검증</span>
                                         </div>
-                                        <p className="text-gray-300 leading-relaxed font-medium">
-                                            소문성 테마주를 철저히 배제하고, AI 데이터센터 전력(원전 SMR), 고대역폭 메모리(HBM), 해외 여객·화물 등 <strong className="text-white">실제 수주 잔고와 분기 흑자가 확인된 실적 대장주</strong>로만 자금이 유입되고 있습니다.
-                                        </p>
+                                        <ul className="space-y-1 text-gray-200 font-medium text-[11px] sm:text-xs">
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-emerald-400 font-black">•</span>
+                                                <span><strong className="text-white">주도 업종:</strong> AI 반도체(HBM) · 원전(SMR) · 항공</span>
+                                            </li>
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-emerald-400 font-black">•</span>
+                                                <span><strong className="text-white">선정 기준:</strong> 실제 수주 잔고 + 분기 흑자 기업</span>
+                                            </li>
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-emerald-400 font-black">•</span>
+                                                <span><strong className="text-white">안전 필터:</strong> 단순 소문·적자 테마주 100% 배제</span>
+                                            </li>
+                                        </ul>
                                     </div>
 
-                                    <div className="bg-black/40 border border-cyan-500/25 rounded-xl p-3">
-                                        <div className="flex items-center gap-1.5 text-cyan-300 font-black mb-1.5">
-                                            <span className="text-sm">📈</span>
-                                            <span>2. 큰손 자금의 움직임 (50일선 검증)</span>
+                                    {/* 카드 2 */}
+                                    <div className="bg-black/45 border border-cyan-500/25 rounded-xl p-3 space-y-1.5">
+                                        <div className="text-cyan-300 font-black flex items-center justify-between">
+                                            <span>📈 2. 큰손 자금 흐름은?</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">수급 양호</span>
                                         </div>
-                                        <p className="text-gray-300 leading-relaxed font-medium">
-                                            최근 두 달간의 평균 매수 단가인 <strong className="text-white">50일 이동평균선 지지력</strong>을 통과한 종목만 선별하여, 외국인과 기관의 프로그램 순매수 유입 시 추가 상승 탄력이 가장 강력한 자리입니다.
-                                        </p>
+                                        <ul className="space-y-1 text-gray-200 font-medium text-[11px] sm:text-xs">
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-cyan-400 font-black">•</span>
+                                                <span><strong className="text-white">추세 기준:</strong> 최근 두 달 평균가(<strong className="text-cyan-300">50일선</strong>) 지지 확보</span>
+                                            </li>
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-cyan-400 font-black">•</span>
+                                                <span><strong className="text-white">매수 주체:</strong> 외국인·기관 동반 순매수 유입 포착</span>
+                                            </li>
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-cyan-400 font-black">•</span>
+                                                <span><strong className="text-white">진입 전략:</strong> 급등 추격매수 금지 · 분할 접근 권고</span>
+                                            </li>
+                                        </ul>
                                     </div>
 
-                                    <div className="bg-black/40 border border-rose-500/25 rounded-xl p-3">
-                                        <div className="flex items-center gap-1.5 text-rose-300 font-black mb-1.5">
-                                            <span className="text-sm">🛡️</span>
-                                            <span>3. 대표님 안전마진 & 결재 권고</span>
+                                    {/* 카드 3 */}
+                                    <div className="bg-black/45 border border-rose-500/25 rounded-xl p-3 space-y-1.5">
+                                        <div className="text-rose-300 font-black flex items-center justify-between">
+                                            <span>🛡️ 3. 기대수익 & 결재 효과</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">TFT 가동</span>
                                         </div>
-                                        <p className="text-gray-300 leading-relaxed font-medium">
-                                            전문가 목표주가 대비 최고 <strong className="text-rose-400">{intelligenceMetrics.topStock.name} {intelligenceMetrics.topStock.upside}</strong>의 안전마진이 확보되어 있으며, 대표님 결재 즉시 <strong className="text-white">전담 분석 TFT가 신설되어 실시간 호가 감시</strong>에 돌입합니다.
-                                        </p>
+                                        <ul className="space-y-1 text-gray-200 font-medium text-[11px] sm:text-xs">
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-rose-400 font-black">•</span>
+                                                <span><strong className="text-white">최고 기대주:</strong> <strong className="text-rose-300">{intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside})</strong></span>
+                                            </li>
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-rose-400 font-black">•</span>
+                                                <span><strong className="text-white">1천만원 투자 시:</strong> 최고 <strong className="text-amber-300">{intelligenceMetrics.topStock.profit10m || '약 +872만원'}</strong> 기대</span>
+                                            </li>
+                                            <li className="flex items-start gap-1.5">
+                                                <span className="text-rose-400 font-black">•</span>
+                                                <span><strong className="text-white">서명 즉시:</strong> 전담 분석 TFT 신설 & 24시간 추적</span>
+                                            </li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -1481,7 +1537,7 @@ export default function CeoOfficePage() {
                             {/* 최고 기대수익주 퀵 하이라이트 박스 */}
                             <div className="bg-gradient-to-r from-rose-950/30 to-amber-950/20 border border-rose-500/30 rounded-xl p-2.5 flex items-center justify-between text-xs">
                                 <div>
-                                    <div className="text-[10px] text-rose-300 font-bold">🚀 1위 최고 기대주</div>
+                                    <div className="text-[10px] text-rose-300 font-bold">🚀 오늘 기대수익 1위</div>
                                     <div className="font-black text-white text-sm">{intelligenceMetrics.topStock.name}</div>
                                 </div>
                                 <div className="text-right">
@@ -1500,211 +1556,193 @@ export default function CeoOfficePage() {
                         </div>
                     </div>
 
-                    {/* 🌟 [3] 총 {totalDocs}건 결재 기안서 4대 자산군별 정밀 분류 매트릭스 (15 Proposals Portfolio Dossier) */}
+                    {/* 🌟 [3] 총 {totalDocs}건 기안서 4대 분류 한눈에 보는 요약표 (줄글 없이 깔끔한 리스트) */}
                     <div className="mt-5 pt-5 border-t border-white/10">
                         <div className="flex items-center justify-between gap-2 mb-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-black text-amber-300 flex items-center gap-1.5">
                                     <span>📑</span>
-                                    <span>총 {totalDocs}건의 상정 기안서 4대 자산군 포트폴리오 매트릭스</span>
+                                    <span>오늘 올라온 {totalDocs}건 기안서 분야별 핵심 요약표</span>
                                 </span>
                                 <span className="text-xs text-gray-400 hidden sm:inline">
-                                    (각 카드를 클릭하시면 해당 안건 서류함으로 즉시 이동합니다)
+                                    (종목을 클릭하시면 해당 결재 서류로 바로 이동합니다)
                                 </span>
                             </div>
-                            <span className="text-[11px] font-bold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">
-                                PORTFOLIO BREAKDOWN
+                            <span className="text-[11px] font-bold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                4대 분야 요약
                             </span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {/* 1. 국내 주식 */}
-                            <div
-                                onClick={() => {
-                                    setCategoryFilter('kr_stock');
-                                    const match = autoApprovals.find(d => d.category_type === 'kr_stock');
-                                    if (match) handleJumpToDoc(match.doc_id);
-                                }}
-                                className="bg-[#0b1424]/90 hover:bg-[#0f1b30] border border-emerald-500/30 hover:border-emerald-400/60 rounded-2xl p-4 transition-all cursor-pointer group shadow-lg"
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
-                                        <span>🇰🇷</span>
-                                        <span>국내 우량 실적주</span>
-                                    </span>
-                                    <span className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                                        {countKr}건
-                                    </span>
-                                </div>
-                                <div className="text-sm font-extrabold text-white group-hover:text-emerald-300 transition-colors">
-                                    두산에너빌리티 · SK하이닉스 · 삼성전자 · 대한항공
-                                </div>
-                                <p className="text-[11px] text-gray-300 mt-1 leading-relaxed line-clamp-2">
-                                    하나·한화·미래에셋·KB증권 목표주가 컨센서스 및 실시간 호가 연동 (최고 기대수익: {intelligenceMetrics.topStock.name} {intelligenceMetrics.topStock.upside})
-                                </p>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-emerald-400 font-bold">
-                                    <span>실시간 호가 & 기대차익 산출</span>
-                                    <span className="group-hover:translate-x-1 transition-transform">서류 열람 →</span>
-                                </div>
-                            </div>
-
-                            {/* 2. 미국 빅테크 */}
-                            <div
-                                onClick={() => {
-                                    setCategoryFilter('us_stock');
-                                    const match = autoApprovals.find(d => d.category_type === 'us_stock');
-                                    if (match) handleJumpToDoc(match.doc_id);
-                                }}
-                                className="bg-[#0b1424]/90 hover:bg-[#0f1b30] border border-sky-500/30 hover:border-sky-400/60 rounded-2xl p-4 transition-all cursor-pointer group shadow-lg"
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="flex items-center gap-1.5 text-xs font-black text-sky-300">
-                                        <span>🌎</span>
-                                        <span>미국 10대 빅테크</span>
-                                    </span>
-                                    <span className="text-xs font-black px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono">
-                                        {countUs}건
-                                    </span>
-                                </div>
-                                <div className="text-sm font-extrabold text-white group-hover:text-sky-300 transition-colors">
-                                    엔비디아(NVDA) · 테슬라(TSLA) · 애플 · MSFT
-                                </div>
-                                <p className="text-[11px] text-gray-300 mt-1 leading-relaxed line-clamp-2">
-                                    10대 빅테크 일자별 데일리 4종목 순환 정밀 분석 및 뉴욕 증시 개장 전후 실시간 호가·AI 인프라 실적 추적
-                                </p>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-sky-400 font-bold">
-                                    <span>글로벌 24시간 데스크</span>
-                                    <span className="group-hover:translate-x-1 transition-transform">서류 열람 →</span>
-                                </div>
-                            </div>
-
-                            {/* 3. 글로벌 선물·파생 */}
-                            <div
-                                onClick={() => {
-                                    setCategoryFilter('global_futures');
-                                    const match = autoApprovals.find(d => d.category_type === 'global_futures');
-                                    if (match) handleJumpToDoc(match.doc_id);
-                                }}
-                                className="bg-[#0b1424]/90 hover:bg-[#0f1b30] border border-purple-500/30 hover:border-purple-400/60 rounded-2xl p-4 transition-all cursor-pointer group shadow-lg"
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="flex items-center gap-1.5 text-xs font-black text-purple-300">
-                                        <span>📊</span>
-                                        <span>글로벌 선물 & 거시지표</span>
-                                    </span>
-                                    <span className="text-xs font-black px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
-                                        {countFutures}건
-                                    </span>
-                                </div>
-                                <div className="text-sm font-extrabold text-white group-hover:text-purple-300 transition-colors">
-                                    나스닥100 선물 · S&P500 · WTI 원유 · 달러인덱스
-                                </div>
-                                <p className="text-[11px] text-gray-300 mt-1 leading-relaxed line-clamp-2">
-                                    24시간 글로벌 파생상품 실시간 시세 연동 및 한국 증시 개장 영향도 사전 헤지 전략 결재 상정
-                                </p>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-purple-400 font-bold">
-                                    <span>24H 야간 헤지 리스크 감사</span>
-                                    <span className="group-hover:translate-x-1 transition-transform">서류 열람 →</span>
-                                </div>
-                            </div>
-
-                            {/* 4. 전세계 경제뉴스 & 거시특보 */}
-                            <div
-                                onClick={() => {
-                                    setCategoryFilter('world_news');
-                                    const match = autoApprovals.find(d => d.category_type === 'world_news' || d.category_type === 'all' || d.doc_id.endsWith('-01'));
-                                    if (match) handleJumpToDoc(match.doc_id);
-                                }}
-                                className="bg-[#0b1424]/90 hover:bg-[#0f1b30] border border-amber-500/30 hover:border-amber-400/60 rounded-2xl p-4 transition-all cursor-pointer group shadow-lg"
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="flex items-center gap-1.5 text-xs font-black text-amber-300">
-                                        <span>📰</span>
-                                        <span>전사 종합 & 글로벌 매크로</span>
-                                    </span>
-                                    <span className="text-xs font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
-                                        {countNews}건
-                                    </span>
-                                </div>
-                                <div className="text-sm font-extrabold text-white group-hover:text-amber-300 transition-colors">
-                                    07:20 모닝 특보 · 미 연준(Fed) 금리 & 환율
-                                </div>
-                                <p className="text-[11px] text-gray-300 mt-1 leading-relaxed line-clamp-2">
-                                    글로벌 경제 지형, 금리 경로, 외국인 패시브 자금 흐름을 알기 쉽게 풀어쓴 대표이사 필수 브리핑
-                                </p>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-amber-400 font-bold">
-                                    <span>거시 환경 종합 진단</span>
-                                    <span className="group-hover:translate-x-1 transition-transform">서류 열람 →</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 🌟 [4] 15건 결재 기안서 전광판 & 원클릭 빠른 열람 리본 (Interactive 15-Doc Ticker Ribbon) */}
-                    <div className="mt-4 pt-4 border-t border-white/10">
-                        <div className="flex items-center justify-between gap-2 mb-2.5">
-                            <div className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                                <span className="text-amber-400 font-black">⚡ 원클릭 기안서 바로가기</span>
-                                <span className="text-[11px] text-gray-400">
-                                    (오늘 상정된 {totalDocs}건 중 열람하실 안건을 클릭하시면 아래 전자결재 상세 화면으로 즉시 이동합니다)
-                                </span>
-                            </div>
-                            <span className="text-[11px] text-amber-300 font-mono">
-                                대기 {pendingDocsCount} / 완료 {approvedDocsCount}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-amber-500/30 scrollbar-track-transparent">
-                            {autoApprovals.map((doc, idx) => {
-                                const signInfo = signMap[doc.doc_id];
-                                const isApproved = signInfo?.status === 'approved';
-                                const isSelected = activeDoc?.doc_id === doc.doc_id;
-
-                                return (
-                                    <button
-                                        key={doc.doc_id}
-                                        type="button"
-                                        onClick={() => handleJumpToDoc(doc.doc_id)}
-                                        className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 border text-left ${
-                                            isSelected
-                                                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black ring-2 ring-amber-400/50'
-                                                : isApproved
-                                                ? 'bg-emerald-950/40 text-emerald-200 border-emerald-500/40 hover:bg-emerald-900/50'
-                                                : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:border-amber-500/40'
-                                        }`}
+                            {/* 1. 국내 주식 요약 리스트 */}
+                            <div className="bg-[#0b1424]/95 border border-emerald-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <div
+                                        onClick={() => {
+                                            setCategoryFilter('kr_stock');
+                                            if (intelligenceMetrics.krDocs[0]) handleJumpToDoc(intelligenceMetrics.krDocs[0].doc_id);
+                                        }}
+                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
                                     >
-                                        <span className="text-xs">
-                                            {doc.category_type === 'kr_stock' ? '🏢' : doc.category_type === 'us_stock' ? '🌎' : doc.category_type === 'global_futures' ? '📊' : '📰'}
+                                        <span className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
+                                            <span>🇰🇷</span>
+                                            <span>국내 우량 실적주</span>
                                         </span>
-                                        <div>
-                                            <div className="flex items-center gap-1">
-                                                <span className={`text-[10px] font-mono ${isSelected ? 'text-slate-950/80' : 'text-gray-400'}`}>
-                                                    {doc.doc_number.split(' ')[1] || `0${idx + 1}`}
-                                                </span>
-                                                <span className="font-extrabold truncate max-w-[110px]">
-                                                    {doc.stock_name}
-                                                </span>
-                                            </div>
-                                            {doc.upside_pct && doc.upside_pct !== '컨센서스 유지' && doc.upside_pct !== '집계 중' ? (
-                                                <div className={`text-[10px] font-mono font-black ${isSelected ? 'text-slate-950' : 'text-rose-400'}`}>
-                                                    {doc.upside_pct}
+                                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                                            {intelligenceMetrics.krDocs.length}건
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {intelligenceMetrics.krDocs.map(doc => (
+                                            <button
+                                                key={doc.doc_id}
+                                                type="button"
+                                                onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left"
+                                            >
+                                                <span className="font-extrabold text-white truncate max-w-[115px]">{doc.stock_name}</span>
+                                                <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+                                                    {doc.target_price && <span className="text-gray-300">목표 {doc.target_price}</span>}
+                                                    {doc.upside_pct && doc.upside_pct.includes('%') && (
+                                                        <span className="text-rose-400 font-black">{doc.upside_pct}</span>
+                                                    )}
                                                 </div>
-                                            ) : doc.current_price ? (
-                                                <div className={`text-[10px] font-mono truncate max-w-[100px] ${isSelected ? 'text-slate-950' : 'text-zinc-400'}`}>
-                                                    {doc.current_price.split(' ')[0]}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-emerald-400 font-bold">
+                                    <span>증권사 목표주가 컨센서스</span>
+                                    <span>클릭 시 상세 열람 →</span>
+                                </div>
+                            </div>
+
+                            {/* 2. 미국 빅테크 요약 리스트 */}
+                            <div className="bg-[#0b1424]/95 border border-sky-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <div
+                                        onClick={() => {
+                                            setCategoryFilter('us_stock');
+                                            if (intelligenceMetrics.usDocs[0]) handleJumpToDoc(intelligenceMetrics.usDocs[0].doc_id);
+                                        }}
+                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                    >
+                                        <span className="flex items-center gap-1.5 text-xs font-black text-sky-300">
+                                            <span>🌎</span>
+                                            <span>미국 10대 빅테크</span>
+                                        </span>
+                                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono">
+                                            {intelligenceMetrics.usDocs.length}건
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {intelligenceMetrics.usDocs.map(doc => (
+                                            <button
+                                                key={doc.doc_id}
+                                                type="button"
+                                                onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left"
+                                            >
+                                                <span className="font-extrabold text-white truncate max-w-[115px]">{doc.stock_name}</span>
+                                                <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+                                                    {doc.current_price && <span className="text-gray-300">{doc.current_price.split(' ')[0]}</span>}
+                                                    {doc.upside_pct && doc.upside_pct.includes('%') && (
+                                                        <span className="text-rose-400 font-black">{doc.upside_pct}</span>
+                                                    )}
                                                 </div>
-                                            ) : null}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-sky-400 font-bold">
+                                    <span>월스트리트 목표가 연동</span>
+                                    <span>클릭 시 상세 열람 →</span>
+                                </div>
+                            </div>
+
+                            {/* 3. 글로벌 선물·지수 요약 리스트 */}
+                            <div className="bg-[#0b1424]/95 border border-purple-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <div
+                                        onClick={() => {
+                                            setCategoryFilter('global_futures');
+                                            if (intelligenceMetrics.futuresDocs[0]) handleJumpToDoc(intelligenceMetrics.futuresDocs[0].doc_id);
+                                        }}
+                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                    >
+                                        <span className="flex items-center gap-1.5 text-xs font-black text-purple-300">
+                                            <span>📊</span>
+                                            <span>글로벌 선물 & 지수</span>
+                                        </span>
+                                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono">
+                                            {intelligenceMetrics.futuresDocs.length}건
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {intelligenceMetrics.futuresDocs.map(doc => (
+                                            <button
+                                                key={doc.doc_id}
+                                                type="button"
+                                                onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all cursor-pointer text-left"
+                                            >
+                                                <span className="font-extrabold text-white truncate max-w-[125px]">{doc.stock_name}</span>
+                                                <span className="text-[11px] font-mono text-purple-300 font-bold shrink-0">
+                                                    {doc.current_price ? doc.current_price.split(' ')[0] : '24H 감시'}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-purple-400 font-bold">
+                                    <span>24시간 야간 선물·원자재</span>
+                                    <span>클릭 시 상세 열람 →</span>
+                                </div>
+                            </div>
+
+                            {/* 4. 전사 종합 & 경제특보 요약 리스트 */}
+                            <div className="bg-[#0b1424]/95 border border-amber-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                                <div>
+                                    <div
+                                        onClick={() => {
+                                            setCategoryFilter('world_news');
+                                            if (intelligenceMetrics.newsDocs[0]) handleJumpToDoc(intelligenceMetrics.newsDocs[0].doc_id);
+                                        }}
+                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                    >
+                                        <span className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                                            <span>📰</span>
+                                            <span>전사 종합 & 경제특보</span>
+                                        </span>
+                                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                                            {intelligenceMetrics.newsDocs.length}건
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {intelligenceMetrics.newsDocs.map(doc => (
+                                            <button
+                                                key={doc.doc_id}
+                                                type="button"
+                                                onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg bg-white/5 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all cursor-pointer text-left"
+                                            >
+                                                <span className="font-extrabold text-white truncate max-w-[140px]">{doc.stock_name}</span>
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold shrink-0">
+                                                    필독 브리핑
+                                                </span>
+                                            </button>
+                                        ))}
+                                        <div className="text-[11px] text-gray-300 bg-black/30 rounded-lg p-2 border border-white/5 leading-snug">
+                                            • 미 연준 금리 & 환율 방향성<br />
+                                            • 외국인 패시브 자금 유입 점검
                                         </div>
-                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-black shrink-0 ${
-                                            isApproved
-                                                ? isSelected ? 'bg-slate-950/30 text-slate-950' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                                : isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                        }`}>
-                                            {isApproved ? '💮 승인' : '⏳ 대기'}
-                                        </span>
-                                    </button>
-                                );
-                            })}
+                                    </div>
+                                </div>
+                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-amber-400 font-bold">
+                                    <span>거시경제 핵심 요약</span>
+                                    <span>클릭 시 상세 열람 →</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -2232,9 +2270,14 @@ export default function CeoOfficePage() {
                                                                     EXECUTIVE SUMMARY
                                                                 </span>
                                                             </div>
-                                                            <p className="text-sm sm:text-[15px] font-bold text-zinc-100 leading-relaxed tracking-normal">
-                                                                {activeDoc.easy_headline}
-                                                            </p>
+                                                            <ul className="space-y-1.5 text-sm sm:text-[15px] font-bold text-zinc-100 leading-relaxed">
+                                                                {splitIntoBullets(activeDoc.easy_headline).map((line, lIdx) => (
+                                                                    <li key={lIdx} className="flex items-start gap-2">
+                                                                        <span className="text-amber-400 font-black shrink-0 mt-0.5">✓</span>
+                                                                        <span>{line}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
                                                         </div>
                                                     )}
 
@@ -2318,13 +2361,21 @@ export default function CeoOfficePage() {
                                                             {/* 1. 핵심 호재 & 왜 오르나요? */}
                                                             <div className="bg-gradient-to-b from-emerald-950/25 via-zinc-900/60 to-zinc-950 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col justify-between">
                                                                 <div>
-                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-emerald-300 mb-2">
-                                                                        <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-400">🚀</span>
-                                                                        <span>1. 왜 오를까요? (성장 동력)</span>
+                                                                    <div className="flex items-center justify-between gap-1.5 text-xs font-black text-emerald-300 mb-2 pb-1.5 border-b border-emerald-500/15">
+                                                                        <span className="flex items-center gap-1">
+                                                                            <span>🚀</span>
+                                                                            <span>1. 왜 오를까요? (성장 동력)</span>
+                                                                        </span>
+                                                                        <span className="text-[10px] text-emerald-400">박진우 부사장</span>
                                                                     </div>
-                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                        {parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡").body || activeDoc.easy_headline}
-                                                                    </p>
+                                                                    <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                        {splitIntoBullets(parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡").body || activeDoc.easy_headline || "").map((b, bIdx) => (
+                                                                            <li key={bIdx} className="flex items-start gap-1.5">
+                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                                <span>{b}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
                                                                 </div>
                                                                 <div className="mt-3 pt-2 border-t border-emerald-500/15 flex items-center justify-between text-[11px] text-emerald-400 font-bold">
                                                                     <span>실적 모멘텀</span>
@@ -2335,13 +2386,21 @@ export default function CeoOfficePage() {
                                                             {/* 2. 외인/기관 큰손 수급 상태 */}
                                                             <div className="bg-gradient-to-b from-cyan-950/25 via-zinc-900/60 to-zinc-950 border border-cyan-500/30 rounded-xl p-3.5 flex flex-col justify-between">
                                                                 <div>
-                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-cyan-300 mb-2">
-                                                                        <span className="p-1 rounded-md bg-cyan-500/20 text-cyan-400">📈</span>
-                                                                        <span>2. 큰손들은 사고 있나요? (수급)</span>
+                                                                    <div className="flex items-center justify-between gap-1.5 text-xs font-black text-cyan-300 mb-2 pb-1.5 border-b border-cyan-500/15">
+                                                                        <span className="flex items-center gap-1">
+                                                                            <span>📈</span>
+                                                                            <span>2. 큰손 수급 흐름</span>
+                                                                        </span>
+                                                                        <span className="text-[10px] text-cyan-400">김도현 상무</span>
                                                                     </div>
-                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                        {parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊").body || "최근 두 달 평균선(50일선) 위에서 외국인과 기관 큰손들의 수급 지지력을 정밀 감시하고 있습니다."}
-                                                                    </p>
+                                                                    <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                        {splitIntoBullets(parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊").body || "최근 두 달 평균선(50일선) 위에서 외국인과 기관 큰손들의 수급 지지력을 정밀 감시하고 있습니다.").map((b, bIdx) => (
+                                                                            <li key={bIdx} className="flex items-start gap-1.5">
+                                                                                <span className="text-cyan-400 font-black shrink-0">•</span>
+                                                                                <span>{b}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
                                                                 </div>
                                                                 <div className="mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between text-[11px] text-cyan-400 font-bold">
                                                                     <span>50일선 추세</span>
@@ -2352,17 +2411,36 @@ export default function CeoOfficePage() {
                                                             {/* 3. 목표가와 안전마진 */}
                                                             <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
                                                                 <div>
-                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-purple-300 mb-2">
-                                                                        <span className="p-1 rounded-md bg-purple-500/20 text-purple-400">🎯</span>
-                                                                        <span>3. 목표가와 기대 상승 여력</span>
+                                                                    <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2 pb-1.5 border-b border-purple-500/15">
+                                                                        <span className="flex items-center gap-1">
+                                                                            <span>🎯</span>
+                                                                            <span>3. 목표가 & 기대수익 요약</span>
+                                                                        </span>
+                                                                        <span className="text-[10px] text-purple-400">밸류에이션</span>
                                                                     </div>
-                                                                    <p className="text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                        {activeDoc.current_price && activeDoc.target_price
-                                                                            ? `실시간 현재가(${activeDoc.current_price}) 대비 전문가 목표주가(${activeDoc.target_price})까지 [${activeDoc.upside_pct || '충분한'}]의 강력한 상승 여력이 열려 있으며, ${activeDoc.profit_per_share ? activeDoc.profit_per_share + '의' : ''} 확실한 안전마진(1,000만원 투자 시 ${activeDoc.profit_10m || '높은 기대수익'})이 확보된 매수 적기입니다.`
-                                                                            : activeDoc.key_numbers.find(k => k.label.includes("목표가") || k.label.includes("현재가"))?.value
-                                                                            ? `전문가 제시 목표치(${activeDoc.key_numbers.find(k => k.label.includes("목표가"))?.value || '목표가'})까지 높은 기대수익률과 안전마진이 확보된 구간입니다.`
-                                                                            : `국내외 제도권 증권사들의 긍정적 투자의견과 함께 추가 상승 여력이 충분한 매력적인 밸류에이션 구간입니다.`}
-                                                                    </p>
+                                                                    <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                        {activeDoc.current_price && activeDoc.target_price ? (
+                                                                            <>
+                                                                                <li className="flex items-start gap-1.5">
+                                                                                    <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                    <span><strong className="text-white">현재가 ➔ 목표가:</strong> {activeDoc.current_price} ➔ <strong className="text-amber-300">{activeDoc.target_price}</strong></span>
+                                                                                </li>
+                                                                                <li className="flex items-start gap-1.5">
+                                                                                    <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                    <span><strong className="text-white">기대 상승폭:</strong> <strong className="text-rose-400">{activeDoc.upside_pct || '상승 여력 충분'}</strong> ({activeDoc.profit_per_share || '안전마진 확보'})</span>
+                                                                                </li>
+                                                                                <li className="flex items-start gap-1.5">
+                                                                                    <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                    <span><strong className="text-white">1천만원 투자 시:</strong> <strong className="text-emerald-300">{activeDoc.profit_10m || '높은 기대수익'}</strong> 예상</span>
+                                                                                </li>
+                                                                            </>
+                                                                        ) : (
+                                                                            <li className="flex items-start gap-1.5">
+                                                                                <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                <span>국내외 제도권 증권사들의 긍정적 투자의견과 함께 추가 상승 여력이 충분한 구간입니다.</span>
+                                                                            </li>
+                                                                        )}
+                                                                    </ul>
                                                                 </div>
                                                                 <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
                                                                     <span>가격 매력도</span>
@@ -2462,96 +2540,6 @@ export default function CeoOfficePage() {
                                                                 </div>
                                                             );
                                                         })}
-                                                    </div>
-
-                                                    {/* 각 본부 임원 자율 분석 3단 프리미엄 카드 보고 */}
-                                                    <div className="grid grid-cols-1 gap-3.5 my-4">
-                                                        {/* 1. 리서치센터 의견 */}
-                                                        {(() => {
-                                                            const p = parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡");
-                                                            return (
-                                                                <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 via-zinc-900/80 to-zinc-950 p-4 sm:p-5 shadow-lg shadow-emerald-950/20">
-                                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-emerald-500/20">
-                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-black text-xs border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
-                                                                                <Compass className="w-3.5 h-3.5 text-emerald-400" />
-                                                                                <span>{p.badge}</span>
-                                                                            </span>
-                                                                            {p.title && (
-                                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
-                                                                                    <span>{p.icon}</span>
-                                                                                    <span>{p.title}</span>
-                                                                                </h4>
-                                                                            )}
-                                                                        </div>
-                                                                        <span className="text-[11px] text-emerald-400/80 font-bold hidden sm:inline">
-                                                                            증권가 리포트 팩트 해설
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
-                                                                        {p.body}
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        })()}
-
-                                                        {/* 2. 수급분석본부 의견 */}
-                                                        {(() => {
-                                                            const p = parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊");
-                                                            return (
-                                                                <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/30 via-zinc-900/80 to-zinc-950 p-4 sm:p-5 shadow-lg shadow-cyan-950/20">
-                                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-cyan-500/20">
-                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 font-black text-xs border border-cyan-500/40 flex items-center gap-1.5 shadow-sm">
-                                                                                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                                                                                <span>{p.badge}</span>
-                                                                            </span>
-                                                                            {p.title && (
-                                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
-                                                                                    <span>{p.icon}</span>
-                                                                                    <span>{p.title}</span>
-                                                                                </h4>
-                                                                            )}
-                                                                        </div>
-                                                                        <span className="text-[11px] text-cyan-400/80 font-bold hidden sm:inline">
-                                                                            외인·기관 자금 유입 진단
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
-                                                                        {p.body}
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        })()}
-
-                                                        {/* 3. 리스크관리본부 의견 */}
-                                                        {(() => {
-                                                            const p = parseExecutiveOpinion(activeDoc.risk_opinion, "리스크본부", "⚠️");
-                                                            return (
-                                                                <div className="rounded-2xl border border-rose-500/35 bg-gradient-to-br from-rose-950/30 via-zinc-900/80 to-zinc-950 p-4 sm:p-5 shadow-lg shadow-rose-950/20">
-                                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2.5 border-b border-rose-500/20">
-                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                            <span className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 font-black text-xs border border-rose-500/40 flex items-center gap-1.5 shadow-sm">
-                                                                                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                                                                                <span>{p.badge}</span>
-                                                                            </span>
-                                                                            {p.title && (
-                                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
-                                                                                    <span>{p.icon}</span>
-                                                                                    <span>{p.title}</span>
-                                                                                </h4>
-                                                                            )}
-                                                                        </div>
-                                                                        <span className="text-[11px] text-rose-400/80 font-bold hidden sm:inline">
-                                                                            원금 보호 & 추격매수 경보
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">
-                                                                        {p.body}
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        })()}
                                                     </div>
 
                                                     {/* 📖 이 보고서에 나온 어려운 단어 3초 풀이 (사전형 카드 그리드) */}
