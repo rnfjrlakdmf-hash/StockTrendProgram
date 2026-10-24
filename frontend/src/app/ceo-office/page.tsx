@@ -1968,7 +1968,7 @@ export default function CeoOfficePage() {
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         {/* 좌측 8컬럼: 대표이사 전자결재 서류함 (기본 탭) */}
-                        <div className={activeTab === 'electronic_sign' ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
+                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
                             {activeTab === 'electronic_sign' && (
                                 <>
                                     {/* 비서실장 브리핑 안내 배너 */}
@@ -3589,47 +3589,60 @@ export default function CeoOfficePage() {
                                     </div>
                                 </div>
                             )}{activeTab === 'watchlist_research' && (
-                                <div className="space-y-4">
-                                    <div className="bg-[#0f172a] border border-sky-500/25 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div className="space-y-5">
+                                    <div className="bg-gradient-to-r from-[#0f172a] via-[#111c35] to-[#0f172a] border border-sky-500/35 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
                                         <div>
-                                            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                                                <span>📚</span>
-                                                <span>내 관심종목 리서치 보고서</span>
-                                            </h3>
-                                            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                                                관심종목으로 설정하신 종목의 시세·수급·증권사 목표가·재무지표·최신 뉴스를 한곳에 모아 쉬운 말로 정리했습니다.
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">📚</span>
+                                                <h3 className="text-base sm:text-lg font-black text-white">
+                                                    내 관심종목 심층 리서치 보고서 (증권사 원문 리포트 · 수급 · 재무 통합)
+                                                </h3>
+                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                                                    총 {researchReports.length}종목 분석 완료
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-300 mt-1.5 leading-relaxed">
+                                                설정하신 관심종목별로 <strong className="text-amber-300">실제 발간된 증권사 애널리스트 리포트 본문 요약 & 원문 PDF</strong>, 실시간 외국인·기관 수급, 재무 밸류에이션, 최신 뉴스를 한눈에 보기 쉽게 정리했습니다.
                                                 {researchGeneratedAt && (
-                                                    <span className="text-sky-300 font-bold"> (작성 시각 {researchGeneratedAt})</span>
+                                                    <span className="text-sky-300 font-bold ml-1">({researchGeneratedAt} 기준)</span>
                                                 )}
                                             </p>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={fetchWatchlistResearch}
-                                            disabled={researchLoading}
-                                            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:bg-gray-700 text-white text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
-                                        >
-                                            <RefreshCw className={`w-3.5 h-3.5 ${researchLoading ? 'animate-spin' : ''}`} />
-                                            <span>{researchLoading ? '보고서 작성 중...' : '최신 보고서로 새로고침'}</span>
-                                        </button>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <Link
+                                                href="/watchlist"
+                                                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 text-xs font-bold transition-all"
+                                            >
+                                                ⚙️ 관심종목 편집
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                onClick={fetchWatchlistResearch}
+                                                disabled={researchLoading}
+                                                className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-gray-700 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-sky-500/20"
+                                            >
+                                                <RefreshCw className={`w-3.5 h-3.5 ${researchLoading ? 'animate-spin' : ''}`} />
+                                                <span>{researchLoading ? '리포트 수집 중...' : '최신 리서치 새로고침'}</span>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {researchLoading && researchReports.length === 0 ? (
-                                        <div className="py-14 flex flex-col items-center gap-2 text-gray-400">
-                                            <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
-                                            <span className="text-xs">관심종목별 시세·수급·컨센서스·뉴스를 모아 보고서를 작성하고 있습니다...</span>
+                                        <div className="py-16 bg-[#0f172a] border border-white/10 rounded-2xl flex flex-col items-center gap-3 text-gray-300">
+                                            <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+                                            <span className="text-sm font-bold">관심종목별 증권사 리서치 리포트 원문과 실시간 수급 데이터를 수집하고 있습니다...</span>
                                         </div>
                                     ) : researchReports.length === 0 ? (
                                         <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-10 text-center space-y-3">
                                             <div className="text-4xl">⭐</div>
-                                            <div className="text-base font-black text-white">작성할 관심종목이 없습니다</div>
-                                            <p className="text-xs text-gray-400">관심종목을 먼저 등록하시면 종목별 리서치 보고서가 자동으로 만들어집니다.</p>
+                                            <div className="text-base font-black text-white">등록된 관심종목이 없습니다</div>
+                                            <p className="text-xs text-gray-400">관심종목을 먼저 등록하시면 종목별 증권사 리서치 보고서가 자동으로 생성됩니다.</p>
                                             <Link href="/watchlist" className="inline-block px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-black">
                                                 관심종목 설정하러 가기 →
                                             </Link>
                                         </div>
                                     ) : (
-                                        <div className="space-y-4">
+                                        <div className="space-y-6">
                                             {researchReports.map((r: any) => {
                                                 const isKr = r.category === 'kr_stock';
                                                 const fmtFlow = (v: number | null | undefined) =>
@@ -3639,106 +3652,253 @@ export default function CeoOfficePage() {
                                                 const badge: Record<string, string> = {
                                                     emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
                                                     blue: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-                                                    slate: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+                                                    slate: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
                                                     rose: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
                                                 };
+                                                const brokerReports: any[] = r.broker_reports || [];
+
                                                 return (
-                                                    <div key={r.stock_code} className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
-                                                        <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-white/10">
+                                                    <div key={r.stock_code} className="bg-gradient-to-br from-[#0f172a] via-[#0c1324] to-[#0f172a] border border-white/15 rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xl">
+                                                        {/* 1. 종목 헤더 */}
+                                                        <div className="flex flex-wrap items-start justify-between gap-3 pb-3.5 border-b border-white/10">
                                                             <div>
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${isKr ? 'bg-blue-500/15 text-blue-300' : 'bg-purple-500/15 text-purple-300'}`}>
-                                                                        {isKr ? '국내주식' : '미국주식'}
+                                                                    <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${isKr ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>
+                                                                        {isKr ? '🇰🇷 국내주식' : '🌎 미국주식'}
                                                                     </span>
-                                                                    <h4 className="text-lg font-black text-white">{r.stock_name}</h4>
-                                                                    <span className="text-xs font-mono text-gray-400">{r.stock_code}</span>
+                                                                    <h4 className="text-xl font-black text-white">{r.stock_name}</h4>
+                                                                    <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded">{r.stock_code}</span>
+                                                                    {brokerReports.length > 0 && (
+                                                                        <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                            📑 증권사 리포트 {brokerReports.length}건 수록
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                <p className="text-xs text-gray-300 mt-1.5">{r.headline}</p>
+                                                                <p className="text-xs sm:text-sm text-gray-300 mt-1.5 font-medium">{r.headline}</p>
                                                             </div>
-                                                            <span className={`px-3 py-1.5 rounded-xl text-xs font-black border ${badge[r.opinion?.color] || badge.slate}`}>
+                                                            <span className={`px-3.5 py-1.5 rounded-xl text-xs font-black border shadow-sm ${badge[r.opinion?.color] || badge.slate}`}>
                                                                 종합 의견 · {r.opinion?.label}
                                                             </span>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
-                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
-                                                                <div className="text-[11px] text-gray-400">현재가</div>
-                                                                <div className="text-sm font-black font-mono text-white mt-0.5">{r.price_str}</div>
-                                                                <div className={`text-[11px] font-bold font-mono ${r.change_pct > 0 ? 'text-rose-400' : r.change_pct < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                                    {r.change_pct > 0 ? '+' : ''}{r.change_pct}%
+                                                        {/* 2. 4대 핵심 시세 & 밸류에이션 지표 */}
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                                            <div className="bg-black/45 border border-white/10 rounded-xl p-3.5">
+                                                                <div className="text-[11px] text-gray-400 font-bold">실시간 현재가</div>
+                                                                <div className="text-base sm:text-lg font-black font-mono text-white mt-0.5">{r.price_str}</div>
+                                                                <div className={`text-xs font-bold font-mono mt-0.5 ${r.change_pct > 0 ? 'text-rose-400' : r.change_pct < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                                    {r.change_pct > 0 ? '+' : ''}{r.change_pct}% {r.trading_value ? `· 거래대금 ${r.trading_value}` : ''}
                                                                 </div>
                                                             </div>
-                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
-                                                                <div className="text-[11px] text-gray-400">증권사 평균 목표가</div>
-                                                                <div className="text-sm font-black font-mono text-amber-300 mt-0.5">{r.consensus?.target_mean_str || '-'}</div>
-                                                                <div className="text-[11px] text-gray-400">
-                                                                    {r.consensus?.upside_pct !== null && r.consensus?.upside_pct !== undefined ? `현재가 대비 ${r.consensus.upside_pct > 0 ? '+' : ''}${r.consensus.upside_pct}%` : '자료 없음'}
+
+                                                            <div className="bg-black/45 border border-amber-500/25 rounded-xl p-3.5">
+                                                                <div className="text-[11px] text-amber-300/90 font-bold">증권사 목표가 / 리포트 기준</div>
+                                                                <div className="text-base sm:text-lg font-black font-mono text-amber-300 mt-0.5">{r.consensus?.target_mean_str || '실적 리포트 참고'}</div>
+                                                                <div className="text-[11px] text-gray-300 mt-0.5 font-medium">
+                                                                    {r.consensus?.upside_pct !== null && r.consensus?.upside_pct !== undefined
+                                                                        ? `현재가 대비 ${r.consensus.upside_pct > 0 ? '+' : ''}${r.consensus.upside_pct}% 상승여력`
+                                                                        : (r.consensus?.note || '아래 증권사 리포트 요약 참고')}
                                                                 </div>
                                                             </div>
-                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
-                                                                <div className="text-[11px] text-gray-400">PER (이익 대비 주가)</div>
-                                                                <div className="text-sm font-black font-mono text-white mt-0.5">{r.per ? `${Number(r.per).toFixed(1)}배` : '-'}</div>
-                                                                <div className="text-[11px] text-gray-400">{r.market_cap ? `시총 ${r.market_cap}` : ''}</div>
+
+                                                            <div className="bg-black/45 border border-white/10 rounded-xl p-3.5">
+                                                                <div className="text-[11px] text-gray-400 font-bold">PER · PBR (재무 가성비)</div>
+                                                                <div className="text-base sm:text-lg font-black font-mono text-white mt-0.5">
+                                                                    {r.per ? `PER ${Number(r.per).toFixed(1)}배` : '집계 중'}
+                                                                    {r.pbr ? <span className="text-xs text-sky-300 ml-1.5">· PBR {Number(r.pbr).toFixed(2)}배</span> : null}
+                                                                </div>
+                                                                <div className="text-[11px] text-gray-400 mt-0.5">
+                                                                    {r.market_cap ? `시총 ${r.market_cap}` : ''}
+                                                                    {r.eps ? ` · EPS ${Number(r.eps).toLocaleString()}원` : ''}
+                                                                </div>
                                                             </div>
-                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3">
-                                                                <div className="text-[11px] text-gray-400">52주 가격 위치</div>
-                                                                <div className="text-sm font-black font-mono text-white mt-0.5">{r.range_pos !== null && r.range_pos !== undefined ? `${r.range_pos}%` : '-'}</div>
-                                                                <div className="text-[11px] text-gray-400">0%=최저 · 100%=최고</div>
+
+                                                            <div className="bg-black/45 border border-white/10 rounded-xl p-3.5">
+                                                                <div className="text-[11px] text-gray-400 font-bold">52주 주가 위치 (최저~최고)</div>
+                                                                <div className="text-base sm:text-lg font-black font-mono text-white mt-0.5">
+                                                                    {r.range_pos !== null && r.range_pos !== undefined ? `하단 대비 ${r.range_pos}%` : '-'}
+                                                                </div>
+                                                                <div className="text-[11px] text-gray-400 mt-0.5 truncate">
+                                                                    {r.low52_str && r.high52_str ? `${r.low52_str} ~ ${r.high52_str}` : '0%=52주 최저 · 100%=52주 최고'}
+                                                                </div>
                                                             </div>
                                                         </div>
 
-                                                        {r.flow && (
-                                                            <div className="bg-black/30 border border-white/10 rounded-xl p-3">
-                                                                <div className="text-[11px] font-bold text-gray-300 mb-2">💰 오늘 누가 샀을까요? (순매수)</div>
-                                                                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                                                    <div><div className="text-gray-400 text-[11px]">외국인</div><div className={`font-black font-mono ${flowColor(r.flow.foreign_today)}`}>{fmtFlow(r.flow.foreign_today)}</div></div>
-                                                                    <div><div className="text-gray-400 text-[11px]">기관</div><div className={`font-black font-mono ${flowColor(r.flow.organ_today)}`}>{fmtFlow(r.flow.organ_today)}</div></div>
-                                                                    <div><div className="text-gray-400 text-[11px]">개인</div><div className={`font-black font-mono ${flowColor(r.flow.individual_today)}`}>{fmtFlow(r.flow.individual_today)}</div></div>
+                                                        {/* 3. 📑 증권사 애널리스트 리서치 리포트 본문 핵심 요약 & PDF 원문 (가장 핵심!) */}
+                                                        <div className="bg-gradient-to-br from-amber-950/20 via-slate-900/90 to-zinc-950 border border-amber-500/35 rounded-2xl p-4 sm:p-5 space-y-3.5">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                                                                        📑 증권사 리서치 리포트 핵심 요약
+                                                                    </span>
+                                                                    <span className="text-xs sm:text-sm font-black text-white">
+                                                                        {brokerReports.length > 0
+                                                                            ? `${r.stock_name}에 대해 증권사 애널리스트가 발표한 실제 분석 리포트 (${brokerReports.length}건)`
+                                                                            : `${r.stock_name} AI 리서치센터 종합 밸류에이션 & 수급 분석`}
+                                                                    </span>
                                                                 </div>
-                                                                <div className="text-[11px] text-gray-500 mt-2">
-                                                                    최근 3거래일 합계 — 외국인 {fmtFlow(r.flow.foreign_3d)} · 기관 {fmtFlow(r.flow.organ_3d)}
-                                                                    {r.flow.foreign_hold_ratio ? ` · 외국인 보유율 ${r.flow.foreign_hold_ratio}` : ''}
+                                                                <span className="text-[11px] text-amber-300/90 font-bold">
+                                                                    원문 핵심 요약 & PDF 제공
+                                                                </span>
+                                                            </div>
+
+                                                            {brokerReports.length > 0 ? (
+                                                                <div className="grid grid-cols-1 gap-3">
+                                                                    {brokerReports.map((br: any, bIdx: number) => (
+                                                                        <div
+                                                                            key={br.id || bIdx}
+                                                                            className="bg-black/50 border border-white/10 hover:border-amber-500/40 rounded-xl p-4 transition-all space-y-2.5"
+                                                                        >
+                                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                                    <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black">
+                                                                                        🏢 {br.broker}
+                                                                                    </span>
+                                                                                    <span className="text-xs font-mono text-gray-400">
+                                                                                        {br.date} 발간
+                                                                                    </span>
+                                                                                    {br.target_price ? (
+                                                                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-black font-mono">
+                                                                                            목표주가 {br.target_price}
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span className="px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 text-[11px] font-bold">
+                                                                                            {br.opinion || '실적·모멘텀 분석'}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    {br.pdf_url && (
+                                                                                        <a
+                                                                                            href={br.pdf_url}
+                                                                                            target="_blank"
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/40 text-[11px] font-black transition-all flex items-center gap-1"
+                                                                                        >
+                                                                                            <span>📄 증권사 원문 PDF 보기</span>
+                                                                                        </a>
+                                                                                    )}
+                                                                                    {br.naver_url && (
+                                                                                        <a
+                                                                                            href={br.naver_url}
+                                                                                            target="_blank"
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[11px] font-bold transition-all"
+                                                                                        >
+                                                                                            상세 원문 →
+                                                                                        </a>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <h5 className="text-sm sm:text-[15px] font-black text-white">
+                                                                                &ldquo;{br.title}&rdquo;
+                                                                            </h5>
+
+                                                                            {br.summary_bullets && br.summary_bullets.length > 0 && (
+                                                                                <ul className="space-y-1.5 pt-1 text-xs text-gray-200 leading-relaxed font-medium">
+                                                                                    {br.summary_bullets.map((line: string, lIdx: number) => (
+                                                                                        <li key={lIdx} className="flex items-start gap-2">
+                                                                                            <span className="text-amber-400 font-black shrink-0 mt-0.5">•</span>
+                                                                                            <span>{line}</span>
+                                                                                        </li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-black/45 border border-white/10 rounded-xl p-4 text-xs text-gray-200 space-y-1.5">
+                                                                    <div className="font-black text-amber-300 mb-1">💡 AI 리서치센터 자체 재무·수급 진단 요약</div>
+                                                                    <p className="leading-relaxed">
+                                                                        현재 {r.stock_name}({r.stock_code})은(는) 현재가 <strong className="text-white">{r.price_str}</strong> (52주 최저~최고 범위의 <strong className="text-sky-300">{r.range_pos ?? 50}%</strong> 구간)에서 거래되고 있으며,
+                                                                        {r.per ? ` PER ${Number(r.per).toFixed(1)}배` : ''}{r.pbr ? ` · PBR ${Number(r.pbr).toFixed(2)}배` : ''}의 밸류에이션을 기록 중입니다. 아래 수급 지표와 투자 포인트를 함께 참고해 주십시오.
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* 4. 외국인·기관·개인 수급 동향 */}
+                                                        {r.flow && (
+                                                            <div className="bg-black/35 border border-white/10 rounded-xl p-3.5">
+                                                                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                                                    <div className="text-xs font-black text-gray-200">💰 오늘 누가 샀을까요? (투자자별 순매수 수급)</div>
+                                                                    <div className="text-[11px] text-gray-400 font-medium">
+                                                                        최근 3거래일 합계 — 외국인 <span className={flowColor(r.flow.foreign_3d)}>{fmtFlow(r.flow.foreign_3d)}</span> · 기관 <span className={flowColor(r.flow.organ_3d)}>{fmtFlow(r.flow.organ_3d)}</span>
+                                                                        {r.flow.foreign_hold_ratio ? ` · 외국인 보유율 ${r.flow.foreign_hold_ratio}` : ''}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
+                                                                    <div className="bg-white/5 rounded-lg py-2 px-3 border border-white/5">
+                                                                        <div className="text-gray-400 text-[11px] font-bold">외국인 (오늘)</div>
+                                                                        <div className={`text-sm font-black font-mono mt-0.5 ${flowColor(r.flow.foreign_today)}`}>{fmtFlow(r.flow.foreign_today)}</div>
+                                                                    </div>
+                                                                    <div className="bg-white/5 rounded-lg py-2 px-3 border border-white/5">
+                                                                        <div className="text-gray-400 text-[11px] font-bold">기관 (오늘)</div>
+                                                                        <div className={`text-sm font-black font-mono mt-0.5 ${flowColor(r.flow.organ_today)}`}>{fmtFlow(r.flow.organ_today)}</div>
+                                                                    </div>
+                                                                    <div className="bg-white/5 rounded-lg py-2 px-3 border border-white/5">
+                                                                        <div className="text-gray-400 text-[11px] font-bold">개인 (오늘)</div>
+                                                                        <div className={`text-sm font-black font-mono mt-0.5 ${flowColor(r.flow.individual_today)}`}>{fmtFlow(r.flow.individual_today)}</div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         )}
 
-                                                        <div className="grid md:grid-cols-2 gap-2.5">
-                                                            <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-xl p-3">
-                                                                <div className="text-[11px] font-black text-emerald-300 mb-1.5">👍 좋은 점</div>
-                                                                {(r.opinion?.good || []).length === 0 ? (
-                                                                    <div className="text-[11px] text-gray-500">특별히 눈에 띄는 호재 지표가 없습니다.</div>
-                                                                ) : (
-                                                                    <ul className="space-y-1 text-[11px] text-emerald-100/90 list-disc pl-4">
-                                                                        {r.opinion.good.map((g: string, i: number) => <li key={i}>{g}</li>)}
-                                                                    </ul>
-                                                                )}
+                                                        {/* 5. 좋은 점 (핵심 호재) & 주의할 점 (리스크 체크포인트) */}
+                                                        <div className="grid md:grid-cols-2 gap-3">
+                                                            <div className="bg-emerald-950/20 border border-emerald-500/25 rounded-xl p-3.5">
+                                                                <div className="text-xs font-black text-emerald-300 mb-2 flex items-center justify-between">
+                                                                    <span>👍 핵심 긍정 요인 (투자 포인트)</span>
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">호재·모멘텀</span>
+                                                                </div>
+                                                                <ul className="space-y-1.5 text-xs text-emerald-100/95 leading-relaxed">
+                                                                    {(r.opinion?.good || []).map((g: string, i: number) => (
+                                                                        <li key={i} className="flex items-start gap-2">
+                                                                            <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                            <span>{g}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
                                                             </div>
-                                                            <div className="bg-rose-950/20 border border-rose-500/20 rounded-xl p-3">
-                                                                <div className="text-[11px] font-black text-rose-300 mb-1.5">⚠️ 주의할 점</div>
-                                                                {(r.opinion?.warn || []).length === 0 ? (
-                                                                    <div className="text-[11px] text-gray-500">특별히 눈에 띄는 위험 신호가 없습니다.</div>
-                                                                ) : (
-                                                                    <ul className="space-y-1 text-[11px] text-rose-100/90 list-disc pl-4">
-                                                                        {r.opinion.warn.map((w: string, i: number) => <li key={i}>{w}</li>)}
-                                                                    </ul>
-                                                                )}
+                                                            <div className="bg-rose-950/20 border border-rose-500/25 rounded-xl p-3.5">
+                                                                <div className="text-xs font-black text-rose-300 mb-2 flex items-center justify-between">
+                                                                    <span>⚠️ 주의할 점 (리스크 체크포인트)</span>
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">안전 점검</span>
+                                                                </div>
+                                                                <ul className="space-y-1.5 text-xs text-rose-100/95 leading-relaxed">
+                                                                    {(r.opinion?.warn || []).map((w: string, i: number) => (
+                                                                        <li key={i} className="flex items-start gap-2">
+                                                                            <span className="text-rose-400 font-black shrink-0">•</span>
+                                                                            <span>{w}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
                                                             </div>
                                                         </div>
 
-                                                        <div className="bg-black/30 border border-white/10 rounded-xl p-3">
-                                                            <div className="text-[11px] font-bold text-gray-300 mb-2">📰 최신 뉴스</div>
+                                                        {/* 6. 최신 뉴스 (최대 5건) */}
+                                                        <div className="bg-black/35 border border-white/10 rounded-xl p-3.5">
+                                                            <div className="text-xs font-black text-gray-200 mb-2 flex items-center justify-between">
+                                                                <span>📰 관련 최신 뉴스 ({(r.news || []).length}건)</span>
+                                                                <span className="text-[11px] text-gray-400">클릭 시 언론사 원문 열람</span>
+                                                            </div>
                                                             {(r.news || []).length === 0 ? (
-                                                                <div className="text-[11px] text-gray-500">최근 뉴스가 없습니다.</div>
+                                                                <div className="text-xs text-gray-500">최근 뉴스가 없습니다.</div>
                                                             ) : (
-                                                                <ul className="space-y-1.5">
+                                                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
                                                                     {r.news.map((n: any, i: number) => (
-                                                                        <li key={i} className="text-[12px] leading-snug">
-                                                                            {n.url ? (
-                                                                                <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:text-sky-200 hover:underline">{n.title}</a>
-                                                                            ) : (
-                                                                                <span className="text-gray-200">{n.title}</span>
-                                                                            )}
-                                                                            {n.press && <span className="text-[10px] text-gray-500 ml-1.5">· {n.press}</span>}
+                                                                        <li key={i} className="text-xs leading-snug flex items-start gap-1.5 truncate">
+                                                                            <span className="text-sky-400 font-bold shrink-0">•</span>
+                                                                            <div className="truncate">
+                                                                                {n.url ? (
+                                                                                    <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:text-sky-200 hover:underline font-medium">{n.title}</a>
+                                                                                ) : (
+                                                                                    <span className="text-gray-200">{n.title}</span>
+                                                                                )}
+                                                                                {n.press && <span className="text-[10px] text-gray-400 ml-1.5">({n.press}{n.datetime ? ` · ${n.datetime}` : ''})</span>}
+                                                                            </div>
                                                                         </li>
                                                                     ))}
                                                                 </ul>
@@ -3748,7 +3908,7 @@ export default function CeoOfficePage() {
                                                 );
                                             })}
                                             <p className="text-[11px] text-gray-500 px-1 leading-relaxed">
-                                                ※ 공개된 시세·수급·증권사 컨센서스·뉴스를 자동으로 요약한 참고 자료이며 투자 권유가 아닙니다. 최종 판단과 책임은 투자자 본인에게 있습니다.
+                                                ※ 공개된 시세·수급·증권사 리서치 리포트·뉴스를 자동으로 요약한 참고 자료이며 투자 권유가 아닙니다. 최종 판단과 책임은 투자자 본인에게 있습니다.
                                             </p>
                                         </div>
                                     )}
@@ -3812,7 +3972,7 @@ export default function CeoOfficePage() {
                         </div>
 
                         {/* 우측 4컬럼: 전사 시장 시스템 가동 현황 & 빠른 서명 요약 (전자결재 탭에서는 12컬럼 풀와이드 메일함으로 전환) */}
-                        <div className={activeTab === 'electronic_sign' ? 'hidden' : 'lg:col-span-4 space-y-5'}>
+                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
                             {/* 전사 자동 시스템 가동 모니터 */}
                             <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
                                 <div className="flex items-center justify-between mb-3">
