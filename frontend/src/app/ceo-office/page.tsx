@@ -564,8 +564,21 @@ export default function CeoOfficePage() {
     const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const [commandInput, setCommandInput] = useState<string>('');
-    const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
+    const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(true);
     const [chatLogs, setChatLogs] = useState<CeoChatLog[]>([]);
+    const [companyPolicy, setCompanyPolicy] = useState<any>({
+        mode: 'balanced',
+        mode_label: '⚖️ 표준 균형운용 체제',
+        auto_pilot: true,
+        alloc_per_trade_krw: 10000000,
+        target_1_pct: 15.0,
+        target_final_pct: 30.0,
+        stop_loss_pct: -3.5,
+    });
+    const [directiveLogs, setDirectiveLogs] = useState<any[]>([]);
+    const [lastWorkflowResult, setLastWorkflowResult] = useState<any | null>(null);
+    const [isExecutingDirective, setIsExecutingDirective] = useState<boolean>(false);
+    const [autoExecOnDirective, setAutoExecOnDirective] = useState<boolean>(true);
     
     // 💼 증권사 자산운용 프랍 트레이딩 데스크 상태 & 일일 P&L 결산 보고서 모달
     const [tradingDesk, setTradingDesk] = useState<any>(null);
@@ -706,6 +719,8 @@ export default function CeoOfficePage() {
                 const json = await res.json();
                 if (json.status === 'success' && json.data) {
                     setTradingDesk(json.data);
+                    if (json.data.company_policy) setCompanyPolicy(json.data.company_policy);
+                    if (Array.isArray(json.data.directive_logs)) setDirectiveLogs(json.data.directive_logs);
                 }
             }
         } catch (e) {
@@ -889,6 +904,8 @@ export default function CeoOfficePage() {
                 if (Array.isArray(d.market_desk) && d.market_desk.length > 0) setMarketDesk(d.market_desk);
                 if (d.office_status) setOfficeStatus(d.office_status);
                 if (d.updated_at) setUpdatedAt(d.updated_at);
+                if (d.company_policy && Object.keys(d.company_policy).length > 0) setCompanyPolicy(d.company_policy);
+                if (Array.isArray(d.directive_logs)) setDirectiveLogs(d.directive_logs);
 
                 if (appendHistory && (messageParam || topicParam)) {
                     const secTurn = (d.debates || []).find((t: DebateTurn) => t.speaker_id === 'sec_chief') || (d.debates || [])[0];
@@ -919,16 +936,84 @@ export default function CeoOfficePage() {
         }
     }, [authLoading, isAdmin, fetchOfficeData]);
 
-    const handleSendDirective = (e: React.FormEvent) => {
+    const executeCompanyDirective = async (payload: any) => {
+        setIsExecutingDirective(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/execute-directive`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CEO-Email': user?.email || '',
+                },
+                body: JSON.stringify({
+                    ...payload,
+                    candidate_docs: autoApprovals.slice(0, 8),
+                }),
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+                if (json.company_policy) setCompanyPolicy(json.company_policy);
+                if (json.trading_desk) {
+                    setTradingDesk(json.trading_desk);
+                    if (Array.isArray(json.trading_desk.directive_logs)) {
+                        setDirectiveLogs(json.trading_desk.directive_logs);
+                    }
+                }
+                setLastWorkflowResult(json);
+
+                if (json.created_doc) {
+                    const cdoc = json.created_doc;
+                    setAutoApprovals(prev => [cdoc, ...prev.filter(d => d.doc_id !== cdoc.doc_id && d.stock_name !== cdoc.stock_name)]);
+                    setSelectedDocId(cdoc.doc_id);
+                    if (json.executed_trades && json.executed_trades.length > 0) {
+                        const nowStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                        setSignMap(prev => {
+                            const next = { ...prev, [cdoc.doc_id]: { status: 'approved' as SignStatus, signedAt: nowStr } };
+                            try { localStorage.setItem('ceo_office_signatures_v1', JSON.stringify(next)); } catch (e) {}
+                            return next;
+                        });
+                    }
+                }
+
+                if (Array.isArray(json.executed_trades) && json.executed_trades.length > 0) {
+                    const nowStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                    setSignMap(prev => {
+                        const next = { ...prev };
+                        json.executed_trades.forEach((tr: any) => {
+                            const matchingDoc = autoApprovals.find(d => d.stock_name === tr.stock_name);
+                            if (matchingDoc) {
+                                next[matchingDoc.doc_id] = { status: 'approved', signedAt: nowStr };
+                            }
+                        });
+                        try { localStorage.setItem('ceo_office_signatures_v1', JSON.stringify(next)); } catch (e) {}
+                        return next;
+                    });
+                }
+
+                setToastMessage({
+                    title: '🏛️ [전사 5대 본부 자동 이행 완료]',
+                    desc: json.headline_result || '대표님의 지시사항이 전 부서에 하달되어 즉시 집행되었습니다.',
+                });
+                setTimeout(() => setToastMessage(null), 7000);
+            }
+        } catch (err) {
+            console.error('Directive execution error:', err);
+        } finally {
+            setIsExecutingDirective(false);
+        }
+    };
+
+    const handleSendDirective = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmed = commandInput.trim();
         if (!trimmed) return;
-        setActiveTab('boardroom');
-        fetchOfficeData('', trimmed, true);
         setCommandInput('');
-        setTimeout(() => {
-            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 150);
+        await executeCompanyDirective({
+            command_type: 'CUSTOM_DIRECTIVE',
+            directive_text: trimmed,
+            auto_execute: autoExecOnDirective,
+        });
+        fetchOfficeData('', trimmed, true);
     };
 
     const handleReexamineDoc = (doc: AutoApprovalDoc) => {
@@ -1895,7 +1980,7 @@ export default function CeoOfficePage() {
                         >
                             <span>🗂️ 결재 및 특별 지시 기록</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25">
-                                {approvedDocsCount + chatLogs.length}건
+                                {approvedDocsCount + directiveLogs.length + chatLogs.length}건
                             </span>
                         </button>
                     </div>
@@ -1904,56 +1989,426 @@ export default function CeoOfficePage() {
                         <button
                             type="button"
                             onClick={() => setShowCommandDrawer(prev => !prev)}
-                            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-amber-500/30 text-amber-300 text-xs font-extrabold transition-all cursor-pointer"
+                            className={`px-3.5 py-2 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                showCommandDrawer
+                                    ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md shadow-amber-500/10'
+                                    : 'bg-white/5 hover:bg-white/10 border-amber-500/30 text-amber-300'
+                            }`}
                         >
-                            {showCommandDrawer ? '▲ 특별 지시창 닫기' : '💬 대표님 특별 지시 내리기 (선택)'}
+                            <span>⚡</span>
+                            <span>{showCommandDrawer ? '전사 지휘통제실 접기 ▲' : '전사 지휘통제실 & 자동운용 사령부 열기 ▼'}</span>
                         </button>
                         <button
                             type="button"
-                            onClick={() => fetchOfficeData('', '', false)}
+                            onClick={() => {
+                                fetchOfficeData('', '', false);
+                                fetchTradingDesk();
+                            }}
                             className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold transition-all cursor-pointer"
                         >
-                            🔄 최신 보고 갱신
+                            🔄 전 부서 시세·보고 갱신
                         </button>
                     </div>
                 </div>
 
-                {/* 대표님이 원하실 때만 여는 선택형 특별 지시창 */}
+                {/* 🏛️ 대표이사 전사 지휘통제실 & 5대 본부 자율운용 사령부 (Systematic Securities Firm Command Center) */}
                 {showCommandDrawer && (
-                    <div className="bg-gradient-to-br from-[#111a2e] via-[#0f172a] to-[#162038] border border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-xl animate-in fade-in duration-200">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs sm:text-sm font-black text-amber-300">
-                                💬 대표이사 특별 하달 지시창 (평소에는 직원들이 알아서 올린 결재만 서명하시면 됩니다)
-                            </span>
-                        </div>
-                        <form onSubmit={handleSendDirective} className="flex flex-col sm:flex-row gap-2.5">
-                            <input
-                                type="text"
-                                value={commandInput}
-                                onChange={e => setCommandInput(e.target.value)}
-                                placeholder="추가로 보고받고 싶은 종목이 있을 때만 입력하세요 (예: 삼성중공업 다시 분석해와)"
-                                className="flex-1 bg-[#070b14] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none"
-                            />
-                            <button
-                                type="submit"
-                                disabled={isCallingMeeting}
-                                className="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0"
-                            >
-                                {isCallingMeeting ? '⚡ 임원 소집 중...' : '📢 특별 보고 지시'}
-                            </button>
-                        </form>
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                            {QUICK_TOPICS.map(item => (
+                    <div className="bg-gradient-to-br from-[#0e172a] via-[#0b1222] to-[#131d36] border-2 border-amber-500/45 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
+                        {/* 1. 상단 타이틀 & 5대 본부 자동화 워크플로우 파이프라인 */}
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                            <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[11px] tracking-wide">
+                                        🏛️ 증권사 전사 지휘통제실 (CEO COMMAND CENTER)
+                                    </span>
+                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${
+                                        companyPolicy?.auto_pilot
+                                            ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
+                                            : 'bg-gray-500/20 border-gray-400/40 text-gray-300'
+                                    }`}>
+                                        {companyPolicy?.auto_pilot ? '🟢 24시 무인 자율운용(Auto-Pilot) 가동 중' : '⚪ 수동 결재 대기 모드'}
+                                    </span>
+                                    <span className="text-xs font-extrabold text-amber-300">
+                                        현재 운용 방침: {companyPolicy?.mode_label || '⚖️ 표준 균형운용 체제'}
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-300 font-bold mt-1.5">
+                                    대표님이 아래에서 <strong className="text-white">운용 방침·원클릭 특명·종목 직접 지시</strong>를 내리시면 <strong className="text-amber-300">비서실 ➔ 리서치센터 ➔ 퀀트본부 ➔ CRO 리스크본부 ➔ 프랍트레이딩팀</strong>이 즉시 자동으로 연쇄 집행합니다.
+                                </p>
+                            </div>
+
+                            {/* 자율운용 ON/OFF 마스터 스위치 */}
+                            <div className="flex items-center gap-2 shrink-0">
                                 <button
-                                    key={item.label}
                                     type="button"
-                                    onClick={() => handleQuickTopic(item.topic, item.message)}
-                                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 cursor-pointer"
+                                    disabled={isExecutingDirective}
+                                    onClick={() => executeCompanyDirective({
+                                        command_type: 'UPDATE_POLICY',
+                                        auto_pilot: !companyPolicy?.auto_pilot,
+                                    })}
+                                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all cursor-pointer border flex items-center gap-2 ${
+                                        companyPolicy?.auto_pilot
+                                            ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-300 shadow-lg shadow-emerald-500/20'
+                                            : 'bg-white/10 hover:bg-white/15 text-gray-200 border-white/20'
+                                    }`}
                                 >
-                                    {item.label}
+                                    <span className={`w-2.5 h-2.5 rounded-full ${companyPolicy?.auto_pilot ? 'bg-slate-950 animate-ping' : 'bg-gray-400'}`} />
+                                    <span>{companyPolicy?.auto_pilot ? '자율운용 엔진 ON (자동 익절·손절 가동)' : '자율운용 엔진 OFF (클릭 시 가동)'}</span>
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* 5대 본부 실시간 체계적 협업 파이프라인 표시 */}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {[
+                                { step: 'STEP 1', dept: '대표이사 비서실', lead: '정유진 실장 👩‍💼', role: '대표님 지시 접수 · 전 부서 긴급 배당', color: 'border-amber-500/35 bg-amber-500/10 text-amber-300' },
+                                { step: 'STEP 2', dept: '리서치센터', lead: '박진우 부사장 👨‍💼', role: '목표주가 컨센서스 검증 · 특명 기안 상정', color: 'border-sky-500/35 bg-sky-500/10 text-sky-300' },
+                                { step: 'STEP 3', dept: '퀀트·수급본부', lead: '김도현 상무 📈', role: '50일선·외인수급 스캔 · 최적 분할호가 산출', color: 'border-indigo-500/35 bg-indigo-500/10 text-indigo-300' },
+                                { step: 'STEP 4', dept: '리스크관리본부', lead: '최서연 CRO 🛡️', role: `익절(+${companyPolicy?.target_1_pct || 15}%) · 손절(${companyPolicy?.stop_loss_pct || -3.5}%) 방어선 세팅`, color: 'border-rose-500/35 bg-rose-500/10 text-rose-300' },
+                                { step: 'STEP 5', dept: '프랍트레이딩팀', lead: '최민석 수석 💼', role: `1회 ${(companyPolicy?.alloc_per_trade_krw || 10000000) / 10000}만원 자동 체결 · 24시 감시`, color: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-300' },
+                            ].map((p, idx) => (
+                                <div key={idx} className={`rounded-xl border p-2.5 ${p.color}`}>
+                                    <div className="flex items-center justify-between text-[10px] font-black opacity-85">
+                                        <span>{p.step}</span>
+                                        <span>● 자동연동</span>
+                                    </div>
+                                    <div className="text-xs font-black text-white mt-0.5">{p.dept}</div>
+                                    <div className="text-[11px] font-bold mt-0.5">{p.lead}</div>
+                                    <div className="text-[10px] text-gray-300 mt-1 leading-tight">{p.role}</div>
+                                </div>
                             ))}
                         </div>
+
+                        {/* 2. 중단: 좌측 [전사 운용 방침 설정] + 우측 [원클릭 전사 특명 하달] */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                            {/* 좌측 6컬럼: 회사 운용 방침(Trading Policy) 원클릭 컨트롤러 */}
+                            <div className="lg:col-span-6 bg-black/45 border border-white/10 rounded-2xl p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
+                                        <span>⚙️</span>
+                                        <span>1. 전사 자산운용 방침 하달 (클릭 즉시 전 부서 기준 변경)</span>
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 font-mono">
+                                        가용현금: {((tradingDesk?.summary?.available_cash ?? 100000000) / 10000).toLocaleString()}만원
+                                    </span>
+                                </div>
+
+                                {/* 운용 모드 3종 프리셋 */}
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { id: 'aggressive', label: '🔥 공격적 수익형', sub: '2,000만 / +20% / -5%' },
+                                        { id: 'balanced', label: '⚖️ 표준 균형형', sub: '1,000만 / +15% / -3.5%' },
+                                        { id: 'conservative', label: '🛡️ 보수적 방어형', sub: '500만 / +10% / -2.5%' },
+                                    ].map(m => {
+                                        const active = (companyPolicy?.mode || 'balanced') === m.id;
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                disabled={isExecutingDirective}
+                                                onClick={() => executeCompanyDirective({
+                                                    command_type: 'UPDATE_POLICY',
+                                                    mode: m.id,
+                                                    apply_preset_defaults: true,
+                                                })}
+                                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                                    active
+                                                        ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-md'
+                                                        : 'bg-white/5 hover:bg-white/10 text-gray-200 border-white/10 font-bold'
+                                                }`}
+                                            >
+                                                <div className="text-xs font-black">{m.label}</div>
+                                                <div className={`text-[10px] mt-0.5 ${active ? 'text-slate-900 font-extrabold' : 'text-gray-400'}`}>
+                                                    {m.sub}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* 세부 파라미터 (1회 배정금 / 1차 익절 / 손절선) */}
+                                <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                                    <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                                        <div className="text-gray-400 font-bold mb-1">1회 매수 배정금</div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {[5000000, 10000000, 20000000].map(amt => (
+                                                <button
+                                                    key={amt}
+                                                    type="button"
+                                                    disabled={isExecutingDirective}
+                                                    onClick={() => executeCompanyDirective({
+                                                        command_type: 'UPDATE_POLICY',
+                                                        alloc_per_trade_krw: amt,
+                                                    })}
+                                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
+                                                        (companyPolicy?.alloc_per_trade_krw || 10000000) === amt
+                                                            ? 'bg-emerald-500 text-slate-950 font-black'
+                                                            : 'bg-black/40 text-gray-300 hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    {amt / 10000}만
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                                        <div className="text-gray-400 font-bold mb-1">1차 자동익절 목표</div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {[10.0, 15.0, 20.0].map(tp => (
+                                                <button
+                                                    key={tp}
+                                                    type="button"
+                                                    disabled={isExecutingDirective}
+                                                    onClick={() => executeCompanyDirective({
+                                                        command_type: 'UPDATE_POLICY',
+                                                        target_1_pct: tp,
+                                                    })}
+                                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
+                                                        Number(companyPolicy?.target_1_pct || 15.0) === tp
+                                                            ? 'bg-amber-400 text-slate-950 font-black'
+                                                            : 'bg-black/40 text-gray-300 hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    +{tp}%
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/5 rounded-xl p-2 border border-white/5">
+                                        <div className="text-gray-400 font-bold mb-1">CRO 자동손절선</div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {[-2.5, -3.5, -5.0].map(sl => (
+                                                <button
+                                                    key={sl}
+                                                    type="button"
+                                                    disabled={isExecutingDirective}
+                                                    onClick={() => executeCompanyDirective({
+                                                        command_type: 'UPDATE_POLICY',
+                                                        stop_loss_pct: sl,
+                                                    })}
+                                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
+                                                        Number(companyPolicy?.stop_loss_pct || -3.5) === sl
+                                                            ? 'bg-rose-500 text-white font-black'
+                                                            : 'bg-black/40 text-gray-300 hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    {sl}%
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 우측 6컬럼: 원클릭 대표이사 전사 특명 버튼 4종 */}
+                            <div className="lg:col-span-6 bg-black/45 border border-white/10 rounded-2xl p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs sm:text-sm font-black text-emerald-300 flex items-center gap-1.5">
+                                        <span>📢</span>
+                                        <span>2. 원클릭 대표이사 전사 특명 하달 (즉시 자동 집행)</span>
+                                    </span>
+                                    <span className="text-[10px] text-emerald-300 font-bold">
+                                        클릭 한 번으로 5대 본부 일괄 가동
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <button
+                                        type="button"
+                                        disabled={isExecutingDirective}
+                                        onClick={() => executeCompanyDirective({ command_type: 'AUTO_INVEST_TOP3' })}
+                                        className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/15 hover:from-emerald-500/30 hover:to-teal-500/25 border border-emerald-500/40 text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-xs font-black text-emerald-300 group-hover:text-emerald-200 flex items-center justify-between">
+                                            <span>🚀 [특명 1] 오늘 TOP 3 자동 매수</span>
+                                            <span className="text-[10px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-black">즉시체결</span>
+                                        </div>
+                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
+                                            오늘 기안서 중 기대수익 상위 3종목을 즉시 심의하여 트레이딩팀에서 분할 매수 체결합니다.
+                                        </p>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        disabled={isExecutingDirective}
+                                        onClick={() => executeCompanyDirective({ command_type: 'AUDIT_ALL_POSITIONS' })}
+                                        className="p-3 rounded-xl bg-gradient-to-r from-sky-500/20 to-indigo-500/15 hover:from-sky-500/30 hover:to-indigo-500/25 border border-sky-500/40 text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-xs font-black text-sky-300 group-hover:text-sky-200 flex items-center justify-between">
+                                            <span>🛡️ [특명 2] 전 종목 리스크·방어선 감사</span>
+                                            <span className="text-[10px] bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded font-black">본전잠금</span>
+                                        </div>
+                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
+                                            보유 종목 실시간 시세를 전수 점검하고, 수익 중인 종목의 손절선을 매수가 위로 상향 잠금합니다.
+                                        </p>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        disabled={isExecutingDirective}
+                                        onClick={() => executeCompanyDirective({ command_type: 'TAKE_PROFIT_WINNERS' })}
+                                        className="p-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/15 hover:from-amber-500/30 hover:to-yellow-500/25 border border-amber-500/40 text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-xs font-black text-amber-300 group-hover:text-amber-200 flex items-center justify-between">
+                                            <span>💰 [특명 3] 수익 종목 일괄 50% 분할익절</span>
+                                            <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-black">수익확정</span>
+                                        </div>
+                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
+                                            현재 수익 구간에 진입한 보유 포지션의 50% 물량을 즉시 매도하여 현금 수익을 금고에 확정합니다.
+                                        </p>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        disabled={isExecutingDirective}
+                                        onClick={handleApproveAll}
+                                        className="p-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-rose-500/15 hover:from-purple-500/30 hover:to-rose-500/25 border border-purple-500/40 text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-xs font-black text-purple-300 group-hover:text-purple-200 flex items-center justify-between">
+                                            <span>🖋️ [특명 4] 대기 기안서 전수 일괄 재가</span>
+                                            <span className="text-[10px] bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded font-black">전수편입</span>
+                                        </div>
+                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
+                                            서류함에 대기 중인 오늘의 추천 기안서를 일괄 서명 승인하고 프랍트레이딩 데스크로 배정합니다.
+                                        </p>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. 하단: 대표이사 직접 지시 입력창 (특명 기안서 자동 생성 + 트레이딩팀 매수 체결 원스톱) */}
+                        <div className="bg-black/55 border border-amber-500/40 rounded-2xl p-4 space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <span className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
+                                    <span>💬</span>
+                                    <span>3. 대표이사 직접 지시 하달 (종목명/지시 입력 시 ➔ 특명 기안서 생성 + 임원회의 + 자동 매수 원스톱 실행)</span>
+                                </span>
+                                <label className="inline-flex items-center gap-2 text-xs font-bold text-emerald-300 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={autoExecOnDirective}
+                                        onChange={e => setAutoExecOnDirective(e.target.checked)}
+                                        className="rounded border-emerald-400 text-emerald-500 focus:ring-0 cursor-pointer"
+                                    />
+                                    <span>⚡ 지시 종목 트레이딩팀 즉시 매수 체결까지 자동 집행</span>
+                                </label>
+                            </div>
+
+                            <form onSubmit={handleSendDirective} className="flex flex-col sm:flex-row gap-2.5">
+                                <input
+                                    type="text"
+                                    value={commandInput}
+                                    onChange={e => setCommandInput(e.target.value)}
+                                    placeholder="직접 지시를 입력하세요 (예: 삼성중공업 분석해서 바로 기안 올리고 1000만원 매수해 / 엔비디아 매수 집행해 / 보수적 모드로 전환해)"
+                                    className="flex-1 bg-[#070b14] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isCallingMeeting || isExecutingDirective}
+                                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 shadow-lg shadow-amber-500/20"
+                                >
+                                    {isExecutingDirective || isCallingMeeting ? '⚡ 5대 본부 이행 중...' : '📢 전 부서 지시 하달 & 즉시 집행'}
+                                </button>
+                            </form>
+
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 지시 예시:</span>
+                                {[
+                                    { label: '🚢 삼성중공업 기안 상정 & 즉시 매수', cmd: '삼성중공업 심층 분석해서 특명 기안 올리고 즉시 매수 집행해' },
+                                    { label: '🤖 엔비디아(NVDA) 1,000만원 매수 집행', cmd: '엔비디아 1000만원 즉시 매수 집행하고 목표가 감시해' },
+                                    { label: '✈️ 대한항공 특별 기안 & 매수 집행', cmd: '대한항공 실적 점검해서 기안서 올리고 매수 집행해' },
+                                    { label: '⚡ 두산에너빌리티 2,000만원 집중 매수', cmd: '두산에너빌리티 2000만원 배정해서 즉시 매수 체결해' },
+                                    ...QUICK_TOPICS.map(q => ({ label: q.label, cmd: q.message })),
+                                ].slice(0, 6).map(item => (
+                                    <button
+                                        key={item.label}
+                                        type="button"
+                                        disabled={isExecutingDirective}
+                                        onClick={async () => {
+                                            await executeCompanyDirective({
+                                                command_type: 'CUSTOM_DIRECTIVE',
+                                                directive_text: item.cmd,
+                                                auto_execute: autoExecOnDirective,
+                                            });
+                                            fetchOfficeData('', item.cmd, true);
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/5 hover:bg-amber-500/20 text-gray-200 hover:text-amber-200 border border-white/10 hover:border-amber-500/40 cursor-pointer transition-all"
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 4. 방금 실행된 5대 본부 연쇄 이행 완료 리포트 (Step-by-Step Execution Report) */}
+                        {lastWorkflowResult && (
+                            <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-indigo-950/40 border-2 border-emerald-400/50 rounded-2xl p-4 space-y-3 animate-in fade-in duration-200">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-black text-[11px]">
+                                            ✅ 5대 본부 이행 완료 보고 ({lastWorkflowResult.cmd_id})
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-black text-white">
+                                            {lastWorkflowResult.headline_result}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLastWorkflowResult(null)}
+                                        className="text-[11px] text-gray-400 hover:text-white font-bold self-end sm:self-auto cursor-pointer"
+                                    >
+                                        보고서 접기 ✕
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                                    {(lastWorkflowResult.workflow_steps || []).map((st: any, idx: number) => (
+                                        <div key={idx} className="bg-black/50 border border-white/10 rounded-xl p-2.5 space-y-1">
+                                            <div className="flex items-center justify-between text-[10px]">
+                                                <span className="font-black text-amber-300">{st.avatar} {st.dept}</span>
+                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">{st.status}</span>
+                                            </div>
+                                            <div className="text-[11px] font-bold text-white">{st.exec}</div>
+                                            <p className="text-[11px] text-gray-300 leading-snug">{st.detail}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                                    {lastWorkflowResult.created_doc && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedDocId(lastWorkflowResult.created_doc.doc_id);
+                                                setActiveTab('electronic_sign');
+                                            }}
+                                            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer"
+                                        >
+                                            🖋️ 방금 상정된 [{lastWorkflowResult.created_doc.stock_name}] 특명 기안서 열람
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('boardroom')}
+                                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs cursor-pointer border border-white/15"
+                                    >
+                                        🎙️ 임원 대면 회의록 확인
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveTab('approved_tf');
+                                            fetchTradingDesk();
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs cursor-pointer"
+                                    >
+                                        💼 프랍트레이딩 체결 원장 & 실시간 수익률 보기
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -3916,15 +4371,45 @@ export default function CeoOfficePage() {
                                     )}
                                 </div>
                             )}{activeTab === 'history' && (
-                                <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
+                                <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-5">
                                     <div>
                                         <h3 className="text-lg font-black text-white mb-1">
-                                            🗂️ 오늘 대표님 전자결재 서명 및 지시 기록부
+                                            🗂️ 대표님 전사 지휘 명령 이력 & 전자결재 서명 기록부
                                         </h3>
                                         <p className="text-xs text-gray-400">
-                                            오늘 대표님께서 서명(승인·보류·재검토)하신 기안서 내역이 자동 보관됩니다.
+                                            대표님께서 지휘통제실에서 하달하신 전사 명령(5대 본부 자동 이행 로그)과 전자결재 서명 내역이 보관됩니다.
                                         </p>
                                     </div>
+
+                                    {directiveLogs.length > 0 && (
+                                        <div className="space-y-2.5">
+                                            <div className="text-xs font-black text-amber-300">
+                                                ⚡ 최근 대표이사 지휘 명령 & 5대 본부 자동 이행 원장 ({directiveLogs.length}건)
+                                            </div>
+                                            {directiveLogs.map((log: any, idx: number) => (
+                                                <div key={log.cmd_id || idx} className="bg-black/50 border border-amber-500/30 rounded-xl p-3.5 space-y-2">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <span className="text-xs font-black text-amber-300 font-mono">
+                                                            [{log.cmd_id}] 지시: {log.directive_text}
+                                                        </span>
+                                                        <span className="text-[11px] text-gray-400 font-mono">{log.timestamp}</span>
+                                                    </div>
+                                                    <div className="text-xs font-bold text-emerald-300">{log.headline_result}</div>
+                                                    {Array.isArray(log.workflow_steps) && (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5 pt-1">
+                                                            {log.workflow_steps.map((st: any, sIdx: number) => (
+                                                                <div key={sIdx} className="bg-white/5 rounded-lg p-2 text-[10px]">
+                                                                    <div className="font-black text-white">{st.avatar} {st.dept}</div>
+                                                                    <div className="text-emerald-300 font-bold">{st.status}</div>
+                                                                    <div className="text-gray-400 mt-0.5 line-clamp-2">{st.detail}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
 
                                     <div className="space-y-2.5">
                                         {autoApprovals.map(doc => {

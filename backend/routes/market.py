@@ -3815,12 +3815,30 @@ def get_ceo_office_boardroom(
                 },
             ]
 
+    company_policy_data = {}
+    directive_logs_data = []
+    try:
+        from ceo_trading_service import load_trading_state
+        t_state = load_trading_state()
+        company_policy_data = t_state.get("company_policy", {})
+        directive_logs_data = t_state.get("directive_logs", [])
+        custom_docs = t_state.get("custom_approvals", [])
+        if custom_docs:
+            existing_ids = {d.get("doc_id") for d in auto_approvals}
+            for cd in reversed(custom_docs[:5]):
+                if cd.get("doc_id") not in existing_ids:
+                    auto_approvals.insert(0, cd)
+    except Exception as e:
+        print(f"[CEOOffice] trading state merge error: {e}")
+
     resp_data = {
         "status": "success",
         "data": {
             "updated_at": now_kst.strftime("%H:%M:%S"),
             "office_status": office_mode,
             "executives": CEO_OFFICE_EXECUTIVES,
+            "company_policy": company_policy_data,
+            "directive_logs": directive_logs_data,
             "auto_approvals": auto_approvals,
             "agenda": agenda_summary,
             "debates": debates,
@@ -3948,3 +3966,20 @@ def post_watchlist_trading_analysis(
     if isinstance(syms, str):
         syms = [s.strip() for s in syms.split(",") if s.strip()]
     return analyze_watchlist_for_trading_desk(user_id=x_user_id, requested_symbols=syms)
+
+
+@router.post("/ceo-office/execute-directive")
+def execute_ceo_office_directive(
+    payload: Dict[str, Any] = Body(...),
+    x_ceo_email: Optional[str] = Header(None),
+):
+    _verify_ceo_clearance(x_ceo_email)
+    """
+    대표이사 전사 지휘통제실(CEO Command Center) 명령 하달 및 5대 본부 자동 연쇄 집행 API
+    """
+    from ceo_trading_service import execute_ceo_company_directive
+    global _CEO_OFFICE_CACHE, _CEO_OFFICE_CACHE_TIME
+    _CEO_OFFICE_CACHE = {}
+    _CEO_OFFICE_CACHE_TIME = 0.0
+    return execute_ceo_company_directive(payload)
+
