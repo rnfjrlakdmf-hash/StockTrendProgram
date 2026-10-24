@@ -563,8 +563,22 @@ export default function CeoOfficePage() {
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
     const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
+    const getCeoEmail = useCallback(() => {
+        if (user?.email) return user.email;
+        if (typeof window !== 'undefined') {
+            try {
+                const raw = localStorage.getItem('stock_user');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed?.email) return parsed.email;
+                }
+            } catch (e) {}
+        }
+        return '';
+    }, [user]);
+
     const [commandInput, setCommandInput] = useState<string>('');
-    const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(true);
+    const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
     const [chatLogs, setChatLogs] = useState<CeoChatLog[]>([]);
     const [companyPolicy, setCompanyPolicy] = useState<any>({
         mode: 'balanced',
@@ -609,7 +623,7 @@ export default function CeoOfficePage() {
                     }
                 } catch (e) {}
             }
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/watchlist-research`, {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/watchlist-research?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-User-ID': uid, 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({ symbols: cachedSymbols })
@@ -647,7 +661,7 @@ export default function CeoOfficePage() {
                 ? customSymbols 
                 : (cachedSymbols.length > 0 ? cachedSymbols : ['005930', '000660', '035420', '005380', 'NVDA', 'TSLA']);
                 
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/watchlist-analysis`, {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/watchlist-analysis?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -672,7 +686,7 @@ export default function CeoOfficePage() {
     const handleApproveWatchlistStock = async (item: any) => {
         if (!confirm(`[대표이사 재가] '${item.stock_name}' 종목을 트레이딩팀 운용 포트폴리오에 정식 편입하고 1,000만원 분할 매수를 집행하시겠습니까?`)) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({
@@ -714,7 +728,7 @@ export default function CeoOfficePage() {
     const fetchTradingDesk = useCallback(async () => {
         try {
             setTradingLoading(true);
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk`, { headers: { 'X-CEO-Email': user?.email || '' } });
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk?ceo_email=${encodeURIComponent(getCeoEmail())}`, { headers: { 'X-CEO-Email': getCeoEmail() } });
             if (res.ok) {
                 const json = await res.json();
                 if (json.status === 'success' && json.data) {
@@ -748,7 +762,7 @@ export default function CeoOfficePage() {
     const handleClosePosition = async (posId: string, stockName: string) => {
         if (!confirm(`[대표이사 지시] ${stockName} 포지션을 실시간 시장가로 전량 매도하여 수익을 확정하시겠습니까?`)) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/close`, {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/close?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({ position_id: posId, reason: '대표이사 시장가 즉시 익절 지시' })
@@ -771,7 +785,7 @@ export default function CeoOfficePage() {
     const handlePartialSell = async (posId: string, stockName: string) => {
         if (!confirm(`[대표이사 지시] ${stockName} 보유 물량의 50%를 분할 매도하여 원금과 수익을 챙기시겠습니까?`)) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/partial-sell`, {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/partial-sell?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({ position_id: posId })
@@ -833,7 +847,7 @@ export default function CeoOfficePage() {
 
             // 💼 증권사 트레이딩 팀으로 매수 주문 자동 전송
             if (doc) {
-                fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
+                fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                     body: JSON.stringify(doc)
@@ -864,7 +878,7 @@ export default function CeoOfficePage() {
         });
         // 💼 전 종목 트레이딩 팀 분할 매수 일괄 전송
         autoApprovals.forEach(doc => {
-            fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
+            fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify(doc)
@@ -885,13 +899,15 @@ export default function CeoOfficePage() {
         }
 
         try {
+            const ceoEm = getCeoEmail();
             const params = new URLSearchParams();
             if (topicParam) params.set('topic', topicParam);
             if (messageParam) params.set('message', messageParam);
+            if (ceoEm) params.set('ceo_email', ceoEm);
 
             const res = await fetch(`${API_BASE_URL}/api/market/ceo-office?${params.toString()}`, {
                 cache: 'no-store',
-                headers: { 'X-CEO-Email': user?.email || '' },
+                headers: { 'X-CEO-Email': ceoEm },
             });
             const json = await res.json();
             if (json.status === 'success' && json.data) {
@@ -939,7 +955,7 @@ export default function CeoOfficePage() {
     const executeCompanyDirective = async (payload: any) => {
         setIsExecutingDirective(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/execute-directive`, {
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/execute-directive?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2011,372 +2027,118 @@ export default function CeoOfficePage() {
                     </div>
                 </div>
 
-                {/* 🏛️ 대표이사 전사 지휘통제실 & 5대 본부 자율운용 사령부 (Systematic Securities Firm Command Center) */}
-                {showCommandDrawer && (
-                    <div className="bg-gradient-to-br from-[#0e172a] via-[#0b1222] to-[#131d36] border-2 border-amber-500/45 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
-                        {/* 1. 상단 타이틀 & 5대 본부 자동화 워크플로우 파이프라인 */}
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-white/10">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[11px] tracking-wide">
-                                        🏛️ 증권사 전사 지휘통제실 (CEO COMMAND CENTER)
-                                    </span>
-                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-black border ${
-                                        companyPolicy?.auto_pilot
-                                            ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
-                                            : 'bg-gray-500/20 border-gray-400/40 text-gray-300'
-                                    }`}>
-                                        {companyPolicy?.auto_pilot ? '🟢 24시 무인 자율운용(Auto-Pilot) 가동 중' : '⚪ 수동 결재 대기 모드'}
-                                    </span>
-                                    <span className="text-xs font-extrabold text-amber-300">
-                                        현재 운용 방침: {companyPolicy?.mode_label || '⚖️ 표준 균형운용 체제'}
-                                    </span>
+                {/* ⚡ 대표이사 심플 지시 & 자동운용 컨트롤 바 (임원회의 탭이거나 대표님이 지시창 버튼을 눌렀을 때만 깔끔하게 표시) */}
+                {(showCommandDrawer || activeTab === 'boardroom') && (
+                    <div className="bg-gradient-to-br from-[#10192d] via-[#0d1425] to-[#131e36] border border-amber-500/40 rounded-2xl p-4 shadow-xl space-y-3">
+                        {/* 1줄: 상태 배지 + 운용 모드 3단 선택 + 원클릭 자동 명령 3개 */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                                    ⚡ 대표이사 전사 지시실
+                                </span>
+                                <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 text-[11px]">
+                                    {[
+                                        { id: 'aggressive', label: '🔥 공격모드(2천만)' },
+                                        { id: 'balanced', label: '⚖️ 표준균형(1천만)' },
+                                        { id: 'conservative', label: '🛡️ 안전방어(500만)' },
+                                    ].map(m => (
+                                        <button
+                                            key={m.id}
+                                            type="button"
+                                            disabled={isExecutingDirective}
+                                            onClick={() => executeCompanyDirective({
+                                                command_type: 'UPDATE_POLICY',
+                                                mode: m.id,
+                                                apply_preset_defaults: true,
+                                            })}
+                                            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                                                (companyPolicy?.mode || 'balanced') === m.id
+                                                    ? 'bg-amber-500 text-slate-950 font-black'
+                                                    : 'text-gray-300 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            {m.label}
+                                        </button>
+                                    ))}
                                 </div>
-                                <p className="text-xs sm:text-sm text-gray-300 font-bold mt-1.5">
-                                    대표님이 아래에서 <strong className="text-white">운용 방침·원클릭 특명·종목 직접 지시</strong>를 내리시면 <strong className="text-amber-300">비서실 ➔ 리서치센터 ➔ 퀀트본부 ➔ CRO 리스크본부 ➔ 프랍트레이딩팀</strong>이 즉시 자동으로 연쇄 집행합니다.
-                                </p>
                             </div>
 
-                            {/* 자율운용 ON/OFF 마스터 스위치 */}
-                            <div className="flex items-center gap-2 shrink-0">
+                            {/* 원클릭 자동 실행 버튼 3개 */}
+                            <div className="flex flex-wrap items-center gap-1.5">
                                 <button
                                     type="button"
                                     disabled={isExecutingDirective}
-                                    onClick={() => executeCompanyDirective({
-                                        command_type: 'UPDATE_POLICY',
-                                        auto_pilot: !companyPolicy?.auto_pilot,
-                                    })}
-                                    className={`px-4 py-2.5 rounded-xl font-black text-xs transition-all cursor-pointer border flex items-center gap-2 ${
-                                        companyPolicy?.auto_pilot
-                                            ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-300 shadow-lg shadow-emerald-500/20'
-                                            : 'bg-white/10 hover:bg-white/15 text-gray-200 border-white/20'
-                                    }`}
+                                    onClick={() => executeCompanyDirective({ command_type: 'AUTO_INVEST_TOP3' })}
+                                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-black cursor-pointer"
                                 >
-                                    <span className={`w-2.5 h-2.5 rounded-full ${companyPolicy?.auto_pilot ? 'bg-slate-950 animate-ping' : 'bg-gray-400'}`} />
-                                    <span>{companyPolicy?.auto_pilot ? '자율운용 엔진 ON (자동 익절·손절 가동)' : '자율운용 엔진 OFF (클릭 시 가동)'}</span>
+                                    🚀 오늘 TOP 3 자동 매수
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isExecutingDirective}
+                                    onClick={() => executeCompanyDirective({ command_type: 'AUDIT_ALL_POSITIONS' })}
+                                    className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-300 text-xs font-black cursor-pointer"
+                                >
+                                    🛡️ 보유종목 방어선 점검
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isExecutingDirective}
+                                    onClick={() => executeCompanyDirective({ command_type: 'TAKE_PROFIT_WINNERS' })}
+                                    className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black cursor-pointer"
+                                >
+                                    💰 수익종목 50% 분할익절
                                 </button>
                             </div>
                         </div>
 
-                        {/* 5대 본부 실시간 체계적 협업 파이프라인 표시 */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                            {[
-                                { step: 'STEP 1', dept: '대표이사 비서실', lead: '정유진 실장 👩‍💼', role: '대표님 지시 접수 · 전 부서 긴급 배당', color: 'border-amber-500/35 bg-amber-500/10 text-amber-300' },
-                                { step: 'STEP 2', dept: '리서치센터', lead: '박진우 부사장 👨‍💼', role: '목표주가 컨센서스 검증 · 특명 기안 상정', color: 'border-sky-500/35 bg-sky-500/10 text-sky-300' },
-                                { step: 'STEP 3', dept: '퀀트·수급본부', lead: '김도현 상무 📈', role: '50일선·외인수급 스캔 · 최적 분할호가 산출', color: 'border-indigo-500/35 bg-indigo-500/10 text-indigo-300' },
-                                { step: 'STEP 4', dept: '리스크관리본부', lead: '최서연 CRO 🛡️', role: `익절(+${companyPolicy?.target_1_pct || 15}%) · 손절(${companyPolicy?.stop_loss_pct || -3.5}%) 방어선 세팅`, color: 'border-rose-500/35 bg-rose-500/10 text-rose-300' },
-                                { step: 'STEP 5', dept: '프랍트레이딩팀', lead: '최민석 수석 💼', role: `1회 ${(companyPolicy?.alloc_per_trade_krw || 10000000) / 10000}만원 자동 체결 · 24시 감시`, color: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-300' },
-                            ].map((p, idx) => (
-                                <div key={idx} className={`rounded-xl border p-2.5 ${p.color}`}>
-                                    <div className="flex items-center justify-between text-[10px] font-black opacity-85">
-                                        <span>{p.step}</span>
-                                        <span>● 자동연동</span>
-                                    </div>
-                                    <div className="text-xs font-black text-white mt-0.5">{p.dept}</div>
-                                    <div className="text-[11px] font-bold mt-0.5">{p.lead}</div>
-                                    <div className="text-[10px] text-gray-300 mt-1 leading-tight">{p.role}</div>
-                                </div>
+                        {/* 2줄: 깔끔한 1줄 지시 입력창 */}
+                        <form onSubmit={handleSendDirective} className="flex flex-col sm:flex-row gap-2">
+                            <input
+                                type="text"
+                                value={commandInput}
+                                onChange={e => setCommandInput(e.target.value)}
+                                placeholder="직접 지시를 입력하세요 (예: 삼성중공업 기안 올리고 1000만원 매수해 / 엔비디아 매수해)"
+                                className="flex-1 bg-[#070b14] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isCallingMeeting || isExecutingDirective}
+                                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0"
+                            >
+                                {isExecutingDirective || isCallingMeeting ? '⚡ 5대 본부 실행 중...' : '📢 지시 하달 & 자동 집행'}
+                            </button>
+                        </form>
+
+                        {/* 빠른 지시 칩 */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            {QUICK_TOPICS.map(item => (
+                                <button
+                                    key={item.label}
+                                    type="button"
+                                    onClick={async () => {
+                                        await executeCompanyDirective({
+                                            command_type: 'CUSTOM_DIRECTIVE',
+                                            directive_text: item.message,
+                                            auto_execute: true,
+                                        });
+                                        fetchOfficeData(item.topic, item.message, true);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 cursor-pointer"
+                                >
+                                    {item.label}
+                                </button>
                             ))}
                         </div>
 
-                        {/* 2. 중단: 좌측 [전사 운용 방침 설정] + 우측 [원클릭 전사 특명 하달] */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                            {/* 좌측 6컬럼: 회사 운용 방침(Trading Policy) 원클릭 컨트롤러 */}
-                            <div className="lg:col-span-6 bg-black/45 border border-white/10 rounded-2xl p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
-                                        <span>⚙️</span>
-                                        <span>1. 전사 자산운용 방침 하달 (클릭 즉시 전 부서 기준 변경)</span>
-                                    </span>
-                                    <span className="text-[10px] text-gray-400 font-mono">
-                                        가용현금: {((tradingDesk?.summary?.available_cash ?? 100000000) / 10000).toLocaleString()}만원
-                                    </span>
-                                </div>
-
-                                {/* 운용 모드 3종 프리셋 */}
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { id: 'aggressive', label: '🔥 공격적 수익형', sub: '2,000만 / +20% / -5%' },
-                                        { id: 'balanced', label: '⚖️ 표준 균형형', sub: '1,000만 / +15% / -3.5%' },
-                                        { id: 'conservative', label: '🛡️ 보수적 방어형', sub: '500만 / +10% / -2.5%' },
-                                    ].map(m => {
-                                        const active = (companyPolicy?.mode || 'balanced') === m.id;
-                                        return (
-                                            <button
-                                                key={m.id}
-                                                type="button"
-                                                disabled={isExecutingDirective}
-                                                onClick={() => executeCompanyDirective({
-                                                    command_type: 'UPDATE_POLICY',
-                                                    mode: m.id,
-                                                    apply_preset_defaults: true,
-                                                })}
-                                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                                                    active
-                                                        ? 'bg-amber-500 text-slate-950 border-amber-300 font-black shadow-md'
-                                                        : 'bg-white/5 hover:bg-white/10 text-gray-200 border-white/10 font-bold'
-                                                }`}
-                                            >
-                                                <div className="text-xs font-black">{m.label}</div>
-                                                <div className={`text-[10px] mt-0.5 ${active ? 'text-slate-900 font-extrabold' : 'text-gray-400'}`}>
-                                                    {m.sub}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* 세부 파라미터 (1회 배정금 / 1차 익절 / 손절선) */}
-                                <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
-                                    <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                                        <div className="text-gray-400 font-bold mb-1">1회 매수 배정금</div>
-                                        <div className="flex flex-wrap gap-1">
-                                            {[5000000, 10000000, 20000000].map(amt => (
-                                                <button
-                                                    key={amt}
-                                                    type="button"
-                                                    disabled={isExecutingDirective}
-                                                    onClick={() => executeCompanyDirective({
-                                                        command_type: 'UPDATE_POLICY',
-                                                        alloc_per_trade_krw: amt,
-                                                    })}
-                                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
-                                                        (companyPolicy?.alloc_per_trade_krw || 10000000) === amt
-                                                            ? 'bg-emerald-500 text-slate-950 font-black'
-                                                            : 'bg-black/40 text-gray-300 hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    {amt / 10000}만
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                                        <div className="text-gray-400 font-bold mb-1">1차 자동익절 목표</div>
-                                        <div className="flex flex-wrap gap-1">
-                                            {[10.0, 15.0, 20.0].map(tp => (
-                                                <button
-                                                    key={tp}
-                                                    type="button"
-                                                    disabled={isExecutingDirective}
-                                                    onClick={() => executeCompanyDirective({
-                                                        command_type: 'UPDATE_POLICY',
-                                                        target_1_pct: tp,
-                                                    })}
-                                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
-                                                        Number(companyPolicy?.target_1_pct || 15.0) === tp
-                                                            ? 'bg-amber-400 text-slate-950 font-black'
-                                                            : 'bg-black/40 text-gray-300 hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    +{tp}%
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white/5 rounded-xl p-2 border border-white/5">
-                                        <div className="text-gray-400 font-bold mb-1">CRO 자동손절선</div>
-                                        <div className="flex flex-wrap gap-1">
-                                            {[-2.5, -3.5, -5.0].map(sl => (
-                                                <button
-                                                    key={sl}
-                                                    type="button"
-                                                    disabled={isExecutingDirective}
-                                                    onClick={() => executeCompanyDirective({
-                                                        command_type: 'UPDATE_POLICY',
-                                                        stop_loss_pct: sl,
-                                                    })}
-                                                    className={`px-2 py-0.5 rounded font-bold cursor-pointer ${
-                                                        Number(companyPolicy?.stop_loss_pct || -3.5) === sl
-                                                            ? 'bg-rose-500 text-white font-black'
-                                                            : 'bg-black/40 text-gray-300 hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    {sl}%
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 우측 6컬럼: 원클릭 대표이사 전사 특명 버튼 4종 */}
-                            <div className="lg:col-span-6 bg-black/45 border border-white/10 rounded-2xl p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs sm:text-sm font-black text-emerald-300 flex items-center gap-1.5">
-                                        <span>📢</span>
-                                        <span>2. 원클릭 대표이사 전사 특명 하달 (즉시 자동 집행)</span>
-                                    </span>
-                                    <span className="text-[10px] text-emerald-300 font-bold">
-                                        클릭 한 번으로 5대 본부 일괄 가동
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    <button
-                                        type="button"
-                                        disabled={isExecutingDirective}
-                                        onClick={() => executeCompanyDirective({ command_type: 'AUTO_INVEST_TOP3' })}
-                                        className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/15 hover:from-emerald-500/30 hover:to-teal-500/25 border border-emerald-500/40 text-left transition-all cursor-pointer group"
-                                    >
-                                        <div className="text-xs font-black text-emerald-300 group-hover:text-emerald-200 flex items-center justify-between">
-                                            <span>🚀 [특명 1] 오늘 TOP 3 자동 매수</span>
-                                            <span className="text-[10px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-black">즉시체결</span>
-                                        </div>
-                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
-                                            오늘 기안서 중 기대수익 상위 3종목을 즉시 심의하여 트레이딩팀에서 분할 매수 체결합니다.
-                                        </p>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        disabled={isExecutingDirective}
-                                        onClick={() => executeCompanyDirective({ command_type: 'AUDIT_ALL_POSITIONS' })}
-                                        className="p-3 rounded-xl bg-gradient-to-r from-sky-500/20 to-indigo-500/15 hover:from-sky-500/30 hover:to-indigo-500/25 border border-sky-500/40 text-left transition-all cursor-pointer group"
-                                    >
-                                        <div className="text-xs font-black text-sky-300 group-hover:text-sky-200 flex items-center justify-between">
-                                            <span>🛡️ [특명 2] 전 종목 리스크·방어선 감사</span>
-                                            <span className="text-[10px] bg-sky-400 text-slate-950 px-1.5 py-0.5 rounded font-black">본전잠금</span>
-                                        </div>
-                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
-                                            보유 종목 실시간 시세를 전수 점검하고, 수익 중인 종목의 손절선을 매수가 위로 상향 잠금합니다.
-                                        </p>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        disabled={isExecutingDirective}
-                                        onClick={() => executeCompanyDirective({ command_type: 'TAKE_PROFIT_WINNERS' })}
-                                        className="p-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/15 hover:from-amber-500/30 hover:to-yellow-500/25 border border-amber-500/40 text-left transition-all cursor-pointer group"
-                                    >
-                                        <div className="text-xs font-black text-amber-300 group-hover:text-amber-200 flex items-center justify-between">
-                                            <span>💰 [특명 3] 수익 종목 일괄 50% 분할익절</span>
-                                            <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-black">수익확정</span>
-                                        </div>
-                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
-                                            현재 수익 구간에 진입한 보유 포지션의 50% 물량을 즉시 매도하여 현금 수익을 금고에 확정합니다.
-                                        </p>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        disabled={isExecutingDirective}
-                                        onClick={handleApproveAll}
-                                        className="p-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-rose-500/15 hover:from-purple-500/30 hover:to-rose-500/25 border border-purple-500/40 text-left transition-all cursor-pointer group"
-                                    >
-                                        <div className="text-xs font-black text-purple-300 group-hover:text-purple-200 flex items-center justify-between">
-                                            <span>🖋️ [특명 4] 대기 기안서 전수 일괄 재가</span>
-                                            <span className="text-[10px] bg-purple-400 text-slate-950 px-1.5 py-0.5 rounded font-black">전수편입</span>
-                                        </div>
-                                        <p className="text-[11px] text-gray-300 mt-1 leading-snug">
-                                            서류함에 대기 중인 오늘의 추천 기안서를 일괄 서명 승인하고 프랍트레이딩 데스크로 배정합니다.
-                                        </p>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. 하단: 대표이사 직접 지시 입력창 (특명 기안서 자동 생성 + 트레이딩팀 매수 체결 원스톱) */}
-                        <div className="bg-black/55 border border-amber-500/40 rounded-2xl p-4 space-y-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <span className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
-                                    <span>💬</span>
-                                    <span>3. 대표이사 직접 지시 하달 (종목명/지시 입력 시 ➔ 특명 기안서 생성 + 임원회의 + 자동 매수 원스톱 실행)</span>
-                                </span>
-                                <label className="inline-flex items-center gap-2 text-xs font-bold text-emerald-300 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoExecOnDirective}
-                                        onChange={e => setAutoExecOnDirective(e.target.checked)}
-                                        className="rounded border-emerald-400 text-emerald-500 focus:ring-0 cursor-pointer"
-                                    />
-                                    <span>⚡ 지시 종목 트레이딩팀 즉시 매수 체결까지 자동 집행</span>
-                                </label>
-                            </div>
-
-                            <form onSubmit={handleSendDirective} className="flex flex-col sm:flex-row gap-2.5">
-                                <input
-                                    type="text"
-                                    value={commandInput}
-                                    onChange={e => setCommandInput(e.target.value)}
-                                    placeholder="직접 지시를 입력하세요 (예: 삼성중공업 분석해서 바로 기안 올리고 1000만원 매수해 / 엔비디아 매수 집행해 / 보수적 모드로 전환해)"
-                                    className="flex-1 bg-[#070b14] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={isCallingMeeting || isExecutingDirective}
-                                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 shadow-lg shadow-amber-500/20"
-                                >
-                                    {isExecutingDirective || isCallingMeeting ? '⚡ 5대 본부 이행 중...' : '📢 전 부서 지시 하달 & 즉시 집행'}
-                                </button>
-                            </form>
-
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-[11px] text-gray-400 font-bold mr-1">⚡ 빠른 지시 예시:</span>
-                                {[
-                                    { label: '🚢 삼성중공업 기안 상정 & 즉시 매수', cmd: '삼성중공업 심층 분석해서 특명 기안 올리고 즉시 매수 집행해' },
-                                    { label: '🤖 엔비디아(NVDA) 1,000만원 매수 집행', cmd: '엔비디아 1000만원 즉시 매수 집행하고 목표가 감시해' },
-                                    { label: '✈️ 대한항공 특별 기안 & 매수 집행', cmd: '대한항공 실적 점검해서 기안서 올리고 매수 집행해' },
-                                    { label: '⚡ 두산에너빌리티 2,000만원 집중 매수', cmd: '두산에너빌리티 2000만원 배정해서 즉시 매수 체결해' },
-                                    ...QUICK_TOPICS.map(q => ({ label: q.label, cmd: q.message })),
-                                ].slice(0, 6).map(item => (
-                                    <button
-                                        key={item.label}
-                                        type="button"
-                                        disabled={isExecutingDirective}
-                                        onClick={async () => {
-                                            await executeCompanyDirective({
-                                                command_type: 'CUSTOM_DIRECTIVE',
-                                                directive_text: item.cmd,
-                                                auto_execute: autoExecOnDirective,
-                                            });
-                                            fetchOfficeData('', item.cmd, true);
-                                        }}
-                                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/5 hover:bg-amber-500/20 text-gray-200 hover:text-amber-200 border border-white/10 hover:border-amber-500/40 cursor-pointer transition-all"
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* 4. 방금 실행된 5대 본부 연쇄 이행 완료 리포트 (Step-by-Step Execution Report) */}
+                        {/* 지시 실행 시에만 깔끔하게 뜨는 5대 본부 이행 결과 요약 */}
                         {lastWorkflowResult && (
-                            <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-indigo-950/40 border-2 border-emerald-400/50 rounded-2xl p-4 space-y-3 animate-in fade-in duration-200">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-black text-[11px]">
-                                            ✅ 5대 본부 이행 완료 보고 ({lastWorkflowResult.cmd_id})
-                                        </span>
-                                        <span className="text-xs sm:text-sm font-black text-white">
-                                            {lastWorkflowResult.headline_result}
-                                        </span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setLastWorkflowResult(null)}
-                                        className="text-[11px] text-gray-400 hover:text-white font-bold self-end sm:self-auto cursor-pointer"
-                                    >
-                                        보고서 접기 ✕
-                                    </button>
+                            <div className="bg-emerald-950/30 border border-emerald-400/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div className="text-emerald-200 font-bold">
+                                    <span className="text-emerald-400 font-black mr-1.5">✅ 전 부서 자동 이행 완료:</span>
+                                    {lastWorkflowResult.headline_result}
                                 </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-                                    {(lastWorkflowResult.workflow_steps || []).map((st: any, idx: number) => (
-                                        <div key={idx} className="bg-black/50 border border-white/10 rounded-xl p-2.5 space-y-1">
-                                            <div className="flex items-center justify-between text-[10px]">
-                                                <span className="font-black text-amber-300">{st.avatar} {st.dept}</span>
-                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">{st.status}</span>
-                                            </div>
-                                            <div className="text-[11px] font-bold text-white">{st.exec}</div>
-                                            <p className="text-[11px] text-gray-300 leading-snug">{st.detail}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                                <div className="flex items-center gap-2 shrink-0">
                                     {lastWorkflowResult.created_doc && (
                                         <button
                                             type="button"
@@ -2384,27 +2146,27 @@ export default function CeoOfficePage() {
                                                 setSelectedDocId(lastWorkflowResult.created_doc.doc_id);
                                                 setActiveTab('electronic_sign');
                                             }}
-                                            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer"
+                                            className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] cursor-pointer"
                                         >
-                                            🖋️ 방금 상정된 [{lastWorkflowResult.created_doc.stock_name}] 특명 기안서 열람
+                                            🖋️ 생성된 기안서 보기
                                         </button>
                                     )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveTab('boardroom')}
-                                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs cursor-pointer border border-white/15"
-                                    >
-                                        🎙️ 임원 대면 회의록 확인
-                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setActiveTab('approved_tf');
                                             fetchTradingDesk();
                                         }}
-                                        className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs cursor-pointer"
+                                        className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-black text-[11px] cursor-pointer"
                                     >
-                                        💼 프랍트레이딩 체결 원장 & 실시간 수익률 보기
+                                        💼 트레이딩 내역 보기
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLastWorkflowResult(null)}
+                                        className="text-gray-400 hover:text-white px-1 cursor-pointer"
+                                    >
+                                        ✕
                                     </button>
                                 </div>
                             </div>

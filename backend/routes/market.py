@@ -2555,22 +2555,25 @@ _CEO_OFFICE_CACHE_TIME: float = 0.0
 ALLOWED_CEO_EMAILS = {"rnfjr@gmail.com", "rnfjrlakdmf@gmail.com"}
 
 
-def _verify_ceo_clearance(x_ceo_email: Optional[str]) -> None:
-    email_clean = (x_ceo_email or "").strip().lower()
-    if email_clean not in ALLOWED_CEO_EMAILS:
-        raise HTTPException(
-            status_code=403,
-            detail="🔒 대표이사 전용 기밀 보안 구역입니다. 인가된 대표이사 계정만 열람할 수 있습니다."
-        )
+def _verify_ceo_clearance(*emails: Optional[str]) -> None:
+    for em in emails:
+        email_clean = (str(em) if em else "").strip().lower()
+        if email_clean in ALLOWED_CEO_EMAILS:
+            return
+    raise HTTPException(
+        status_code=403,
+        detail="🔒 대표이사 전용 기밀 보안 구역입니다. 인가된 대표이사 계정만 열람할 수 있습니다."
+    )
 
 
 @router.get("/ceo-office")
 def get_ceo_office_boardroom(
     topic: str = Query("", description="안건 종목명/티커 또는 빈 문자열(전사 자동 결재 브리핑)"),
     message: str = Query("", description="대표님이 대화창에 직접 입력한 지시 말씀"),
+    ceo_email: Optional[str] = Query(None),
     x_ceo_email: Optional[str] = Header(None),
 ):
-    _verify_ceo_clearance(x_ceo_email)
+    _verify_ceo_clearance(x_ceo_email, ceo_email)
     """
     AI 증권사 대표이사 전자결재 & 자율 임원 보고 시스템 통합 API (주말·야간 24시간 365일 무휴 가동)
     - 직원(5인 임원 및 리서치·퀀트·글로벌팀)들이 평일·주말 구분 없이 알아서 시장 시스템과 종목을 분석해 결재판(auto_approvals)에 상정
@@ -3872,8 +3875,8 @@ def trigger_morning_macro_endpoint(force: bool = True):
 
 
 @router.get("/ceo-office/trading-desk")
-def get_ceo_office_trading_desk(x_ceo_email: Optional[str] = Header(None)):
-    _verify_ceo_clearance(x_ceo_email)
+def get_ceo_office_trading_desk(ceo_email: Optional[str] = Query(None), x_ceo_email: Optional[str] = Header(None)):
+    _verify_ceo_clearance(x_ceo_email, ceo_email)
     """
     증권사 자산운용 프랍 트레이딩 데스크 현황 및 실시간 포지션/수익률 조회 API
     """
@@ -3884,8 +3887,8 @@ def get_ceo_office_trading_desk(x_ceo_email: Optional[str] = Header(None)):
 
 
 @router.post("/ceo-office/trading-desk/order")
-def execute_trading_desk_order(payload: Dict[str, Any] = Body(...), x_ceo_email: Optional[str] = Header(None)):
-    _verify_ceo_clearance(x_ceo_email)
+def execute_trading_desk_order(payload: Dict[str, Any] = Body(...), ceo_email: Optional[str] = Query(None), x_ceo_email: Optional[str] = Header(None)):
+    _verify_ceo_clearance(x_ceo_email, ceo_email, payload.get("ceo_email"))
     """
     대표이사 재가 승인 시 트레이딩 팀에서 적정 매수가 분할 매수 주문 자동 집행
     """
@@ -3895,8 +3898,8 @@ def execute_trading_desk_order(payload: Dict[str, Any] = Body(...), x_ceo_email:
 
 
 @router.post("/ceo-office/trading-desk/close")
-def close_trading_desk_position(payload: Dict[str, Any] = Body(...), x_ceo_email: Optional[str] = Header(None)):
-    _verify_ceo_clearance(x_ceo_email)
+def close_trading_desk_position(payload: Dict[str, Any] = Body(...), ceo_email: Optional[str] = Query(None), x_ceo_email: Optional[str] = Header(None)):
+    _verify_ceo_clearance(x_ceo_email, ceo_email, payload.get("ceo_email"))
     """
     대표이사 지시에 따른 시장가 전량 익절/매도 처리
     """
@@ -3908,8 +3911,8 @@ def close_trading_desk_position(payload: Dict[str, Any] = Body(...), x_ceo_email
 
 
 @router.post("/ceo-office/trading-desk/partial-sell")
-def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...), x_ceo_email: Optional[str] = Header(None)):
-    _verify_ceo_clearance(x_ceo_email)
+def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...), ceo_email: Optional[str] = Query(None), x_ceo_email: Optional[str] = Header(None)):
+    _verify_ceo_clearance(x_ceo_email, ceo_email, payload.get("ceo_email"))
     """
     1차 목표가 도달 또는 대표이사 지시에 따른 50% 분할 익절 처리
     """
@@ -3922,10 +3925,11 @@ def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...), x_ce
 @router.post("/ceo-office/watchlist-research")
 def post_watchlist_research(
     payload: Dict[str, Any] = Body(default={}),
+    ceo_email: Optional[str] = Query(None),
     x_user_id: Optional[str] = Header(None),
     x_ceo_email: Optional[str] = Header(None),
 ):
-    _verify_ceo_clearance(x_ceo_email)
+    _verify_ceo_clearance(x_ceo_email, ceo_email, payload.get("ceo_email"))
     """
     관심종목별 리서치 보고서 (시세·수급·증권사 컨센서스·재무지표·뉴스 + 쉬운 말 종합의견)
     """
@@ -3939,10 +3943,11 @@ def post_watchlist_research(
 @router.get("/ceo-office/trading-desk/watchlist-analysis")
 def get_watchlist_trading_analysis(
     symbols: Optional[str] = Query(None),
+    ceo_email: Optional[str] = Query(None),
     x_user_id: Optional[str] = Header(None),
     x_ceo_email: Optional[str] = Header(None),
 ):
-    _verify_ceo_clearance(x_ceo_email)
+    _verify_ceo_clearance(x_ceo_email, ceo_email)
     """
     대표이사 및 사용자의 관심종목에 대한 트레이딩 팀의 적정 매수가/목표가/손익비 진단 API
     """
@@ -3954,10 +3959,11 @@ def get_watchlist_trading_analysis(
 @router.post("/ceo-office/trading-desk/watchlist-analysis")
 def post_watchlist_trading_analysis(
     payload: Dict[str, Any] = Body(...),
+    ceo_email: Optional[str] = Query(None),
     x_user_id: Optional[str] = Header(None),
     x_ceo_email: Optional[str] = Header(None),
 ):
-    _verify_ceo_clearance(x_ceo_email)
+    _verify_ceo_clearance(x_ceo_email, ceo_email, payload.get("ceo_email"))
     """
     특정 종목 리스트나 입력된 종목명을 트레이딩 팀에서 즉시 정밀 진단
     """
@@ -3971,9 +3977,10 @@ def post_watchlist_trading_analysis(
 @router.post("/ceo-office/execute-directive")
 def execute_ceo_office_directive(
     payload: Dict[str, Any] = Body(...),
+    ceo_email: Optional[str] = Query(None),
     x_ceo_email: Optional[str] = Header(None),
 ):
-    _verify_ceo_clearance(x_ceo_email)
+    _verify_ceo_clearance(x_ceo_email, ceo_email, payload.get("ceo_email"))
     """
     대표이사 전사 지휘통제실(CEO Command Center) 명령 하달 및 5대 본부 자동 연쇄 집행 API
     """
