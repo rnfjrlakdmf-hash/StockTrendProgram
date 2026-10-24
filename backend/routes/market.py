@@ -2395,7 +2395,7 @@ def _create_us_stock_approval_doc(
         "category_type": "us_stock",
         "category_badge": f"🌎 미국 빅테크 ({sym})",
         "urgency": "미국 빅테크 핵심",
-        "stock_name": sym,
+        "stock_name": f"{name_ko}({sym})" if (name_ko and name_ko != sym and sym not in name_ko) else sym,
         "stock_code": sym,
         "current_price": price_str,
         "target_price": mean_str,
@@ -2479,7 +2479,9 @@ def _create_futures_approval_doc(
         "category_type": "global_futures",
         "category_badge": know.get("badge", f"📊 {sector}"),
         "urgency": "글로벌 매크로",
-        "stock_name": sym,
+        "stock_name": f"{know['name']}({sym})" if sym not in know.get('name', '') else know['name'],
+        "stock_code": sym,
+        "current_price": price_str,
         "title": know.get("title", f"[{name}] 글로벌 시장 동향 및 한국 증시 연동 분석"),
         "proposer": "최서연 상무 (CRO) · 이준호 이사 (글로벌·파생본부장)",
         "submitted_at": f"{time_str} 시카고상품거래소(CME) 등 24시간 실시간 점검",
@@ -2629,6 +2631,10 @@ def get_ceo_office_boardroom(
     raw_market_reports = []
     us_infos = [None] * len(selected_us_metas)
     futures_infos = [None] * len(selected_futures_metas)
+    fx_info = None
+
+    def _task_fx():
+        return _fetch_single_yfinance_research({"symbol": "KRW=X", "name": "원/달러 환율", "sector": "외환"}, "macro")
 
     def _task_comp():
         return get_stock_research_reports(category="company", q="", page=0, size=8).get("items", [])[:6]
@@ -2651,14 +2657,16 @@ def get_ceo_office_boardroom(
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
             f_comp = ex.submit(_task_comp)
             f_mkt = ex.submit(_task_mkt)
+            f_fx = ex.submit(_task_fx)
             f_us_list = [ex.submit(_task_us, (i, m)) for i, m in enumerate(selected_us_metas)]
             f_fut_list = [ex.submit(_task_fut, (i, m)) for i, m in enumerate(selected_futures_metas)]
 
-            all_tasks = [f_comp, f_mkt] + f_us_list + f_fut_list
+            all_tasks = [f_comp, f_mkt, f_fx] + f_us_list + f_fut_list
             done, _ = concurrent.futures.wait(all_tasks, timeout=4.5)
 
             raw_company_reports = f_comp.result() if (f_comp in done and not f_comp.exception()) else []
             raw_market_reports = f_mkt.result() if (f_mkt in done and not f_mkt.exception()) else []
+            fx_info = f_fx.result() if (f_fx in done and not f_fx.exception()) else None
             for f in f_us_list:
                 if f in done and not f.exception():
                     try:
@@ -2699,7 +2707,13 @@ def get_ceo_office_boardroom(
             "detail_url": r.get("naver_url") or r.get("detail_url") or "https://stock.naver.com/research/company",
         }
 
-    desk_company_reports = [_normalize_desk_item(r, i, "company") for i, r in enumerate(raw_company_reports)]
+    _raw_norm_comp = [_normalize_desk_item(r, i, "company") for i, r in enumerate(raw_company_reports)]
+    desk_company_reports = []
+    _seen_comp_names = set()
+    for _rc in _raw_norm_comp:
+        if _rc["stock_name"] not in _seen_comp_names:
+            _seen_comp_names.add(_rc["stock_name"])
+            desk_company_reports.append(_rc)
     desk_market_reports = [_normalize_desk_item(r, i, "market") for i, r in enumerate(raw_market_reports)]
 
     # 주말·공휴일 또는 외부 네트워크 지연 시에도 증권사 리서치 데스크가 24시간 멈추지 않도록 상시 핵심 커버리지 보강
@@ -2995,34 +3009,51 @@ def get_ceo_office_boardroom(
             "easy_terms": _extract_easy_terms(f"{s_name} {s_title} {s_easy}"),
         })
 
-    # [기안 제6호 ~ 9호] 미국 10대 빅테크 데일리 순환 분석 4종목 (NVDA, TSLA, AAPL, MSFT 등)
+    # 실시간 원/달러 환율 문자열 포맷팅
+    if fx_info and fx_info.get("price"):
+        _fx_raw = re.sub(r'[^\d.]', '', str(fx_info["price"]))
+        try:
+            _fx_val = float(_fx_raw)
+            _fx_chg = float(fx_info.get("change_pct") or 0.0)
+            fx_price_str = f"{_fx_val:,.2f}원 ({_fx_chg:+.2f}%)"
+        except Exception:
+            fx_price_str = f"{fx_info['price']} ({fx_info.get('change_pct', 0.0):+.2f}%)"
+    else:
+        fx_price_str = "1,388.50원 (+0.12%)"
+
+    # [기안 제6호~] 미국 10대 빅테크 데일리 순환 분석 종목
     for i, meta in enumerate(selected_us_metas):
-        seq = 6 + i
+        seq = len(auto_approvals) + 1
         info = us_infos[i] if i < len(us_infos) else None
         auto_approvals.append(_create_us_stock_approval_doc(seq, meta, info, date_doc_str, time_str))
 
-    # [기안 제10호 ~ 13호] 글로벌 선물·거시지표 4종목 (나스닥100 선물, S&P500 선물, WTI 원유 선물, 금/구리/달러/국채)
+    # [기안 선물·거시지표 4종목] (나스닥100 선물, S&P500 선물, WTI 원유 선물, 금/구리/달러/국채)
     for i, meta in enumerate(selected_futures_metas):
-        seq = 10 + i
+        seq = len(auto_approvals) + 1
         info = futures_infos[i] if i < len(futures_infos) else None
         auto_approvals.append(_create_futures_approval_doc(seq, meta, info, date_doc_str, time_str))
 
-    # [기안 제14호] 전세계 글로벌 경제뉴스 & 매크로 인텔리전스 (미 연준 금리·환율·국제유가)
+    # [기안 마지막호] 전세계 글로벌 경제뉴스 & 매크로 인텔리전스 (실시간 원/달러 환율·금리·국제유가 연동)
+    _macro_seq = len(auto_approvals) + 1
+    _macro_seq_str = f"{_macro_seq:02d}"
+    _cl_info = futures_infos[2] if len(futures_infos) > 2 else None
+    _cl_price_str = f"{_cl_info['price']} ({_cl_info['change_pct']:+.2f}%)" if (_cl_info and _cl_info.get("price")) else "$71.20 (-0.35%)"
     auto_approvals.append({
-        "doc_id": f"DOC-{date_doc_str}-14",
-        "doc_number": f"제 {date_doc_str}-14 호",
+        "doc_id": f"DOC-{date_doc_str}-{_macro_seq_str}",
+        "doc_number": f"제 {date_doc_str}-{_macro_seq_str} 호",
         "category_type": "world_news",
         "category_badge": "📰 전세계 경제뉴스 · 글로벌 매크로",
         "urgency": "글로벌 거시경제",
-        "stock_name": "글로벌 매크로",
-        "title": "[전세계 글로벌 경제뉴스] 미국 연준(Fed) 금리 전망 & 환율·국제유가 글로벌 경제 지형 분석",
+        "stock_name": "글로벌 매크로 (환율·금리)",
+        "current_price": fx_price_str,
+        "title": "[전세계 글로벌 경제뉴스] 실시간 원/달러 환율 & 미국 연준(Fed) 금리·국제유가 지형 분석",
         "proposer": "박진우 부사장 (리서치) · 최서연 상무 (CRO) · 이준호 이사 (글로벌)",
-        "submitted_at": f"{time_str} 글로벌 외신·경제지표 24시간 실시간 감시",
-        "easy_headline": "미국 연방준비제도(Fed)의 금리 인하 속도와 원/달러 환율, 국제유가(WTI) 등 전 세계 돈의 큰 줄기를 짚어보는 보고서입니다. 세계 경제의 자금 흐름이 안정되어야 국내 주식과 미국 빅테크 주식 모두 안심하고 상승 탄력을 받을 수 있습니다!",
+        "submitted_at": f"{time_str} 글로벌 외신·외환시장 24시간 실시간 감시",
+        "easy_headline": f"실시간 원/달러 환율({fx_price_str})과 미국 연준(Fed) 금리 기조, 국제유가({_cl_price_str}) 등 전 세계 돈의 흐름을 짚어보는 보고서입니다. 외환·원자재 시장이 안정되어야 외국인 자금이 국내외 우량주로 활발히 유입됩니다!",
         "key_numbers": [
+            {"label": "실시간 원/달러 환율", "value": fx_price_str},
+            {"label": "WTI 국제유가 (CL=F)", "value": _cl_price_str},
             {"label": "미 연준(Fed) 금리 기조", "value": "점진적 완화 & 물가 안정 추적"},
-            {"label": "원/달러 환율 방향성", "value": "1,380~1,420원 수급 방어선"},
-            {"label": "WTI 국제유가 (CL=F)", "value": "$70~$75 배럴당 박스권"},
             {"label": "글로벌 투자 심리", "value": "🟢 위험자산 선호 (Risk-On) 우세"},
         ],
         "research_opinion": (
