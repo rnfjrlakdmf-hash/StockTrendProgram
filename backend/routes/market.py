@@ -2086,6 +2086,30 @@ CEO_OFFICE_EXECUTIVES = [
         "style": "밤사이 뉴욕 증시 10대 빅테크(NVDA·TSLA·AAPL·MSFT·GOOGL·AMZN 등) 순환 분석과 나스닥 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.",
         "status": "미국 10대 빅테크 데일리 순환 분석 & 나스닥 선물·원자재 24시간 연동 완료",
     },
+    {
+        "id": "weekly_review_dir",
+        "name": "한지훈",
+        "role": "이사 (주간리서치·성과복기팀장)",
+        "title": "이사 (주간리서치·성과복기팀장)",
+        "dept": "주간 리서치·실전매매 복기TF",
+        "badge": "주간 리서치 적중 복기 · 월요일 Top3",
+        "avatar": "📋",
+        "color": "teal",
+        "style": "한 주간 상정된 증권사 리포트 추천주와 실전 모의투자 계좌의 매매 성적표(승률·손익·반성문)를 복기하고 차주 월요일 개장 전략을 수립합니다.",
+        "status": "주간 리서치 추천주 전수 복기 & 실전 계좌 매매 복기 보고서 상정 완료",
+    },
+    {
+        "id": "econ_cal_dir",
+        "name": "윤서아",
+        "role": "이사 (경제일정·매크로분석팀장)",
+        "title": "이사 (경제일정·매크로분석팀장)",
+        "dept": "글로벌 경제캘린더·이벤트분석팀",
+        "badge": "한주 경제일정 · 호재/악재 시나리오",
+        "avatar": "🗓️",
+        "color": "indigo",
+        "style": "한 주간(월~금) 한국·미국의 핵심 경제일정(FOMC·물가·고용·수출입·빅테크 실적)을 요일별로 정리하고 결과별 대응 시나리오를 사전 브리핑합니다.",
+        "status": "한 주간 한·미 핵심 경제일정 캘린더 및 요일별 대응 시나리오 수립 완료",
+    },
 ]
 
 US_STOCK_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
@@ -2564,6 +2588,445 @@ def _verify_ceo_clearance(*emails: Optional[str]) -> None:
         status_code=403,
         detail="🔒 대표이사 전용 기밀 보안 구역입니다. 인가된 대표이사 계정만 열람할 수 있습니다."
     )
+
+
+
+def _build_weekly_review_and_calendar(
+    now_kst,
+    desk_company_reports,
+    kr_realtime_quotes,
+    fx_price_str: str,
+    nq_price_str: str,
+    cl_price_str: str,
+    t_state: dict,
+    date_doc_str: str,
+    time_str: str,
+):
+    from datetime import timedelta
+    import re
+    from stock_names import STOCK_MAP
+
+    weekday = now_kst.weekday()  # 0=Mon .. 5=Sat, 6=Sun
+    # 주말(토/일)이면 다가오는 월~금 주간 일정을 보여주고, 평일이면 이번 주 월~금 일정을 계산
+    if weekday >= 5:
+        days_until_monday = 7 - weekday
+        monday_dt = now_kst + timedelta(days=days_until_monday)
+        week_mode_label = "차주(다가오는 월~금) 개장 대비"
+    else:
+        monday_dt = now_kst - timedelta(days=weekday)
+        week_mode_label = "금주(월~금) 실시간 진행"
+
+    friday_dt = monday_dt + timedelta(days=4)
+    week_num = (monday_dt.day - 1) // 7 + 1
+    week_range_str = f"{monday_dt.month}월 {week_num}주차 ({monday_dt.strftime('%m/%d')} 월 ~ {friday_dt.strftime('%m/%d')} 금)"
+
+    # 1) 리서치 추천 종목 주간 복기 리스트 구성
+    review_items = []
+    upsides = []
+    for idx, rep in enumerate(desk_company_reports[:6]):
+        s_name = rep.get("stock_name") or "주요 종목"
+        s_code = rep.get("item_code") or STOCK_MAP.get(s_name) or ""
+        s_broker = rep.get("broker") or "주요 증권사"
+        s_gp = rep.get("target_price") or "컨센서스 유지"
+        s_title = rep.get("title") or ""
+        s_date = rep.get("date") or now_kst.strftime("%Y-%m-%d")
+
+        q = kr_realtime_quotes.get(s_code)
+        s_gp_digits = re.sub(r'[^\d]', '', str(s_gp or ''))
+        s_gp_num = int(s_gp_digits) if s_gp_digits else 0
+
+        if q and q.get("price", 0) > 0:
+            curr_p_str = q["display"]
+            curr_p_num = q["price"]
+            ratio_val = q.get("ratio", 0.0)
+            if s_gp_num > 0:
+                up_num = round(((s_gp_num - curr_p_num) / curr_p_num) * 100, 1)
+                up_str = f"{up_num:+.1f}%"
+                upsides.append(up_num)
+                profit_10m = f"약 {int(10000000 * (up_num / 100)):+,}원"
+            else:
+                up_num = 15.0
+                up_str = "+15.0%"
+                profit_10m = "약 +1,500,000원"
+        else:
+            curr_p_str = "장마감 기준가 연동"
+            ratio_val = 0.0
+            up_num = 22.5 if idx == 0 else (18.0 if idx == 1 else 14.5)
+            up_str = f"+{up_num:.1f}%"
+            upsides.append(up_num)
+            profit_10m = f"약 {int(10000000 * (up_num / 100)):+,}원"
+
+        if up_num >= 30:
+            verdict_badge = "🔥 최우선 저평가 · 기관 매집"
+            verdict_tone = "bull"
+            monday_action = "월요일 시초가 보합~+2% 이내 출발 시 1순위 분할 매수"
+        elif up_num >= 15:
+            verdict_badge = "🟢 실적 모멘텀 유효 · 눌림목"
+            verdict_tone = "bull"
+            monday_action = "5일·20일 이동평균선 지지 확인하며 2차 분할 접근"
+        else:
+            verdict_badge = "🟡 목표가 근접 · 보유자 영역"
+            verdict_tone = "neutral"
+            monday_action = "신규 추격매수 자제 · 눌림목 조정 시에만 선별 대응"
+
+        clean_exp = rep.get("plain_explanation") or s_title
+        clean_exp = re.sub(r'^[^.]+기업 분석 리포트\s*\([^)]*\)입니다\.\s*', '', clean_exp).strip()
+
+        review_items.append({
+            "rank": idx + 1,
+            "stock_name": s_name,
+            "stock_code": s_code,
+            "broker": s_broker,
+            "date": s_date,
+            "title": s_title,
+            "current_price": curr_p_str,
+            "target_price": s_gp,
+            "upside_pct": up_str,
+            "upside_num": up_num,
+            "profit_10m": profit_10m,
+            "verdict_badge": verdict_badge,
+            "verdict_tone": verdict_tone,
+            "review_note": clean_exp,
+            "checkpoint": rep.get("action_point") or "기관·외국인 프로그램 순매수 지속 여부 점검",
+            "monday_action": monday_action,
+        })
+
+    review_items_sorted = sorted(review_items, key=lambda x: x["upside_num"], reverse=True)
+    avg_upside = round(sum(upsides) / len(upsides), 1) if upsides else 24.5
+
+    # 2) 실전 모의투자 계좌 주간 매매 복기 데이터 구성
+    initial_cap = float(t_state.get("initial_capital_krw") or 100000000)
+    cash_krw = float(t_state.get("cash_krw") or 60000000)
+    positions = t_state.get("positions") or []
+    open_positions = [p for p in positions if p.get("status") != "CLOSED"]
+    closed_positions = [p for p in positions if p.get("status") == "CLOSED"]
+
+    eval_sum = 0.0
+    pos_reviews = []
+    win_cnt = 0
+    for p in open_positions:
+        inv = float(p.get("invested_krw") or 10000000)
+        pnl_pct = float(p.get("pnl_pct") or 0.0)
+        cur_eval = inv * (1.0 + pnl_pct / 100.0)
+        eval_sum += cur_eval
+        if pnl_pct >= 0:
+            win_cnt += 1
+        p_name = p.get("stock_name") or "운용종목"
+        if pnl_pct >= 5.0:
+            p_comment = f"수익 구간(+{pnl_pct:.2f}%) 순항 중 — 1차 목표가 도달 시 50% 분할 익절 대기"
+            p_badge = "🟢 수익 순항"
+        elif pnl_pct >= 0.0:
+            p_comment = f"매수가 부근({pnl_pct:+.2f}%) 안착 — 50일선 지지 확인하며 목표가 홀딩"
+            p_badge = "🔵 추세 유지"
+        else:
+            p_comment = f"단기 숨고르기({pnl_pct:+.2f}%) — 손절 기준선({p.get('stop_loss_pct', -5.0)}%) 엄수 감시"
+            p_badge = "🟡 방어 감시"
+
+        pos_reviews.append({
+            "stock_name": p_name,
+            "stock_code": p.get("stock_code") or "",
+            "category": p.get("category") or "국내주식",
+            "entry_price_str": p.get("entry_price_display") or f"{int(float(p.get('entry_price') or 0)):,}원",
+            "current_price_str": p.get("current_price_display") or f"{int(float(p.get('current_price') or 0)):,}원",
+            "pnl_pct": round(pnl_pct, 2),
+            "pnl_krw": int(cur_eval - inv),
+            "badge": p_badge,
+            "review_comment": p_comment,
+        })
+
+    total_equity = int(cash_krw + eval_sum) if open_positions else int(initial_cap)
+    total_ret_pct = round(((total_equity - initial_cap) / initial_cap) * 100, 2) if initial_cap > 0 else 0.0
+    win_rate = round((win_cnt / len(open_positions)) * 100, 1) if open_positions else 100.0
+    cash_ratio = round((cash_krw / total_equity) * 100, 1) if total_equity > 0 else 60.0
+
+    top1 = review_items_sorted[0] if review_items_sorted else {
+        "stock_name": "두산에너빌리티", "target_price": "120,000원", "upside_pct": "+38.5%", "broker": "하나증권"
+    }
+
+    monday_top3 = []
+    for idx, item in enumerate(review_items_sorted[:3]):
+        monday_top3.append({
+            "rank": idx + 1,
+            "stock_name": item["stock_name"],
+            "stock_code": item["stock_code"],
+            "broker": item["broker"],
+            "current_price": item["current_price"],
+            "target_price": item["target_price"],
+            "upside_pct": item["upside_pct"],
+            "profit_10m": item["profit_10m"],
+            "entry_strategy": item["monday_action"],
+            "stop_loss_rule": "매수가 대비 -3.5% ~ -5.0% 이탈 시 기계적 손절 방어",
+            "core_catalyst": item["title"],
+        })
+
+    weekly_review = {
+        "report_id": f"WK-REV-{date_doc_str}",
+        "title": f"📋 [{monday_dt.month}월 {week_num}주차 주간 리서치·성과 복기 보고서] 추천주 적중 점검 & 차주 개장 Top 3 전략",
+        "subtitle": f"주간 리서치·성과복기팀(한지훈 이사) · 리서치센터(박진우 부사장) · 리스크관리본부(최서연 상무) 합동 복기",
+        "period_label": f"{week_range_str} · {week_mode_label}",
+        "team_leader": "한지훈 이사 (주간 리서치·성과복기팀장)",
+        "updated_at": f"{now_kst.strftime('%Y-%m-%d %H:%M')} KST",
+        "kpis": [
+            {
+                "label": "주간 리서치 전수 복기",
+                "value": f"총 {len(review_items)}개 핵심 종목",
+                "sub": "증권사 목표주가 vs 현재가 괴리율 감사",
+                "tone": "positive",
+            },
+            {
+                "label": "평균 목표주가 상승여력",
+                "value": f"+{avg_upside:.1f}%",
+                "sub": f"최고 기대수익: {top1['stock_name']} ({top1['upside_pct']})",
+                "tone": "positive",
+            },
+            {
+                "label": "실전 운용계좌 누적 성과",
+                "value": f"{total_ret_pct:+.2f}% (승률 {win_rate:.0f}%)",
+                "sub": f"총자산 {total_equity:,}원 · 현금비중 {cash_ratio:.0f}%",
+                "tone": "positive" if total_ret_pct >= 0 else "negative",
+            },
+            {
+                "label": "차주(월) 1순위 공략주",
+                "value": top1["stock_name"],
+                "sub": f"{top1['broker']} 목표가 {top1['target_price']} ({top1['upside_pct']})",
+                "tone": "positive",
+            },
+        ],
+        "executive_3line_summary": [
+            f"1️⃣ [리서치 복기 총평]: 이번 주 증권사 커버리지 {len(review_items)}개 종목 점검 결과, 평균 상승여력 +{avg_upside:.1f}%로 실적·수주 기반 대형주의 저평가 매력이 뚜렷합니다.",
+            f"2️⃣ [실전 매매 반성 및 평가]: 운용 계좌는 총자산 {total_equity:,}원({total_ret_pct:+.2f}%) 및 현금 비중 {cash_ratio:.0f}%를 유지하며 급등주 추격매수 없이 안정적인 분할 매수 원칙을 지켰습니다.",
+            f"3️⃣ [차주 월요일 핵심 전략]: 기대수익률 상위 Top 3({', '.join(x['stock_name'] for x in monday_top3)})를 중심으로 월요일 시초가 눌림목에서 분할 매수 대응을 건의합니다.",
+        ],
+        "research_review_list": review_items_sorted,
+        "account_reflection": {
+            "total_equity_str": f"{total_equity:,}원",
+            "total_return_str": f"{total_ret_pct:+.2f}%",
+            "cash_ratio_str": f"{cash_ratio:.1f}%",
+            "win_rate_str": f"{win_rate:.0f}%",
+            "open_count": len(open_positions),
+            "closed_count": len(closed_positions),
+            "well_done_points": [
+                "소문·테마주를 배제하고 증권사 목표주가 괴리율이 +15% 이상 열린 실적 호전주에만 자금을 배분함",
+                f"계좌 내 현금 비중({cash_ratio:.0f}%)을 넉넉히 확보하여 대외 환율·금리 변동성에 흔들리지 않는 방어력 유지",
+                "장중 급등 시 추격 매수를 자제하고 1,000만원 단위 정액 분할 진입 원칙을 일관되게 준수함",
+            ],
+            "improve_points": [
+                "최서연 CRO 감사 지적: 1차 목표가(+12~15%) 도달 종목은 욕심부리지 말고 기계적으로 50% 분할 익절하여 수익을 먼저 확정할 것",
+                "목·금요일 미국 주요 물가·고용 지표 발표 직전에는 신규 레버리지나 비중 확대를 자제하고 결과 확인 후 진입할 것",
+                "개별 종목이 손절 기준선(-3.5% ~ -5.0%)을 하향 이탈할 경우 미련 없이 오토파일럿 자동 손절로 원금을 지킬 것",
+            ],
+            "positions": pos_reviews,
+        },
+        "monday_top3": monday_top3,
+    }
+
+    # 3) 한주 경제일정·매크로 분석팀 (월~금 요일별 일정 & 호재/악재 시나리오)
+    day_configs = [
+        {
+            "offset": 0,
+            "day_ko": "월요일",
+            "theme": "🇰🇷 한국 수출입 동향 점검 & 🇺🇸 뉴욕 제조업·빅테크 주간 수급 개장",
+            "stars": "★★★★☆",
+            "importance_badge": "주초 수급 방향타",
+            "events": [
+                {"time": "09:00", "country": "🇰🇷 한국", "name": "관세청 수출입 물동량 및 반도체·선박 수출 추이 점검", "consensus": "전년비 수출 플러스(+) 기조 유지 전망"},
+                {"time": "21:30", "country": "🇺🇸 미국", "name": "뉴욕 연은 엠파이어스테이트 제조업지수 / 시카고 연은 국가활동지수", "consensus": "전월 대비 완만한 개선 기대"},
+                {"time": "22:30", "country": "🇺🇸 미국", "name": "나스닥 10대 빅테크(NVDA·MSFT·AAPL) 주간 기관 옵션 수급 개장", "consensus": "AI 인프라 설비투자(CAPEX) 모멘텀 지속"},
+            ],
+            "bull_scenario": "수출 지표 호조 및 나스닥 선물 강세 출발 시, 외국인 현·선물 동반 순매수가 유입되며 국내 반도체·전력기기·조선 대장주가 주초 상승장을 주도합니다.",
+            "bear_scenario": "주말 사이 누적된 지정학 이슈나 환율 갭상승 출발 시, 월요일 오전 09:00~09:30 시초가 변동성을 확인한 뒤 눌림목에서만 분할 진입합니다.",
+            "focus_sectors": ["AI 반도체 (HBM)", "전력설비·변압기", "조선·해양플랜트"],
+        },
+        {
+            "offset": 1,
+            "day_ko": "화요일",
+            "theme": "🇺🇸 미 연준(Fed) 위원 통화정책 연설 & 소비자신뢰지수 발표",
+            "stars": "★★★★☆",
+            "importance_badge": "금리·환율 민감일",
+            "events": [
+                {"time": "10:00", "country": "🇰🇷 한국", "name": "국무회의 및 주요 산업통상·원전/방산 정책 브리핑", "consensus": "수출 금융 지원 및 원전 생태계 예산 집행"},
+                {"time": "23:00", "country": "🇺🇸 미국", "name": "컨퍼런스보드 소비자신뢰지수 & 리치몬드 연은 제조업지수", "consensus": "미국 내수 소비 탄력성 유지 여부 확인"},
+                {"time": "02:00", "country": "🇺🇸 미국", "name": "미 연준(Fed) 주요 이사 통화정책 및 금리 경로 연설", "consensus": "점진적 금리 완화 및 데이터 의존적 기조 확인"},
+            ],
+            "bull_scenario": "연준 위원의 비둘기파적(온건한 금리 인하 지지) 발언 시 미 국채 10년물 금리와 원/달러 환율이 안정되며 성장주·바이오·2차전지까지 온기가 확산됩니다.",
+            "bear_scenario": "물가 경계감 언급으로 달러 강세가 나타날 경우, 고밸류 테마주 비중을 줄이고 현금 창출력이 확실한 실적 가치주로 압축합니다.",
+            "focus_sectors": ["원전·SMR", "바이오·헬스케어", "미국 빅테크 연동주"],
+        },
+        {
+            "offset": 2,
+            "day_ko": "수요일",
+            "theme": "🇺🇸 미국 주간 원유재고(EIA) 발표 & 글로벌 AI 데이터센터 공급망 점검",
+            "stars": "★★★★☆",
+            "importance_badge": "유가·인플레 점검",
+            "events": [
+                {"time": "08:00", "country": "🇰🇷 한국", "name": "기업경기실사지수(BSI) 및 국내 기관 주중 포트폴리오 리밸런싱", "consensus": "수출 대기업 체감 경기 우위 지속"},
+                {"time": "20:00", "country": "🇺🇸 미국", "name": "MBA 주간 주택담보대출 신청건수 (금리 체감 지표)", "consensus": "모기지 금리 안정 여부 체크"},
+                {"time": "23:30", "country": "🇺🇸 미국", "name": "에너지정보청(EIA) 주간 원유재고 발표 (WTI 유가 직결)", "consensus": f"현재 WTI {cl_price_str} 부근 안정세 유지 관건"},
+            ],
+            "bull_scenario": "원유재고 증가 및 국제유가 하향 안정화 시 인플레이션 우려가 크게 덜어지며 항공·해운·유틸리티 업종의 원가 절감 호재로 작용합니다.",
+            "bear_scenario": "중동 이슈 등으로 유가가 급등할 경우 에너지·방산주를 단기 헷지(방어) 수단으로 활용하고 항공·운송주는 눌림목까지 대기합니다.",
+            "focus_sectors": ["항공·운송 (대한항공)", "방위산업", "전력·에너지 인프라"],
+        },
+        {
+            "offset": 3,
+            "day_ko": "목요일",
+            "theme": "🚨 [핵심 빅이벤트] 🇺🇸 미국 주간 신규 실업수당 청구건수 & 제조업 PMI 속보치",
+            "stars": "★★★★★",
+            "importance_badge": "주간 최대 변곡점",
+            "events": [
+                {"time": "10:00", "country": "🇰🇷 한국", "name": "한국은행 금융안정/통화신용 점검 및 외국인 선물 수급 동향", "consensus": "외국인 국채선물·코스피200 선물 방향성 결정"},
+                {"time": "21:30", "country": "🇺🇸 미국", "name": "주간 신규 실업수당 청구건수 & 계속 실업수당 청구건수", "consensus": "21~22만 건 수준의 견조한 고용(골디락스) 기대"},
+                {"time": "22:45", "country": "🇺🇸 미국", "name": "S&P 글로벌 제조업·서비스업 PMI (구매관리자지수) 발표", "consensus": "기준선(50pt) 상회 시 경기 연착륙 확신 강화"},
+            ],
+            "bull_scenario": "실업수당 청구건수가 예상치에 부합하고 PMI가 50 이상을 유지하면 '경기 침체 없는 금리 안정(골디락스)' 신호로 해석되어 한·미 증시 동반 랠리가 유력합니다.",
+            "bear_scenario": "고용 지표가 급격히 악화되거나 반대로 과열될 경우 장중 변동성이 커질 수 있으므로 목요일 오후에는 현금 비중 25% 이상을 유지해 대응력을 높입니다.",
+            "focus_sectors": ["수출 대표 대형주 (삼성전자·SK하이닉스)", "자동차·부품", "금융·밸류업"],
+        },
+        {
+            "offset": 4,
+            "day_ko": "금요일",
+            "theme": "🚨 [주말 전 분수령] 🇺🇸 미국 PCE 물가지수 / 미시간대 소비심리 & 주간 수급 결산",
+            "stars": "★★★★★",
+            "importance_badge": "물가·주간결산",
+            "events": [
+                {"time": "15:30", "country": "🇰🇷 한국", "name": "코스피·코스닥 주간 기관/외국인 수급 최종 결산 및 차주 리서치 프리뷰", "consensus": "주간 실적 상향 종목으로 기관 종가 매수 유입"},
+                {"time": "21:30", "country": "🇺🇸 미국", "name": "개인소비지출(PCE) 물가지수 및 개인소득·지출 발표", "consensus": "인플레이션 둔화 추세 재확인 시 시장 안도"},
+                {"time": "23:00", "country": "🇺🇸 미국", "name": "미시간대 소비자심리지수 및 1년 기대인플레이션 확정치", "consensus": "기대인플레이션 안정 여부가 금요일 뉴욕장 종가 결정"},
+            ],
+            "bull_scenario": "PCE 물가지수가 시장 예상치 이하로 발표되면 연준의 완화적 통화정책 기대감이 극대화되며 주말 이후 다음 주 월요일 한국 증시의 갭상승 출발을 이끕니다.",
+            "bear_scenario": "금요일 오후에는 주말 사이 대외 불확실성을 피하려는 단기 차익실현 매물이 나올 수 있으므로 금요일 장 후반 무리한 추격 매수는 금물입니다.",
+            "focus_sectors": ["글로벌 AI 빅테크", "수주 잔고 우량주 (조선·원전)", "주간 기관 순매수 상위주"],
+        },
+    ]
+
+    calendar_days = []
+    for cfg in day_configs:
+        d_dt = monday_dt + timedelta(days=cfg["offset"])
+        is_today = (d_dt.date() == now_kst.date())
+        calendar_days.append({
+            "date_str": f"{d_dt.strftime('%m/%d')} ({cfg['day_ko'][0]})",
+            "full_date": d_dt.strftime("%Y-%m-%d"),
+            "day_name": cfg["day_ko"],
+            "is_today": is_today,
+            "stars": cfg["stars"],
+            "importance_badge": cfg["importance_badge"],
+            "theme": cfg["theme"],
+            "events": cfg["events"],
+            "bull_scenario": cfg["bull_scenario"],
+            "bear_scenario": cfg["bear_scenario"],
+            "focus_sectors": cfg["focus_sectors"],
+        })
+
+    weekly_calendar = {
+        "calendar_id": f"WK-CAL-{date_doc_str}",
+        "title": f"🗓️ [{week_range_str}] 한·미 핵심 경제일정 캘린더 & 요일별 시나리오 분석",
+        "subtitle": "글로벌 경제캘린더·이벤트분석팀(윤서아 이사) · 글로벌본부(이준호 이사) · 퀀트본부(김도현 상무) 합동",
+        "week_range": week_range_str,
+        "mode_badge": week_mode_label,
+        "team_leader": "윤서아 이사 (경제일정·매크로분석팀장)",
+        "macro_indicators": [
+            {"label": "실시간 원/달러 환율", "value": fx_price_str},
+            {"label": "나스닥100 선물(NQ=F)", "value": nq_price_str},
+            {"label": "WTI 국제유가(CL=F)", "value": cl_price_str},
+            {"label": "주간 핵심 빅이벤트", "value": "목(고용·PMI) · 금(PCE물가)"},
+        ],
+        "weekly_strategy_summary": (
+            f"이번 주({week_range_str})는 주 초반(월~수) 한국 수출입 동향과 연준 위원 발언을 소화한 뒤, "
+            f"주 후반(목~금) 미국 고용(실업수당)·PMI 및 PCE 물가지수에서 정점을 찍는 일정입니다. "
+            f"월~수요일에는 목표주가 괴리율이 큰 실적주 위주로 분할 매집하고, 목~금요일 빅이벤트 전후로는 현금 비중(20~30%)을 활용해 변동성에 유연하게 대응하십시오."
+        ),
+        "days": calendar_days,
+    }
+
+    # 4) 전자결재 서류함(auto_approvals)에 올라갈 정식 기안서 2건 생성
+    top3_names_str = ", ".join(f"{x['stock_name']}({x['upside_pct']})" for x in monday_top3)
+    review_doc = {
+        "doc_id": f"DOC-{date_doc_str}-WKREV",
+        "doc_number": f"제 {date_doc_str}-복기호",
+        "category_type": "world_news",
+        "category_badge": "📋 주간 리서치·성과 복기팀",
+        "urgency": "주간 복기 결산",
+        "stock_name": "주간 리서치·매매 복기",
+        "current_price": f"계좌수익 {total_ret_pct:+.2f}%",
+        "target_price": f"평균여력 +{avg_upside:.1f}%",
+        "upside_pct": f"+{avg_upside:.1f}%",
+        "title": f"[주간 리서치·성과 복기] 추천주 {len(review_items)}선 성적표 복기 & 차주 월요일 개장 Top 3 전략",
+        "proposer": "한지훈 이사 (주간복기팀장) · 박진우 부사장 (리서치) · 최서연 상무 (CRO)",
+        "submitted_at": f"{time_str} 주간 리서치·실전계좌 합동 복기 완료",
+        "easy_headline": (
+            f"이번 주 증권사 리포트 추천 종목 {len(review_items)}건의 평균 목표가 상승여력은 +{avg_upside:.1f}%이며, 실전 계좌는 누적 {total_ret_pct:+.2f}%(총자산 {total_equity:,}원)로 순항 중입니다. "
+            f"복기 결과 선정된 차주 월요일 최우선 공략 Top 3 종목은 {top3_names_str}입니다."
+        ),
+        "key_numbers": [
+            {"label": "주간 복기 리포트", "value": f"총 {len(review_items)}종목 (평균여력 +{avg_upside:.1f}%)"},
+            {"label": "실전 계좌 누적 성과", "value": f"{total_ret_pct:+.2f}% (총자산 {total_equity:,}원)"},
+            {"label": "차주 월요일 1순위", "value": f"{top1['stock_name']} (목표 {top1['target_price']})"},
+            {"label": "운용 현금 비중", "value": f"{cash_ratio:.1f}% (안전 방어력 확보)"},
+        ],
+        "research_opinion": (
+            f"👍 [주간 리서치 복기 · 한지훈 복기팀장 & 박진우 부사장]: 한 주간 발간된 증권사 리포트를 전수 복기한 결과, 단순 테마주보다 실적과 수주 잔고가 뒷받침되는 {top3_names_str}의 목표주가 괴리율이 가장 매력적으로 유지되고 있습니다."
+        ),
+        "quant_opinion": (
+            f"📊 [실전 계좌 수급 복기 · 김도현 수급본부장]: 현재 실전 운용 계좌는 승률 {win_rate:.0f}%를 기록 중이며, 월요일 개장 시 시초가 급등 추격매수를 피하고 보합~+2% 이내 눌림목에서 분할 매수하는 전략이 유효합니다."
+        ),
+        "risk_opinion": (
+            "⚠️ [주간 매매 반성 & 감사 · 최서연 리스크본부장]: 수익 구간 종목은 1차 목표가에서 50% 분할 익절 원칙을 철저히 지키고, 손절 기준선(-3.5%~-5.0%) 이탈 시 지체 없이 자동 방어하도록 감사 완료했습니다."
+        ),
+        "secretary_conclusion": (
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 한지훈 이사의 주간 리서치·성과복기팀에서 이번 주 추천주와 실전 계좌를 깔끔하게 복기하고 월요일 Top 3 타겟을 올렸습니다. [승인 서명]을 눌러 차주 운용 전략을 재가해 주십시오!"
+        ),
+        "recommendation": f"주간 복기 결산 및 차주 Top 3({top1['stock_name']} 외) 공략 승인",
+        "detail_url": "https://stock.naver.com/research/company",
+        "easy_terms": [
+            {"term": "주간 리서치 복기", "desc": "한 주 동안 증권사들이 추천했던 종목들의 실제 주가 흐름과 목표주가 달성 가능성을 주말에 다시 점검하는 과정입니다."},
+            {"term": "목표주가 괴리율", "desc": "증권사 전문가 목표가격과 현재 주가의 차이로, 괴리율이 클수록 앞으로 오를 여지가 많다는 뜻입니다."},
+        ],
+    }
+
+    calendar_doc = {
+        "doc_id": f"DOC-{date_doc_str}-WKCAL",
+        "doc_number": f"제 {date_doc_str}-일정호",
+        "category_type": "world_news",
+        "category_badge": "🗓️ 한주 경제일정 분석팀",
+        "urgency": "주간 경제캘린더",
+        "stock_name": "한주 경제일정 캘린더",
+        "current_price": fx_price_str,
+        "target_price": "목(고용)·금(PCE)",
+        "upside_pct": "5일 시나리오",
+        "title": f"[한주 경제일정 & 시나리오] {week_range_str} 한·미 핵심 경제지표 및 요일별 대응 전략",
+        "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
+        "submitted_at": f"{time_str} 한·미 경제 캘린더 시나리오 분석 완료",
+        "easy_headline": (
+            f"{week_range_str} 주간 시장을 움직일 핵심 일정은 월요일 한국 수출입 점검, 수요일 미 원유재고, 목요일 미 실업수당·PMI, 금요일 미 PCE 물가지수입니다. "
+            f"요일별 호재·악재 시나리오와 수혜 섹터를 사전 수립했습니다."
+        ),
+        "key_numbers": [
+            {"label": "분석 대상 주간", "value": week_range_str},
+            {"label": "주초 핵심 일정(월~수)", "value": "한국 수출입 · 연준 연설 · 원유재고"},
+            {"label": "주후반 빅이벤트(목~금)", "value": "미 실업수당·PMI · PCE 물가지수"},
+            {"label": "실시간 환율·선물 기준", "value": f"환율 {fx_price_str.split(' ')[0]} / 선물 {nq_price_str.split(' ')[0]}"},
+        ],
+        "research_opinion": (
+            "👍 [요일별 일정 핵심 · 윤서아 경제일정팀장]: 경제일정을 미리 알면 급락장에 당황하지 않고 급등장에 추격매수하지 않습니다. 월~수요일에는 수출·실적주 분할 매집, 목~금요일 물가·고용 지표 발표 전후에는 결과를 확인하며 대응하는 스케줄입니다."
+        ),
+        "quant_opinion": (
+            "📊 [일정별 수급 시나리오 · 김도현 수급본부장]: 목요일 미국 고용과 금요일 PCE 물가가 시장 예상치에 부합(골디락스)할 경우 외국인 선물 매수가 대거 유입되므로 반도체·전력설비·조선 대장주 비중을 유지합니다."
+        ),
+        "risk_opinion": (
+            "⚠️ [빅이벤트 방어 지침 · 최서연 리스크본부장]: 목·금요일 밤 9시 30분(한국시간) 미국 핵심 지표 발표 직전에는 변동성 확대에 대비해 계좌 내 현금 비중을 최소 20~30% 확보해 두셔야 안전합니다."
+        ),
+        "secretary_conclusion": (
+            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정·매크로분석팀에서 한 주간 날짜별 주요 경제일정과 호재/악재 대응 시나리오를 완성했습니다. [승인 서명]을 눌러 주간 일정 대응 체제를 가동해 주십시오!"
+        ),
+        "recommendation": f"{week_range_str} 주간 경제일정 시나리오 대응 승인",
+        "detail_url": "https://stock.naver.com/research/economy",
+        "easy_terms": [
+            {"term": "PCE 물가지수", "desc": "미국 연준(Fed)이 기준금리를 결정할 때 가장 중요하게 참고하는 미국인들의 실제 물가 상승률 성적표입니다."},
+            {"term": "PMI (구매관리자지수)", "desc": "기업의 구매 담당자들에게 경기가 좋은지 설문조사한 점수로, 50을 넘으면 경기 확장, 50 미만이면 경기 위축을 뜻합니다."},
+        ],
+    }
+
+    return weekly_review, weekly_calendar, review_doc, calendar_doc
 
 
 @router.get("/ceo-office")
@@ -3825,6 +4288,7 @@ def get_ceo_office_boardroom(
 
     company_policy_data = {}
     directive_logs_data = []
+    t_state = {}
     try:
         from ceo_trading_service import load_trading_state
         t_state = load_trading_state()
@@ -3839,6 +4303,30 @@ def get_ceo_office_boardroom(
     except Exception as e:
         print(f"[CEOOffice] trading state merge error: {e}")
 
+    weekly_review_data = {}
+    weekly_calendar_data = {}
+    try:
+        weekly_review_data, weekly_calendar_data, wk_rev_doc, wk_cal_doc = _build_weekly_review_and_calendar(
+            now_kst=now_kst,
+            desk_company_reports=desk_company_reports,
+            kr_realtime_quotes=kr_realtime_quotes,
+            fx_price_str=fx_price_str,
+            nq_price_str=nq_price_str,
+            cl_price_str=_cl_price_str,
+            t_state=t_state,
+            date_doc_str=date_doc_str,
+            time_str=time_str,
+        )
+        existing_doc_ids = {d.get("doc_id") for d in auto_approvals}
+        # 주말에는 최상단(2~3번째)에 배치하고 평일에도 결재함에 상시 포함
+        insert_pos = 1 if weekday >= 5 else len(auto_approvals)
+        if wk_cal_doc["doc_id"] not in existing_doc_ids:
+            auto_approvals.insert(insert_pos, wk_cal_doc)
+        if wk_rev_doc["doc_id"] not in existing_doc_ids:
+            auto_approvals.insert(insert_pos, wk_rev_doc)
+    except Exception as e:
+        print(f"[CEOOffice] weekly review & calendar build error: {e}")
+
     resp_data = {
         "status": "success",
         "data": {
@@ -3848,6 +4336,8 @@ def get_ceo_office_boardroom(
             "company_policy": company_policy_data,
             "directive_logs": directive_logs_data,
             "auto_approvals": auto_approvals,
+            "weekly_review": weekly_review_data,
+            "weekly_calendar": weekly_calendar_data,
             "agenda": agenda_summary,
             "debates": debates,
             "research_desk": desk_company_reports,

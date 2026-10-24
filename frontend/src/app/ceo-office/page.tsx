@@ -268,6 +268,28 @@ const FALLBACK_EXECUTIVES: Executive[] = [
         style: '밤사이 뉴욕 증시 10대 빅테크(NVDA·TSLA·AAPL·MSFT·GOOGL·AMZN 등) 순환 분석과 나스닥 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.',
         status: '미국 10대 빅테크 데일리 순환 분석 & 나스닥 선물·원자재 24시간 연동 완료',
     },
+    {
+        id: 'weekly_review_dir',
+        name: '한지훈',
+        role: '이사 (주간리서치·성과복기팀장)',
+        dept: '주간 리서치·실전매매 복기TF',
+        badge: '주간 리서치 적중 복기 · 월요일 Top3',
+        avatar: '📋',
+        color: 'teal',
+        style: '한 주간 상정된 증권사 리포트 추천주와 실전 모의투자 계좌의 매매 성적표(승률·손익·반성문)를 복기하고 차주 월요일 개장 전략을 수립합니다.',
+        status: '주간 리서치 추천주 전수 복기 & 실전 계좌 매매 복기 보고서 상정 완료',
+    },
+    {
+        id: 'econ_cal_dir',
+        name: '윤서아',
+        role: '이사 (경제일정·매크로분석팀장)',
+        dept: '글로벌 경제캘린더·이벤트분석팀',
+        badge: '한주 경제일정 · 호재/악재 시나리오',
+        avatar: '🗓️',
+        color: 'indigo',
+        style: '한 주간(월~금) 한국·미국의 핵심 경제일정(FOMC·물가·고용·수출입·빅테크 실적)을 요일별로 정리하고 결과별 대응 시나리오를 사전 브리핑합니다.',
+        status: '한 주간 한·미 핵심 경제일정 캘린더 및 요일별 대응 시나리오 수립 완료',
+    },
 ];
 
 const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
@@ -561,7 +583,10 @@ export default function CeoOfficePage() {
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
-    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'weekly_review_calendar' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
+    const [weeklySubView, setWeeklySubView] = useState<'both' | 'review' | 'calendar'>('both');
+    const [weeklyReview, setWeeklyReview] = useState<any>(null);
+    const [weeklyCalendar, setWeeklyCalendar] = useState<any>(null);
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const getCeoEmail = useCallback(() => {
         if (user?.email) return user.email;
@@ -923,6 +948,8 @@ export default function CeoOfficePage() {
                 if (d.updated_at) setUpdatedAt(d.updated_at);
                 if (d.company_policy && Object.keys(d.company_policy).length > 0) setCompanyPolicy(d.company_policy);
                 if (Array.isArray(d.directive_logs)) setDirectiveLogs(d.directive_logs);
+                if (d.weekly_review && Object.keys(d.weekly_review).length > 0) setWeeklyReview(d.weekly_review);
+                if (d.weekly_calendar && Object.keys(d.weekly_calendar).length > 0) setWeeklyCalendar(d.weekly_calendar);
 
                 if (appendHistory && (messageParam || topicParam)) {
                     const secTurn = (d.debates || []).find((t: DebateTurn) => t.speaker_id === 'sec_chief') || (d.debates || [])[0];
@@ -1926,8 +1953,8 @@ export default function CeoOfficePage() {
                         </div>
                     </div>
 
-                    {/* 5인 임원진 자율 업무 완료 상태 카드 */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 mt-6">
+                    {/* 7인 임원진(주간복기팀·경제일정팀 포함) 자율 업무 완료 상태 카드 */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mt-6">
                         {executives.map(exec => (
                             <div
                                 key={exec.id}
@@ -1969,6 +1996,23 @@ export default function CeoOfficePage() {
                             <span>🖋️ 대표이사 전자결재 서류함 (자동 상정)</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25 font-extrabold">
                                 대기 {pendingDocsCount}건
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('weekly_review_calendar')}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                                activeTab === 'weekly_review_calendar'
+                                    ? 'bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400 text-slate-950 shadow-lg shadow-teal-500/25'
+                                    : 'bg-teal-500/15 text-teal-200 hover:bg-teal-500/25 border border-teal-400/40'
+                            }`}
+                        >
+                            <span>📋 주간 리서치 복기 &amp; 🗓️ 한주 경제일정</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                activeTab === 'weekly_review_calendar' ? 'bg-slate-950/30 text-slate-950' : 'bg-teal-400/20 text-teal-300'
+                            }`}>
+                                주말·주간 특화팀
                             </span>
                         </button>
 
@@ -2230,7 +2274,7 @@ export default function CeoOfficePage() {
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         {/* 좌측 8컬럼: 대표이사 전자결재 서류함 (기본 탭) */}
-                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
+                        <div className={['electronic_sign', 'weekly_review_calendar', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
                             {activeTab === 'electronic_sign' && (
                                 <>
                                     {/* 비서실장 브리핑 안내 배너 */}
@@ -4202,7 +4246,460 @@ export default function CeoOfficePage() {
                                         </div>
                                     )}
                                 </div>
-                            )}{activeTab === 'history' && (
+                            )}{activeTab === 'weekly_review_calendar' && (
+                                <div className="space-y-6">
+                                    {/* 상단 헤더 & 뷰 전환 스위치 */}
+                                    <div className="bg-gradient-to-r from-[#0b192c] via-[#0f2537] to-[#0b192c] border-2 border-teal-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl">
+                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                            <div>
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    <span className="px-3 py-1 rounded-full text-xs font-black bg-teal-500/20 text-teal-300 border border-teal-400/40">
+                                                        📋 주간 리서치·성과복기팀 (한지훈 이사)
+                                                    </span>
+                                                    <span className="px-3 py-1 rounded-full text-xs font-black bg-indigo-500/20 text-indigo-300 border border-indigo-400/40">
+                                                        🗓️ 글로벌 경제일정·매크로분석팀 (윤서아 이사)
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                                                        {weeklyReview?.period_label || '주간 전수 결산 & 차주(월~금) 시나리오 가동'}
+                                                    </span>
+                                                </div>
+                                                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                                    🏛️ 대표이사 전용 『주간 리서치·매매 복기』 &amp; 『한주 경제일정 시나리오』 합동 보고서
+                                                </h2>
+                                                <p className="text-xs sm:text-sm text-gray-300 mt-1">
+                                                    이번 주 추천 종목과 실전 계좌의 성적표를 냉정하게 복기(반성)하고, 다가오는 한 주간(월~금) 한국·미국의 핵심 경제일정과 호재·악재 대응 시나리오를 한눈에 브리핑합니다.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setWeeklySubView('both')}
+                                                    className={`px-3.5 py-2 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                                                        weeklySubView === 'both'
+                                                            ? 'bg-teal-400 text-slate-950 shadow-lg shadow-teal-400/25'
+                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                    }`}
+                                                >
+                                                    ✨ 복기 + 경제일정 한눈에 보기
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setWeeklySubView('review')}
+                                                    className={`px-3.5 py-2 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                                                        weeklySubView === 'review'
+                                                            ? 'bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-400/25'
+                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                    }`}
+                                                >
+                                                    📋 주간 리서치·매매 복기만
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setWeeklySubView('calendar')}
+                                                    className={`px-3.5 py-2 rounded-xl text-xs font-black cursor-pointer transition-all ${
+                                                        weeklySubView === 'calendar'
+                                                            ? 'bg-indigo-400 text-slate-950 shadow-lg shadow-indigo-400/25'
+                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                    }`}
+                                                >
+                                                    🗓️ 한주 경제일정 캘린더만
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PART 1: 📋 주간 리서치·성과 복기팀 보고서 */}
+                                    {(weeklySubView === 'both' || weeklySubView === 'review') && (
+                                        <div className="bg-[#0b1323] border-2 border-emerald-500/35 rounded-3xl p-5 sm:p-6 space-y-6 shadow-xl">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                                                <div>
+                                                    <div className="text-xs font-black text-emerald-400 mb-1 flex items-center gap-2">
+                                                        <span>📋 PART 1 · 주간 리서치·실전매매 복기TF</span>
+                                                        <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                                            {weeklyReview?.team_leader || '한지훈 이사 · 박진우 부사장 · 최서연 상무'}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-lg sm:text-xl font-black text-white">
+                                                        {weeklyReview?.title || '📋 [주간 리서치·성과 복기 보고서] 추천주 적중 점검 & 차주 개장 Top 3 전략'}
+                                                    </h3>
+                                                </div>
+                                                <span className="text-xs font-mono text-gray-400 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 self-start sm:self-auto">
+                                                    {weeklyReview?.updated_at || '실시간 복기 동기화 완료'}
+                                                </span>
+                                            </div>
+
+                                            {/* 4대 핵심 복기 KPI 카드 */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                {(weeklyReview?.kpis || [
+                                                    { label: '주간 리서치 전수 복기', value: `총 ${researchDesk.length}개 핵심 종목`, sub: '증권사 목표주가 vs 현재가 괴리율 감사', tone: 'positive' },
+                                                    { label: '평균 목표주가 상승여력', value: '+28.4%', sub: `최고 기대수익: ${intelligenceMetrics.topStock.name} (${intelligenceMetrics.topStock.upside})`, tone: 'positive' },
+                                                    { label: '실전 운용계좌 누적 성과', value: '+0.00% (승률 100%)', sub: '추격매수 배제 · 분할매수 원칙 준수', tone: 'positive' },
+                                                    { label: '차주(월) 1순위 공략주', value: intelligenceMetrics.topStock.name, sub: `목표가 ${intelligenceMetrics.topStock.target} (${intelligenceMetrics.topStock.upside})`, tone: 'positive' },
+                                                ]).map((kpi: any, idx: number) => (
+                                                    <div key={idx} className="bg-black/45 border border-emerald-500/25 rounded-2xl p-4">
+                                                        <div className="text-xs font-bold text-gray-400 mb-1">{kpi.label}</div>
+                                                        <div className="text-lg sm:text-xl font-black text-emerald-300">{kpi.value}</div>
+                                                        <div className="text-[11px] text-gray-300 mt-1">{kpi.sub}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* 대표님 전용 3줄 복기 총평 */}
+                                            <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/30 border border-emerald-500/35 rounded-2xl p-4 sm:p-5">
+                                                <div className="text-xs sm:text-sm font-black text-emerald-300 mb-2.5 flex items-center gap-2">
+                                                    <span>📌</span>
+                                                    <span>대표님 전용 주간 복기 3줄 핵심 요약 (10초 브리핑)</span>
+                                                </div>
+                                                <div className="space-y-2 text-xs sm:text-sm text-gray-100 font-bold leading-relaxed">
+                                                    {(weeklyReview?.executive_3line_summary || [
+                                                        '1️⃣ [리서치 복기 총평]: 이번 주 증권사 커버리지 종목 점검 결과, 실적·수주 기반 대형주의 목표가 대비 저평가 매력이 뚜렷합니다.',
+                                                        '2️⃣ [실전 매매 반성 및 평가]: 급등주 추격매수를 철저히 배제하고 현금 비중을 유지하며 1,000만원 정액 분할 매수 원칙을 지켰습니다.',
+                                                        '3️⃣ [차주 월요일 핵심 전략]: 기대수익률 상위 Top 3 종목을 중심으로 월요일 시초가 눌림목에서 분할 매수 대응을 건의합니다.',
+                                                    ]).map((line: string, i: number) => (
+                                                        <div key={i} className="bg-black/35 rounded-xl px-3.5 py-2 border border-white/5">
+                                                            {line}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 🚀 차주 월요일 개장 최우선 타겟 Top 3 */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-base sm:text-lg font-black text-amber-300 flex items-center gap-2">
+                                                        <span>🚀</span>
+                                                        <span>차주(월요일) 개장 집중 공략 Top 3 타겟 &amp; 매매 시나리오</span>
+                                                    </h4>
+                                                    <span className="text-xs text-gray-400">복기 결과 기대수익률 최상위 엄선</span>
+                                                </div>
+                                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+                                                    {(weeklyReview?.monday_top3 || []).map((item: any) => (
+                                                        <div key={item.rank} className="bg-gradient-to-br from-[#111c33] to-[#0a101f] border-2 border-amber-500/35 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                                                            <div className="space-y-2.5">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                                                                        🏆 월요일 {item.rank}순위 · {item.stock_name}
+                                                                    </span>
+                                                                    <span className="text-xs font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
+                                                                        {item.broker}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 flex items-center justify-between text-xs">
+                                                                    <div>
+                                                                        <div className="text-[10px] text-gray-400 font-bold">현재가 ➔ 목표주가</div>
+                                                                        <div className="font-black text-white font-mono mt-0.5">
+                                                                            {item.current_price.split(' ')[0]} ➔ <span className="text-amber-300">{item.target_price}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <div className="text-[10px] text-rose-300 font-bold">기대수익률</div>
+                                                                        <div className="text-sm font-black text-rose-400 font-mono">{item.upside_pct}</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-1.5 text-xs">
+                                                                    <div className="bg-emerald-950/35 border border-emerald-500/30 rounded-lg p-2.5">
+                                                                        <span className="text-emerald-300 font-black block mb-0.5">🎯 월요일 진입 타점:</span>
+                                                                        <span className="text-gray-200 font-medium">{item.entry_strategy}</span>
+                                                                    </div>
+                                                                    <div className="bg-rose-950/30 border border-rose-500/25 rounded-lg p-2.5">
+                                                                        <span className="text-rose-300 font-black block mb-0.5">🛡️ 손절·방어 원칙:</span>
+                                                                        <span className="text-gray-200 font-medium">{item.stop_loss_rule}</span>
+                                                                    </div>
+                                                                    <div className="text-[11px] text-gray-300 px-1 pt-0.5">
+                                                                        <strong className="text-amber-300">• 핵심 모멘텀:</strong> {item.core_catalyst}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleApproveWatchlistStock({
+                                                                    stock_name: item.stock_name,
+                                                                    stock_code: item.stock_code,
+                                                                    category: 'kr_stock',
+                                                                    current_price: item.current_price,
+                                                                    target_price_final: item.target_price,
+                                                                })}
+                                                                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs cursor-pointer transition-all shadow-md"
+                                                            >
+                                                                🖋️ 대표이사 직권 차주 포트폴리오 즉시 편입
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 📊 이번 주 증권사 리포트 추천주 전수 복기 리스트 */}
+                                            <div className="space-y-3">
+                                                <h4 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                                                    <span>📊</span>
+                                                    <span>이번 주 상정 증권사 리포트 종목별 정밀 복기표</span>
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {(weeklyReview?.research_review_list || []).map((rep: any, idx: number) => (
+                                                        <div key={idx} className="bg-black/45 border border-white/10 hover:border-emerald-500/40 rounded-2xl p-4 space-y-2.5 transition-all">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black text-xs">
+                                                                        🎯 {rep.stock_name}
+                                                                    </span>
+                                                                    <span className="text-xs font-bold text-gray-400">
+                                                                        {rep.broker} · {rep.date}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                    {rep.verdict_badge}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="text-sm font-black text-white">
+                                                                {rep.title}
+                                                            </div>
+
+                                                            <div className="bg-slate-900/90 border border-white/10 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                                <span className="text-gray-300 font-bold">
+                                                                    현재 <strong className="text-white font-mono">{rep.current_price.split(' ')[0]}</strong> ➔ 목표 <strong className="text-amber-300 font-mono">{rep.target_price}</strong>
+                                                                </span>
+                                                                <span className="text-rose-400 font-black font-mono">
+                                                                    기대수익 {rep.upside_pct} (1천만원 시 {rep.profit_10m})
+                                                                </span>
+                                                            </div>
+
+                                                            <ul className="space-y-1 text-xs text-gray-200 leading-relaxed">
+                                                                <li className="flex items-start gap-1.5">
+                                                                    <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                    <span><strong className="text-emerald-300">주간 복기:</strong> {rep.review_note}</span>
+                                                                </li>
+                                                                <li className="flex items-start gap-1.5">
+                                                                    <span className="text-amber-400 font-black shrink-0">•</span>
+                                                                    <span><strong className="text-amber-300">차주 지침:</strong> {rep.monday_action}</span>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 💼 실전 모의투자 계좌 주간 매매 반성문 & 리스크 감사 */}
+                                            <div className="bg-black/40 border border-white/15 rounded-2xl p-4 sm:p-5 space-y-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <h4 className="text-base font-black text-white flex items-center gap-2">
+                                                        <span>💼</span>
+                                                        <span>우리 회사 실전 운용 계좌 주간 매매 복기 &amp; CRO 반성문</span>
+                                                    </h4>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setActiveTab('approved_tf');
+                                                            fetchTradingDesk();
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-black cursor-pointer"
+                                                    >
+                                                        실전 트레이딩 데스크 상세 열기 →
+                                                    </button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+                                                        <div className="text-xs sm:text-sm font-black text-emerald-300">
+                                                            👍 이번 주 잘한 점 (한지훈 복기팀장 · 김도현 수급상무 평가)
+                                                        </div>
+                                                        <ul className="space-y-1.5 text-xs text-gray-200 leading-relaxed">
+                                                            {(weeklyReview?.account_reflection?.well_done_points || []).map((pt: string, i: number) => (
+                                                                <li key={i} className="flex items-start gap-1.5">
+                                                                    <span className="text-emerald-400 font-black shrink-0">✓</span>
+                                                                    <span>{pt}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+
+                                                    <div className="bg-rose-950/25 border border-rose-500/30 rounded-xl p-4 space-y-2">
+                                                        <div className="text-xs sm:text-sm font-black text-rose-300">
+                                                            ⚠️ 반성 및 차주 보완할 점 (최서연 CRO 리스크 감사)
+                                                        </div>
+                                                        <ul className="space-y-1.5 text-xs text-gray-200 leading-relaxed">
+                                                            {(weeklyReview?.account_reflection?.improve_points || []).map((pt: string, i: number) => (
+                                                                <li key={i} className="flex items-start gap-1.5">
+                                                                    <span className="text-rose-400 font-black shrink-0">!</span>
+                                                                    <span>{pt}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                {Array.isArray(weeklyReview?.account_reflection?.positions) && weeklyReview.account_reflection.positions.length > 0 && (
+                                                    <div className="pt-2 space-y-2">
+                                                        <div className="text-xs font-black text-gray-300">
+                                                            📌 현재 보유 운용 종목별 주간 복기 코멘트 ({weeklyReview.account_reflection.positions.length}종목)
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                                            {weeklyReview.account_reflection.positions.map((pos: any, i: number) => (
+                                                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs space-y-1">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="font-black text-white">{pos.stock_name}</span>
+                                                                        <span className={`font-black font-mono ${pos.pnl_pct >= 0 ? 'text-rose-400' : 'text-sky-400'}`}>
+                                                                            {pos.pnl_pct >= 0 ? `+${pos.pnl_pct}%` : `${pos.pnl_pct}%`}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="text-[11px] text-gray-400 font-mono">
+                                                                        매수가 {pos.entry_price_str} ➔ 현재 {pos.current_price_str}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-emerald-200 pt-1 border-t border-white/5">
+                                                                        • {pos.review_comment}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* PART 2: 🗓️ 한주 경제일정·매크로 분석팀 캘린더 */}
+                                    {(weeklySubView === 'both' || weeklySubView === 'calendar') && (
+                                        <div className="bg-[#0b1323] border-2 border-indigo-500/35 rounded-3xl p-5 sm:p-6 space-y-6 shadow-xl">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                                                <div>
+                                                    <div className="text-xs font-black text-indigo-400 mb-1 flex items-center gap-2">
+                                                        <span>🗓️ PART 2 · 글로벌 경제캘린더·이벤트분석팀</span>
+                                                        <span className="text-[11px] px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                                                            {weeklyCalendar?.team_leader || '윤서아 이사 · 이준호 이사 · 김도현 상무'}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-lg sm:text-xl font-black text-white">
+                                                        {weeklyCalendar?.title || '🗓️ 한·미 핵심 경제일정 캘린더 & 요일별 호재/악재 대응 시나리오'}
+                                                    </h3>
+                                                </div>
+                                                <span className="text-xs font-black text-amber-300 bg-amber-500/15 px-3 py-1.5 rounded-xl border border-amber-500/30 self-start sm:self-auto">
+                                                    {weeklyCalendar?.mode_badge || '주간 5일(월~금) 시나리오 가동'}
+                                                </span>
+                                            </div>
+
+                                            {/* 거시지표 기준점 4칸 요약 & 주간 전략 총평 */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                {(weeklyCalendar?.macro_indicators || [
+                                                    { label: '실시간 원/달러 환율', value: '1,380원대 실시간 감시' },
+                                                    { label: '나스닥100 선물(NQ=F)', value: '24시간 추세 연동 중' },
+                                                    { label: 'WTI 국제유가(CL=F)', value: '인플레 안정 구간 점검' },
+                                                    { label: '주간 핵심 빅이벤트', value: '목(고용·PMI) · 금(PCE물가)' },
+                                                ]).map((m: any, idx: number) => (
+                                                    <div key={idx} className="bg-black/45 border border-indigo-500/25 rounded-2xl p-3.5">
+                                                        <div className="text-[11px] font-bold text-gray-400">{m.label}</div>
+                                                        <div className="text-base font-black text-indigo-300 font-mono mt-1">{m.value}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="bg-gradient-to-r from-indigo-950/45 via-slate-900 to-sky-950/35 border border-indigo-500/35 rounded-2xl p-4 text-xs sm:text-sm text-gray-100 leading-relaxed">
+                                                <div className="font-black text-indigo-300 mb-1 flex items-center gap-1.5">
+                                                    <span>🧭</span>
+                                                    <span>윤서아 경제일정팀장 · 한주간 시장 온도계 &amp; 대응 가이드</span>
+                                                </div>
+                                                <p className="font-medium text-gray-200">
+                                                    {weeklyCalendar?.weekly_strategy_summary || '주 초반(월~수)에는 한국 수출입 동향과 연준 위원 발언을 확인하며 실적 저평가주를 분할 매집하고, 주 후반(목~금) 미국 실업수당·PMI 및 PCE 물가지수 발표 전후에는 현금 비중(20~30%)으로 변동성에 유연하게 대응하십시오.'}
+                                                </p>
+                                            </div>
+
+                                            {/* 월~금 요일별 상세 타임라인 & 호재/악재 시나리오 카드 */}
+                                            <div className="space-y-4">
+                                                {(weeklyCalendar?.days || []).map((day: any, dIdx: number) => (
+                                                    <div
+                                                        key={dIdx}
+                                                        className={`rounded-2xl p-4 sm:p-5 border transition-all space-y-3.5 ${
+                                                            day.is_today
+                                                                ? 'bg-gradient-to-r from-indigo-950/50 via-[#101c35] to-[#0d1629] border-2 border-amber-400 shadow-lg shadow-amber-500/10'
+                                                                : 'bg-black/45 border-white/10 hover:border-indigo-500/40'
+                                                        }`}
+                                                    >
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="px-3 py-1 rounded-xl bg-indigo-500/25 text-indigo-200 border border-indigo-400/40 font-black text-xs sm:text-sm font-mono">
+                                                                    📅 {day.date_str}
+                                                                </span>
+                                                                {day.is_today && (
+                                                                    <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px] animate-pulse">
+                                                                        ★ TODAY 오늘의 일정
+                                                                    </span>
+                                                                )}
+                                                                <span className="text-sm sm:text-base font-black text-white">
+                                                                    {day.theme}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-black text-amber-400 tracking-wider">
+                                                                    중요도 {day.stars}
+                                                                </span>
+                                                                <span className="px-2.5 py-0.5 rounded-lg bg-white/10 text-gray-200 text-[11px] font-bold">
+                                                                    {day.importance_badge}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 시간대별 세부 일정 리스트 */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                                                            {(day.events || []).map((ev: any, eIdx: number) => (
+                                                                <div key={eIdx} className="bg-slate-900/90 border border-white/10 rounded-xl p-3 space-y-1">
+                                                                    <div className="flex items-center justify-between text-[11px]">
+                                                                        <span className="font-black text-sky-300">{ev.country}</span>
+                                                                        <span className="font-mono text-amber-300 font-bold">⏰ {ev.time} KST</span>
+                                                                    </div>
+                                                                    <div className="text-xs font-black text-white leading-snug">
+                                                                        {ev.name}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-gray-400 pt-0.5">
+                                                                        • 예상/핵심: <span className="text-gray-200 font-semibold">{ev.consensus}</span>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* 호재 vs 악재 시나리오 양면 비교 */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 text-xs space-y-1">
+                                                                <div className="font-black text-emerald-300 flex items-center gap-1.5">
+                                                                    <span>🟢 긍정(호재) 발표 시 시장 시나리오 &amp; 공략</span>
+                                                                </div>
+                                                                <p className="text-gray-200 leading-relaxed font-medium">
+                                                                    {day.bull_scenario}
+                                                                </p>
+                                                            </div>
+                                                            <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 text-xs space-y-1">
+                                                                <div className="font-black text-rose-300 flex items-center gap-1.5">
+                                                                    <span>🔴 부진(악재) 발표 시 리스크 방어 지침</span>
+                                                                </div>
+                                                                <p className="text-gray-200 leading-relaxed font-medium">
+                                                                    {day.bear_scenario}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 주목할 수혜 섹터 태그 */}
+                                                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                            <span className="text-[11px] font-black text-indigo-300">
+                                                                🎯 {day.day_name} 집중 감시 섹터:
+                                                            </span>
+                                                            {(day.focus_sectors || []).map((sec: string, sIdx: number) => (
+                                                                <span
+                                                                    key={sIdx}
+                                                                    className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-200 border border-indigo-500/30 text-[11px] font-bold"
+                                                                >
+                                                                    #{sec}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                                        )}{activeTab === 'history' && (
                                 <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-5">
                                     <div>
                                         <h3 className="text-lg font-black text-white mb-1">
@@ -4291,7 +4788,7 @@ export default function CeoOfficePage() {
                         </div>
 
                         {/* 우측 4컬럼: 전사 시장 시스템 가동 현황 & 빠른 서명 요약 (전자결재 탭에서는 12컬럼 풀와이드 메일함으로 전환) */}
-                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
+                        <div className={['electronic_sign', 'weekly_review_calendar', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
                             {/* 전사 자동 시스템 가동 모니터 */}
                             <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
                                 <div className="flex items-center justify-between mb-3">
