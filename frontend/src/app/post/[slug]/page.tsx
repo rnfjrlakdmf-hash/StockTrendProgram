@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         title: `${post.title} | 오늘의 핫이슈 종목 리포트 - StockTrend`,
         description: desc,
         robots: isRepetitiveTickerPost
-            ? { index: false, follow: true }
+            ? { index: true, follow: true }
             : { index: true, follow: true },
         alternates: {
             canonical: `/post/${resolvedParams.slug}`,

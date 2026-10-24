@@ -64,14 +64,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 canonical: `/stock/${decodedTicker}`,
             },
             robots: {
-                index: false,
+                index: true,
                 follow: true,
             },
         };
     }
     
     const name = data.name || decodedTicker;
-    const title = `[급등주] ${name} 주가 전망 및 AI 모멘텀 분석 (${decodedTicker}) | 스마트 투자 비서`;
+    const title = `${name} (${decodedTicker}) 주가 전망 · 증권사 목표주가 리포트 · 외국인 기관 수급 분석 | 스마트 투자 비서`;
     const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 실시간 매수/매도 시그널과 향후 전망을 무료로 확인하세요.`;
     
     // OG Image URL 생성
@@ -90,13 +90,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         robots: {
-            index: false,
+            index: true,
             follow: true,
         },
         alternates: {
             canonical: `/stock/${decodedTicker}`,
         },
-        keywords: [name, `${name} 주가`, `${name} 전망`, `${name} 배당`, `${name} 분석`, `${name} 실적`, "AI 주식 분석", decodedTicker],
+        keywords: [name, `${name} 주가`, `${name} 주가 전망`, `${name} 목표주가`, `${name} 증권사 리포트`, `${name} 수급`, `${name} 외국인 순매수`, `${name} 배당금`, `${name} 실적`, decodedTicker, "AI 주식 분석"],
         openGraph: {
             title,
             description,

@@ -40,12 +40,49 @@ async function getLatestTheoryPosts() {
 }
 
 export const metadata: Metadata = {
-  title: '스마트 투자 비서 | AI 주식 분석, 실시간 수급 및 공시 알림',
-  description: '금융감독원 DART 및 미국 SEC 공시 기반 실시간 알림, AI 퀀트 가치평가(PER/PBR/ROE), 외국인·기관 수급 추적 및 46대 필수 주식 투자 가이드를 100% 무료로 제공합니다.',
+  title: '스마트 투자 비서 | 증권사 목표주가 리포트 요약 · 외국인 기관 실시간 수급 · AI 주식 분석',
+  description: '오늘 발간된 국내 증권사 종목 리포트 목표주가 요약, 외국인·기관 실시간 수급 스캐너, 금융감독원 DART 및 미국 SEC 공시 속보, 나스닥 선물·원달러 환율 브리핑을 100% 무료로 확인하세요.',
+  keywords: [
+    '증권사 리포트 요약', '오늘의 목표주가', '외국인 기관 수급', 'AI 주식 분석', '실시간 주가 알림',
+    'DART 공시 속보', '삼성전자 주가 전망', 'SK하이닉스 목표주가', '두산에너빌리티 목표주가',
+    '엔비디아 주가 전망', '테슬라 주가 전망', '브로드컴 목표주가', '나스닥 선물 실시간', '스마트 투자 비서'
+  ],
   alternates: {
     canonical: '/',
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
+  },
 };
+
+const POPULAR_SEO_STOCKS = [
+  { ticker: '005930', name: '삼성전자', tag: '반도체·HBM' },
+  { ticker: '000660', name: 'SK하이닉스', tag: 'AI 메모리' },
+  { ticker: '034020', name: '두산에너빌리티', tag: 'SMR·원전' },
+  { ticker: '010140', name: '삼성중공업', tag: '조선·LNG' },
+  { ticker: '042660', name: '한화오션', tag: '방산·조선' },
+  { ticker: '012450', name: '한화에어로스페이스', tag: 'K-방산' },
+  { ticker: '003490', name: '대한항공', tag: '항공·운송' },
+  { ticker: '306200', name: '세아제강', tag: '강관·에너지' },
+  { ticker: '012630', name: 'HDC현대산업개발', tag: '건설·디벨로퍼' },
+  { ticker: '028050', name: '삼성E&A', tag: '플랜트·수주' },
+  { ticker: '005380', name: '현대차', tag: '자동차·밸류업' },
+  { ticker: '035420', name: 'NAVER', tag: 'AI·플랫폼' },
+  { ticker: 'NVDA', name: '엔비디아 (NVDA)', tag: '미국 AI 대장' },
+  { ticker: 'TSLA', name: '테슬라 (TSLA)', tag: '자율주행·로봇' },
+  { ticker: 'AVGO', name: '브로드컴 (AVGO)', tag: 'AI 맞춤형칩' },
+  { ticker: 'AAPL', name: '애플 (AAPL)', tag: '온디바이스 AI' },
+  { ticker: 'MSFT', name: '마이크로소프트', tag: '클라우드·AI' },
+  { ticker: 'PLTR', name: '팔란티어 (PLTR)', tag: 'AI 국방·데이터' },
+];
 
 const INVESTMENT_GUIDES = [
   { href: '/guide/per', title: 'PER (주가수익비율)', desc: '적정 PER 기준과 실전 가치평가' },
@@ -466,6 +503,52 @@ export default async function Home() {
                   <p className="text-gray-400 text-[11px] mt-1 leading-relaxed line-clamp-2">
                     {desc}
                   </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* 3-B. 구글·네이버 검색 유입용 인기 종목 실시간 목표주가·수급 리포트 허브 */}
+          <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-white">
+                  🔥 실시간 인기 검색 종목 · 증권사 목표주가 &amp; 수급 리포트
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  개인 투자자들이 가장 많이 검색하는 국내외 핵심 종목의 실시간 시세, 외국인·기관 수급, 증권사 목표주가 분석 페이지입니다.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  href="/ceo-office"
+                  className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all"
+                >
+                  🏛️ 오늘의 증권사 리포트 브리핑 →
+                </Link>
+                <Link
+                  href="/directory"
+                  className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all"
+                >
+                  전 종목 디렉토리 →
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+              {POPULAR_SEO_STOCKS.map((item) => (
+                <Link
+                  key={item.ticker}
+                  href={`/stock/${item.ticker}`}
+                  className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 hover:border-emerald-500/40 transition-all group block"
+                >
+                  <div className="text-xs font-black text-white group-hover:text-emerald-400 truncate">
+                    {item.name}
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
+                    <span className="font-mono">{item.ticker}</span>
+                    <span className="text-emerald-400/90 font-bold">{item.tag}</span>
+                  </div>
                 </Link>
               ))}
             </div>

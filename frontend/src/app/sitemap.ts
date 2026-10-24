@@ -4,123 +4,201 @@ import { API_BASE_URL } from '@/lib/config';
 
 export const revalidate = 3600; // 1시간마다 ISR 재생성 및 CDN 캐싱
 
+// 한국 및 미국 검색량 최상위 대표 종목 (구글/네이버 종목 검색 유입 핵심 타겟)
+const CORE_SEO_TICKERS = [
+    // 국내 대표 대형주 · 인기 검색주
+    '005930', '000660', '034020', '010140', '042660', '329180', '003490', '012450',
+    '047810', '079550', '373220', '006400', '051910', '086520', '247540', '003670',
+    '035420', '035720', '005380', '000270', '012330', '207940', '068270', '196170',
+    '028300', '042700', '001440', '009830', '010120', '267260', '003550', '055550',
+    '105560', '086790', '316140', '028050', '012630', '306200', '014830', '460870',
+    '004020', '010130', '011200', '352820', '259960', '036570', '097950', '003230',
+    // 미국 빅테크 · AI · 배당 인기 검색주
+    'NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'AVGO', 'AMD', 'PLTR',
+    'ARM', 'ASML', 'TSM', 'NFLX', 'COST', 'BRK-B', 'LLY', 'UNH', 'JPM', 'V',
+    'QQQ', 'SPY', 'SOXL', 'TQQQ', 'SCHD', 'JEPI'
+];
+
+const ALL_THEME_SLUGS = [
+    'ai', 'secondary-battery', 'robot', 'semiconductor', 'superconductor',
+    'low-pbr', 'defense', 'entertainment', 'bio', 'ecommerce',
+    'shipbuilding', 'metaverse', 'nuclear', 'cloud', 'gaming',
+    'webtoon', 'beauty', 'healthcare', 'aviation', 'food'
+];
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://stock-trend-program.co.kr';
+    const now = new Date();
     
-    // 1. 핵심 금융 아카데미·리서치 및 주요 서비스 페이지 (100% 풍부한 SSR 텍스트 보장 페이지)
+    // 1. 핵심 서비스 및 리서치 페이지 (구글 최우선 색인 대상)
     const routes: MetadataRoute.Sitemap = [
         {
             url: `${baseUrl}`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
+            lastModified: now,
+            changeFrequency: 'hourly',
             priority: 1.0,
         },
         {
+            url: `${baseUrl}/ceo-office`,
+            lastModified: now,
+            changeFrequency: 'hourly',
+            priority: 1.0,
+        },
+        {
+            url: `${baseUrl}/research`,
+            lastModified: now,
+            changeFrequency: 'hourly',
+            priority: 0.95,
+        },
+        {
+            url: `${baseUrl}/directory`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.95,
+        },
+        {
             url: `${baseUrl}/guide`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.95,
         },
         {
             url: `${baseUrl}/blog`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.95,
         },
         {
             url: `${baseUrl}/theory`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.95,
         },
         {
             url: `${baseUrl}/post`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.9,
         },
         {
-            url: `${baseUrl}/calculator`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
+            url: `${baseUrl}/theme`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/signals`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/discovery`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: `${baseUrl}/analysis`,
+            lastModified: now,
+            changeFrequency: 'daily',
             priority: 0.9,
         },
         {
             url: `${baseUrl}/etf`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
+            lastModified: now,
+            changeFrequency: 'daily',
             priority: 0.85,
         },
         {
             url: `${baseUrl}/emerging`,
-            lastModified: new Date(),
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.85,
+        },
+        {
+            url: `${baseUrl}/calculator`,
+            lastModified: now,
             changeFrequency: 'weekly',
             priority: 0.85,
         },
         {
-            url: `${baseUrl}/signals`,
-            lastModified: new Date(),
+            url: `${baseUrl}/ranking`,
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.85,
         },
         {
-            url: `${baseUrl}/discovery`,
-            lastModified: new Date(),
+            url: `${baseUrl}/calendar`,
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.85,
         },
         {
-            url: `${baseUrl}/theme`,
-            lastModified: new Date(),
+            url: `${baseUrl}/earnings`,
+            lastModified: now,
             changeFrequency: 'daily',
             priority: 0.85,
         },
         {
-            url: `${baseUrl}/analysis`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
+            url: `${baseUrl}/supply-chain`,
+            lastModified: now,
+            changeFrequency: 'weekly',
             priority: 0.85,
         },
-        {
-            url: `${baseUrl}/research`,
-            lastModified: new Date(),
-            changeFrequency: 'daily',
-            priority: 0.9,
-        },
-        // 애드센스 및 검색엔진 필수 5대 정책/신뢰성 페이지
         {
             url: `${baseUrl}/about`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'monthly',
-            priority: 0.8,
+            priority: 0.7,
         },
         {
             url: `${baseUrl}/contact`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'monthly',
-            priority: 0.8,
+            priority: 0.7,
         },
         {
             url: `${baseUrl}/privacy-policy`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'yearly',
-            priority: 0.7,
+            priority: 0.6,
         },
         {
             url: `${baseUrl}/terms`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'yearly',
-            priority: 0.7,
+            priority: 0.6,
         },
         {
             url: `${baseUrl}/disclaimer`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'yearly',
-            priority: 0.7,
+            priority: 0.6,
         },
     ];
 
-    // 2. 46대 주식 교육 전문 가이드 (구글 애드센스 고품질 텍스트 심사 핵심 자산)
+    // 2. 20대 핵심 주식 테마 대장주·수혜주 분석 페이지
+    ALL_THEME_SLUGS.forEach((slug) => {
+        routes.push({
+            url: `${baseUrl}/theme/${slug}`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.9,
+        });
+    });
+
+    // 3. 검색 유입 최상위 국내·미국 대표 종목 상세 분석 페이지 (/stock/[ticker])
+    CORE_SEO_TICKERS.forEach((ticker) => {
+        routes.push({
+            url: `${baseUrl}/stock/${encodeURIComponent(ticker)}`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.92,
+        });
+    });
+
+    // 4. 46대 주식 교육 전문 가이드
     const ALL_GUIDE_SLUGS = [
         "ai-investing", "averaging-down", "beta", "bollinger-band", "book-value", 
         "dart", "dead-cross", "disclosure", "diversification", "dividend", 
@@ -137,25 +215,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ALL_GUIDE_SLUGS.forEach((slug) => {
         routes.push({
             url: `${baseUrl}/guide/${slug}`,
-            lastModified: new Date(),
+            lastModified: now,
             changeFrequency: 'weekly',
-            priority: 0.95, // 구글 크롤러에게 최우선 수집 요청
+            priority: 0.9,
         });
     });
 
-    // 3. 고품질 정적 SEO 블로그 포스트 (1,500자 이상 전문가 칼럼)
+    // 5. 고품질 정적 SEO 블로그 포스트
     STATIC_POSTS.forEach((post) => {
         routes.push({
             url: `${baseUrl}/blog/${encodeURIComponent(post.slug)}`,
             lastModified: new Date(post.createdAt),
             changeFrequency: 'weekly',
-            priority: 0.95,
+            priority: 0.9,
         });
     });
 
     const frontendApiUrl = baseUrl;
 
-    // 4~6. 엄선된 오리지널 칼럼만 사이트맵에 등록 (대량 자동생성 중복 종목글은 사이트맵에서 제외하여 애드센스 '가치 없는 인벤토리/중복 콘텐츠' 판정 원천 차단)
+    // 6. 실시간 블로그·이론·SEO 칼럼 및 오늘의 증권사 리포트 기안 종목 동적 추가
     try {
         const fetchWithFastTimeout = async (url: string, timeoutMs: number = 5000) => {
             const controller = new AbortController();
@@ -170,20 +248,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }
         };
 
-        const [blogData, theoryData, seoData] = await Promise.all([
-            fetchWithFastTimeout(`${frontendApiUrl}/api/blog/posts?page=1&limit=40`),
+        const [blogData, theoryData, seoData, ceoData] = await Promise.all([
+            fetchWithFastTimeout(`${frontendApiUrl}/api/blog/posts?page=1&limit=50`),
             fetchWithFastTimeout(`${frontendApiUrl}/api/theory/posts?page=1&limit=70`),
-            fetchWithFastTimeout(`${frontendApiUrl}/api/seo_posts?page=1&limit=80`),
+            fetchWithFastTimeout(`${frontendApiUrl}/api/seo_posts?page=1&limit=100`),
+            fetchWithFastTimeout(`${API_BASE_URL}/api/market/ceo-office`),
         ]);
 
-        // 블로그 포스트 (일자별 중복 제거, 최대 30편 엄선)
+        // 오늘 대표이사 전자결재 기안서에 올라온 최신 리포트 종목들도 즉시 사이트맵에 최우선 등록
+        if (ceoData?.auto_approvals && Array.isArray(ceoData.auto_approvals)) {
+            ceoData.auto_approvals.forEach((doc: any) => {
+                const code = String(doc.stock_code || '').trim();
+                if (code && code !== 'SYSTEM' && !code.includes('=')) {
+                    routes.push({
+                        url: `${baseUrl}/stock/${encodeURIComponent(code)}`,
+                        lastModified: now,
+                        changeFrequency: 'hourly',
+                        priority: 0.95,
+                    });
+                }
+            });
+        }
+
         if (blogData?.status === 'ok' && Array.isArray(blogData.posts)) {
-            const seenBlogDates = new Set<string>();
+            const seenBlogSlugs = new Set<string>();
             blogData.posts.forEach((post: any) => {
                 const slug = String(post.slug || post.id || '');
-                const datePrefix = slug.slice(0, 8);
-                if (seenBlogDates.size < 30 && !seenBlogDates.has(slug)) {
-                    seenBlogDates.add(slug);
+                if (slug && seenBlogSlugs.size < 45 && !seenBlogSlugs.has(slug)) {
+                    seenBlogSlugs.add(slug);
                     routes.push({
                         url: `${baseUrl}/blog/${encodeURIComponent(slug)}`,
                         lastModified: new Date(post.createdAt || Date.now()),
@@ -194,33 +286,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             });
         }
 
-        // 이론 포스트 (22,000자 이상의 고품질 교육 아티클)
         if (theoryData?.status === 'ok' && Array.isArray(theoryData.posts)) {
             theoryData.posts.slice(0, 60).forEach((post: any) => {
                 const slug = post.slug || post.id;
-                routes.push({
-                    url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
-                    lastModified: new Date(post.createdAt || Date.now()),
-                    changeFrequency: 'daily',
-                    priority: 0.95,
-                });
+                if (slug) {
+                    routes.push({
+                        url: `${baseUrl}/theory/${encodeURIComponent(slug)}`,
+                        lastModified: new Date(post.createdAt || Date.now()),
+                        changeFrequency: 'daily',
+                        priority: 0.9,
+                    });
+                }
             });
         }
 
-        // 실시간 SEO 포스트 중에서는 종목 반복형(mass-*, seo-*)을 제외하고 독립 주제형 교육 칼럼(qa-seo-*)만 엄선 등록
         if (seoData?.status === 'ok' && Array.isArray(seoData.posts)) {
-            seoData.posts
-                .filter((post: any) => String(post.slug || post.id || '').startsWith('qa-seo-'))
-                .slice(0, 25)
-                .forEach((post: any) => {
-                    const slug = post.slug || post.id;
+            seoData.posts.slice(0, 60).forEach((post: any) => {
+                const slug = post.slug || post.id;
+                if (slug) {
                     routes.push({
                         url: `${baseUrl}/post/${encodeURIComponent(slug)}`,
                         lastModified: new Date(post.createdAt || Date.now()),
-                        changeFrequency: 'weekly',
+                        changeFrequency: 'daily',
                         priority: 0.85,
                     });
-                });
+                }
+            });
         }
     } catch (e) {
         console.error("Fast sitemap extra fetch failed safely:", e);

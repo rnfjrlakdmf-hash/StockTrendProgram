@@ -2086,18 +2086,6 @@ CEO_OFFICE_EXECUTIVES = [
         "style": "밤사이 뉴욕 증시 10대 빅테크(NVDA·TSLA·AAPL·MSFT·GOOGL·AMZN 등) 순환 분석과 나스닥 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.",
         "status": "미국 10대 빅테크 데일리 순환 분석 & 나스닥 선물·원자재 24시간 연동 완료",
     },
-    {
-        "id": "pr_cmo",
-        "name": "한소희",
-        "role": "상무 (홍보·마케팅본부장 · CMO)",
-        "title": "상무 (홍보·마케팅본부장 · CMO)",
-        "dept": "대외홍보·바이럴마케팅본부",
-        "badge": "블로그 · 단톡방 · 주식카페 · 쇼츠 자동 홍보",
-        "avatar": "📣",
-        "color": "pink",
-        "style": "오늘 기안서에 올라온 급등 기대 종목과 시황을 바탕으로 네이버 블로그, 카카오톡 단톡방, 주식 카페, 인스타/쇼츠용 홍보 원고를 즉시 작성해 사이트 방문자와 광고 수익을 늘립니다.",
-        "status": "오늘자 사이트 홍보 원고 5종(블로그·카톡·카페·SNS·쇼츠) 작성 대기 완료",
-    },
 ]
 
 US_STOCK_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
@@ -3830,6 +3818,11 @@ def get_ceo_office_boardroom(
     if not topic and not message:
         _CEO_OFFICE_CACHE = resp_data
         _CEO_OFFICE_CACHE_TIME = time.time()
+        try:
+            from seo_auto_publisher import trigger_auto_seo_in_background
+            trigger_auto_seo_in_background(auto_approvals)
+        except Exception:
+            pass
     return resp_data
 
 

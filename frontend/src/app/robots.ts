@@ -6,10 +6,20 @@ export default function robots(): MetadataRoute.Robots {
         rules: [
             {
                 userAgent: '*',
-                allow: '/',
+                allow: [
+                    '/',
+                    '/ceo-office',
+                    '/stock/',
+                    '/theme/',
+                    '/directory',
+                    '/research',
+                    '/blog/',
+                    '/guide/',
+                    '/theory/',
+                    '/post/',
+                ],
                 disallow: [
                     '/admin/',
-                    '/ceo-office',
                     '/private/',
                     '/api/analysis/',
                     '/login',
@@ -23,9 +33,15 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: 'Mediapartners-Google',
                 allow: '/',
-                disallow: ['/admin/', '/ceo-office', '/login', '/auth/'],
+                disallow: ['/admin/', '/login', '/auth/'],
+            },
+            {
+                userAgent: ['Googlebot', 'Yeti', 'Bingbot'],
+                allow: '/',
+                disallow: ['/admin/', '/private/', '/login', '/auth/'],
             },
         ],
         sitemap: `${baseUrl}/sitemap.xml`,
+        host: baseUrl,
     };
 }
