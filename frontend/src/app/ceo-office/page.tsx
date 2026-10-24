@@ -813,6 +813,7 @@ export default function CeoOfficePage() {
 
     const mainSectionRef = useRef<HTMLDivElement>(null);
     const boardroomDebateRef = useRef<HTMLDivElement>(null);
+    const detailReaderRef = useRef<HTMLDivElement>(null);
 
     // localStorage에서 오늘 서명한 결재 상태 복원
     useEffect(() => {
@@ -1223,8 +1224,8 @@ export default function CeoOfficePage() {
         setActiveTab('electronic_sign');
         setMobileDetailOpen(true);
         setTimeout(() => {
-            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 120);
+            (detailReaderRef.current || mainSectionRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     };
 
     // 현재 열람 중인 상세 기안서
@@ -2319,6 +2320,9 @@ export default function CeoOfficePage() {
                                                                 onClick={() => {
                                                                     setSelectedDocId(doc.doc_id);
                                                                     setMobileDetailOpen(true);
+                                                                    setTimeout(() => {
+                                                                        detailReaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                                    }, 60);
                                                                 }}
                                                                 className={`group relative rounded-2xl border-2 transition-all p-3.5 sm:p-4 cursor-pointer text-left ${
                                                                     isSelected
@@ -2430,7 +2434,7 @@ export default function CeoOfficePage() {
                                         </div>
 
                                         {/* 우측 상세 열람실 (Detail Dossier Reader) */}
-                                        <div className={`lg:col-span-7 xl:col-span-8 lg:sticky lg:top-6 ${mobileDetailOpen ? 'block' : 'hidden lg:block'}`}>
+                                        <div ref={detailReaderRef} className={`lg:col-span-7 xl:col-span-8 scroll-mt-6 ${mobileDetailOpen ? 'block' : 'hidden lg:block'}`}>
                                             {activeDoc ? (
                                                 <div className={`relative overflow-hidden rounded-3xl border-2 transition-all p-5 sm:p-7 shadow-2xl ${
                                                     (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
