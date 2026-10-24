@@ -2989,7 +2989,12 @@ def get_ceo_office_boardroom(
             profit_per_share = "집계 중"
             profit_10m = "집계 중"
 
-        gp_explain = f"{s_broker}에서 '{s_name}'의 현재가({curr_price_str}) 대비 목표가를 {s_gp}(기대 상승 여력 {upside_str})로 제시했습니다. " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else f"{s_broker}에서 '{s_name}'의 최근 사업 현황과 실적을 분석했습니다. "
+        # s_easy 안에 있는 중복 서두("OO증권에서 발표한 'OO' 기업 분석 리포트 (...)입니다.") 제거
+        s_easy_clean = re.sub(r'^[^.]+기업 분석 리포트\s*\([^)]*\)입니다\.\s*', '', s_easy).strip()
+        if not s_easy_clean:
+            s_easy_clean = s_easy
+        s_easy = s_easy_clean
+        gp_explain = f"현재가({curr_price_str}) 대비 목표주가 {s_gp}(기대수익 {upside_str}) 제시 — " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else "" 
 
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-0{idx}",

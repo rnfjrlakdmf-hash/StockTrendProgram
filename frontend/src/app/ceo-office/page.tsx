@@ -1228,6 +1228,48 @@ export default function CeoOfficePage() {
         }, 100);
     };
 
+    // 좌측 서류함 카드용 깔끔 2줄 핵심 불릿 추출기 (중복되는 증권사/현재가/목표가 서두 제거 후 핵심 요점만 2줄 요약)
+    const getCleanCardBullets = (doc: AutoApprovalDoc): string[] => {
+        const raw = (doc.easy_headline || doc.plain_summary || '').trim();
+        if (!raw) return [];
+        const cleaned = raw
+            .replace(/^[^.]+대비 목표가를 [^.]+제시했습니다\.\s*/g, '')
+            .replace(/^현재가\([^)]+\) 대비 목표주가 [—-]+\s*/g, '')
+            .replace(/^[^.]+기업 분석 리포트\s*\([^)]*\)입니다\.\s*/g, '')
+            .replace(/^📌\s*\[[^\]]+\]:?\s*/g, '')
+            .trim();
+
+        const sentences = cleaned
+            .split(/(?<=다\.|요\.|음\.|함\.|망\.)\s+/)
+            .map(s => s.trim())
+            .filter(s => s.length > 4 && !s.includes('기업 분석 리포트') && !s.includes('대비 목표가를'));
+
+        const targetList = sentences.length > 0 ? sentences : [cleaned];
+        return targetList.slice(0, 2).map(s => {
+            return s
+                .replace(/다가오는 실적 발표에서 시장 예상치\(컨센서스\)를 뛰어넘는/g, '시장 예상치를 뛰어넘는')
+                .replace(/핵심 긍정 요인으로 꼽았습니다\./g, '핵심 호재로 평가')
+                .replace(/분석했습니다\./g, '전망')
+                .replace(/예상했습니다\./g, '전망')
+                .replace(/예상됩니다\./g, '전망');
+        });
+    };
+
+    const getCleanCardTitle = (doc: AutoApprovalDoc): { badgeName: string; mainTitle: string } => {
+        let t = (doc.title || '').trim();
+        let badgeName = doc.stock_name || '';
+        // Strip leading [종목명] if present
+        const m = t.match(/^\[([^\]]+)\]\s*(.*)$/);
+        if (m) {
+            badgeName = m[1];
+            t = m[2];
+        }
+        // Strip secondary English tag like [3Q26 Review] into cleaner Korean or remove
+        t = t.replace(/^\[3Q\d*\s*Review\]\s*/i, '3분기 실적 리뷰 · ');
+        t = t.replace(/^\[4Q\d*\s*Preview\]\s*/i, '4분기 실적 프리뷰 · ');
+        return { badgeName, mainTitle: t || doc.title };
+    };
+
     // 현재 열람 중인 상세 기안서
     const activeDoc = autoApprovals.find(d => d.doc_id === selectedDocId) || filteredDocs[0] || autoApprovals[0] || null;
 
@@ -2339,13 +2381,13 @@ export default function CeoOfficePage() {
                                                                     <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-gradient-to-b from-amber-400 to-yellow-300 rounded-r-full" />
                                                                 )}
 
-                                                                {/* 상단: 문서번호 & 카테고리 뱃지 & 결재상태 */}
-                                                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5 pl-1.5">
+                                                                {/* 1. 상단: 문서번호 & 카테고리 뱃지 & 결재상태 */}
+                                                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2 pl-1.5">
                                                                     <div className="flex flex-wrap items-center gap-1.5">
-                                                                        <span className="text-[10px] font-mono font-bold text-gray-400">
+                                                                        <span className="text-[10px] font-mono font-extrabold text-slate-300 bg-white/5 px-1.5 py-0.5 rounded">
                                                                             {doc.doc_number}
                                                                         </span>
-                                                                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
                                                                             {doc.category_badge}
                                                                         </span>
                                                                     </div>
@@ -2361,54 +2403,78 @@ export default function CeoOfficePage() {
                                                                             </span>
                                                                         )}
                                                                         {status === 'pending' && (
-                                                                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-300 bg-amber-500/20 border border-amber-400/40 px-2 py-0.5 rounded-full animate-pulse">
+                                                                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-300 bg-amber-500/20 border border-amber-400/40 px-2 py-0.5 rounded-full">
                                                                                 ⏳ 미결재
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                 </div>
 
-                                                                {/* 제목 */}
-                                                                <h4 className={`text-xs sm:text-sm font-black leading-snug pl-1.5 break-keep ${
-                                                                    isSelected ? 'text-white' : 'text-gray-200 group-hover:text-white'
-                                                                }`}>
-                                                                    {doc.title}
-                                                                </h4>
+                                                                {/* 2. 종목명 하이라이트 + 핵심 한줄 제목 */}
+                                                                {(() => {
+                                                                    const { badgeName, mainTitle } = getCleanCardTitle(doc);
+                                                                    const bullets = getCleanCardBullets(doc);
+                                                                    return (
+                                                                        <>
+                                                                            <div className="pl-1.5 space-y-1">
+                                                                                {badgeName && (
+                                                                                    <div className="inline-flex items-center gap-1.5">
+                                                                                        <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 to-yellow-500/15 border border-amber-400/40 text-amber-200 font-black text-xs">
+                                                                                            🎯 {badgeName}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+                                                                                <h4 className={`text-[13px] sm:text-sm font-black leading-snug break-keep ${
+                                                                                    isSelected ? 'text-white' : 'text-gray-100 group-hover:text-white'
+                                                                                }`}>
+                                                                                    {mainTitle}
+                                                                                </h4>
+                                                                            </div>
 
-                                                                {/* 쉬운 해설 스니펫 (잘리지 않게 전체 표시) */}
-                                                                {doc.easy_headline && (
-                                                                    <p className="text-[11px] text-gray-300/90 mt-1 pl-1.5 leading-relaxed break-keep">
-                                                                        {doc.easy_headline}
-                                                                    </p>
-                                                                )}
+                                                                            {/* 3. 💰 현재가 ➔ 목표가 & 기대수익 하이라이트 박스 (확 눈에 띄게!) */}
+                                                                            {(doc.current_price || doc.target_price) && (
+                                                                                <div className="mt-2.5 ml-1.5 p-2 rounded-xl bg-black/50 border border-white/10 flex flex-wrap items-center justify-between gap-1.5 text-[11px] font-mono">
+                                                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                                                        {doc.current_price && (
+                                                                                            <span className="text-gray-200 font-bold">
+                                                                                                현재 <strong className="text-white">{doc.current_price.split(' ')[0]}</strong>
+                                                                                            </span>
+                                                                                        )}
+                                                                                        {doc.target_price && (
+                                                                                            <>
+                                                                                                <span className="text-amber-400 font-black">➔</span>
+                                                                                                <span className="text-amber-300 font-black">
+                                                                                                    목표 {doc.target_price}
+                                                                                                </span>
+                                                                                            </>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {doc.upside_pct && doc.upside_pct !== '컨센서스 유지' && doc.upside_pct !== '집계 중' && (
+                                                                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/25 border border-rose-500/40 text-rose-300 font-black text-[11px]">
+                                                                                            기대 {doc.upside_pct}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
 
-                                                                {/* 💰 실시간 현재가 ➔ 목표가 & 기대수익 배지 */}
-                                                                {(doc.current_price || doc.target_price) && (
-                                                                    <div className="flex flex-wrap items-center gap-1.5 mt-2 pl-1.5 text-[11px] font-mono">
-                                                                        {doc.current_price && (
-                                                                            <span className="text-zinc-200 font-bold bg-black/40 px-1.5 py-0.5 rounded border border-white/5">
-                                                                                현재 {doc.current_price.split(' ')[0]}
-                                                                            </span>
-                                                                        )}
-                                                                        {doc.target_price && (
-                                                                            <>
-                                                                                <span className="text-zinc-500 text-[10px]">➔</span>
-                                                                                <span className="text-amber-300 font-black bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/25">
-                                                                                    목표 {doc.target_price}
-                                                                                </span>
-                                                                            </>
-                                                                        )}
-                                                                        {doc.upside_pct && doc.upside_pct !== '컨센서스 유지' && doc.upside_pct !== '집계 중' && (
-                                                                            <span className="ml-auto px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-black text-[10px]">
-                                                                                {doc.upside_pct}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
+                                                                            {/* 4. 📌 핵심 요점 2줄 불릿 요약 (중복 서두 없이 깔끔하게!) */}
+                                                                            {bullets.length > 0 && (
+                                                                                <ul className="mt-2 pl-1.5 space-y-1 text-[11px] text-gray-200 leading-snug break-keep">
+                                                                                    {bullets.map((b, bIdx) => (
+                                                                                        <li key={bIdx} className="flex items-start gap-1.5">
+                                                                                            <span className="text-amber-400 font-black shrink-0 mt-0.5">•</span>
+                                                                                            <span>{b}</span>
+                                                                                        </li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                })()}
 
-                                                                {/* 하단: 기안자 & 서명 퀵버튼 (기안자 이름 잘리지 않게 표시) */}
-                                                                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-white/5 pl-1.5 text-[10px] text-gray-300">
-                                                                    <span className="flex-1 leading-snug break-keep">{doc.proposer}</span>
+                                                                {/* 5. 하단: 기안 임원 요약 & 서명 퀵버튼 */}
+                                                                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-white/10 pl-1.5 text-[10px] text-gray-400">
+                                                                    <span className="flex-1 leading-snug break-keep">✍️ {doc.proposer}</span>
                                                                     <div className="flex items-center gap-1 shrink-0">
                                                                         <button
                                                                             type="button"
