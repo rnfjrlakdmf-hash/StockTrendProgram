@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-구글(Google)·네이버(Naver)·빙(Bing) 100% 무인 자동 SEO 발행 및 색인 알림 엔진
-- 대표님이 신경 쓰지 않아도 매일 오늘의 결재 기안서(증권사 목표주가 리포트·수급·글로벌 시황)를
-  검색엔진 친화적 마켓 브리핑 아티클(/blog/[slug])로 자동 발행하고,
-- IndexNow API를 통해 검색엔진 로봇에게 새 URL과 종목 페이지들을 즉시 색인 요청합니다.
+구글(Google)·네이버(Naver)·빙(Bing) 100% 무인 자동 SEO 색인 알림 엔진
+- 대표이사 집무실(/ceo-office)의 기밀 결재 기안서는 외부에 절대 유출하지 않고 대표님만 열람할 수 있도록 철저히 보호합니다.
+- 대신 일반 방문자용 공개 페이지(메인 대시보드, 전 종목 디렉토리, 공개 테마 페이지, 공개 종목 시세 페이지, 투자 가이드 46선)만
+  IndexNow API를 통해 검색엔진 로봇에게 자동 색인 요청하여 자연 검색 유입을 극대화합니다.
 """
 import os
 import json
@@ -22,6 +22,13 @@ SITE_URL = f"https://{SITE_HOST}"
 INDEXNOW_KEY = "d1a5029178414151d0fd99a83053ce16"
 
 STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo_auto_state.json")
+
+PUBLIC_SEO_TICKERS = [
+    "005930", "000660", "034020", "010140", "042660", "329180", "003490", "012450",
+    "373220", "006400", "051910", "035420", "035720", "005380", "000270", "207940",
+    "068270", "028300", "042700", "055550", "105560", "NVDA", "TSLA", "AAPL",
+    "MSFT", "GOOGL", "AMZN", "META", "AVGO", "AMD", "PLTR",
+]
 
 
 def _load_seo_state() -> Dict[str, Any]:
@@ -45,11 +52,13 @@ def _save_seo_state(state: Dict[str, Any]) -> None:
 def ping_search_engines(urls: List[str]) -> Dict[str, Any]:
     """
     IndexNow 프로토콜(네이버·빙·구글 호환 서치엔진 즉시 색인 알림) 호출
+    ※ /ceo-office 등 대표님 전용 보안 경로는 절대 포함하지 않습니다.
     """
-    if not urls:
+    safe_urls = [u for u in urls if "/ceo-office" not in u and "/admin" not in u]
+    if not safe_urls:
         return {"status": "skipped", "count": 0}
 
-    unique_urls = list(dict.fromkeys(urls))[:100]
+    unique_urls = list(dict.fromkeys(safe_urls))[:100]
     payload = {
         "host": SITE_HOST,
         "key": INDEXNOW_KEY,
@@ -77,97 +86,16 @@ def ping_search_engines(urls: List[str]) -> Dict[str, Any]:
     return {"status": "ok", "submitted_urls": len(unique_urls), "results": results}
 
 
-def auto_publish_daily_seo_from_approvals(auto_approvals: List[Dict[str, Any]]) -> Dict[str, Any]:
+def auto_publish_daily_seo_from_approvals(auto_approvals: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    하루 1회 이상 자동으로 오늘의 전자결재 기안서(국내 리포트 종목 + 미국 빅테크 + 선물·환율)를
-    Firestore `blog_posts`에 정식 SEO 아티클로 발행하고 검색엔진에 즉시 핑을 전송합니다.
+    [대표님 기밀 보호 적용]
+    - 대표이사 집무실의 기안서 원문은 외부 블로그에 절대 발행하지 않으며, 혹시 이전에 생성된 기안서 요약글이 있다면 즉시 삭제합니다.
+    - 오직 일반 공개 페이지(/, /directory, /research, /guide/*, /stock/*)만 검색엔진에 색인 핑을 전송합니다.
     """
     now = datetime.now()
     today_str = now.strftime("%Y%m%d")
-    date_display = now.strftime("%Y년 %m월 %d일")
 
-    state = _load_seo_state()
-    if state.get("last_published_date") == today_str:
-        return {"status": "already_published_today", "date": today_str}
-
-    if not auto_approvals:
-        return {"status": "no_approvals"}
-
-    kr_docs = [d for d in auto_approvals if d.get("category_type") == "kr_stock"]
-    us_docs = [d for d in auto_approvals if d.get("category_type") == "us_stock"]
-    fut_docs = [d for d in auto_approvals if d.get("category_type") == "futures"]
-
-    kr_names = [d.get("stock_name", "") for d in kr_docs if d.get("stock_name")]
-    us_names = [d.get("stock_name", "") for d in us_docs if d.get("stock_name")]
-
-    top_doc = kr_docs[0] if kr_docs else auto_approvals[0]
-    top_name = top_doc.get("stock_name", "주요 특징주")
-    top_upside = top_doc.get("upside_pct", "")
-
-    slug = f"{today_str}-daily-research-target-price-report"
-    title = f"[{date_display} 증권사 리포트 요약] {', '.join(kr_names[:4])} 목표주가 전망 및 외국인·기관 수급 총정리"
-
-    # 풍부한 검색엔진 최적화(SEO) HTML 본문 구성
-    sections = []
-    sections.append(
-        f"<p><strong>{date_display} 스마트 투자 비서 AI 증권사 리서치센터</strong>에서 오늘 발간된 국내 증권사 애널리스트 종목 리포트 목표주가 컨센서스와 외국인·기관 수급, 미국 빅테크 및 글로벌 선물·환율 핵심 지표를 종합 정리해 드립니다.</p>"
-    )
-
-    if kr_docs:
-        sections.append("<h2>1. 오늘의 국내 증권사 목표주가 리포트 포착 종목</h2>")
-        for doc in kr_docs:
-            s_name = doc.get("stock_name", "")
-            s_code = doc.get("stock_code", "")
-            c_price = doc.get("current_price", "-")
-            t_price = doc.get("target_price", "-")
-            upside = doc.get("upside_pct", "-")
-            headline = doc.get("easy_headline", "")
-            r_op = doc.get("research_opinion", "")
-            q_op = doc.get("quant_opinion", "")
-            rk_op = doc.get("risk_opinion", "")
-            stock_link = f'<a href="/stock/{s_code}">{s_name}({s_code}) 상세 수급·재무 보러가기</a>' if s_code else s_name
-
-            sections.append(
-                f"<h3>📌 {s_name} ({s_code}) — 현재가 {c_price} / 목표주가 {t_price} (상승여력 {upside})</h3>"
-                f"<p>{headline}</p>"
-                f"<ul>"
-                f"<li><strong>리서치 핵심 분석:</strong> {r_op}</li>"
-                f"<li><strong>외국인·기관 수급 진단:</strong> {q_op}</li>"
-                f"<li><strong>투자 시 유의사항(리스크):</strong> {rk_op}</li>"
-                f"<li><strong>실시간 차트 및 재무제표:</strong> {stock_link}</li>"
-                f"</ul>"
-            )
-
-    if us_docs:
-        sections.append("<h2>2. 미국 빅테크 AI 주도주 및 글로벌 수급 동향</h2>")
-        for doc in us_docs:
-            s_name = doc.get("stock_name", "")
-            s_code = doc.get("stock_code", "")
-            c_price = doc.get("current_price", "-")
-            t_price = doc.get("target_price", "-")
-            upside = doc.get("upside_pct", "-")
-            headline = doc.get("easy_headline", "")
-            sections.append(
-                f"<h3>🌎 {s_name} — 현재가 {c_price} / 월가 목표주가 {t_price} ({upside})</h3>"
-                f"<p>{headline}</p>"
-            )
-
-    if fut_docs:
-        sections.append("<h2>3. 글로벌 선물 지수 (나스닥100 · S&amp;P500 · 금 · 원유) 브리핑</h2><ul>")
-        for doc in fut_docs:
-            sections.append(
-                f"<li><strong>{doc.get('stock_name', '')}:</strong> 현재 시세 {doc.get('current_price', '-')} — {doc.get('easy_headline', '')}</li>"
-            )
-        sections.append("</ul>")
-
-    sections.append(
-        "<hr/><p>※ 본 브리핑은 금융감독원 전자공시(DART), 한국거래소(KRX), 네이버 금융 증권사 컨센서스 데이터를 기반으로 자동 요약된 참고 자료이며 특정 종목의 매수·매도 권유가 아닙니다.</p>"
-    )
-
-    html_content = "\n".join(sections)
-    tags = ["증권사리포트", "목표주가", "외국인수급", "기관순매수", "미국주식"] + [n.split("(")[0].strip() for n in (kr_names[:4] + us_names[:2]) if n]
-
-    # Firestore blog_posts 저장
+    # 이전에 생성되었을 수 있는 기안서 요약 블로그 글 삭제 (기안서 기밀 유지)
     try:
         import firebase_admin
         from firebase_admin import firestore
@@ -176,59 +104,48 @@ def auto_publish_daily_seo_from_approvals(auto_approvals: List[Dict[str, Any]]) 
         initialize_firebase()
         if firebase_admin._apps:
             db = firestore.client()
-            doc_ref = db.collection("blog_posts").document(slug)
-            doc_ref.set({
-                "id": slug,
-                "slug": slug,
-                "title": title,
-                "content": html_content,
-                "tags": tags[:10],
-                "author": "스마트 투자 비서 리서치센터",
-                "createdAt": now.isoformat(),
-                "viewCount": 12,
-            }, merge=True)
-    except Exception as e:
-        logger.warning(f"[SEO Auto] Firestore blog_posts write skipped/failed: {e}")
+            old_slug = f"{today_str}-daily-research-target-price-report"
+            db.collection("blog_posts").document(old_slug).delete()
+    except Exception:
+        pass
 
-    # 검색엔진 색인 요청할 핵심 URL 리스트 구성
+    state = _load_seo_state()
+    if state.get("last_published_date") == today_str:
+        return {"status": "already_pinged_today", "date": today_str}
+
+    # 공개 페이지 URL만 검색엔진에 색인 요청 (/ceo-office 절대 제외)
     urls_to_ping = [
         f"{SITE_URL}/",
-        f"{SITE_URL}/ceo-office",
-        f"{SITE_URL}/blog/{slug}",
-        f"{SITE_URL}/blog",
-        f"{SITE_URL}/research",
         f"{SITE_URL}/directory",
+        f"{SITE_URL}/research",
+        f"{SITE_URL}/theme",
+        f"{SITE_URL}/guide",
+        f"{SITE_URL}/blog",
+        f"{SITE_URL}/theory",
+        f"{SITE_URL}/signals",
+        f"{SITE_URL}/discovery",
         f"{SITE_URL}/sitemap.xml",
         f"{SITE_URL}/rss.xml",
     ]
-    for d in (kr_docs + us_docs):
-        code = str(d.get("stock_code") or "").strip()
-        if code and code != "SYSTEM" and "=" not in code:
-            urls_to_ping.append(f"{SITE_URL}/stock/{code}")
+    for ticker in PUBLIC_SEO_TICKERS:
+        urls_to_ping.append(f"{SITE_URL}/stock/{ticker}")
 
     ping_res = ping_search_engines(urls_to_ping)
 
     state["last_published_date"] = today_str
     state["last_ping_time"] = int(time.time())
     state["ping_count"] = int(state.get("ping_count", 0)) + 1
-    slugs = state.get("published_slugs", [])
-    if slug not in slugs:
-        slugs.append(slug)
-    state["published_slugs"] = slugs[-60:]
+    state["published_slugs"] = []
     _save_seo_state(state)
 
     return {
-        "status": "published",
-        "slug": slug,
-        "title": title,
+        "status": "public_pages_pinged_only",
+        "ceo_office_privacy": "STRICT_CEO_ONLY",
         "ping": ping_res,
     }
 
 
-def trigger_auto_seo_in_background(auto_approvals: List[Dict[str, Any]]) -> None:
-    """
-    응답 지연(0ms)을 위해 백그라운드 데몬 스레드에서 하루 1회 자동 발행 및 색인 핑 실행
-    """
+def trigger_auto_seo_in_background(auto_approvals: List[Dict[str, Any]] = None) -> None:
     state = _load_seo_state()
     today_str = datetime.now().strftime("%Y%m%d")
     if state.get("last_published_date") == today_str:
@@ -236,7 +153,7 @@ def trigger_auto_seo_in_background(auto_approvals: List[Dict[str, Any]]) -> None
 
     def _worker():
         try:
-            auto_publish_daily_seo_from_approvals(auto_approvals)
+            auto_publish_daily_seo_from_approvals()
         except Exception as e:
             logger.warning(f"[SEO Auto Background] Error: {e}")
 

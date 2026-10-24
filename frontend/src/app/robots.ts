@@ -8,7 +8,6 @@ export default function robots(): MetadataRoute.Robots {
                 userAgent: '*',
                 allow: [
                     '/',
-                    '/ceo-office',
                     '/stock/',
                     '/theme/',
                     '/directory',
@@ -20,8 +19,10 @@ export default function robots(): MetadataRoute.Robots {
                 ],
                 disallow: [
                     '/admin/',
+                    '/ceo-office',
                     '/private/',
                     '/api/analysis/',
+                    '/api/market/ceo-office',
                     '/login',
                     '/auth/',
                     '/disclosure/redirect',
@@ -33,12 +34,12 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: 'Mediapartners-Google',
                 allow: '/',
-                disallow: ['/admin/', '/login', '/auth/'],
+                disallow: ['/admin/', '/ceo-office', '/login', '/auth/'],
             },
             {
                 userAgent: ['Googlebot', 'Yeti', 'Bingbot'],
                 allow: '/',
-                disallow: ['/admin/', '/private/', '/login', '/auth/'],
+                disallow: ['/admin/', '/ceo-office', '/private/', '/login', '/auth/'],
             },
         ],
         sitemap: `${baseUrl}/sitemap.xml`,

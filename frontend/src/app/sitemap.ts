@@ -39,12 +39,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 1.0,
         },
         {
-            url: `${baseUrl}/ceo-office`,
-            lastModified: now,
-            changeFrequency: 'hourly',
-            priority: 1.0,
-        },
-        {
             url: `${baseUrl}/research`,
             lastModified: now,
             changeFrequency: 'hourly',
@@ -248,27 +242,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }
         };
 
-        const [blogData, theoryData, seoData, ceoData] = await Promise.all([
+        const [blogData, theoryData, seoData] = await Promise.all([
             fetchWithFastTimeout(`${frontendApiUrl}/api/blog/posts?page=1&limit=50`),
             fetchWithFastTimeout(`${frontendApiUrl}/api/theory/posts?page=1&limit=70`),
             fetchWithFastTimeout(`${frontendApiUrl}/api/seo_posts?page=1&limit=100`),
-            fetchWithFastTimeout(`${API_BASE_URL}/api/market/ceo-office`),
         ]);
-
-        // 오늘 대표이사 전자결재 기안서에 올라온 최신 리포트 종목들도 즉시 사이트맵에 최우선 등록
-        if (ceoData?.auto_approvals && Array.isArray(ceoData.auto_approvals)) {
-            ceoData.auto_approvals.forEach((doc: any) => {
-                const code = String(doc.stock_code || '').trim();
-                if (code && code !== 'SYSTEM' && !code.includes('=')) {
-                    routes.push({
-                        url: `${baseUrl}/stock/${encodeURIComponent(code)}`,
-                        lastModified: now,
-                        changeFrequency: 'hourly',
-                        priority: 0.95,
-                    });
-                }
-            });
-        }
 
         if (blogData?.status === 'ok' && Array.isArray(blogData.posts)) {
             const seenBlogSlugs = new Set<string>();

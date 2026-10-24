@@ -598,7 +598,7 @@ export default function CeoOfficePage() {
             }
             const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/watchlist-research`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-User-ID': uid },
+                headers: { 'Content-Type': 'application/json', 'X-User-ID': uid, 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({ symbols: cachedSymbols })
             });
             if (res.ok) {
@@ -638,7 +638,8 @@ export default function CeoOfficePage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-User-ID': uid || ''
+                    'X-User-ID': uid || '',
+                    'X-CEO-Email': user?.email || ''
                 },
                 body: JSON.stringify({ symbols: symbolsToSend })
             });
@@ -660,7 +661,7 @@ export default function CeoOfficePage() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({
                     stock_name: item.stock_name,
                     stock_code: item.stock_code,
@@ -700,7 +701,7 @@ export default function CeoOfficePage() {
     const fetchTradingDesk = useCallback(async () => {
         try {
             setTradingLoading(true);
-            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk`);
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk`, { headers: { 'X-CEO-Email': user?.email || '' } });
             if (res.ok) {
                 const json = await res.json();
                 if (json.status === 'success' && json.data) {
@@ -712,7 +713,7 @@ export default function CeoOfficePage() {
         } finally {
             setTradingLoading(false);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (!authLoading && isAdmin) {
@@ -734,7 +735,7 @@ export default function CeoOfficePage() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/close`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({ position_id: posId, reason: '대표이사 시장가 즉시 익절 지시' })
             });
             const data = await res.json();
@@ -757,7 +758,7 @@ export default function CeoOfficePage() {
         try {
             const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/partial-sell`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify({ position_id: posId })
             });
             const data = await res.json();
@@ -819,7 +820,7 @@ export default function CeoOfficePage() {
             if (doc) {
                 fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                     body: JSON.stringify(doc)
                 }).then(() => fetchTradingDesk()).catch(e => console.error(e));
             }
@@ -850,7 +851,7 @@ export default function CeoOfficePage() {
         autoApprovals.forEach(doc => {
             fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify(doc)
             }).catch(e => console.error(e));
         });
@@ -875,6 +876,7 @@ export default function CeoOfficePage() {
 
             const res = await fetch(`${API_BASE_URL}/api/market/ceo-office?${params.toString()}`, {
                 cache: 'no-store',
+                headers: { 'X-CEO-Email': user?.email || '' },
             });
             const json = await res.json();
             if (json.status === 'success' && json.data) {
@@ -909,7 +911,7 @@ export default function CeoOfficePage() {
             setLoading(false);
             setIsCallingMeeting(false);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (!authLoading && isAdmin) {
@@ -4060,24 +4062,31 @@ export default function CeoOfficePage() {
                     </div>
                 )}
 
-                {/* 🌐 24시간 무인 구글(Google)·네이버(Naver) SEO 자동 검색 노출 가동 현황판 */}
-                <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
+                {/* 🔒 대표이사 집무실 1급 기밀 보안 & 🌐 일반 공개 페이지 무인 구글 SEO 분리 가동 현황판 */}
+                <div className="bg-[#0d1526] border border-amber-500/35 rounded-2xl p-4 sm:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
                             <h3 className="text-xs sm:text-sm font-black text-white">
-                                🌐 구글(Google)·네이버·빙 24시간 무인 SEO 검색 유입 엔진 가동 중
+                                🔒 대표이사 집무실·기안서 『대표님 단독 열람 보안』 &amp; 🌐 일반 공개 페이지 무인 SEO 가동 중
                             </h3>
                         </div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            ✓ 대표님이 신경 쓰지 않아도 100% 자동 노출·색인 작동
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            🔒 이 집무실과 결재 기안서는 오직 대표님 계정만 열람 가능 (외부·검색엔진 100% 비공개)
                         </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+                        <div className="bg-black/40 border border-amber-500/25 rounded-xl p-3 flex items-center justify-between">
+                            <div>
+                                <div className="font-bold text-amber-300">🔒 대표이사 집무실·기안서</div>
+                                <div className="text-[11px] text-gray-400">일반 회원·비로그인·검색로봇 접근 완전 차단</div>
+                            </div>
+                            <span className="text-amber-400 font-black shrink-0">대표님 전용</span>
+                        </div>
                         <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                             <div>
-                                <div className="font-bold text-white">전 종목 구글 검색 허용</div>
-                                <div className="text-[11px] text-gray-400">국내·미국 종목별 목표주가 페이지 개방</div>
+                                <div className="font-bold text-white">🌐 일반 공개 종목 페이지</div>
+                                <div className="text-[11px] text-gray-400">일반 방문자용 종목 시세·가이드 구글 노출</div>
                             </div>
                             <Link href="/directory" className="text-emerald-400 font-black hover:underline shrink-0">
                                 디렉토리 →
@@ -4085,8 +4094,8 @@ export default function CeoOfficePage() {
                         </div>
                         <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                             <div>
-                                <div className="font-bold text-white">구글 사이트맵 자동 확장</div>
-                                <div className="text-[11px] text-gray-400">오늘 기안서 종목 + 핵심 종목 자동 등록</div>
+                                <div className="font-bold text-white">🗺️ 공개 페이지 사이트맵</div>
+                                <div className="text-[11px] text-gray-400">집무실 제외 · 공개 가이드/종목만 등록</div>
                             </div>
                             <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="text-emerald-400 font-black hover:underline shrink-0">
                                 Sitemap →
@@ -4094,21 +4103,10 @@ export default function CeoOfficePage() {
                         </div>
                         <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                             <div>
-                                <div className="font-bold text-white">실시간 리포트 RSS 송출</div>
-                                <div className="text-[11px] text-gray-400">오늘의 15건 기안서 포털 피드 자동 배포</div>
+                                <div className="font-bold text-white">📡 무인 IndexNow 검색 핑</div>
+                                <div className="text-[11px] text-gray-400">일반 공개 페이지만 구글·네이버 자동 홍보</div>
                             </div>
-                            <a href="/rss.xml" target="_blank" rel="noopener noreferrer" className="text-emerald-400 font-black hover:underline shrink-0">
-                                RSS 피드 →
-                            </a>
-                        </div>
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-center justify-between">
-                            <div>
-                                <div className="font-bold text-white">IndexNow 자동 색인 핑</div>
-                                <div className="text-[11px] text-gray-400">일일 리포트 칼럼 자동 발행 &amp; 포털 알림</div>
-                            </div>
-                            <Link href="/blog" className="text-amber-300 font-black hover:underline shrink-0">
-                                자동칼럼 →
-                            </Link>
+                            <span className="text-emerald-400 font-black shrink-0">자동 가동 중</span>
                         </div>
                     </div>
                 </div>

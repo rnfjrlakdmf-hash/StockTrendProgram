@@ -521,10 +521,10 @@ export default async function Home() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Link
-                  href="/ceo-office"
+                  href="/research"
                   className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all"
                 >
-                  🏛️ 오늘의 증권사 리포트 브리핑 →
+                  📑 증권사 리서치 센터 →
                 </Link>
                 <Link
                   href="/directory"

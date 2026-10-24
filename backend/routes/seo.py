@@ -637,14 +637,10 @@ def get_seo_auto_status():
 @router.post("/seo/trigger-ping")
 @router.get("/seo/trigger-ping")
 def trigger_seo_ping_now():
-    """즉시 오늘의 기안서 기반 SEO 아티클 발행 및 구글·네이버·빙 IndexNow 색인 핑 전송"""
-    from routes.market import get_ceo_office_briefing
+    """일반 공개 페이지(/, /directory, /stock/*, /guide/*)만 구글·네이버·빙 IndexNow 색인 핑 전송 (대표님 집무실 기안서 100% 비공개 보호)"""
     from seo_auto_publisher import auto_publish_daily_seo_from_approvals, _load_seo_state, _save_seo_state
-    # 강제 재발행을 위해 오늘 날짜 초기화
     st = _load_seo_state()
     st["last_published_date"] = ""
     _save_seo_state(st)
-    office = get_ceo_office_briefing()
-    approvals = (office.get("data") or {}).get("auto_approvals", [])
-    res = auto_publish_daily_seo_from_approvals(approvals)
+    res = auto_publish_daily_seo_from_approvals()
     return {"status": "success", "result": res}
