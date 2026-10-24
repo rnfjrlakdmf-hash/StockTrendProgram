@@ -268,6 +268,17 @@ const FALLBACK_EXECUTIVES: Executive[] = [
         style: '밤사이 뉴욕 증시 10대 빅테크(NVDA·TSLA·AAPL·MSFT·GOOGL·AMZN 등) 순환 분석과 나스닥 선물, 원/달러 환율과 한국 증시 연결고리를 자동 보고합니다.',
         status: '미국 10대 빅테크 데일리 순환 분석 & 나스닥 선물·원자재 24시간 연동 완료',
     },
+    {
+        id: 'pr_cmo',
+        name: '한소희',
+        role: '상무 (홍보·마케팅본부장 · CMO)',
+        dept: '대외홍보·바이럴마케팅본부',
+        badge: '블로그 · 단톡방 · 주식카페 · 쇼츠 자동 홍보',
+        avatar: '📣',
+        color: 'pink',
+        style: '오늘 기안서에 올라온 급등 기대 종목과 시황을 바탕으로 네이버 블로그, 카카오톡 단톡방, 주식 카페, 인스타/쇼츠용 홍보 원고를 즉시 작성해 사이트 방문자와 광고 수익을 늘립니다.',
+        status: '오늘자 사이트 홍보 원고 5종(블로그·카톡·카페·SNS·쇼츠) 작성 대기 완료',
+    },
 ];
 
 const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
@@ -561,7 +572,44 @@ export default function CeoOfficePage() {
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
-    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research' | 'pr_marketing'>('electronic_sign');
+    // 📣 홍보·바이럴마케팅본부 상태
+    const [prSelectedTopic, setPrSelectedTopic] = useState<string>('ALL');
+    const [prCustomKeyword, setPrCustomKeyword] = useState<string>('');
+    const [prTone, setPrTone] = useState<string>('전문가적인');
+    const [prAiGenerating, setPrAiGenerating] = useState<boolean>(false);
+    const [prAiCustomResult, setPrAiCustomResult] = useState<any>(null);
+    const [prCopiedId, setPrCopiedId] = useState<string | null>(null);
+
+    const handleCopyPrText = useCallback((id: string, text: string) => {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+            setPrCopiedId(id);
+            setTimeout(() => setPrCopiedId(null), 2500);
+        }
+    }, []);
+
+    const handleGenerateAiPr = useCallback(async (kwOverride?: string) => {
+        const targetKw = (kwOverride ?? prCustomKeyword).trim() || 'AI 주식 수급 분석 및 목표주가 리포트';
+        try {
+            setPrAiGenerating(true);
+            const res = await fetch(`${API_BASE_URL}/api/marketing/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword: targetKw, tone: prTone }),
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success' && json.data) {
+                    setPrAiCustomResult({ keyword: targetKw, tone: prTone, ...json.data });
+                }
+            }
+        } catch (err) {
+            console.error('AI PR generation error:', err);
+        } finally {
+            setPrAiGenerating(false);
+        }
+    }, [prCustomKeyword, prTone]);
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const [commandInput, setCommandInput] = useState<string>('');
     const [showCommandDrawer, setShowCommandDrawer] = useState<boolean>(false);
@@ -1780,29 +1828,46 @@ export default function CeoOfficePage() {
                         </div>
                     </div>
 
-                    {/* 5인 임원진 자율 업무 완료 상태 카드 */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 mt-6">
-                        {executives.map(exec => (
-                            <div
-                                key={exec.id}
-                                className="bg-[#0b1222]/90 border border-white/10 rounded-xl p-3 flex flex-col justify-between"
-                            >
-                                <div>
-                                    <div className="flex items-center justify-between gap-1 mb-1">
-                                        <span className="text-xl">{exec.avatar}</span>
-                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                            ✓ 분석·기안 완료
-                                        </span>
+                    {/* 6인 임원진 자율 업무 완료 상태 카드 (홍보본부장 포함) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-6">
+                        {executives.map(exec => {
+                            const isPr = exec.id === 'pr_cmo';
+                            return (
+                                <div
+                                    key={exec.id}
+                                    onClick={() => {
+                                        if (isPr) {
+                                            setActiveTab('pr_marketing');
+                                            mainSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                    }}
+                                    className={`rounded-xl p-3 flex flex-col justify-between transition-all ${
+                                        isPr
+                                            ? 'bg-gradient-to-br from-pink-950/60 via-[#0b1222] to-purple-950/50 border border-pink-500/40 hover:border-pink-400 cursor-pointer shadow-lg shadow-pink-500/10'
+                                            : 'bg-[#0b1222]/90 border border-white/10'
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between gap-1 mb-1">
+                                            <span className="text-xl">{exec.avatar}</span>
+                                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                                                isPr
+                                                    ? 'bg-pink-500/20 text-pink-300 border-pink-500/40'
+                                                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                            }`}>
+                                                {isPr ? '📣 홍보원고 대기' : '✓ 분석·기안 완료'}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm font-extrabold text-white">{exec.name}</div>
+                                        <div className={`text-[11px] font-bold ${isPr ? 'text-pink-300' : 'text-amber-300/90'}`}>{exec.role}</div>
+                                        <div className="text-[10px] text-gray-400 mt-0.5">{exec.dept}</div>
                                     </div>
-                                    <div className="text-sm font-extrabold text-white">{exec.name}</div>
-                                    <div className="text-[11px] font-bold text-amber-300/90">{exec.role}</div>
-                                    <div className="text-[10px] text-gray-400 mt-0.5">{exec.dept}</div>
+                                    <div className={`mt-2 pt-2 border-t border-white/5 text-[10px] line-clamp-2 ${isPr ? 'text-pink-200 font-bold' : 'text-emerald-200/90'}`}>
+                                        {isPr ? '클릭 시 오늘자 사이트 홍보 원고 5종 열람 →' : exec.status}
+                                    </div>
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-white/5 text-[10px] text-emerald-200/90 line-clamp-2">
-                                    {exec.status}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -1880,6 +1945,23 @@ export default function CeoOfficePage() {
                                     {researchReports.length}종목
                                 </span>
                             )}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('pr_marketing')}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                                activeTab === 'pr_marketing'
+                                    ? 'bg-gradient-to-r from-pink-500 via-rose-400 to-amber-300 text-slate-950 shadow-lg shadow-pink-500/25 font-black'
+                                    : 'bg-pink-500/10 text-pink-200 hover:bg-pink-500/20 border border-pink-500/30'
+                            }`}
+                        >
+                            <span>📣 홍보·마케팅본부 (사이트 홍보팀)</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                activeTab === 'pr_marketing' ? 'bg-slate-950/30 text-slate-950' : 'bg-pink-500/25 text-pink-200'
+                            }`}>
+                                홍보원고 5종 완비
+                            </span>
                         </button>
 
                         <button
@@ -1968,7 +2050,7 @@ export default function CeoOfficePage() {
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         {/* 좌측 8컬럼: 대표이사 전자결재 서류함 (기본 탭) */}
-                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
+                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf', 'pr_marketing'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
                             {activeTab === 'electronic_sign' && (
                                 <>
                                     {/* 비서실장 브리핑 안내 배너 */}
@@ -3913,7 +3995,511 @@ export default function CeoOfficePage() {
                                         </div>
                                     )}
                                 </div>
-                            )}{activeTab === 'history' && (
+                            )}{activeTab === 'pr_marketing' && (() => {
+                                const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'http://13.209.99.170';
+                                const top1 = autoApprovals.find(d => d.stock_name === intelligenceMetrics.topStock.name) || intelligenceMetrics.krDocs[0] || autoApprovals[0];
+                                const top2 = autoApprovals.find(d => d.stock_name === intelligenceMetrics.secondStock.name) || intelligenceMetrics.krDocs[1] || autoApprovals[1];
+                                const krListStr = intelligenceMetrics.krStockListStr || '두산에너빌리티 · 삼성전자 · SK하이닉스';
+                                const usListStr = intelligenceMetrics.usStockListStr || '엔비디아(NVDA) · 브로드컴(AVGO) · 테슬라(TSLA)';
+
+                                // 선택된 종목/주제 계산
+                                const selectedDoc = prSelectedTopic === 'ALL'
+                                    ? top1
+                                    : autoApprovals.find(d => d.stock_name === prSelectedTopic) || top1;
+
+                                const focusName = prSelectedTopic === 'ALL'
+                                    ? `${top1?.stock_name || '유망주'} · ${top2?.stock_name || '주도주'}`
+                                    : (selectedDoc?.stock_name || prSelectedTopic);
+                                const focusUpside = selectedDoc?.upside_pct || '+60% 이상';
+                                const focusTarget = selectedDoc?.target_price || '목표가 상향';
+                                const focusCurrent = selectedDoc?.current_price || '실시간 집계 중';
+                                const focusHeadline = selectedDoc?.easy_headline || '제도권 증권사 리포트 컨센서스와 외국인·기관 큰손 수급이 동시에 포착된 핵심 종목입니다.';
+
+                                // 5대 채널별 즉시 복사 가능한 홍보 원고 자동 생성
+                                const prCopies = [
+                                    {
+                                        id: 'kakao_brief',
+                                        team: '제1홍보팀 · 김수빈 카톡·오픈채팅 확산팀장',
+                                        badge: '💬 카카오톡 단톡방 · 오픈채팅 · 밴드용 (30초 아침 브리핑)',
+                                        channelUrl: 'https://open.kakao.com',
+                                        channelLabel: '카카오톡/단톡방에 붙여넣기',
+                                        tip: '주식 단톡방·지인 방·네이버 밴드에 매일 아침 복사해서 올리시면 클릭률이 가장 높습니다!',
+                                        title: `[📊 오늘 아침 30초 증시 & 증권사 목표주가 TOP 브리핑]`,
+                                        body: `📢 [오늘의 AI 증권사 리서치 & 큰손 수급 브리핑]
+
+🌎 1. 간밤 글로벌 증시 & 환율 핵심
+• 나스닥 100 선물: ${intelligenceMetrics.nqPrice}
+• 실시간 원/달러 환율: ${intelligenceMetrics.usdKrwPrice}
+• 미국 빅테크 집중 감시: ${usListStr}
+
+🇰🇷 2. 오늘 국내 증권사 리포트 포착 종목
+• 포착 종목: ${krListStr}
+${top1 ? `• 기대수익 1위: ${top1.stock_name} (현재가 ${top1.current_price || '-'} → 목표주가 ${top1.target_price || '-'}, 상승여력 ${top1.upside_pct})` : ''}
+${top2 ? `• 기대수익 2위: ${top2.stock_name} (목표주가 ${top2.target_price || '-'}, 상승여력 ${top2.upside_pct})` : ''}
+
+💡 핵심 한줄 요약:
+"${focusHeadline}"
+
+👇 15개 전 종목 증권사 리포트 원문 & 실시간 목표주가 무료 열람하기
+${siteUrl}/ceo-office`
+                                    },
+                                    {
+                                        id: 'naver_blog',
+                                        team: '제2홍보팀 · 강민지 블로그·티스토리 SEO팀장',
+                                        badge: '📝 네이버 블로그 · 티스토리 검색 상위노출 원고',
+                                        channelUrl: 'https://blog.naver.com',
+                                        channelLabel: '네이버 블로그 글쓰기 이동 →',
+                                        tip: '제목과 본문을 그대로 복사해 네이버 블로그나 티스토리에 올리시면 종목명 검색 유입이 폭발적으로 늘어납니다.',
+                                        title: `[종목분석] ${focusName} 주가 전망 및 증권사 목표주가 리포트 총정리 (상승여력 ${focusUpside})`,
+                                        body: `안녕하세요! 매일 아침 제도권 증권사 리서치센터 리포트와 외국인·기관 수급을 쉽게 풀어드리는 AI 증권사 리서치 데스크입니다. 😊
+
+오늘 주식 시장에서 개인 투자자분들이 가장 주목하셔야 할 핵심 리포트와 수급 분석 결과를 정리해 드립니다.
+
+━━━━━━━━━━━━━━━━━━━━
+📌 1. 오늘 글로벌 시장 온도계 점검
+━━━━━━━━━━━━━━━━━━━━
+• 미국 나스닥 100 선물: ${intelligenceMetrics.nqPrice}
+• 실시간 원/달러 환율: ${intelligenceMetrics.usdKrwPrice}
+• 오늘 분석된 국내 핵심 종목: ${krListStr}
+• 오늘 분석된 미국 빅테크: ${usListStr}
+
+━━━━━━━━━━━━━━━━━━━━
+🎯 2. 오늘의 집중 분석 종목: ${focusName}
+━━━━━━━━━━━━━━━━━━━━
+• 실시간 현재가: ${focusCurrent}
+• 증권사 목표주가: ${focusTarget} (기대 상승여력 ${focusUpside})
+• 핵심 투자 포인트:
+${focusHeadline}
+
+${selectedDoc?.research_opinion ? `• 리서치센터 분석:
+${selectedDoc.research_opinion}
+` : ''}${selectedDoc?.quant_opinion ? `• 외국인·기관 수급 동향:
+${selectedDoc.quant_opinion}
+` : ''}${selectedDoc?.risk_opinion ? `• 투자 시 유의사항 (리스크 점검):
+${selectedDoc.risk_opinion}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━
+🚀 3. 실시간 AI 수급 스캐너 & 리포트 원문 보기
+━━━━━━━━━━━━━━━━━━━━
+어려운 증권사 PDF 리포트를 일일이 찾으실 필요 없이, 아래 사이트에서 매일 24시간 무료로 국내외 목표주가 컨센서스와 큰손 수급을 한눈에 확인하실 수 있습니다!
+
+👉 무료 실시간 리포트 & 수급 확인하기: ${siteUrl}
+👉 대표이사 전자결재 브리핑 바로가기: ${siteUrl}/ceo-office
+
+#주식전망 #목표주가 #증권사리포트 #${(selectedDoc?.stock_name || '주식분석').replace(/[^가-힣a-zA-Z0-9]/g, '')} #외국인수급 #기관순매수 #미국주식 #나스닥선물 #환율전망 #재테크`
+                                    },
+                                    {
+                                        id: 'cafe_viral',
+                                        team: '제3홍보팀 · 윤재혁 주식카페·종토방 바이럴팀장',
+                                        badge: '🔥 네이버 주식카페 · 종목토론방 · 커뮤니티 자연스러운 후기글',
+                                        channelUrl: 'https://section.cafe.naver.com',
+                                        channelLabel: '네이버 카페 바로가기 →',
+                                        tip: '광고 티가 나지 않는 "정보 공유/후기" 스타일 원고입니다. 주식 카페나 종목토론방에 공유하기 좋습니다.',
+                                        title: `오늘 ${focusName} 증권사 리포트랑 외인·기관 수급 정리된 거 보셨나요? (목표가 ${focusUpside})`,
+                                        body: `요즘 장이 종목별로 너무 차별화되다 보니 뉴스만 보고 따라 사면 물리기 십상이더라고요. 💦
+
+그래서 저는 아침마다 증권사 애널리스트 리포트랑 외국인·기관 수급만 모아놓은 대시보드 챙겨보는데, 오늘 올라온 기안서 중에 눈에 띄는 종목이 있어서 공유해 봅니다!
+
+✅ 오늘 눈여겨볼 핵심 숫자
+1) 나스닥 선물 ${intelligenceMetrics.nqPrice} / 환율 ${intelligenceMetrics.usdKrwPrice}
+2) 국내 리포트 포착 종목: ${krListStr}
+3) 오늘 목표주가 괴리율 상위: ${focusName} (현재가 대비 목표가 여력 ${focusUpside})
+
+특히 ${focusName} 관련해서 증권사 리포트 핵심 요약이랑 조심해야 할 리스크(손절선/환율 영향)까지 초보자도 읽기 쉽게 3줄로 정리되어 있어서 아침 출근길에 보기 딱 좋습니다.
+
+증권사 리포트 원문 PDF랑 실시간 외인/기관 수급 궁금하신 분들은 아래 링크에서 무료로 보실 수 있어요! 성투하세요 📈
+
+🔗 무료 리포트 & 수급 요약 보러가기: ${siteUrl}/ceo-office`
+                                    },
+                                    {
+                                        id: 'sns_threads',
+                                        team: '제4홍보팀 · 이하은 인스타·스레드(Threads) SNS팀장',
+                                        badge: '📱 인스타그램 · 스레드(Threads) · X(트위터) 3줄 후킹 홍보글',
+                                        channelUrl: 'https://www.threads.net',
+                                        channelLabel: '스레드(Threads) 열기 →',
+                                        tip: '짧고 강렬한 숫자 중심의 글로 스레드나 인스타그램 피드에 올리면 젊은 주식 투자자 유입에 특효입니다!',
+                                        title: `[스레드/인스타용] 오늘 증권사가 목표가 ${focusUpside} 부른 종목 🔥`,
+                                        body: `솔직히 주린이인데 증권사 리포트 30페이지짜리 언제 다 읽나요? 😭
+
+오늘 AI 증권사 임원진이 아침부터 15개 리포트 전수 조사해서 딱 3줄로 요약해 준 결과 공유합니다 👇
+
+📌 환율: ${intelligenceMetrics.usdKrwPrice} | 나스닥선물: ${intelligenceMetrics.nqPrice}
+🥇 오늘 상승여력 1위: ${top1?.stock_name || focusName} (${top1?.upside_pct || focusUpside})
+🥈 오늘 상승여력 2위: ${top2?.stock_name || '우량 수급주'} (${top2?.upside_pct || '+35%'})
+🎯 국내 포착: ${krListStr}
+
+복잡한 유료 리딩방 말고, 제도권 증권사 공식 리포트 3줄 요약본 무료로 챙겨보세요!
+👉 프로필/링크 확인: ${siteUrl}/ceo-office
+
+#주식공부 #미국주식 #국내주식 #증권사리포트 #목표주가 #직장인재테크`
+                                    },
+                                    {
+                                        id: 'shorts_script',
+                                        team: '제4홍보팀 · 이하은 유튜브 쇼츠·릴스·틱톡 영상팀장',
+                                        badge: '🎬 유튜브 쇼츠 · 인스타 릴스 · 틱톡 30초 대본',
+                                        channelUrl: 'https://studio.youtube.com',
+                                        channelLabel: '유튜브 스튜디오 열기 →',
+                                        tip: '스마트폰 화면 녹화로 우리 사이트(/ceo-office)를 띄워놓고 이 대본 그대로 읽으시면 30초 만에 조회수 터지는 쇼츠 영상이 완성됩니다!',
+                                        title: `[쇼츠 30초 대본] 오늘 증권사가 목표주가 ${focusUpside} 높여 부른 이 종목!`,
+                                        body: `🎬 [0~5초: 강력한 후킹 (화면: 대표이사 집무실 상단 배너 클로즈업)]
+"여러분! 오늘 아침 국내 증권사 리포트에서 현재가보다 무려 ${focusUpside}나 더 오를 수 있다고 발표한 종목, 확인하셨나요?"
+
+📊 [5~15초: 핵심 팩트 전달 (화면: 결재 기안서 클릭 후 목표주가·수급 카드 보여주기)]
+"간밤 나스닥 선물은 ${intelligenceMetrics.nqPrice}, 환율은 ${intelligenceMetrics.usdKrwPrice}을 기록 중인데요.
+오늘 분석된 ${krListStr} 중에서도 특히 '${focusName}'에 외국인과 기관의 관심이 쏠리고 있습니다."
+
+💡 [15~23초: 한줄 이유 설명]
+"${focusHeadline}"
+
+🚀 [23~30초: 사이트 유도 (CTA)]
+"증권사 원문 리포트와 조심해야 할 손절 기준선까지, 지금 고정 댓글 링크(StockTrend AI 증권사 집무실)에서 100% 무료로 확인해 보세요!"
+👉 고정댓글 링크: ${siteUrl}/ceo-office`
+                                    }
+                                ];
+
+                                return (
+                                    <div className="space-y-5">
+                                        {/* 1. 한소희 홍보본부장 & 4대 홍보팀 상단 브리핑 헤더 */}
+                                        <div className="bg-gradient-to-br from-[#1f102b] via-[#13182b] to-[#0f172a] border-2 border-pink-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl">
+                                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-white/10">
+                                                <div className="flex items-start gap-3.5">
+                                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/30 to-purple-500/30 border border-pink-400/50 flex items-center justify-center text-3xl shrink-0 shadow-lg">
+                                                        📣
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-pink-500 text-slate-950">
+                                                                대외홍보·바이럴마케팅본부
+                                                            </span>
+                                                            <span className="text-xs font-extrabold text-pink-300">
+                                                                한소희 상무 (CMO · 최고마케팅책임자) 및 전담 홍보팀 4인 대기 중
+                                                            </span>
+                                                        </div>
+                                                        <h2 className="text-lg sm:text-xl font-black text-white mt-1">
+                                                            &ldquo;대표님! 오늘 기안서({totalDocs}건)를 바탕으로 우리 사이트 홍보 원고 5종을 모두 써두었습니다!&rdquo;
+                                                        </h2>
+                                                        <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
+                                                            글을 직접 쓰실 필요가 전혀 없습니다. 아래에서 원하시는 홍보 채널(카톡방·블로그·카페·스레드·쇼츠)의 <strong className="text-pink-300">[📋 원클릭 복사]</strong> 버튼만 눌러 붙여넣으시면 방문자 유입과 <strong className="text-amber-300">카카오 애드핏 광고 클릭 수익</strong>이 함께 늘어납니다!
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleCopyPrText('site_url_only', `${siteUrl}/ceo-office`)}
+                                                        className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-black cursor-pointer transition-all"
+                                                    >
+                                                        {prCopiedId === 'site_url_only' ? '✅ 사이트 주소 복사됨!' : '🔗 내 사이트 주소 복사'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const allText = prCopies.map(c => `=== ${c.badge} ===\n제목: ${c.title}\n\n${c.body}`).join('\n\n\n');
+                                                            handleCopyPrText('all_5_packs', allText);
+                                                        }}
+                                                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-rose-400 to-amber-300 hover:opacity-95 text-slate-950 text-xs sm:text-sm font-black shadow-lg shadow-pink-500/20 cursor-pointer transition-all"
+                                                    >
+                                                        {prCopiedId === 'all_5_packs' ? '✅ 5종 전체 원고 복사 완료!' : '📦 오늘 홍보 원고 5종 한꺼번에 복사'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* 홍보부 산하 4개 실무팀 상태 카드 */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                                                <div className="bg-black/35 border border-pink-500/25 rounded-xl p-3">
+                                                    <div className="flex items-center justify-between text-xs font-black text-pink-300 mb-1">
+                                                        <span>💬 제1홍보팀 (카톡·단톡방)</span>
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">작성완료</span>
+                                                    </div>
+                                                    <div className="text-xs font-extrabold text-white">김수빈 팀장</div>
+                                                    <div className="text-[11px] text-gray-400 mt-0.5">아침 30초 시황·특징주 카톡 브리핑 원고 담당</div>
+                                                </div>
+                                                <div className="bg-black/35 border border-emerald-500/25 rounded-xl p-3">
+                                                    <div className="flex items-center justify-between text-xs font-black text-emerald-300 mb-1">
+                                                        <span>📝 제2홍보팀 (네이버 블로그)</span>
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">작성완료</span>
+                                                    </div>
+                                                    <div className="text-xs font-extrabold text-white">강민지 팀장</div>
+                                                    <div className="text-[11px] text-gray-400 mt-0.5">종목명 검색 상위노출 SEO 블로그 원고·해시태그 담당</div>
+                                                </div>
+                                                <div className="bg-black/35 border border-amber-500/25 rounded-xl p-3">
+                                                    <div className="flex items-center justify-between text-xs font-black text-amber-300 mb-1">
+                                                        <span>🔥 제3홍보팀 (주식카페·종토방)</span>
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">작성완료</span>
+                                                    </div>
+                                                    <div className="text-xs font-extrabold text-white">윤재혁 팀장</div>
+                                                    <div className="text-[11px] text-gray-400 mt-0.5">거부감 없는 자연스러운 정보공유형 커뮤니티 바이럴 담당</div>
+                                                </div>
+                                                <div className="bg-black/35 border border-sky-500/25 rounded-xl p-3">
+                                                    <div className="flex items-center justify-between text-xs font-black text-sky-300 mb-1">
+                                                        <span>🎬 제4홍보팀 (스레드·쇼츠)</span>
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">작성완료</span>
+                                                    </div>
+                                                    <div className="text-xs font-extrabold text-white">이하은 팀장</div>
+                                                    <div className="text-[11px] text-gray-400 mt-0.5">3줄 임팩트 스레드 & 유튜브 쇼츠 30초 대본 담당</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 2. 홍보할 주인공 종목 선택 바 & AI 맞춤 홍보글 생성기 */}
+                                        <div className="bg-[#0f172a] border border-white/15 rounded-2xl p-4 sm:p-5 space-y-4">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                                                <div>
+                                                    <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                                                        <span>🎯 Step 1. 오늘 어떤 종목을 주인공으로 홍보할까요?</span>
+                                                        <span className="text-[11px] font-bold text-pink-300 bg-pink-500/15 px-2 py-0.5 rounded-full border border-pink-500/30">
+                                                            버튼 클릭 시 아래 5개 홍보 원고가 즉시 바뀝니다!
+                                                        </span>
+                                                    </h3>
+                                                </div>
+                                            </div>
+
+                                            {/* 오늘의 결재 종목 빠른 선택 칩 */}
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPrSelectedTopic('ALL')}
+                                                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                                        prSelectedTopic === 'ALL'
+                                                            ? 'bg-pink-500 text-slate-950 shadow-md shadow-pink-500/25'
+                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                    }`}
+                                                >
+                                                    🌟 오늘 전체 시황 + 기대수익 1·2위 종합 홍보 (추천)
+                                                </button>
+                                                {autoApprovals
+                                                    .filter(d => d.category_type === 'kr_stock' || d.category_type === 'us_stock')
+                                                    .map(doc => (
+                                                        <button
+                                                            key={doc.doc_id}
+                                                            type="button"
+                                                            onClick={() => setPrSelectedTopic(doc.stock_name)}
+                                                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                                prSelectedTopic === doc.stock_name
+                                                                    ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                            }`}
+                                                        >
+                                                            <span>{doc.category_type === 'kr_stock' ? '🇰🇷' : '🌎'} {doc.stock_name}</span>
+                                                            {doc.upside_pct && (
+                                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                                                                    prSelectedTopic === doc.stock_name ? 'bg-black/20 text-slate-950' : 'bg-emerald-500/20 text-emerald-300'
+                                                                }`}>
+                                                                    {doc.upside_pct}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                            </div>
+
+                                            {/* 직접 키워드를 입력해 AI 추가 원고를 뽑는 도구 */}
+                                            <div className="pt-3 border-t border-white/10 flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
+                                                <span className="text-xs font-extrabold text-amber-300 shrink-0">
+                                                    ✨ 특별 주제 AI 추가 작성 지시:
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={prCustomKeyword}
+                                                    onChange={e => setPrCustomKeyword(e.target.value)}
+                                                    placeholder="원하시는 다른 종목이나 주제가 있다면 적어주세요 (예: 에스엠씨지 리포트 분석, 코스닥 외국인 수급)"
+                                                    className="flex-1 bg-black/40 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-pink-400"
+                                                />
+                                                <select
+                                                    value={prTone}
+                                                    onChange={e => setPrTone(e.target.value)}
+                                                    className="bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none"
+                                                >
+                                                    <option value="전문가적인">👔 신뢰감 있는 전문가 말투</option>
+                                                    <option value="친근한 이웃같은">😊 친근하고 부드러운 말투</option>
+                                                    <option value="긴박하고 강렬한">🔥 시선을 끄는 강렬한 말투</option>
+                                                    <option value="유머러스한">😄 재치 있고 재미있는 말투</option>
+                                                </select>
+                                                <button
+                                                    type="button"
+                                                    disabled={prAiGenerating}
+                                                    onClick={() => handleGenerateAiPr()}
+                                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-95 text-white text-xs font-black cursor-pointer shrink-0 disabled:opacity-50"
+                                                >
+                                                    {prAiGenerating ? '🤖 한소희 본부장이 원고 작성 중...' : '✨ AI 맞춤 홍보원고 추가 생성'}
+                                                </button>
+                                            </div>
+
+                                            {/* AI 특별 생성 결과가 있을 경우 표시 */}
+                                            {prAiCustomResult && (
+                                                <div className="bg-purple-950/30 border border-purple-500/40 rounded-2xl p-4 space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-xs font-black text-purple-300">
+                                                            ✨ 한소희 본부장의 특별 지시 AI 원고 완성! (주제: {prAiCustomResult.keyword} · 말투: {prAiCustomResult.tone})
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPrAiCustomResult(null)}
+                                                            className="text-xs text-gray-400 hover:text-white"
+                                                        >
+                                                            닫기 ✕
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {prAiCustomResult.blog && (
+                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs font-black text-emerald-300">📝 AI 블로그 원고</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleCopyPrText('ai_blog', `${prAiCustomResult.blog.title}
+
+${prAiCustomResult.blog.content}
+
+👉 바로가기: ${siteUrl}/ceo-office`)}
+                                                                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-[11px] font-black cursor-pointer"
+                                                                    >
+                                                                        {prCopiedId === 'ai_blog' ? '✅ 복사됨!' : '📋 원클릭 복사'}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="text-xs font-bold text-white">{prAiCustomResult.blog.title}</div>
+                                                                <pre className="text-[11px] text-gray-300 whitespace-pre-wrap font-sans max-h-40 overflow-y-auto leading-relaxed">
+                                                                    {prAiCustomResult.blog.content}
+                                                                </pre>
+                                                            </div>
+                                                        )}
+                                                        {prAiCustomResult.community && (
+                                                            <div className="bg-black/40 border border-white/10 rounded-xl p-3 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs font-black text-amber-300">🔥 AI 카페·단톡방 원고</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleCopyPrText('ai_comm', `${prAiCustomResult.community.title}
+
+${prAiCustomResult.community.content}
+
+👉 바로가기: ${siteUrl}/ceo-office`)}
+                                                                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-[11px] font-black cursor-pointer"
+                                                                    >
+                                                                        {prCopiedId === 'ai_comm' ? '✅ 복사됨!' : '📋 원클릭 복사'}
+                                                                    </button>
+                                                                </div>
+                                                                <div className="text-xs font-bold text-white">{prAiCustomResult.community.title}</div>
+                                                                <pre className="text-[11px] text-gray-300 whitespace-pre-wrap font-sans max-h-40 overflow-y-auto leading-relaxed">
+                                                                    {prAiCustomResult.community.content}
+                                                                </pre>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* 3. 오늘의 기안서 연동 5대 채널 홍보 원고 카드 그리드 */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                            {prCopies.map((item, idx) => {
+                                                const isCopied = prCopiedId === item.id;
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className={`bg-[#0d1526] border border-white/15 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-3 ${
+                                                            idx === 0 ? 'lg:col-span-2 border-pink-500/40 bg-gradient-to-br from-[#161224] to-[#0d1526]' : ''
+                                                        }`}
+                                                    >
+                                                        <div className="space-y-2.5">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                <div>
+                                                                    <div className="text-[11px] font-bold text-pink-300">{item.team}</div>
+                                                                    <h4 className="text-sm sm:text-base font-black text-white mt-0.5">
+                                                                        {item.badge}
+                                                                    </h4>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleCopyPrText(item.id, `${item.title}
+
+${item.body}`)}
+                                                                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                                            isCopied
+                                                                                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25'
+                                                                                : 'bg-pink-500 hover:bg-pink-400 text-slate-950 shadow-md shadow-pink-500/20'
+                                                                        }`}
+                                                                    >
+                                                                        <span>{isCopied ? '✅ 복사 완료! 붙여넣기(Ctrl+V) 하세요' : '📋 제목+본문 원클릭 복사'}</span>
+                                                                    </button>
+                                                                    <a
+                                                                        href={item.channelUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold text-gray-200 transition-all"
+                                                                    >
+                                                                        {item.channelLabel}
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="text-[11px] text-amber-300/95 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                                                                💡 <strong>홍보팀 팁:</strong> {item.tip}
+                                                            </div>
+
+                                                            <div className="bg-black/45 border border-white/10 rounded-xl p-3.5 space-y-2">
+                                                                <div className="text-xs font-black text-amber-300 border-b border-white/10 pb-2">
+                                                                    📌 제목: <span className="text-white">{item.title}</span>
+                                                                </div>
+                                                                <pre className="text-xs text-gray-200 whitespace-pre-wrap font-sans leading-relaxed max-h-64 overflow-y-auto pr-1">
+                                                                    {item.body}
+                                                                </pre>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* 4. 24시간 무인 검색엔진 자동 홍보(SEO) 가동 현황판 */}
+                                        <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                                <div>
+                                                    <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                                                        <span>🤖 24시간 무인 검색엔진(네이버·구글·다음) 자동 홍보봇 가동 현황</span>
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400 mt-0.5">
+                                                        대표님께서 직접 홍보글을 올리시는 것과 별개로, 우리 사이트 내부의 자동 SEO 로봇이 24시간 검색엔진에 사이트를 알리고 있습니다.
+                                                    </p>
+                                                </div>
+                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                    ✓ 무인 홍보 100% 정상 가동 중
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                                <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-black text-white">구글·네이버 사이트맵 (Sitemap)</div>
+                                                        <div className="text-[11px] text-gray-400 mt-0.5">153개 종목·가이드 페이지 자동 색인 송출</div>
+                                                    </div>
+                                                    <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="text-emerald-400 font-black hover:underline">
+                                                        정상 송출 →
+                                                    </a>
+                                                </div>
+                                                <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-black text-white">RSS 실시간 뉴스·브리핑 피드</div>
+                                                        <div className="text-[11px] text-gray-400 mt-0.5">검색 포털 크롤러 자동 수집 피드</div>
+                                                    </div>
+                                                    <a href="/rss.xml" target="_blank" rel="noopener noreferrer" className="text-emerald-400 font-black hover:underline">
+                                                        정상 송출 →
+                                                    </a>
+                                                </div>
+                                                <div className="bg-black/40 border border-white/10 rounded-xl p-3.5 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-black text-white">카카오 애드핏 수익형 광고 연동</div>
+                                                        <div className="text-[11px] text-gray-400 mt-0.5">홍보 링크를 통해 들어온 방문자 클릭 시 적립</div>
+                                                    </div>
+                                                    <span className="text-amber-300 font-black">8개 슬롯 가동</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}{activeTab === 'history' && (
                                 <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-4">
                                     <div>
                                         <h3 className="text-lg font-black text-white mb-1">
@@ -3972,7 +4558,7 @@ export default function CeoOfficePage() {
                         </div>
 
                         {/* 우측 4컬럼: 전사 시장 시스템 가동 현황 & 빠른 서명 요약 (전자결재 탭에서는 12컬럼 풀와이드 메일함으로 전환) */}
-                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
+                        <div className={['electronic_sign', 'watchlist_research', 'approved_tf', 'pr_marketing'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
                             {/* 전사 자동 시스템 가동 모니터 */}
                             <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
                                 <div className="flex items-center justify-between mb-3">
