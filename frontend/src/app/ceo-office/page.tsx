@@ -1737,7 +1737,7 @@ export default function CeoOfficePage() {
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
                                                 className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left"
                                             >
-                                                <span className="font-extrabold text-white truncate max-w-[115px]">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.target_price && <span className="text-gray-300">목표 {doc.target_price}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -1780,7 +1780,7 @@ export default function CeoOfficePage() {
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
                                                 className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left"
                                             >
-                                                <span className="font-extrabold text-white truncate max-w-[115px]">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.current_price && <span className="text-gray-300">{doc.current_price.split(' ')[0]}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -1823,7 +1823,7 @@ export default function CeoOfficePage() {
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
                                                 className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all cursor-pointer text-left"
                                             >
-                                                <span className="font-extrabold text-white truncate max-w-[125px]">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
                                                 <span className="text-[11px] font-mono text-purple-300 font-bold shrink-0">
                                                     {doc.current_price ? doc.current_price.split(' ')[0] : '24H 감시'}
                                                 </span>
@@ -1863,7 +1863,7 @@ export default function CeoOfficePage() {
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg bg-white/5 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all cursor-pointer text-left"
                                             >
-                                                <span className="font-extrabold text-white truncate max-w-[140px]">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
                                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold shrink-0">
                                                     필독 브리핑
                                                 </span>
@@ -2302,7 +2302,7 @@ export default function CeoOfficePage() {
                                                 <span className="text-[11px] text-amber-300">클릭 시 우측 상세 열람</span>
                                             </div>
 
-                                            <div className="space-y-2 max-h-[820px] overflow-y-auto pr-1">
+                                            <div className="space-y-2.5">
                                                 {filteredDocs.length === 0 ? (
                                                     <div className="bg-black/30 border border-white/10 rounded-2xl p-8 text-center text-gray-400 text-xs">
                                                         해당 조건에 맞는 결재 서류가 없습니다.
@@ -2336,12 +2336,12 @@ export default function CeoOfficePage() {
                                                                 )}
 
                                                                 {/* 상단: 문서번호 & 카테고리 뱃지 & 결재상태 */}
-                                                                <div className="flex items-center justify-between gap-1.5 mb-1.5 pl-1.5">
-                                                                    <div className="flex items-center gap-1.5 truncate">
+                                                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5 pl-1.5">
+                                                                    <div className="flex flex-wrap items-center gap-1.5">
                                                                         <span className="text-[10px] font-mono font-bold text-gray-400">
                                                                             {doc.doc_number}
                                                                         </span>
-                                                                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 truncate max-w-[140px]">
+                                                                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
                                                                             {doc.category_badge}
                                                                         </span>
                                                                     </div>
@@ -2365,15 +2365,15 @@ export default function CeoOfficePage() {
                                                                 </div>
 
                                                                 {/* 제목 */}
-                                                                <h4 className={`text-xs sm:text-sm font-black leading-snug line-clamp-2 pl-1.5 ${
+                                                                <h4 className={`text-xs sm:text-sm font-black leading-snug pl-1.5 break-keep ${
                                                                     isSelected ? 'text-white' : 'text-gray-200 group-hover:text-white'
                                                                 }`}>
                                                                     {doc.title}
                                                                 </h4>
 
-                                                                {/* 1줄 쉬운 해설 스니펫 */}
+                                                                {/* 쉬운 해설 스니펫 (잘리지 않게 전체 표시) */}
                                                                 {doc.easy_headline && (
-                                                                    <p className="text-[11px] text-gray-400 line-clamp-1 mt-1 pl-1.5 leading-relaxed">
+                                                                    <p className="text-[11px] text-gray-300/90 mt-1 pl-1.5 leading-relaxed break-keep">
                                                                         {doc.easy_headline}
                                                                     </p>
                                                                 )}
@@ -2402,9 +2402,9 @@ export default function CeoOfficePage() {
                                                                     </div>
                                                                 )}
 
-                                                                {/* 하단: 기안자 & 시간 & 서명 퀵버튼 */}
-                                                                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-white/5 pl-1.5 text-[10px] text-gray-400">
-                                                                    <span className="truncate max-w-[160px]">{doc.proposer}</span>
+                                                                {/* 하단: 기안자 & 서명 퀵버튼 (기안자 이름 잘리지 않게 표시) */}
+                                                                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-white/5 pl-1.5 text-[10px] text-gray-300">
+                                                                    <span className="flex-1 leading-snug break-keep">{doc.proposer}</span>
                                                                     <div className="flex items-center gap-1 shrink-0">
                                                                         <button
                                                                             type="button"
@@ -2430,7 +2430,7 @@ export default function CeoOfficePage() {
                                         </div>
 
                                         {/* 우측 상세 열람실 (Detail Dossier Reader) */}
-                                        <div className={`lg:col-span-7 xl:col-span-8 ${mobileDetailOpen ? 'block' : 'hidden lg:block'}`}>
+                                        <div className={`lg:col-span-7 xl:col-span-8 lg:sticky lg:top-6 ${mobileDetailOpen ? 'block' : 'hidden lg:block'}`}>
                                             {activeDoc ? (
                                                 <div className={`relative overflow-hidden rounded-3xl border-2 transition-all p-5 sm:p-7 shadow-2xl ${
                                                     (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
