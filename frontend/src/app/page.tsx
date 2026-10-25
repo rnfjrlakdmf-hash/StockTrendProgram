@@ -5,6 +5,7 @@ import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { 
   Trophy, Calculator, Zap, Shield, BookOpen, Newspaper, GraduationCap, BarChart3
 } from 'lucide-react';
+import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 
 export const revalidate = 300;
 
@@ -475,6 +476,8 @@ export default async function Home() {
               ))}
             </div>
           </section>
+
+          <KakaoRevenueAd type="bottom" />
 
         </div>
       </div>
