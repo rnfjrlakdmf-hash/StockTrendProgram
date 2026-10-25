@@ -1494,87 +1494,119 @@ def get_stock_research_reports(
         pts_list: list,
         gp_str: str | None,
         op_str: str | None,
+        write_dt: str = "",
+        analyst_nm: str | None = None,
     ):
         joined = f"{rep_title} {' '.join(pts_list)}"
-        joined_low = joined.lower()
+        title_low = (rep_title or "").lower()
 
-        # 핵심 매출/영업이익 숫자 자동 추출
-        sales_m = re.search(r'매출(?:액)?\s*([0-9,]+조\s*[0-9,]*억?원?|[0-9,]+억\s*원?)', joined)
-        op_m = re.search(r'영업이익\s*([0-9,]+조\s*[0-9,]*억?원?|[0-9,]+억\s*원?)', joined)
+        # 핵심 매출/영업이익/전년비 숫자 팩트만 추출 (원문 문장 복제 없이 수치만 추출)
+        sales_m = re.search(r'매출(?:액)?\s*[:：]?\s*([0-9,]+(?:\.[0-9]+)?\s*조\s*[0-9,]*억?\s*원?|[0-9,]+(?:\.[0-9]+)?\s*억\s*원?)', joined)
+        op_m = re.search(r'영업이익\s*[:：]?\s*([0-9,]+(?:\.[0-9]+)?\s*조\s*[0-9,]*억?\s*원?|[0-9,]+(?:\.[0-9]+)?\s*억\s*원?)', joined)
+        yoy_m = re.search(r'(?:YoY|전년동기대비|전년비)\s*([+\-]?\d+(?:\.\d+)?%)', joined, flags=re.IGNORECASE)
         num_snippets = []
         if sales_m:
             num_snippets.append(f"매출액 {sales_m.group(1).strip()}")
         if op_m:
             num_snippets.append(f"영업이익 {op_m.group(1).strip()}")
+        if yoy_m:
+            num_snippets.append(f"전년 대비 변동률 {yoy_m.group(1).strip()}")
         num_clause = f" ({' · '.join(num_snippets)})" if num_snippets else ""
 
-        # 내용 맥락 자동 번역
+        # 리포트 제목(rep_title) 우선 기준으로 성격을 정확히 분류 (Review vs Preview 혼동 방지)
+        is_review = any(k in title_low for k in ["review", "리뷰", "잠정실적", "확정실적"])
+        is_preview = (not is_review) and any(k in title_low for k in ["preview", "프리뷰", "전망"])
+
         meaning_parts = []
-        if any(k in joined_low for k in ["preview", "프리뷰", "전망", "예상"]):
-            if any(k in joined for k in ["상회", "서프라이즈", "호실적", "최대"]):
-                meaning_parts.append(f"다가오는 실적 발표에서 시장 예상치(컨센서스)를 뛰어넘는 호실적{num_clause}이 기대된다고 분석했습니다.")
-            elif any(k in joined for k in ["부합", "선방", "견조"]):
-                meaning_parts.append(f"이번 분기 실적{num_clause}이 증권가 전문가들의 평균 예상치(컨센서스)에 부합하며 안정적으로 선방할 것으로 내다봤습니다.")
+        if is_review:
+            if any(k in joined for k in ["상회", "서프라이즈"]) and not any(k in joined for k in ["하회", "부진"]):
+                meaning_parts.append(f"발표된 분기 실적 수치{num_clause}가 시장 컨센서스를 상회했다는 사실을 바탕으로 작성된 실적 리뷰 보고서입니다.")
+            elif any(k in joined for k in ["하회", "부진", "아쉬운"]):
+                meaning_parts.append(f"발표된 분기 실적 수치{num_clause}와 일회성 비용 요인 및 향후 본업 회복 조건을 점검한 실적 리뷰 보고서입니다.")
+            elif any(k in joined for k in ["부합", "무난", "선방"]):
+                meaning_parts.append(f"발표된 분기 실적{num_clause}이 시장 예상치(컨센서스)에 부합한 점을 확인하고 향후 사업 일정을 짚어본 실적 리뷰입니다.")
+            else:
+                meaning_parts.append(f"최근 공시된 분기 실적 수치{num_clause}를 토대로 사업 부문별 현황과 밸류에이션 요인을 정리한 실적 리뷰 보고서입니다.")
+        elif is_preview:
+            if any(k in joined for k in ["상회", "서프라이즈", "호실적"]) and not any(k in joined for k in ["하회", "부진"]):
+                meaning_parts.append(f"다가오는 분기 실적 발표를 앞두고 컨센서스 대비 양호한 실적 추정치{num_clause}를 제시한 프리뷰 보고서입니다.")
             elif any(k in joined for k in ["하회", "부진", "둔화"]):
-                meaning_parts.append(f"일회성 비용이나 업황 영향으로 이번 분기 실적{num_clause}은 시장 눈높이보다 다소 낮을 것으로 예상했습니다.")
+                meaning_parts.append(f"다가오는 분기 실적 추정치{num_clause}를 보수적으로 조정하며 업황 변수를 점검한 프리뷰 보고서입니다.")
             else:
-                meaning_parts.append(f"다가오는 분기 실적 성적표{num_clause}와 핵심 사업부문의 수익성을 사전 점검한 보고서입니다.")
-        elif any(k in joined_low for k in ["review", "리뷰", "잠정"]):
-            if any(k in joined for k in ["상회", "서프라이즈"]):
-                meaning_parts.append(f"발표된 실제 실적{num_clause}이 시장 기대치를 웃도는 깜짝 호실적을 기록했다고 평가했습니다.")
-            elif any(k in joined for k in ["하회", "아쉬운"]):
-                meaning_parts.append(f"발표된 실적{num_clause}이 일시적 요인으로 시장 예상치에는 못 미쳤으나 향후 본업 회복 여부를 짚었습니다.")
+                meaning_parts.append(f"다가오는 분기 예상 실적 수치{num_clause}와 주요 사업부문의 수익성 지표를 사전 점검한 프리뷰 보고서입니다.")
+        else:
+            if num_snippets:
+                meaning_parts.append(f"공시 및 추정 재무 수치{num_clause}를 바탕으로 기업의 핵심 사업 현황과 가치 평가(밸류에이션) 요인을 다룬 분석 자료입니다.")
             else:
-                meaning_parts.append(f"최근 발표된 분기 확정 실적{num_clause}의 세부 내용과 향후 이익 흐름을 분석했습니다.")
+                meaning_parts.append("기업의 주요 사업 모멘텀, 업황 사이클 및 재무 밸류에이션 지표를 종합적으로 점검한 분석 자료입니다.")
 
-        if any(k in joined for k in ["수주", "본계약", "계약", "백로그", "납품"]):
-            meaning_parts.append("특히 향후 매출 성장을 이끌 신규 수주 및 본계약 체결 기대감을 핵심 긍정 요인으로 꼽았습니다.")
-        elif any(k in joined for k in ["하향"]):
-            meaning_parts.append("시장 눈높이 조정을 반영해 목표주가는 일부 낮추었으나, 기업의 중장기 이익 체력은 유효하다고 평가했습니다.")
-        elif any(k in joined for k in ["상향"]):
-            meaning_parts.append("실적 추정치가 높아짐에 따라 목표주가를 기존보다 상향 조정한 점이 핵심입니다.")
+        if any(k in joined for k in ["수주", "본계약", "백로그", "납품"]):
+            meaning_parts.append("핵심 관찰 변수로는 신규 수주 잔고 추이와 본계약 공시 일정이 언급되었습니다.")
         elif any(k in joined for k in ["배당", "자사주", "밸류업", "주주환원"]):
-            meaning_parts.append("안정적인 현금 창출력을 바탕으로 배당 확대 및 주주환원(밸류업) 매력이 부각된다는 내용입니다.")
+            meaning_parts.append("핵심 관찰 변수로는 현금흐름에 기반한 배당 및 주주환원(밸류업) 정책 이행 여부가 꼽혔습니다.")
+        elif any(k in joined for k in ["밸류에이션", "트리거", "저평가", "pbr", "per"]):
+            meaning_parts.append("핵심 관찰 변수로는 현재 주가수익비율(PER)·주가순자산비율(PBR) 대비 주가 재평가(밸류에이션) 계기가 제시되었습니다.")
 
-        if not meaning_parts:
-            meaning_parts.append(f"'{rep_title}'를 주제로 핵심 사업의 실적 흐름과 업황 변화를 알기 쉽게 짚어낸 보고서입니다.")
+        # 원문 문장을 그대로 복제하지 않고 순수 팩트·수치 메타데이터만으로 자체 구성한 3대 요약 포인트 생성
+        factual_points = []
+        author_info = f"{broker_name}{f' ({analyst_nm} 애널리스트)' if analyst_nm else ''}"
+        factual_points.append(
+            f"[발간 기관 및 일자 팩트] {write_dt or '최근'} {author_info}에서 발간한 '{target_name}' 공개 리서치 메타데이터 집계입니다."
+        )
+        if gp_str or op_str:
+            factual_points.append(
+                f"[증권사 제시 컨센서스 팩트] 투자의견 '{op_str or '별도 미표기'}' · 제시 목표주가 '{gp_str or '별도 미표기'}' (당사 추천이 아닌 해당 증권사 발표 수치)"
+            )
+        if num_snippets:
+            factual_points.append(
+                f"[핵심 재무 수치 팩트] 리포트 내 주요 재무 지표: {' · '.join(num_snippets)} (세부 산출 근거는 원문 리포트 참조)"
+            )
+        else:
+            report_kind = "분기 실적 리뷰(Review)" if is_review else ("분기 실적 프리뷰(Preview)" if is_preview else "기업·산업 밸류에이션 분석")
+            factual_points.append(
+                f"[리포트 분류 및 주제] 구분: {report_kind} · 주제: '{rep_title}' (원문 본문은 저작권 보호를 위해 우측 상단 공식 원문 링크를 통해 제공됩니다)"
+            )
 
         if cat_k == "company":
             meta_tags = []
             if gp_str:
                 meta_tags.append(f"제시 목표가 {gp_str}")
             if op_str:
-                meta_tags.append(f"의견 {op_str}")
+                meta_tags.append(f"투자의견 {op_str}")
             meta_str = f" ({' · '.join(meta_tags)})" if meta_tags else ""
             easy_text = f"{broker_name}에서 발표한 '{target_name}' 기업 분석 리포트{meta_str}입니다. {' '.join(meaning_parts)}"
 
             if any(k in joined for k in ["수주", "본계약", "계약"]):
-                tip_text = f"실제 수주·본계약 공시(DART)가 발표되는 시점과 분기 영업이익률 추이를 함께 확인하면 좋습니다."
+                tip_text = f"향후 전자공시시스템(DART)의 단일판매·공급계약 공시와 분기 영업이익률 추이를 함께 대조해 보세요."
             elif any(k in joined for k in ["환율", "환헷지", "수출"]):
-                tip_text = f"원/달러 환율 흐름에 따른 수출 채산성 변화와 외국인·기관 수급 유입 여부를 함께 살펴보세요."
+                tip_text = f"원/달러 환율 흐름에 따른 수출 채산성 변화와 외국인·기관 수급 데이터를 함께 비교해 보세요."
             else:
-                tip_text = f"'{target_name}'의 실제 분기 영업이익이 증권사 평균 예상치(컨센서스)를 넘어서는지 확인하는 것이 핵심입니다."
-            return easy_text, tip_text
+                tip_text = f"'{target_name}'의 분기 실적 공시(DART) 수치와 증권사 컨센서스 달성 여부를 객관적으로 비교해 보시기 바랍니다."
+            return easy_text, tip_text, factual_points
 
         if cat_k == "industry":
             ind = target_name or "주요 산업"
             return (
                 f"{broker_name}의 '{ind}' 업종 분석 리포트입니다. {' '.join(meaning_parts)}",
-                f"'{ind}' 업종 내 대표 기업들의 수출입 통관 데이터와 기관·외국인 동반 수급 흐름을 비교해 보세요.",
+                f"'{ind}' 업종 내 대표 기업들의 수출입 통관 통계와 기관·외국인 수급 흐름을 비교해 보세요.",
+                factual_points,
             )
         if cat_k == "economy":
             return (
-                f"{broker_name}의 글로벌 경제·환율·물가 분석 리포트입니다. 금리와 환율 변화가 시장 자금 흐름에 주는 영향을 설명합니다.",
-                "미국 물가·고용 지표 발표 전후로 달러 인덱스와 원/달러 환율이 어떻게 움직이는지 관찰해 보세요.",
+                f"{broker_name}의 거시경제·환율·물가 분석 리포트입니다. 금리와 환율 변화가 자금 흐름에 주는 영향을 다룹니다.",
+                "미국 물가·고용 지표 발표 전후로 달러 인덱스와 원/달러 환율 추이를 관찰해 보세요.",
+                factual_points,
             )
         if cat_k == "debenture":
             return (
-                f"{broker_name}의 채권·금리 시장 리포트입니다. 한국·미국 국채 금리 흐름과 기준금리 전망을 다룹니다.",
-                "국채 금리가 내려가면 채권 가격은 올라가는 역의 관계를 기억하며 시중 금리 추이를 확인해 보세요.",
+                f"{broker_name}의 채권·금리 시장 리포트입니다. 한국·미국 국채 금리 흐름과 통화정책 변수를 다룹니다.",
+                "국채 금리와 채권 가격의 역(逆)의 관계를 참고하여 시중 금리 추이를 확인해 보세요.",
+                factual_points,
             )
         return (
             f"{broker_name}에서 발표한 증시 시황 브리핑입니다. {' '.join(meaning_parts)}",
-            "환율·금리 방향성과 외국인·기관의 현·선물 수급 변화를 핵심 지표로 참고해 보세요.",
+            "환율·금리 방향성과 외국인·기관의 현·선물 수급 통계를 핵심 지표로 참고해 보세요.",
+            factual_points,
         )
 
     q_clean = (q or "").strip()
@@ -1665,8 +1697,8 @@ def get_stock_research_reports(
         if pts and pts[0] == title and len(pts) > 1:
             pts = pts[1:]
 
-        easy_exp, check_tip = build_plain_korean_digest(
-            cat_key, broker, item_name, title, pts, goal_price, opinion
+        easy_exp, check_tip, factual_pts = build_plain_korean_digest(
+            cat_key, broker, item_name, title, pts, goal_price, opinion, write_date, analyst
         )
 
         formatted_items.append({
@@ -1684,7 +1716,7 @@ def get_stock_research_reports(
             "goal_price": goal_price,
             "goal_price_num": goal_price_num,
             "opinion": opinion,
-            "summary_points": pts,
+            "summary_points": factual_pts,
             "easy_summary": easy_exp,
             "checkpoint": check_tip,
             "naver_url": f"https://stock.naver.com/research/{url_slug}/{nid}" if nid else "https://stock.naver.com/research/company"

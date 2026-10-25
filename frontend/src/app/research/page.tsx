@@ -249,12 +249,12 @@ const FALLBACK_KR_REPORTS: ResearchReportItem[] = [
         goal_price_num: 120000,
         opinion: "Buy (매수)",
         summary_points: [
-            "두산에너빌리티 목표주가를 120,000원으로 상향하며 투자의견 매수(Buy) 유지",
-            "글로벌 대형 원전 및 차세대 소형모듈원전(SMR) 추가 수주 모멘텀 본격화 기대",
-            "에너빌리티 부문 수주잔고 확대와 고마진 기자재 매출 비중 상승으로 중장기 실적 개선 전망"
+            "[발간 기관 및 일자 팩트] 2026-10-16 하나증권에서 발간한 '두산에너빌리티(034020)' 공개 리서치 메타데이터 집계입니다.",
+            "[증권사 제시 컨센서스 팩트] 투자의견 'Buy (매수)' · 제시 목표주가 '120,000원' (당사 추천이 아닌 해당 증권사 발표 수치)",
+            "[리포트 분류 및 주제] 구분: 기업·산업 밸류에이션 분석 · 핵심 키워드: 대형원전 및 소형모듈원전(SMR) 수주 잔고 추이 (원문은 공식 링크 참조)"
         ],
-        easy_summary: "하나증권에서 '두산에너빌리티'에 대해 목표주가를 120,000원으로 제시하며 'Buy (매수)' 의견을 낸 기업 분석 리포트입니다. 전 세계 AI 데이터센터 전력 수요 급증으로 대형원전과 소형원전(SMR) 핵심 설비 수주가 늘어날 것이라는 평가입니다.",
-        checkpoint: "'두산에너빌리티'의 해외 원전 본계약 체결 일정과 분기 영업이익 개선 속도를 함께 확인하세요.",
+        easy_summary: "하나증권에서 발표한 '두산에너빌리티' 기업 분석 리포트 (제시 목표가 120,000원 · 투자의견 Buy (매수))입니다. 기업의 주요 사업 모멘텀, 업황 사이클 및 재무 밸류에이션 지표를 종합적으로 점검한 분석 자료입니다. 핵심 관찰 변수로는 신규 수주 잔고 추이와 본계약 공시 일정이 언급되었습니다.",
+        checkpoint: "향후 전자공시시스템(DART)의 단일판매·공급계약 공시와 분기 영업이익률 추이를 함께 대조해 보세요.",
         naver_url: "https://stock.naver.com/research/company/96804"
     }
 ];
@@ -748,9 +748,9 @@ export default function MultiAssetResearchPage() {
                                                         <span className="text-[11px] font-mono text-zinc-400">{rep.date}</span>
                                                     </div>
                                                     <h4 className="text-sm font-black text-white leading-snug">{rep.title}</h4>
-                                                    {rep.summary_points?.[0] && (
+                                                    {(rep.easy_summary || rep.summary_points?.[0]) && (
                                                         <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
-                                                            • {rep.summary_points[0]}
+                                                            • {rep.easy_summary || rep.summary_points?.[0]}
                                                         </p>
                                                     )}
                                                 </div>
@@ -1068,15 +1068,17 @@ export default function MultiAssetResearchPage() {
                                             </div>
                                         </div>
 
-                                        {/* 2순위: 증권사 리포트 원문 핵심 수치 & 요약 (번호 매김 카드 리스트로 깔끔하게 정돈) */}
+                                        {/* 2순위: 자체 분석 핵심 팩트 & 메타데이터 브리핑 (원문 무단 복제 없이 순수 팩트·수치만 표시) */}
                                         {item.summary_points && item.summary_points.length > 0 && (
                                             <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-white/10 space-y-2.5">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="text-xs font-black text-zinc-300 flex items-center gap-1.5">
                                                         <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                                                        <span>증권사 리포트 원문 핵심 발췌 ({item.broker})</span>
+                                                        <span>핵심 팩트 & 수치 메타데이터 브리핑 ({item.broker} 발표 기준)</span>
                                                     </div>
-                                                    <span className="text-[11px] text-zinc-500 font-medium">외부 기관 발표 원문 요약</span>
+                                                    <span className="text-[11px] text-zinc-400 font-medium">
+                                                        저작권 준수 · 원문 본문은 우측 상단 [원문 리포트 ↗]에서 열람
+                                                    </span>
                                                 </div>
                                                 <div className="space-y-2">
                                                     {item.summary_points.map((pt, pIdx) => (
@@ -1113,6 +1115,24 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* 카드 하단 저작권·자본시장법 안심 안내 한 줄 */}
+                                        <div className="pt-2.5 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-500">
+                                            <span>
+                                                ⚖️ 본 해설은 {item.broker}의 공개 팩트(목표가·투자의견·재무수치)를 바탕으로 당사가 독자 작성한 초보자 학습용 요약이며, 매수·매도 추천이 아닙니다.
+                                            </span>
+                                            {item.naver_url && (
+                                                <a
+                                                    href={item.naver_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-purple-400 hover:text-purple-300 font-bold inline-flex items-center gap-1"
+                                                >
+                                                    <span>공식 원문 열람 출처 바로가기</span>
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            )}
+                                        </div>
                                     </article>
                                 );
                             })}
@@ -1144,15 +1164,15 @@ export default function MultiAssetResearchPage() {
                 </>
             )}
 
-            {/* 자본시장법 제101조 준수 법적 고지 배너 */}
+            {/* 저작권법 및 자본시장법 제101조 준수 법적 고지 배너 */}
             <div className="mt-10 p-6 rounded-3xl bg-zinc-950/90 border border-amber-500/25 space-y-2 text-xs text-zinc-400 leading-relaxed">
                 <p className="text-amber-400 font-black text-xs sm:text-sm">
-                    ⚖️ 자본시장법 준수 및 제3자 공개 리서치 인용 안내 (법적 면책 고지)
+                    ⚖️ 저작권법 · 자본시장법 준수 및 공개 리서치 팩트 인용 안내 (법적 면책 고지)
                 </p>
                 <p>
                     1. 본 리서치 센터는 이용자에게 어떠한 유료 회비나 대가도 받지 않는 <strong>100% 무료 금융 데이터·용어 교육 열람 도구</strong>입니다.<br />
-                    2. 화면에 표시되는 목표주가 및 투자의견(Buy/Hold 등)은 본 사이트의 자체 판단이나 매매 추천이 아니며, <strong>금융위원회 인가 국내 증권사 및 글로벌 투자은행(IB)이 공개 발표한 제3자 컨센서스 통계 데이터를 객관적으로 단순 인용·집계한 참고 자료</strong>입니다.<br />
-                    3. 본 서비스는 자본시장과 금융투자업에 관한 법률상 투자자문업 또는 유사투자자문업에 해당하지 않으며, 특정 금융투자상품의 매수·매도를 권유하지 않습니다. 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.
+                    2. <strong>[저작권 보호 정책]</strong> 증권사 애널리스트의 원문 본문이나 원본 PDF 파일을 당사 서버에 무단 복제·저장·재배포하지 않으며, 저작권법상 비보호 영역인 <strong>단순 사실·수치 정보(발간사, 발표일, 제시 목표주가, 투자의견, 공시 재무 수치)</strong>만을 기반으로 당사가 자체 작성한 초보자 학습용 해설과 용어 풀이를 제공합니다. 원문 열람을 원하시는 경우 각 카드의 <strong>[원문 리포트 ↗]</strong> 공식 아웃링크를 이용해 주시기 바랍니다.<br />
+                    3. <strong>[자본시장법 준수]</strong> 화면에 표시되는 목표주가 및 투자의견(Buy/Hold 등)은 본 사이트의 자체 판단이나 매매 추천이 아니며, 금융위원회 인가 국내 증권사 및 글로벌 투자은행(IB)이 공개 발표한 제3자 컨센서스 통계 데이터를 객관적으로 단순 집계한 참고 자료입니다. 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.
                 </p>
             </div>
 
