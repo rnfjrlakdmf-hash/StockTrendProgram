@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 canonical: `/stock/${decodedTicker}`,
             },
             robots: {
-                index: true,
+                index: false,
                 follow: true,
             },
         };
@@ -72,12 +72,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     
     const name = data.name || decodedTicker;
     const title = `${name} (${decodedTicker}) 주가 전망 · 증권사 목표주가 리포트 · 외국인 기관 수급 분석 | 스마트 투자 비서`;
-    const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 실시간 매수/매도 시그널과 향후 전망을 무료로 확인하세요.`;
+    const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 객관적인 재무 지표와 수급 분석 통계를 무료로 확인하세요.`;
     
     // OG Image URL 생성
     const ogUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
     ogUrl.searchParams.set('title', name);
-    ogUrl.searchParams.set('subtitle', '지금 당장 확인해야 할 AI 매수 시그널 포착!');
+    ogUrl.searchParams.set('subtitle', '공시·재무 지표 및 외인·기관 수급 통계 리포트');
     ogUrl.searchParams.set('theme', '오늘의 특징주');
     
     if (data.price && data.previousClose) {
@@ -90,7 +90,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         robots: {
-            index: true,
+            index: false,
             follow: true,
         },
         alternates: {
@@ -220,7 +220,7 @@ export default async function StockSeoPage({ params }: Props) {
     // Calculate dynamic change for Share button imageUrl if needed
     const shareOgUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
     shareOgUrl.searchParams.set('title', name);
-    shareOgUrl.searchParams.set('subtitle', '지금 당장 확인해야 할 AI 매수 시그널 포착!');
+    shareOgUrl.searchParams.set('subtitle', '공시·재무 지표 및 외인·기관 수급 통계 리포트');
     shareOgUrl.searchParams.set('theme', '오늘의 특징주');
     if (data.price && data.previousClose) {
         const changePercent = ((data.price - data.previousClose) / data.previousClose) * 100;

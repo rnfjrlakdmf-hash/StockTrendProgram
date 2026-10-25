@@ -679,15 +679,14 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                                         <span className="font-bold text-[11px]">디스코드 토론</span>
                                     </a>
 
-                                    <a 
-                                        href="https://t.me/stocktrend_live" 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-sky-500/20 text-zinc-300 hover:text-sky-400 border border-white/5 transition-all"
+                                    <Link 
+                                        href="/theory" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-400 border border-white/5 transition-all"
                                     >
-                                        <Send className="w-3.5 h-3.5 shrink-0" />
-                                        <span className="font-bold text-[11px]">텔레그램 속보</span>
-                                    </a>
+                                        <LineChart className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="font-bold text-[11px]">차트 아카데미</span>
+                                    </Link>
                                 </div>
 
                                 {/* 5. 관리자 시스템 & 무인 자동매매 사령부 링크 (오직 관리자 이메일 로그인 시에만 노출) */}

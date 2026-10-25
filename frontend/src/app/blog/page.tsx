@@ -53,7 +53,7 @@ export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
 async function getBlogPosts(page: number, limitPerPage: number) {
     // 1. 고품질 정적 블로그 25편을 기본 데이터셋으로 장착 (구글 애드센스 심사 통과 핵심 보증)
-    const baseStaticPosts: BlogPost[] = STATIC_POSTS.map((p) => ({
+    const baseStaticPosts: BlogPost[] = STATIC_POSTS.slice(0, 13).map((p) => ({
         id: p.id,
         title: p.title,
         content: p.content,

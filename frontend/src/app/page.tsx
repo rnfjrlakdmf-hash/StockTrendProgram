@@ -3,32 +3,35 @@ import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { 
-  Trophy, Calculator, Zap, Shield, BookOpen, Newspaper
+  Trophy, Calculator, Zap, Shield, BookOpen, Newspaper, GraduationCap, BarChart3
 } from 'lucide-react';
-import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 
 export const revalidate = 300;
 
 async function getLatestTheoryPosts() {
+  const staticSlugSet = new Set(STATIC_POSTS.slice(0, 13).map(p => p.slug));
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1500);
-    const res = await fetch('https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=6', {
+    const res = await fetch('https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=10', {
       next: { revalidate: 300 },
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    if (!res.ok) throw new Error("Theory fetch error");
-    const data = await res.json();
-    if (Array.isArray(data?.posts) && data.posts.length > 0) {
-      return data.posts.slice(0, 6);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.posts) && data.posts.length > 0) {
+        const filtered = data.posts.filter((p: any) => !staticSlugSet.has(p.slug || p.id));
+        if (filtered.length >= 6) {
+          return filtered.slice(0, 6);
+        }
+      }
     }
   } catch {
-    // API 장애 또는 타임아웃 시 100% 무중단 정적 칼럼 제공
+    // API 장애 시 정적 이론 전용 슬라이스(13~19) 사용 (/blog 칼럼과 100% 분리)
   }
 
-  // Fallback: STATIC_POSTS에서 실전 투자/차트 기법 칼럼 6선 반환
-  return STATIC_POSTS.slice(0, 6).map(p => ({
+  return STATIC_POSTS.slice(13, 19).map(p => ({
     id: p.id,
     title: p.title,
     content: p.content,
@@ -40,12 +43,12 @@ async function getLatestTheoryPosts() {
 }
 
 export const metadata: Metadata = {
-  title: '스마트 투자 비서 | 증권사 목표주가 리포트 요약 · 외국인 기관 실시간 수급 · AI 주식 분석',
-  description: '오늘 발간된 국내 증권사 종목 리포트 목표주가 요약, 외국인·기관 실시간 수급 스캐너, 금융감독원 DART 및 미국 SEC 공시 속보, 나스닥 선물·원달러 환율 브리핑을 100% 무료로 확인하세요.',
+  title: '스마트 투자 비서 | 금융 리서치 칼럼 · 기업 재무제표 분석 · 주식 투자 아카데미',
+  description: '거시경제 시황 분석 칼럼, PER·PBR·ROE 기업 재무제표 밸류에이션 연구, 46대 필수 금융 용어 백과사전, 금융감독원 DART 및 미국 SEC 공시 해설을 무료로 제공하는 금융 교육·리서치 미디어입니다.',
   keywords: [
-    '증권사 리포트 요약', '오늘의 목표주가', '외국인 기관 수급', 'AI 주식 분석', '실시간 주가 알림',
-    'DART 공시 속보', '삼성전자 주가 전망', 'SK하이닉스 목표주가', '두산에너빌리티 목표주가',
-    '엔비디아 주가 전망', '테슬라 주가 전망', '브로드컴 목표주가', '나스닥 선물 실시간', '스마트 투자 비서'
+    '금융 리서치 칼럼', '기업 재무제표 분석', '주식 투자 백과사전', '거시경제 시황 분석',
+    'DART 전자공시 해설', 'PER PBR ROE 계산법', '기술적 보조지표 강의', '배당주 투자 전략',
+    'ETF 자산배분 가이드', 'FOMC 금리 분석', '스마트 투자 비서'
   ],
   alternates: {
     canonical: '/',
@@ -63,78 +66,57 @@ export const metadata: Metadata = {
   },
 };
 
-const POPULAR_SEO_STOCKS = [
-  { ticker: '005930', name: '삼성전자', tag: '반도체·HBM' },
-  { ticker: '000660', name: 'SK하이닉스', tag: 'AI 메모리' },
-  { ticker: '034020', name: '두산에너빌리티', tag: 'SMR·원전' },
-  { ticker: '010140', name: '삼성중공업', tag: '조선·LNG' },
-  { ticker: '042660', name: '한화오션', tag: '방산·조선' },
-  { ticker: '012450', name: '한화에어로스페이스', tag: 'K-방산' },
-  { ticker: '003490', name: '대한항공', tag: '항공·운송' },
-  { ticker: '306200', name: '세아제강', tag: '강관·에너지' },
-  { ticker: '012630', name: 'HDC현대산업개발', tag: '건설·디벨로퍼' },
-  { ticker: '028050', name: '삼성E&A', tag: '플랜트·수주' },
-  { ticker: '005380', name: '현대차', tag: '자동차·밸류업' },
-  { ticker: '035420', name: 'NAVER', tag: 'AI·플랫폼' },
-  { ticker: 'NVDA', name: '엔비디아 (NVDA)', tag: '미국 AI 대장' },
-  { ticker: 'TSLA', name: '테슬라 (TSLA)', tag: '자율주행·로봇' },
-  { ticker: 'AVGO', name: '브로드컴 (AVGO)', tag: 'AI 맞춤형칩' },
-  { ticker: 'AAPL', name: '애플 (AAPL)', tag: '온디바이스 AI' },
-  { ticker: 'MSFT', name: '마이크로소프트', tag: '클라우드·AI' },
-  { ticker: 'PLTR', name: '팔란티어 (PLTR)', tag: 'AI 국방·데이터' },
-];
-
 const INVESTMENT_GUIDES = [
-  { href: '/guide/per', title: 'PER (주가수익비율)', desc: '적정 PER 기준과 실전 가치평가' },
-  { href: '/guide/pbr', title: 'PBR (주가순자산비율)', desc: '장부가치 대비 저평가 판단 지표' },
-  { href: '/guide/roe', title: 'ROE (자기자본이익률)', desc: '워런 버핏이 강조한 자본 효율성' },
-  { href: '/guide/eps', title: 'EPS (주당순이익)', desc: '순이익 성장률과 기업 체력 측정' },
-  { href: '/guide/rsi', title: 'RSI (상대강도지수)', desc: '과매수·과매도 반등 타점 포착' },
-  { href: '/guide/macd', title: 'MACD 추세 분석', desc: '이동평균 수렴확산과 골든크로스' },
-  { href: '/guide/bollinger-band', title: '볼린저 밴드', desc: '표준편차 밴드 스퀴즈와 돌파' },
-  { href: '/guide/moving-average', title: '이동평균선(MA)', desc: '단기·장기 추세선 매매 타이밍' },
-  { href: '/guide/golden-cross', title: '골든크로스 & 데드크로스', desc: '추세 반전 시그널의 실전 활용법' },
-  { href: '/guide/volume', title: '거래량 분석', desc: '주가 상승의 원동력과 세력 매집' },
-  { href: '/guide/dividend-yield', title: '배당수익률 분석', desc: '안정적인 고배당주 포트폴리오' },
-  { href: '/guide/ex-dividend-date', title: '배당락일 & 배당주 매매', desc: '배당 기준일과 배당락 주가 방어' },
-  { href: '/guide/short-selling', title: '공매도 & 숏스퀴즈', desc: '외인·기관 대차잔고와 수급 구조' },
-  { href: '/guide/dart', title: 'DART 전자공시', desc: '공급계약 및 내부자 거래 분석' },
-  { href: '/guide/disclosure', title: '기업 공시 완전 정복', desc: '유상증자·무상증자 주가 영향' },
-  { href: '/guide/fomc', title: 'FOMC & 기준금리', desc: '미국 연준 통화정책과 주가 상관관계' },
-  { href: '/guide/interest-rate', title: '금리 사이클과 주식', desc: '고금리·저금리 수혜 섹터 로테이션' },
-  { href: '/guide/inflation', title: '인플레이션과 원자재', desc: '물가 상승기 헷지 자산 배분 전략' },
-  { href: '/guide/etf', title: 'ETF 투자 바이블', desc: '시장 지수 및 섹터 분산 투자 비법' },
-  { href: '/guide/value-investing', title: '가치투자 기본 원칙', desc: '안전마진과 경제적 해자 기업 발굴' },
-  { href: '/guide/growth-investing', title: '성장주 투자 전략', desc: '빅테크와 혁신 기업 밸류에이션' },
-  { href: '/guide/stop-loss', title: '손절매(Stop-Loss) 원칙', desc: '원금 보존을 위한 리스크 관리 룰' },
-  { href: '/guide/averaging-down', title: '올바른 물타기 전략', desc: '평단가 낮추기와 탈출 시나리오' },
-  { href: '/guide/rebalancing', title: '포트폴리오 리밸런싱', desc: '자산배분과 변동성 리스크 관리' },
+  { href: '/guide/per', title: 'PER (주가수익비율)', desc: '기업 순이익 대비 적정 주가 산출과 업종별 밸류에이션 비교 방법론' },
+  { href: '/guide/pbr', title: 'PBR (주가순자산비율)', desc: '순자산 장부가치 대비 저평가 여부와 청산가치 안전마진 평가' },
+  { href: '/guide/roe', title: 'ROE (자기자본이익률)', desc: '워런 버핏이 중시한 자기자본 대비 이익 창출 효율성과 듀퐁 분석' },
+  { href: '/guide/eps', title: 'EPS (주당순이익)', desc: '주당순이익 성장 추이와 희석주당순이익을 통한 수익성 검증' },
+  { href: '/guide/rsi', title: 'RSI (상대강도지수)', desc: '가격 상승·하락 압력의 상대적 강도와 다이버전스 통계 해석법' },
+  { href: '/guide/macd', title: 'MACD 추세 지표', desc: '단기·장기 지수이동평균 수렴·확산 원리와 히스토그램 국면 분석' },
+  { href: '/guide/bollinger-band', title: '볼린저 밴드', desc: '이동평균선과 표준편차를 활용한 가격 변동성 구간 통계 측정' },
+  { href: '/guide/moving-average', title: '이동평균선(MA)', desc: '5일·20일·60일·120일 기간별 평균 체결가와 정배열·역배열 구조' },
+  { href: '/guide/golden-cross', title: '골든크로스 & 데드크로스', desc: '단기·장기 이동평균선 교차 현상의 통계적 의미와 속임수 판별법' },
+  { href: '/guide/volume', title: '거래량 수급 분석', desc: '가격 변동 국면별 거래량 추이와 기관·외국인 수급 집중도 해석' },
+  { href: '/guide/dividend-yield', title: '배당수익률과 배당성향', desc: '잉여현금흐름(FCF) 기반 배당 지속가능성과 인컴 포트폴리오 설계' },
+  { href: '/guide/ex-dividend-date', title: '배당기준일과 배당락', desc: '결산·분기 배당 권리 확정 구조와 배당락일 이론 가격 변동 계산' },
+  { href: '/guide/short-selling', title: '공매도 & 대차잔고', desc: '대차거래 체결 메커니즘과 공매도 비중 데이터를 읽는 법' },
+  { href: '/guide/dart', title: 'DART 전자공시 독해법', desc: '사업보고서, 분기보고서, 단일판매·공급계약 공시 핵심 체크리스트' },
+  { href: '/guide/disclosure', title: '유상증자·무상증자 해설', desc: '자본 조달 방식(제3자배정·주주배정)에 따른 지분가치 희석 효과 분석' },
+  { href: '/guide/fomc', title: 'FOMC와 통화정책', desc: '미국 연방준비제도 기준금리 결정 구조와 점도표(Dot Plot) 해석' },
+  { href: '/guide/interest-rate', title: '금리 사이클과 자산배분', desc: '국채 수익률 곡선(장단기 금리차)과 거시경제 경기 순환 국면 분석' },
+  { href: '/guide/inflation', title: '인플레이션(CPI·PCE)', desc: '소비자물가지수·근원물가 추이가 기업 영업이익률과 할인율에 미치는 영향' },
+  { href: '/guide/etf', title: 'ETF 구조와 추적오차', desc: '상장지수펀드(ETF)의 순자산가치(NAV), 괴리율, 총보수(TER) 비교 기준' },
+  { href: '/guide/value-investing', title: '가치투자(Value Investing)', desc: '벤저민 그레이엄의 안전마진 개념과 내재가치 추정 프레임워크' },
+  { href: '/guide/growth-investing', title: '성장주 밸류에이션(PEG)', desc: '매출·영업이익 고성장 기업의 PEG 지표 및 현금흐름할인법(DCF) 기초' },
+  { href: '/guide/stop-loss', title: '손실 제한과 변동성 관리', desc: '손익비(Risk-Reward Ratio) 설계와 최대낙폭(MDD) 통제 원칙' },
+  { href: '/guide/averaging-down', title: '분할 매수와 평단가 계산', desc: '코스트 애버리징(Cost Averaging)의 수학적 원리와 비중 관리 원칙' },
+  { href: '/guide/rebalancing', title: '포트폴리오 리밸런싱', desc: '주식·채권·현금 자산배분 비율 유지와 정기 리밸런싱 효과 분석' },
 ];
 
 const FAQS = [
   {
-    q: '스마트 투자 비서의 AI 주식 분석은 어떻게 작동하나요?',
-    a: '한국거래소(KRX), 금융감독원 DART, 미국 SEC EDGAR에서 수집한 방대한 원천 데이터를 기반으로 다중 팩터(재무 건전성, 밸류에이션, 외인·기관 수급, 기술적 보조지표, 뉴스 감성)를 정량적으로 종합 분석하여 누구나 알기 쉬운 종합 점수와 핵심 요약 리포트를 산출합니다.',
+    q: '스마트 투자 비서는 어떤 콘텐츠와 데이터를 제공하나요?',
+    a: '스마트 투자 비서는 한국거래소(KRX), 금융감독원 전자공시시스템(Open DART), 미국 증권거래위원회(SEC EDGAR)의 공식 데이터를 바탕으로 작성된 거시경제 시황 칼럼, 46대 필수 주식 용어 백과사전, 재무제표·보조지표 아카데미 강의, 그리고 정량적 수급 통계 도구를 무료로 제공합니다.',
   },
   {
-    q: '실시간 주가 및 DART 공시 알림 서비스는 무료인가요?',
-    a: '네, 100% 무료로 제공됩니다. 관심 종목의 장중 급등락, 대규모 공급계약 체결, 최대주주 및 임원 내부자 거래, 시간외 거래 가격 변동 정보를 스마트폰 푸시 알림과 실시간 웹 알림 센터를 통해 즉시 받아보실 수 있습니다.',
+    q: '제공되는 금융 칼럼과 아카데미 교육 자료는 모두 무료인가요?',
+    a: '네, 모든 거시경제 리서치 칼럼, 70편 이상의 차트·재무 스터디 아카데미, 46대 주식 투자 백과사전 및 배당·평단가 계산기는 별도의 유료 결제 없이 100% 무료로 열람하실 수 있습니다.',
   },
   {
-    q: '주식 초보자도 활용하기 쉬운가요?',
-    a: '어려운 재무제표와 복잡한 공시 원문을 초보자의 눈높이에 맞춰 직관적인 게이지 차트와 3줄 요약 팩트로 변환하여 제공합니다. 또한 46대 필수 주식 용어 사전과 매일 업데이트되는 실전 투자 칼럼을 통해 체계적으로 공부하실 수 있습니다.',
+    q: '주식 입문자도 이해할 수 있도록 쉽게 구성되어 있나요?',
+    a: '네. 어려운 회계·재무제표 용어(PER, PBR, ROE, 영업현금흐름 등)와 거시경제 지표(FOMC, CPI, 국채 금리 등)를 구체적인 계산 예시와 시각적 도표를 곁들여 기초부터 체계적으로 학습할 수 있도록 집필하였습니다.',
   },
   {
-    q: '외국인 및 기관 투자자의 수급 추적이 왜 중요한가요?',
-    a: '주식 시장에서 막대한 자금력을 가진 외국인 투자자와 국내 기관(스마트 머니)의 순매수·순매도 동향은 주가의 중장기 방향성을 결정짓는 핵심 수급 엔진입니다. 스마트 투자 비서는 당일 장중 대량 매집 종목과 슈퍼개미의 지분 변동을 실시간으로 추적합니다.',
+    q: '기업 공시(DART·SEC)와 수급 데이터는 어떤 기준으로 분석하나요?',
+    a: '주관적인 풍문이나 루머를 배제하고, 금융감독원 DART에 공시된 정식 사업보고서·공급계약 수치와 거래소의 기관·외국인 순매수 통계만을 정량적으로 요약하여 정보 비대칭 해소를 돕습니다.',
   },
   {
-    q: '미국 주식(나스닥, S&P 500, NYSE)도 지원되나요?',
-    a: '네, 애플, 엔비디아, 테슬라 등 미국 주요 상장 기업의 실시간 정규장 시세뿐만 아니라 프리마켓(Pre-market), 애프터마켓(After-market) 시간외 거래 시세와 미국 증권거래위원회(SEC) Form 4 내부자 거래 공시를 지원합니다.',
+    q: '유사투자자문이나 종목 추천을 하는 사이트인가요?',
+    a: '아닙니다. 스마트 투자 비서는 자본시장과 금융투자업에 관한 법률을 엄격히 준수하며, 1:1 투자 자문이나 특정 종목의 매수·매도 추천 행위를 일절 하지 않는 순수 금융 교육·데이터 리서치 미디어입니다.',
   },
   {
-    q: '유사투자자문이나 종목 추천 행위를 하나요?',
-    a: '아닙니다. 스마트 투자 비서는 자본시장법을 엄격히 준수하며 특정 종목의 매수·매도를 권유하거나 1:1 투자 자문을 하지 않습니다. 공공 기관의 객관적인 팩트 데이터를 투자자가 스스로 판단할 수 있도록 정리해 드리는 순수 정보 제공 플랫폼입니다.',
+    q: '콘텐츠의 저작권과 편집 원칙은 어떻게 관리되나요?',
+    a: '모든 아카데미 강의와 리서치 칼럼은 스마트 투자 비서 수석 리서치팀의 자체 집필 및 팩트 검증(Fact-Check) 절차를 거쳐 발행되며, 출처가 명확한 공공 통계만을 인용합니다.',
   },
 ];
 
@@ -150,7 +132,7 @@ export default async function Home() {
         "@id": "https://stock-trend-program.co.kr/#website",
         "url": "https://stock-trend-program.co.kr",
         "name": "스마트 투자 비서",
-        "description": "AI 기반 실시간 주식 데이터 분석 및 DART 공시 알림 플랫폼",
+        "description": "거시경제 금융 리서치 칼럼, 기업 재무제표 분석 및 주식 투자 아카데미 플랫폼",
         "publisher": {
           "@type": "Organization",
           "name": "StockTrend Research Team",
@@ -179,27 +161,118 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* 1. 클라이언트 인터랙티브 대시보드 */}
-      <HomeClient />
+      {/* 1. 상단 에디토리얼 금융 리서치 & 투자 아카데미 매거진 허브 (SSR Above-the-Fold) */}
+      <div className="bg-gradient-to-b from-[#07090e] via-[#090b10] to-[#06070a] border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-12 space-y-10">
 
-      {/* 2. 하단 서비스 가이드 & 신뢰성 섹션 (고품격 에디토리얼 레이아웃) */}
-      <div className="bg-gradient-to-b from-[#09090b] via-[#06070a] to-[#040406] border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-12">
+          {/* 매거진 헤더 & 주요 섹션 바로가기 */}
+          <header className="rounded-3xl bg-gradient-to-br from-blue-950/40 via-zinc-900/80 to-emerald-950/30 border border-white/10 p-6 sm:p-8 shadow-2xl">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-3xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black tracking-wide">
+                  <GraduationCap className="w-4 h-4 text-blue-400" />
+                  <span>FINANCIAL RESEARCH &amp; INVESTMENT ACADEMY</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
+                  스마트 투자 비서 · 금융 리서치 &amp; 투자 교육 아카데미
+                </h1>
+                <p className="text-xs sm:text-sm md:text-base text-gray-300 leading-relaxed">
+                  한국거래소(KRX)·금융감독원(DART)·미국 SEC 공시 데이터에 기반한 <strong>거시경제 심층 칼럼</strong>, <strong>실전 재무·차트 아카데미(70+강)</strong>, 그리고 <strong>필수 금융 용어 백과사전(46선)</strong>을 무료로 제공하는 정통 금융 리서치 미디어입니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2.5 shrink-0">
+                <Link
+                  href="/blog"
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-black transition-all shadow-lg shadow-blue-600/20"
+                >
+                  📰 마켓 리서치 칼럼
+                </Link>
+                <Link
+                  href="/theory"
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-black transition-all"
+                >
+                  📘 차트·재무 아카데미
+                </Link>
+                <Link
+                  href="/guide"
+                  className="px-4 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs sm:text-sm font-black transition-all"
+                >
+                  📚 금융 백과사전 46선
+                </Link>
+                <a
+                  href="#live-market-dashboard"
+                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5"
+                >
+                  <BarChart3 className="w-4 h-4 text-amber-400" />
+                  <span>실시간 마켓 상황판 ↓</span>
+                </a>
+              </div>
+            </div>
+          </header>
 
-          {/* [애드센스 핵심 에디토리얼 섹션 1] 최신 1타 강사 차트·주식 스터디 칼럼 (SSR 본문 발췌 노출) */}
+          {/* [에디토리얼 섹션 1] 전문가 심층 경제·가치투자 리서치 칼럼 (SSR 정적 원고 노출) */}
+          <section aria-labelledby="featured-research-heading" className="bg-zinc-900/60 border border-blue-500/25 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 id="featured-research-heading" className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                  <Newspaper className="w-5 h-5 text-blue-400" /> 심층 금융 리서치 &amp; 거시경제 분석 칼럼
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                  기업 재무제표 독해법, 금리·환율 거시경제 사이클, 밸류에이션(PER·PBR·ROE), 배당 및 절세 전략을 깊이 있게 분석한 오리지널 칼럼입니다.
+                </p>
+              </div>
+              <Link href="/blog" className="text-xs font-black text-blue-300 hover:text-blue-200 bg-blue-500/15 border border-blue-500/30 px-4 py-2 rounded-xl self-start sm:self-center">
+                전체 칼럼 아카이브 보기 →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredBlogPosts.map((post) => {
+                const plainDesc = String((post as any).excerpt || post.content || '')
+                  .replace(/<[^>]*>?/gm, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+                  .slice(0, 155);
+                return (
+                  <Link
+                    key={post.slug}
+                    href={`/blog/${encodeURIComponent(post.slug)}`}
+                    className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 hover:border-blue-500/50 transition-all flex flex-col justify-between gap-3 group"
+                  >
+                    <div className="space-y-2">
+                      <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                        {(post as any).category || '심층 금융 리서치'}
+                      </span>
+                      <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-blue-300 transition-colors leading-snug">
+                        {post.title}
+                      </h3>
+                      <p className="text-xs text-gray-300 leading-relaxed line-clamp-3">
+                        {plainDesc}...
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-blue-400">
+                      리서치 전문 읽기 →
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* [에디토리얼 섹션 2] 최신 차트·보조지표 & 재무 스터디 칼럼 */}
           {latestTheoryPosts.length > 0 && (
-            <section className="bg-zinc-900/60 border border-emerald-500/25 rounded-3xl p-6 sm:p-8 space-y-6">
+            <section aria-labelledby="latest-academy-heading" className="bg-zinc-900/60 border border-emerald-500/25 rounded-3xl p-6 sm:p-8 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-emerald-400" /> 최신 연재 · 1타 강사의 매일 차트 &amp; 주식 스터디
+                  <h2 id="latest-academy-heading" className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-emerald-400" /> 실전 주식 차트 &amp; 기술적 보조지표 아카데미
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                    실전 캔들 차트(SVG), 수치 비교 그래프, 1,000만 원 실전 계산 시뮬레이션으로 배우는 오리지널 투자 교육 칼럼입니다.
+                    캔들 차트 구조, 이동평균선, RSI·MACD·볼린저밴드의 수학적 산출 원리와 실전 사례를 체계적으로 해설하는 금융 교육 연재물입니다.
                   </p>
                 </div>
                 <Link href="/theory" className="text-xs font-black text-emerald-300 hover:text-emerald-200 bg-emerald-500/15 border border-emerald-500/30 px-4 py-2 rounded-xl self-start sm:self-center">
-                  전체 70+편 강의 보기 →
+                  전체 아카데미 강의 보기 →
                 </Link>
               </div>
 
@@ -209,7 +282,7 @@ export default async function Home() {
                     .replace(/<[^>]*>?/gm, ' ')
                     .replace(/\s+/g, ' ')
                     .trim()
-                    .slice(0, 145);
+                    .slice(0, 155);
                   const slug = post.slug || post.id;
                   return (
                     <Link
@@ -219,7 +292,7 @@ export default async function Home() {
                     >
                       <div className="space-y-2">
                         <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                          실전 차트·그래프 스터디
+                          투자 이론 · 보조지표 강의
                         </span>
                         <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-emerald-300 transition-colors leading-snug">
                           {post.title}
@@ -238,255 +311,22 @@ export default async function Home() {
             </section>
           )}
 
-          {/* [애드센스 핵심 에디토리얼 섹션 2] 전문가 심층 경제·가치투자 리서치 칼럼 (SSR 정적 원고 노출) */}
-          <section className="bg-zinc-900/60 border border-blue-500/25 rounded-3xl p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                  <Newspaper className="w-5 h-5 text-blue-400" /> 심층 금융 리서치 &amp; 거시경제 분석 칼럼
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  재무제표 독해법, 금리·환율 사이클, 기업 밸류에이션(PER·PBR·ROE), 절세 전략을 깊이 있게 다룬 전문 칼럼입니다.
-                </p>
-              </div>
-              <Link href="/blog" className="text-xs font-black text-blue-300 hover:text-blue-200 bg-blue-500/15 border border-blue-500/30 px-4 py-2 rounded-xl self-start sm:self-center">
-                전체 칼럼 아카이브 →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {featuredBlogPosts.map((post) => {
-                const plainDesc = String((post as any).excerpt || post.content || '')
-                  .replace(/<[^>]*>?/gm, ' ')
-                  .replace(/\s+/g, ' ')
-                  .trim()
-                  .slice(0, 145);
-                return (
-                  <Link
-                    key={post.slug}
-                    href={`/blog/${encodeURIComponent(post.slug)}`}
-                    className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 hover:border-blue-500/50 transition-all flex flex-col justify-between gap-3 group"
-                  >
-                    <div className="space-y-2">
-                      <span className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                        {(post as any).category || '심층 투자 칼럼'}
-                      </span>
-                      <h3 className="text-sm md:text-base font-extrabold text-white group-hover:text-blue-300 transition-colors leading-snug">
-                        {post.title}
-                      </h3>
-                      <p className="text-xs text-gray-300 leading-relaxed line-clamp-3">
-                        {plainDesc}...
-                      </p>
-                    </div>
-                    <span className="text-[11px] font-bold text-blue-400">
-                      리서치 전문 읽기 →
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* 실시간 인기 스마트 금융 도구 4선 */}
-          <section className="bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-blue-950/20 border border-purple-500/20 rounded-3xl p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-400" /> 실시간 인기 퀀트 금융 도구
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  투자자들의 수익률을 극대화하는 핵심 분석 시뮬레이터와 VIP 리더보드입니다.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link 
-                href="/ranking"
-                className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/30 hover:border-amber-400/60 transition-all group space-y-2 block"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-amber-400/20 text-amber-300">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-black bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">VIP 랭킹</span>
-                </div>
-                <h3 className="text-white font-black text-base group-hover:text-amber-300 transition-colors">주식 고수 랭킹</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">전국 고수들의 관심종목 실시간 수익률과 명예의 전당 TOP 100</p>
-              </Link>
-
-              <Link 
-                href="/calculator"
-                className="p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/30 hover:border-blue-400/60 transition-all group space-y-2 block"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-blue-400/20 text-blue-300">
-                    <Calculator className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-black bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">HOT 도구</span>
-                </div>
-                <h3 className="text-white font-black text-base group-hover:text-blue-300 transition-colors">스마트 주식 계산기</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">물타기 평단가 인하 탈출 시뮬레이터 &amp; 종목별 월배당 캐시플로우 계산기</p>
-              </Link>
-
-              <Link 
-                href="/signals"
-                className="p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 hover:border-red-400/60 transition-all group space-y-2 block"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-orange-400/20 text-orange-300">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-black bg-orange-400/20 text-orange-300 px-2 py-0.5 rounded-full">실시간</span>
-                </div>
-                <h3 className="text-white font-black text-base group-hover:text-orange-300 transition-colors">글로벌 마켓 시그널</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">외인·기관 대량 수급 변동 및 DART 공시 실시간 레이더 감지</p>
-              </Link>
-
-              <Link 
-                href="/portfolio"
-                className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/60 transition-all group space-y-2 block"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-emerald-400/20 text-emerald-300">
-                    <Shield className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-black bg-emerald-400/20 text-emerald-300 px-2 py-0.5 rounded-full">AI 진단</span>
-                </div>
-                <h3 className="text-white font-black text-base group-hover:text-emerald-300 transition-colors">포트폴리오 자산 진단</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">6대 팩터 모델 기반 보유 종목의 변동성과 분산도 정밀 진단</p>
-              </Link>
-            </div>
-          </section>
-
-          {/* 1. 실시간 전문가 마켓 리포트 (최신 블로그 피드) */}
-          <section className="space-y-4 pt-6">
+          {/* [에디토리얼 섹션 3] 주식 투자 실전 백과 - 필수 금융 지식 46선 */}
+          <section aria-labelledby="encyclopedia-heading" className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
               <div>
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black tracking-wider uppercase mb-1">
-                  DAILY MARKET INTELLIGENCE
-                </div>
-                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
-                  📰 전문가 실시간 마켓 리포트
+                <h2 id="encyclopedia-heading" className="text-xl md:text-2xl font-black text-white">
+                  📚 주식 투자 실전 백과사전 · 필수 금융 지식 46선
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  국내외 증시 마감 시황, 외인·기관 수급 집중주, 글로벌 거시경제 동향을 매일 심층 분석합니다.
-                </p>
-              </div>
-              <Link 
-                href="/blog" 
-                className="px-4 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 hover:text-white text-xs font-bold transition-all shrink-0 self-start sm:self-auto"
-              >
-                전체 리포트 200+ 보기 →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link 
-                href="/blog" 
-                className="p-5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-blue-500/40 transition-all group space-y-3 block"
-              >
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold">미국 증시 시황</span>
-                  <span>매일 업데이트</span>
-                </div>
-                <h3 className="text-white font-bold text-base group-hover:text-blue-400 transition-colors line-clamp-2">
-                  글로벌 거시경제 지표 및 뉴욕 증시 빅테크 수급 분석
-                </h3>
-                <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
-                  S&amp;P 500, 나스닥 100 지수 변동 요인과 미 연준 FOMC 금리 향방, 엔비디아·애플 등 핵심 주도주 거래 동향을 상세히 전해드립니다.
-                </p>
-              </Link>
-
-              <Link 
-                href="/blog" 
-                className="p-5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-emerald-500/40 transition-all group space-y-3 block"
-              >
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">국내 증시 수급</span>
-                  <span>매일 업데이트</span>
-                </div>
-                <h3 className="text-white font-bold text-base group-hover:text-emerald-400 transition-colors line-clamp-2">
-                  코스피·코스닥 외국인·기관 순매수 집중 종목 브리핑
-                </h3>
-                <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
-                  반도체, 2차전지, 바이오 등 주요 주도 섹터의 자금 유입 현황과 메이저 세력의 평단가 대비 수익률 통계를 분석합니다.
-                </p>
-              </Link>
-
-              <Link 
-                href="/blog" 
-                className="p-5 rounded-2xl bg-zinc-900/70 border border-white/10 hover:border-purple-500/40 transition-all group space-y-3 block"
-              >
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold">DART 전자공시</span>
-                  <span>실시간 속보</span>
-                </div>
-                <h3 className="text-white font-bold text-base group-hover:text-purple-400 transition-colors line-clamp-2">
-                  금융감독원 핵심 수주 공시 및 내부자 지분 변동 추적
-                </h3>
-                <p className="text-gray-400 text-xs line-clamp-3 leading-relaxed">
-                  매출액 대비 대규모 단일판매 공급계약, 최대주주 및 임원 주식 매수 공시 등 주가 모멘텀을 유발하는 팩트를 선별 전달합니다.
-                </p>
-              </Link>
-            </div>
-          </section>
-
-          {/* 2. 스마트 투자 비서 4대 핵심 가치 & 플랫폼 소개 */}
-          <section className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
-            <div>
-              <h2 className="text-xl md:text-2xl font-black text-white">스마트 투자 비서 4대 핵심 분석 엔진</h2>
-              <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                국내외 증시 실시간 수급과 공시 팩트를 정량적으로 분석하여 개인 투자자의 정보 비대칭을 해소합니다.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
-                <div className="text-xs font-black text-blue-400">01. 수급·공시 레이더</div>
-                <h3 className="text-white font-bold text-sm">실시간 스마트머니 포착</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">외인·기관 순매수 집중주 및 DART 공급계약·내부자 지분 변동 공시 실시간 감지</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
-                <div className="text-xs font-black text-emerald-400">02. 퀀트 밸류에이션</div>
-                <h3 className="text-white font-bold text-sm">AI 정량 재무 스코어링</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">PER, PBR, ROE, RSI, MACD 등 20개 이상의 핵심 지표를 종합한 객관적 평가 점수</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
-                <div className="text-xs font-black text-purple-400">03. 주도 테마 맵</div>
-                <h3 className="text-white font-bold text-sm">실시간 섹터 자금 흐름</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">인공지능, 2차전지, 바이오, 로봇 등 시장을 주도하는 테마와 대장주 실시간 추적</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-zinc-950/60 border border-white/5 space-y-2">
-                <div className="text-xs font-black text-amber-400">04. 리스크 사전 감지</div>
-                <h3 className="text-white font-bold text-sm">대차·신용 위험 경고</h3>
-                <p className="text-gray-400 text-xs leading-relaxed">대차잔고, 신용융자 잔고율, 공매도 비중을 분석하여 급락 위험성을 사전에 경고</p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <Link href="/about" className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1">
-                플랫폼 신뢰성 및 데이터 정책 자세히 보기 →
-              </Link>
-            </div>
-          </section>
-
-          {/* 3. 주식 투자 실전 가이드 - 필수 금융 지식 46선 (시각적 정식 렌더링) */}
-          <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-white">
-                  📚 주식 투자 실전 백과 - 필수 금융 지식 46선
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  워런 버핏의 밸류에이션부터 기술적 차트 보조지표까지 초보자도 쉽게 배울 수 있는 실전 백과사전입니다.
+                  기업 가치평가(PER·PBR·ROE·EBITDA)부터 거시경제 지표(FOMC·금리·인플레이션)까지 체계적으로 정리한 금융 백과사전입니다.
                 </p>
               </div>
               <Link 
                 href="/guide" 
                 className="px-4 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 hover:text-white text-xs font-bold transition-all shrink-0 self-start sm:self-auto"
               >
-                전체 46개 가이드 보기 →
+                전체 46개 백과사전 보기 →
               </Link>
             </div>
 
@@ -508,77 +348,115 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* 3-B. 구글·네이버 검색 유입용 인기 종목 실시간 목표주가·수급 리포트 허브 */}
-          <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+        </div>
+      </div>
+
+      {/* 2. 실시간 마켓 데이터 대시보드 (인터랙티브 금융 상황판) */}
+      <div id="live-market-dashboard">
+        <HomeClient />
+      </div>
+
+      {/* 3. 하단 금융 분석 도구 · 데이터 신뢰성 선언 · FAQ */}
+      <div className="bg-gradient-to-b from-[#09090b] via-[#06070a] to-[#040406] border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-12">
+
+          {/* 스마트 금융 계산 및 리서치 도구 4선 */}
+          <section className="bg-gradient-to-br from-purple-950/20 via-zinc-900/60 to-blue-950/20 border border-purple-500/20 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-white">
-                  🔥 실시간 인기 검색 종목 · 증권사 목표주가 &amp; 수급 리포트
+                <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" /> 주요 금융 데이터 분석 도구
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                  개인 투자자들이 가장 많이 검색하는 국내외 핵심 종목의 실시간 시세, 외국인·기관 수급, 증권사 목표주가 분석 페이지입니다.
+                  배당 현금흐름 시뮬레이션, 포트폴리오 분산도 점검, 거시경제 지표를 한눈에 확인하는 분석 도구입니다.
                 </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  href="/research"
-                  className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all"
-                >
-                  📑 증권사 리서치 센터 →
-                </Link>
-                <Link
-                  href="/directory"
-                  className="px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 text-xs font-bold transition-all"
-                >
-                  전 종목 디렉토리 →
-                </Link>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-              {POPULAR_SEO_STOCKS.map((item) => (
-                <Link
-                  key={item.ticker}
-                  href={`/stock/${item.ticker}`}
-                  className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 hover:border-emerald-500/40 transition-all group block"
-                >
-                  <div className="text-xs font-black text-white group-hover:text-emerald-400 truncate">
-                    {item.name}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link 
+                href="/research"
+                className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/30 hover:border-amber-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-amber-400/20 text-amber-300">
+                    <Newspaper className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1">
-                    <span className="font-mono">{item.ticker}</span>
-                    <span className="text-emerald-400/90 font-bold">{item.tag}</span>
+                  <span className="text-[10px] font-black bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full">리서치</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-amber-300 transition-colors">국내·해외 증권 리서치</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">국내 상장사, 미국 빅테크, ETF 및 원자재·환율 지표 종합 리서치 센터</p>
+              </Link>
+
+              <Link 
+                href="/calculator"
+                className="p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/30 hover:border-blue-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-blue-400/20 text-blue-300">
+                    <Calculator className="w-5 h-5" />
                   </div>
-                </Link>
-              ))}
+                  <span className="text-[10px] font-black bg-blue-400/20 text-blue-300 px-2 py-0.5 rounded-full">계산기</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-blue-300 transition-colors">스마트 금융 계산기</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">분할 매수 평균단가 시뮬레이터 및 월배당·연간 배당금 현금흐름 계산기</p>
+              </Link>
+
+              <Link 
+                href="/signals"
+                className="p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 border border-red-500/30 hover:border-red-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-orange-400/20 text-orange-300">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black bg-orange-400/20 text-orange-300 px-2 py-0.5 rounded-full">매크로</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-orange-300 transition-colors">글로벌 마켓 지표</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">원·달러 환율, 국채 금리, 원자재 시세 및 DART 전자공시 현황 모니터링</p>
+              </Link>
+
+              <Link 
+                href="/theme"
+                className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-400/60 transition-all group space-y-2 block"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-emerald-400/20 text-emerald-300">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black bg-emerald-400/20 text-emerald-300 px-2 py-0.5 rounded-full">산업분석</span>
+                </div>
+                <h3 className="text-white font-black text-base group-hover:text-emerald-300 transition-colors">20대 핵심 산업·섹터 분석</h3>
+                <p className="text-gray-400 text-xs leading-relaxed">반도체, AI, 2차전지, 바이오, 조선·방산 등 20대 핵심 산업 밸류체인 리서치</p>
+              </Link>
             </div>
           </section>
 
-          {/* 4. 공공 데이터 수집 기준 및 E-E-A-T 신뢰성 선언 */}
+          {/* 공공 데이터 수집 기준 및 E-E-A-T 신뢰성 선언 */}
           <section className="bg-gradient-to-br from-zinc-900/80 to-black border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
             <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-              🏛️ 공공 데이터 수집 기준 및 신뢰성 정책 (Data Integrity)
+              🏛️ 공공 데이터 수집 기준 및 편집 윤리 정책 (Editorial &amp; Data Integrity)
             </h2>
             <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-              스마트 투자 비서는 금융감독원 전자공시시스템(Open DART), 한국거래소(KRX) 정보데이터시스템, 미국 증권거래위원회(SEC EDGAR) 등 공신력 있는 공식 공공 데이터만을 정량 분석합니다.
+              스마트 투자 비서는 금융감독원 전자공시시스템(Open DART), 한국거래소(KRX) 정보데이터시스템, 미국 증권거래위원회(SEC EDGAR) 등 공신력 있는 공식 공공 데이터만을 정량 분석하며, 모든 교육 칼럼은 엄격한 팩트 검증을 거쳐 발행됩니다.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5">
-                <div className="text-xs font-bold text-emerald-400 mb-1">✓ 100% 공식 API 연동</div>
-                <p className="text-gray-400 text-xs">금융감독원 및 거래소 인가 파이프라인을 통해 왜곡 없는 순수 원천 데이터만을 수집합니다.</p>
+                <div className="text-xs font-bold text-emerald-400 mb-1">✓ 공식 공시·거래소 데이터 연동</div>
+                <p className="text-gray-400 text-xs">금융감독원 DART 및 거래소 공식 통계 파이프라인을 통해 왜곡 없는 원천 재무 데이터를 수집합니다.</p>
               </div>
               <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5">
-                <div className="text-xs font-bold text-blue-400 mb-1">✓ 객관적 정량 분석 지향</div>
-                <p className="text-gray-400 text-xs">주관적 루머나 찌라시를 배제하고, 재무제표 팩트와 실체결 수급 통계에 기반한 객관적 지표만을 산출합니다.</p>
+                <div className="text-xs font-bold text-blue-400 mb-1">✓ 객관적 재무·통계 리서치</div>
+                <p className="text-gray-400 text-xs">근거 없는 풍문을 배제하고, 감사보고서 수치와 수급 통계에 기반한 객관적 금융 해설만을 제공합니다.</p>
               </div>
               <div className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5">
-                <div className="text-xs font-bold text-purple-400 mb-1">✓ 완전 무료 &amp; 안전한 정보</div>
-                <p className="text-gray-400 text-xs">불법 리딩방 권유나 유료 결제 없이, 건전한 금융 생태계 조성을 위해 모든 핵심 인프라를 평생 무료로 개방합니다.</p>
+                <div className="text-xs font-bold text-purple-400 mb-1">✓ 자본시장법 준수 및 무료 개방</div>
+                <p className="text-gray-400 text-xs">유료 리딩방 유도나 매매 권유 없이, 건전한 투자 문화 정착을 위해 모든 아카데미 콘텐츠를 무료로 개방합니다.</p>
               </div>
             </div>
           </section>
 
-          {/* 5. 자주 묻는 질문 (FAQ 아코디언/카드) */}
+          {/* 자주 묻는 질문 (FAQ) */}
           <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4">
             <h2 className="text-xl md:text-2xl font-black text-white">
               ❓ 자주 묻는 질문 (FAQ)
@@ -597,9 +475,6 @@ export default async function Home() {
               ))}
             </div>
           </section>
-
-          {/* 6. 정식 카카오 애드핏 배너 (클로킹/자동리프레시 제거, 구글 애드센스 정책 100% 준수) */}
-          <KakaoRevenueAd type="banner" />
 
         </div>
       </div>

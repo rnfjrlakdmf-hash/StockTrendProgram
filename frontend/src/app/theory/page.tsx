@@ -23,7 +23,7 @@ export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
 async function getTheoryPosts(page: number, limitPerPage: number) {
     // API 실패 시 서빙할 핵심 실전 차트 & 투자 이론 포스트 (구글 애드센스 빈 페이지 방지 보증)
-    const fallbackTheoryPosts: TheoryPost[] = STATIC_POSTS.slice(0, 15).map((p) => ({
+    const fallbackTheoryPosts: TheoryPost[] = STATIC_POSTS.slice(13).map((p) => ({
         id: p.id,
         title: p.title,
         content: p.content,

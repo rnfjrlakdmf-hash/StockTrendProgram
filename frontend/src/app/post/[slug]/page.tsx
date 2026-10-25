@@ -56,6 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         return {
             title: `${fallbackTitle} | 핫이슈 종목 분석 - 스마트 투자 비서`,
             description: `${fallbackTitle}에 대한 실시간 주가 분석, 모멘텀 및 수급 진단 정보를 확인하세요.`,
+            robots: { index: false, follow: true },
             alternates: {
                 canonical: `/post/${resolvedParams.slug}`,
             },
@@ -70,9 +71,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
         title: `${post.title} | 오늘의 핫이슈 종목 리포트 - StockTrend`,
         description: desc,
-        robots: isRepetitiveTickerPost
-            ? { index: true, follow: true }
-            : { index: true, follow: true },
+        robots: { index: false, follow: true },
         alternates: {
             canonical: `/post/${resolvedParams.slug}`,
         },
@@ -303,20 +302,6 @@ export default async function TheoryPostPage({ params }: { params: Promise<{ slu
 
             <div className="mt-8 mb-4">
                 <PushSubscribeButton />
-            </div>
-
-            {/* [New] Telegram Subscribe Banner */}
-            <div className="mb-12">
-                <div className="w-full bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-[0_0_30px_rgba(37,99,235,0.15)]">
-                    <div className="bg-blue-600 p-3 rounded-full mb-4 shadow-[0_0_15px_rgba(37,99,235,0.5)]">
-                        <Send className="w-8 h-8 text-white ml-1" />
-                    </div>
-                    <h3 className="text-2xl font-black text-white mb-2">이 글이 유익하셨나요?</h3>
-                    <p className="text-blue-200 mb-6 font-medium">더 빠르고 정확한 주식 핵심 정보를 텔레그램에서 무료로 받아보세요!</p>
-                    <Link href="https://t.me/stocktrend_live" target="_blank" rel="noopener noreferrer" className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transform hover:scale-105 transition-all text-lg flex items-center justify-center gap-3">
-                        👉 실시간 속보방 무료 입장하기
-                    </Link>
-                </div>
             </div>
 
             <div className="w-full flex justify-center mb-12">

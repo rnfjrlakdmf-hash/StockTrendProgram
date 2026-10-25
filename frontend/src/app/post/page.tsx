@@ -5,7 +5,7 @@ import PostListClient, { SeoPost } from "./PostListClient";
 
 export const metadata: Metadata = {
     title: "오늘의 핫이슈 종목 & 특징주 심층 분석 리포트 | 주가 전망·수급 분석 - StockTrend",
-    description: "실시간 급등주, 테마 대장주, 외국인·기관 수급 특징주 심층 분석! 카카오, 삼성전자, 2차전지, 반도체 등 오늘의 핵심 종목 주가 전망과 모멘텀 리포트를 100% 무료로 확인하세요.",
+    description: "주요 상장기업 공시 내역, 테마별 수급 동향, 외국인·기관 수급 특징주 심층 분석! 카카오, 삼성전자, 2차전지, 반도체 등 오늘의 핵심 종목 주가 전망과 모멘텀 리포트를 100% 무료로 확인하세요.",
     keywords: [
         "핫이슈 종목",
         "특징주 분석",
@@ -20,12 +20,16 @@ export const metadata: Metadata = {
         "주식 리포트",
         "StockTrend"
     ],
+    robots: {
+        index: false,
+        follow: true,
+    },
     alternates: {
         canonical: '/post',
     },
     openGraph: {
         title: "오늘의 핫이슈 종목 & 특징주 심층 분석 리포트 | StockTrend",
-        description: "상위 1% 수급 데이터로 분석한 실시간 급등주, 테마 대장주, 외국인·기관 수급 특징주 심층 리포트.",
+        description: "상위 1% 수급 데이터로 분석한 주요 상장기업 공시 내역, 테마별 수급 동향, 외국인·기관 수급 특징주 심층 리포트.",
         url: 'https://stock-trend-program.co.kr/post',
         siteName: '스마트 투자비서 StockTrend',
         locale: 'ko_KR',
@@ -54,7 +58,7 @@ import { STATIC_POSTS } from "@/lib/staticBlogPosts";
 import SeoContentBlock from "@/components/SeoContentBlock";
 
 async function getSeoPosts(page: number, limitPerPage: number) {
-    const fallbackSeoPosts: SeoPost[] = STATIC_POSTS.slice(0, 15).map((p) => ({
+    const fallbackSeoPosts: SeoPost[] = STATIC_POSTS.slice(13).map((p) => ({
         id: p.id,
         title: p.title,
         content: p.content,
@@ -131,7 +135,7 @@ export default async function SeoListPage(props: Props) {
         "@context": "https://schema.org",
         "@type": "CollectionPage",
         "name": "오늘의 핫이슈 종목 & 특징주 심층 분석 리포트",
-        "description": "실시간 급등주, 테마 대장주, 외국인·기관 수급 특징주 심층 분석 리포트",
+        "description": "주요 상장기업 공시 내역, 테마별 수급 동향, 외국인·기관 수급 특징주 심층 분석 리포트",
         "url": "https://stock-trend-program.co.kr/post",
         "publisher": {
             "@type": "Organization",
