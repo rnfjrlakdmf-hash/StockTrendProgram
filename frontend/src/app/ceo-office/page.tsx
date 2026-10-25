@@ -583,7 +583,9 @@ export default function CeoOfficePage() {
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
-    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'weekly_review_calendar' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'one_page_summary' | 'weekly_review_calendar' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
+    const [summaryFilter, setSummaryFilter] = useState<'all' | 'approved' | 'kr_stock' | 'us_stock' | 'macro'>('all');
+    const [summaryViewMode, setSummaryViewMode] = useState<'table' | 'cards'>('table');
     const [weeklySubView, setWeeklySubView] = useState<'both' | 'review' | 'calendar'>('both');
     const [weeklyReview, setWeeklyReview] = useState<any>(null);
     const [weeklyCalendar, setWeeklyCalendar] = useState<any>(null);
@@ -2001,6 +2003,23 @@ export default function CeoOfficePage() {
 
                         <button
                             type="button"
+                            onClick={() => setActiveTab('one_page_summary')}
+                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                                activeTab === 'one_page_summary'
+                                    ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 text-slate-950 shadow-lg shadow-amber-500/25'
+                                    : 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 border border-amber-400/40'
+                            }`}
+                        >
+                            <span>📄 1장 요약 브리핑 카드</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                activeTab === 'one_page_summary' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
+                            }`}>
+                                한눈에 보기·복사
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => setActiveTab('weekly_review_calendar')}
                             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
                                 activeTab === 'weekly_review_calendar'
@@ -2274,7 +2293,7 @@ export default function CeoOfficePage() {
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         {/* 좌측 8컬럼: 대표이사 전자결재 서류함 (기본 탭) */}
-                        <div className={['electronic_sign', 'weekly_review_calendar', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
+                        <div className={['electronic_sign', 'one_page_summary', 'weekly_review_calendar', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'lg:col-span-12 space-y-5' : 'lg:col-span-8 space-y-5'}>
                             {activeTab === 'electronic_sign' && (
                                 <>
                                     {/* 비서실장 브리핑 안내 배너 */}
@@ -3051,6 +3070,380 @@ export default function CeoOfficePage() {
                                     </div>
                                 </>
                             )}
+
+                            {activeTab === 'one_page_summary' && (() => {
+                                const summaryDocs = autoApprovals.filter(doc => {
+                                    const st = signMap[doc.doc_id]?.status || 'pending';
+                                    if (summaryFilter === 'approved') return st === 'approved';
+                                    if (summaryFilter === 'kr_stock') return doc.category_type === 'kr_stock';
+                                    if (summaryFilter === 'us_stock') return doc.category_type === 'us_stock';
+                                    if (summaryFilter === 'macro') return doc.category_type === 'global_futures' || doc.category_type === 'world_news' || doc.category_type === 'all';
+                                    return true;
+                                });
+
+                                const handleCopyOnePageSummary = () => {
+                                    const nowStr = new Date().toLocaleString('ko-KR');
+                                    const lines: string[] = [
+                                        `📄 [대표이사 집무실 · 1장 요약 브리핑 시트]`,
+                                        `• 일시: ${nowStr}`,
+                                        `• 나스닥선물: ${intelligenceMetrics.nqPrice} | 원/달러 환율: ${intelligenceMetrics.usdKrwPrice}`,
+                                        `• 상정 ${totalDocs}건 중 결재완료 ${approvedDocsCount}건 (평균 기대수익 +${intelligenceMetrics.avgUpside}%)`,
+                                        `----------------------------------------`,
+                                    ];
+                                    summaryDocs.forEach((d, idx) => {
+                                        const st = (signMap[d.doc_id]?.status || 'pending') === 'approved' ? '✅결재완료' : '⏳대기';
+                                        const headline = (d.easy_headline || d.title || '').replace(/\s+/g, ' ').trim();
+                                        lines.push(
+                                            `${idx + 1}. [${st}] ${d.stock_name} (${d.category_badge})`,
+                                            `   - 현재가: ${d.current_price || '-'} ➔ 목표가: ${d.target_price || '-'} (${d.upside_pct || '유망'})`,
+                                            `   - 1천만원 기대수익: ${d.profit_10m || '-'} | 방어선: 50일선 지지 · -3.5% 손절`,
+                                            `   - 핵심포인트: ${headline}`
+                                        );
+                                    });
+                                    if (weeklyReview?.monday_top3_picks?.length) {
+                                        lines.push(`----------------------------------------`, `🚀 [차주 월요일 최우선 공략 Top 3]`);
+                                        weeklyReview.monday_top3_picks.forEach((p: any) => {
+                                            lines.push(`• ${p.rank}위 ${p.name}: 현재 ${p.current} ➔ 목표 ${p.target} (${p.upside}) | ${p.point}`);
+                                        });
+                                    }
+                                    const text = lines.join('\n');
+                                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                        navigator.clipboard.writeText(text);
+                                        setToastMessage({
+                                            title: '📋 1장 요약 브리핑 복사 완료!',
+                                            desc: `총 ${summaryDocs.length}건의 종목 타점 및 핵심 포인트가 클립보드에 복사되었습니다. 카카오톡이나 메모장에 바로 붙여넣으실 수 있습니다.`
+                                        });
+                                    }
+                                };
+
+                                return (
+                                    <div className="space-y-5">
+                                        {/* 1. 상단 컨트롤 & 액션 헤더 */}
+                                        <div className="bg-gradient-to-r from-[#0e172a] via-[#131f38] to-[#0e172a] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+                                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                                                <div>
+                                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-black mb-2">
+                                                        <span>📄 EXECUTIVE 1-PAGE BRIEFING SHEET</span>
+                                                        <span>·</span>
+                                                        <span className="text-emerald-300">진입가 · 목표가 · 손절가 · 핵심근거 1장 압축</span>
+                                                    </div>
+                                                    <h2 className="text-xl sm:text-2xl font-black text-white">
+                                                        대표이사 전용 · 오늘의 결재 종목 1장 요약 브리핑 표
+                                                    </h2>
+                                                    <p className="text-xs sm:text-sm text-gray-300 mt-1">
+                                                        개별 기안서를 일일이 열지 않고도 전 종목의 <strong className="text-amber-300">현재 진입가 · 목표주가(기대수익) · 손절 방어선 · 1천만원 기대수익</strong>을 한 장의 표로 비교하고 즉시 결재하실 수 있습니다.
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCopyOnePageSummary}
+                                                        className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shadow-lg shadow-amber-500/20 flex items-center gap-1.5"
+                                                    >
+                                                        <span>📋 카톡·메모장용 1장 텍스트 복사</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => typeof window !== 'undefined' && window.print()}
+                                                        className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-black text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-1.5"
+                                                    >
+                                                        <Printer className="w-4 h-4 text-amber-300" />
+                                                        <span>PDF / 1장 인쇄</span>
+                                                    </button>
+                                                    {pendingDocsCount > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleApproveAll}
+                                                            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                                                        >
+                                                            🖋️ 전 안건 일괄 승인 ({pendingDocsCount}건)
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* 4대 핵심 요약 지표 배너 */}
+                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                                <div className="bg-black/45 border border-white/10 rounded-2xl p-3.5">
+                                                    <div className="text-[11px] text-gray-400 font-bold">📌 결재 진행 현황</div>
+                                                    <div className="text-base sm:text-lg font-black text-white mt-0.5">
+                                                        총 {totalDocs}건 중 <span className="text-emerald-400">{approvedDocsCount}건 재가</span>
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-400 mt-0.5">미결재 대기: {pendingDocsCount}건</div>
+                                                </div>
+                                                <div className="bg-black/45 border border-rose-500/30 rounded-2xl p-3.5">
+                                                    <div className="text-[11px] text-rose-300 font-bold">🎯 상정 종목 평균 기대수익</div>
+                                                    <div className="text-base sm:text-lg font-black text-rose-400 font-mono mt-0.5">
+                                                        평균 +{intelligenceMetrics.avgUpside}%
+                                                    </div>
+                                                    <div className="text-[11px] text-amber-300 mt-0.5 truncate">
+                                                        1위: {intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside})
+                                                    </div>
+                                                </div>
+                                                <div className="bg-black/45 border border-cyan-500/30 rounded-2xl p-3.5">
+                                                    <div className="text-[11px] text-cyan-300 font-bold">🌎 글로벌 선물 &amp; 원/달러 환율</div>
+                                                    <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5 truncate">
+                                                        나스닥 {intelligenceMetrics.nqPrice}
+                                                    </div>
+                                                    <div className="text-[11px] text-amber-300 mt-0.5">
+                                                        환율: {intelligenceMetrics.usdKrwPrice}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-black/45 border border-emerald-500/30 rounded-2xl p-3.5">
+                                                    <div className="text-[11px] text-emerald-300 font-bold">🛡️ 전사 표준 리스크 방어선</div>
+                                                    <div className="text-sm sm:text-base font-black text-emerald-300 mt-0.5">
+                                                        50일선 지지 · -3.5% 손절
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-300 mt-0.5">
+                                                        1차 익절 +15% / 최종 +30%
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 필터 버튼 & 뷰 모드 전환 */}
+                                            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {[
+                                                        { id: 'all', label: `전체 안건 (${totalDocs})` },
+                                                        { id: 'approved', label: `✅ 결재완료 종목 (${approvedDocsCount})` },
+                                                        { id: 'kr_stock', label: `🇰🇷 국내 주식 (${countKr})` },
+                                                        { id: 'us_stock', label: `🇺🇸 미국 빅테크 (${countUs})` },
+                                                        { id: 'macro', label: `📊 선물·거시 (${countFutures + countNews})` },
+                                                    ].map(f => (
+                                                        <button
+                                                            key={f.id}
+                                                            type="button"
+                                                            onClick={() => setSummaryFilter(f.id as any)}
+                                                            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                                                summaryFilter === f.id
+                                                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                                                    : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10'
+                                                            }`}
+                                                        >
+                                                            {f.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex items-center gap-1 bg-black/50 p-1 rounded-xl border border-white/10">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSummaryViewMode('table')}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer transition-all ${
+                                                            summaryViewMode === 'table'
+                                                                ? 'bg-emerald-500 text-slate-950'
+                                                                : 'text-gray-300 hover:text-white'
+                                                        }`}
+                                                    >
+                                                        📊 1장 압축 표 보기
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSummaryViewMode('cards')}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer transition-all ${
+                                                            summaryViewMode === 'cards'
+                                                                ? 'bg-emerald-500 text-slate-950'
+                                                                : 'text-gray-300 hover:text-white'
+                                                        }`}
+                                                    >
+                                                        📱 스마트폰 명함 카드뷰
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 2. 표 모드 (PC/태블릿 한눈에 보기) */}
+                                        {summaryViewMode === 'table' ? (
+                                            <div className="bg-[#0b1324] border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead>
+                                                            <tr className="bg-[#111c35] border-b border-white/15 text-[11px] sm:text-xs font-black text-amber-300">
+                                                                <th className="py-3.5 px-4 whitespace-nowrap">구분</th>
+                                                                <th className="py-3.5 px-4 whitespace-nowrap">종목명 (코드)</th>
+                                                                <th className="py-3.5 px-4 whitespace-nowrap">현재 진입가</th>
+                                                                <th className="py-3.5 px-4 whitespace-nowrap">목표가 (기대수익)</th>
+                                                                <th className="py-3.5 px-4 whitespace-nowrap">1천만원 기대수익</th>
+                                                                <th className="py-3.5 px-4 whitespace-nowrap">손절·방어 기준선</th>
+                                                                <th className="py-3.5 px-4 min-w-[260px]">핵심 투자 포인트 (1줄 요약)</th>
+                                                                <th className="py-3.5 px-4 text-center whitespace-nowrap">원클릭 결재</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/10 text-xs sm:text-sm">
+                                                            {summaryDocs.map((doc) => {
+                                                                const isApproved = (signMap[doc.doc_id]?.status || 'pending') === 'approved';
+                                                                const theme = getCategoryTheme(doc);
+                                                                const oneLinePoint = (doc.easy_headline || doc.secretary_conclusion || doc.title || '').replace(/\s+/g, ' ').trim();
+                                                                return (
+                                                                    <tr
+                                                                        key={doc.doc_id}
+                                                                        className={`transition-colors hover:bg-white/[0.04] ${
+                                                                            isApproved ? 'bg-emerald-950/15' : ''
+                                                                        }`}
+                                                                    >
+                                                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-black border ${theme.pill}`}>
+                                                                                <span>{theme.icon}</span>
+                                                                                <span>{theme.shortLabel}</span>
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setSelectedDocId(doc.doc_id);
+                                                                                    setActiveTab('electronic_sign');
+                                                                                }}
+                                                                                className="text-left group cursor-pointer"
+                                                                            >
+                                                                                <div className="font-black text-white group-hover:text-amber-300 transition-colors">
+                                                                                    {doc.stock_name}
+                                                                                </div>
+                                                                                <div className="text-[11px] text-gray-400 font-mono">
+                                                                                    {doc.stock_code || doc.doc_number}
+                                                                                </div>
+                                                                            </button>
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-gray-200">
+                                                                            {doc.current_price || '실시간 연동'}
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 whitespace-nowrap font-mono">
+                                                                            <div className="font-black text-amber-300">
+                                                                                {doc.target_price || '목표가 산정'}
+                                                                            </div>
+                                                                            {doc.upside_pct && (
+                                                                                <div className="text-xs font-black text-rose-400">
+                                                                                    {doc.upside_pct}
+                                                                                </div>
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 whitespace-nowrap font-mono font-black text-emerald-300">
+                                                                            {doc.profit_10m || '안정 수익 기대'}
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                            <span className="inline-block px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold">
+                                                                                50일선 지지 · -3.5% 손절
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 text-xs text-gray-200 leading-relaxed max-w-md">
+                                                                            <div className="line-clamp-2 font-medium">
+                                                                                {oneLinePoint}
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                                                            {isApproved ? (
+                                                                                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-black">
+                                                                                    ✓ 재가완료
+                                                                                </span>
+                                                                            ) : (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleSignDoc(doc.doc_id, 'approved')}
+                                                                                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-sm"
+                                                                                >
+                                                                                    🖋️ 즉시 승인
+                                                                                </button>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* 3. 스마트폰 명함 카드뷰 (모바일 캡처 최적화) */
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                {summaryDocs.map((doc) => {
+                                                    const isApproved = (signMap[doc.doc_id]?.status || 'pending') === 'approved';
+                                                    const theme = getCategoryTheme(doc);
+                                                    const oneLinePoint = (doc.easy_headline || doc.secretary_conclusion || doc.title || '').replace(/\s+/g, ' ').trim();
+                                                    return (
+                                                        <div
+                                                            key={doc.doc_id}
+                                                            className={`rounded-2xl p-4 border transition-all flex flex-col justify-between gap-3 ${
+                                                                isApproved
+                                                                    ? 'bg-gradient-to-br from-emerald-950/35 via-[#0c1526] to-[#0a101d] border-emerald-500/45 shadow-lg'
+                                                                    : 'bg-[#0b1324] border-white/15'
+                                                            }`}
+                                                        >
+                                                            <div className="space-y-3">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black border ${theme.pill}`}>
+                                                                        <span>{theme.icon}</span>
+                                                                        <span>{theme.shortLabel}</span>
+                                                                    </span>
+                                                                    {isApproved ? (
+                                                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px] font-black">
+                                                                            ✓ 대표이사 재가필
+                                                                        </span>
+                                                                    ) : (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleSignDoc(doc.doc_id, 'approved')}
+                                                                            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black cursor-pointer"
+                                                                        >
+                                                                            🖋️ 즉시 승인
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+
+                                                                <div>
+                                                                    <h3 className="text-base sm:text-lg font-black text-white">
+                                                                        {doc.stock_name}
+                                                                    </h3>
+                                                                    <p className="text-xs text-gray-300 mt-1 line-clamp-2 leading-relaxed">
+                                                                        {oneLinePoint}
+                                                                    </p>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-3 gap-2 bg-black/45 border border-white/10 rounded-xl p-2.5 text-center">
+                                                                    <div>
+                                                                        <div className="text-[10px] text-gray-400 font-bold">현재 진입가</div>
+                                                                        <div className="text-xs font-black text-white font-mono mt-0.5 truncate">
+                                                                            {doc.current_price ? doc.current_price.split(' ')[0] : '-'}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="border-x border-white/10 px-1">
+                                                                        <div className="text-[10px] text-amber-300 font-bold">목표가(수익)</div>
+                                                                        <div className="text-xs font-black text-rose-400 font-mono mt-0.5 truncate">
+                                                                            {doc.upside_pct || doc.target_price || '유망'}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="text-[10px] text-rose-300 font-bold">손절 방어선</div>
+                                                                        <div className="text-xs font-black text-rose-300 font-mono mt-0.5">
+                                                                            -3.5% / 50일선
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                                                                <span className="text-emerald-300 font-black">
+                                                                    💰 1천만 투자 시: {doc.profit_10m || '수익 기대'}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedDocId(doc.doc_id);
+                                                                        setActiveTab('electronic_sign');
+                                                                    }}
+                                                                    className="text-gray-400 hover:text-amber-300 font-bold text-[11px] cursor-pointer"
+                                                                >
+                                                                    기안서 원문 →
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {activeTab === 'boardroom' && agenda && (
                                 <>
