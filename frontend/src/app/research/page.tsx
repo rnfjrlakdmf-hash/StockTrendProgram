@@ -249,12 +249,12 @@ const FALLBACK_KR_REPORTS: ResearchReportItem[] = [
         goal_price_num: 120000,
         opinion: "Buy (매수)",
         summary_points: [
-            "[발간 기관 및 일자 팩트] 2026-10-16 하나증권에서 발간한 '두산에너빌리티(034020)' 공개 리서치 메타데이터 집계입니다.",
-            "[증권사 제시 컨센서스 팩트] 투자의견 'Buy (매수)' · 제시 목표주가 '120,000원' (당사 추천이 아닌 해당 증권사 발표 수치)",
-            "[리포트 분류 및 주제] 구분: 기업·산업 밸류에이션 분석 · 핵심 키워드: 대형원전 및 소형모듈원전(SMR) 수주 잔고 추이 (원문은 공식 링크 참조)"
+            "발간 정보: 2026-10-16 · 하나증권",
+            "증권사 의견: 투자의견 'Buy (매수)' · 목표주가 120,000원",
+            "핵심 주제: 대형원전 및 소형모듈원전(SMR) 수주 잔고 추이 점검"
         ],
-        easy_summary: "하나증권에서 발표한 '두산에너빌리티' 기업 분석 리포트 (제시 목표가 120,000원 · 투자의견 Buy (매수))입니다. 기업의 주요 사업 모멘텀, 업황 사이클 및 재무 밸류에이션 지표를 종합적으로 점검한 분석 자료입니다. 핵심 관찰 변수로는 신규 수주 잔고 추이와 본계약 공시 일정이 언급되었습니다.",
-        checkpoint: "향후 전자공시시스템(DART)의 단일판매·공급계약 공시와 분기 영업이익률 추이를 함께 대조해 보세요.",
+        easy_summary: "기업의 핵심 사업 현황과 향후 성장 모멘텀 및 주가 가치(밸류에이션)를 종합 점검한 분석 리포트입니다. 특히 신규 수주 잔고 추이와 본계약 체결 일정이 핵심 포인트로 다루어졌습니다.",
+        checkpoint: "향후 공시(DART)되는 수주·공급계약 규모와 분기 영업이익률 추이를 함께 확인해 보세요.",
         naver_url: "https://stock.naver.com/research/company/96804"
     }
 ];
@@ -416,13 +416,13 @@ export default function MultiAssetResearchPage() {
                     <div className="space-y-2">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-200 text-xs font-black">
                             <Sparkles className="w-3.5 h-3.5 text-purple-300" />
-                            <span>GLOBAL MULTI-ASSET RESEARCH CENTER · 국내주식 · 해외주식 · ETF · 선물</span>
+                            <span>MULTI-ASSET RESEARCH CENTER</span>
                         </div>
                         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                             국내·해외주식 · ETF · 선물 통합 리서치 센터
                         </h1>
                         <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl">
-                            <strong>🇰🇷 국내 전 종목 증권사 리포트</strong>뿐만 아니라 <strong>🇺🇸 미국 빅테크 월가 IB 목표주가 컨센서스</strong>, <strong>📊 한·미 대표 ETF 심층 분석</strong>, <strong>⚡ 나스닥·금·원유·국채 선물 리서치</strong>까지 모든 투자 자산의 분석 자료와 초보자 눈높이 해설을 한곳에서 확인하세요.
+                            국내 증권사 종목·산업 리포트부터 미국 빅테크 월가 컨센서스, 대표 ETF, 글로벌 선물 시황까지 핵심 요약으로 깔끔하게 확인하세요.
                         </p>
                     </div>
                 </div>
@@ -496,7 +496,7 @@ export default function MultiAssetResearchPage() {
                 <div className="space-y-2">
                     <div className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
                         <Flame className="w-3.5 h-3.5 text-amber-400" />
-                        <span>인기 종목 원클릭 바로가기 (클릭하면 해당 종목·자산의 리서치 분석을 즉시 조회합니다)</span>
+                        <span>인기 종목 바로가기</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                         {quickChips.map((chip) => {
@@ -647,16 +647,16 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                             </div>
 
-                                            {/* 1순위: 초보자 3초 핵심 요약 & 관찰 포인트 (가장 먼저 눈에 들어오도록 상단 배치) */}
+                                            {/* 1순위: 핵심 요약 & 체크포인트 */}
                                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
                                                 <div className="lg:col-span-2 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/45 via-indigo-950/30 to-zinc-900/80 border border-purple-500/35 space-y-2 shadow-inner">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <span className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-purple-200">
                                                             <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
-                                                            <span>한눈에 이해하는 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
+                                                            <span>한눈에 보는 핵심 요약</span>
                                                         </span>
                                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-400/25">
-                                                            핵심 요약
+                                                            핵심 브리핑
                                                         </span>
                                                     </div>
                                                     <p className="text-sm sm:text-[15px] text-white font-medium leading-relaxed">
@@ -667,7 +667,7 @@ export default function MultiAssetResearchPage() {
                                                 <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-950/40 to-zinc-900/80 border border-emerald-500/30 space-y-2 flex flex-col justify-center">
                                                     <div className="flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-emerald-300">
                                                         <Target className="w-4 h-4 text-emerald-400 shrink-0" />
-                                                        <span>핵심 데이터 관찰 포인트</span>
+                                                        <span>체크포인트</span>
                                                     </div>
                                                     <p className="text-xs sm:text-sm text-zinc-100 leading-relaxed">
                                                         {mItem.checkpoint}
@@ -675,16 +675,16 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                             </div>
 
-                                            {/* 2순위: 리서치 세부 수치 및 원문 핵심 포인트 */}
+                                            {/* 2순위: 리서치 세부 수치 및 핵심 포인트 */}
                                             <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-white/10 space-y-2.5">
                                                 <div className="text-xs font-black text-zinc-300 flex items-center gap-1.5">
                                                     <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
                                                     <span>
                                                         {mainTab === "us_stock"
-                                                            ? "월가 투자은행(IB) 컨센서스 & 핵심 재무 지표"
+                                                            ? "월가 컨센서스 & 핵심 지표"
                                                             : mainTab === "etf"
-                                                                ? "ETF 기초지수 구조 & 핵심 시세 통계"
-                                                                : "글로벌 선물 시세 & 거시경제 핵심 포인트"}
+                                                                ? "ETF 구조 & 시세 요약"
+                                                                : "선물 시세 & 핵심 포인트"}
                                                     </span>
                                                 </div>
                                                 <div className="space-y-2">
@@ -706,7 +706,7 @@ export default function MultiAssetResearchPage() {
                                                 <div className="pt-3 border-t border-white/10 space-y-2.5">
                                                     <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
                                                         <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
-                                                        <span>리포트 속 어려운 금융·파생 용어 1분 풀이</span>
+                                                        <span>함께 알아두면 좋은 금융 용어</span>
                                                     </div>
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                                         {terms.map((t, tIdx) => (
@@ -1040,16 +1040,16 @@ export default function MultiAssetResearchPage() {
                                             </div>
                                         </div>
 
-                                        {/* 1순위 (가장 먼저 눈에 들어오는 핵심 영역): 한눈에 이해하는 쉬운 해설 & 관찰 포인트 */}
+                                        {/* 1순위: 한눈에 보는 핵심 요약 & 체크포인트 */}
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
                                             <div className="lg:col-span-2 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/45 via-indigo-950/30 to-zinc-900/85 border border-purple-500/35 space-y-2 shadow-inner">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-black text-purple-200">
                                                         <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
-                                                        <span>한눈에 이해하는 쉬운 해설 (쉽게 말해 무슨 뜻인가요?)</span>
+                                                        <span>한눈에 보는 핵심 요약</span>
                                                     </span>
                                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-400/25">
-                                                        초보자 3초 요약
+                                                        핵심 브리핑
                                                     </span>
                                                 </div>
                                                 <p className="text-sm sm:text-[15px] text-white font-medium leading-relaxed">
@@ -1068,16 +1068,16 @@ export default function MultiAssetResearchPage() {
                                             </div>
                                         </div>
 
-                                        {/* 2순위: 자체 분석 핵심 팩트 & 메타데이터 브리핑 (원문 무단 복제 없이 순수 팩트·수치만 표시) */}
+                                        {/* 2순위: 리포트 3줄 핵심 정리 */}
                                         {item.summary_points && item.summary_points.length > 0 && (
                                             <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-white/10 space-y-2.5">
                                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="text-xs font-black text-zinc-300 flex items-center gap-1.5">
                                                         <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                                                        <span>핵심 팩트 & 수치 메타데이터 브리핑 ({item.broker} 발표 기준)</span>
+                                                        <span>리포트 3줄 핵심 정리</span>
                                                     </div>
                                                     <span className="text-[11px] text-zinc-400 font-medium">
-                                                        저작권 준수 · 원문 본문은 우측 상단 [원문 리포트 ↗]에서 열람
+                                                        {item.broker} 발표 데이터 기반
                                                     </span>
                                                 </div>
                                                 <div className="space-y-2">
@@ -1103,7 +1103,7 @@ export default function MultiAssetResearchPage() {
                                             <div className="pt-3 border-t border-white/10 space-y-2.5">
                                                 <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
                                                     <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
-                                                    <span>리포트에 등장한 어려운 금융·회계 용어 1분 풀이</span>
+                                                    <span>함께 알아두면 좋은 금융 용어</span>
                                                 </div>
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                                     {terms.map((t, tIdx) => (
@@ -1116,10 +1116,10 @@ export default function MultiAssetResearchPage() {
                                             </div>
                                         )}
 
-                                        {/* 카드 하단 저작권·자본시장법 안심 안내 한 줄 */}
+                                        {/* 카드 하단 깔끔한 출처 및 안내 */}
                                         <div className="pt-2.5 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-500">
                                             <span>
-                                                ⚖️ 본 해설은 {item.broker}의 공개 팩트(목표가·투자의견·재무수치)를 바탕으로 당사가 독자 작성한 초보자 학습용 요약이며, 매수·매도 추천이 아닙니다.
+                                                📌 {item.broker} 공개 리포트 요약 · 투자 권유가 아닌 참고용 학습 자료입니다.
                                             </span>
                                             {item.naver_url && (
                                                 <a
@@ -1128,7 +1128,7 @@ export default function MultiAssetResearchPage() {
                                                     rel="noopener noreferrer"
                                                     className="text-purple-400 hover:text-purple-300 font-bold inline-flex items-center gap-1"
                                                 >
-                                                    <span>공식 원문 열람 출처 바로가기</span>
+                                                    <span>공식 원문 보기</span>
                                                     <ExternalLink className="w-3 h-3" />
                                                 </a>
                                             )}
@@ -1164,15 +1164,15 @@ export default function MultiAssetResearchPage() {
                 </>
             )}
 
-            {/* 저작권법 및 자본시장법 제101조 준수 법적 고지 배너 */}
-            <div className="mt-10 p-6 rounded-3xl bg-zinc-950/90 border border-amber-500/25 space-y-2 text-xs text-zinc-400 leading-relaxed">
-                <p className="text-amber-400 font-black text-xs sm:text-sm">
-                    ⚖️ 저작권법 · 자본시장법 준수 및 공개 리서치 팩트 인용 안내 (법적 면책 고지)
+            {/* 저작권법 및 자본시장법 준수 안내 */}
+            <div className="mt-10 p-5 sm:p-6 rounded-3xl bg-zinc-950/90 border border-white/10 space-y-2 text-xs text-zinc-400 leading-relaxed">
+                <p className="text-amber-300 font-black text-xs sm:text-sm">
+                    ⚖️ 리서치 이용 및 법적 안내
                 </p>
                 <p>
-                    1. 본 리서치 센터는 이용자에게 어떠한 유료 회비나 대가도 받지 않는 <strong>100% 무료 금융 데이터·용어 교육 열람 도구</strong>입니다.<br />
-                    2. <strong>[저작권 보호 정책]</strong> 증권사 애널리스트의 원문 본문이나 원본 PDF 파일을 당사 서버에 무단 복제·저장·재배포하지 않으며, 저작권법상 비보호 영역인 <strong>단순 사실·수치 정보(발간사, 발표일, 제시 목표주가, 투자의견, 공시 재무 수치)</strong>만을 기반으로 당사가 자체 작성한 초보자 학습용 해설과 용어 풀이를 제공합니다. 원문 열람을 원하시는 경우 각 카드의 <strong>[원문 리포트 ↗]</strong> 공식 아웃링크를 이용해 주시기 바랍니다.<br />
-                    3. <strong>[자본시장법 준수]</strong> 화면에 표시되는 목표주가 및 투자의견(Buy/Hold 등)은 본 사이트의 자체 판단이나 매매 추천이 아니며, 금융위원회 인가 국내 증권사 및 글로벌 투자은행(IB)이 공개 발표한 제3자 컨센서스 통계 데이터를 객관적으로 단순 집계한 참고 자료입니다. 모든 투자의 최종 판단과 책임은 투자자 본인에게 있습니다.
+                    • 본 리서치 센터는 무료 금융 데이터·용어 학습 공간이며, 특정 종목의 매수·매도를 권유하지 않습니다.<br />
+                    • 표시되는 목표주가와 투자의견은 각 증권사 및 글로벌 투자은행(IB)이 공개 발표한 컨센서스 수치를 집계한 참고 자료입니다.<br />
+                    • 저작권 보호를 위해 리포트 원문이나 PDF는 직접 제공하지 않으며, 상세 원문은 각 카드의 <strong>[원문 리포트 ↗]</strong> 공식 링크에서 열람하실 수 있습니다.
                 </p>
             </div>
 
