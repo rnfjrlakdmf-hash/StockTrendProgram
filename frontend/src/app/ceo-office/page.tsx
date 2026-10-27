@@ -6145,6 +6145,8 @@ export default function CeoOfficePage() {
 
                                             {researchReports.map((r: any) => {
                                                 const isKr = r.category === 'kr_stock';
+                                                const audit = computeStockRiskDiagnostic(r, riskCapital);
+                                                const isCopied = copiedRiskStock === r.stock_code;
                                                 const fmtFlow = (v: number | null | undefined) =>
                                                     v === null || v === undefined ? '-' : `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}주`;
                                                 const flowColor = (v: number | null | undefined) =>
