@@ -4828,7 +4828,7 @@ export default function CeoOfficePage() {
                                                                                 <div className="font-black text-white group-hover:text-amber-300 transition-colors leading-snug">
                                                                                     {doc.stock_name}
                                                                                 </div>
-                                                                                <div className="text-[11px] text-gray-400 font-mono leading-normal mt-0.5">
+                                                                                <div className="text-[11px] text-gray-400 font-mono leading-normal mt-0.5 pb-0.5">
                                                                                     {doc.stock_code || doc.doc_number}
                                                                                 </div>
                                                                             </button>
@@ -4841,7 +4841,7 @@ export default function CeoOfficePage() {
                                                                                 {doc.target_price || '목표가 산정'}
                                                                             </div>
                                                                             {doc.upside_pct && (
-                                                                                <div className="text-xs font-black text-rose-400 leading-normal mt-0.5">
+                                                                                <div className="text-xs font-black text-rose-400 leading-normal mt-0.5 pb-0.5">
                                                                                     {doc.upside_pct}
                                                                                 </div>
                                                                             )}
@@ -4854,8 +4854,8 @@ export default function CeoOfficePage() {
                                                                                 50일선 지지 · -3.5% 손절
                                                                             </span>
                                                                         </td>
-                                                                        <td className="py-3.5 px-3.5 align-middle text-xs text-gray-200 leading-relaxed min-w-[280px]">
-                                                                            <div className="line-clamp-2 font-medium break-keep">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-xs text-gray-200 leading-relaxed min-w-[280px] whitespace-normal">
+                                                                            <div className="line-clamp-2 font-medium break-keep leading-relaxed pb-0.5">
                                                                                 {oneLinePoint}
                                                                             </div>
                                                                         </td>
