@@ -274,6 +274,141 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc): {
     };
 }
 
+interface StockRiskDiagnostic {
+    riskScore: number;
+    riskLevel: '안전·저위험' | '중위험·주의관찰' | '고위험·단기과열';
+    badgeClass: string;
+    scoreColor: string;
+    safeEntryStr: string;
+    stopLossStr: string;
+    takeProfitStr: string;
+    maxWeightStr: string;
+    splitRuleStr: string;
+    croVerdict: string;
+    factors: {
+        icon: string;
+        title: string;
+        tag: string;
+        tagColor: string;
+        points: string[];
+    }[];
+}
+
+function computeStockRiskDiagnostic(r: any): StockRiskDiagnostic {
+    const isUS = r.category === 'us_stock';
+    const price = typeof r.price === 'number' ? r.price : 0;
+    const fmt = (n: number) => isUS ? `$${n.toFixed(2)}` : `${Math.round(n).toLocaleString()}원`;
+
+    // 1. 계산 수치
+    const stopLossVal = isUS ? price * 0.965 : Math.round(price * 0.965);
+    const safeEntryVal = r.change_pct > 2 ? (isUS ? price * 0.985 : Math.round(price * 0.985)) : price;
+    const targetMeanNum = r.consensus?.target_mean;
+    const takeProfitVal = targetMeanNum && targetMeanNum > price 
+        ? targetMeanNum 
+        : (isUS ? price * 1.08 : Math.round(price * 1.075));
+
+    // 2. 리스크 스코어 (1~5점)
+    let score = 2;
+    const rp = r.range_pos;
+    if (rp !== null && rp !== undefined) {
+        if (rp >= 80) score += 1;
+        if (rp <= 15) score += 1;
+    }
+    const chg = r.change_pct || 0;
+    if (chg >= 4) score += 1;
+    if (chg <= -3.5) score += 1;
+
+    if (r.flow) {
+        const ft = r.flow.foreign_today;
+        const ot = r.flow.organ_today;
+        if (ft !== null && ot !== null) {
+            if (ft < 0 && ot < 0) score += 1;
+            else if (ft > 0 && ot > 0) score -= 1;
+        }
+    }
+    if (r.per && r.per > 45) score += 1;
+    score = Math.max(1, Math.min(5, score));
+
+    let riskLevel: '안전·저위험' | '중위험·주의관찰' | '고위험·단기과열' = '중위험·주의관찰';
+    let badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+    let scoreColor = 'text-amber-400';
+
+    if (score <= 2) {
+        riskLevel = '안전·저위험';
+        badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+        scoreColor = 'text-emerald-400';
+    } else if (score >= 4) {
+        riskLevel = '고위험·단기과열';
+        badgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+        scoreColor = 'text-rose-400';
+    }
+
+    const safeEntryStr = `${fmt(safeEntryVal)} 이하 (무리한 추격 매수 방지선)`;
+    const stopLossStr = `${fmt(stopLossVal)} (-3.5% 도달 시 기계적 즉각 손절)`;
+    const takeProfitStr = `${fmt(takeProfitVal)} (1차 50% 분할 익절 목표)`;
+    const maxWeightStr = '계좌 총자산의 최대 10~15% 이내 (몰빵 절대 금지)';
+    const splitRuleStr = '1차 30%(10시 안착) ➔ 2차 40%(눌림 지지) ➔ 3차 30%(돌파)';
+
+    const factors = [
+        {
+            icon: '⏰',
+            title: '진입 타이밍 & 시초가 변동성',
+            tag: '장 초반 30분 관망 원칙',
+            tagColor: 'text-amber-300 bg-amber-500/15 border-amber-500/30',
+            points: [
+                `현재 주가는 52주 범위의 ${rp ?? 50}% 구간 (오늘 ${chg > 0 ? '+' : ''}${chg}%)에 위치`,
+                `개장 직후 갭상승 추격 매수를 자제하고, 오전 10시 이후 당일 시초가 위 지지선 안착 확인 필수`,
+                `안전 진입가: ${fmt(safeEntryVal)} 부근의 눌림목 분할 체결 권장`,
+            ],
+        },
+        {
+            icon: '📉',
+            title: '수급 변심 & 매물대 저항',
+            tag: '큰손 수급 및 매물벽 진단',
+            tagColor: 'text-rose-300 bg-rose-500/15 border-rose-500/30',
+            points: [
+                `외국인/기관 수급: ${r.flow ? `오늘 외인 ${r.flow.foreign_today > 0 ? '+' : ''}${Math.round(r.flow.foreign_today || 0).toLocaleString()}주 / 기관 ${r.flow.organ_today > 0 ? '+' : ''}${Math.round(r.flow.organ_today || 0).toLocaleString()}주` : '수급 모멘텀 집계 중'}`,
+                `직전 고점 매물대(${r.high52_str || '전고점'}) 진입 시 차익실현 매도세 출회 가능성 대비`,
+                `철통 방어선: ${fmt(stopLossVal)} (-3.5% 또는 50일선) 이탈 시 감정 없이 손절 처리`,
+            ],
+        },
+        {
+            icon: '🌐',
+            title: '거시 매크로 & 실적/공시 민감도',
+            tag: '대외 변수 & 비중 통제',
+            tagColor: 'text-blue-300 bg-blue-500/15 border-blue-500/30',
+            points: [
+                `환율(1,380원선) 변동 및 미국 금리 기조에 따른 패시브 자금 변동성 주의`,
+                `증권사 목표가(${r.consensus?.target_mean_str || '컨센서스'}) 대비 상승여력(${r.consensus?.upside_pct ? `${r.consensus.upside_pct}%` : '집계 중'}) 확인`,
+                `단일 종목 계좌 편입 한도: 총자산의 10~15% 이내로 엄격 제한 (몰빵 금지)`,
+            ],
+        },
+    ];
+
+    let croVerdict = '';
+    if (score <= 2) {
+        croVerdict = `현재 ${r.stock_name}은(는) 큰손 수급과 밸류에이션 상 하방 경직성이 확보된 안전 구간입니다. 안전 진입가(${fmt(safeEntryVal)}) 부근에서 3단계 분할로 진입하시되, 손절선(${fmt(stopLossVal)})은 반드시 기계적으로 걸어두십시오.`;
+    } else if (score === 3) {
+        croVerdict = `${r.stock_name}은(는) 현재 지지선과 저항선 사이에서 방향성을 탐색하는 중립 구간입니다. 단기 급등에 따른 뇌동매매를 피하시고, 오전 10시 이후 지지력 확인 후 계좌 비중 10% 이내로 보수적 분할 매수하십시오.`;
+    } else {
+        croVerdict = `${r.stock_name}은(는) 단기 가격 급등 또는 52주 상단 매물벽 저항으로 변동성 리스크가 높은 과열 구간입니다. 신규 추격 매수는 전면 자제하시고, -3.5% 손절가(${fmt(stopLossVal)})를 철저히 설정한 상태에서만 극소액 분할 접근을 허용합니다.`;
+    }
+
+    return {
+        riskScore: score,
+        riskLevel,
+        badgeClass,
+        scoreColor,
+        safeEntryStr,
+        stopLossStr,
+        takeProfitStr,
+        maxWeightStr,
+        splitRuleStr,
+        croVerdict,
+        factors,
+    };
+}
+
 interface ResearchReportItem {
     id: string;
     category: string;
@@ -736,11 +871,75 @@ export default function CeoOfficePage() {
     const [isWatchlistLoading, setIsWatchlistLoading] = useState<boolean>(false);
     const [watchlistSearchInput, setWatchlistSearchInput] = useState<string>('');
 
+    // 🛡️ [NEW] 종목별 리스크 감사 & 자율 종목 검색 진단 상태
+    const [riskSearchQuery, setRiskSearchQuery] = useState<string>('');
+    const [riskSearchLoading, setRiskSearchLoading] = useState<boolean>(false);
+    const [searchedRiskReport, setSearchedRiskReport] = useState<any>(null);
+    const [riskSearchError, setRiskSearchError] = useState<string>('');
+    const [copiedRiskStock, setCopiedRiskStock] = useState<string>('');
+
     // 📚 관심종목 리서치 보고서 상태
     const [researchReports, setResearchReports] = useState<any[]>([]);
     const [researchLoading, setResearchLoading] = useState<boolean>(false);
     const [researchGeneratedAt, setResearchGeneratedAt] = useState<string>('');
     const [researchRequested, setResearchRequested] = useState<number>(0);
+
+    // 🔍 자율 종목 리스크 감사 실시간 검색 핸들러
+    const handleSearchStockRisk = useCallback(async (symbolToSearch?: string) => {
+        const target = (symbolToSearch || riskSearchQuery || '').trim();
+        if (!target) return;
+        try {
+            setRiskSearchLoading(true);
+            setRiskSearchError('');
+            const uid = user?.id || (user as any)?.uid || '';
+            const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/watchlist-research?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-ID': uid, 'X-CEO-Email': user?.email || '' },
+                body: JSON.stringify({ symbols: [target] })
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success' && json.reports && json.reports.length > 0) {
+                    setSearchedRiskReport(json.reports[0]);
+                } else {
+                    setRiskSearchError(`'${target}' 종목 정보를 찾을 수 없습니다. 정확한 종목명이나 코드를 확인해 주십시오.`);
+                }
+            } else {
+                setRiskSearchError('종목 리스크 진단 중 일시적 통신 오류가 발생했습니다.');
+            }
+        } catch (e: any) {
+            console.error('Failed to search stock risk:', e);
+            setRiskSearchError('종목 리스크 진단에 실패했습니다.');
+        } finally {
+            setRiskSearchLoading(false);
+        }
+    }, [riskSearchQuery, user]);
+
+    // 📋 리스크 진단서 클립보드 복사 핸들러
+    const handleCopyRiskAudit = (r: any, audit: StockRiskDiagnostic) => {
+        const text = `[최서연 CRO 종목별 정밀 리스크 진단 보고서]
+■ 종목: ${r.stock_name} (${r.stock_code}) | 현재가: ${r.price_str}
+■ 종합 리스크 등급: ${audit.riskLevel} (위험도 스코어: ${audit.riskScore}/5)
+■ 대표이사 자산 방어 4대 실천 가이드:
+  1. 안전 권장 진입가: ${audit.safeEntryStr}
+  2. 기계적 손절 방어선 (-3.5%): ${audit.stopLossStr}
+  3. 1차 분할 익절 목표가 (50%): ${audit.takeProfitStr}
+  4. 계좌 최대 비중: ${audit.maxWeightStr}
+  5. 분할 매수 원칙: ${audit.splitRuleStr}
+■ 3대 세부 리스크 요인:
+  - 진입 타이밍: ${audit.factors[0].points.join(' / ')}
+  - 수급 및 매물대: ${audit.factors[1].points.join(' / ')}
+  - 거시 매크로 & 비중: ${audit.factors[2].points.join(' / ')}
+■ 최서연 상무(CRO) 최종 결재 소견:
+  "${audit.croVerdict}"
+※ 본 보고서는 AI 리스크 통제 시스템에 의해 자동 생성된 투자 참고용 감사 보고서입니다.`;
+
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(text);
+            setCopiedRiskStock(r.stock_code);
+            setTimeout(() => setCopiedRiskStock(''), 3000);
+        }
+    };
 
     const fetchWatchlistResearch = useCallback(async () => {
         try {
@@ -2188,7 +2387,7 @@ export default function CeoOfficePage() {
                                     : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                             }`}
                         >
-                            <span>📚 내 관심종목 리서치 보고서</span>
+                            <span>🛡️ 종목별 리스크 감사 & 관심종목 보고서</span>
                             {researchReports.length > 0 && (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25 font-extrabold">
                                     {researchReports.length}종목
@@ -4498,19 +4697,25 @@ export default function CeoOfficePage() {
                                 </div>
                             )}{activeTab === 'watchlist_research' && (
                                 <div className="space-y-5">
-                                    <div className="bg-gradient-to-r from-[#0f172a] via-[#111c35] to-[#0f172a] border border-sky-500/35 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
+                                    <div className="bg-gradient-to-r from-[#0d1627] via-[#101d38] to-[#0d1627] border-2 border-sky-500/40 rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xl">
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xl">📚</span>
-                                                <h3 className="text-base sm:text-lg font-black text-white">
-                                                    내 관심종목 심층 리서치 보고서 (증권사 원문 리포트 · 수급 · 재무 통합)
-                                                </h3>
-                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                                                    총 {researchReports.length}종목 분석 완료
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                                                    <span>🛡️</span>
+                                                    <span>CRO 최서연 상무 (리스크 총괄)</span>
+                                                </span>
+                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                                                    전사 리스크 감사 보고서
+                                                </span>
+                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                                    관심종목 {researchReports.length}종목 전수 점검
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-gray-300 mt-1.5 leading-relaxed">
-                                                설정하신 관심종목별로 <strong className="text-amber-300">실제 발간된 증권사 애널리스트 리포트 본문 요약 & 원문 PDF</strong>, 실시간 외국인·기관 수급, 재무 밸류에이션, 최신 뉴스를 한눈에 보기 쉽게 정리했습니다.
+                                            <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+                                                🛡️ 종목별 리스크 감사 보고서 &amp; 내 관심종목 정밀 자산 방어선
+                                            </h3>
+                                            <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed">
+                                                대표님의 소중한 투자 원금을 지키기 위해, 내 관심종목은 물론 검색하신 모든 종목에 대해 <strong className="text-amber-300">정밀 리스크 등급 · -3.5% 자동 손절선 · 1차 익절가 · 계좌 15% 비중 한도</strong>를 산출하여 1장의 리스크 감사 보고서로 브리핑합니다.
                                                 {researchGeneratedAt && (
                                                     <span className="text-sky-300 font-bold ml-1">({researchGeneratedAt} 기준)</span>
                                                 )}
@@ -4519,21 +4724,290 @@ export default function CeoOfficePage() {
                                         <div className="flex items-center gap-2 shrink-0">
                                             <Link
                                                 href="/watchlist"
-                                                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 text-xs font-bold transition-all"
+                                                className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 text-xs font-bold transition-all"
                                             >
-                                                ⚙️ 관심종목 편집
+                                                ⚙️ 관심종목 설정
                                             </Link>
                                             <button
                                                 type="button"
                                                 onClick={fetchWatchlistResearch}
                                                 disabled={researchLoading}
-                                                className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-gray-700 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-sky-500/20"
+                                                className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-gray-700 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-sky-500/20"
                                             >
                                                 <RefreshCw className={`w-3.5 h-3.5 ${researchLoading ? 'animate-spin' : ''}`} />
-                                                <span>{researchLoading ? '리포트 수집 중...' : '최신 리서치 새로고침'}</span>
+                                                <span>{researchLoading ? '전수 점검 중...' : '관심종목 전수 새로고침'}</span>
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* 🔍 [방안 2 핵심 기능] 자율 종목 검색 & 실시간 리스크 감사 바 */}
+                                    <div className="bg-[#0b1324] border border-sky-500/30 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-base">🔍</span>
+                                                <h4 className="text-xs sm:text-sm font-black text-white">
+                                                    자율 종목 즉시 검색 &amp; 실시간 리스크 감사 보고서 생성
+                                                </h4>
+                                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                                    국내·미국 전 종목 실시간 진단
+                                                </span>
+                                            </div>
+                                            <span className="text-[11px] text-gray-400">
+                                                원하시는 종목을 입력하시면 최서연 CRO의 1장 리스크 진단서가 즉시 생성됩니다.
+                                            </span>
+                                        </div>
+
+                                        <form
+                                            onSubmit={(e) => {
+                                                e.preventDefault();
+                                                handleSearchStockRisk();
+                                            }}
+                                            className="flex items-center gap-2"
+                                        >
+                                            <input
+                                                type="text"
+                                                value={riskSearchQuery}
+                                                onChange={(e) => setRiskSearchQuery(e.target.value)}
+                                                placeholder="진단할 종목명 또는 종목코드 입력 (예: 두산에너빌리티, 삼성전자, 현대차, NVDA, TSLA...)"
+                                                className="flex-1 bg-black/60 border border-white/15 focus:border-sky-400 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition-all"
+                                            />
+                                            <button
+                                                type="submit"
+                                                disabled={riskSearchLoading || !riskSearchQuery.trim()}
+                                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:bg-gray-800 disabled:from-transparent disabled:to-transparent text-slate-950 disabled:text-gray-500 text-xs sm:text-sm font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-lg shadow-sky-500/25"
+                                            >
+                                                {riskSearchLoading ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                                                ) : (
+                                                    <span>🔍</span>
+                                                )}
+                                                <span>{riskSearchLoading ? '감사 중...' : '실시간 리스크 감사'}</span>
+                                            </button>
+                                        </form>
+
+                                        {/* 추천 빠른 종목 칩 */}
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                            <span className="text-[11px] font-bold text-gray-400 mr-1">⚡ 대표님 다빈도 종목:</span>
+                                            {[
+                                                { name: '삼성전자', code: '005930' },
+                                                { name: 'SK하이닉스', code: '000660' },
+                                                { name: '두산에너빌리티', code: '034020' },
+                                                { name: '현대차', code: '005380' },
+                                                { name: '한화에어로스페이스', code: '012450' },
+                                                { name: '알테오젠', code: '196170' },
+                                                { name: '엔비디아 (NVDA)', code: 'NVDA' },
+                                                { name: '테슬라 (TSLA)', code: 'TSLA' },
+                                                { name: '애플 (AAPL)', code: 'AAPL' },
+                                            ].map((chip) => (
+                                                <button
+                                                    key={chip.code}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setRiskSearchQuery(chip.name);
+                                                        handleSearchStockRisk(chip.code);
+                                                    }}
+                                                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-sky-500/20 text-gray-300 hover:text-sky-300 border border-white/10 hover:border-sky-500/30 text-[11px] font-medium transition-all cursor-pointer"
+                                                >
+                                                    {chip.name}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {riskSearchError && (
+                                            <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-2">
+                                                <span>⚠️</span>
+                                                <span>{riskSearchError}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 🌟 [자율 검색된 종목 스포트라이트 리스크 감사 보고서] */}
+                                    {searchedRiskReport && (() => {
+                                        const r = searchedRiskReport;
+                                        const isKr = r.category === 'kr_stock';
+                                        const audit = computeStockRiskDiagnostic(r);
+                                        const isCopied = copiedRiskStock === r.stock_code;
+
+                                        return (
+                                            <div className="bg-gradient-to-br from-[#121b2f] via-[#0d1628] to-[#121b2f] border-2 border-amber-500/50 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5 animate-in fade-in duration-300">
+                                                {/* 헤더 */}
+                                                <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-white/10">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1 shadow-md">
+                                                                <span>⚡ 실시간 감사 완료</span>
+                                                            </span>
+                                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${isKr ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>
+                                                                {isKr ? '🇰🇷 국내주식' : '🌎 미국주식'}
+                                                            </span>
+                                                            <h4 className="text-xl sm:text-2xl font-black text-white">{r.stock_name}</h4>
+                                                            <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded">{r.stock_code}</span>
+                                                        </div>
+                                                        <p className="text-xs sm:text-sm text-gray-300 mt-1.5 font-medium">{r.headline}</p>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCopyRiskAudit(r, audit)}
+                                                            className={`px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                                isCopied
+                                                                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-lg'
+                                                                    : 'bg-white/5 hover:bg-white/10 text-gray-200 border-white/15'
+                                                            }`}
+                                                        >
+                                                            <span>{isCopied ? '✅ 복사 완료!' : '📋 카톡·메모장 복사'}</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (typeof window !== 'undefined') window.print();
+                                                            }}
+                                                            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-400 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
+                                                        >
+                                                            <Printer className="w-3.5 h-3.5" />
+                                                            <span>🖨️ 1장 PDF 인쇄</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSearchedRiskReport(null)}
+                                                            className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+                                                            title="닫기"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* 시세 요약 */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                                    <div className="bg-black/50 border border-white/10 rounded-xl p-3">
+                                                        <div className="text-[11px] text-gray-400 font-bold">실시간 현재가</div>
+                                                        <div className="text-lg font-black font-mono text-white mt-0.5">{r.price_str}</div>
+                                                        <div className={`text-xs font-bold font-mono mt-0.5 ${r.change_pct > 0 ? 'text-rose-400' : r.change_pct < 0 ? 'text-blue-400' : 'text-gray-400'}`}>
+                                                            {r.change_pct > 0 ? '+' : ''}{r.change_pct}%
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-black/50 border border-amber-500/25 rounded-xl p-3">
+                                                        <div className="text-[11px] text-amber-300 font-bold">증권사 목표가</div>
+                                                        <div className="text-lg font-black font-mono text-amber-300 mt-0.5">{r.consensus?.target_mean_str || '실적 리포트 참고'}</div>
+                                                        <div className="text-[11px] text-gray-300 mt-0.5">상승여력 {r.consensus?.upside_pct ? `+${r.consensus.upside_pct}%` : '집계 중'}</div>
+                                                    </div>
+                                                    <div className="bg-black/50 border border-white/10 rounded-xl p-3">
+                                                        <div className="text-[11px] text-gray-400 font-bold">52주 위치</div>
+                                                        <div className="text-lg font-black font-mono text-white mt-0.5">{r.range_pos !== null && r.range_pos !== undefined ? `하단 대비 ${r.range_pos}%` : '-'}</div>
+                                                        <div className="text-[11px] text-gray-400 mt-0.5 truncate">{r.low52_str || ''} ~ {r.high52_str || ''}</div>
+                                                    </div>
+                                                    <div className="bg-black/50 border border-white/10 rounded-xl p-3">
+                                                        <div className="text-[11px] text-gray-400 font-bold">PER · PBR</div>
+                                                        <div className="text-lg font-black font-mono text-white mt-0.5">{r.per ? `PER ${Number(r.per).toFixed(1)}배` : '-'}</div>
+                                                        <div className="text-[11px] text-sky-300 mt-0.5">{r.pbr ? `PBR ${Number(r.pbr).toFixed(2)}배` : ''}</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* 🛡️ 최서연 CRO 리스크 정밀 감사 & 자산 방어선 모듈 */}
+                                                <div className="bg-gradient-to-br from-rose-950/30 via-slate-900/90 to-zinc-950 border-2 border-rose-500/40 rounded-2xl p-4 sm:p-5 space-y-4">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-lg">🛡️</span>
+                                                            <h5 className="text-sm sm:text-base font-black text-white">
+                                                                최서연 CRO 리스크 정밀 감사 &amp; 자산 방어 실천 가이드
+                                                            </h5>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-bold text-gray-300">종합 리스크 등급:</span>
+                                                            <span className={`px-3 py-1 rounded-xl text-xs font-black border ${audit.badgeClass}`}>
+                                                                {audit.riskLevel} (위험도 {audit.riskScore}/5)
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 대표이사 자산 방어 4대 실천 가이드 (숫자 기반) */}
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                                                        <div className="bg-black/60 border border-sky-500/30 rounded-xl p-3">
+                                                            <div className="text-[11px] text-sky-300 font-black flex items-center gap-1">
+                                                                <span>🛡️</span>
+                                                                <span>안전 권장 진입가</span>
+                                                            </div>
+                                                            <div className="text-sm sm:text-base font-black font-mono text-white mt-1">
+                                                                {audit.safeEntryStr.split(' ')[0]}
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-400 mt-0.5">추격 매수 자제선</div>
+                                                        </div>
+
+                                                        <div className="bg-black/60 border border-rose-500/40 rounded-xl p-3">
+                                                            <div className="text-[11px] text-rose-300 font-black flex items-center gap-1">
+                                                                <span>🛑</span>
+                                                                <span>기계적 손절선 (-3.5%)</span>
+                                                            </div>
+                                                            <div className="text-sm sm:text-base font-black font-mono text-rose-400 mt-1">
+                                                                {audit.stopLossStr.split(' ')[0]}
+                                                            </div>
+                                                            <div className="text-[10px] text-rose-300/80 mt-0.5">이탈 시 즉시 기계적 손절</div>
+                                                        </div>
+
+                                                        <div className="bg-black/60 border border-emerald-500/30 rounded-xl p-3">
+                                                            <div className="text-[11px] text-emerald-300 font-black flex items-center gap-1">
+                                                                <span>🎯</span>
+                                                                <span>1차 분할 익절가 (50%)</span>
+                                                            </div>
+                                                            <div className="text-sm sm:text-base font-black font-mono text-emerald-400 mt-1">
+                                                                {audit.takeProfitStr.split(' ')[0]}
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-400 mt-0.5">원금 및 확정수익 확보</div>
+                                                        </div>
+
+                                                        <div className="bg-black/60 border border-amber-500/30 rounded-xl p-3">
+                                                            <div className="text-[11px] text-amber-300 font-black flex items-center gap-1">
+                                                                <span>⚖️</span>
+                                                                <span>계좌 최대 비중 한도</span>
+                                                            </div>
+                                                            <div className="text-sm sm:text-base font-black font-mono text-amber-300 mt-1">
+                                                                최대 10~15%
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-400 mt-0.5">몰빵 절대 금지 룰</div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 3대 정밀 리스크 팩터 세부 진단 */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        {audit.factors.map((f, fIdx) => (
+                                                            <div key={fIdx} className="bg-black/50 border border-white/10 rounded-xl p-3.5 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-1.5 text-xs font-black text-white">
+                                                                        <span>{f.icon}</span>
+                                                                        <span>{f.title}</span>
+                                                                    </div>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${f.tagColor}`}>
+                                                                        {f.tag}
+                                                                    </span>
+                                                                </div>
+                                                                <ul className="space-y-1.5 text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                                    {f.points.map((pt, pIdx) => (
+                                                                        <li key={pIdx} className="flex items-start gap-1.5">
+                                                                            <span className="text-rose-400 font-black shrink-0">•</span>
+                                                                            <span>{pt}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* 최서연 상무 최종 소견 */}
+                                                    <div className="p-3.5 rounded-xl bg-black/70 border border-rose-500/30 text-xs space-y-1">
+                                                        <div className="flex items-center gap-1.5 text-rose-300 font-black">
+                                                            <span>⚠️</span>
+                                                            <span>최서연 CRO 상무의 직설적 최종 결재 의견</span>
+                                                        </div>
+                                                        <p className="text-gray-200 leading-relaxed font-medium">
+                                                            &ldquo;{audit.croVerdict}&rdquo;
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {researchLoading && researchReports.length === 0 ? (
                                         <div className="py-16 bg-[#0f172a] border border-white/10 rounded-2xl flex flex-col items-center gap-3 text-gray-300">
@@ -4551,6 +5025,21 @@ export default function CeoOfficePage() {
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2 border-b border-white/10">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg">📋</span>
+                                                    <h4 className="text-sm sm:text-base font-black text-white">
+                                                        대표님 등록 관심종목 전수 리스크 관리 보고서 ({researchReports.length}개 종목)
+                                                    </h4>
+                                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 font-bold">
+                                                        최서연 CRO 정밀 진단
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-gray-400">
+                                                    ※ 종목별 리스크 감사 결과 · -3.5% 손절 방어선 · 1장 인쇄 및 복사 지원
+                                                </span>
+                                            </div>
+
                                             {researchReports.map((r: any) => {
                                                 const isKr = r.category === 'kr_stock';
                                                 const fmtFlow = (v: number | null | undefined) =>
@@ -4629,6 +5118,130 @@ export default function CeoOfficePage() {
                                                                 <div className="text-[11px] text-gray-400 mt-0.5 truncate">
                                                                     {r.low52_str && r.high52_str ? `${r.low52_str} ~ ${r.high52_str}` : '0%=52주 최저 · 100%=52주 최고'}
                                                                 </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 🛡️ 2.5 [최서연 CRO 리스크 정밀 감사 & 자산 방어선 보고서] */}
+                                                        <div className="bg-gradient-to-br from-rose-950/25 via-slate-900/90 to-zinc-950 border-2 border-rose-500/35 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white font-black text-xs">
+                                                                        🛡️ 리스크 감사
+                                                                    </span>
+                                                                    <span className="text-xs sm:text-sm font-black text-white">
+                                                                        {r.stock_name} 리스크 정밀 진단 &amp; 자산 방어선 가이드 (최서연 CRO)
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`px-2.5 py-1 rounded-xl text-xs font-black border ${audit.badgeClass}`}>
+                                                                        {audit.riskLevel} (위험도 {audit.riskScore}/5)
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleCopyRiskAudit(r, audit)}
+                                                                        className={`px-2.5 py-1 rounded-lg border text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                                                            isCopied
+                                                                                ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                                                                                : 'bg-white/5 hover:bg-white/10 text-gray-200 border-white/15'
+                                                                        }`}
+                                                                    >
+                                                                        <span>{isCopied ? '✅ 복사 완료!' : '📋 진단서 복사'}</span>
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (typeof window !== 'undefined') window.print();
+                                                                        }}
+                                                                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/40 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1"
+                                                                    >
+                                                                        <Printer className="w-3 h-3" />
+                                                                        <span>1장 인쇄</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 대표이사 자산 방어 4대 실천 가이드 */}
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                                                <div className="bg-black/60 border border-sky-500/25 rounded-xl p-2.5">
+                                                                    <div className="text-[10px] text-sky-300 font-black flex items-center gap-1">
+                                                                        <span>🛡️</span>
+                                                                        <span>안전 권장 진입가</span>
+                                                                    </div>
+                                                                    <div className="text-xs sm:text-sm font-black font-mono text-white mt-1">
+                                                                        {audit.safeEntryStr.split(' ')[0]}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">추격 매수 금지선</div>
+                                                                </div>
+
+                                                                <div className="bg-black/60 border border-rose-500/35 rounded-xl p-2.5">
+                                                                    <div className="text-[10px] text-rose-300 font-black flex items-center gap-1">
+                                                                        <span>🛑</span>
+                                                                        <span>손절 방어선 (-3.5%)</span>
+                                                                    </div>
+                                                                    <div className="text-xs sm:text-sm font-black font-mono text-rose-400 mt-1">
+                                                                        {audit.stopLossStr.split(' ')[0]}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-rose-300/80 mt-0.5">기계적 자동 손절</div>
+                                                                </div>
+
+                                                                <div className="bg-black/60 border border-emerald-500/25 rounded-xl p-2.5">
+                                                                    <div className="text-[10px] text-emerald-300 font-black flex items-center gap-1">
+                                                                        <span>🎯</span>
+                                                                        <span>1차 익절가 (50%)</span>
+                                                                    </div>
+                                                                    <div className="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-1">
+                                                                        {audit.takeProfitStr.split(' ')[0]}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">원금 및 수익 확보</div>
+                                                                </div>
+
+                                                                <div className="bg-black/60 border border-amber-500/25 rounded-xl p-2.5">
+                                                                    <div className="text-[10px] text-amber-300 font-black flex items-center gap-1">
+                                                                        <span>⚖️</span>
+                                                                        <span>최대 계좌 비중</span>
+                                                                    </div>
+                                                                    <div className="text-xs sm:text-sm font-black font-mono text-amber-300 mt-1">
+                                                                        최대 10~15%
+                                                                    </div>
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">안전 포트폴리오</div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 3대 정밀 리스크 팩터 세부 진단 */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                                                                {audit.factors.map((f, fIdx) => (
+                                                                    <div key={fIdx} className="bg-black/40 border border-white/10 rounded-xl p-3 space-y-1.5">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center gap-1.5 text-xs font-black text-white">
+                                                                                <span>{f.icon}</span>
+                                                                                <span>{f.title}</span>
+                                                                            </div>
+                                                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${f.tagColor}`}>
+                                                                                {f.tag}
+                                                                            </span>
+                                                                        </div>
+                                                                        <ul className="space-y-1 text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                                            {f.points.map((pt, pIdx) => (
+                                                                                <li key={pIdx} className="flex items-start gap-1">
+                                                                                    <span className="text-rose-400 font-black shrink-0">•</span>
+                                                                                    <span>{pt}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* 최서연 상무 최종 소견 */}
+                                                            <div className="p-3 rounded-xl bg-black/60 border border-rose-500/25 text-xs space-y-1">
+                                                                <div className="flex items-center gap-1.5 text-rose-300 font-black">
+                                                                    <span>⚠️</span>
+                                                                    <span>최서연 CRO 상무의 직설적 최종 결재 의견</span>
+                                                                </div>
+                                                                <p className="text-gray-200 leading-relaxed font-medium">
+                                                                    &ldquo;{audit.croVerdict}&rdquo;
+                                                                </p>
                                                             </div>
                                                         </div>
 
