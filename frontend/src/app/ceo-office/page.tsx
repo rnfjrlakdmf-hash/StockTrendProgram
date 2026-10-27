@@ -216,6 +216,42 @@ function parsePriceValue(raw: any, sector?: string, stockName?: string): { num: 
     return { num, isDollar: isDollar || isOil, formatted };
 }
 
+function getCategoryTheme(doc: AutoApprovalDoc): { icon: string; shortLabel: string; pill: string } {
+    if (doc.category_type === 'kr_stock') {
+        return {
+            icon: '🇰🇷',
+            shortLabel: '국내주식',
+            pill: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+        };
+    }
+    if (doc.category_type === 'us_stock') {
+        return {
+            icon: '🌎',
+            shortLabel: '미국주식',
+            pill: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        };
+    }
+    if (doc.category_type === 'global_futures') {
+        return {
+            icon: '📊',
+            shortLabel: '글로벌선물',
+            pill: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+        };
+    }
+    if (doc.category_type === 'world_news') {
+        return {
+            icon: '📰',
+            shortLabel: '매크로뉴스',
+            pill: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        };
+    }
+    return {
+        icon: '📌',
+        shortLabel: (doc.category_badge || '시장종합').replace(/^[^\w가-힣]+/, '').trim() || '시장종합',
+        pill: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+    };
+}
+
 function detectSectorType(stockName: string, title: string = "", categoryBadge: string = ""): string {
     const s = `${stockName} ${title} ${categoryBadge}`.toLowerCase();
     if (s.includes('vix') || s.includes('변동성') || s.includes('공포')) {
