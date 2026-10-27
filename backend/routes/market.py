@@ -3444,7 +3444,19 @@ def get_ceo_office_boardroom(
         s_gp = rep["target_price"]
         s_title = rep["title"]
         s_easy = rep["plain_explanation"] or f"{s_broker} 전문가가 '{s_name}'의 앞으로 돈 벌 능력(실적)을 긍정적으로 보고 목표주가 {s_gp}을 제시했습니다."
-        s_check = rep["action_point"] or "다음 분기 성적표(영업이익)가 전문가 예상만큼 잘 나오는지 꼭 확인해야 합니다."
+        s_check = rep.get("action_point")
+        if not s_check or "성적표" in s_check or "예상치" in s_check or "확인해 보세요" in s_check:
+            s_low = f"{s_name} {s_title}".lower()
+            if any(k in s_low for k in ["기업은행", "국민은행", "신한", "하나금융", "우리금융", "은행", "금융"]):
+                s_check = f"‘{s_name}’은 기준금리 인하에 따른 순이자마진(NIM) 축소와 중소기업 대출 건전성(대손충당금)을 점검해야 합니다. 7~8%대 고배당 매력은 높으나 배당락 전후 단기 수급 변동에 유의하세요."
+            elif any(k in s_low for k in ["두산에너빌리티", "한전기술", "한전kps", "원전", "원자력"]):
+                s_check = f"‘{s_name}’은 체코 신규 원전 본계약 체결 일정과 웨스팅하우스(WEC) 지식재산권(IP) 합의 여부가 핵심 변수입니다. 단기 급등에 따른 차익 매물벽에 주의하세요."
+            elif any(k in s_low for k in ["하이닉스", "삼성전자", "반도체", "hbm"]):
+                s_check = f"‘{s_name}’은 글로벌 빅테크의 AI CAPEX 투자 지속성 및 HBM3E 공급 과잉 여부, 미·중 반도체 규제 변수를 면밀히 점검해야 합니다."
+            elif any(k in s_low for k in ["대한항공", "항공", "해운"]):
+                s_check = f"‘{s_name}’은 유가 급등과 고환율에 따른 항공유류비·환차손 부담 및 아시아나 합병 후 노선 반납에 따른 매출 공백을 확인해야 합니다."
+            else:
+                s_check = f"‘{s_name}’은 최근 외국인·기관 큰손의 실시간 수급 동향과 직전 고점 매물대 저항 여부를 점검하고, 손절선(-3.5%)을 설정한 뒤 분할 접근해야 합니다."
         s_code = rep.get("item_code") or STOCK_MAP.get(s_name) or ""
 
         # 실시간 현재가 및 기대 수익률/수익금 계산

@@ -184,91 +184,392 @@ interface RiskDefenseRule {
     desc: string;
 }
 
+function parsePriceValue(raw: any): { num: number; isDollar: boolean; formatted: string } {
+    if (!raw) return { num: 0, isDollar: false, formatted: '-' };
+    const str = String(raw).trim();
+    const isDollar = str.includes('$');
+    const beforeParen = str.split('(')[0];
+    const match = beforeParen.match(/([0-9,]+(?:\.[0-9]+)?)/);
+    if (!match) return { num: 0, isDollar, formatted: str };
+    const num = parseFloat(match[1].replace(/,/g, ''));
+    const formatted = isDollar ? `$${num.toFixed(2)}` : `${Math.round(num).toLocaleString()}원`;
+    return { num, isDollar, formatted };
+}
+
+function detectSectorType(stockName: string, title: string = "", categoryBadge: string = ""): string {
+    const s = `${stockName} ${title} ${categoryBadge}`.toLowerCase();
+    if (stockName === '전체 시장 시스템' || s.includes('모닝') || s.includes('매크로') || s.includes('선물') || s.includes('지수')) {
+        return 'macro_market';
+    }
+    if (/기업은행|국민은행|신한|하나금융|우리금융|카카오뱅크|jb금융|dgb금융|bnk금융|키움증권|미래에셋|삼성증권|한국금융지주|메리츠|동양생명|삼성화재|db손해|한화생명|은행|금융/.test(s)) {
+        return 'banking';
+    }
+    if (/두산에너빌리티|한전기술|한전kps|한국전력|현대일렉트릭|효성중공업|두산밥캣|두산|씨에스윈드|현대건설기계|ls일렉트릭|ls|일진전기|원전|원자력|전력기기/.test(s)) {
+        return 'nuclear_energy';
+    }
+    if (/삼성전자|sk하이닉스|한미반도체|리노공업|isc|원익|동진쎄미켐|하나마이크론|주성엔지니어링|hpsp|이오테크닉스|db하이텍|semiconductor|hbm|반도체/.test(s)) {
+        return 'semiconductor';
+    }
+    if (/현대차|기아|현대모비스|현대위아|만도|hl만도|한온시스템|한국타이어|자동차/.test(s)) {
+        return 'automotive';
+    }
+    if (/알테오젠|삼천당제약|삼성바이오로직스|셀트리온|유한양행|한미약품|리가켐바이오|에이비엘바이오|sk바이오팜|한올바이오파마|휴젤|파마리서치|바이오|제약/.test(s)) {
+        return 'bio_pharma';
+    }
+    if (/한화에어로스페이스|lig넥스원|현대로템|한국항공우주|한화시스템|풍산|방산/.test(s)) {
+        return 'defense';
+    }
+    if (/대한항공|아시아나|진에어|제주항공|티웨이|hmm|팬오션|대한해운|항공|해운/.test(s)) {
+        return 'shipping_airline';
+    }
+    if (/lg에너지솔루션|에코프로|posco홀딩스|포스코퓨처엠|엘앤에프|삼성sdi|sk이노베이션|코스모신소재|금양|2차전지|배터리/.test(s)) {
+        return 'secondary_battery';
+    }
+    if (/naver|네이버|카카오|엔씨소프트|크래프톤|넷마블|하이브|sm|jyp|와이지/.test(s)) {
+        return 'internet_entertainment';
+    }
+    if (/nvda|tsla|aapl|msft|googl|amzn|meta|avgo|qcom|amd/.test(s)) {
+        return 'us_tech';
+    }
+    return 'general_stock';
+}
+
 function getDetailedRiskBreakdown(doc: AutoApprovalDoc): {
     headline: string;
     factors: RiskFactor[];
     defenseRules: RiskDefenseRule[];
 } {
-    const isMacroOrIndex = doc.stock_name === '전체 시장 시스템' || 
-                           doc.category_type === 'world_news' || 
-                           doc.category_badge?.includes('모닝') || 
-                           doc.stock_name?.includes('매크로') ||
-                           doc.category_type === 'global_futures';
-                           
-    const isUSStock = doc.category_type === 'us_stock';
     const sName = doc.stock_name || "해당 안건";
+    const sector = detectSectorType(doc.stock_name, doc.title || "", doc.category_badge || "");
+    const isUSStock = doc.category_type === 'us_stock' || sector === 'us_tech';
 
-    const factors: RiskFactor[] = [
-        {
-            icon: "⏰",
-            title: "진입 타이밍 & 시초가 변동성",
-            tag: "장 초반 30분 주의",
-            tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
-            points: isMacroOrIndex ? [
-                "개장 직후(09:00~09:20) 갭상승 출발 시 단기 차익 실현 매물 출회 및 위꼬리 리스크 존재",
-                "시초가 30분간 전액 매수는 지양하며, 10시 이후 당일 시초가 및 지지선 안착을 확인해야 안전",
-            ] : [
-                `밤사이 호재 뉴스로 개장 직후 주가가 급등 출발할 경우 단기 고점 차익 매물에 물릴 위험`,
-                `시초가 추격 매수를 자제하고, 오전 10시 이후 장중 거래량 및 눌림목 지지 여부 확인 후 접근`,
-            ],
-        },
-        {
-            icon: "📉",
-            title: "수급 변심 & 매물대 저항",
-            tag: "큰손 매도 전환 감시",
-            tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
-            points: isMacroOrIndex ? [
-                "외국인의 KOSPI 200 선물 순매도 전환 시 당일 오후장 지수 급격 하락 압력 발생 가능성",
-                "외국인 선물 순매도가 -3,000억 원 이상 급증할 경우 신규 진입을 전면 보류하고 관망",
-            ] : [
-                `직전 고점 부근 및 매물 집중 구간에서의 단기 차익 실현 매도 벽 출회 위험`,
-                `50일 이동평균선 지지 여부와 외국인·기관 큰손의 당일 동반 순매도 전환 여부 필수 체크`,
-            ],
-        },
-        {
-            icon: "🌐",
-            title: "거시 매크로 & 환율·금리 민감도",
-            tag: "대외 환경 리스크",
-            tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
-            points: isUSStock ? [
-                "원/달러 환율 변동에 따른 환차손(원화 강세 전환 시 평가손실) 위험 상존",
-                "미국 국채 10년물 금리 급등 및 연준(Fed) 금리 기조에 따른 고밸류 성장주 변동성 확대 대비",
-            ] : [
-                "원/달러 환율 1,380원대 후반 고환율 구간 지속 시 외국인 패시브 자금의 일시 이탈 위험",
-                "미국 주요 물가·고용 지표 발표 및 지정학적 변수에 따른 글로벌 시장 흔들림 모니터링",
-            ],
-        },
-    ];
+    // 1. 가격 추출 및 실전 자산 방어선 수치 산출
+    const rawPrice = doc.current_price || doc.key_numbers?.find(k => k.label.includes('현재가') || k.label.includes('현재 주가') || k.label.includes('현재 시세'))?.value;
+    const rawTarget = doc.target_price || doc.key_numbers?.find(k => k.label.includes('목표가'))?.value;
+
+    const currPrice = parsePriceValue(rawPrice);
+    const targetPrice = parsePriceValue(rawTarget);
+
+    const priceNum = currPrice.num;
+    const isDollar = currPrice.isDollar || isUSStock;
+    const fmt = (n: number) => isDollar ? `$${n.toFixed(2)}` : `${Math.round(n).toLocaleString()}원`;
+
+    // 손절가 (-3.5%)
+    const stopLossNum = priceNum > 0 ? (isDollar ? priceNum * 0.965 : Math.round(priceNum * 0.965)) : 0;
+    const stopLossFormatted = stopLossNum > 0 ? fmt(stopLossNum) : '-3.5% 또는 50일선';
+
+    // 권장 안전 진입가 (당일 1.5% 눌림목 또는 현재가)
+    const safeEntryNum = priceNum > 0 ? (isDollar ? priceNum * 0.985 : Math.round(priceNum * 0.985)) : 0;
+    const safeEntryFormatted = safeEntryNum > 0 ? fmt(safeEntryNum) : '오전 10시 지지선';
+
+    // 1차 분할 익절가 (중간값 또는 +7.5%)
+    let target1Num = 0;
+    if (priceNum > 0) {
+        if (targetPrice.num > priceNum) {
+            target1Num = isDollar ? priceNum + (targetPrice.num - priceNum) * 0.5 : Math.round(priceNum + (targetPrice.num - priceNum) * 0.5);
+        } else {
+            target1Num = isDollar ? priceNum * 1.075 : Math.round(priceNum * 1.075);
+        }
+    }
+    const target1Formatted = target1Num > 0 ? fmt(target1Num) : '1차 목표가 도달 시';
+    const currPriceStr = currPrice.num > 0 ? currPrice.formatted : '현재가';
+    const maxWeightDesc = isDollar ? '총자산 1만 달러 기준 최대 $1,000~$1,500' : '총자산 1,000만원 기준 최대 100만~150만원';
+
+    let headline = "";
+    let factors: RiskFactor[] = [];
+
+    if (sector === 'banking') {
+        headline = `‘${sName}’은 금리 인하 사이클에 따른 순이자마진(NIM) 축소 압력과 중소기업 대출 건전성(대손충당금)을 반드시 점검해야 합니다. 7~8%대 고배당 매력은 높으나 배당락 전후 단기 수급 변동에 철저히 대비하십시오.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 금리/배당락 변동성",
+                tag: "NIM 마진 & 배당락 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "한국은행 기준금리 인하 기조 진입 시 예대금리차 축소로 인한 분기 순이자마진(NIM) 둔화 리스크 모니터링",
+                    "7~8%대 높은 배당수익률과 밸류업 수혜가 있으나, 결산 배당락 전후 기관 배당차익거래 청산 매물 출회 주의",
+                    `권장 진입가: 현재가(${currPriceStr}) 대비 무리한 시초가 추격 대신 지지선(${safeEntryFormatted}) 안착 확인 후 진입`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 중기 대출 건전성/충당금 리스크",
+                tag: "연체율 & 대손충당금 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "중소기업 특화 국책은행 특성상 내수 경기 침체 시 중소기업 연체율 상승 및 부동산 PF·대손충당금 추가 적립 여부 필수 체크",
+                    "정부 '기업 밸류업 프로그램' 모멘텀 둔화 시 외국인 및 기관의 동반 순매도 전환 여부 실시간 감시",
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 하향 이탈 시 감정 배제 후 즉시 손절 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 정부 배당/자본 규제 민감도",
+                tag: "CET1 자본비율 & 세입 정책",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "대주주(기획재정부 59.2%)의 배당 세입 정책 및 금융당국의 스트레스 완충자본 규제 강화에 따른 보통주자본(CET1) 관리 부담",
+                    "원/달러 환율보다는 국내 중소기업 체감 경기 및 한국은행 금융통화위원회 기준금리 결정 경로가 주가의 핵심 변수",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 절대 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'nuclear_energy') {
+        headline = `‘${sName}’은 체코 신규 원전 본계약 체결 일정과 웨스팅하우스(WEC) 지식재산권(IP) 분쟁 합의 여부가 핵심 리스크입니다. 단기 급등에 따른 밸류에이션 부담이 있으므로 분할 매수와 손절선을 엄수하십시오.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 원전 수주 모멘텀 변동성",
+                tag: "본계약 일정 & 위꼬리 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "체코 원전 우선협상대상자 선정 후 본계약 체결(2025~2026년)까지 뉴스 플로우에 따른 단기 주가 널뛰기 리스크",
+                    "개장 직후 원전 테마성 갭상승 추격 매수를 엄금하고 오전 10시 이후 지지선 안착 확인 후 진입",
+                    `권장 진입가: ${currPriceStr} 대비 ${safeEntryFormatted} 부근 눌림목에서 분할 체결 권장`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 대형 수주 공백/차익 매물",
+                tag: "차익 매물벽 & 특허 분쟁",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "대형 수주 공시 직후 단기 재료 소멸로 인한 기관·외국인의 차익실현 매도 벽 출회 위험",
+                    "웨스팅하우스 특허 소송 및 미국 정부 원전 수출 통제 관련 돌발 뉴스 시 변동성 확대 대비",
+                    `철통 손절선: ${stopLossFormatted} (-3.5% 또는 50일선) 이탈 시 감정 배제 후 기계적 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 글로벌 원전/전력망 정책",
+                tag: "글로벌 정책 & CAPEX 부담",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미국 대선 및 유럽 각국의 탈원전 회귀 속도, 빅테크 SMR(소형모듈원자로) 전력 공급 계약 구체화 여부 모니터링",
+                    "가스터빈 및 SMR 상용화 설비투자(CAPEX) 부담 대비 영업이익 창출 속도 점검",
+                    `계좌 비중 한도: 총자산의 10~15%(${maxWeightDesc}) 이내 엄격 통제`,
+                ],
+            },
+        ];
+    } else if (sector === 'semiconductor') {
+        headline = `‘${sName}’은 글로벌 빅테크의 AI 설비투자(CAPEX) 지속성 및 HBM3E/HBM4 공급 과잉 논란, 미국 대중국 반도체 장비 규제 변수를 정밀 점검해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & AI 사이클 피크아웃 변동성",
+                tag: "HBM 공급 & 갭상승 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "엔비디아 차세대 GPU 출시 주기 및 빅테크 AI 서버 투자 속도 조절에 따른 단기 고점 위꼬리 리스크",
+                    "범용 D램/낸드 가격 회복 속도 및 메모리 감산 종료 후 공급 증가에 따른 마진 압박 확인",
+                    `권장 진입가: ${safeEntryFormatted} 이하 눌림목 지지선 확인 후 3단계 분할 진입`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 외국인 선물·현물 동반 매도 감시",
+                tag: "외인 패시브 매도벽 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "코스피 대형 반도체주 특성상 외국인의 선물 대량 매도 및 프로그램 차익 매물 출회 시 일일 낙폭 확대 주의",
+                    `50일선 및 직전 고점 매물대 돌파 여부 확인, 손절가 ${stopLossFormatted} 하향 이탈 시 즉시 위험 관리`,
+                    "엔비디아 실적 발표 전후 옵션 변동성에 따른 단기 흔들림 대비",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 미·중 무역 규제 및 환율",
+                tag: "수출 통제 & 고환율 민감도",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미국 상무부의 대중국 반도체 장비·HBM 수출 통제 규제 및 대만 TSMC 파운드리 생태계 병목 변수",
+                    "원/달러 고환율에 따른 단기 환차익 매력과 외국인 패시브 자금 유출입 변동성 동시 모니터링",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'shipping_airline') {
+        headline = `‘${sName}’은 국제 유가(WTI) 급등과 고환율에 따른 항공유류비·외화리스부채 환차손, 아시아나 합병 후 독점 노선 반납에 따른 매출 공백 리스크를 관리해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 유가·환율 원가 변동성",
+                tag: "유류할증료 & 환차손 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "중동 지정학적 위기 시 항공유(Jet Fuel) 가격 급등에 따른 3~4분기 영업이익률 급락 위험",
+                    "원/달러 환율 1,380원대 지속 시 대규모 외화표시 항공기 리스부채 평가손실 발생 가능성",
+                    `권장 진입가: ${safeEntryFormatted} 부근 눌림목에서 분할 체결`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 아시아나 합병 통합 비용",
+                tag: "노선 반납 & 마일리지 통합",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "아시아나항공 인수합병(M&A) 완료 과정에서 화물사업부 매각 및 알짜 유럽·미주 슬롯 반납에 따른 매출 공백",
+                    `대규모 마일리지 통합 및 조직 융합 비용 발생 시 단기 실적 쇼크 주의, 손절선 ${stopLossFormatted} 준수`,
+                    "기관 투자가의 장기 합병 불확실성에 따른 일시적 수급 이탈 감시",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 글로벌 여객/화물 수요 둔화",
+                tag: "교역량 & 화물 운임 추이",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "중국·유럽 경기 침체 시 프리미엄 여객 및 반도체 항공 화물 운임(TAC 지수) 하락 압력 점검",
+                    "글로벌 인플레이션에 따른 해외여행 수요 피크아웃 여부 확인",
+                    `계좌 비중 한도: 총자산의 10~15%(${maxWeightDesc}) 이내 엄격 제한`,
+                ],
+            },
+        ];
+    } else if (sector === 'us_tech') {
+        headline = `‘${sName}’은 높은 밸류에이션(PER)에 따른 분기 실적 및 가이던스 1~2% 미달 시 급락 변동성과 미국 법무부(DOJ) 반독점 소송 리스크를 철저히 관리해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 나스닥 실적 발표 전후 변동성",
+                tag: "어닝 가이던스 & 갭락 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "분기 어닝 시즌 가이던스 눈높이가 극도로 높아 실적이 예상치를 상회해도 '재료 소멸'로 -5~10% 급락 위험",
+                    "장 초반 뉴욕 증시 개장 직후 추격 매수를 자제하고 한국 시간 밤 11시 30분 이후 눌림목 안착 확인",
+                    `권장 진입가: ${safeEntryFormatted} 이하 분할 매수`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 미국 국채 10년물 금리 및 기관 블록딜",
+                tag: "국채 금리 & 내부자 매도 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "미국 10년물 국채 금리 급등 시 고밸류 빅테크 멀티플 디레이팅(주가 급락) 압력",
+                    `내부자(CEO·임원) 지분 매각 및 옵션 만기일 전후 대규모 변동성 주의, 손절선 ${stopLossFormatted} 기계적 방어`,
+                    "월가 대형 헤지펀드의 차익실현 매물 출회 여부 상시 점검",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 미 법무부 반독점 소송 및 환율",
+                tag: "빅테크 반독점 & 환차손",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미 법무부(DOJ) 및 FTC의 빅테크 반독점 제재, 대중국 AI 가속기 판매 제재 리스크",
+                    "원/달러 환율 하락 시 해외 주식 평가 수익이 원화 기준으로 줄어드는 환차손 리스크 점검",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'macro_market') {
+        headline = "외국인의 KOSPI 200 선물 순매도 전환(-3,000억 원 이상) 및 미국 국채 금리·환율 급변 시 지수 전반의 패시브 자금 이탈에 대비하십시오.";
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 시초가 갭 변동성",
+                tag: "장 초반 30분 관망",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "개장 직후(09:00~09:20) 갭상승 출발 시 단기 차익 실현 매물 출회 및 위꼬리 리스크 존재",
+                    "시초가 30분간 전액 매수는 지양하며, 10시 이후 당일 시초가 및 지지선 안착을 확인해야 안전",
+                    "선물 지수 베이시스(선물-현물 가격차) 백워데이션 전환 시 신규 진입 자제",
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 패시브 매물 출회",
+                tag: "외국인 선물 순매도 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "외국인의 KOSPI 200 선물 순매도 전환 시 당일 오후장 지수 급격 하락 압력 발생 가능성",
+                    "외국인 선물 순매도가 -3,000억 원 이상 급증할 경우 신규 진입을 전면 보류하고 관망",
+                    "기관 금융투자(프로그램) 매도세 전환 여부 필수 체크",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 환율·금리 민감도",
+                tag: "대외 거시 환경 리스크",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "원/달러 환율 1,380원대 후반 고환율 구간 지속 시 외국인 패시브 자금의 일시 이탈 위험",
+                    "미국 주요 물가·고용 지표 발표 및 지정학적 변수에 따른 글로벌 시장 흔들림 모니터링",
+                    "지수 레버리지 ETF 단일 투자 시 계좌 비중 15% 이내 엄격 제한",
+                ],
+            },
+        ];
+    } else {
+        // general_stock
+        const customAlert = parseExecutiveOpinion(doc.risk_opinion, "리스크본부", "⚠️").body || "";
+        headline = customAlert.length > 15 ? customAlert : `‘${sName}’은 실시간 수급 동향과 전고점 매물대 저항 여부를 점검하고, 증권사 예상 실적(컨센서스) 부합 여부를 확인한 뒤 보수적으로 분할 접근해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 시초가 변동성",
+                tag: "장 초반 30분 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `호재 뉴스로 개장 직후 주가가 급등 출발할 경우 단기 고점 차익 매물에 물릴 위험`,
+                    `시초가 추격 매수를 자제하고, 오전 10시 이후 장중 거래량 및 지지선 안착 확인 후 진입`,
+                    `권장 진입가: 현재가(${currPriceStr}) 대비 ${safeEntryFormatted} 부근 눌림목 체결`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 매물대 저항",
+                tag: "큰손 매도 전환 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    `직전 고점 부근 및 매물 집중 구간에서의 단기 차익 실현 매도 벽 출회 위험`,
+                    `50일 이동평균선 지지 여부와 외국인·기관 큰손의 당일 동반 순매도 전환 여부 필수 체크`,
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 이탈 시 감정 배제 후 즉시 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 실적/공시 민감도",
+                tag: "실적 컨센서스 & 비중 통제",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "분기 실제 영업이익이 증권사 컨센서스에 부합하는지 실적 발표일 전후 모니터링",
+                    "원/달러 환율 1,380원선 변동 및 글로벌 금리 기조에 따른 패시브 자금 변동성 체크",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 절대 엄수`,
+                ],
+            },
+        ];
+    }
 
     const defenseRules: RiskDefenseRule[] = [
         {
             num: "①",
             title: "계좌 비중 제한",
-            target: "최대 10~15% 이내",
-            desc: "단일 종목·안건에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.",
+            target: `최대 10~15% (${maxWeightDesc})`,
+            desc: `${sName} 단일 종목에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.`,
         },
         {
             num: "②",
             title: "3단계 분할 매수",
-            target: "30% ➔ 40% ➔ 30%",
-            desc: "1차(오전 10시 이후 30%) ➔ 2차(지지선 확인 시 40%) ➔ 3차(상승 돌파 시 30%)로 나누어 매수합니다.",
+            target: `30% ➔ 40% ➔ 30% (${safeEntryFormatted})`,
+            desc: `1차(오전 10시 지지선 ${safeEntryFormatted}에 30%) ➔ 2차(눌림목 안착 40%) ➔ 3차(상승 돌파 30%)로 나누어 매수합니다.`,
         },
         {
             num: "③",
             title: "기계적 손절 방어선",
-            target: "-3.5% 또는 50일선",
-            desc: "진입 단가 대비 -3.5% 하락하거나 50일선 아래로 종가가 깨지면 감정 없이 즉시 방어합니다.",
+            target: `🛑 ${stopLossFormatted} (-3.5% 도달 시 즉각)`,
+            desc: `현재가 대비 -3.5% 하락한 ${stopLossFormatted}을 종가 또는 장중 이탈하면 감정 없이 즉시 방어합니다.`,
         },
         {
             num: "④",
             title: "1차 분할 익절",
-            target: "목표가 도달 시 50%",
-            desc: "제시된 1차 목표가 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.",
+            target: `🎯 ${target1Formatted} (보유 물량 50%)`,
+            desc: `1차 목표가 ${target1Formatted} 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.`,
         },
     ];
 
     return {
-        headline: parseExecutiveOpinion(doc.risk_opinion, "리스크본부", "⚠️").body || "하루에 급등한 주식을 무리하게 추격 매수하지 않고, 50일선 지지 확인 후 분할 매수하며 -3.5% 손절선을 엄수합니다.",
+        headline,
         factors,
         defenseRules,
     };
