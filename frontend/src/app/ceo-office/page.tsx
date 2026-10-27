@@ -3437,8 +3437,85 @@ export default function CeoOfficePage() {
                                                         </div>
                                                     )}
 
-                                                    {/* 💰 [대표님 실시간 시세 & 목표 수익 시뮬레이터] */}
-                                                    {(activeDoc.current_price || activeDoc.key_numbers.some(k => k.label.includes('현재가') || k.label.includes('현재 주가') || k.label.includes('현재 시세'))) && (
+                                                    {/* 💰 [대표님 실시간 시세 & 목표 수익 시뮬레이터 / 거시지표 전광판 분기] */}
+                                                    {(() => {
+                                                        const isMacroDoc = 
+                                                            activeDoc.category_type === 'global_futures' || 
+                                                            activeDoc.category_type === 'world_news' || 
+                                                            activeDoc.category_type === 'macro' ||
+                                                            activeDoc.category_badge?.includes('지표') || 
+                                                            activeDoc.category_badge?.includes('뉴스') || 
+                                                            activeDoc.category_badge?.includes('특보') ||
+                                                            activeDoc.stock_name?.includes('VIX') || 
+                                                            activeDoc.stock_name?.includes('환율') || 
+                                                            activeDoc.stock_name?.includes('금리') || 
+                                                            activeDoc.stock_name?.includes('시스템') ||
+                                                            activeDoc.stock_name?.includes('선물');
+
+                                                        const hasPrice = Boolean(activeDoc.current_price || activeDoc.key_numbers.some(k => k.label.includes('현재가') || k.label.includes('현재 주가') || k.label.includes('현재 시세')));
+                                                        if (!hasPrice) return null;
+
+                                                        if (isMacroDoc) {
+                                                            const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
+                                                            const vixVal = parseFloat((activeDoc.current_price || '18').replace(/[^0-9.]/g, '')) || 18.39;
+                                                            return (
+                                                                <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-950/40 via-slate-900 to-indigo-950/30 border border-sky-500/40 shadow-xl relative overflow-hidden">
+                                                                    <div className="absolute top-0 right-0 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                                                                        <div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-sm sm:text-base font-black text-sky-300 flex items-center gap-1.5">
+                                                                                    <span className="text-lg">📊</span>
+                                                                                    <span>[글로벌 거시 지표] 실시간 위험도 &amp; 시장 체온계 진단표</span>
+                                                                                </span>
+                                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40 animate-pulse">
+                                                                                    ● 24시간 실시간 글로벌 시장 지표 연동
+                                                                                </span>
+                                                                            </div>
+                                                                            <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
+                                                                                ※ 개별 매수 종목이 아니며, 오늘 주식시장 전체의 <strong className="text-amber-300">'위험도(공포 수위)'와 대외 환경을 진단하는 핵심 계기판</strong>입니다.
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="text-left sm:text-right shrink-0 bg-emerald-500/15 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                                                                            <div className="text-[10px] text-emerald-300/90 font-bold">시장 날씨 판정</div>
+                                                                            <div className="text-sm sm:text-base font-black text-emerald-400 font-mono tracking-tight flex items-center sm:justify-end gap-1">
+                                                                                <span>{isVix ? (vixVal < 20 ? '☀️ 맑음 (안도 랠리)' : vixVal < 30 ? '⛅ 흐림 (주의 관망)' : '⛈️ 폭풍우 (패닉 경보)') : '🌐 글로벌 시장 지표'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* 4단 거시 지표 진단 카드 */}
+                                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
+                                                                        <div className="bg-black/50 rounded-xl p-3 border border-white/10">
+                                                                            <div className="text-[11px] text-zinc-400 font-medium">① 실시간 지표 수치</div>
+                                                                            <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
+                                                                                {activeDoc.current_price || '실시간 연동 중'}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="bg-black/50 rounded-xl p-3 border border-sky-500/20">
+                                                                            <div className="text-[11px] text-sky-300 font-medium">② 지표 성격</div>
+                                                                            <div className="text-xs sm:text-sm font-black text-sky-200 mt-0.5 truncate">
+                                                                                시장 위험도 측정기 (매수X)
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="bg-black/50 rounded-xl p-3 border border-emerald-500/20">
+                                                                            <div className="text-[11px] text-emerald-300 font-medium">③ 시장 공포 수준</div>
+                                                                            <div className="text-xs sm:text-sm font-black text-emerald-300 mt-0.5">
+                                                                                {isVix ? (vixVal < 20 ? '낮음 (안정 구간 / 20 미만)' : '경계 구간') : '정상 범위 내 등락'}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="bg-gradient-to-br from-sky-950/40 to-emerald-950/30 rounded-xl p-3 border border-emerald-500/30">
+                                                                            <div className="text-[11px] text-emerald-300/90 font-bold">④ 대표님 행동 지침</div>
+                                                                            <div className="text-xs sm:text-sm font-black text-emerald-300 mt-0.5">
+                                                                                우량주 분할 매수 적합
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
                                                         <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-zinc-900 via-slate-900 to-zinc-900 border border-amber-500/40 shadow-xl relative overflow-hidden">
                                                             <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
                                                             
@@ -3496,7 +3573,8 @@ export default function CeoOfficePage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    )}
+                                                    );
+                                                })()}
 
                                                     {/* 🎯 대표님을 위한 종목 심층 3대 핵심 분석 & 팩트체크 */}
                                                     <div className="mt-4 bg-gradient-to-br from-[#0c1427] via-[#09101f] to-[#0d162b] border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
@@ -3519,8 +3597,8 @@ export default function CeoOfficePage() {
                                                                 <div>
                                                                     <div className="flex items-center justify-between gap-1.5 text-xs font-black text-emerald-300 mb-2 pb-1.5 border-b border-emerald-500/15">
                                                                         <span className="flex items-center gap-1">
-                                                                            <span>🚀</span>
-                                                                            <span>1. 왜 오를까요? (성장 동력)</span>
+                                                                            <span>{activeDoc.category_type === 'global_futures' || activeDoc.category_badge?.includes('지표') ? '📊' : '🚀'}</span>
+                                                                            <span>{activeDoc.category_type === 'global_futures' || activeDoc.category_badge?.includes('지표') ? '1. 지표의 핵심 의미 (무슨 뜻인가요?)' : '1. 왜 오를까요? (성장 동력)'}</span>
                                                                         </span>
                                                                         <span className="text-[10px] text-emerald-400">박진우 부사장</span>
                                                                     </div>
@@ -3564,45 +3642,107 @@ export default function CeoOfficePage() {
                                                                 </div>
                                                             </div>
 
-                                                            {/* 3. 목표가와 안전마진 */}
-                                                            <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
-                                                                <div>
-                                                                    <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2 pb-1.5 border-b border-purple-500/15">
-                                                                        <span className="flex items-center gap-1">
-                                                                            <span>🎯</span>
-                                                                            <span>3. 목표가 & 기대수익 요약</span>
-                                                                        </span>
-                                                                        <span className="text-[10px] text-purple-400">밸류에이션</span>
+                                                            {/* 3. 목표가와 안전마진 / 거시 지표일 경우 위험도 판정 */}
+                                                            {(() => {
+                                                                const isMacroDoc = 
+                                                                    activeDoc.category_type === 'global_futures' || 
+                                                                    activeDoc.category_type === 'world_news' || 
+                                                                    activeDoc.category_badge?.includes('지표') || 
+                                                                    activeDoc.stock_name?.includes('VIX') || 
+                                                                    activeDoc.stock_name?.includes('환율') || 
+                                                                    activeDoc.stock_name?.includes('금리');
+
+                                                                if (isMacroDoc) {
+                                                                    const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
+                                                                    return (
+                                                                        <div className="bg-gradient-to-b from-sky-950/25 via-zinc-900/60 to-zinc-950 border border-sky-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                            <div>
+                                                                                <div className="flex items-center justify-between gap-1.5 text-xs font-black text-sky-300 mb-2 pb-1.5 border-b border-sky-500/15">
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <span>🛡️</span>
+                                                                                        <span>3. 시장 위험도 판정 &amp; 행동 지침</span>
+                                                                                    </span>
+                                                                                    <span className="text-[10px] text-sky-400">거시 리스크</span>
+                                                                                </div>
+                                                                                <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                                    {isVix ? (
+                                                                                        <>
+                                                                                            <li className="flex items-start gap-1.5">
+                                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                                                <span><strong className="text-white">공포 수위 판정:</strong> 현재 VIX 지수({activeDoc.current_price})는 <strong className="text-emerald-300">20 미만의 안정 구간</strong>으로 시장에 공포가 없습니다.</span>
+                                                                                            </li>
+                                                                                            <li className="flex items-start gap-1.5">
+                                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                                                <span><strong className="text-white">외국인 수급 환경:</strong> 위험 회피 심리가 낮아 글로벌 큰손들의 한국 우량주 매수 유입에 우호적입니다.</span>
+                                                                                            </li>
+                                                                                            <li className="flex items-start gap-1.5">
+                                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                                                <span><strong className="text-white">대표님 행동 지침:</strong> 승인하신 실전 종목(기업은행 등)을 10만원 예산 내에서 <strong className="text-amber-300">계획대로 분할 매수하셔도 안전</strong>합니다.</span>
+                                                                                            </li>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <li className="flex items-start gap-1.5">
+                                                                                                <span className="text-sky-400 font-black shrink-0">•</span>
+                                                                                                <span><strong className="text-white">거시 지표 흐름:</strong> {activeDoc.current_price} 수준에서 안정적인 등락을 유지하고 있습니다.</span>
+                                                                                            </li>
+                                                                                            <li className="flex items-start gap-1.5">
+                                                                                                <span className="text-sky-400 font-black shrink-0">•</span>
+                                                                                                <span><strong className="text-white">포트폴리오 영향:</strong> 대외 급변 요인이 제한적이므로 정상 투자 전략을 유지합니다.</span>
+                                                                                            </li>
+                                                                                        </>
+                                                                                    )}
+                                                                                </ul>
+                                                                            </div>
+                                                                            <div className="mt-3 pt-2 border-t border-sky-500/15 flex items-center justify-between text-[11px] text-sky-300 font-bold">
+                                                                                <span>투자 환경 판정</span>
+                                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black">☀️ 시장 날씨 맑음</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
+
+                                                                return (
+                                                                    <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                        <div>
+                                                                            <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2 pb-1.5 border-b border-purple-500/15">
+                                                                                <span className="flex items-center gap-1">
+                                                                                    <span>🎯</span>
+                                                                                    <span>3. 목표가 &amp; 기대수익 요약</span>
+                                                                                </span>
+                                                                                <span className="text-[10px] text-purple-400">밸류에이션</span>
+                                                                            </div>
+                                                                            <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                                {activeDoc.current_price && activeDoc.target_price ? (
+                                                                                    <>
+                                                                                        <li className="flex items-start gap-1.5">
+                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                            <span><strong className="text-white">현재가 ➔ 목표가:</strong> {activeDoc.current_price} ➔ <strong className="text-amber-300">{activeDoc.target_price}</strong></span>
+                                                                                        </li>
+                                                                                        <li className="flex items-start gap-1.5">
+                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                            <span><strong className="text-white">기대 상승폭:</strong> <strong className="text-rose-400">{activeDoc.upside_pct || '상승 여력 충분'}</strong> ({activeDoc.profit_per_share || '안전마진 확보'})</span>
+                                                                                        </li>
+                                                                                        <li className="flex items-start gap-1.5">
+                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                            <span><strong className="text-white">1천만원 투자 시:</strong> <strong className="text-emerald-300">{activeDoc.profit_10m || '높은 기대수익'}</strong> 예상</span>
+                                                                                        </li>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span>국내외 제도권 증권사들의 긍정적 투자의견과 함께 추가 상승 여력이 충분한 구간입니다.</span>
+                                                                                    </li>
+                                                                                )}
+                                                                            </ul>
+                                                                        </div>
+                                                                        <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
+                                                                            <span>가격 매력도</span>
+                                                                            <span className="px-1.5 py-0.5 rounded bg-purple-500/20 font-black">💎 상승 여력 충분</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                        {activeDoc.current_price && activeDoc.target_price ? (
-                                                                            <>
-                                                                                <li className="flex items-start gap-1.5">
-                                                                                    <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                    <span><strong className="text-white">현재가 ➔ 목표가:</strong> {activeDoc.current_price} ➔ <strong className="text-amber-300">{activeDoc.target_price}</strong></span>
-                                                                                </li>
-                                                                                <li className="flex items-start gap-1.5">
-                                                                                    <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                    <span><strong className="text-white">기대 상승폭:</strong> <strong className="text-rose-400">{activeDoc.upside_pct || '상승 여력 충분'}</strong> ({activeDoc.profit_per_share || '안전마진 확보'})</span>
-                                                                                </li>
-                                                                                <li className="flex items-start gap-1.5">
-                                                                                    <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                    <span><strong className="text-white">1천만원 투자 시:</strong> <strong className="text-emerald-300">{activeDoc.profit_10m || '높은 기대수익'}</strong> 예상</span>
-                                                                                </li>
-                                                                            </>
-                                                                        ) : (
-                                                                            <li className="flex items-start gap-1.5">
-                                                                                <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                <span>국내외 제도권 증권사들의 긍정적 투자의견과 함께 추가 상승 여력이 충분한 구간입니다.</span>
-                                                                            </li>
-                                                                        )}
-                                                                    </ul>
-                                                                </div>
-                                                                <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
-                                                                    <span>가격 매력도</span>
-                                                                    <span className="px-1.5 py-0.5 rounded bg-purple-500/20 font-black">💎 상승 여력 충분</span>
-                                                                </div>
-                                                            </div>
+                                                                );
+                                                            })()}
                                                         </div>
 
                                                         {/* 4. 대표이사 리스크 정밀 진단 & 세부 방어 매뉴얼 */}
@@ -3708,8 +3848,76 @@ export default function CeoOfficePage() {
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* 💰 [NEW] 대표이사 실전 자금 배분 & 철통 손익 계산표 (정확한 원화/달러 금액 표기) */}
-                                                                    {riskData.financialPlan && (
+                                                                    {/* 💰 [NEW] 대표이사 실전 자금 배분 & 철통 손익 계산표 / 거시 지표 신호등 분기 */}
+                                                                    {(() => {
+                                                                        const isMacroDoc = 
+                                                                            activeDoc.category_type === 'global_futures' || 
+                                                                            activeDoc.category_type === 'world_news' || 
+                                                                            activeDoc.category_badge?.includes('지표') || 
+                                                                            activeDoc.stock_name?.includes('VIX') || 
+                                                                            activeDoc.stock_name?.includes('환율') || 
+                                                                            activeDoc.stock_name?.includes('금리');
+
+                                                                        if (isMacroDoc) {
+                                                                            const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
+                                                                            return (
+                                                                                <div className="mt-3.5 bg-black/70 border-2 border-sky-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
+                                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-base">🧭</span>
+                                                                                            <h6 className="text-xs sm:text-sm font-black text-white">
+                                                                                                {activeDoc.stock_name} 시장 날씨 판정 &amp; 대표님 자산 운용 신호등
+                                                                                            </h6>
+                                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                                                                                                거시 환경 종합 진단
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    
+                                                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                                                                        <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3.5 space-y-1.5">
+                                                                                            <div className="text-[11px] font-black text-emerald-300 flex items-center gap-1.5">
+                                                                                                <span>🟢</span>
+                                                                                                <span>초록불: VIX 20 미만 (현재 18.39)</span>
+                                                                                            </div>
+                                                                                            <div className="text-sm font-black text-white">안도 랠리 · 정상 매수 허용</div>
+                                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
+                                                                                                시장에 공포가 없는 안정 구간입니다. 대표님이 서명하신 개별 우량주(기업은행 등)를 10만원 예산 내에서 계획대로 매수 체결하셔도 안전합니다.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        
+                                                                                        <div className="bg-amber-950/20 border border-amber-500/25 rounded-xl p-3.5 space-y-1.5">
+                                                                                            <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5">
+                                                                                                <span>🟡</span>
+                                                                                                <span>노란불: VIX 20 ~ 30</span>
+                                                                                            </div>
+                                                                                            <div className="text-sm font-black text-amber-200">변동성 주의 · 보수적 접근</div>
+                                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
+                                                                                                시장이 긴장하고 있는 상태입니다. 시초가 추격 매수를 엄금하고 오전 10시 이후 지지선 안착을 확인한 뒤에만 분할 진입합니다.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        
+                                                                                        <div className="bg-rose-950/20 border border-rose-500/25 rounded-xl p-3.5 space-y-1.5">
+                                                                                            <div className="text-[11px] font-black text-rose-300 flex items-center gap-1.5">
+                                                                                                <span>🔴</span>
+                                                                                                <span>빨간불: VIX 30 이상</span>
+                                                                                            </div>
+                                                                                            <div className="text-sm font-black text-rose-300">시장 패닉 · 매수 전면 보류</div>
+                                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
+                                                                                                전쟁·위기 등 폭풍우 구간입니다. 신규 매수를 전면 중단하고 -3.5% 손절선을 엄수하여 현금을 90% 이상 비축합니다.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                                                                                        ※ <strong>[결재 가이드]</strong>: 본 안건에 [승인 서명]을 누르시더라도 VIX를 직접 매수하지 않으며, <strong className="text-amber-300">“현재 시장 날씨(VIX 18.39)가 맑고 정상이므로, 다른 우량 실전 종목들의 정상 매매를 허가한다”</strong>는 전사 거시 환경 승인으로 자동 처리됩니다.
+                                                                                    </p>
+                                                                                </div>
+                                                                            );
+                                                                        }
+
+                                                                        if (!riskData.financialPlan) return null;
+                                                                        return (
                                                                         <div className="mt-3.5 bg-black/70 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
                                                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
                                                                                 <div className="flex items-center gap-2">
@@ -3856,7 +4064,8 @@ export default function CeoOfficePage() {
                                                                                 ※ 대표님의 소중한 원금을 지키기 위해, 최악의 경우에도 <strong className="text-rose-300">최대 손실을 -{riskData.financialPlan.maxLossAmount}으로 철저히 차단</strong>하고 <strong className="text-emerald-300">원금 {riskData.financialPlan.shieldedAmount}을 안전하게 확보</strong>하도록 설계된 실전 리스크 매뉴얼입니다.
                                                                             </p>
                                                                         </div>
-                                                                    )}
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                             );
                                                         })()}
