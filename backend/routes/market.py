@@ -1896,8 +1896,12 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
             return "-"
         if currency == "KRW":
             return f"{int(round(val)):,}원"
-        if sym in ["^TNX", "^VIX"]:
-            return f"{val:.2f}"
+        if sym == "^VIX":
+            return f"{val:.2f}pt"
+        if sym in ["^TNX", "TNX"]:
+            return f"{val:.2f}%"
+        if sym == "DX-Y.NYB":
+            return f"{val:.2f}pt"
         return f"${val:,.2f}"
 
     trend_badge = "📊 50일 이동평균선 근접 구간"

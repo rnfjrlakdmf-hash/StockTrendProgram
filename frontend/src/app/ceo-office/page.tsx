@@ -184,16 +184,36 @@ interface RiskDefenseRule {
     desc: string;
 }
 
-function parsePriceValue(raw: any): { num: number; isDollar: boolean; formatted: string } {
+function parsePriceValue(raw: any, sector?: string, stockName?: string): { num: number; isDollar: boolean; formatted: string } {
     if (!raw) return { num: 0, isDollar: false, formatted: '-' };
     const str = String(raw).trim();
+    const s = `${stockName || ''} ${str}`.toLowerCase();
     const isDollar = str.includes('$');
+    const isVix = sector === 'macro_vix' || s.includes('vix') || s.includes('공포');
+    const isRate = sector === 'macro_rate' || str.includes('%') || s.includes('국채') || s.includes('금리') || s.includes('tnx');
+    const isOil = sector === 'macro_oil' || s.includes('wti') || s.includes('원유') || s.includes('유가') || s.includes('cl=f');
+    const isFx = sector === 'macro_fx' || s.includes('환율') || s.includes('달러') || s.includes('usdkrw');
+
     const beforeParen = str.split('(')[0];
     const match = beforeParen.match(/([0-9,]+(?:\.[0-9]+)?)/);
     if (!match) return { num: 0, isDollar, formatted: str };
     const num = parseFloat(match[1].replace(/,/g, ''));
-    const formatted = isDollar ? `$${num.toFixed(2)}` : `${Math.round(num).toLocaleString()}원`;
-    return { num, isDollar, formatted };
+
+    let formatted = '';
+    if (isVix) {
+        // VIX 지수는 원화('원')가 아닌 지수 포인트(pt)입니다!
+        formatted = `${num.toFixed(2)}pt`;
+    } else if (isRate) {
+        formatted = `${num.toFixed(2)}%`;
+    } else if (isOil || isDollar) {
+        formatted = `$${num.toFixed(2)}`;
+    } else if (isFx) {
+        formatted = `${num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}원`;
+    } else {
+        formatted = `${Math.round(num).toLocaleString()}원`;
+    }
+
+    return { num, isDollar: isDollar || isOil, formatted };
 }
 
 function detectSectorType(stockName: string, title: string = "", categoryBadge: string = ""): string {
@@ -396,12 +416,22 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
     const rawPrice = doc.current_price || doc.key_numbers?.find(k => k.label.includes('현재가') || k.label.includes('현재 주가') || k.label.includes('현재 시세'))?.value;
     const rawTarget = doc.target_price || doc.key_numbers?.find(k => k.label.includes('목표가'))?.value;
 
-    const currPrice = parsePriceValue(rawPrice);
-    const targetPrice = parsePriceValue(rawTarget);
+    const currPrice = parsePriceValue(rawPrice, sector, doc.stock_name);
+    const targetPrice = parsePriceValue(rawTarget, sector, doc.stock_name);
 
     const priceNum = currPrice.num;
     const isDollar = currPrice.isDollar || isUSStock;
-    const fmt = (n: number) => isDollar ? `$${n.toFixed(2)}` : `${Math.round(n).toLocaleString()}원`;
+    const isVix = sector === 'macro_vix';
+    const isRate = sector === 'macro_rate';
+    const isOil = sector === 'macro_oil';
+    const isFx = sector === 'macro_fx';
+    const fmt = (n: number) => {
+        if (isVix) return `${n.toFixed(2)}pt`;
+        if (isRate) return `${n.toFixed(2)}%`;
+        if (isOil || isDollar) return `$${n.toFixed(2)}`;
+        if (isFx) return `${n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}원`;
+        return `${Math.round(n).toLocaleString()}원`;
+    };
 
     // 손절가 (-3.5%)
     const stopLossNum = priceNum > 0 ? (isDollar ? priceNum * 0.965 : Math.round(priceNum * 0.965)) : 0;
@@ -3717,7 +3747,7 @@ export default function CeoOfficePage() {
                                                                         <div className="bg-black/50 rounded-xl p-3 border border-white/10">
                                                                             <div className="text-[11px] text-zinc-400 font-medium">① 실시간 지표 수치</div>
                                                                             <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
-                                                                                {activeDoc.current_price || '실시간 연동 중'}
+                                                                                {isVix ? (activeDoc.current_price?.includes('pt') ? activeDoc.current_price : `${(parseFloat((activeDoc.current_price || '18.39').replace(/[^0-9.]/g, '')) || 18.39).toFixed(2)}pt`) : (activeDoc.current_price || '실시간 연동 중')}
                                                                             </div>
                                                                         </div>
                                                                         <div className="bg-black/50 rounded-xl p-3 border border-sky-500/20">
@@ -3897,7 +3927,7 @@ export default function CeoOfficePage() {
                                                                                         <>
                                                                                             <li className="flex items-start gap-1.5">
                                                                                                 <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                                                                <span><strong className="text-white">공포 수위 판정:</strong> 현재 VIX 지수({activeDoc.current_price})는 <strong className="text-emerald-300">20 미만의 안정 구간</strong>으로 시장에 공포가 없습니다.</span>
+                                                                                                <span><strong className="text-white">공포 수위 판정:</strong> 현재 VIX 지수({isVix ? (activeDoc.current_price?.includes('pt') ? activeDoc.current_price : `${(parseFloat((activeDoc.current_price || '18.39').replace(/[^0-9.]/g, '')) || 18.39).toFixed(2)}pt`) : activeDoc.current_price})는 <strong className="text-emerald-300">20 미만의 안정 구간</strong>으로 시장에 공포가 없습니다.</span>
                                                                                             </li>
                                                                                             <li className="flex items-start gap-1.5">
                                                                                                 <span className="text-emerald-400 font-black shrink-0">•</span>
