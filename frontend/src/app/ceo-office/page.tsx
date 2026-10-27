@@ -4776,18 +4776,26 @@ export default function CeoOfficePage() {
                                         {/* 2. 표 모드 (PC/태블릿 한눈에 보기) */}
                                         {summaryViewMode === 'table' ? (
                                             <div className="bg-[#0b1324] border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+                                                {/* 좌우 스크롤 안내 가이드 */}
+                                                <div className="px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-black/40 to-transparent border-b border-white/10 flex items-center justify-between text-xs text-zinc-300">
+                                                    <span className="flex items-center gap-1.5 font-bold text-amber-300">
+                                                        <span>↔️</span>
+                                                        <span>표를 좌우(← →)로 스크롤하시면 <strong>[원클릭 즉시 승인]</strong> 버튼까지 전체 안건을 한눈에 보실 수 있습니다.</span>
+                                                    </span>
+                                                    <span className="hidden sm:inline text-zinc-400 font-mono">총 {summaryDocs.length}개 안건 상정</span>
+                                                </div>
                                                 <div className="overflow-x-auto">
-                                                    <table className="w-full text-left border-collapse">
+                                                    <table className="w-full min-w-[1150px] text-left border-collapse">
                                                         <thead>
                                                             <tr className="bg-[#111c35] border-b border-white/15 text-[11px] sm:text-xs font-black text-amber-300">
-                                                                <th className="py-3.5 px-4 whitespace-nowrap">구분</th>
-                                                                <th className="py-3.5 px-4 whitespace-nowrap">종목명 (코드)</th>
-                                                                <th className="py-3.5 px-4 whitespace-nowrap">현재 진입가</th>
-                                                                <th className="py-3.5 px-4 whitespace-nowrap">목표가 (기대수익)</th>
-                                                                <th className="py-3.5 px-4 whitespace-nowrap">1천만원 기대수익</th>
-                                                                <th className="py-3.5 px-4 whitespace-nowrap">손절·방어 기준선</th>
-                                                                <th className="py-3.5 px-4 min-w-[260px]">핵심 투자 포인트 (1줄 요약)</th>
-                                                                <th className="py-3.5 px-4 text-center whitespace-nowrap">원클릭 결재</th>
+                                                                <th className="py-3 px-3.5 whitespace-nowrap text-center">구분</th>
+                                                                <th className="py-3 px-3.5 whitespace-nowrap">종목명 (코드)</th>
+                                                                <th className="py-3 px-3.5 whitespace-nowrap text-right">현재 진입가</th>
+                                                                <th className="py-3 px-3.5 whitespace-nowrap text-right">목표가 (기대수익)</th>
+                                                                <th className="py-3 px-3.5 whitespace-nowrap text-right">1천만원 기대수익</th>
+                                                                <th className="py-3 px-3.5 whitespace-nowrap text-center">손절·방어 기준선</th>
+                                                                <th className="py-3 px-3.5 min-w-[280px]">핵심 투자 포인트 (1줄 요약)</th>
+                                                                <th className="py-3 px-3.5 text-center whitespace-nowrap">원클릭 결재</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-white/10 text-xs sm:text-sm">
@@ -4802,56 +4810,56 @@ export default function CeoOfficePage() {
                                                                             isApproved ? 'bg-emerald-950/15' : ''
                                                                         }`}
                                                                     >
-                                                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-center whitespace-nowrap">
                                                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-black border ${theme.pill}`}>
                                                                                 <span>{theme.icon}</span>
                                                                                 <span>{theme.shortLabel}</span>
                                                                             </span>
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                                                        <td className="py-3.5 px-3.5 align-middle whitespace-nowrap">
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => {
                                                                                     setSelectedDocId(doc.doc_id);
                                                                                     setActiveTab('electronic_sign');
                                                                                 }}
-                                                                                className="text-left group cursor-pointer"
+                                                                                className="text-left group cursor-pointer block"
                                                                             >
-                                                                                <div className="font-black text-white group-hover:text-amber-300 transition-colors">
+                                                                                <div className="font-black text-white group-hover:text-amber-300 transition-colors leading-snug">
                                                                                     {doc.stock_name}
                                                                                 </div>
-                                                                                <div className="text-[11px] text-gray-400 font-mono">
+                                                                                <div className="text-[11px] text-gray-400 font-mono leading-normal mt-0.5">
                                                                                     {doc.stock_code || doc.doc_number}
                                                                                 </div>
                                                                             </button>
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 whitespace-nowrap font-mono font-bold text-gray-200">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-right whitespace-nowrap font-mono font-bold text-gray-200">
                                                                             {doc.current_price || '실시간 연동'}
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 whitespace-nowrap font-mono">
-                                                                            <div className="font-black text-amber-300">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-right whitespace-nowrap font-mono">
+                                                                            <div className="font-black text-amber-300 leading-snug">
                                                                                 {doc.target_price || '목표가 산정'}
                                                                             </div>
                                                                             {doc.upside_pct && (
-                                                                                <div className="text-xs font-black text-rose-400">
+                                                                                <div className="text-xs font-black text-rose-400 leading-normal mt-0.5">
                                                                                     {doc.upside_pct}
                                                                                 </div>
                                                                             )}
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 whitespace-nowrap font-mono font-black text-emerald-300">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-right whitespace-nowrap font-mono font-black text-emerald-300">
                                                                             {doc.profit_10m || '안정 수익 기대'}
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 whitespace-nowrap">
-                                                                            <span className="inline-block px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-center whitespace-nowrap">
+                                                                            <span className="inline-block px-2.5 py-1 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold">
                                                                                 50일선 지지 · -3.5% 손절
                                                                             </span>
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 text-xs text-gray-200 leading-relaxed max-w-md">
-                                                                            <div className="line-clamp-2 font-medium">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-xs text-gray-200 leading-relaxed min-w-[280px]">
+                                                                            <div className="line-clamp-2 font-medium break-keep">
                                                                                 {oneLinePoint}
                                                                             </div>
                                                                         </td>
-                                                                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                                                        <td className="py-3.5 px-3.5 align-middle text-center whitespace-nowrap">
                                                                             {isApproved ? (
                                                                                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-black">
                                                                                     ✓ 재가완료
@@ -4860,7 +4868,7 @@ export default function CeoOfficePage() {
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={() => handleSignDoc(doc.doc_id, 'approved')}
-                                                                                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-sm"
+                                                                                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-sm"
                                                                                 >
                                                                                     🖋️ 즉시 승인
                                                                                 </button>
