@@ -198,7 +198,22 @@ function parsePriceValue(raw: any): { num: number; isDollar: boolean; formatted:
 
 function detectSectorType(stockName: string, title: string = "", categoryBadge: string = ""): string {
     const s = `${stockName} ${title} ${categoryBadge}`.toLowerCase();
-    if (stockName === '전체 시장 시스템' || s.includes('모닝') || s.includes('매크로') || s.includes('선물') || s.includes('지수')) {
+    if (s.includes('vix') || s.includes('변동성') || s.includes('공포')) {
+        return 'macro_vix';
+    }
+    if (s.includes('wti') || s.includes('원유') || s.includes('유가') || s.includes('cl=f')) {
+        return 'macro_oil';
+    }
+    if (s.includes('환율') || s.includes('달러') || s.includes('usdkrw') || s.includes('dxy') || s.includes('krw=x')) {
+        return 'macro_fx';
+    }
+    if (s.includes('국채') || s.includes('금리') || s.includes('tnx') || s.includes('10년물')) {
+        return 'macro_rate';
+    }
+    if (s.includes('나스닥') || s.includes('nq=f') || s.includes('s&p') || s.includes('es=f')) {
+        return 'macro_futures';
+    }
+    if (stockName === '전체 시장 시스템' || s.includes('모닝') || s.includes('매크로') || s.includes('지수') || s.includes('선물')) {
         return 'macro_market';
     }
     if (/기업은행|국민은행|신한|하나금융|우리금융|카카오뱅크|jb금융|dgb금융|bnk금융|키움증권|미래에셋|삼성증권|한국금융지주|메리츠|동양생명|삼성화재|db손해|한화생명|은행|금융/.test(s)) {
@@ -597,6 +612,191 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
                 ],
             },
         ];
+    } else if (sector === 'macro_vix') {
+        headline = `‘VIX 공포지수(${currPriceStr})’는 현재 20 미만의 안정 구간이나, 20 돌파 시 변동성 확대 및 30 상회 시 글로벌 증시 급락 패닉 리스크를 상시 감시해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "공포 수위 임계선 & 급등 변동성",
+                tag: "20선 안정 vs 30선 패닉",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `현재 VIX 지수(${currPriceStr})는 20 미만의 안정 구간으로 시장 참여자들의 공포 심리가 낮은 평온한 상태`,
+                    "VIX가 20을 넘어서거나 단기 +10% 이상 급등할 경우 변동성 주의보 발령 및 추격 매수 자제",
+                    "VIX 30 돌파 시에는 글로벌 패닉 구간이므로 모든 신규 매수를 즉시 중단하고 방어 태세 전환",
+                ],
+            },
+            {
+                icon: "📉",
+                title: "옵션 시장 풋/콜 비율 & 기관 하방 헤지",
+                tag: "기관 풋옵션 매수 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "S&P 500 지수 풋옵션(하락 베팅) 거래량이 콜옵션 대비 급증하는지 풋/콜 비율(PCR) 실시간 모니터링",
+                    "월가 대형 헤지펀드의 변동성 매수 포지션 확대 시 대형 기술주 일시 조정 가능성 대비",
+                    "옵션 만기일 전후 지수 흔들림 및 변동성 스프레드 확대 여부 상시 점검",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 한국 증시 패시브 영향",
+                tag: "외국인 위험선호 연동",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "VIX 안정세 지속 시 글로벌 투자 자금의 위험자산 선호(Risk-On)로 한국 코스피 및 반도체 우량주 수급 우호적",
+                    "미국 FOMC 금리 발표, 주요 고용·물가 지표 및 지정학적 돌발 뉴스 발생 시 VIX 급변 모니터링",
+                    "대표님 실천 지침: VIX 20 미만 유지 시 승인하신 종목(기업은행 등 10만원 예산) 계획대로 분할 매수 적합",
+                ],
+            },
+        ];
+    } else if (sector === 'macro_oil') {
+        headline = `‘WTI 국제유가(${currPriceStr})’는 중동 지정학적 충돌과 산유국(OPEC+) 감산 정책에 따른 에너지 원가 급등 및 글로벌 인플레이션 자극 리스크를 점검해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "유가 변동성 & 인플레이션 자극",
+                tag: "배럴당 $80 저항선 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `현재 WTI 유가(${currPriceStr})는 정상 범위 내에서 횡보 중이나, 배럴당 $80 상회 시 물가 재점화 우려`,
+                    "유가 급등 시 미국 CPI 상승 및 연준 금리 인하 지연 압력으로 글로벌 증시 단기 흔들림 대비",
+                    "산유국(OPEC+) 감산 회의 및 미국 원유 재고량 발표 전후 가격 변동성 모니터링",
+                ],
+            },
+            {
+                icon: "📉",
+                title: "국내 수출·운송 기업 원가 부담",
+                tag: "항공·해운·화학 마진 압박",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "항공(대한항공 등)·해운 기업의 유류비 증가 및 외화 리스부채 평가손실 리스크 점검",
+                    "정유·석유화학 업종의 정제마진(스프레드) 축소 여부 실시간 체크",
+                    "고유가 지속 시 한국 무역수지 악화 및 외국인 패시브 자금 이탈 압력 감시",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 중동 정세 모니터링",
+                tag: "해상 물동량 병목 변수",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "중동 분쟁 심화 시 호르무즈 해협 등 주요 원유 수송로 봉쇄 우려에 따른 공급 쇼크 점검",
+                    "유가 안정 구간($70대 초반) 유지 시 국내 제조업 기업들의 실적 방어력 양호",
+                    "대표님 지침: 유가 안정 시 실적 우량주 분할 매수 정상 집행",
+                ],
+            },
+        ];
+    } else if (sector === 'macro_fx') {
+        headline = `‘원/달러 환율(${currPriceStr})’은 1,380원대 후반 고환율 구간 지속에 따른 외국인 패시브 자금의 일시 이탈 및 환차손 회피 매물 출회에 대비해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "환율 변동성 & 1,400원 심리적 저항선",
+                tag: "외환당국 개입 경계선",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `현재 환율(${currPriceStr})은 고환율 구간으로 1,400원 저항선 근접 시 변동성 확대 주의`,
+                    "1,400원 돌파 시 외환당국 구두개입 및 국민연금 외환스왑 가동 가능성 모니터링",
+                    "환율 급등 국면에서는 시초가 추격 매수를 자제하고 장중 지지선 안착 확인 필수",
+                ],
+            },
+            {
+                icon: "📉",
+                title: "외국인 환차익/환차손 수급 분기점",
+                tag: "외인 패시브 매도벽 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "환율 상승(원화 약세) 시 외국인은 달러 환전 손실을 우려해 한국 IT·반도체 대형주 매도세 전환 가능성",
+                    "반대로 환율이 1,380원 아래로 하향 안정화될 경우 외국인 선물 및 현물 순매수 유입 가속",
+                    "당일 외국인의 코스피 선물 순매도 금액 3,000억 원 초과 여부 필수 체크",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 미 연준 금리/달러 인덱스",
+                tag: "DXY 달러 인덱스 연동",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미국 달러 인덱스(DXY) 103~105선 등락 및 미·한 기준금리 격차 영향 점검",
+                    "수출 대장주(현대차, 반도체)의 단기 환차익 수혜와 원자재 수입 물가 상승 영향 동시 점검",
+                    "대표님 지침: 환율 안정 시 승인 안건(10만원 예산) 계획대로 분할 체결",
+                ],
+            },
+        ];
+    } else if (sector === 'macro_rate') {
+        headline = `‘미국 10년물 국채금리(${currPriceStr})’는 4.2~4.3% 상회 시 글로벌 성장주 및 빅테크 밸류에이션(할인율) 급락 리스크를 경계해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "국채금리 변동성 & 4.3% 저항선",
+                tag: "장기 시장금리 벤치마크",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `현재 미국 10년물 국채금리(${currPriceStr})는 채권 시장의 핵심 바로미터`,
+                    "10년물 금리가 4.3%를 돌파할 경우 뉴욕증시 기술주 멀티플 디레이팅(주가 급락) 압력 발생",
+                    "미국 고용 지표 및 CPI 물가 지표 발표 시간대 금리 변동성 집중 모니터링",
+                ],
+            },
+            {
+                icon: "📉",
+                title: "글로벌 성장주 & 빅테크 할인율 압박",
+                tag: "고밸류 기술주 조정 주의",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "금리 상승 시 미래 현금흐름의 현재가치 할인율이 높아져 고PER AI 반도체·소프트웨어주 차익 매물 출회",
+                    "미국 20년물 국채 ETF(TLT) 등 채권 자산 유동성 흐름 추적",
+                    "금리 하향 안정 시 엔비디아, SK하이닉스 등 성장 대장주 반등 모멘텀 강화",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 미 연준(Fed) 기준금리 경로",
+                tag: "FOMC 점도표 & 통화 정책",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미국 연준(Fed)의 기준금리 인하 횟수 및 속도 조절 발언에 따른 시장 심리 점검",
+                    "한국은행 기준금리 결정 경로 및 국내 채권 금리 스프레드 모니터링",
+                    "대표님 지침: 국채금리 안정 시 승인 안건 정상 분할 매수 집행",
+                ],
+            },
+        ];
+    } else if (sector === 'macro_futures') {
+        headline = `‘${sName}(${currPriceStr})’는 미국 빅테크 실적 발표 전후 옵션 변동성과 한국 증시 시초가 갭 연동 리스크를 정밀 점검해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 시초가 갭 변동성",
+                tag: "장 초반 30분 관망",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `미국 야간 선물(${currPriceStr})의 급등락이 한국 코스피·코스닥 시초가 갭 형성에 직결`,
+                    "개장 직후 갭상승 출발 시 무리한 추격 매수를 자제하고 10시 이후 지지선 안착 확인",
+                    "미국 정규장 마감 후 시간외 빅테크 어닝 발표에 따른 선물 지수 출렁임 주의",
+                ],
+            },
+            {
+                icon: "📉",
+                title: "외국인 선물 수급 & 프로그램 매매",
+                tag: "외국인 선물 동향 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "나스닥 선물 약세 시 국내 IT·반도체 대형주로 외국인 프로그램 매도세 출회 가능성",
+                    "외국인 코스피 200 선물 순매도 전환 시 당일 오후장 지수 하방 압력 점검",
+                    "선물 지수 50일선 지지력 유지 여부 실시간 체크",
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 글로벌 AI 사이클",
+                tag: "빅테크 실적 & CAPEX",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "엔비디아, 마이크로소프트 등 미국 매그니피센트7(M7) 주가 흐름과 선물 지수 동조화 모니터링",
+                    "글로벌 반도체 지수(SOX) 및 기술주 투자 심리 추적",
+                    "대표님 지침: 선물 지수 안정 시 실전 승인 종목 계획대로 분할 체결",
+                ],
+            },
+        ];
     } else if (sector === 'macro_market') {
         headline = "외국인의 KOSPI 200 선물 순매도 전환(-3,000억 원 이상) 및 미국 국채 금리·환율 급변 시 지수 전반의 패시브 자금 이탈에 대비하십시오.";
         factors = [
@@ -677,8 +877,36 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
 
     // 실전 자금 리스크 계산 플랜 도출
     const plan = computeFinancialRiskPlan(rawPrice, rawTarget, capitalOverride);
+    const isMacroSector = sector.startsWith('macro_');
 
-    const defenseRules: RiskDefenseRule[] = [
+    const defenseRules: RiskDefenseRule[] = isMacroSector ? [
+        {
+            num: "①",
+            title: "시장 체온계 감시",
+            target: sector === 'macro_vix' ? "VIX 20 미만 안정선" : (sector === 'macro_fx' ? "환율 1,390원 지지선" : (sector === 'macro_oil' ? "유가 $80 저항선" : "정상 등락 범위 유지")),
+            desc: sector === 'macro_vix' 
+                ? "VIX 20 미만 유지 시 시장에 공포가 없으므로 대표님의 실전 승인 종목 매매를 정상 집행합니다."
+                : (sector === 'macro_fx' ? "환율 안정세 지속 시 외국인 순매수가 강화되므로 승인 종목 체결을 지원합니다." : "대외 거시 지표가 평온하게 유지되는지 24시간 실시간 모니터링합니다."),
+        },
+        {
+            num: "②",
+            title: "실전 종목 연동",
+            target: "승인 안건 10만원 분할 체결",
+            desc: "거시 지표가 맑음(안정)일 때 대표님이 [승인 서명]하신 개별 실전 우량주(기업은행 등)를 안전하게 분할 매수합니다.",
+        },
+        {
+            num: "③",
+            title: "비상 방어선 가동",
+            target: sector === 'macro_vix' ? "VIX 30 돌파 시 패닉 경보" : (sector === 'macro_fx' ? "환율 1,400원 돌파 시 경보" : "대외 변동성 급증 시"),
+            desc: "공포지수 급등이나 환율 급변 등 폭풍우 발생 시 신규 매수를 전면 보류하고 기존 종목 -3.5% 손절선을 엄수합니다.",
+        },
+        {
+            num: "④",
+            title: "자산 방어 & 현금 확보",
+            target: "리스크 감지 시 현금 50% 확보",
+            desc: "대외 리스크가 확대될 경우 보유 주식의 절반을 분할 익절하여 안전 현금을 확보하고 계좌를 지킵니다.",
+        },
+    ] : [
         {
             num: "①",
             title: "계좌 비중 한도",
