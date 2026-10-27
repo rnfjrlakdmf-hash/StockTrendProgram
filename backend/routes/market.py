@@ -1459,32 +1459,22 @@ def get_stock_research_reports(
     def clean_html_to_points(raw_html: str):
         if not raw_html:
             return []
-        text = re.sub(r'<br\s*/?>|</p>|</li>|</div>|</tr>', '\n', raw_html, flags=re.IGNORECASE)
-        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r"<br\s*/?>|</p>|</li>|</div>|</tr>|</strong>|</b>|</h3>|</h2>", "\n", raw_html, flags=re.IGNORECASE)
+        text = re.sub(r"<[^>]+>", "", text)
         text = html_lib.unescape(text)
         pts = []
         for raw_ln in text.splitlines():
-            ln = re.sub(r'^[\s•\-\*·:]+', '', raw_ln).strip()
-            # 공백 정규화 (예: "3 조 1,724 억원" -> "3조 1,724억원")
-            ln = re.sub(r'(\d)\s+(조|억|만|원|배|%)', r'\1\2', ln)
-            ln = re.sub(r'(조|억)\s+(\d)', r'\1 \2', ln)
+            ln = re.sub(r"^[\s•\-\*·:]+", "", raw_ln).strip()
+            ln = re.sub(r"(\d)\s+(조|억|만|원|배|%)", r"\1\2", ln)
+            ln = re.sub(r"(조|억)\s+(\d)", r"\1 \2", ln)
             if len(ln) < 6:
                 continue
-            # 문장이 너무 길 경우 단어 중간에서 자르지 않고 마침표(.) 기준으로 완결된 문장만 보존
-            if len(ln) > 220:
-                sentences = re.split(r'(?<=[다음함망임됨]\.)\s+|(?<=\.)\s+', ln)
-                acc = ""
-                for s in sentences:
-                    s_clean = s.strip()
-                    if not s_clean:
-                        continue
-                    if len(acc) + len(s_clean) + 1 <= 240:
-                        acc = f"{acc} {s_clean}".strip() if acc else s_clean
-                    else:
-                        break
-                ln = acc if len(acc) >= 15 else (ln[:220].rsplit(' ', 1)[0] + "...")
-            pts.append(ln)
-        return pts[:4]
+            sents = [s.strip() for s in re.split(r"(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+", ln) if s.strip()]
+            if sents:
+                pts.extend(sents)
+            else:
+                pts.append(ln)
+        return pts[:10]
 
     def build_plain_korean_digest(
         cat_k: str,
@@ -1566,33 +1556,8 @@ def get_stock_research_reports(
 
         second_sentence = ""
 
-        # 깔끔한 3줄 핵심 정리 (군더더기 괄호 제거)
-        author_info = f"{broker_name}{f' · {analyst_nm} 애널리스트' if analyst_nm else ''}"
-        report_kind = "분기 실적 리뷰(Review)" if is_review else ("분기 실적 프리뷰(Preview)" if is_preview else "기업·산업 심층 분석")
-
-        factual_points = [
-            f"발간 정보: {write_dt or '최근'} · {author_info}",
-        ]
-        if gp_str or op_str:
-            factual_points.append(
-                f"증권사 의견: 투자의견 '{op_str or '중립/미표기'}' · 목표주가 {gp_str or '별도 미제시'}"
-            )
-        else:
-            factual_points.append(
-                f"리포트 분류: {report_kind} ({target_name})"
-            )
-
-        if num_snippets:
-            factual_points.append(
-                f"주요 실적 수치: {' · '.join(num_snippets)}"
-            )
-        else:
-            factual_points.append(
-                f"핵심 주제: {report_kind} 관점에서 사업 모멘텀 및 밸류에이션 점검"
-            )
-
+        # 1) 체크포인트 팁 결정
         if cat_k == "company":
-            easy_text = first_sentence.strip()
             if any(k in joined for k in ["수주", "공급", "계약", "납품"]):
                 tip_text = "향후 신규 수주·공급계약 공시(DART) 규모와 본계약 진행 속도를 주요 지표로 확인해 보세요."
             elif any(k in joined for k in ["인수", "합병", "시너지"]):
@@ -1607,6 +1572,43 @@ def get_stock_research_reports(
                 tip_text = "원/달러 환율 흐름과 외국인·기관 수급 변화를 함께 살펴보세요."
             else:
                 tip_text = f"'{target_name}'의 주요 사업 부문별 가동률 및 증권가 목표주가 괴리율을 함께 참고해 보세요."
+        else:
+            tip_text = "시장 금리·환율 변동성 및 수급 주체별 매매 동향을 함께 참고해 보세요."
+
+        # 2) 3줄 핵심 정리 (상단 카드 배지에 이미 있는 '발간정보', '증권사 투자의견/목표주가' 중복 전면 제거 -> 리포트 본문 기반 3대 핵심 분석 팩트로 교체)
+        filtered_points = []
+        for p in pts_list:
+            p_clean = re.sub(r'^[(\[\<][+\-!*▶■▲▼#\w\s]+[)\]\>]\s*:?\s*', '', str(p or '')).strip()
+            if len(p_clean) >= 12 and p_clean != rep_title and p_clean not in filtered_points:
+                filtered_points.append(p_clean)
+
+        factual_points = []
+        for s in filtered_points:
+            if len(s) < 18 and not s.endswith(('다.', '함.', '음.', '임.')):
+                continue
+            if not s.endswith(('.', '!', '?', '원', '%', ')')):
+                s += '.'
+            if len(s) > 135:
+                s = s[:130].rsplit(' ', 1)[0] + '...'
+            factual_points.append(s)
+            if len(factual_points) == 3:
+                break
+
+        # 3개가 안 될 경우 리포트 본문 수치나 핵심 모멘텀으로 보강 (상단 정보와 중복 없는 고유 팩트)
+        if len(factual_points) < 1:
+            factual_points.append(f"핵심 분석 모멘텀: '{rep_title}'.")
+        if len(factual_points) < 2:
+            if num_snippets:
+                factual_points.append(f"주요 실적 팩트: {' · '.join(num_snippets)}.")
+            else:
+                factual_points.append(f"사업 현황 점검: {target_name}의 주력 사업부별 수익성 및 수급 모멘텀 분석.")
+        if len(factual_points) < 3:
+            factual_points.append(f"투자 관전 포인트: {tip_text}")
+
+        factual_points = factual_points[:3]
+
+        if cat_k == "company":
+            easy_text = first_sentence.strip()
             return easy_text, tip_text, factual_points
 
         if cat_k == "industry":
