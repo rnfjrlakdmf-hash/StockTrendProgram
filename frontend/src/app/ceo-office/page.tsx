@@ -7154,7 +7154,7 @@ export default function CeoOfficePage() {
                         </div>
 
                         {/* 우측 4컬럼: 전사 시장 시스템 가동 현황 & 빠른 서명 요약 (전자결재 탭에서는 12컬럼 풀와이드 메일함으로 전환) */}
-                        <div className={['electronic_sign', 'weekly_review_calendar', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
+                        <div className={['electronic_sign', 'one_page_summary', 'weekly_review_calendar', 'watchlist_research', 'approved_tf'].includes(activeTab) ? 'hidden' : 'lg:col-span-4 space-y-5'}>
                             {/* 전사 자동 시스템 가동 모니터 */}
                             <div className="bg-[#0d1526] border border-emerald-500/30 rounded-2xl p-4 sm:p-5">
                                 <div className="flex items-center justify-between mb-3">
