@@ -239,8 +239,10 @@ interface FinancialRiskPlan {
     currPrice: string;
     targetPrice: string;
     maxAlloc: string;
+    allocType: string;
     totalShares: string;
     actualInvest: string;
+    cashReserve: string;
     stopLossPrice: string;
     maxLossAmount: string;
     shieldedAmount: string;
@@ -250,10 +252,11 @@ interface FinancialRiskPlan {
     finalTotalVal: string;
     finalProfitAmt: string;
     finalUpsidePct: string;
+    priceExceedsBudget: boolean;
     tranches: { step: string; price: string; shares: string; amt: string }[];
 }
 
-function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalCapital: number = 10000000): FinancialRiskPlan | null {
+function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalCapital: number = 100000): FinancialRiskPlan | null {
     const isDollar = String(rawCurrPrice || '').includes('$') || String(rawTargetPrice || '').includes('$');
     const cMatch = String(rawCurrPrice || '').split('(')[0].match(/([0-9,]+(?:\.[0-9]+)?)/);
     const currP = cMatch ? parseFloat(cMatch[1].replace(/,/g, '')) : 0;
@@ -262,18 +265,49 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     const tMatch = String(rawTargetPrice || '').split('(')[0].match(/([0-9,]+(?:\.[0-9]+)?)/);
     const targetP = tMatch ? parseFloat(tMatch[1].replace(/,/g, '')) : (currP * 1.15);
 
-    const capital = isDollar ? (totalCapital === 10000000 ? 10000 : totalCapital / 1400) : totalCapital;
-    const maxAlloc = capital * 0.15; // 15% 계좌 비중 상한
+    const fmt = (v: number) => isDollar ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`;
 
+    // 운용 자금 처리:
+    // 500만원 이하(10만, 30만, 50만, 100만, 300만, 500만) = 해당 종목 실전 직접 투입 예산으로 100% 배정
+    // 1,000만원 이상(1천만, 3천만, 5천만, 1억 등) = 전체 계좌 포트폴리오 안전 분산 15% 비중 한도 적용
+    const isDirectBudget = totalCapital <= 5000000;
+    const capital = isDollar ? (totalCapital <= 5000000 ? (totalCapital / 1400) : (totalCapital / 1400)) : totalCapital;
+    const maxAlloc = isDirectBudget ? capital : (capital * 0.15);
+    const allocType = isDirectBudget 
+        ? (isDollar ? '소액 실전 예산 (직접 투입)' : `소액 실전 맞춤 (${fmt(maxAlloc)} 직접 투입)`) 
+        : `계좌 분산 한도 (${fmt(maxAlloc)}, 총자산의 15%)`;
+
+    let priceExceedsBudget = false;
     let totalShares = Math.floor(maxAlloc / currP);
-    if (totalShares <= 0) totalShares = 1;
+    if (totalShares <= 0) {
+        totalShares = 1;
+        priceExceedsBudget = true;
+    }
 
-    let share1 = Math.floor(totalShares * 0.3) || 1;
-    let share2 = Math.floor(totalShares * 0.4) || 1;
-    let share3 = totalShares - share1 - share2;
-    if (share3 <= 0) {
+    // 3단계 분할 매수 수량 배분
+    let share1 = 0;
+    let share2 = 0;
+    let share3 = 0;
+    if (totalShares === 1) {
+        share1 = 1;
+        share2 = 0;
+        share3 = 0;
+    } else if (totalShares === 2) {
+        share1 = 1;
+        share2 = 1;
+        share3 = 0;
+    } else if (totalShares === 3) {
+        share1 = 1;
+        share2 = 1;
         share3 = 1;
-        totalShares = share1 + share2 + share3;
+    } else {
+        share1 = Math.max(1, Math.round(totalShares * 0.3));
+        share2 = Math.max(1, Math.round(totalShares * 0.4));
+        share3 = totalShares - share1 - share2;
+        if (share3 < 0) {
+            share2 += share3;
+            share3 = 0;
+        }
     }
 
     const safeEntry = isDollar ? Number((currP * 0.985).toFixed(2)) : Math.round(currP * 0.985);
@@ -281,17 +315,21 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     const entry3 = currP;
 
     const actualInvest = isDollar ? Number((totalShares * currP).toFixed(2)) : Math.round(totalShares * currP);
+    const cashReserve = Math.max(0, isDollar ? Number((maxAlloc - actualInvest).toFixed(2)) : Math.round(maxAlloc - actualInvest));
 
     const stopLossP = isDollar ? Number((currP * 0.965).toFixed(2)) : Math.round(currP * 0.965);
     const lossPerShare = isDollar ? Number((currP - stopLossP).toFixed(2)) : Math.round(currP - stopLossP);
     const maxLossAmt = isDollar ? Number((lossPerShare * totalShares).toFixed(2)) : Math.round(lossPerShare * totalShares);
-    const shieldedAmt = isDollar ? Number((actualInvest - maxLossAmt).toFixed(2)) : (actualInvest - maxLossAmt);
+    // 철통 회수금: 손절 후 건져내는 주식 평가금 + 미투입 잔여 현금
+    const shieldedAmt = isDollar 
+        ? Number((actualInvest - maxLossAmt + (priceExceedsBudget ? 0 : cashReserve)).toFixed(2)) 
+        : (actualInvest - maxLossAmt + (priceExceedsBudget ? 0 : cashReserve));
 
     // 1차 익절가 (중간 목표가 또는 +8%)
     const t1P = targetP > currP
         ? (isDollar ? Number((currP + (targetP - currP) * 0.5).toFixed(2)) : Math.round(currP + (targetP - currP) * 0.5))
         : (isDollar ? Number((currP * 1.08).toFixed(2)) : Math.round(currP * 1.08));
-    const t1Shares = Math.floor(totalShares * 0.5) || 1;
+    const t1Shares = Math.max(1, Math.floor(totalShares * 0.5));
     const t1ProfitPerShare = isDollar ? Number((t1P - currP).toFixed(2)) : Math.round(t1P - currP);
     const t1CashIn = isDollar ? Number((t1Shares * t1P).toFixed(2)) : Math.round(t1Shares * t1P);
     const t1ProfitAmt = isDollar ? Number((t1ProfitPerShare * t1Shares).toFixed(2)) : Math.round(t1ProfitPerShare * t1Shares);
@@ -302,15 +340,15 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     const finalProfitAmt = isDollar ? Number((finalProfitPerShare * totalShares).toFixed(2)) : Math.round(finalProfitPerShare * totalShares);
     const finalUpsidePct = ((targetP - currP) / currP * 100).toFixed(1);
 
-    const fmt = (v: number) => isDollar ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`;
-
     return {
         isDollar,
         currPrice: fmt(currP),
         targetPrice: fmt(targetP),
         maxAlloc: fmt(maxAlloc),
+        allocType,
         totalShares: isDollar ? `${totalShares}주` : `${totalShares.toLocaleString()}주`,
         actualInvest: fmt(actualInvest),
+        cashReserve: fmt(cashReserve),
         stopLossPrice: fmt(stopLossP),
         maxLossAmount: fmt(maxLossAmt),
         shieldedAmount: fmt(shieldedAmt),
@@ -320,6 +358,7 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
         finalTotalVal: fmt(finalTotalVal),
         finalProfitAmt: fmt(finalProfitAmt),
         finalUpsidePct: `${Number(finalUpsidePct) > 0 ? '+' : ''}${finalUpsidePct}%`,
+        priceExceedsBudget,
         tranches: [
             { step: '1차 (30%)', price: fmt(safeEntry), shares: `${share1}주`, amt: fmt(share1 * safeEntry) },
             { step: '2차 (40%)', price: fmt(entry2), shares: `${share2}주`, amt: fmt(share2 * entry2) },
@@ -328,10 +367,11 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     };
 }
 
-function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number = 10000000): {
+function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number = 100000): {
     headline: string;
     factors: RiskFactor[];
     defenseRules: RiskDefenseRule[];
+    financialPlan: FinancialRiskPlan | null;
 } {
     const sName = doc.stock_name || "해당 안건";
     const sector = detectSectorType(doc.stock_name, doc.title || "", doc.category_badge || "");
@@ -642,29 +682,35 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
         {
             num: "①",
             title: "계좌 비중 한도",
-            target: plan ? `${plan.maxAlloc} 한도 (${plan.totalShares})` : `최대 10~15% (${maxWeightDesc})`,
+            target: plan ? `${plan.maxAlloc} (${plan.allocType})` : `최대 10~15% (${maxWeightDesc})`,
             desc: plan 
-                ? `운용 자금 기준 총 ${plan.actualInvest} (${plan.totalShares}) 이내 엄격 제한 (몰빵 절대 금지)`
+                ? (plan.priceExceedsBudget 
+                    ? `설정 예산(${plan.maxAlloc}) 대비 1주 단가가 높아 최소 단위인 1주(${plan.actualInvest}) 기준으로 산출했습니다.`
+                    : `운용 자산 기준 총 ${plan.actualInvest} (${plan.totalShares}) 배정 (잔여 현금 ${plan.cashReserve} 비상금 보관)`)
                 : `${sName} 단일 종목에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.`,
         },
         {
             num: "②",
             title: "3단계 분할 매수",
             target: plan 
-                ? `1차 ${plan.tranches[0].amt} ➔ 2차 ${plan.tranches[1].amt} ➔ 3차 ${plan.tranches[2].amt}`
+                ? (plan.tranches[1].shares === '0주' 
+                    ? `1차 ${plan.tranches[0].amt} (1주 집중)` 
+                    : `1차 ${plan.tranches[0].amt} ➔ 2차 ${plan.tranches[1].amt} ➔ 3차 ${plan.tranches[2].amt}`)
                 : `30% ➔ 40% ➔ 30% (${safeEntryFormatted})`,
             desc: plan
-                ? `1차(${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} ${plan.tranches[2].shares}) 분할 체결`
+                ? (plan.tranches[1].shares === '0주'
+                    ? `오전 10시 지지선 확인 후 ${plan.tranches[0].price}에 1주 진입합니다.`
+                    : `1차(${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} ${plan.tranches[2].shares}) 분할 체결`)
                 : `1차(오전 10시 지지선 ${safeEntryFormatted}에 30%) ➔ 2차(눌림목 안착 40%) ➔ 3차(상승 돌파 30%)로 나누어 매수합니다.`,
         },
         {
             num: "③",
             title: "기계적 손절 방어선",
             target: plan
-                ? `🛑 ${plan.stopLossPrice} (최대 손실: -${plan.maxLossAmount})`
+                ? `🛑 ${plan.stopLossPrice} (최대 손실 딱 -${plan.maxLossAmount})`
                 : `🛑 ${stopLossFormatted} (-3.5% 도달 시 즉각)`,
             desc: plan
-                ? `손절 시 총 손실은 딱 -${plan.maxLossAmount}으로 제한되며, 원금 ${plan.shieldedAmount}(96.5%)는 철통 방어 회수`
+                ? `손절 시 총 손실은 딱 -${plan.maxLossAmount}으로 철저히 차단되며, 원금 + 잔여금 ${plan.shieldedAmount}은 안전하게 지켜냅니다.`
                 : `현재가 대비 -3.5% 하락한 ${stopLossFormatted}을 종가 또는 장중 이탈하면 감정 없이 즉시 방어합니다.`,
         },
         {
@@ -708,7 +754,7 @@ interface StockRiskDiagnostic {
     }[];
 }
 
-function computeStockRiskDiagnostic(r: any): StockRiskDiagnostic {
+function computeStockRiskDiagnostic(r: any, capitalOverride: number = 100000): StockRiskDiagnostic {
     const isUS = r.category === 'us_stock';
     const price = typeof r.price === 'number' ? r.price : 0;
     const fmt = (n: number) => isUS ? `$${n.toFixed(2)}` : `${Math.round(n).toLocaleString()}원`;
@@ -808,7 +854,7 @@ function computeStockRiskDiagnostic(r: any): StockRiskDiagnostic {
         croVerdict = `${r.stock_name}은(는) 단기 가격 급등 또는 52주 상단 매물벽 저항으로 변동성 리스크가 높은 과열 구간입니다. 신규 추격 매수는 전면 자제하시고, -3.5% 손절가(${fmt(stopLossVal)})를 철저히 설정한 상태에서만 극소액 분할 접근을 허용합니다.`;
     }
 
-    const plan = computeFinancialRiskPlan(r.price_str || r.price, r.consensus?.target_mean || r.consensus?.target_mean_str, 10000000);
+    const plan = computeFinancialRiskPlan(r.price_str || r.price, r.consensus?.target_mean || r.consensus?.target_mean_str, capitalOverride);
 
     return {
         riskScore: score,
@@ -1295,7 +1341,7 @@ export default function CeoOfficePage() {
     const [riskSearchError, setRiskSearchError] = useState<string>('');
     const [copiedRiskStock, setCopiedRiskStock] = useState<string>('');
     // 💰 [NEW] 대표이사 실전 투자금 기준 상태 (기본 1,000만원)
-    const [riskCapital, setRiskCapital] = useState<number>(10000000);
+    const [riskCapital, setRiskCapital] = useState<number>(100000);
 
     // 📚 관심종목 리서치 보고서 상태
     const [researchReports, setResearchReports] = useState<any[]>([]);
@@ -3617,6 +3663,26 @@ export default function CeoOfficePage() {
                                                                         ))}
                                                                     </div>
 
+                                                                    {/* 🔒 [안전 게이트키퍼] 대표이사 독점 결재권 보증 안내 배너 */}
+                                                                    <div className="bg-gradient-to-r from-sky-950/40 via-blue-950/30 to-indigo-950/30 border border-sky-500/35 rounded-xl p-3 sm:p-3.5 flex items-start gap-3">
+                                                                        <div className="p-2 rounded-lg bg-sky-500/20 text-sky-300 text-lg shrink-0">
+                                                                            🔒
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-xs font-black text-sky-200">
+                                                                                    대표이사 독점 결재권(Human-in-the-Loop Safe Guard) 가동 중
+                                                                                </span>
+                                                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                                                    100% 허가제
+                                                                                </span>
+                                                                            </div>
+                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
+                                                                                자동매매는 대표님께서 기안서를 검토하시고 <strong className="text-amber-300">[승인 서명(재가)]</strong>을 누르신 <strong>‘허가 안건’</strong>에 한해서만, 대표님이 정하신 소액 예산(10만원 등) 한도 내에서 안전하게 체결됩니다. <strong className="text-rose-300">미결재·반려 안건은 계좌에서 1원도 무단 매매되지 않으므로 안심하셔도 됩니다.</strong>
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
                                                                     {/* 🎯 대표님 전용 철통 자산 방어 4대 실천 수칙 */}
                                                                     <div className="pt-2 border-t border-rose-500/20">
                                                                         <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5 mb-2">
@@ -3656,12 +3722,17 @@ export default function CeoOfficePage() {
                                                                                     </span>
                                                                                 </div>
 
-                                                                                {/* 투자금 변경 퀵 버튼 */}
-                                                                                <div className="flex items-center gap-1.5">
-                                                                                    <span className="text-[11px] text-gray-400 font-bold">운용 자금:</span>
+                                                                                {/* 투자금 변경 퀵 버튼 & 직접 입력 */}
+                                                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                                                    <span className="text-[11px] text-gray-400 font-bold shrink-0">운용 예산:</span>
                                                                                     {[
-                                                                                        { label: '1,000만원', val: 10000000 },
-                                                                                        { label: '3,000만원', val: 30000000 },
+                                                                                        { label: '🌟 10만원 (소액 실전)', val: 100000 },
+                                                                                        { label: '30만원', val: 300000 },
+                                                                                        { label: '50만원', val: 500000 },
+                                                                                        { label: '100만원', val: 1000000 },
+                                                                                        { label: '300만원', val: 3000000 },
+                                                                                        { label: '500만원', val: 5000000 },
+                                                                                        { label: '1,000만원 (15% 비중)', val: 10000000 },
                                                                                         { label: '5,000만원', val: 50000000 },
                                                                                         { label: '1억원', val: 100000000 },
                                                                                     ].map((btn) => (
@@ -3669,15 +3740,30 @@ export default function CeoOfficePage() {
                                                                                             key={btn.val}
                                                                                             type="button"
                                                                                             onClick={() => setRiskCapital(btn.val)}
-                                                                                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                                                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
                                                                                                 riskCapital === btn.val
-                                                                                                    ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                                                                                    ? 'bg-amber-400 text-slate-950 font-black shadow-md ring-1 ring-amber-300'
                                                                                                     : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                                                                                             }`}
                                                                                         >
                                                                                             {btn.label}
                                                                                         </button>
                                                                                     ))}
+                                                                                    <div className="flex items-center gap-1 bg-black/60 border border-white/15 rounded-lg px-2 py-0.5 ml-1">
+                                                                                        <span className="text-[10px] text-gray-400 font-bold">직접:</span>
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            step="10000"
+                                                                                            min="10000"
+                                                                                            value={riskCapital}
+                                                                                            onChange={(e) => {
+                                                                                                const n = parseInt(e.target.value, 10);
+                                                                                                if (!isNaN(n) && n > 0) setRiskCapital(n);
+                                                                                            }}
+                                                                                            className="w-20 bg-transparent text-[10px] font-mono text-amber-300 font-bold focus:outline-none text-right"
+                                                                                        />
+                                                                                        <span className="text-[10px] text-gray-400">원</span>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
 
@@ -3714,8 +3800,18 @@ export default function CeoOfficePage() {
                                                                                         <tr className="bg-amber-500/10 font-bold border-y border-amber-500/25">
                                                                                             <td className="py-2.5 px-2.5 text-amber-300">⚖️ 총 투자 한도</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-amber-300">현재가 {riskData.financialPlan.currPrice}</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-amber-200">계좌 최대 비중 15% 한도 엄수 (몰빵 금지)</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">
+                                                                                                총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})
+                                                                                                {riskData.financialPlan.cashReserve !== '0원' && !riskData.financialPlan.priceExceedsBudget && (
+                                                                                                    <span className="text-gray-400 text-[10px] ml-1.5 font-normal">(잔여 현금 {riskData.financialPlan.cashReserve} 비축)</span>
+                                                                                                )}
+                                                                                            </td>
+                                                                                            <td className="py-2.5 px-2.5 text-amber-200">
+                                                                                                {riskData.financialPlan.allocType}
+                                                                                                {riskData.financialPlan.priceExceedsBudget && (
+                                                                                                    <span className="text-rose-400 text-[10px] block font-normal">※ 1주 단가가 예산보다 높아 최소 1주 기준으로 시뮬레이션</span>
+                                                                                                )}
+                                                                                            </td>
                                                                                         </tr>
                                                                                         <tr className="bg-rose-500/10 font-bold border-b border-rose-500/30">
                                                                                             <td className="py-2.5 px-2.5 text-rose-300 flex items-center gap-1">
@@ -5365,7 +5461,7 @@ export default function CeoOfficePage() {
                                     {searchedRiskReport && (() => {
                                         const r = searchedRiskReport;
                                         const isKr = r.category === 'kr_stock';
-                                        const audit = computeStockRiskDiagnostic(r);
+                                        const audit = computeStockRiskDiagnostic(r, riskCapital);
                                         const isCopied = copiedRiskStock === r.stock_code;
 
                                         return (
