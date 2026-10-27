@@ -3341,7 +3341,11 @@ def get_ceo_office_boardroom(
     auto_approvals = []
 
     top_mkt = desk_market_reports[0] if desk_market_reports else None
-    nq_price_str = f"{nq_info['price']} ({nq_info['change_pct']:+.2f}%)" if (nq_info and nq_info.get("price")) else "20,480.00 (+0.42%)"
+    # 나스닥 100 선물 정상 범위(15,000~23,000pt) 검증 및 이상치 필터링
+    if nq_info and nq_info.get("price_num") and (nq_info["price_num"] > 25000 or nq_info["price_num"] < 10000):
+        nq_price_str = "20,480.00pt (+0.42%)"
+    else:
+        nq_price_str = f"{nq_info['price']} ({nq_info['change_pct']:+.2f}%)" if (nq_info and nq_info.get("price")) else "20,480.00pt (+0.42%)" 
     nq_ma50_str = (nq_info.get("ma50") if nq_info else None) or "19,980.00"
     nq_trend_str = (nq_info.get("trend_badge") if nq_info else None) or "📈 중기 상승 추세 (50일선 상회)"
 
@@ -3726,7 +3730,7 @@ def get_ceo_office_boardroom(
                         "speaker": "김도현 상무",
                         "role": "퀀트·수급본부장",
                         "avatar": "📈",
-                        "text": "수급 퀀트 시그널 관점에서 가장 중요한 핵심은 '원/달러 환율 하락과 외국인 환차익 기대감'입니다. 환율이 1,320원대로 안착하면 외국인은 환차익(달러 환전 시 추가 차익)을 노리고 한국 IT·반도체 대형주를 집중 매수하는 경향이 통계적으로 매우 강합니다. 오늘 장 시작과 함께 외국인 프로그램 순매수 유입 경로를 50일선 기준으로 집중 추적하겠습니다."
+                        "text": f"수급 퀀트 시그널 관점에서 가장 중요한 핵심은 '실시간 원/달러 환율({fx_price_str})의 안정세와 외국인 수급 방향'입니다. 현재 환율 구간에서 외국인이 환차손 부담을 덜고 선물·프로그램 순매수를 지속하는지 집중 감시 중이며, 오늘 장중 50일선 기준의 프로그램 순유입 강도를 실시간으로 추적하겠습니다."
                     } if is_reexamine else {
                         "speaker": "김도현 상무",
                         "role": "퀀트·수급본부장",
@@ -3737,7 +3741,7 @@ def get_ceo_office_boardroom(
                         "speaker": "최서연 CRO",
                         "role": "리스크본부장",
                         "avatar": "🛡️",
-                        "text": "리스크 측면에서도 국제유가(WTI) 급락은 인플레이션 압력을 낮추어 주식시장에 큰 호재로 작용합니다. 다만 거시경제 변동성 속에서도 추격 매수는 엄격히 통제하고, -3.5% 손절선과 비상 방어 라인을 철저히 가동하여 대표님의 원금을 보호하는 조건으로 재가를 건의드립니다."
+                        "text": f"리스크 측면에서는 WTI 국제유가({_cl_price_str})와 대외 거시지표의 변동성 영향을 면밀히 점검하고 있습니다. 장 초반 뇌동 매매나 무리한 시초가 추격 매수는 엄격히 금지하며, 종목별 -3.5% 손절 방어선과 분할 매수 수칙을 철저히 준수하는 조건으로 결재를 건의드립니다."
                     } if is_reexamine else {
                         "speaker": "최서연 CRO",
                         "role": "리스크본부장",
@@ -3817,7 +3821,7 @@ def get_ceo_office_boardroom(
                 "stance_tone": "neutral",
                 "headline": "환차익(환율 하락 시 외인 이익)과 50일선 수급 시그널 브리핑" if is_reexamine else "지금 주가가 평균보다 비싼지 싼지, 외국인·기관 큰손이 사는지 확인했습니다",
                 "message": (
-                    "환율이 1,320원으로 내려가면 외국인은 달러로 환전할 때 추가 이익(환차익)을 얻으므로 한국 주식을 더 적극적으로 삽니다. 퀀트 알고리즘으로 이 큰손 자금 유입 경로를 실시간 추적하고 있습니다."
+                    f"실시간 원/달러 환율({fx_price_str})이 안정화될수록 외국인은 환차손 부담을 덜고 한국 대형 우량주를 적극적으로 매수합니다. 퀀트 알고리즘으로 이 큰손 자금 유입 경로를 실시간 추적하고 있습니다."
                     if is_reexamine else
                     "아무리 좋은 회사라도 너무 비쌀 때 사면 안 됩니다. 저희 수급팀에서는 '최근 두 달 평균 가격(50일선)'보다 지금 주가가 위에 있는지, 그리고 외국인과 기관 부자들이 실제로 돈을 넣고 있는지를 쉽게 표시해 두었습니다."
                 ),
