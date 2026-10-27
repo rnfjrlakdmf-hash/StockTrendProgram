@@ -169,6 +169,111 @@ interface AutoApprovalDoc {
     easy_terms?: { term: string; desc: string }[];
 }
 
+interface RiskFactor {
+    icon: string;
+    title: string;
+    tag: string;
+    tagColor: string;
+    points: string[];
+}
+
+interface RiskDefenseRule {
+    num: string;
+    title: string;
+    target: string;
+    desc: string;
+}
+
+function getDetailedRiskBreakdown(doc: AutoApprovalDoc): {
+    headline: string;
+    factors: RiskFactor[];
+    defenseRules: RiskDefenseRule[];
+} {
+    const isMacroOrIndex = doc.stock_name === '전체 시장 시스템' || 
+                           doc.category_type === 'world_news' || 
+                           doc.category_badge?.includes('모닝') || 
+                           doc.stock_name?.includes('매크로') ||
+                           doc.category_type === 'global_futures';
+                           
+    const isUSStock = doc.category_type === 'us_stock';
+    const sName = doc.stock_name || "해당 안건";
+
+    const factors: RiskFactor[] = [
+        {
+            icon: "⏰",
+            title: "진입 타이밍 & 시초가 변동성",
+            tag: "장 초반 30분 주의",
+            tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+            points: isMacroOrIndex ? [
+                "개장 직후(09:00~09:20) 갭상승 출발 시 단기 차익 실현 매물 출회 및 위꼬리 리스크 존재",
+                "시초가 30분간 전액 매수는 지양하며, 10시 이후 당일 시초가 및 지지선 안착을 확인해야 안전",
+            ] : [
+                `밤사이 호재 뉴스로 개장 직후 주가가 급등 출발할 경우 단기 고점 차익 매물에 물릴 위험`,
+                `시초가 추격 매수를 자제하고, 오전 10시 이후 장중 거래량 및 눌림목 지지 여부 확인 후 접근`,
+            ],
+        },
+        {
+            icon: "📉",
+            title: "수급 변심 & 매물대 저항",
+            tag: "큰손 매도 전환 감시",
+            tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+            points: isMacroOrIndex ? [
+                "외국인의 KOSPI 200 선물 순매도 전환 시 당일 오후장 지수 급격 하락 압력 발생 가능성",
+                "외국인 선물 순매도가 -3,000억 원 이상 급증할 경우 신규 진입을 전면 보류하고 관망",
+            ] : [
+                `직전 고점 부근 및 매물 집중 구간에서의 단기 차익 실현 매도 벽 출회 위험`,
+                `50일 이동평균선 지지 여부와 외국인·기관 큰손의 당일 동반 순매도 전환 여부 필수 체크`,
+            ],
+        },
+        {
+            icon: "🌐",
+            title: "거시 매크로 & 환율·금리 민감도",
+            tag: "대외 환경 리스크",
+            tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+            points: isUSStock ? [
+                "원/달러 환율 변동에 따른 환차손(원화 강세 전환 시 평가손실) 위험 상존",
+                "미국 국채 10년물 금리 급등 및 연준(Fed) 금리 기조에 따른 고밸류 성장주 변동성 확대 대비",
+            ] : [
+                "원/달러 환율 1,380원대 후반 고환율 구간 지속 시 외국인 패시브 자금의 일시 이탈 위험",
+                "미국 주요 물가·고용 지표 발표 및 지정학적 변수에 따른 글로벌 시장 흔들림 모니터링",
+            ],
+        },
+    ];
+
+    const defenseRules: RiskDefenseRule[] = [
+        {
+            num: "①",
+            title: "계좌 비중 제한",
+            target: "최대 10~15% 이내",
+            desc: "단일 종목·안건에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.",
+        },
+        {
+            num: "②",
+            title: "3단계 분할 매수",
+            target: "30% ➔ 40% ➔ 30%",
+            desc: "1차(오전 10시 이후 30%) ➔ 2차(지지선 확인 시 40%) ➔ 3차(상승 돌파 시 30%)로 나누어 매수합니다.",
+        },
+        {
+            num: "③",
+            title: "기계적 손절 방어선",
+            target: "-3.5% 또는 50일선",
+            desc: "진입 단가 대비 -3.5% 하락하거나 50일선 아래로 종가가 깨지면 감정 없이 즉시 방어합니다.",
+        },
+        {
+            num: "④",
+            title: "1차 분할 익절",
+            target: "목표가 도달 시 50%",
+            desc: "제시된 1차 목표가 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.",
+        },
+    ];
+
+    return {
+        headline: parseExecutiveOpinion(doc.risk_opinion, "리스크본부", "⚠️").body || "하루에 급등한 주식을 무리하게 추격 매수하지 않고, 50일선 지지 확인 후 분할 매수하며 -3.5% 손절선을 엄수합니다.",
+        factors,
+        defenseRules,
+    };
+}
+
 interface ResearchReportItem {
     id: string;
     category: string;
@@ -2835,14 +2940,91 @@ export default function CeoOfficePage() {
                                                             </div>
                                                         </div>
 
-                                                        {/* 4. 대표이사 리스크 방어선 배너 */}
-                                                        <div className="mt-3 bg-rose-950/20 border border-rose-500/30 rounded-xl p-3 flex items-start gap-2.5">
-                                                            <span className="text-sm shrink-0 mt-0.5">🛡️</span>
-                                                            <div className="text-xs text-rose-200/90 leading-relaxed font-medium">
-                                                                <span className="font-black text-rose-300 mr-1.5">[리스크 방어선 · 최서연 상무]:</span>
-                                                                {parseExecutiveOpinion(activeDoc.risk_opinion, "리스크본부", "⚠️").body || "하루에 급등한 주식을 무리하게 추격 매수하지 않고, 50일선 지지 확인 후 분할 매수하며 -3.5% 손절선을 엄수합니다."}
-                                                            </div>
-                                                        </div>
+                                                        {/* 4. 대표이사 리스크 정밀 진단 & 세부 방어 매뉴얼 */}
+                                                        {(() => {
+                                                            const riskData = getDetailedRiskBreakdown(activeDoc);
+                                                            return (
+                                                                <div className="mt-4 bg-gradient-to-br from-rose-950/30 via-zinc-950/90 to-red-950/20 border border-rose-500/35 rounded-2xl p-4 sm:p-4.5 shadow-lg space-y-3.5">
+                                                                    {/* 상단 타이틀 바 */}
+                                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-rose-500/20">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="w-6 h-6 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center justify-center text-xs">
+                                                                                🛡️
+                                                                            </span>
+                                                                            <h5 className="text-xs sm:text-sm font-black text-rose-200 tracking-tight flex items-center gap-1.5">
+                                                                                <span>4. 리스크 정밀 진단 & 세부 방어 매뉴얼</span>
+                                                                                <span className="text-[10px] text-zinc-400 font-normal">| 최서연 리스크관리본부장 (CRO)</span>
+                                                                            </h5>
+                                                                        </div>
+                                                                        <span className="text-[10px] font-black text-rose-300 bg-rose-500/15 px-2 py-0.5 rounded-md border border-rose-500/30 flex items-center gap-1">
+                                                                            <span>⚠️</span>
+                                                                            <span>손실 방어 1순위 감사 완료</span>
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {/* CRO 핵심 경고 헤드라인 */}
+                                                                    <div className="bg-black/50 border border-rose-500/25 rounded-xl p-3 flex items-start gap-2.5">
+                                                                        <span className="text-rose-400 font-black text-xs shrink-0 mt-0.5">📌</span>
+                                                                        <p className="text-xs text-rose-100/95 font-medium leading-relaxed">
+                                                                            <span className="font-black text-rose-300 mr-1.5">[CRO 핵심 경보]:</span>
+                                                                            {riskData.headline}
+                                                                        </p>
+                                                                    </div>
+
+                                                                    {/* 3대 정밀 리스크 요인 분석 카드 그리드 */}
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                                                                        {riskData.factors.map((f, fIdx) => (
+                                                                            <div key={fIdx} className="bg-zinc-950/80 border border-white/10 rounded-xl p-3 flex flex-col justify-between">
+                                                                                <div>
+                                                                                    <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-white/5">
+                                                                                        <span className="text-xs font-black text-white flex items-center gap-1">
+                                                                                            <span>{f.icon}</span>
+                                                                                            <span>{f.title}</span>
+                                                                                        </span>
+                                                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${f.tagColor}`}>
+                                                                                            {f.tag}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <ul className="space-y-1.5 text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium">
+                                                                                        {f.points.map((pt, pIdx) => (
+                                                                                            <li key={pIdx} className="flex items-start gap-1.5">
+                                                                                                <span className="text-rose-400 font-bold shrink-0">•</span>
+                                                                                                <span>{pt}</span>
+                                                                                            </li>
+                                                                                        ))}
+                                                                                    </ul>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+
+                                                                    {/* 🎯 대표님 전용 철통 자산 방어 4대 실천 수칙 */}
+                                                                    <div className="pt-2 border-t border-rose-500/20">
+                                                                        <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5 mb-2">
+                                                                            <Target className="w-3.5 h-3.5 text-amber-400" />
+                                                                            <span>대표님 전용 '철통 자산 방어 실천 4원칙' (구체적 실행 수칙)</span>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                            {riskData.defenseRules.map((rule, rIdx) => (
+                                                                                <div key={rIdx} className="bg-black/60 border border-amber-500/20 rounded-xl p-2.5 flex flex-col justify-between">
+                                                                                    <div>
+                                                                                        <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400">
+                                                                                            <span>{rule.num} {rule.title}</span>
+                                                                                        </div>
+                                                                                        <div className="text-xs sm:text-[13px] font-black text-amber-300 font-mono mt-1">
+                                                                                            {rule.target}
+                                                                                        </div>
+                                                                                        <p className="text-[10px] text-zinc-300 mt-1 leading-snug">
+                                                                                            {rule.desc}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
 
                                                     {/* 🏛️ 대표이사 재가 연동: 전담 TFT 신설 안내 배너 */}
