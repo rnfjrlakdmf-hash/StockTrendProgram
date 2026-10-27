@@ -234,7 +234,101 @@ function detectSectorType(stockName: string, title: string = "", categoryBadge: 
     return 'general_stock';
 }
 
-function getDetailedRiskBreakdown(doc: AutoApprovalDoc): {
+interface FinancialRiskPlan {
+    isDollar: boolean;
+    currPrice: string;
+    targetPrice: string;
+    maxAlloc: string;
+    totalShares: string;
+    actualInvest: string;
+    stopLossPrice: string;
+    maxLossAmount: string;
+    shieldedAmount: string;
+    target1Price: string;
+    target1CashIn: string;
+    target1ProfitAmt: string;
+    finalTotalVal: string;
+    finalProfitAmt: string;
+    finalUpsidePct: string;
+    tranches: { step: string; price: string; shares: string; amt: string }[];
+}
+
+function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalCapital: number = 10000000): FinancialRiskPlan | null {
+    const isDollar = String(rawCurrPrice || '').includes('$') || String(rawTargetPrice || '').includes('$');
+    const cMatch = String(rawCurrPrice || '').split('(')[0].match(/([0-9,]+(?:\.[0-9]+)?)/);
+    const currP = cMatch ? parseFloat(cMatch[1].replace(/,/g, '')) : 0;
+    if (currP <= 0) return null;
+
+    const tMatch = String(rawTargetPrice || '').split('(')[0].match(/([0-9,]+(?:\.[0-9]+)?)/);
+    const targetP = tMatch ? parseFloat(tMatch[1].replace(/,/g, '')) : (currP * 1.15);
+
+    const capital = isDollar ? (totalCapital === 10000000 ? 10000 : totalCapital / 1400) : totalCapital;
+    const maxAlloc = capital * 0.15; // 15% 계좌 비중 상한
+
+    let totalShares = Math.floor(maxAlloc / currP);
+    if (totalShares <= 0) totalShares = 1;
+
+    let share1 = Math.floor(totalShares * 0.3) || 1;
+    let share2 = Math.floor(totalShares * 0.4) || 1;
+    let share3 = totalShares - share1 - share2;
+    if (share3 <= 0) {
+        share3 = 1;
+        totalShares = share1 + share2 + share3;
+    }
+
+    const safeEntry = isDollar ? Number((currP * 0.985).toFixed(2)) : Math.round(currP * 0.985);
+    const entry2 = isDollar ? Number((currP * 0.965).toFixed(2)) : Math.round(currP * 0.965);
+    const entry3 = currP;
+
+    const actualInvest = isDollar ? Number((totalShares * currP).toFixed(2)) : Math.round(totalShares * currP);
+
+    const stopLossP = isDollar ? Number((currP * 0.965).toFixed(2)) : Math.round(currP * 0.965);
+    const lossPerShare = isDollar ? Number((currP - stopLossP).toFixed(2)) : Math.round(currP - stopLossP);
+    const maxLossAmt = isDollar ? Number((lossPerShare * totalShares).toFixed(2)) : Math.round(lossPerShare * totalShares);
+    const shieldedAmt = isDollar ? Number((actualInvest - maxLossAmt).toFixed(2)) : (actualInvest - maxLossAmt);
+
+    // 1차 익절가 (중간 목표가 또는 +8%)
+    const t1P = targetP > currP
+        ? (isDollar ? Number((currP + (targetP - currP) * 0.5).toFixed(2)) : Math.round(currP + (targetP - currP) * 0.5))
+        : (isDollar ? Number((currP * 1.08).toFixed(2)) : Math.round(currP * 1.08));
+    const t1Shares = Math.floor(totalShares * 0.5) || 1;
+    const t1ProfitPerShare = isDollar ? Number((t1P - currP).toFixed(2)) : Math.round(t1P - currP);
+    const t1CashIn = isDollar ? Number((t1Shares * t1P).toFixed(2)) : Math.round(t1Shares * t1P);
+    const t1ProfitAmt = isDollar ? Number((t1ProfitPerShare * t1Shares).toFixed(2)) : Math.round(t1ProfitPerShare * t1Shares);
+
+    // 최종 목표가
+    const finalProfitPerShare = isDollar ? Number((targetP - currP).toFixed(2)) : Math.round(targetP - currP);
+    const finalTotalVal = isDollar ? Number((totalShares * targetP).toFixed(2)) : Math.round(totalShares * targetP);
+    const finalProfitAmt = isDollar ? Number((finalProfitPerShare * totalShares).toFixed(2)) : Math.round(finalProfitPerShare * totalShares);
+    const finalUpsidePct = ((targetP - currP) / currP * 100).toFixed(1);
+
+    const fmt = (v: number) => isDollar ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`;
+
+    return {
+        isDollar,
+        currPrice: fmt(currP),
+        targetPrice: fmt(targetP),
+        maxAlloc: fmt(maxAlloc),
+        totalShares: isDollar ? `${totalShares}주` : `${totalShares.toLocaleString()}주`,
+        actualInvest: fmt(actualInvest),
+        stopLossPrice: fmt(stopLossP),
+        maxLossAmount: fmt(maxLossAmt),
+        shieldedAmount: fmt(shieldedAmt),
+        target1Price: fmt(t1P),
+        target1CashIn: fmt(t1CashIn),
+        target1ProfitAmt: fmt(t1ProfitAmt),
+        finalTotalVal: fmt(finalTotalVal),
+        finalProfitAmt: fmt(finalProfitAmt),
+        finalUpsidePct: `${Number(finalUpsidePct) > 0 ? '+' : ''}${finalUpsidePct}%`,
+        tranches: [
+            { step: '1차 (30%)', price: fmt(safeEntry), shares: `${share1}주`, amt: fmt(share1 * safeEntry) },
+            { step: '2차 (40%)', price: fmt(entry2), shares: `${share2}주`, amt: fmt(share2 * entry2) },
+            { step: '3차 (30%)', price: fmt(entry3), shares: `${share3}주`, amt: fmt(share3 * entry3) },
+        ],
+    };
+}
+
+function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number = 10000000): {
     headline: string;
     factors: RiskFactor[];
     defenseRules: RiskDefenseRule[];
@@ -541,30 +635,47 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc): {
         ];
     }
 
+    // 실전 자금 리스크 계산 플랜 도출
+    const plan = computeFinancialRiskPlan(rawPrice, rawTarget, capitalOverride);
+
     const defenseRules: RiskDefenseRule[] = [
         {
             num: "①",
-            title: "계좌 비중 제한",
-            target: `최대 10~15% (${maxWeightDesc})`,
-            desc: `${sName} 단일 종목에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.`,
+            title: "계좌 비중 한도",
+            target: plan ? `${plan.maxAlloc} 한도 (${plan.totalShares})` : `최대 10~15% (${maxWeightDesc})`,
+            desc: plan 
+                ? `운용 자금 기준 총 ${plan.actualInvest} (${plan.totalShares}) 이내 엄격 제한 (몰빵 절대 금지)`
+                : `${sName} 단일 종목에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.`,
         },
         {
             num: "②",
             title: "3단계 분할 매수",
-            target: `30% ➔ 40% ➔ 30% (${safeEntryFormatted})`,
-            desc: `1차(오전 10시 지지선 ${safeEntryFormatted}에 30%) ➔ 2차(눌림목 안착 40%) ➔ 3차(상승 돌파 30%)로 나누어 매수합니다.`,
+            target: plan 
+                ? `1차 ${plan.tranches[0].amt} ➔ 2차 ${plan.tranches[1].amt} ➔ 3차 ${plan.tranches[2].amt}`
+                : `30% ➔ 40% ➔ 30% (${safeEntryFormatted})`,
+            desc: plan
+                ? `1차(${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} ${plan.tranches[2].shares}) 분할 체결`
+                : `1차(오전 10시 지지선 ${safeEntryFormatted}에 30%) ➔ 2차(눌림목 안착 40%) ➔ 3차(상승 돌파 30%)로 나누어 매수합니다.`,
         },
         {
             num: "③",
             title: "기계적 손절 방어선",
-            target: `🛑 ${stopLossFormatted} (-3.5% 도달 시 즉각)`,
-            desc: `현재가 대비 -3.5% 하락한 ${stopLossFormatted}을 종가 또는 장중 이탈하면 감정 없이 즉시 방어합니다.`,
+            target: plan
+                ? `🛑 ${plan.stopLossPrice} (최대 손실: -${plan.maxLossAmount})`
+                : `🛑 ${stopLossFormatted} (-3.5% 도달 시 즉각)`,
+            desc: plan
+                ? `손절 시 총 손실은 딱 -${plan.maxLossAmount}으로 제한되며, 원금 ${plan.shieldedAmount}(96.5%)는 철통 방어 회수`
+                : `현재가 대비 -3.5% 하락한 ${stopLossFormatted}을 종가 또는 장중 이탈하면 감정 없이 즉시 방어합니다.`,
         },
         {
             num: "④",
             title: "1차 분할 익절",
-            target: `🎯 ${target1Formatted} (보유 물량 50%)`,
-            desc: `1차 목표가 ${target1Formatted} 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.`,
+            target: plan
+                ? `🎯 ${plan.target1Price} (+${plan.target1ProfitAmt} 확정)`
+                : `🎯 ${target1Formatted} (보유 물량 50%)`,
+            desc: plan
+                ? `1차 목표 도달 시 절반 매도로 현금 ${plan.target1CashIn} 즉시 회수 (확정 순수익: +${plan.target1ProfitAmt})`
+                : `1차 목표가 ${target1Formatted} 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.`,
         },
     ];
 
@@ -572,6 +683,7 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc): {
         headline,
         factors,
         defenseRules,
+        financialPlan: plan,
     };
 }
 
@@ -586,6 +698,7 @@ interface StockRiskDiagnostic {
     maxWeightStr: string;
     splitRuleStr: string;
     croVerdict: string;
+    financialPlan: FinancialRiskPlan | null;
     factors: {
         icon: string;
         title: string;
@@ -695,6 +808,8 @@ function computeStockRiskDiagnostic(r: any): StockRiskDiagnostic {
         croVerdict = `${r.stock_name}은(는) 단기 가격 급등 또는 52주 상단 매물벽 저항으로 변동성 리스크가 높은 과열 구간입니다. 신규 추격 매수는 전면 자제하시고, -3.5% 손절가(${fmt(stopLossVal)})를 철저히 설정한 상태에서만 극소액 분할 접근을 허용합니다.`;
     }
 
+    const plan = computeFinancialRiskPlan(r.price_str || r.price, r.consensus?.target_mean || r.consensus?.target_mean_str, 10000000);
+
     return {
         riskScore: score,
         riskLevel,
@@ -706,6 +821,7 @@ function computeStockRiskDiagnostic(r: any): StockRiskDiagnostic {
         maxWeightStr,
         splitRuleStr,
         croVerdict,
+        financialPlan: plan,
         factors,
     };
 }
@@ -1178,6 +1294,8 @@ export default function CeoOfficePage() {
     const [searchedRiskReport, setSearchedRiskReport] = useState<any>(null);
     const [riskSearchError, setRiskSearchError] = useState<string>('');
     const [copiedRiskStock, setCopiedRiskStock] = useState<string>('');
+    // 💰 [NEW] 대표이사 실전 투자금 기준 상태 (기본 1,000만원)
+    const [riskCapital, setRiskCapital] = useState<number>(10000000);
 
     // 📚 관심종목 리서치 보고서 상태
     const [researchReports, setResearchReports] = useState<any[]>([]);
@@ -1218,15 +1336,16 @@ export default function CeoOfficePage() {
 
     // 📋 리스크 진단서 클립보드 복사 핸들러
     const handleCopyRiskAudit = (r: any, audit: StockRiskDiagnostic) => {
-        const text = `[최서연 CRO 종목별 정밀 리스크 진단 보고서]
+        const p = audit.financialPlan;
+        const text = `[최서연 CRO 종목별 정밀 리스크 진단 보고서 (실전 금액 산출 완료)]
 ■ 종목: ${r.stock_name} (${r.stock_code}) | 현재가: ${r.price_str}
 ■ 종합 리스크 등급: ${audit.riskLevel} (위험도 스코어: ${audit.riskScore}/5)
-■ 대표이사 자산 방어 4대 실천 가이드:
-  1. 안전 권장 진입가: ${audit.safeEntryStr}
-  2. 기계적 손절 방어선 (-3.5%): ${audit.stopLossStr}
-  3. 1차 분할 익절 목표가 (50%): ${audit.takeProfitStr}
-  4. 계좌 최대 비중: ${audit.maxWeightStr}
-  5. 분할 매수 원칙: ${audit.splitRuleStr}
+■ 실전 자산 방어 핵심 금액 (1,000만원 운용 기준):
+  1. 총 투자 한도 (최대 15%): ${p ? `${p.actualInvest} (${p.totalShares})` : audit.maxWeightStr}
+  2. 1차 진입가: ${p ? `${p.tranches[0].price} (${p.tranches[0].shares} / ${p.tranches[0].amt})` : audit.safeEntryStr}
+  3. 기계적 손절가 (-3.5%): ${p ? `${p.stopLossPrice} (손실 제한: -${p.maxLossAmount} / 원금 ${p.shieldedAmount} 안전 회수)` : audit.stopLossStr}
+  4. 1차 분할 익절가 (50%): ${p ? `${p.target1Price} (현금 ${p.target1CashIn} 회수 / 확정 순익 +${p.target1ProfitAmt})` : audit.takeProfitStr}
+  5. 최종 목표가: ${p ? `${p.targetPrice} (${p.finalUpsidePct} / 총 순익 +${p.finalProfitAmt})` : audit.takeProfitStr}
 ■ 3대 세부 리스크 요인:
   - 진입 타이밍: ${audit.factors[0].points.join(' / ')}
   - 수급 및 매물대: ${audit.factors[1].points.join(' / ')}
@@ -3442,7 +3561,7 @@ export default function CeoOfficePage() {
 
                                                         {/* 4. 대표이사 리스크 정밀 진단 & 세부 방어 매뉴얼 */}
                                                         {(() => {
-                                                            const riskData = getDetailedRiskBreakdown(activeDoc);
+                                                            const riskData = getDetailedRiskBreakdown(activeDoc, riskCapital);
                                                             return (
                                                                 <div className="mt-4 bg-gradient-to-br from-rose-950/30 via-zinc-950/90 to-red-950/20 border border-rose-500/35 rounded-2xl p-4 sm:p-4.5 shadow-lg space-y-3.5">
                                                                     {/* 상단 타이틀 바 */}
@@ -3506,15 +3625,15 @@ export default function CeoOfficePage() {
                                                                         </div>
                                                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                                             {riskData.defenseRules.map((rule, rIdx) => (
-                                                                                <div key={rIdx} className="bg-black/60 border border-amber-500/20 rounded-xl p-2.5 flex flex-col justify-between">
+                                                                                <div key={rIdx} className="bg-black/60 border border-amber-500/20 rounded-xl p-3 flex flex-col justify-between">
                                                                                     <div>
-                                                                                        <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400">
+                                                                                        <div className="flex items-center justify-between text-[11px] font-black text-zinc-300">
                                                                                             <span>{rule.num} {rule.title}</span>
                                                                                         </div>
-                                                                                        <div className="text-xs sm:text-[13px] font-black text-amber-300 font-mono mt-1">
+                                                                                        <div className="text-xs sm:text-[13px] font-black text-amber-300 font-mono mt-1.5 leading-snug">
                                                                                             {rule.target}
                                                                                         </div>
-                                                                                        <p className="text-[10px] text-zinc-300 mt-1 leading-snug">
+                                                                                        <p className="text-[11px] text-zinc-300 mt-1.5 leading-relaxed font-medium">
                                                                                             {rule.desc}
                                                                                         </p>
                                                                                     </div>
@@ -3522,6 +3641,126 @@ export default function CeoOfficePage() {
                                                                             ))}
                                                                         </div>
                                                                     </div>
+
+                                                                    {/* 💰 [NEW] 대표이사 실전 자금 배분 & 철통 손익 계산표 (정확한 원화/달러 금액 표기) */}
+                                                                    {riskData.financialPlan && (
+                                                                        <div className="mt-3.5 bg-black/70 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
+                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-base">💰</span>
+                                                                                    <h6 className="text-xs sm:text-sm font-black text-white">
+                                                                                        {activeDoc.stock_name} 실전 자금 배분 &amp; 철통 손익 방어 계산표
+                                                                                    </h6>
+                                                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                                        100% 금액 계산 완료
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                {/* 투자금 변경 퀵 버튼 */}
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <span className="text-[11px] text-gray-400 font-bold">운용 자금:</span>
+                                                                                    {[
+                                                                                        { label: '1,000만원', val: 10000000 },
+                                                                                        { label: '3,000만원', val: 30000000 },
+                                                                                        { label: '5,000만원', val: 50000000 },
+                                                                                        { label: '1억원', val: 100000000 },
+                                                                                    ].map((btn) => (
+                                                                                        <button
+                                                                                            key={btn.val}
+                                                                                            type="button"
+                                                                                            onClick={() => setRiskCapital(btn.val)}
+                                                                                            className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                                                                                riskCapital === btn.val
+                                                                                                    ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                                                                                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                                                            }`}
+                                                                                        >
+                                                                                            {btn.label}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* 상세 표 */}
+                                                                            <div className="overflow-x-auto">
+                                                                                <table className="w-full text-left text-xs border-collapse">
+                                                                                    <thead>
+                                                                                        <tr className="border-b border-white/10 text-gray-400 text-[11px]">
+                                                                                            <th className="py-2 px-2.5 font-bold">진행 단계</th>
+                                                                                            <th className="py-2 px-2.5 font-bold">기준 단가</th>
+                                                                                            <th className="py-2 px-2.5 font-bold">매수 수량 및 투입 금액</th>
+                                                                                            <th className="py-2 px-2.5 font-bold">리스크 통제 &amp; 손익 결과</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody className="divide-y divide-white/5 text-gray-200 text-xs">
+                                                                                        <tr className="bg-white/[0.02]">
+                                                                                            <td className="py-2.5 px-2.5 font-bold text-sky-300">1차 분할 매수</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[0].price}</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[0].shares} ({riskData.financialPlan.tranches[0].amt})</td>
+                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">비중 30% · 오전 10시 이후 지지선 진입</td>
+                                                                                        </tr>
+                                                                                        <tr className="bg-white/[0.02]">
+                                                                                            <td className="py-2.5 px-2.5 font-bold text-sky-300">2차 분할 매수</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[1].price}</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[1].shares} ({riskData.financialPlan.tranches[1].amt})</td>
+                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">비중 40% · 하방 지지력 확인 후 체결</td>
+                                                                                        </tr>
+                                                                                        <tr className="bg-white/[0.02]">
+                                                                                            <td className="py-2.5 px-2.5 font-bold text-sky-300">3차 분할 매수</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[2].price}</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[2].shares} ({riskData.financialPlan.tranches[2].amt})</td>
+                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">비중 30% · 전고점 상승 돌파 시 추가 매수</td>
+                                                                                        </tr>
+                                                                                        <tr className="bg-amber-500/10 font-bold border-y border-amber-500/25">
+                                                                                            <td className="py-2.5 px-2.5 text-amber-300">⚖️ 총 투자 한도</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">현재가 {riskData.financialPlan.currPrice}</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})</td>
+                                                                                            <td className="py-2.5 px-2.5 text-amber-200">계좌 최대 비중 15% 한도 엄수 (몰빵 금지)</td>
+                                                                                        </tr>
+                                                                                        <tr className="bg-rose-500/10 font-bold border-b border-rose-500/30">
+                                                                                            <td className="py-2.5 px-2.5 text-rose-300 flex items-center gap-1">
+                                                                                                <span>🛑</span>
+                                                                                                <span>기계적 손절 방어</span>
+                                                                                            </td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-rose-400">{riskData.financialPlan.stopLossPrice} (-3.5%)</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.totalShares})</td>
+                                                                                            <td className="py-2.5 px-2.5 text-rose-200">
+                                                                                                <strong className="text-rose-400">최대 손실 -{riskData.financialPlan.maxLossAmount} 한정</strong>
+                                                                                                <span className="text-gray-300 ml-1.5">(원금 {riskData.financialPlan.shieldedAmount} 철통 회수)</span>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                        <tr className="bg-emerald-500/10 font-bold border-b border-emerald-500/25">
+                                                                                            <td className="py-2.5 px-2.5 text-emerald-300 flex items-center gap-1">
+                                                                                                <span>🎯</span>
+                                                                                                <span>1차 분할 익절</span>
+                                                                                            </td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-emerald-400">{riskData.financialPlan.target1Price}</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-emerald-300">보유 50% 분할 매도</td>
+                                                                                            <td className="py-2.5 px-2.5 text-emerald-200">
+                                                                                                <span>현금 회수: {riskData.financialPlan.target1CashIn}</span>
+                                                                                                <strong className="text-emerald-400 ml-1.5">(확정 순수익: +{riskData.financialPlan.target1ProfitAmt})</strong>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                        <tr className="bg-purple-500/10 font-bold">
+                                                                                            <td className="py-2.5 px-2.5 text-purple-300 flex items-center gap-1">
+                                                                                                <span>🏆</span>
+                                                                                                <span>최종 목표가 달성</span>
+                                                                                            </td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-purple-300">{riskData.financialPlan.targetPrice} ({riskData.financialPlan.finalUpsidePct})</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-purple-200">잔여 50% 전량 익절</td>
+                                                                                            <td className="py-2.5 px-2.5 text-purple-200">
+                                                                                                <span>총 평가 회수: {riskData.financialPlan.finalTotalVal}</span>
+                                                                                                <strong className="text-purple-300 ml-1.5">(최종 누적 순이익: +{riskData.financialPlan.finalProfitAmt})</strong>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                            <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
+                                                                                ※ 대표님의 소중한 원금을 지키기 위해, 최악의 경우에도 <strong className="text-rose-300">최대 손실을 -{riskData.financialPlan.maxLossAmount}으로 철저히 차단</strong>하고 <strong className="text-emerald-300">원금 {riskData.financialPlan.shieldedAmount}을 안전하게 확보</strong>하도록 설계된 실전 리스크 매뉴얼입니다.
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })()}
