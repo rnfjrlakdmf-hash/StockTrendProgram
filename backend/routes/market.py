@@ -1512,39 +1512,59 @@ def get_stock_research_reports(
         if yoy_m:
             num_snippets.append(f"전년 대비 {yoy_m.group(1).strip()}")
         num_clause = f"({' · '.join(num_snippets)})" if num_snippets else ""
-
         is_review = any(k in title_low for k in ["review", "리뷰", "잠정실적", "확정실적"])
         is_preview = (not is_review) and any(k in title_low for k in ["preview", "프리뷰", "전망"])
 
-        # 1문장: 리포트 성격 요약 (간결하고 읽기 편한 문장)
-        if is_review:
-            if any(k in joined for k in ["상회", "서프라이즈"]) and not any(k in joined for k in ["하회", "부진"]):
-                first_sentence = f"발표된 분기 실적{num_clause}이 시장 예상치를 웃돈 점을 바탕으로 향후 이익 흐름을 짚어본 실적 리뷰입니다."
-            elif any(k in joined for k in ["하회", "부진", "아쉬운"]):
-                first_sentence = f"발표된 분기 실적{num_clause}의 아쉬운 요인을 짚어보고 향후 본업 회복 시점을 점검한 실적 리뷰입니다."
-            else:
-                first_sentence = f"최근 발표된 분기 실적{num_clause}을 바탕으로 사업 부문별 현황과 향후 전망을 정리한 실적 리뷰입니다."
-        elif is_preview:
-            if any(k in joined for k in ["상회", "서프라이즈", "호실적"]) and not any(k in joined for k in ["하회", "부진"]):
-                first_sentence = f"다가오는 실적 발표를 앞두고 시장 기대치에 부합하거나 웃도는 양호한 실적{num_clause}을 전망한 프리뷰 리포트입니다."
-            elif any(k in joined for k in ["하회", "부진", "둔화"]):
-                first_sentence = f"다가오는 분기 실적 추정치{num_clause}를 보수적으로 점검하며 업황 변수를 정리한 프리뷰 리포트입니다."
-            else:
-                first_sentence = f"다가오는 분기 예상 실적{num_clause}과 주요 사업부문의 수익성을 사전 점검한 프리뷰 리포트입니다."
-        else:
-            first_sentence = f"기업의 핵심 사업 현황{num_clause}과 향후 성장 모멘텀 및 주가 가치(밸류에이션)를 종합 점검한 분석 리포트입니다."
 
-        # 2문장: 핵심 포인트 요약
-        if any(k in joined for k in ["수주", "본계약", "백로그", "납품"]):
-            second_sentence = "특히 신규 수주 잔고 추이와 본계약 체결 일정이 핵심 포인트로 다루어졌습니다."
-        elif any(k in joined for k in ["배당", "자사주", "밸류업", "주주환원"]):
-            second_sentence = "특히 현금흐름을 바탕으로 한 배당 확대 및 주주환원(밸류업) 매력이 주요 포인트로 꼽혔습니다."
-        elif any(k in joined for k in ["밸류에이션", "트리거", "저평가", "pbr", "per"]):
-            second_sentence = "특히 현재 기업가치 대비 주가가 재평가받을 수 있는 핵심 계기(트리거)를 중점적으로 짚었습니다."
-        elif any(k in joined for k in ["상향"]):
-            second_sentence = "실적 추정치 개선을 반영해 목표주가를 상향 조정한 점이 핵심입니다."
+        # 1. 원문 불릿포인트 정리 (HTML 태그 제거 및 접두부 정제)
+        cleaned_pts = []
+        for p in pts_list:
+            p_clean = re.sub(r'^[(\[\<][+\-!*▶■▲▼#\w\s]+[)\]\>]\s*:?\s*', '', str(p or '')).strip()
+            if p_clean and p_clean != rep_title:
+                cleaned_pts.append(p_clean)
+
+        # 2. 리포트 본문에서 가장 핵심적이고 구체적인 팩트 문장 추출
+        body_summary = ""
+        if cleaned_pts:
+            p0 = cleaned_pts[0]
+            # p0가 짧은 소제목일 경우 (예: "아시아나 인수 후 매출 증대 효과", "대규모 액추에이터 공급 계약 체결")
+            if len(p0) <= 35 and not p0.endswith(('다.', '함.', '음.', '임.')) and len(cleaned_pts) > 1:
+                p1 = cleaned_pts[1]
+                sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', p1) if s.strip()]
+                p1_first = sents[0] if sents else p1[:120]
+                body_summary = f"{p0} 분석입니다. {p1_first}"
+            else:
+                sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', p0) if s.strip()]
+                acc = sents[0] if sents else p0[:120]
+                if len(acc) < 70 and len(sents) > 1:
+                    cand = f"{acc} {sents[1]}"
+                    if len(cand) <= 160:
+                        acc = cand
+                elif len(acc) < 70 and len(cleaned_pts) > 1:
+                    p1_sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', cleaned_pts[1]) if s.strip()]
+                    if p1_sents:
+                        cand = f"{acc} {p1_sents[0]}"
+                        if len(cand) <= 160:
+                            acc = cand
+                body_summary = acc
+
+        body_summary = re.sub(r'\s+', ' ', body_summary).strip()
+        if body_summary and not body_summary.endswith('.'):
+            body_summary += '.'
+
+        # 3. 종목별 맞춤 한눈에 보는 핵심 요약 완성 (종목별 고유 팩트 반영)
+        if len(body_summary) >= 20:
+            if rep_title in body_summary or target_name in body_summary[:15]:
+                first_sentence = body_summary
+            else:
+                first_sentence = f"[{target_name}] {body_summary}"
         else:
-            second_sentence = "주력 사업의 수익성 추이와 업황 회복 속도를 주요 관찰 포인트로 제시했습니다."
+            op_part = f"투자의견 {op_str}" if op_str else ""
+            gp_part = f"목표주가 {gp_str}" if gp_str else ""
+            targets_str = f"({', '.join(filter(None, [op_part, gp_part]))})" if (op_part or gp_part) else ""
+            first_sentence = f"[{target_name}] {broker_name}에서 '{rep_title}'{targets_str}을(를) 핵심 모멘텀으로 점검한 기업분석 리포트입니다."
+
+        second_sentence = ""
 
         # 깔끔한 3줄 핵심 정리 (군더더기 괄호 제거)
         author_info = f"{broker_name}{f' · {analyst_nm} 애널리스트' if analyst_nm else ''}"
@@ -1572,13 +1592,21 @@ def get_stock_research_reports(
             )
 
         if cat_k == "company":
-            easy_text = f"{first_sentence} {second_sentence}"
-            if any(k in joined for k in ["수주", "본계약", "계약"]):
-                tip_text = "향후 공시(DART)되는 수주·공급계약 규모와 분기 영업이익률 추이를 함께 확인해 보세요."
+            easy_text = first_sentence.strip()
+            if any(k in joined for k in ["수주", "공급", "계약", "납품"]):
+                tip_text = "향후 신규 수주·공급계약 공시(DART) 규모와 본계약 진행 속도를 주요 지표로 확인해 보세요."
+            elif any(k in joined for k in ["인수", "합병", "시너지"]):
+                tip_text = "합병 및 통합 이후 실제 매출 증대분과 노선·사업 시너지 창출 여부를 체크해 보세요."
+            elif any(k in joined for k in ["실적", "영업이익", "순이익", "컨센서스"]):
+                tip_text = f"'{target_name}'의 분기 실제 실적이 증권사 평균 예상치(컨센서스)에 부합하는지 확인해 보세요."
+            elif any(k in joined for k in ["급락", "낙폭", "저평가", "반등"]):
+                tip_text = "단기 낙폭 과대 이후 외국인·기관 프로그램 순매수 유입과 기술적 지지선 안착을 확인해 보세요."
+            elif any(k in joined for k in ["배당", "자사주", "주주환원", "밸류업"]):
+                tip_text = "주주환원 정책 확대(배당성향, 자사주 매입·소각) 공시와 배당수익률 추이를 점검해 보세요."
             elif any(k in joined for k in ["환율", "환헷지", "수출"]):
                 tip_text = "원/달러 환율 흐름과 외국인·기관 수급 변화를 함께 살펴보세요."
             else:
-                tip_text = f"'{target_name}'의 분기 실제 실적이 증권사 평균 예상치(컨센서스)에 부합하는지 확인해 보세요."
+                tip_text = f"'{target_name}'의 주요 사업 부문별 가동률 및 증권가 목표주가 괴리율을 함께 참고해 보세요."
             return easy_text, tip_text, factual_points
 
         if cat_k == "industry":
