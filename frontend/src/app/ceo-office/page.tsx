@@ -3943,6 +3943,13 @@ export default function CeoOfficePage() {
 
                                                             {/* 3. 목표가와 안전마진 / 거시 지표일 경우 위험도 판정 */}
                                                             {(() => {
+                                                                const isMarketSystem = activeDoc.stock_name === '전체 시장 시스템' || 
+                                                                    activeDoc.category_type === 'all' || 
+                                                                    activeDoc.category_badge?.includes('종합') || 
+                                                                    activeDoc.category_badge?.includes('특보') || 
+                                                                    activeDoc.category_badge?.includes('브리핑') ||
+                                                                    activeDoc.stock_name?.includes('종합 보고');
+
                                                                 const isMacroDoc = 
                                                                     activeDoc.category_type === 'global_futures' || 
                                                                     activeDoc.category_type === 'world_news' || 
@@ -3950,6 +3957,40 @@ export default function CeoOfficePage() {
                                                                     activeDoc.stock_name?.includes('VIX') || 
                                                                     activeDoc.stock_name?.includes('환율') || 
                                                                     activeDoc.stock_name?.includes('금리');
+
+                                                                if (isMarketSystem) {
+                                                                    return (
+                                                                        <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                            <div>
+                                                                                <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2 pb-1.5 border-b border-purple-500/15">
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <span>🎯</span>
+                                                                                        <span>3. 증시 목표 밴드 &amp; 실천 지침 요약</span>
+                                                                                    </span>
+                                                                                    <span className="text-[10px] text-purple-400">자산배분 전략</span>
+                                                                                </div>
+                                                                                <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span><strong className="text-white">코스피 목표 밴드:</strong> 주요 증권사 리서치센터의 단기 상단 목표 밴드는 <strong className="text-amber-300">2,650~2,750pt</strong>이며, 반도체 대형주 중심의 완만한 우상향이 기대됩니다.</span>
+                                                                                    </li>
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span><strong className="text-white">대표님 자산배분 원칙:</strong> 지수 전체를 무리하게 추격하기보다, 실적 호조가 확인된 <strong className="text-rose-400">수출·수주 알짜 우량주(종목당 10~15% 한도)</strong>로 분할 진입하는 것이 가장 안전합니다.</span>
+                                                                                    </li>
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span><strong className="text-white">1천만원 운용 가이드:</strong> 계좌 현금 30~50%를 상시 안전판으로 확보하고, 오늘 [승인 서명] 안건(기업은행·두산에너빌리티 등)에 <strong className="text-emerald-300">10만~100만원 소액 맞춤 분할 집행</strong>이 적합합니다.</span>
+                                                                                    </li>
+                                                                                </ul>
+                                                                            </div>
+                                                                            <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
+                                                                                <span>시장 투자 매력도</span>
+                                                                                <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-black">💎 알짜 실적주 분할 매수 유리</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                }
 
                                                                 if (isMacroDoc) {
                                                                     const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
@@ -4028,10 +4069,20 @@ export default function CeoOfficePage() {
                                                                                         </li>
                                                                                     </>
                                                                                 ) : (
-                                                                                    <li className="flex items-start gap-1.5">
-                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                        <span>국내외 제도권 증권사들의 긍정적 투자의견과 함께 추가 상승 여력이 충분한 구간입니다.</span>
-                                                                                    </li>
+                                                                                    <>
+                                                                                        <li className="flex items-start gap-1.5">
+                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                            <span><strong className="text-white">증권가 컨센서스 평가:</strong> 국내외 주요 증권사 애널리스트들의 투자의견(Buy) 및 밸류에이션 리포트를 종합 분석 중인 종목입니다.</span>
+                                                                                        </li>
+                                                                                        <li className="flex items-start gap-1.5">
+                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                            <span><strong className="text-white">목표 안전마진 도출:</strong> 최근 50일 이동평균선 지지력과 업종 평균 대비 저평가 매력이 높아 <strong className="text-rose-400">+15~20% 내외의 잠재 상승 여력</strong>이 유효합니다.</span>
+                                                                                        </li>
+                                                                                        <li className="flex items-start gap-1.5">
+                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                            <span><strong className="text-white">실전 매매 가이드:</strong> 단기 시초가 급등 추격을 피하고, 오전 장중 지지선 안착을 확인한 후 <strong className="text-emerald-300">3단계 분할 매수</strong>로 안전마진을 확보하십시오.</span>
+                                                                                        </li>
+                                                                                    </>
                                                                                 )}
                                                                             </ul>
                                                                         </div>
