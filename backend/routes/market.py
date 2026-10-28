@@ -1517,12 +1517,13 @@ def get_stock_research_reports(
         body_summary = ""
         if cleaned_pts:
             p0 = cleaned_pts[0]
-            # p0가 짧은 소제목일 경우 (예: "아시아나 인수 후 매출 증대 효과", "대규모 액추에이터 공급 계약 체결")
-            if len(p0) <= 35 and not p0.endswith(('다.', '함.', '음.', '임.')) and len(cleaned_pts) > 1:
-                p1 = cleaned_pts[1]
+            p0_clean = p0.rstrip('. ')
+            # p0가 짧은 소제목/핵심헤드라인일 경우 (예: "3개 분기 연속 서프라이즈", "아시아나 인수 후 매출 증대 효과")
+            if len(p0_clean) <= 40 and not p0_clean.endswith(('다', '함', '음', '임', '됨', '음')) and len(cleaned_pts) > 1:
+                p1 = cleaned_pts[1].strip()
                 sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', p1) if s.strip()]
                 p1_first = sents[0] if sents else p1[:120]
-                body_summary = f"{p0} 분석입니다. {p1_first}"
+                body_summary = f"‘{p0_clean}’ 성과와 함께 {p1_first}"
             else:
                 sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', p0) if s.strip()]
                 acc = sents[0] if sents else p0[:120]

@@ -42,10 +42,23 @@ function parseExecutiveOpinion(raw: string, defaultRole: string = "분석본부"
 function splitIntoBullets(raw: string): string[] {
     if (!raw) return [];
     const cleaned = raw.replace(/\s+/g, ' ').trim();
-    const parts = cleaned
-        .split(/(?<=[.!?다요음함])\s+/)
-        .map(s => s.trim())
+    // 1) 엠대시(—) 및 마침표/종결어미 뒤 공백을 기준으로 1차 분리
+    const rawParts = cleaned
+        .split(/(?<=[—])\s*|(?<=[.!?다요음함])\s+/)
+        .map(s => s.trim().replace(/^[-—•✓\s]+/, '').replace(/[-—\s]+$/, '').trim())
         .filter(Boolean);
+
+    // 2) 짧은 파편(예: "분석입니다.", "평가입니다.", 10자 이하 단문)이 독립 불릿으로 떨어져 나가지 않도록 직전 문장에 자연스럽게 병합
+    const parts: string[] = [];
+    for (const p of rawParts) {
+        if (!p) continue;
+        const isFragment = p.length <= 10 || /^(분석|평가|전망|의견|보고서|설명)입니다[.]?$/.test(p);
+        if (parts.length > 0 && isFragment) {
+            parts[parts.length - 1] = `${parts[parts.length - 1]} ${p}`.trim();
+        } else {
+            parts.push(p);
+        }
+    }
     return parts.length > 0 ? parts : [cleaned];
 }
 
