@@ -1538,6 +1538,11 @@ async def seo_blog_scheduler_loop():
             update_heartbeat("SEO_Blog_Bot")
             now = datetime.now(kst)
             
+            from holiday_checker import is_global_weekend_closure
+            if is_global_weekend_closure():
+                await asyncio.sleep(1800)
+                continue
+
             # 비용 절감을 위해 하루 3번(아침, 점심, 저녁) 실행하도록 변경
             target_hours = [9, 13, 18]
             if now.hour in target_hours and last_run_hour != now.hour:
@@ -2023,6 +2028,11 @@ async def morning_macro_scheduler_loop():
         try:
             now = datetime.now(kst_tz)
             current_date = now.strftime("%Y-%m-%d")
+
+            # 일요일/월요일 아침은 주말 미국장 휴장으로 인해 브리핑 생략 (AI 비용 절감)
+            if now.weekday() in [6, 0]:
+                await asyncio.sleep(1800)
+                continue
 
             # 매일 아침 07:20 ~ 07:35 사이에 1회 실행
             if now.hour == 7 and 20 <= now.minute <= 35:

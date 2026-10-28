@@ -273,6 +273,12 @@ async def startup_event():
                 
                 while True:
                     try:
+                        from holiday_checker import is_global_weekend_closure
+                        if is_global_weekend_closure():
+                            print("[ThemePrecacheLoop] 💤 Global weekend closure (Sat 06:00 ~ Sun 20:00). Skipping AI theme precache to save Gemini API costs.")
+                            await asyncio.sleep(3600)
+                            continue
+
                         from db_manager import get_cached_theme
                         from ai_analysis import analyze_theme
                         
@@ -307,6 +313,12 @@ async def startup_event():
                 
                 while True:
                     try:
+                        from holiday_checker import is_global_weekend_closure
+                        if is_global_weekend_closure():
+                            print("[SignalPrecacheLoop] 💤 Global weekend closure (Sat 06:00 ~ Sun 20:00). Skipping AI signal briefing to save Gemini API costs.")
+                            await asyncio.sleep(3600)
+                            continue
+
                         from db_manager import get_recent_signals
                         from turbo_engine import turbo_engine
                         from routes.signals import get_signal_briefing

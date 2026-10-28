@@ -54,6 +54,25 @@ def is_market_open_hours(market_type: str) -> bool:
         
     return True
 
+def is_global_weekend_closure() -> bool:
+    """
+    미국/한국 등 전 세계 주식 시장이 100% 문을 닫는 주말 휴장 시간인지 판별합니다.
+    - 시작: 토요일 06:00 KST (미국 금요일 본장 및 애프터마켓 마감 직후)
+    - 종료: 일요일 20:00 KST (차주 글로벌 선물 및 프리마켓 대비 전)
+    이 시간 동안에는 불필요한 AI 분석, 뉴스 배치 요약, 테마/시그널 프리캐싱을 중단하여
+    구글 클라우드 Gemini API 비용을 획기적으로 절감합니다.
+    """
+    kst = timezone(timedelta(hours=9))
+    now = datetime.now(kst)
+    weekday = now.weekday() # 0: 월, 4: 금, 5: 토, 6: 일
+    hour = now.hour
+
+    if weekday == 5 and hour >= 6:
+        return True
+    if weekday == 6 and hour < 20:
+        return True
+    return False
+
 def exit_if_holiday(market_type: str, script_name: str = "Script"):
     """휴장일이면 프로세스를 종료합니다 (단독 스크립트용)"""
     if is_holiday(market_type):

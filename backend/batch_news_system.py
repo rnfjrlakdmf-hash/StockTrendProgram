@@ -775,6 +775,12 @@ class BatchNewsSystem:
 
         while self.running:
             try:
+                from holiday_checker import is_global_weekend_closure
+                if is_global_weekend_closure():
+                    print("[BatchNews] 💤 Global weekend closure (Sat 06:00 ~ Sun 20:00). Pausing news cycle to save API costs.")
+                    await asyncio.sleep(1800)
+                    continue
+
                 await self.collect_and_distribute()
             except Exception as e:
                 print(f"[BatchNews] 사이클 오류: {e}")
