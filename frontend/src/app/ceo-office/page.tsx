@@ -622,6 +622,145 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
                 ],
             },
         ];
+    } else if (sector === 'bio_pharma') {
+        headline = `‘${sName}’은 미국 PBM(처방약급여관리업체) 처방집 등재 후 실처방 확대 속도와 글로벌 바이오시밀러 가격 인하 경쟁, 합병 후 무형자산 상각에 따른 원가율 부담을 집중 점검해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 신약 처방·PBM 등재 변동성",
+                tag: "짐펜트라 처방 & PBM 환급 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "미국 대형 PBM 처방집 등재 이후 실제 병의원 처방 환급(Rebate) 규모 확대 및 매출 반영 속도 확인",
+                    "스텔라라·악템라·아일리아 등 신규 시밀러 출시 초기 다국적 제약사와의 가격 인하(Price Erosion) 경쟁 리스크 모니터링",
+                    `권장 진입가: 현재가(${currPriceStr}) 대비 무리한 시초가 추격 대신 지지선(${safeEntryFormatted}) 안착 확인 후 분할 진입`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 합병 무형자산 상각/재고 원가율",
+                tag: "원가율(COGS) & 기관 공매도 감시",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "셀트리온헬스케어 합병에 따른 판권·영업권 무형자산 상각비 및 재고자산 매출원가율(COGS)의 단계적 정상화 여부 점검",
+                    "분기 실적 발표 전후 기관 및 대차잔고·공매도 잔고 변동 추이를 실시간 추적",
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 하향 이탈 시 감정 배제 후 즉시 손절 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & FDA/EMA 규제 및 CDMO 신사업",
+                tag: "FDA 실사 & CAPEX 현금흐름",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미국 FDA 및 유럽 EMA의 cGMP 생산 시설 실사 통과 여부 및 신규 파이프라인 임상 승인 일정 점검",
+                    "신규 100% 자회사 CDMO(위탁개발생산) 설비투자(CAPEX) 집행 시 분기 잉여현금흐름(FCF) 관리 부담 체크",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 절대 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'automotive') {
+        headline = `‘${sName}’은 미국 대선 후 IRA 전기차 세액공제 보조금 개편 여부와 글로벌 관세 리스크, 하이브리드(HEV) 판매 마진 방어력을 집중 점검해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 미국 전기차 보조금(IRA) 변동성",
+                tag: "북미 정책 & 관세 변수",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "미국 행정부 교체 시 인플레이션감축법(IRA) 보조금 축소 및 수입 완성차 10~25% 보편 관세 부과 리스크 점검",
+                    `권장 진입가: 현재가(${currPriceStr}) 대비 ${safeEntryFormatted} 부근 눌림목 체결`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 완성차 인센티브(할인) 출혈 경쟁",
+                tag: "딜러 재고 & 프로모션 비용",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "미국·유럽 현지 딜러 인센티브 증가 시 대당 공헌이익 감소 및 글로벌 완성차 할인 경쟁 심화 여부 확인",
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 이탈 시 감정 배제 후 즉시 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 환율 변동 및 주주환원(자사주 소각)",
+                tag: "환율 수혜 & 밸류업 지표",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "원/달러 환율 1,380원선 변동에 따른 수출 환차익 규모와 3개년 주주환원(배당성향 35% 및 자사주 매입) 이행 점검",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'defense') {
+        headline = `‘${sName}’은 폴란드·중동 2차 수출 실행계약 체결 일정과 생산능력(CAPA) 증설에 따른 납기 이행률, 수출입은행 금융지원 한도 변수를 점검해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 해외 방산 본계약 체결 일정",
+                tag: "수주 공시 & 차익실현 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "수주 기대감으로 급등한 직후 실제 계약 체결 공시 시 단기 '재료 소멸' 차익 매물 출회 주의",
+                    `권장 진입가: 현재가(${currPriceStr}) 대비 ${safeEntryFormatted} 부근 눌림목 체결`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 방산 생산라인 증설 및 부품 조달 병목",
+                tag: "납기 지연 & 지체상금 리스크",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "해외 대규모 물량 납기를 맞추기 위한 원자재·반도체 부품 조달 병목 및 생산라인 지체상금 발생 여부 점검",
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 이탈 시 감정 배제 후 즉시 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 지정학적 긴장도 및 국가 수출 금융",
+                tag: "수은 금융지원 & 국방예산",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "국내 수출입은행·무역보험공사의 정책금융 한도 확대 법안 및 수입국 정권 교체에 따른 국방비 집행 연속성 체크",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'secondary_battery') {
+        headline = `‘${sName}’은 글로벌 전기차 수요 둔화(캐즘) 장기화 여부와 리튬·니켈 메탈가 하락에 따른 양극재 판가 연동 손실, 가동률 저하에 따른 고정비 부담을 집중 관리해야 합니다.`;
+        factors = [
+            {
+                icon: "⏰",
+                title: "진입 타이밍 & 전기차 캐즘(Chasm) 가동률 변동성",
+                tag: "OEM 주문량 & 가동률 주의",
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    "글로벌 완성차 OEM사들의 전기차 출시 지연 및 배터리 주문 감축에 따른 셀 공장 가동률 저하 모니터링",
+                    `권장 진입가: 현재가(${currPriceStr}) 대비 ${safeEntryFormatted} 부근 눌림목 체결`,
+                ],
+            },
+            {
+                icon: "📉",
+                title: "수급 변심 & 광물(리튬/니켈) 판가 래깅 손실",
+                tag: "원자재 래깅 & 재고평가손",
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    "리튬·니켈 가격 하락 시 기확보 재고에 대한 평가손실 및 양극재 납품단가 하락으로 인한 마진 압박 점검",
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 이탈 시 감정 배제 후 즉시 방어`,
+                ],
+            },
+            {
+                icon: "🌐",
+                title: "거시 매크로 & 북미 AMPC 보조금 및 신규 폼팩터 경쟁",
+                tag: "AMPC 보조금 & LFP 침투율",
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    "미국 IRA 첨단제조생산세액공제(AMPC) 보조금 규모와 중국산 저가 LFP 배터리 침투 확대 변수 체크",
+                    `단일 종목 계좌 편입 한도: 총자산의 10~15%(${maxWeightDesc}) 엄수`,
+                ],
+            },
+        ];
     } else if (sector === 'shipping_airline') {
         headline = `‘${sName}’은 국제 유가(WTI) 급등과 고환율에 따른 항공유류비·외화리스부채 환차손, 아시아나 합병 후 독점 노선 반납에 따른 매출 공백 리스크를 관리해야 합니다.`;
         factors = [
