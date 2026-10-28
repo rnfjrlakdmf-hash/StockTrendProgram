@@ -38,10 +38,48 @@ function parseExecutiveOpinion(raw: string, defaultRole: string = "분석본부"
     return { badge: defaultRole, title: "", body: raw, icon: defaultIcon };
 }
 
+// 어려운 증권사 리포트 전문용어(YoY, OPM, Review, 컨센서스 등)를 대표님 눈높이에 맞게 쉽게 순화하는 헬퍼
+function humanizeFinancialText(text: string): string {
+    if (!text) return '';
+    let s = text;
+    // 1. 분기 및 Review/Preview 정제
+    s = s.replace(/([1-4])Q(?:\d{2})?\s*Review:?/gi, '$1분기 실적 결산:');
+    s = s.replace(/([1-4])Q(?:\d{2})?\s*Preview:?/gi, '$1분기 실적 전망:');
+    s = s.replace(/\bReview:?/gi, '실적 결산:');
+    s = s.replace(/\bPreview:?/gi, '실적 전망:');
+
+    // 2. 이하 YoY/QoQ 제거 및 YoY, QoQ 쉬운 한국어 번역
+    s = s.replace(/,\s*이하\s*(?:YoY|QoQ)/gi, '');
+    s = s.replace(/\(?\s*이하\s*(?:YoY|QoQ)\s*\)?/gi, '');
+    s = s.replace(/YoY\s*([+\-]?\d+(?:\.\d+)?%)/gi, '작년 동기 대비 $1');
+    s = s.replace(/QoQ\s*([+\-]?\d+(?:\.\d+)?%)/gi, '전분기 대비 $1');
+    s = s.replace(/\(\s*YoY\s*\)/gi, '(작년 대비 성장)');
+
+    // 3. OPM (Operating Profit Margin, 영업이익률)
+    s = s.replace(/OPM\s*(\d+(?:\.\d+)?%)/gi, '영업이익률 $1');
+
+    // 4. 컨센서스 정제
+    s = s.replace(/컨센서스\s*대폭\s*상회/g, '시장 예상치 대폭 상회(어닝 서프라이즈)');
+    s = s.replace(/컨센서스\s*상회/g, '시장 예상치 상회(호실적)');
+    s = s.replace(/컨센서스\s*하회/g, '시장 기대치 소폭 하회');
+    s = s.replace(/컨센서스\s*부합/g, '시장 예상치 부합(안정적 성적)');
+    s = s.replace(/컨센서스/g, '증권사 평균 예상치');
+    s = s.replace(/하회했다\.?/g, '소폭 밑돌았습니다.');
+    s = s.replace(/상회했다\.?/g, '시원하게 웃돌았습니다.');
+
+    // 5. 불필요한 기호/공백 정리
+    s = s.replace(/\(\s*,/g, '(');
+    s = s.replace(/,\s*\)/g, ')');
+    s = s.replace(/,\s*,/g, ',');
+    s = s.replace(/\s{2,}/g, ' ').trim();
+    return s;
+}
+
 // 긴 줄글을 깔끔한 개조식(불릿 포인트) 문장 배열로 분리하는 헬퍼
 function splitIntoBullets(raw: string): string[] {
     if (!raw) return [];
-    const cleaned = raw.replace(/\s+/g, ' ').trim();
+    const humanized = humanizeFinancialText(raw);
+    const cleaned = humanized.replace(/\s+/g, ' ').trim();
     // 1) 엠대시(—) 및 마침표/종결어미 뒤 공백을 기준으로 1차 분리
     const rawParts = cleaned
         .split(/(?<=[—])\s*|(?<=[.!?다요음함])\s+/)

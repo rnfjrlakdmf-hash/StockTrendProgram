@@ -1523,7 +1523,8 @@ def get_stock_research_reports(
                 p1 = cleaned_pts[1].strip()
                 sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', p1) if s.strip()]
                 p1_first = sents[0] if sents else p1[:120]
-                body_summary = f"‘{p0_clean}’ 성과와 함께 {p1_first}"
+                connector = "소식과 함께" if any(w in p0_clean for w in ["하회", "둔화", "우려", "부진", "적자"]) else "성과와 함께"
+                body_summary = f"‘{p0_clean}’ {connector} {p1_first}"
             else:
                 sents = [s.strip() for s in re.split(r'(?<=[다함음임됨록있음봄높낮좋적]\.)\s+|(?<=\.)\s+', p0) if s.strip()]
                 acc = sents[0] if sents else p0[:120]
