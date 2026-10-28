@@ -4726,18 +4726,20 @@ export default function CeoOfficePage() {
                                                     )}
 
                                                     {/* 비서실장 최종 결재 건의문 */}
-                                                    <div className="mt-5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-950/20">
-                                                        <div className="flex items-start gap-3">
-                                                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-xs font-black border border-purple-400/40 shrink-0 mt-0.5">
+                                                    <div className="mt-5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/40 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-lg shadow-purple-950/20">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-purple-500/20">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-xs font-black border border-purple-400/40 shrink-0">
                                                                 비서실장 최종 검토
                                                             </span>
-                                                            <div className="text-xs sm:text-sm text-purple-100 font-bold leading-relaxed">
-                                                                {activeDoc.secretary_conclusion}
-                                                            </div>
+                                                            {activeDoc.recommendation && (
+                                                                <span className="px-3 py-1 rounded-xl bg-purple-500/30 text-purple-200 text-xs font-black border border-purple-400/50 shadow-sm break-keep-all text-left">
+                                                                    건의: {activeDoc.recommendation}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <span className="shrink-0 px-3 py-1.5 rounded-xl bg-purple-500/30 text-purple-200 text-xs font-black border border-purple-400/50 shadow-sm self-start sm:self-auto">
-                                                            건의: {activeDoc.recommendation}
-                                                        </span>
+                                                        <div className="w-full text-xs sm:text-sm text-purple-100 font-bold leading-relaxed break-keep-all whitespace-normal">
+                                                            {activeDoc.secretary_conclusion}
+                                                        </div>
                                                     </div>
 
                                                     {/* 하단 대표이사 전자서명 버튼 바 */}
