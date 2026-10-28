@@ -4398,12 +4398,14 @@ def get_ceo_office_boardroom(
             time_str=time_str,
         )
         existing_doc_ids = {d.get("doc_id") for d in auto_approvals}
-        # 주말에는 최상단(2~3번째)에 배치하고 평일에도 결재함에 상시 포함
-        insert_pos = 1 if weekday >= 5 else len(auto_approvals)
-        if wk_cal_doc["doc_id"] not in existing_doc_ids:
-            auto_approvals.insert(insert_pos, wk_cal_doc)
-        if wk_rev_doc["doc_id"] not in existing_doc_ids:
-            auto_approvals.insert(insert_pos, wk_rev_doc)
+        # [주말 전용 상정] '주간 성과 복기 & 차주 월요일 개장 Top 3 전략'은 금요일 장마감(16시) 이후 및 주말(토/일)에만 결재함에 정식 상정
+        is_weekend_review_time = (weekday >= 5) or (weekday == 4 and now_kst.hour >= 16)
+        if is_weekend_review_time:
+            insert_pos = 1
+            if wk_cal_doc["doc_id"] not in existing_doc_ids:
+                auto_approvals.insert(insert_pos, wk_cal_doc)
+            if wk_rev_doc["doc_id"] not in existing_doc_ids:
+                auto_approvals.insert(insert_pos, wk_rev_doc)
     except Exception as e:
         print(f"[CEOOffice] weekly review & calendar build error: {e}")
 
