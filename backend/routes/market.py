@@ -3039,48 +3039,106 @@ def _build_weekly_review_and_calendar(
         ],
     }
 
-    calendar_doc = {
-        "doc_id": f"DOC-{date_doc_str}-WKCAL",
-        "doc_number": f"제 {date_doc_str}-일정호",
-        "category_type": "world_news",
-        "category_badge": "🗓️ 한주 경제일정 분석팀",
-        "urgency": "주간 경제캘린더",
-        "stock_name": "한주 경제일정 캘린더",
-        "current_price": fx_price_str,
-        "target_price": "목(고용)·금(PCE)",
-        "upside_pct": "5일 시나리오",
-        "title": f"[한주 경제일정 & 시나리오] {week_range_str} 한·미 핵심 경제지표 및 요일별 대응 전략",
-        "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
-        "submitted_at": f"{time_str} 한·미 경제 캘린더 시나리오 분석 완료",
-        "easy_headline": (
-            f"{week_range_str} 주간 시장을 움직일 핵심 일정은 월요일 한국 수출입 점검, 수요일 미 원유재고, 목요일 미 실업수당·PMI, 금요일 미 PCE 물가지수입니다. "
-            f"요일별 호재·악재 시나리오와 수혜 섹터를 사전 수립했습니다."
-        ),
-        "key_numbers": [
-            {"label": "분석 대상 주간", "value": week_range_str},
-            {"label": "주초 핵심 일정(월~수)", "value": "한국 수출입 · 연준 연설 · 원유재고"},
-            {"label": "주후반 빅이벤트(목~금)", "value": "미 실업수당·PMI · PCE 물가지수"},
-            {"label": "실시간 환율·선물 기준", "value": f"환율 {fx_price_str.split(' ')[0]} / 선물 {nq_price_str.split(' ')[0]}"},
-        ],
-        "research_opinion": (
-            "👍 [요일별 일정 핵심 · 윤서아 경제일정팀장]: 경제일정을 미리 알면 급락장에 당황하지 않고 급등장에 추격매수하지 않습니다. 월~수요일에는 수출·실적주 분할 매집, 목~금요일 물가·고용 지표 발표 전후에는 결과를 확인하며 대응하는 스케줄입니다."
-        ),
-        "quant_opinion": (
-            "📊 [일정별 수급 시나리오 · 김도현 수급본부장]: 목요일 미국 고용과 금요일 PCE 물가가 시장 예상치에 부합(골디락스)할 경우 외국인 선물 매수가 대거 유입되므로 반도체·전력설비·조선 대장주 비중을 유지합니다."
-        ),
-        "risk_opinion": (
-            "⚠️ [빅이벤트 방어 지침 · 최서연 리스크본부장]: 목·금요일 밤 9시 30분(한국시간) 미국 핵심 지표 발표 직전에는 변동성 확대에 대비해 계좌 내 현금 비중을 최소 20~30% 확보해 두셔야 안전합니다."
-        ),
-        "secretary_conclusion": (
-            "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정·매크로분석팀에서 한 주간 날짜별 주요 경제일정과 호재/악재 대응 시나리오를 완성했습니다. [승인 서명]을 눌러 주간 일정 대응 체제를 가동해 주십시오!"
-        ),
-        "recommendation": f"{week_range_str} 주간 경제일정 시나리오 대응 승인",
-        "detail_url": "https://stock.naver.com/research/economy",
-        "easy_terms": [
-            {"term": "PCE 물가지수", "desc": "미국 연준(Fed)이 기준금리를 결정할 때 가장 중요하게 참고하는 미국인들의 실제 물가 상승률 성적표입니다."},
-            {"term": "PMI (구매관리자지수)", "desc": "기업의 구매 담당자들에게 경기가 좋은지 설문조사한 점수로, 50을 넘으면 경기 확장, 50 미만이면 경기 위축을 뜻합니다."},
-        ],
-    }
+    # 5) 요일별 경제일정 기안서 생성:
+    # - 평일(월~금 16:00 이전): "오늘(당일)"의 핵심 경제일정과 장중/야간 대응 시나리오 & 집중 섹터 기안서 생성
+    # - 주말(금요일 16:00 이후 ~ 일요일): "차주(한 주 전체)" 핵심 경제일정 캘린더 기안서 생성
+    is_weekend_cal_mode = (weekday >= 5) or (weekday == 4 and now_kst.hour >= 16)
+
+    if not is_weekend_cal_mode:
+        # 평일 모드: 오늘의 요일 인덱스 (0: 월, 1: 화, 2: 수, 3: 목, 4: 금)
+        day_idx = min(max(weekday, 0), 4)
+        cur_cfg = day_configs[day_idx]
+        cur_date_str = now_kst.strftime("%m/%d")
+        events_summary = ", ".join(f"{e['country']} {e['name']}({e['time']})" for e in cur_cfg["events"][:2])
+        focus_str = ", ".join(cur_cfg["focus_sectors"])
+
+        calendar_doc = {
+            "doc_id": f"DOC-{date_doc_str}-DAYCAL",
+            "doc_number": f"제 {date_doc_str}-일정호",
+            "category_type": "world_news",
+            "category_badge": f"🗓️ 오늘({cur_cfg['day_ko']})의 핵심 경제일정",
+            "urgency": cur_cfg["importance_badge"],
+            "stock_name": f"오늘의 경제일정 ({cur_cfg['day_ko']})",
+            "current_price": fx_price_str,
+            "target_price": cur_cfg["importance_badge"],
+            "upside_pct": cur_cfg["stars"],
+            "title": f"[오늘의 경제일정 & 대응 전략] {cur_date_str} ({cur_cfg['day_ko']}) 한·미 주요 지표 발표 및 시나리오",
+            "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
+            "submitted_at": f"{time_str} 오늘({cur_cfg['day_ko']}) 한·미 경제일정 분석 완료",
+            "easy_headline": (
+                f"오늘({cur_date_str} {cur_cfg['day_ko']}) 시장의 방향을 가를 핵심 일정은 '{cur_cfg['theme']}'입니다. "
+                f"주요 발표 지표는 {events_summary}이며, "
+                f"호재 시나리오 발생 시 {focus_str} 섹터가 직접적인 수혜를 입을 전망입니다."
+            ),
+            "key_numbers": [
+                {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_cfg["theme"].split("] ")[-1] if "]" in cur_cfg["theme"] else cur_cfg["theme"]},
+                {"label": "호재 시 집중 공략 섹터", "value": focus_str},
+                {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
+                {"label": "실시간 환율·선물 기준", "value": f"환율 {fx_price_str.split(' ')[0]} / 선물 {nq_price_str.split(' ')[0]}"},
+            ],
+            "research_opinion": (
+                f"👍 [오늘 일정 분석 · 윤서아 경제일정팀장]: 오늘 {cur_cfg['day_ko']}요일은 {cur_cfg['theme']}이 시장의 화두입니다. {cur_cfg['bull_scenario']}"
+            ),
+            "quant_opinion": (
+                f"📊 [오늘 수급 시나리오 · 김도현 수급본부장]: 주요 지표 발표 전후로 외국인과 기관의 자금이 {focus_str} 대장주로 유입되는지 실시간 감시 중입니다. {cur_cfg['bear_scenario']}"
+            ),
+            "risk_opinion": (
+                f"⚠️ [오늘 리스크 방어 · 최서연 리스크본부장]: {cur_cfg['bear_scenario']}"
+            ),
+            "secretary_conclusion": (
+                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정팀에서 오늘({cur_date_str} {cur_cfg['day_ko']}) 발표될 핵심 경제 일정과 이에 맞춘 집중 공략 섹터({focus_str})를 보고드립니다. [승인 서명]을 눌러 오늘 일정 대응을 가동해 주십시오!"
+            ),
+            "recommendation": f"오늘({cur_cfg['day_ko']}) 경제지표 대응 및 집중 섹터({focus_str}) 공략 승인",
+            "detail_url": "https://stock.naver.com/research/economy",
+            "easy_terms": [
+                {"term": cur_cfg["events"][0]["name"].split()[0] if cur_cfg["events"] else "경제지표", "desc": cur_cfg["events"][0].get("consensus", "시장 방향성을 결정하는 중요 지표입니다.") if cur_cfg["events"] else "시장 지표"},
+                {"term": "골디락스 (Goldilocks)", "desc": "경기가 너무 과열되지도 않고 차갑게 식지도 않아, 주식 투자하기에 가장 이상적인 온도의 경제 상태를 뜻합니다."},
+            ],
+        }
+    else:
+        # 주말 모드: 차주(한 주 전체) 캘린더
+        calendar_doc = {
+            "doc_id": f"DOC-{date_doc_str}-WKCAL",
+            "doc_number": f"제 {date_doc_str}-일정호",
+            "category_type": "world_news",
+            "category_badge": "🗓️ 한주 경제일정 분석팀",
+            "urgency": "주간 경제캘린더",
+            "stock_name": "한주 경제일정 캘린더",
+            "current_price": fx_price_str,
+            "target_price": "목(고용)·금(PCE)",
+            "upside_pct": "5일 시나리오",
+            "title": f"[한주 경제일정 & 시나리오] {week_range_str} 한·미 핵심 경제지표 및 요일별 대응 전략",
+            "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
+            "submitted_at": f"{time_str} 한·미 경제 캘린더 시나리오 분석 완료",
+            "easy_headline": (
+                f"{week_range_str} 주간 시장을 움직일 핵심 일정은 월요일 한국 수출입 점검, 수요일 미 원유재고, 목요일 미 실업수당·PMI, 금요일 미 PCE 물가지수입니다. "
+                f"요일별 호재·악재 시나리오와 수혜 섹터를 사전 수립했습니다."
+            ),
+            "key_numbers": [
+                {"label": "분석 대상 주간", "value": week_range_str},
+                {"label": "주초 핵심 일정(월~수)", "value": "한국 수출입 · 연준 연설 · 원유재고"},
+                {"label": "주후반 빅이벤트(목~금)", "value": "미 실업수당·PMI · PCE 물가지수"},
+                {"label": "실시간 환율·선물 기준", "value": f"환율 {fx_price_str.split(' ')[0]} / 선물 {nq_price_str.split(' ')[0]}"},
+            ],
+            "research_opinion": (
+                "👍 [요일별 일정 핵심 · 윤서아 경제일정팀장]: 경제일정을 미리 알면 급락장에 당황하지 않고 급등장에 추격매수하지 않습니다. 월~수요일에는 수출·실적주 분할 매집, 목~금요일 물가·고용 지표 발표 전후에는 결과를 확인하며 대응하는 스케줄입니다."
+            ),
+            "quant_opinion": (
+                "📊 [일정별 수급 시나리오 · 김도현 수급본부장]: 목요일 미국 고용과 금요일 PCE 물가가 시장 예상치에 부합(골디락스)할 경우 외국인 선물 매수가 대거 유입되므로 반도체·전력설비·조선 대장주 비중을 유지합니다."
+            ),
+            "risk_opinion": (
+                "⚠️ [빅이벤트 방어 지침 · 최서연 리스크본부장]: 목·금요일 밤 9시 30분(한국시간) 미국 핵심 지표 발표 직전에는 변동성 확대에 대비해 계좌 내 현금 비중을 최소 20~30% 확보해 두셔야 안전합니다."
+            ),
+            "secretary_conclusion": (
+                "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정·매크로분석팀에서 한 주간 날짜별 주요 경제일정과 호재/악재 대응 시나리오를 완성했습니다. [승인 서명]을 눌러 주간 일정 대응 체제를 가동해 주십시오!"
+            ),
+            "recommendation": f"{week_range_str} 주간 경제일정 시나리오 대응 승인",
+            "detail_url": "https://stock.naver.com/research/economy",
+            "easy_terms": [
+                {"term": "PCE 물가지수", "desc": "미국 연준(Fed)이 기준금리를 결정할 때 가장 중요하게 참고하는 미국인들의 실제 물가 상승률 성적표입니다."},
+                {"term": "PMI (구매관리자지수)", "desc": "기업의 구매 담당자들에게 경기가 좋은지 설문조사한 점수로, 50을 넘으면 경기 확장, 50 미만이면 경기 위축을 뜻합니다."},
+            ],
+        }
 
     return weekly_review, weekly_calendar, review_doc, calendar_doc
 
@@ -4398,14 +4456,16 @@ def get_ceo_office_boardroom(
             time_str=time_str,
         )
         existing_doc_ids = {d.get("doc_id") for d in auto_approvals}
-        # [주말 전용 상정] '주간 성과 복기 & 차주 월요일 개장 Top 3 전략'은 금요일 장마감(16시) 이후 및 주말(토/일)에만 결재함에 정식 상정
+        # [스마트 일정 상정] 평일에는 '오늘 당일의 핵심 경제일정 & 시나리오', 주말에는 '주간 전체 캘린더 & 차주 월요일 Top3 복기 전략' 상정
         is_weekend_review_time = (weekday >= 5) or (weekday == 4 and now_kst.hour >= 16)
         if is_weekend_review_time:
-            insert_pos = 1
             if wk_cal_doc["doc_id"] not in existing_doc_ids:
-                auto_approvals.insert(insert_pos, wk_cal_doc)
+                auto_approvals.insert(1, wk_cal_doc)
             if wk_rev_doc["doc_id"] not in existing_doc_ids:
-                auto_approvals.insert(insert_pos, wk_rev_doc)
+                auto_approvals.insert(2, wk_rev_doc)
+        else:
+            if wk_cal_doc["doc_id"] not in existing_doc_ids:
+                auto_approvals.insert(1, wk_cal_doc)
     except Exception as e:
         print(f"[CEOOffice] weekly review & calendar build error: {e}")
 
