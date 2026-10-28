@@ -188,13 +188,15 @@ function parsePriceValue(raw: any, sector?: string, stockName?: string): { num: 
     if (!raw) return { num: 0, isDollar: false, formatted: '-' };
     const str = String(raw).trim();
     const s = `${stockName || ''} ${str}`.toLowerCase();
-    const isDollar = str.includes('$');
-    const isVix = sector === 'macro_vix' || s.includes('vix') || s.includes('공포');
-    const isRate = sector === 'macro_rate' || str.includes('%') || s.includes('국채') || s.includes('금리') || s.includes('tnx');
-    const isOil = sector === 'macro_oil' || s.includes('wti') || s.includes('원유') || s.includes('유가') || s.includes('cl=f');
-    const isFx = sector === 'macro_fx' || s.includes('환율') || s.includes('달러') || s.includes('usdkrw');
+    const beforeParen = str.split('(')[0].trim();
 
-    const beforeParen = str.split('(')[0];
+    // 통화 및 매크로 지표 판별 (일반 주식의 일일 등락률 '(+1.50%)'로 인해 '%'로 오인되는 것을 원천 차단하기 위해 beforeParen 검사)
+    const isDollar = sector === 'us_stock' || sector === 'us_tech' || beforeParen.includes('$') || str.startsWith('$');
+    const isVix = sector === 'macro_vix' || s.includes('vix') || s.includes('공포지수');
+    const isRate = sector === 'macro_rate' || beforeParen.includes('%') || s.includes('^tnx');
+    const isOil = sector === 'macro_oil' || s.includes('wti') || s.includes('cl=f');
+    const isFx = sector === 'macro_fx' || s.includes('usdkrw') || s.includes('원/달러') || s.includes('달러/원');
+
     const match = beforeParen.match(/([0-9,]+(?:\.[0-9]+)?)/);
     if (!match) return { num: 0, isDollar, formatted: str };
     const num = parseFloat(match[1].replace(/,/g, ''));
@@ -254,22 +256,25 @@ function getCategoryTheme(doc: AutoApprovalDoc): { icon: string; shortLabel: str
 
 function detectSectorType(stockName: string, title: string = "", categoryBadge: string = ""): string {
     const s = `${stockName} ${title} ${categoryBadge}`.toLowerCase();
-    if (s.includes('vix') || s.includes('변동성') || s.includes('공포')) {
+    const nameLower = (stockName || '').toLowerCase();
+    const isMacroCategory = categoryBadge.includes('거시') || categoryBadge.includes('매크로') || categoryBadge.includes('지표') || categoryBadge.includes('채권') || categoryBadge.includes('환율') || categoryBadge.includes('원자재') || categoryBadge.includes('선물');
+
+    if (nameLower.includes('vix') || nameLower.includes('공포지수') || (isMacroCategory && (s.includes('vix') || s.includes('변동성') || s.includes('공포')))) {
         return 'macro_vix';
     }
-    if (s.includes('wti') || s.includes('원유') || s.includes('유가') || s.includes('cl=f')) {
+    if (nameLower.includes('wti') || nameLower.includes('원유') || nameLower.includes('유가') || nameLower.includes('cl=f') || (isMacroCategory && (s.includes('wti') || s.includes('원유') || s.includes('유가')))) {
         return 'macro_oil';
     }
-    if (s.includes('환율') || s.includes('달러') || s.includes('usdkrw') || s.includes('dxy') || s.includes('krw=x')) {
+    if (nameLower.includes('환율') || nameLower.includes('usdkrw') || nameLower.includes('달러/원') || nameLower.includes('원/달러') || (isMacroCategory && (s.includes('환율') || s.includes('usdkrw') || s.includes('dxy') || s.includes('달러')))) {
         return 'macro_fx';
     }
-    if (s.includes('국채') || s.includes('금리') || s.includes('tnx') || s.includes('10년물')) {
+    if (nameLower.includes('국채') || nameLower.includes('tnx') || nameLower.includes('10년물') || (isMacroCategory && (s.includes('국채') || s.includes('금리') || s.includes('tnx') || s.includes('10년물')))) {
         return 'macro_rate';
     }
-    if (s.includes('나스닥') || s.includes('nq=f') || s.includes('s&p') || s.includes('es=f')) {
+    if (nameLower.includes('나스닥 선물') || nameLower.includes('s&p 선물') || (isMacroCategory && (s.includes('나스닥') || s.includes('nq=f') || s.includes('s&p') || s.includes('es=f')))) {
         return 'macro_futures';
     }
-    if (stockName === '전체 시장 시스템' || s.includes('모닝') || s.includes('매크로') || s.includes('지수') || s.includes('선물')) {
+    if (stockName === '전체 시장 시스템' || (isMacroCategory && (s.includes('모닝') || s.includes('시장') || s.includes('지수')))) {
         return 'macro_market';
     }
     if (/기업은행|국민은행|신한|하나금융|우리금융|카카오뱅크|jb금융|dgb금융|bnk금융|키움증권|미래에셋|삼성증권|한국금융지주|메리츠|동양생명|삼성화재|db손해|한화생명|은행|금융/.test(s)) {
