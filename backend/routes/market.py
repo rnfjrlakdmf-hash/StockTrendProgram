@@ -2663,9 +2663,10 @@ def _build_weekly_review_and_calendar(
     from stock_names import STOCK_MAP
 
     weekday = now_kst.weekday()  # 0=Mon .. 5=Sat, 6=Sun
-    # 주말(토/일)이면 다가오는 월~금 주간 일정을 보여주고, 평일이면 이번 주 월~금 일정을 계산
-    if weekday >= 5:
-        days_until_monday = 7 - weekday
+    # 금요일 16:00 이후 또는 주말(토/일)이면 다가오는 차주 월~금 주간 일정을 계산, 평일 주간이면 이번 주 월~금 일정 계산
+    is_weekend_calc = (weekday >= 5) or (weekday == 4 and now_kst.hour >= 16)
+    if is_weekend_calc:
+        days_until_monday = (7 - weekday) if weekday >= 5 else 3
         monday_dt = now_kst + timedelta(days=days_until_monday)
         week_mode_label = "차주(다가오는 월~금) 개장 대비"
     else:
