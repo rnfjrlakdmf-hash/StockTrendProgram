@@ -6,7 +6,8 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface MarketIndex {
     label: string;
-    icon: string;
+    icon?: string;
+    badge?: string;
     value: string;
     change: string;
     up: boolean;
@@ -61,16 +62,17 @@ export default function FlipIndexTicker() {
                     const name = item.event_kr || "";
                     let label = "";
                     let icon = "📊";
+                    let badge: string | undefined = undefined;
 
                     if (name === "S&P 500" || name === "S&P") {
                         label = "S&P 500";
-                        icon = "🇺🇸";
+                        badge = "US";
                     } else if (name === "DOW JONES" || name.includes("다우")) {
                         label = "Dow Jones";
-                        icon = "🇺🇸";
+                        badge = "US";
                     } else if (name === "NASDAQ 100") {
                         label = "NASDAQ 100";
-                        icon = "🇺🇸";
+                        badge = "US";
                     } else if (name.includes("국채") && (name.includes("10년") || name.includes("10년물"))) {
                         label = "미 10년물 국채";
                         icon = "📈";
@@ -88,10 +90,10 @@ export default function FlipIndexTicker() {
                         icon = "🪙";
                     } else if (name.includes("KOSPI")) {
                         label = "KOSPI";
-                        icon = "🇰🇷";
+                        badge = "KR";
                     } else if (name.includes("KOSDAQ")) {
                         label = "KOSDAQ";
-                        icon = "🇰🇷";
+                        badge = "KR";
                     }
 
                     if (label && !targetItems.some(x => x.label === label)) {
@@ -113,6 +115,7 @@ export default function FlipIndexTicker() {
                         targetItems.push({
                             label,
                             icon,
+                            badge,
                             value: rawValue,
                             change: rawChange,
                             up: item.change_val !== undefined ? item.change_val >= 0 : !rawChange.startsWith("-"),
@@ -172,10 +175,20 @@ export default function FlipIndexTicker() {
     const renderItem = (idx: MarketIndex, key: string) => (
         <div 
             key={key} 
-            className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] active:bg-white/10 border border-white/5 hover:border-cyan-500/30 transition-all duration-200 cursor-default select-none"
+            className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/10 border border-white/10 hover:border-cyan-500/30 transition-all duration-200 cursor-default select-none shadow-sm"
         >
-            <span className="text-xs sm:text-sm drop-shadow-sm">{idx.icon}</span>
-            <span className="text-[11px] sm:text-xs md:text-sm font-black text-gray-300 tracking-tight whitespace-nowrap">
+            {idx.badge ? (
+                <span className={`inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-black font-mono tracking-wider rounded border shadow-xs ${
+                    idx.badge === 'US' 
+                        ? 'bg-blue-600/25 text-blue-300 border-blue-400/40' 
+                        : 'bg-rose-600/25 text-rose-300 border-rose-400/40'
+                }`}>
+                    {idx.badge}
+                </span>
+            ) : (
+                <span className="text-xs sm:text-sm drop-shadow-sm">{idx.icon}</span>
+            )}
+            <span className="text-[11px] sm:text-xs md:text-sm font-black text-gray-200 tracking-tight whitespace-nowrap">
                 {idx.label}
             </span>
             <span className="text-[11px] sm:text-xs md:text-sm font-black text-white font-mono tabular-nums tracking-tight whitespace-nowrap">
@@ -209,7 +222,7 @@ export default function FlipIndexTicker() {
             onTouchEnd={handleTouchEnd}
         >
             {/* 좌측 고정 LIVE 배지 */}
-            <div className="flex items-center gap-1.5 sm:gap-2 pl-3 sm:pl-4 pr-2.5 sm:pr-3.5 h-full bg-[#06070d] border-r border-white/10 text-[10px] sm:text-xs font-black tracking-wider uppercase z-30 shrink-0 shadow-lg">
+            <div className="flex items-center gap-1.5 sm:gap-2 pl-3 sm:pl-4 pr-3 sm:pr-4 h-full bg-[#06070d] border-r border-white/10 text-[10px] sm:text-xs font-black tracking-wider uppercase z-30 shrink-0 shadow-[10px_0_15px_-3px_rgba(6,7,13,0.95)]">
                 <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>

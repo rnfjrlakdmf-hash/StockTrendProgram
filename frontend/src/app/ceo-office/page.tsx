@@ -3148,126 +3148,143 @@ export default function CeoOfficePage() {
                 </div>
             )}
 
-            {/* 상단 대표이사 전자결재 집무실 헤더 배너 */}
-            <div className="relative overflow-hidden border-b border-amber-500/30 bg-gradient-to-r from-[#0d1527] via-[#131c33] to-[#0d1527]">
-                <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+            {/* 상단 대표이사 전자결재 집무실 헤더 배너 (울트라 럭셔리 프리미엄 에디션) */}
+            <div className="relative overflow-hidden border-b border-amber-500/25 bg-[#060913]">
+                {/* 럭셔리 앰비언트 글로우 조명 효과 */}
+                <div className="absolute -top-32 left-1/4 w-[600px] h-[350px] bg-gradient-to-br from-amber-500/12 via-yellow-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute -bottom-32 right-10 w-[550px] h-[350px] bg-gradient-to-bl from-emerald-500/10 via-cyan-500/5 to-transparent rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute top-1/2 left-0 w-80 h-80 bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                        <div className="flex-1">
-                            {/* 상단 럭셔리 인가 뱃지 */}
-                            <div className="flex flex-wrap items-center gap-2 mb-3">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-black shadow-sm">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                                    <span>🏛️ AI 증권사 대표이사 전자결재실</span>
-                                    <span className="text-gray-500">|</span>
-                                    <span className="text-emerald-300 font-extrabold">전 부서 자율 분석 완료</span>
+                        <div className="flex-1 space-y-4">
+                            {/* 상단 최고경영자 VIP 인가 뱃지 */}
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-black shadow-lg shadow-amber-500/5">
+                                    <span className="relative flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.9)]"></span>
+                                    </span>
+                                    <span>👑 EXCLUSIVE VIP SUITE · AI 증권사 대표이사 최고결재실</span>
+                                    <span className="text-white/20">|</span>
+                                    <span className="text-emerald-300 font-extrabold flex items-center gap-1">
+                                        <CheckCircle2 className="w-3.5 h-3.5" /> 5개 본부 전수 조사 완료
+                                    </span>
                                 </div>
-                                <span className="text-[11px] text-gray-400 bg-white/5 px-2.5 py-0.5 rounded-md border border-white/5 font-mono">
+                                <span className="text-[11px] text-gray-300 bg-white/[0.04] px-3 py-1 rounded-full border border-white/10 font-mono tracking-tight flex items-center gap-1.5">
+                                    <Clock className="w-3 h-3 text-amber-400" />
                                     {officeStatus}
                                 </span>
                             </div>
 
-                            {/* 메인 헤드라인 (한눈에 들어오는 깔끔 요약형) */}
+                            {/* 메인 헤드라인 (품격 있는 프리미엄 타이포그래피) */}
                             <div>
-                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-black tracking-tight text-white leading-tight">
-                                    대표님, 오늘 시장 분석이 완료되었습니다 <br className="hidden sm:inline" />
-                                    <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent underline decoration-amber-500/40 decoration-2">
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-black tracking-tight text-white leading-[1.25]">
+                                    대표님, 오늘 시장 분석이 완료되었습니다. <br className="hidden sm:inline" />
+                                    총{' '}
+                                    <span className="inline-block px-2.5 py-0.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-400/40 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 font-mono font-black shadow-sm mx-1">
                                         총 {totalDocs}건의 결재 기안서
                                     </span>
                                     를 검토 후 서명해 주십시오 🖋️
                                 </h1>
-                                <div className="flex flex-wrap items-center gap-2 mt-2.5 text-xs text-gray-200">
-                                    <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 font-extrabold text-amber-300">
-                                        📌 핵심 요약
+                                <div className="flex flex-wrap items-center gap-2 mt-3 text-xs sm:text-sm text-gray-300">
+                                    <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold text-xs">
+                                        📌 당일 핵심 지침
                                     </span>
-                                    <span>5개 본부 전수 조사 완료</span>
-                                    <span className="text-gray-500">·</span>
-                                    <strong className="text-emerald-300">실적 흑자 + 50일선 수급 돌파</strong>
-                                    <span>검증 안건만 엄선 상정</span>
+                                    <span className="text-gray-300 font-medium">
+                                        증권사 리서치 전수 점검 완료 · <strong className="text-emerald-300 font-bold">실적 흑자 턴어라운드 + 50일선 수급 돌파</strong> 검증 안건만 엄선 상정
+                                    </span>
                                 </div>
                             </div>
 
-                            {/* 🌟 [1] 글로벌 4대 핵심 지표 한눈에 보기 (기안서 데이터 100% 실시간 연동) */}
+                            {/* 🌟 [1] 글로벌 4대 핵심 지표 한눈에 보기 (글래스모피즘 럭셔리 카드) */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm">
+                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 transition-all rounded-2xl p-3.5 shadow-lg group">
                                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span>🇺🇸 미국 나스닥선물</span>
-                                        <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.2 rounded">NQ=F</span>
+                                        <span className="flex items-center gap-1 text-gray-300">🇺🇸 미국 나스닥선물</span>
+                                        <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">NQ=F</span>
                                     </div>
-                                    <div className="text-sm sm:text-base font-black text-white font-mono">
+                                    <div className="text-base sm:text-lg font-black text-white font-mono tracking-tight">
                                         {intelligenceMetrics.nqPrice}
                                     </div>
-                                    <div className="text-[10px] text-emerald-300 mt-1 font-bold truncate">
-                                        ✓ 선물 기안서 실시간 시세 연동
+                                    <div className="text-[10px] text-emerald-300/90 mt-1 font-bold truncate flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                        <span>선물 기안서 실시간 연동</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm">
+                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-sky-500/40 transition-all rounded-2xl p-3.5 shadow-lg group">
                                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span>🤖 글로벌 빅테크 대장</span>
-                                        <span className="text-[10px] text-sky-400 font-mono bg-sky-500/10 px-1.5 py-0.2 rounded">{intelligenceMetrics.bigTechSymbol}</span>
+                                        <span className="flex items-center gap-1 text-gray-300">🤖 글로벌 빅테크 대장</span>
+                                        <span className="text-[10px] text-sky-400 font-mono bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 rounded font-bold">{intelligenceMetrics.bigTechSymbol}</span>
                                     </div>
-                                    <div className="text-sm sm:text-base font-black text-white font-mono">
+                                    <div className="text-base sm:text-lg font-black text-white font-mono tracking-tight">
                                         {intelligenceMetrics.bigTechPrice}
                                     </div>
-                                    <div className="text-[10px] text-sky-300 mt-1 font-bold truncate">
-                                        ✓ {intelligenceMetrics.bigTechUpside}
+                                    <div className="text-[10px] text-sky-300/90 mt-1 font-bold truncate flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
+                                        <span>{intelligenceMetrics.bigTechUpside}</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 backdrop-blur-sm shadow-sm">
+                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-amber-500/40 transition-all rounded-2xl p-3.5 shadow-lg group">
                                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span>💵 실시간 원/달러 환율</span>
-                                        <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.2 rounded">USD/KRW</span>
+                                        <span className="flex items-center gap-1 text-gray-300">💵 실시간 원/달러 환율</span>
+                                        <span className="text-[10px] text-amber-400 font-mono bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">USD/KRW</span>
                                     </div>
-                                    <div className="text-sm sm:text-base font-black text-amber-300 font-mono">
+                                    <div className="text-base sm:text-lg font-black text-amber-300 font-mono tracking-tight">
                                         {intelligenceMetrics.usdKrwPrice}
                                     </div>
-                                    <div className="text-[10px] text-amber-200/90 mt-1 font-bold truncate">
-                                        ✓ 실시간 외환 시세 · 외국인 수급 연동
+                                    <div className="text-[10px] text-amber-200/90 mt-1 font-bold truncate flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                        <span>실시간 외환·외인 수급 연동</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-amber-950/30 via-slate-900 to-rose-950/30 border border-amber-500/35 rounded-xl p-3 backdrop-blur-sm shadow-sm">
+                                <div className="bg-gradient-to-br from-rose-950/40 via-slate-900/70 to-amber-950/30 backdrop-blur-xl border border-rose-500/35 hover:border-rose-400/60 transition-all rounded-2xl p-3.5 shadow-lg group">
                                     <div className="flex items-center justify-between text-[11px] text-amber-300 font-bold mb-1">
                                         <span>🎯 상정 종목 평균 기대수익</span>
-                                        <span className="text-[10px] text-rose-300 font-mono bg-rose-500/20 px-1.5 py-0.2 rounded font-black">TOP</span>
+                                        <span className="text-[10px] text-rose-300 font-mono bg-rose-500/25 border border-rose-500/40 px-1.5 py-0.2 rounded font-black">TOP PICK</span>
                                     </div>
-                                    <div className="text-sm sm:text-base font-black text-rose-400 font-mono">
+                                    <div className="text-base sm:text-lg font-black text-rose-400 font-mono tracking-tight">
                                         평균 +{intelligenceMetrics.avgUpside}%
                                     </div>
-                                    <div className="text-[10px] text-rose-300 mt-1 font-bold truncate">
-                                        🚀 1위: {intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside})
+                                    <div className="text-[10px] text-rose-300 mt-1 font-bold truncate flex items-center gap-1">
+                                        <span>🚀 1위:</span>
+                                        <span className="text-white font-extrabold">{intelligenceMetrics.topStock.name}</span>
+                                        <span className="text-rose-400 font-black">({intelligenceMetrics.topStock.upside})</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 🌟 [2] 오늘의 기안서 3줄 핵심 요약 브리핑 (오늘 상정된 종목 100% 자동 반영) */}
-                            <div className="bg-gradient-to-br from-[#0c162c] via-[#0b1222] to-[#0d162a] border border-amber-500/35 rounded-2xl p-4 shadow-xl">
-                                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-3 border-b border-white/10">
+                            {/* 🌟 [2] 오늘의 기안서 3줄 핵심 요약 브리핑 (최고급 인텔리전스 폴리오 카드) */}
+                            <div className="bg-gradient-to-br from-[#0c162c] via-[#091122] to-[#0c152a] border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-2xl">
+                                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-white/10">
                                     <div className="flex items-center gap-2">
-                                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                                        <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs shadow-sm">
                                             📊 오늘 기안서 3줄 핵심 요약
                                         </span>
                                         <span className="text-xs sm:text-sm font-black text-white">
                                             오늘 상정된 {totalDocs}건의 실제 기안서 종목·환율·기대수익 실시간 자동 브리핑
                                         </span>
                                     </div>
-                                    <span className="text-[11px] text-emerald-300 font-bold">
-                                        ● 기안서 데이터 100% 실시간 연동
+                                    <span className="text-[11px] text-emerald-300 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        기안서 데이터 100% 실시간 연동
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                                     {/* 카드 1: 오늘 기안서에 실제 올라온 국내/미국 종목 */}
-                                    <div className="bg-black/45 border border-emerald-500/25 rounded-xl p-3 space-y-1.5">
+                                    <div className="bg-black/50 border border-emerald-500/30 rounded-xl p-3.5 space-y-2 hover:border-emerald-500/50 transition-all">
                                         <div className="text-emerald-300 font-black flex items-center justify-between">
-                                            <span>💡 1. 오늘 어떤 종목이 올라왔나요?</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">실시간 기안 종목</span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span>💡</span>
+                                                <span>1. 오늘 어떤 종목이 올라왔나요?</span>
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">실시간 기안</span>
                                         </div>
-                                        <ul className="space-y-1 text-gray-200 font-medium text-[11px] sm:text-xs">
+                                        <ul className="space-y-1.5 text-gray-200 font-medium text-[11px] sm:text-xs">
                                             <li className="flex items-start gap-1.5">
                                                 <span className="text-emerald-400 font-black shrink-0">•</span>
                                                 <span><strong className="text-white">국내 상정주 ({intelligenceMetrics.krDocs.length}건):</strong> <strong className="text-emerald-300">{intelligenceMetrics.krStockListStr}</strong></span>
@@ -3284,12 +3301,15 @@ export default function CeoOfficePage() {
                                     </div>
 
                                     {/* 카드 2: 오늘 기안서의 실시간 선물·환율·수급 */}
-                                    <div className="bg-black/45 border border-cyan-500/25 rounded-xl p-3 space-y-1.5">
+                                    <div className="bg-black/50 border border-cyan-500/30 rounded-xl p-3.5 space-y-2 hover:border-cyan-500/50 transition-all">
                                         <div className="text-cyan-300 font-black flex items-center justify-between">
-                                            <span>📈 2. 글로벌 선물 & 환율·수급은?</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">24H 거시 연동</span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span>📈</span>
+                                                <span>2. 글로벌 선물 & 환율·수급은?</span>
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">24H 거시 연동</span>
                                         </div>
-                                        <ul className="space-y-1 text-gray-200 font-medium text-[11px] sm:text-xs">
+                                        <ul className="space-y-1.5 text-gray-200 font-medium text-[11px] sm:text-xs">
                                             <li className="flex items-start gap-1.5">
                                                 <span className="text-cyan-400 font-black shrink-0">•</span>
                                                 <span><strong className="text-white">글로벌 선물:</strong> {intelligenceMetrics.futuresListStr} (<strong className="text-cyan-300">나스닥 {intelligenceMetrics.nqPrice}</strong>)</span>
@@ -3306,12 +3326,15 @@ export default function CeoOfficePage() {
                                     </div>
 
                                     {/* 카드 3: 오늘 기안서 기대수익 1위·2위 & 결재 효과 */}
-                                    <div className="bg-black/45 border border-rose-500/25 rounded-xl p-3 space-y-1.5">
+                                    <div className="bg-black/50 border border-rose-500/30 rounded-xl p-3.5 space-y-2 hover:border-rose-500/50 transition-all">
                                         <div className="text-rose-300 font-black flex items-center justify-between">
-                                            <span>🛡️ 3. 오늘 기대수익 TOP & 결재 효과</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">TFT 가동</span>
+                                            <span className="flex items-center gap-1.5">
+                                                <span>🛡️</span>
+                                                <span>3. 오늘 기대수익 TOP & 결재 효과</span>
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">TFT 즉시 가동</span>
                                         </div>
-                                        <ul className="space-y-1 text-gray-200 font-medium text-[11px] sm:text-xs">
+                                        <ul className="space-y-1.5 text-gray-200 font-medium text-[11px] sm:text-xs">
                                             <li className="flex items-start gap-1.5">
                                                 <span className="text-rose-400 font-black shrink-0">•</span>
                                                 <span><strong className="text-white">기대수익 1위:</strong> <strong className="text-rose-300">{intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside}, 목표 {intelligenceMetrics.topStock.target})</strong></span>
@@ -3330,57 +3353,63 @@ export default function CeoOfficePage() {
                             </div>
                         </div>
 
-                        {/* 우측 상단 전자결재 현황판 & 일괄 서명 버튼 */}
-                        <div className="bg-[#0b1222]/95 border-2 border-amber-500/35 rounded-2xl p-4 sm:p-5 min-w-[300px] lg:w-[330px] backdrop-blur-md shadow-2xl shrink-0 space-y-3.5">
+                        {/* 우측 상단 전자결재 현황판 & 일괄 서명 버튼 (하이엔드 데스크 허브) */}
+                        <div className="bg-gradient-to-b from-[#0d172e] via-[#091022] to-[#0a1329] border-2 border-amber-500/40 rounded-2xl p-5 min-w-[300px] lg:w-[335px] backdrop-blur-xl shadow-[0_10px_35px_rgba(245,158,11,0.15)] shrink-0 space-y-4">
                             <div className="flex items-center justify-between text-xs text-gray-400">
                                 <span className="font-extrabold text-amber-300 flex items-center gap-1.5">
-                                    <span>📋</span>
+                                    <span className="text-sm">📋</span>
                                     <span>오늘의 결재 집무판</span>
                                 </span>
-                                <span className="text-[11px] font-mono text-gray-400 bg-white/5 px-2 py-0.5 rounded">
+                                <span className="text-[11px] font-mono text-gray-300 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
                                     {updatedAt ? `${updatedAt} 상정` : '실시간 상정'}
                                 </span>
                             </div>
 
                             {/* 실시간 서명 진행률 게이지 바 */}
-                            <div className="bg-black/50 border border-white/10 rounded-xl p-3">
-                                <div className="flex items-center justify-between text-xs mb-1.5">
-                                    <span className="text-gray-300 font-bold">결재 서명 진행률</span>
+                            <div className="bg-black/50 border border-white/10 rounded-xl p-3.5 space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-gray-300 font-bold flex items-center gap-1">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                                        <span>결재 서명 진행률</span>
+                                    </span>
                                     <span className="text-amber-300 font-black font-mono">
                                         {intelligenceMetrics.approvalRate}% ({approvedDocsCount}/{totalDocs}건 완료)
                                     </span>
                                 </div>
-                                <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                                <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden border border-white/5">
                                     <div
-                                        className="h-full bg-gradient-to-r from-amber-500 via-emerald-400 to-emerald-300 transition-all duration-500 rounded-full"
+                                        className="bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
                                         style={{ width: `${intelligenceMetrics.approvalRate}%` }}
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-3 gap-2 text-center">
-                                <div className="bg-white/5 rounded-xl py-2 px-2 border border-white/5">
+                                <div className="bg-white/[0.04] rounded-xl py-2 px-2 border border-white/10">
                                     <div className="text-[10px] text-gray-400 font-bold">총 상정</div>
-                                    <div className="text-lg font-black text-white">{totalDocs}건</div>
+                                    <div className="text-lg font-black text-white font-mono">{totalDocs}건</div>
                                 </div>
                                 <div className="bg-amber-500/10 rounded-xl py-2 px-2 border border-amber-500/30">
                                     <div className="text-[10px] text-amber-200 font-bold">서명 대기</div>
-                                    <div className="text-lg font-black text-amber-300 flex items-center justify-center gap-1">
+                                    <div className="text-lg font-black text-amber-300 font-mono flex items-center justify-center gap-1">
                                         {pendingDocsCount > 0 && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block" />}
                                         <span>{pendingDocsCount}건</span>
                                     </div>
                                 </div>
                                 <div className="bg-emerald-500/10 rounded-xl py-2 px-2 border border-emerald-500/30">
                                     <div className="text-[10px] text-emerald-200 font-bold">승인 완료</div>
-                                    <div className="text-lg font-black text-emerald-400">{approvedDocsCount}건</div>
+                                    <div className="text-lg font-black text-emerald-400 font-mono">{approvedDocsCount}건</div>
                                 </div>
                             </div>
 
                             {/* 최고 기대수익주 퀵 하이라이트 박스 */}
-                            <div className="bg-gradient-to-r from-rose-950/30 to-amber-950/20 border border-rose-500/30 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                            <div className="bg-gradient-to-r from-rose-950/40 via-amber-950/30 to-slate-900 border border-rose-500/40 rounded-xl p-3 flex items-center justify-between text-xs">
                                 <div>
-                                    <div className="text-[10px] text-rose-300 font-bold">🚀 오늘 기대수익 1위</div>
-                                    <div className="font-black text-white text-sm">{intelligenceMetrics.topStock.name}</div>
+                                    <div className="text-[10px] text-rose-300 font-bold flex items-center gap-1">
+                                        <span>🚀</span>
+                                        <span>오늘 기대수익 1위</span>
+                                    </div>
+                                    <div className="font-black text-white text-sm mt-0.5">{intelligenceMetrics.topStock.name}</div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-rose-400 font-black font-mono text-sm">{intelligenceMetrics.topStock.upside}</div>
@@ -3388,18 +3417,20 @@ export default function CeoOfficePage() {
                                 </div>
                             </div>
 
+                            {/* 럭셔리 골드 일괄 승인 서명 버튼 */}
                             <button
                                 type="button"
                                 onClick={handleApproveAll}
-                                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-[0_4px_25px_rgba(245,158,11,0.35)] hover:shadow-[0_6px_30px_rgba(245,158,11,0.5)] transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
                             >
-                                <span>🖋️ 상정된 안건 전체 일괄 승인 서명하기</span>
+                                <span className="text-base">🖋️</span>
+                                <span>상정된 안건 전체 일괄 승인 서명하기</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* 🌟 [3] 총 {totalDocs}건 기안서 4대 분류 한눈에 보는 요약표 (줄글 없이 깔끔한 리스트) */}
-                    <div className="mt-5 pt-5 border-t border-white/10">
+                    {/* 🌟 [3] 총 {totalDocs}건 기안서 4대 분류 한눈에 보는 요약표 */}
+                    <div className="mt-6 pt-5 border-t border-white/10">
                         <div className="flex items-center justify-between gap-2 mb-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-black text-amber-300 flex items-center gap-1.5">
@@ -3410,21 +3441,21 @@ export default function CeoOfficePage() {
                                     (종목을 클릭하시면 해당 결재 서류로 바로 이동합니다)
                                 </span>
                             </div>
-                            <span className="text-[11px] font-bold text-amber-300/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            <span className="text-[11px] font-bold text-amber-300/90 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                                 4대 분야 요약
                             </span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                             {/* 1. 국내 주식 요약 리스트 */}
-                            <div className="bg-[#0b1424]/95 border border-emerald-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                            <div className="bg-[#0b1424]/95 border border-emerald-500/30 hover:border-emerald-500/50 rounded-2xl p-4 shadow-lg flex flex-col justify-between transition-all">
                                 <div>
                                     <div
                                         onClick={() => {
                                             setCategoryFilter('kr_stock');
                                             if (intelligenceMetrics.krDocs[0]) handleJumpToDoc(intelligenceMetrics.krDocs[0].doc_id);
                                         }}
-                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                        className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10 cursor-pointer hover:opacity-80"
                                     >
                                         <span className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
                                             <span>🇰🇷</span>
@@ -3440,9 +3471,9 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left group"
                                             >
-                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep group-hover:text-emerald-300 transition-colors">{doc.stock_name}</span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.target_price && <span className="text-gray-300">목표 {doc.target_price}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -3453,21 +3484,21 @@ export default function CeoOfficePage() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-emerald-400 font-bold">
-                                    <span>증권사 목표주가 컨센서스</span>
+                                <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-emerald-400 font-bold">
+                                    <span>증권사 리서치 목표가 연동</span>
                                     <span>클릭 시 상세 열람 →</span>
                                 </div>
                             </div>
 
                             {/* 2. 미국 빅테크 요약 리스트 */}
-                            <div className="bg-[#0b1424]/95 border border-sky-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                            <div className="bg-[#0b1424]/95 border border-sky-500/30 hover:border-sky-500/50 rounded-2xl p-4 shadow-lg flex flex-col justify-between transition-all">
                                 <div>
                                     <div
                                         onClick={() => {
                                             setCategoryFilter('us_stock');
                                             if (intelligenceMetrics.usDocs[0]) handleJumpToDoc(intelligenceMetrics.usDocs[0].doc_id);
                                         }}
-                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                        className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10 cursor-pointer hover:opacity-80"
                                     >
                                         <span className="flex items-center gap-1.5 text-xs font-black text-sky-300">
                                             <span>🌎</span>
@@ -3483,9 +3514,9 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left group"
                                             >
-                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep group-hover:text-sky-300 transition-colors">{doc.stock_name}</span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.current_price && <span className="text-gray-300">{doc.current_price.split(' ')[0]}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -3496,21 +3527,21 @@ export default function CeoOfficePage() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-sky-400 font-bold">
+                                <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-sky-400 font-bold">
                                     <span>월스트리트 목표가 연동</span>
                                     <span>클릭 시 상세 열람 →</span>
                                 </div>
                             </div>
 
                             {/* 3. 글로벌 선물·지수 요약 리스트 */}
-                            <div className="bg-[#0b1424]/95 border border-purple-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                            <div className="bg-[#0b1424]/95 border border-purple-500/30 hover:border-purple-500/50 rounded-2xl p-4 shadow-lg flex flex-col justify-between transition-all">
                                 <div>
                                     <div
                                         onClick={() => {
                                             setCategoryFilter('global_futures');
                                             if (intelligenceMetrics.futuresDocs[0]) handleJumpToDoc(intelligenceMetrics.futuresDocs[0].doc_id);
                                         }}
-                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                        className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10 cursor-pointer hover:opacity-80"
                                     >
                                         <span className="flex items-center gap-1.5 text-xs font-black text-purple-300">
                                             <span>📊</span>
@@ -3526,9 +3557,9 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all cursor-pointer text-left"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all cursor-pointer text-left group"
                                             >
-                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white break-keep group-hover:text-purple-300 transition-colors">{doc.stock_name}</span>
                                                 <span className="text-[11px] font-mono text-purple-300 font-bold shrink-0">
                                                     {doc.current_price ? doc.current_price.split(' ')[0] : '24H 감시'}
                                                 </span>
@@ -3536,21 +3567,21 @@ export default function CeoOfficePage() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-purple-400 font-bold">
+                                <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-purple-400 font-bold">
                                     <span>24시간 야간 선물·원자재</span>
                                     <span>클릭 시 상세 열람 →</span>
                                 </div>
                             </div>
 
                             {/* 4. 전사 종합 & 경제특보 요약 리스트 */}
-                            <div className="bg-[#0b1424]/95 border border-amber-500/30 rounded-2xl p-3.5 shadow-lg flex flex-col justify-between">
+                            <div className="bg-[#0b1424]/95 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-4 shadow-lg flex flex-col justify-between transition-all">
                                 <div>
                                     <div
                                         onClick={() => {
                                             setCategoryFilter('world_news');
                                             if (intelligenceMetrics.newsDocs[0]) handleJumpToDoc(intelligenceMetrics.newsDocs[0].doc_id);
                                         }}
-                                        className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 cursor-pointer hover:opacity-80"
+                                        className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/10 cursor-pointer hover:opacity-80"
                                     >
                                         <span className="flex items-center gap-1.5 text-xs font-black text-amber-300">
                                             <span>📰</span>
@@ -3566,47 +3597,43 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg bg-white/5 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all cursor-pointer text-left"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all cursor-pointer text-left group"
                                             >
-                                                <span className="font-extrabold text-white break-keep">{doc.stock_name}</span>
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold shrink-0">
-                                                    필독 브리핑
+                                                <span className="font-extrabold text-white break-keep group-hover:text-amber-300 transition-colors">{doc.stock_name}</span>
+                                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0 font-bold">
+                                                    {doc.urgency}
                                                 </span>
                                             </button>
                                         ))}
-                                        <div className="text-[11px] text-gray-300 bg-black/30 rounded-lg p-2 border border-white/5 leading-snug">
-                                            • 미 연준 금리 & 환율 방향성<br />
-                                            • 외국인 패시브 자금 유입 점검
-                                        </div>
                                     </div>
                                 </div>
-                                <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-amber-400 font-bold">
-                                    <span>거시경제 핵심 요약</span>
+                                <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-amber-400 font-bold">
+                                    <span>한·미 거시 매크로 캘린더</span>
                                     <span>클릭 시 상세 열람 →</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* 7인 임원진(주간복기팀·경제일정팀 포함) 자율 업무 완료 상태 카드 */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mt-6">
-                        {executives.map(exec => (
+                    {/* 5개 본부 임원진 현황 (기업 임원 ID 뱃지 스타일) */}
+                    <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {executiveSquad.map((exec, idx) => (
                             <div
-                                key={exec.id}
-                                className="bg-[#0b1222]/90 border border-white/10 rounded-xl p-3 flex flex-col justify-between"
+                                key={idx}
+                                className="bg-[#0b1222]/90 border border-white/10 hover:border-amber-500/35 rounded-2xl p-3.5 flex flex-col justify-between shadow-lg transition-all"
                             >
                                 <div>
-                                    <div className="flex items-center justify-between gap-1 mb-1">
-                                        <span className="text-xl">{exec.avatar}</span>
-                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                            ✓ 분석·기안 완료
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xl p-1.5 rounded-xl bg-white/5 border border-white/10">{exec.avatar}</span>
+                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                            <CheckCircle2 className="w-3 h-3 text-emerald-400" /> 완료
                                         </span>
                                     </div>
-                                    <div className="text-sm font-extrabold text-white">{exec.name}</div>
+                                    <div className="text-sm font-extrabold text-white tracking-tight">{exec.name}</div>
                                     <div className="text-[11px] font-bold text-amber-300/90">{exec.role}</div>
                                     <div className="text-[10px] text-gray-400 mt-0.5">{exec.dept}</div>
                                 </div>
-                                <div className="mt-2 pt-2 border-t border-white/5 text-[10px] text-emerald-200/90 line-clamp-2">
+                                <div className="mt-2.5 pt-2 border-t border-white/5 text-[10px] text-emerald-200/90 line-clamp-2 font-medium">
                                     {exec.status}
                                 </div>
                             </div>
@@ -3616,20 +3643,22 @@ export default function CeoOfficePage() {
             </div>
 
             <div ref={mainSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-                {/* 상단 탭 & 선택형 특별 지시 토글 바 */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
-                    <div className="flex flex-wrap gap-2">
+                {/* 🌟 대표이사 집무실 프리미엄 세그먼트 도크 (Luxury Executive Tab Bar) */}
+                <div className="bg-[#070b16]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 flex flex-wrap items-center justify-between gap-2.5 shadow-2xl">
+                    <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto no-scrollbar">
                         <button
                             type="button"
                             onClick={() => setActiveTab('electronic_sign')}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'electronic_sign'
-                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
-                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                    ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
+                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
                             }`}
                         >
-                            <span>🖋️ 대표이사 전자결재 서류함 (자동 상정)</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25 font-extrabold">
+                            <span>🖋️ 대표이사 전자결재 서류함</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${
+                                activeTab === 'electronic_sign' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}>
                                 대기 {pendingDocsCount}건
                             </span>
                         </button>
@@ -3637,49 +3666,51 @@ export default function CeoOfficePage() {
                         <button
                             type="button"
                             onClick={() => setActiveTab('one_page_summary')}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'one_page_summary'
                                     ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 text-slate-950 shadow-lg shadow-amber-500/25'
-                                    : 'bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 border border-amber-400/40'
+                                    : 'bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 border border-amber-400/30'
                             }`}
                         >
                             <span>📄 1장 요약 브리핑 카드</span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                 activeTab === 'one_page_summary' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
                             }`}>
-                                한눈에 보기·복사
+                                한눈에 보기
                             </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setActiveTab('weekly_review_calendar')}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'weekly_review_calendar'
                                     ? 'bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400 text-slate-950 shadow-lg shadow-teal-500/25'
-                                    : 'bg-teal-500/15 text-teal-200 hover:bg-teal-500/25 border border-teal-400/40'
+                                    : 'bg-teal-500/10 text-teal-200 hover:bg-teal-500/20 border border-teal-400/30'
                             }`}
                         >
-                            <span>📋 주간 리서치 복기 &amp; 🗓️ 한주 경제일정</span>
+                            <span>📋 주간 복기 &amp; 🗓️ 경제일정</span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                                 activeTab === 'weekly_review_calendar' ? 'bg-slate-950/30 text-slate-950' : 'bg-teal-400/20 text-teal-300'
                             }`}>
-                                주말·주간 특화팀
+                                특화팀
                             </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setActiveTab('boardroom')}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'boardroom'
-                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
-                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                    ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
+                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
                             }`}
                         >
-                            <span>🎙️ 임원 대면 브리핑 · 심층 토론실</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25">
-                                {debates.length}명 보고
+                            <span>🎙️ 임원 대면 토론실</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                activeTab === 'boardroom' ? 'bg-black/30 text-white' : 'bg-white/10 text-zinc-400'
+                            }`}>
+                                {debates.length}명
                             </span>
                         </button>
 
@@ -3689,18 +3720,17 @@ export default function CeoOfficePage() {
                                 setActiveTab('approved_tf');
                                 fetchTradingDesk();
                             }}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'approved_tf'
                                     ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-300 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
-                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
                             }`}
                         >
-                            <span>💼</span>
-                            <span>트레이딩 운용팀 & 실시간 수익률 보고</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                            <span>💼 트레이딩 운용팀</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                                 activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                             }`}>
-                                {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 종목 운용 중
+                                {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 운용
                             </span>
                         </button>
 
@@ -3710,49 +3740,50 @@ export default function CeoOfficePage() {
                                 setActiveTab('watchlist_research');
                                 if (researchReports.length === 0) fetchWatchlistResearch();
                             }}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'watchlist_research'
                                     ? 'bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
-                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
                             }`}
                         >
-                            <span>🔬</span>
-                            <span>[대표님 전담] 맞춤 종목 리서치팀</span>
+                            <span>🔬 맞춤 종목 리서치팀</span>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                                 activeTab === 'watchlist_research' ? 'bg-slate-950/40 text-slate-950' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
                             }`}>
-                                자율 분석 신설
+                                전담 신설
                             </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setActiveTab('history')}
-                            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                                 activeTab === 'history'
-                                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
-                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
                             }`}
                         >
-                            <span>🗂️ 결재 및 특별 지시 기록</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25">
-                                {approvedDocsCount + directiveLogs.length + chatLogs.length}건
+                            <span>🗂️ 결재·지시 기록</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                                activeTab === 'history' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-white/10 text-zinc-400'
+                            }`}>
+                                {approvedDocsCount + directiveLogs.length + chatLogs.length}
                             </span>
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         <button
                             type="button"
                             onClick={() => setShowCommandDrawer(prev => !prev)}
-                            className={`px-3.5 py-2 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            className={`px-3.5 py-2.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
                                 showCommandDrawer
-                                    ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md shadow-amber-500/10'
+                                    ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-md shadow-amber-500/10'
                                     : 'bg-white/5 hover:bg-white/10 border-amber-500/30 text-amber-300'
                             }`}
                         >
                             <span>⚡</span>
-                            <span>{showCommandDrawer ? '전사 지휘통제실 접기 ▲' : '전사 지휘통제실 & 자동운용 사령부 열기 ▼'}</span>
+                            <span>{showCommandDrawer ? '지휘통제실 닫기 ▲' : '지휘통제실 열기 ▼'}</span>
                         </button>
                         <button
                             type="button"
@@ -3760,9 +3791,11 @@ export default function CeoOfficePage() {
                                 fetchOfficeData('', '', false);
                                 fetchTradingDesk();
                             }}
-                            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold transition-all cursor-pointer"
+                            className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                            title="전 부서 보고 갱신"
                         >
-                            🔄 전 부서 시세·보고 갱신
+                            <span>🔄</span>
+                            <span className="hidden sm:inline">새로고침</span>
                         </button>
                     </div>
                 </div>
