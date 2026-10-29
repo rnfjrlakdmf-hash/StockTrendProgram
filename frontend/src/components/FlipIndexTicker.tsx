@@ -182,12 +182,12 @@ export default function FlipIndexTicker() {
                 .animate-ticker-marquee {
                     display: flex !important;
                     width: max-content !important;
-                    animation: ticker-seamless-loop 24s linear infinite !important;
+                    animation: ticker-seamless-loop 12s linear infinite !important;
                     will-change: transform;
                 }
                 @media (min-width: 768px) {
                     .animate-ticker-marquee {
-                        animation: ticker-seamless-loop 28s linear infinite !important;
+                        animation: ticker-seamless-loop 14s linear infinite !important;
                     }
                 }
                 .group\\/ticker:hover .animate-ticker-marquee,
