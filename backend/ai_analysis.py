@@ -710,11 +710,65 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
     if cached:
         return cached
 
+    # 기업 실명 및 실제 사업 개요 추출 (LLM의 임의 추측/환각 방지)
+    company_name = symbol
+    business_desc = ""
+    clean_sym = symbol.strip().upper()
+
+    if clean_sym.isdigit() and len(clean_sym) == 6:
+        # 한국 종목: WiseReport 및 Naver에서 정확한 한글 사명과 비즈니스 프로필 로드
+        try:
+            import requests
+            from bs4 import BeautifulSoup
+            r = requests.get(
+                f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={clean_sym}",
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=4
+            )
+            if r.status_code == 200:
+                soup = BeautifulSoup(r.text, "html.parser")
+                h1 = soup.find("span", class_="name")
+                if h1 and h1.text.strip():
+                    company_name = h1.text.strip()
+                summary_el = soup.find("div", class_="cmp_comment")
+                if summary_el and summary_el.text.strip():
+                    business_desc = summary_el.text.strip()[:600]
+        except Exception as e:
+            print(f"[Supply Chain] WiseReport fetch note: {e}")
+
+        # Fallback to stock_names
+        if company_name == symbol:
+            try:
+                from stock_names import STOCK_MAP
+                code_to_name = {v: k for k, v in STOCK_MAP.items() if isinstance(v, str)}
+                if clean_sym in code_to_name:
+                    company_name = code_to_name[clean_sym]
+            except Exception:
+                pass
+    else:
+        # 미국/해외 종목: yfinance 기반 프로필 로드
+        try:
+            import yfinance as yf
+            t_obj = yf.Ticker(clean_sym)
+            t_info = t_obj.info or {}
+            company_name = t_info.get("longName") or t_info.get("shortName") or clean_sym
+            business_desc = (t_info.get("longBusinessSummary") or "")[:600]
+        except Exception as e:
+            print(f"[Supply Chain] yfinance fetch note: {e}")
+
+    company_context = f"Target Company: {company_name} (Ticker/Code: {symbol})"
+    if business_desc:
+        company_context += f"\nCompany Actual Business Profile & Products: {business_desc}"
+
     model = get_json_model()
     
     prompt = f"""
-    Analyze the Global Supply Chain and Value Chain for {symbol}.
+    Analyze the Global Supply Chain and Value Chain for the target company below:
+    {company_context}
     Current Date: {today}
+
+    CRITICAL ACCURACY REQUIREMENT:
+    You must strictly base your supply chain analysis (Raw materials, Suppliers, Customers, Competitors) on the target company's ACTUAL industry and business profile ({company_name}: {business_desc[:120] if business_desc else 'Standard industry'}). Do NOT confuse with other companies or generic semiconductors.
 
     Instructions:
     1. Identify key 'Suppliers' (Tier 1 AND Tier 2), 'Customers' (Tier 1 AND Tier 2), and 'Competitors'.
@@ -745,7 +799,7 @@ def analyze_supply_chain(symbol: str) -> Dict[str, Any]:
         ],
         "nodes": [
             {{
-                "id": "{symbol}", "group": "target", "tier": 1, "label": "{symbol} (Kor Name)", "ticker": "{symbol}",
+                "id": "{symbol}", "group": "target", "tier": 1, "label": "{company_name}", "ticker": "{symbol}",
                 "themes": ["#AI가속기", "#HBM"],
                 "market_share": "N/A",
                 "event": {{"name": "신제품 발표", "d_day": "D-30", "date": "2024-06-15"}} 
