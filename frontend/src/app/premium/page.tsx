@@ -93,7 +93,7 @@ const FALLBACK_PREMIUM_REPORT = {
     status: "success",
     locked: true,
     data: {
-        report_date: "2026-08-28",
+        report_date: new Date().toISOString().slice(0, 10),
         content: `### 💎 Section 1. 스마트머니 자금 대이동 맥락
 글로벌 AI 인프라 증설 사이클과 기업 밸류업 프로그램이 맞물리며 코스피·코스닥 핵심 우량주로 스마트머니의 선별적 유입이 강화되고 있습니다. 외국인 투자자는 글로벌 HBM(고대역폭메모리) 공급망을 주도하는 'SK하이닉스'(1,420,000주)와 역사적 PBR 하단 권역에 위치한 '삼성전자'(2,850,000주), 그리고 주주환원율을 높이는 금융·자동차 대형주를 중심으로 현·선물 동반 순매수 기조를 유지하고 있습니다. 기관 투자자는 북미 전력망 교체 슈퍼사이클의 수혜가 기대되는 'HD현대일렉트릭'(195,000주)과 유럽향 방산 수출 실적이 가시화되는 '한화에어로스페이스'(220,000주), 바이오 플랫폼 대장주를 중심으로 연기금·투신 자금을 집중 배치했습니다. 전반적인 스마트머니 흐름은 단기 테마주에서 실적 가시성과 수주 잔고(Backlog)가 뒷받침되는 실적 주도주 국면으로 뚜렷하게 이동하고 있습니다.
 
@@ -131,13 +131,8 @@ export default function PremiumPage() {
 
     useEffect(() => {
         const fetchReport = async () => {
-            if (!user) {
-                setReport(FALLBACK_PREMIUM_REPORT);
-                setIsLoading(false);
-                return;
-            }
             try {
-                const userId = (user as any)?.uid || (user as any)?.id;
+                const userId = (user as any)?.uid || (user as any)?.id || "guest";
                 const res = await fetch(`${API_BASE_URL}/api/auth/reports/premium?user_id=${userId}&t=${Date.now()}`, { cache: "no-store" });
                 const data = await res.json();
                 if (data.status === "success" && data.data?.content) {
@@ -421,7 +416,7 @@ export default function PremiumPage() {
                                     VVIP QUANT TERMINAL
                                 </span>
                                 <span className="text-xs font-mono font-bold text-gray-300">
-                                    {report?.data?.report_date || "2026-08-28"} KST
+                                    {report?.data?.report_date || new Date().toISOString().slice(0, 10)} KST
                                 </span>
                             </div>
                             <h1 className="text-2xl md:text-3xl lg:text-[28px] font-black text-white tracking-tight leading-snug">
