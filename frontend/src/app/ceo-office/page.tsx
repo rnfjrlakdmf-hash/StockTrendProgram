@@ -3617,7 +3617,7 @@ export default function CeoOfficePage() {
 
                     {/* 5개 본부 임원진 현황 (기업 임원 ID 뱃지 스타일) */}
                     <div className="mt-6 pt-5 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                        {executiveSquad.map((exec, idx) => (
+                        {(executives && executives.length > 0 ? executives.slice(0, 5) : FALLBACK_EXECUTIVES.slice(0, 5)).map((exec, idx) => (
                             <div
                                 key={idx}
                                 className="bg-[#0b1222]/90 border border-white/10 hover:border-amber-500/35 rounded-2xl p-3.5 flex flex-col justify-between shadow-lg transition-all"
