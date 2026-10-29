@@ -405,18 +405,18 @@ def _default_state() -> Dict[str, Any]:
             "enabled": True,
             "mode": "AI_PAPER",  # AI_PAPER | KIS_VIRTUAL | KIS_REAL
             "market_target": "ALL",  # ALL(국내주식+해외주식+국내외ETF 24시간 풀가동) | KR | US
-            "paper_seed_krw": 20000000,  # 모의투자 시드머니 기본값 2,000만원 영구 유지
-            "initial_capital_krw": 20000000,
-            "max_total_invest_krw": 10000000,  # 실전/연동 계좌에서 AI 자동매매가 사용할 수 있는 최대 총 투자 한도 금액 (원)
-            "order_amount_krw": 1400000,
-            "max_positions": 4,  # [수익 극대화 추천형] 3~5종목 압축 집중 투자 (한 종목당 투자 비중을 키워 수익금 극대화)
-            "take_profit_pct": 3.8,  # [수익 극대화 추천형] 목표 익절률 +3.8% (추세 도달 시 시원하게 고수익 확정)
-            "use_stop_loss": True,  # [수익 극대화 추천형] 엄격한 손절 가동 (손실은 -2.0%로 짧게 잘라내고 원금 철통 방어)
-            "auto_averaging_down": True,  # True = -5% 하락 시 1회 자동 물타기(평단가 낮추기)
-            "stop_loss_pct": 2.0,  # [수익 극대화 추천형] 손절선 -2.0% 엄격 준수
-            "min_hold_minutes_for_loss_cut": 5,  # [최소 관망 시간] 매수 체결 후 최소 3~5분(기본 5분) 동안은 호가 출렁임으로 인한 섣부른 조기 손절 보류
-            "trailing_stop_pct": 1.0,
-            "min_ai_score": 68,
+            "paper_seed_krw": 10000000,  # 모의투자 시드머니 1,000만원
+            "initial_capital_krw": 10000000,
+            "max_total_invest_krw": 10000000,
+            "order_amount_krw": 2500000,
+            "max_positions": 4,  # [스마트 주도주 스윙] 4종목 엄선 집중 투자
+            "take_profit_pct": 7.5,  # [스마트 주도주 스윙] 목표 익절률 +7.5% (추세 추종)
+            "use_stop_loss": True,
+            "auto_averaging_down": True,
+            "stop_loss_pct": 3.8,  # [스마트 주도주 스윙] 정상 숨고르기(-2~3%) 수용 후 원칙 손절 -3.8%
+            "min_hold_minutes_for_loss_cut": 20,  # 최소 20분 관망
+            "trailing_stop_pct": 1.8,
+            "min_ai_score": 78,
             "allow_off_hours_sim": False,  # 대표님 원칙: 모의투자도 실전과 100% 동일하게 정규장 거래시간만 엄수!
             "telegram_notify": True,
             "kis_order_enabled": True,  # 계좌를 연동해 두었더라도 실제 증권사 주문 전송을 ON/OFF 할 수 있는 안전 스위치
@@ -2254,9 +2254,9 @@ def panic_sell_all() -> Dict[str, Any]:
     return get_dashboard_summary(state)
 
 
-def reset_paper_account(initial_capital_krw: int = 20000000) -> Dict[str, Any]:
+def reset_paper_account(initial_capital_krw: int = 10000000) -> Dict[str, Any]:
     state = load_state()
-    seed_krw = max(50000, int(initial_capital_krw or 20000000))
+    seed_krw = max(50000, int(initial_capital_krw or 10000000))
     state["config"]["paper_seed_krw"] = seed_krw
     state["config"]["initial_capital_krw"] = seed_krw
     state["config"]["mode"] = "AI_PAPER"
@@ -2497,52 +2497,38 @@ def _evaluate_ai_smart_exit(
             # 일반적인 잔파도 손절은 관망 시간(3~5분) 동안 철저히 보류하고 관망!
             return None
 
-        # 1-A. [지지선 붕괴 & 하락 압력 조기 탈출 (Early Risk Cut)] - 3~5분 관망 시간 경과 후 발동
-        # 고정 손절선(-2.0%)까지 멍하니 기다리지 않고, -0.6% ~ -1.0% 수준이라도:
-        #  - 20일선(생명선)을 뚜렷하게 이탈 중이거나 (ma20_gap < -1.0%)
-        #  - 당일 장중 마이너스 심화 (intraday_chg <= -0.5%) 또는 고점 대비 급락 (drop_from_peak >= 1.5%p) 시:
-        if pnl_pct <= -0.6 and (ma20_gap < -1.0 or intraday_chg <= -0.5 or drop_from_peak >= 1.5):
+        # 1-A. [지지선 심각 붕괴 & 하락 압력 선제 손절] - 20분 관망 시간 경과 후 발동
+        # 정상적인 -1~2% 잔파도가 아니라, -2.8% 이하로 밀리면서 20일선 이탈 및 당일 급락세가 명백할 때만 발동
+        if pnl_pct <= -2.8 and (ma20_gap < -2.5 or intraday_chg <= -2.0 or drop_from_peak >= 3.0):
             return f"🛡️ [AI 상황판단 선제탈출] 지지선 이탈·하락압력 가중 ({pnl_pct:+.2f}%) → 손실 최소화를 위해 즉시 현금화"
 
-        if pnl_pct <= -1.0 and (intraday_chg <= -0.2 or drop_from_peak >= 1.0):
-            return f"🛡️ [AI 위험감지 조기탈출] 추가 하락 위험 포착 ({pnl_pct:+.2f}%) → 더 큰 손실 방지를 위해 선제 매도"
-
-        # 1-B. [최대 허용 손절 방어선] - 3~5분 관망 시간 경과 후 발동
-        # 급락장 등에서 자산을 보호하기 위한 최종 마지노선
-        effective_max_loss = abs(sl_pct) if sl_pct > 0 else 2.0
+        # 1-B. [최대 허용 손절 방어선] - 20분 관망 시간 경과 후 발동
+        # 급락장 등에서 자산을 보호하기 위한 최종 마지노선 (-3.8%)
+        effective_max_loss = abs(sl_pct) if sl_pct > 0 else 3.8
         if pnl_pct <= -effective_max_loss:
-            return f"🛡️ [AI 리스크 방어선 작동] 손실 제한 기준(-{effective_max_loss:.1f}%) 도달 ({pnl_pct:+.2f}%) 즉시 전량 손절"
+            return f"🛡️ [AI 리스크 방어선 작동] 원칙 손절 기준(-{effective_max_loss:.1f}%) 도달 ({pnl_pct:+.2f}%) 즉시 전량 손절"
 
     # =========================================================================
-    # [2] 🎯 시장 상황 맞춤형 수익 극대화 (Adaptive Profit Maximization)
+    # [2] 🎯 스마트 주도주 스윙 수익 극대화 (Adaptive Profit Maximization)
     # =========================================================================
 
-    # 2-A. [상단 저항 / RSI 과열 / 매도세 출현 시 유연한 조기 이익 실현]
-    # 굳이 목표치에 얽매이지 않고, +0.8% ~ +1.8% 구간이라도:
-    #  - RSI가 과열권(>68)에 진입했거나
-    #  - 장중 고점 찍고 매도세가 유입되며 0.4%p 이상 반락할 때:
-    # "수익에만 매달리지 않고, 지금 번 돈을 즉시 챙겨서 안전하게 현금화!"
-    if pnl_pct >= 0.8 and (rsi >= 68.0 or drop_from_peak >= 0.4):
-        return f"🧠 [AI 유연한 조기익절] 상단 저항·탄력 둔화 감지 → +{pnl_pct:.2f}% 수익 즉시 확정"
-
-    # 2-B. [수익 보존 락 (Profit-Lock)]
-    # 장중 +1.2% 이상 올랐던 종목이 고점에서 0.5%p 이상 밀리면, 절대로 마이너스로 가지 않게 남은 차익을 바로 챙김!
-    if peak_pct >= 1.2 and drop_from_peak >= 0.5 and pnl_pct >= 0.5:
-        return f"🧠 [AI 이익보존 긴급매도] 고점(+{peak_pct:.2f}%) 대비 차익실현 매물 감지 → +{pnl_pct:.2f}% 수익 보존 안전 매도"
-
-    # 2-C. [강한 상승 탄력 추세 추종 (Let Profits Run)]
-    # 20일선 위에 안정적으로 안착해 있고, RSI 과열이 없으며 고점 대비 밀림이 없다면:
-    # 목표가(+3.8%)에 도달했더라도 무조건 자르지 않고, 고점에서 꺾일 때까지 수익을 더 길게 끌고 갑니다!
+    # 2-A. [목표가 돌파 & 상승 탄력 추세 추종 (Let Profits Run)]
+    # 목표가(기본 +7.5%)에 도달했을 때:
     if pnl_pct >= tp_pct:
-        # 고점 대비 밀림이 0.3%p 미만이고 상승 탄력이 살아있다면 +5% 이상 추가 질주 허용!
-        if drop_from_peak < 0.3 and rsi < 75.0 and ma20_gap > 0:
-            pass  # 강세 추세 지속 중 -> 계속 홀딩하며 수익 극대화!
+        # 고점 대비 밀림이 0.5%p 미만이고 강한 상승 탄력(RSI < 75, 20일선 상회)이 살아있다면 +10% 이상 추가 질주 허용!
+        if drop_from_peak < 0.5 and rsi < 75.0 and ma20_gap > 0:
+            pass  # 강세 추세 지속 중 -> 계속 홀딩하며 슈퍼 랠리 향유!
         else:
             return f"🎯 [AI 목표돌파 익절] 목표 수익률(+{pnl_pct:.2f}%) 달성 전량 수익 확정"
 
-    # 2-D. [고수익 트레일링 스탑] - 고수익 구간(+2.0% 이상) 진입 후 꺾일 때 확실한 수익 락인
-    if peak_pct >= 2.0 and drop_from_peak >= max(0.6, ts_pct) and pnl_pct >= 0.8:
-        return f"🧠 [AI 트레일링 익절] 고점(+{peak_pct:.2f}%) 대비 {drop_from_peak:.2f}%p 하락 감지 → +{pnl_pct:.2f}% 수익 보존"
+    # 2-B. [수익 보존 락 (Profit-Lock)]
+    # 장중 +4.0% 이상 큰 폭으로 올랐던 종목이 고점에서 1.5%p 이상 밀리고 잔여 수익이 +1.5% 이하로 위협받을 때 안전하게 차익 확정!
+    if peak_pct >= 4.0 and drop_from_peak >= 1.5 and pnl_pct >= 1.5:
+        return f"🧠 [AI 이익보존 안전매도] 고점(+{peak_pct:.2f}%) 대비 차익실현 매물 출회 감지 → +{pnl_pct:.2f}% 수익 보존 안전 매도"
+
+    # 2-C. [고수익 트레일링 스탑] - 고수익 구간(+5.0% 이상) 진입 후 꺾일 때 확실한 수익 락인
+    if peak_pct >= 5.0 and drop_from_peak >= max(1.5, ts_pct) and pnl_pct >= 2.5:
+        return f"🧠 [AI 트레일링 익절] 고점(+{peak_pct:.2f}%) 대비 {drop_from_peak:.2f}%p 하락 감지 → +{pnl_pct:.2f}% 고수익 보존"
 
     return None
 
