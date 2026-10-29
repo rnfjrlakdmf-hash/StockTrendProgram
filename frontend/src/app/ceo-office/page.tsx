@@ -310,23 +310,30 @@ function detectSectorType(stockName: string, title: string = "", categoryBadge: 
     const nameLower = (stockName || '').toLowerCase();
     const isMacroCategory = categoryBadge.includes('거시') || categoryBadge.includes('매크로') || categoryBadge.includes('지표') || categoryBadge.includes('채권') || categoryBadge.includes('환율') || categoryBadge.includes('원자재') || categoryBadge.includes('선물');
 
-    if (nameLower.includes('vix') || nameLower.includes('공포지수') || (isMacroCategory && (s.includes('vix') || s.includes('변동성') || s.includes('공포')))) {
-        return 'macro_vix';
-    }
-    if (nameLower.includes('wti') || nameLower.includes('원유') || nameLower.includes('유가') || nameLower.includes('cl=f') || (isMacroCategory && (s.includes('wti') || s.includes('원유') || s.includes('유가')))) {
-        return 'macro_oil';
-    }
-    if (nameLower.includes('환율') || nameLower.includes('usdkrw') || nameLower.includes('달러/원') || nameLower.includes('원/달러') || (isMacroCategory && (s.includes('환율') || s.includes('usdkrw') || s.includes('dxy') || s.includes('달러')))) {
+    // 1. 종합 매크로 / 환율 보고서는 stockName 기준으로 우선 판별하여 제목 속 유가 언급에 낚이지 않도록 방어
+    if (nameLower.includes('글로벌 매크로') || nameLower.includes('환율') || nameLower.includes('경제일정') || nameLower.includes('usdkrw') || nameLower.includes('달러/원') || nameLower.includes('원/달러')) {
         return 'macro_fx';
     }
-    if (nameLower.includes('국채') || nameLower.includes('tnx') || nameLower.includes('10년물') || (isMacroCategory && (s.includes('국채') || s.includes('금리') || s.includes('tnx') || s.includes('10년물')))) {
+    if (nameLower.includes('vix') || nameLower.includes('공포지수')) {
+        return 'macro_vix';
+    }
+    if (nameLower.includes('wti') || nameLower.includes('원유') || nameLower.includes('cl=f') || (isMacroCategory && (nameLower.includes('유가') || (s.includes('wti') && !nameLower.includes('환율'))))) {
+        return 'macro_oil';
+    }
+    if (nameLower.includes('국채') || nameLower.includes('tnx') || nameLower.includes('10년물') || (isMacroCategory && (nameLower.includes('금리') || s.includes('10년물')))) {
         return 'macro_rate';
     }
-    if (nameLower.includes('나스닥 선물') || nameLower.includes('s&p 선물') || (isMacroCategory && (s.includes('나스닥') || s.includes('nq=f') || s.includes('s&p') || s.includes('es=f')))) {
+    if (nameLower.includes('나스닥 선물') || nameLower.includes('s&p 선물') || (isMacroCategory && (nameLower.includes('선물') && !nameLower.includes('원유')))) {
         return 'macro_futures';
     }
     if (stockName === '전체 시장 시스템' || (isMacroCategory && (s.includes('모닝') || s.includes('시장') || s.includes('지수')))) {
         return 'macro_market';
+    }
+    if (isMacroCategory && (s.includes('환율') || s.includes('달러'))) {
+        return 'macro_fx';
+    }
+    if (isMacroCategory && (s.includes('wti') || s.includes('원유') || s.includes('유가'))) {
+        return 'macro_oil';
     }
     if (/기업은행|국민은행|신한|하나금융|우리금융|카카오뱅크|jb금융|dgb금융|bnk금융|키움증권|미래에셋|삼성증권|한국금융지주|메리츠|동양생명|삼성화재|db손해|한화생명|은행|금융/.test(s)) {
         return 'banking';
