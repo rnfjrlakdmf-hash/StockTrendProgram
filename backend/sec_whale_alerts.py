@@ -504,10 +504,20 @@ def parse_13f_filing(filing: dict) -> dict:
         soup = BeautifulSoup(r_info.content, "xml")
         holdings = []
         total_val = 0
+        put_count = 0
+        call_count = 0
         
         for item in soup.find_all(["infoTable", "ns1:infoTable"]):
             issuer = item.find(["nameOfIssuer", "ns1:nameOfIssuer"])
             name = issuer.text.strip() if issuer else "Unknown"
+            
+            # 롱 / 풋(하방 숏 헷지) / 콜(레버리지) 옵션 구분
+            put_call_el = item.find(["putCall", "ns1:putCall"])
+            pc = put_call_el.text.strip().upper() if put_call_el and put_call_el.text else ""
+            if pc == "PUT":
+                put_count += 1
+            elif pc == "CALL":
+                call_count += 1
             
             val_el = item.find(["value", "ns1:value"])
             try:
@@ -525,7 +535,7 @@ def parse_13f_filing(filing: dict) -> dict:
                 
             if val_usd > 0:
                 total_val += val_usd
-                holdings.append({"name": name, "value_usd": val_usd, "shares": shares})
+                holdings.append({"name": name, "value_usd": val_usd, "shares": shares, "opt": pc})
                 
         if not holdings:
             return {}
@@ -562,12 +572,20 @@ def parse_13f_filing(filing: dict) -> dict:
             clean_name = h["name"].title().replace(" Inc", "").replace(" Corp", "").replace(" Co", "").replace(" Ltd", "").strip()
             top_strs.append(f"{clean_name} {pct:.0f}%")
             
+        if put_count > 0:
+            pos_nature = f"롱(Long) 위주 (하방 풋옵션 {put_count}건 헷지 포함)"
+        else:
+            pos_nature = "100% 순수 롱(Long · 실물 주식 매수 보유)"
+
         return {
             "has_detail": True,
             "total_val_usd": total_val,
             "total_aum_str": _fmt_usd_krw(total_val),
             "holdings_count": len(holdings),
-            "top_holding_summary": ", ".join(top_strs)
+            "top_holding_summary": ", ".join(top_strs),
+            "pos_nature": pos_nature,
+            "put_count": put_count,
+            "call_count": call_count
         }
     except Exception as e:
         print(f"[SEC Whale 13F] XML parse error: {e}")
@@ -640,19 +658,22 @@ def check_sec_13f_alerts():
                 period_label = f" ({_pd.year}년 {_pd.month}분기 기준)"
             except Exception:
                 period_label = f" ({period_str[:10]})"
-        title = f"🐳 [미국 기관 포지션 공개] {display_name}"
+        title = f"🐳 [미국 기관 롱(Long) 포지션 공개] {display_name}"
         parsed_13f = parse_13f_filing(filing)
         if parsed_13f and parsed_13f.get("has_detail"):
             aum_str = parsed_13f["total_aum_str"]
             top_holdings = parsed_13f["top_holding_summary"]
             count = parsed_13f["holdings_count"]
-            line1 = f"▪️ 📊 포트폴리오: {aum_str} | 핵심비중: {top_holdings}"
-            line2 = f"▪️ 💡 특징: 총 {count}개 종목 보유, 대형 우량 자산 위주 포트폴리오 운용"
-            body = f"{line1}\n{line2}"
+            pos_nature = parsed_13f.get("pos_nature", "100% 롱(Long · 실물 주식 매수 보유)")
+            line0 = f"▪️ 🟢 포지션 성격: {pos_nature}"
+            line1 = f"▪️ 📊 포트폴리오: {aum_str} | 핵심비중(Top3): {top_holdings}"
+            line2 = f"▪️ 💡 운용 전략: 총 {count}개 종목 보유, AI 빅테크 및 대형 우량 자산 중심 장기 롱(Buy & Hold) 운용"
+            body = f"{line0}\n{line1}\n{line2}"
         else:
-            line1 = f"▪️ 📊 수급: 대형 기관투자자의 분기별 보유 주식(13F) 포트폴리오 공개{period_label}"
-            line2 = f"▪️ 💡 해석: 월가 슈퍼 고래 기관의 최신 지분 포지션 변동 확인"
-            body = f"{line1}\n{line2}"
+            line0 = f"▪️ 🟢 포지션 성격: 롱(Long · 미국 주식 실물 매수 보유){period_label}"
+            line1 = f"▪️ 📊 수급: 대형 기관투자자의 분기별 보유 주식(Form 13F) 포트폴리오 공개"
+            line2 = f"▪️ 💡 해석: 월가 슈퍼 고래 기관의 최신 실물 주식 매수 포지션 변동 확인"
+            body = f"{line0}\n{line1}\n{line2}"
 
         print(f"[SEC Whale 13F] New filing: {title}")
 
