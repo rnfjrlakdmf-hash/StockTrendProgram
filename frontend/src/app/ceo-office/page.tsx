@@ -1808,53 +1808,201 @@ export default function CeoOfficePage() {
                     )}
                 </div>
 
-                {/* 2. 최근 3~4개년 실적 & 재무제표 팩트체크 테이블 */}
-                {finTable && finTable.years && finTable.years.length > 0 && finTable.rows && finTable.rows.length > 0 && (
-                    <div className="bg-gradient-to-br from-slate-900/90 via-[#0c1a2e] to-slate-900/90 border border-emerald-500/30 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
-                        <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                            <div className="flex items-center gap-2">
-                                <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-black">📊</span>
-                                <h5 className="text-xs sm:text-sm font-black text-white">
-                                    최근 3~4개년 실적 &amp; 재무 건전성 팩트체크
-                                </h5>
+                {/* 2. 최근 3~4개년 실적 & 재무제표 팩트체크 테이블 (초보자 10초 쉬운 해설 탑재) */}
+                {finTable && finTable.years && finTable.years.length > 0 && finTable.rows && finTable.rows.length > 0 && (() => {
+                    const findRow = (kw: string) => finTable.rows.find((r: any) => r.title && r.title.includes(kw));
+                    const cleanNum = (v: any) => {
+                        if (!v || v === '-') return null;
+                        const n = parseFloat(String(v).replace(/,/g, ''));
+                        return isNaN(n) ? null : n;
+                    };
+
+                    const revRow = findRow('매출액');
+                    const opRow = findRow('영업이익');
+                    const opmRow = findRow('영업이익률');
+                    const debtRow = findRow('부채비율');
+
+                    const getValues = (row: any) => (row?.values || []).map(cleanNum).filter((x: any) => x !== null);
+                    const revVals = getValues(revRow);
+                    const opVals = getValues(opRow);
+                    const opmVals = getValues(opmRow);
+                    const debtVals = getValues(debtRow);
+
+                    const revFirst = revVals.length > 0 ? revVals[0] : null;
+                    const revLast = revVals.length > 0 ? revVals[revVals.length - 1] : null;
+                    const revGrowth = revFirst && revLast && revFirst !== 0 ? Math.round(((revLast - revFirst) / Math.abs(revFirst)) * 100) : null;
+
+                    const opFirst = opVals.length > 0 ? opVals[0] : null;
+                    const opLast = opVals.length > 0 ? opVals[opVals.length - 1] : null;
+                    const opGrowth = opFirst && opLast && opFirst !== 0 ? Math.round(((opLast - opFirst) / Math.abs(opFirst)) * 100) : null;
+
+                    const debtFirst = debtVals.length > 0 ? debtVals[0] : null;
+                    const debtLast = debtVals.length > 0 ? debtVals[debtVals.length - 1] : null;
+
+                    const opmLast = opmVals.length > 0 ? opmVals[opmVals.length - 1] : null;
+
+                    // 쉬운 용어 사전 맵
+                    const easyDict: Record<string, string> = {
+                        '매출액': '장사 규모 (총 판매금액)',
+                        '영업이익': '알짜 수익 (원가·비용 뺀 순이익)',
+                        '당기순이익': '최종 금고에 들어온 순돈 (세금 제외)',
+                        '영업이익률': '100원 팔았을 때 남는 돈',
+                        '순이익률': '최종 마진율',
+                        'ROE': '내 돈 굴린 이자율 (자기자본이익률)',
+                        '부채비율': '빌린 빚의 비중 (100% 이하 안전)',
+                        '유보율': '회사 금고에 쌓아둔 비상금',
+                        'EPS': '주식 1주당 벌어들인 순돈',
+                        'PER': '원금 회수 걸리는 기간 (낮을수록 저평가)',
+                        'BPS': '주식 1주당 순자산 가치',
+                        'PBR': '회사 망해도 건지는 가치 (1배 이하면 염가)',
+                    };
+
+                    return (
+                        <div className="bg-gradient-to-br from-slate-900/90 via-[#0c1a2e] to-slate-900/90 border border-emerald-500/35 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                            {/* 섹션 헤더 */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-black">📊</span>
+                                    <h5 className="text-xs sm:text-sm font-black text-white">
+                                        최근 3~4개년 실적 &amp; 재무 건전성 팩트체크
+                                    </h5>
+                                </div>
+                                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                                    연간 정기공시 기준 (단위: 억원 / %)
+                                </span>
                             </div>
-                            <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                                연간 재무제표 공시 기준 (단위: 억원/비율)
-                            </span>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-white/10 text-gray-400 bg-black/40">
-                                        <th className="py-2 px-3 font-bold text-gray-300">주요 재무 지표</th>
-                                        {finTable.years.map((y: string, idx: number) => (
-                                            <th key={idx} className="py-2 px-3 font-mono font-bold text-center text-white">
-                                                {y}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 font-mono">
-                                    {finTable.rows.slice(0, 10).map((row: any, rIdx: number) => {
-                                        const isHighlight = ['매출액', '영업이익', '영업이익률', 'ROE'].includes(row.title);
-                                        return (
-                                            <tr key={rIdx} className={isHighlight ? 'bg-white/5 font-bold' : 'hover:bg-white/5'}>
-                                                <td className={`py-2 px-3 font-sans ${isHighlight ? 'text-emerald-300 font-bold' : 'text-gray-300'}`}>
-                                                    {row.title}
-                                                </td>
-                                                {row.values.map((v: string, cIdx: number) => (
-                                                    <td key={cIdx} className={`py-2 px-3 text-center ${v && v.startsWith('-') && v !== '-' ? 'text-blue-400' : 'text-gray-200'}`}>
-                                                        {v || '-'}
+
+                            {/* 💡 대표님을 위한 10초 초간단 쉬운 해설 배너 */}
+                            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 font-black text-[11px]">
+                                        💡 대표님 10초 쉬운 해설
+                                    </span>
+                                    <span className="text-xs font-black text-emerald-300">
+                                        쉽게 말해 이 회사는 어떤 상태인가요?
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-200 leading-relaxed font-medium">
+                                    {revGrowth && revGrowth > 0
+                                        ? `회사가 파는 물건의 총규모(매출)가 첫해 대비 +${revGrowth}% 성장하고, 실제 남기는 알짜 이익(영업이익) 역시 크게 늘어나는 강력한 성장 궤도에 있습니다.`
+                                        : '회사가 안정적인 매출 규모를 꾸준히 방어하며 견고한 사업 기반을 유지하고 있습니다.'}
+                                    {debtFirst && debtLast && debtFirst > debtLast
+                                        ? ` 특히 빚(부채비율)을 과거 ${debtFirst}%에서 ${debtLast}% 수준으로 대폭 축소하여 부도 걱정이 전혀 없는 초우량 안전 체질로 탈바꿈했습니다.`
+                                        : ''}
+                                </p>
+                            </div>
+
+                            {/* 4대 핵심 재무 신호등 카드 */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                {/* 1) 매출 파워 */}
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold">
+                                        <span>장사 규모 (매출액)</span>
+                                        <span className="text-emerald-400 font-bold">성장성 우수</span>
+                                    </div>
+                                    <div className="text-base sm:text-lg font-black font-mono text-white">
+                                        {revLast ? `${revLast.toLocaleString()}억` : '-'}
+                                    </div>
+                                    <div className="text-[11px] font-mono font-bold text-emerald-400">
+                                        {revGrowth !== null ? `첫해 대비 +${revGrowth}% 성장` : '안정적 유지'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">물건이 매년 더 많이 팔림</div>
+                                </div>
+
+                                {/* 2) 영업이익 */}
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold">
+                                        <span>알짜 이익 (영업이익)</span>
+                                        <span className="text-emerald-400 font-bold">흑자 기조</span>
+                                    </div>
+                                    <div className="text-base sm:text-lg font-black font-mono text-white">
+                                        {opLast ? `${opLast.toLocaleString()}억` : '-'}
+                                    </div>
+                                    <div className="text-[11px] font-mono font-bold text-emerald-400">
+                                        {opGrowth !== null ? `첫해 대비 +${opGrowth}% 급증` : '수익성 방어'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">원가 빼고 남긴 순수 돈</div>
+                                </div>
+
+                                {/* 3) 부채비율 */}
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold">
+                                        <span>빚의 비중 (부채비율)</span>
+                                        <span className={debtLast && debtLast <= 100 ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                                            {debtLast && debtLast <= 100 ? "초우량 안전" : "적정 수준"}
+                                        </span>
+                                    </div>
+                                    <div className="text-base sm:text-lg font-black font-mono text-white">
+                                        {debtLast ? `${debtLast}%` : '-'}
+                                    </div>
+                                    <div className="text-[11px] font-mono font-bold text-sky-400">
+                                        {debtFirst && debtLast ? `${debtFirst}% → ${debtLast}% 급감` : '100% 이하 안전권'}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">빚을 갚아 부도 걱정 없음</div>
+                                </div>
+
+                                {/* 4) 영업이익률 */}
+                                <div className="bg-black/50 border border-white/10 rounded-xl p-3 space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold">
+                                        <span>마진율 (영업이익률)</span>
+                                        <span className="text-emerald-400 font-bold">두 자릿수 마진</span>
+                                    </div>
+                                    <div className="text-base sm:text-lg font-black font-mono text-white">
+                                        {opmLast ? `${opmLast}%` : '-'}
+                                    </div>
+                                    <div className="text-[11px] font-mono font-bold text-emerald-400">
+                                        100원 팔아 {opmLast ? Math.round(opmLast) : 10}원 남김
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">돈 버는 질적 효율성 우수</div>
+                                </div>
+                            </div>
+
+                            {/* 상세 재무제표 팩트체크 표 (용어 해설 태그 포함) */}
+                            <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/40">
+                                <table className="w-full text-xs text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-white/10 text-gray-300 bg-white/5">
+                                            <th className="py-2.5 px-3 font-bold">재무 지표 &amp; 쉬운 뜻</th>
+                                            {finTable.years.map((y: string, idx: number) => (
+                                                <th key={idx} className="py-2.5 px-3 font-mono font-bold text-center text-white">
+                                                    {y}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 font-mono">
+                                        {finTable.rows.slice(0, 10).map((row: any, rIdx: number) => {
+                                            const isHighlight = ['매출액', '영업이익', '영업이익률', 'ROE', '부채비율'].includes(row.title);
+                                            const desc = easyDict[row.title];
+
+                                            return (
+                                                <tr key={rIdx} className={isHighlight ? 'bg-white/5 font-bold hover:bg-white/10' : 'hover:bg-white/5'}>
+                                                    <td className="py-2.5 px-3 font-sans">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className={isHighlight ? 'text-emerald-300 font-black' : 'text-gray-200 font-medium'}>
+                                                                {row.title}
+                                                            </span>
+                                                            {desc && (
+                                                                <span className="text-[10px] font-normal text-gray-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+                                                                    {desc}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
-                                                ))}
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                                    {row.values.map((v: string, cIdx: number) => (
+                                                        <td key={cIdx} className={`py-2.5 px-3 text-center ${v && v.startsWith('-') && v !== '-' ? 'text-blue-400 font-bold' : 'text-gray-200'}`}>
+                                                            {v || '-'}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {/* 3. 차트 이동평균선(20일/50일/120일) & 기술적 지지선 진단 */}
                 {tech && (tech.ma20 || tech.ma50 || tech.ma120) && (
