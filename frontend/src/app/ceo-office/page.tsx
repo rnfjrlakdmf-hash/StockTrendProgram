@@ -3345,16 +3345,17 @@ export default function CeoOfficePage() {
                             }}
                             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
                                 activeTab === 'watchlist_research'
-                                    ? 'bg-gradient-to-r from-sky-500 to-indigo-400 text-slate-950 shadow-lg shadow-sky-500/25'
+                                    ? 'bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
                                     : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                             }`}
                         >
-                            <span>🛡️ 종목별 리스크 감사 & 관심종목 보고서</span>
-                            {researchReports.length > 0 && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/25 font-extrabold">
-                                    {researchReports.length}종목
-                                </span>
-                            )}
+                            <span>🔬</span>
+                            <span>[대표님 전담] 맞춤 종목 리서치팀</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                activeTab === 'watchlist_research' ? 'bg-slate-950/40 text-slate-950' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                            }`}>
+                                자율 분석 신설
+                            </span>
                         </button>
 
                         <button
@@ -6128,63 +6129,99 @@ export default function CeoOfficePage() {
                                 </div>
                             )}{activeTab === 'watchlist_research' && (
                                 <div className="space-y-5">
-                                    <div className="bg-gradient-to-r from-[#0d1627] via-[#101d38] to-[#0d1627] border-2 border-sky-500/40 rounded-3xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xl">
-                                        <div>
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
-                                                    <span>🛡️</span>
-                                                    <span>CRO 최서연 상무 (리스크 총괄)</span>
-                                                </span>
-                                                <span className="px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                                                    전사 리스크 감사 보고서
-                                                </span>
-                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                                    관심종목 {researchReports.length}종목 전수 점검
-                                                </span>
+                                    {/* 🏢 [대표님 전담] 맞춤 종목 특별 리서치팀 신설 배너 */}
+                                    <div className="bg-gradient-to-r from-[#0d1627] via-[#101d38] to-[#0d1627] border-2 border-sky-400/50 rounded-3xl p-5 sm:p-6 shadow-2xl">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <div>
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    <span className="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-200 border border-amber-400/40 flex items-center gap-1.5 shadow-sm">
+                                                        <span>🏢</span>
+                                                        <span>대표이사 직속 상설 기구</span>
+                                                    </span>
+                                                    <span className="px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                                                        🔬 맞춤 종목 특별 리서치팀
+                                                    </span>
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                                        국내·미국 전 종목 자율 분석 가동
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                                                    <span>🎯</span>
+                                                    <span>대표님 전담 맞춤 종목 리서치 센터</span>
+                                                </h3>
+                                                <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed">
+                                                    대표님께서 관심 있으시거나 매수를 검토 중이신 <strong className="text-sky-300">어떤 종목이든(국내외 전 종목)</strong> 입력해 주시면, 전담 리서치팀이 즉시 가동되어 <strong className="text-amber-300">증권사 리포트 원문 요약 · 큰손(외인/기관) 실시간 수급 · 차트 52주 위치 · -3.5% 기계적 손절 방어선 및 1차 익절가</strong>를 총망라한 <strong className="text-emerald-300">1장 종합 리서치 보고서</strong>를 맞춤 작성해 드립니다.
+                                                    {researchGeneratedAt && (
+                                                        <span className="text-sky-300 font-bold ml-1">({researchGeneratedAt} 기준)</span>
+                                                    )}
+                                                </p>
                                             </div>
-                                            <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-                                                🛡️ 종목별 리스크 감사 보고서 &amp; 내 관심종목 정밀 자산 방어선
-                                            </h3>
-                                            <p className="text-xs sm:text-sm text-gray-300 mt-2 leading-relaxed">
-                                                대표님의 소중한 투자 원금을 지키기 위해, 내 관심종목은 물론 검색하신 모든 종목에 대해 <strong className="text-amber-300">정밀 리스크 등급 · -3.5% 자동 손절선 · 1차 익절가 · 계좌 15% 비중 한도</strong>를 산출하여 1장의 리스크 감사 보고서로 브리핑합니다.
-                                                {researchGeneratedAt && (
-                                                    <span className="text-sky-300 font-bold ml-1">({researchGeneratedAt} 기준)</span>
-                                                )}
-                                            </p>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <Link
+                                                    href="/watchlist"
+                                                    className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 text-xs font-bold transition-all"
+                                                >
+                                                    ⚙️ 관심종목 설정
+                                                </Link>
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchWatchlistResearch}
+                                                    disabled={researchLoading}
+                                                    className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-gray-700 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-sky-500/20"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${researchLoading ? 'animate-spin' : ''}`} />
+                                                    <span>{researchLoading ? '전수 분석 중...' : '관심종목 전수 새로고침'}</span>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <Link
-                                                href="/watchlist"
-                                                className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 text-xs font-bold transition-all"
-                                            >
-                                                ⚙️ 관심종목 설정
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                onClick={fetchWatchlistResearch}
-                                                disabled={researchLoading}
-                                                className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:bg-gray-700 text-slate-950 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-sky-500/20"
-                                            >
-                                                <RefreshCw className={`w-3.5 h-3.5 ${researchLoading ? 'animate-spin' : ''}`} />
-                                                <span>{researchLoading ? '전수 점검 중...' : '관심종목 전수 새로고침'}</span>
-                                            </button>
+
+                                        {/* 리서치팀 4인 전담 분석진 배지 */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 mt-4 border-t border-white/10">
+                                            <div className="bg-black/30 rounded-xl p-2.5 border border-purple-500/20 flex items-center gap-2">
+                                                <span className="text-xl">👨‍💼</span>
+                                                <div>
+                                                    <div className="text-[11px] font-black text-purple-300">박진우 부사장 (리서치)</div>
+                                                    <div className="text-[10px] text-gray-400">증권사 리포트·실적·목표가</div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/30 rounded-xl p-2.5 border border-emerald-500/20 flex items-center gap-2">
+                                                <span className="text-xl">📈</span>
+                                                <div>
+                                                    <div className="text-[11px] font-black text-emerald-300">김도현 상무 (퀀트수급)</div>
+                                                    <div className="text-[10px] text-gray-400">외인·기관 큰손 &amp; 50일선</div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/30 rounded-xl p-2.5 border border-rose-500/20 flex items-center gap-2">
+                                                <span className="text-xl">🛡️</span>
+                                                <div>
+                                                    <div className="text-[11px] font-black text-rose-300">최서연 상무 (CRO)</div>
+                                                    <div className="text-[10px] text-gray-400">-3.5% 손절선·비중 감사</div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-black/30 rounded-xl p-2.5 border border-amber-500/20 flex items-center gap-2">
+                                                <span className="text-xl">👩‍💼</span>
+                                                <div>
+                                                    <div className="text-[11px] font-black text-amber-300">정유진 비서실장</div>
+                                                    <div className="text-[10px] text-gray-400">대표님 전용 10초 요약</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* 🔍 [방안 2 핵심 기능] 자율 종목 검색 & 실시간 리스크 감사 바 */}
-                                    <div className="bg-[#0b1324] border border-sky-500/30 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+                                    {/* 🔍 [전담 리서치팀 가동 데스크] 자율 종목 검색 & 실시간 종합 분석 요청 바 */}
+                                    <div className="bg-gradient-to-r from-[#0b1324] via-[#0f1d38] to-[#0b1324] border-2 border-sky-400/40 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-base">🔍</span>
+                                                <span className="text-base">🔬</span>
                                                 <h4 className="text-xs sm:text-sm font-black text-white">
-                                                    자율 종목 즉시 검색 &amp; 실시간 리스크 감사 보고서 생성
+                                                    맞춤 종목 즉시 분석 요청 데스크
                                                 </h4>
-                                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                                    국내·미국 전 종목 실시간 진단
+                                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold">
+                                                    실시간 리서치팀 풀가동
                                                 </span>
                                             </div>
-                                            <span className="text-[11px] text-gray-400">
-                                                원하시는 종목을 입력하시면 최서연 CRO의 1장 리스크 진단서가 즉시 생성됩니다.
+                                            <span className="text-[11px] text-sky-200/80 font-medium">
+                                                원하시는 종목명이나 코드를 입력하시면 전담 리서치팀이 1장의 종합 리포트를 즉시 발행합니다.
                                             </span>
                                         </div>
 
@@ -6199,36 +6236,38 @@ export default function CeoOfficePage() {
                                                 type="text"
                                                 value={riskSearchQuery}
                                                 onChange={(e) => setRiskSearchQuery(e.target.value)}
-                                                placeholder="진단할 종목명 또는 종목코드 입력 (예: 두산에너빌리티, 삼성전자, 현대차, NVDA, TSLA...)"
-                                                className="flex-1 bg-black/60 border border-white/15 focus:border-sky-400 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition-all"
+                                                placeholder="분석을 요청하실 종목명 또는 종목코드 입력 (예: 에스엠씨지, 두산에너빌리티, 삼성전자, 현대차, NVDA, TSLA...)"
+                                                className="flex-1 bg-black/70 border-2 border-white/20 focus:border-sky-400 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-gray-400 outline-none transition-all shadow-inner"
                                             />
                                             <button
                                                 type="submit"
                                                 disabled={riskSearchLoading || !riskSearchQuery.trim()}
-                                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 disabled:bg-gray-800 disabled:from-transparent disabled:to-transparent text-slate-950 disabled:text-gray-500 text-xs sm:text-sm font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-lg shadow-sky-500/25"
+                                                className="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-500 hover:from-sky-300 hover:to-purple-400 disabled:bg-gray-800 disabled:from-transparent disabled:to-transparent text-slate-950 disabled:text-gray-500 text-xs sm:text-sm font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-lg shadow-sky-500/25"
                                             >
                                                 {riskSearchLoading ? (
                                                     <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                                                 ) : (
-                                                    <span>🔍</span>
+                                                    <span>🔬</span>
                                                 )}
-                                                <span>{riskSearchLoading ? '감사 중...' : '실시간 리스크 감사'}</span>
+                                                <span>{riskSearchLoading ? '리서치팀 정밀 분석 중...' : '리서치팀 분석 가동'}</span>
                                             </button>
                                         </form>
 
-                                        {/* 추천 빠른 종목 칩 */}
+                                        {/* 추천 빠른 종목 칩 (에스엠씨지 추가) */}
                                         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                            <span className="text-[11px] font-bold text-gray-400 mr-1">⚡ 대표님 다빈도 종목:</span>
+                                            <span className="text-[11px] font-bold text-amber-300 mr-1">⚡ 대표님 추천 원클릭 분석:</span>
                                             {[
+                                                { name: '에스엠씨지', code: '460870' },
                                                 { name: '삼성전자', code: '005930' },
                                                 { name: 'SK하이닉스', code: '000660' },
                                                 { name: '두산에너빌리티', code: '034020' },
+                                                { name: '한미약품', code: '128940' },
+                                                { name: '기아', code: '000270' },
+                                                { name: '한국전력', code: '015760' },
                                                 { name: '현대차', code: '005380' },
-                                                { name: '한화에어로스페이스', code: '012450' },
                                                 { name: '알테오젠', code: '196170' },
                                                 { name: '엔비디아 (NVDA)', code: 'NVDA' },
                                                 { name: '테슬라 (TSLA)', code: 'TSLA' },
-                                                { name: '애플 (AAPL)', code: 'AAPL' },
                                             ].map((chip) => (
                                                 <button
                                                     key={chip.code}
@@ -6237,7 +6276,7 @@ export default function CeoOfficePage() {
                                                         setRiskSearchQuery(chip.name);
                                                         handleSearchStockRisk(chip.code);
                                                     }}
-                                                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-sky-500/20 text-gray-300 hover:text-sky-300 border border-white/10 hover:border-sky-500/30 text-[11px] font-medium transition-all cursor-pointer"
+                                                    className="px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/25 text-sky-200 hover:text-white border border-sky-500/30 hover:border-sky-400 text-[11px] font-bold transition-all cursor-pointer shadow-sm"
                                                 >
                                                     {chip.name}
                                                 </button>
@@ -6265,8 +6304,9 @@ export default function CeoOfficePage() {
                                                 <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-white/10">
                                                     <div>
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center gap-1 shadow-md">
-                                                                <span>⚡ 실시간 감사 완료</span>
+                                                            <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-sky-400 to-indigo-400 text-slate-950 font-black text-xs flex items-center gap-1 shadow-md">
+                                                                <span>🔬</span>
+                                                                <span>리서치팀 4인 합동 분석 완료</span>
                                                             </span>
                                                             <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${isKr ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'}`}>
                                                                 {isKr ? '🇰🇷 국내주식' : '🌎 미국주식'}
