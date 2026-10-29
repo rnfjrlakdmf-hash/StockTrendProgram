@@ -1014,8 +1014,9 @@ def _enrich_supply_chain_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
     def enrich_node(node):
         ticker_sym = node.get("ticker")
         if not ticker_sym or ticker_sym.lower() in ['unknown', 'n/a', 'none', 'null', '']: 
-            node["price_display"] = "N/A"
-            node["invalid"] = True
+            node["price_display"] = "비상장/글로벌 파트너"
+            node["change_display"] = "-"
+            node["invalid"] = False
             return
         try:
             if ":" in ticker_sym: ticker_sym = ticker_sym.split(":")[-1]
@@ -1125,13 +1126,14 @@ def _enrich_supply_chain_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
                         node["price_display"] = "N/A"
                         node["invalid"] = True
             else:
-                # [Fix] If price or prev is missing, it's invalid
                 node["price_display"] = "N/A"
-                node["invalid"] = True
+                node["change_display"] = "-"
+                node["invalid"] = False
         except Exception as e: 
             print(f"[enrich_node] Error for {ticker_sym}: {e}")
             node["price_display"] = "N/A"
-            node["invalid"] = True
+            node["change_display"] = "-"
+            node["invalid"] = False
 
     def enrich_comm(comm):
         ticker_sym = comm.get("ticker")
@@ -1182,8 +1184,9 @@ def _enrich_supply_chain_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
     followers_list = data.get("followers")
     data["followers"] = [s for s in followers_list if not s.get("invalid")] if followers_list else []
     
+    # 공급망 맵의 노드는 비상장 파트너/해외 협력사도 핵심 가치사슬이므로 절대 삭제하지 않고 보존
     nodes_list = data.get("nodes")
-    data["nodes"] = [n for n in nodes_list if not n.get("invalid")] if nodes_list else []
+    data["nodes"] = [n for n in nodes_list if n.get("label")] if nodes_list else []
 
     return data
 
