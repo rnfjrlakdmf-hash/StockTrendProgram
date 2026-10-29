@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/config';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -48,6 +48,7 @@ export default function FlipIndexTicker() {
     const [indices, setIndices] = useState<MarketIndex[]>([]);
     const [loading, setLoading] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
+    const lastDataHashRef = useRef<string>("");
 
     const fetchIndices = async () => {
         try {
@@ -108,7 +109,6 @@ export default function FlipIndexTicker() {
                         cleanLabel = "국제 금 (Gold)";
                     }
 
-                    // 수치 및 등락률 정밀 포맷팅
                     let rawChange = String(item.change || "0.00%").trim();
                     if (!rawChange.endsWith("%")) {
                         rawChange = `${rawChange}%`;
@@ -129,8 +129,14 @@ export default function FlipIndexTicker() {
                 
                 // 중복 라벨 제거
                 const uniqueIndices = coreIndices.filter((v: any, i: number, a: any[]) => a.findIndex(t => (t.label === v.label)) === i);
+                
                 if (uniqueIndices.length > 0) {
-                    setIndices(uniqueIndices);
+                    // 중요: 데이터가 실제로 바뀌었을 때만 state를 갱신하여 애니메이션 리셋 방지!
+                    const currentHash = JSON.stringify(uniqueIndices.map(u => `${u.label}:${u.value}:${u.change}`));
+                    if (currentHash !== lastDataHashRef.current) {
+                        lastDataHashRef.current = currentHash;
+                        setIndices(uniqueIndices);
+                    }
                 }
             }
         } catch (err) {
@@ -142,7 +148,8 @@ export default function FlipIndexTicker() {
 
     useEffect(() => {
         fetchIndices();
-        const interval = setInterval(fetchIndices, 15000); 
+        // 60초마다 백그라운드 폴링 (데이터가 변경되지 않으면 리렌더링 전혀 없음)
+        const interval = setInterval(fetchIndices, 60000); 
         return () => clearInterval(interval);
     }, []);
 
@@ -158,6 +165,9 @@ export default function FlipIndexTicker() {
 
     if (!indices || indices.length === 0) return null;
 
+    // 3벌 복제로 끊김 없는 무한 루프 구현 (0% -> -33.333% 이동 시 완전 일치)
+    const streamItems = [...indices, ...indices, ...indices];
+
     return (
         <div 
             className="relative w-full overflow-hidden flex items-center h-10 md:h-11 select-none group/ticker bg-[#06070d]"
@@ -165,19 +175,19 @@ export default function FlipIndexTicker() {
             onTouchEnd={() => setIsPaused(false)}
         >
             <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes ticker-marquee {
+                @keyframes ticker-seamless-loop {
                     0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
+                    100% { transform: translateX(-33.333333%); }
                 }
                 .animate-ticker-marquee {
                     display: flex !important;
                     width: max-content !important;
-                    animation: ticker-marquee 18s linear infinite !important;
+                    animation: ticker-seamless-loop 24s linear infinite !important;
                     will-change: transform;
                 }
                 @media (min-width: 768px) {
                     .animate-ticker-marquee {
-                        animation: ticker-marquee 22s linear infinite !important;
+                        animation: ticker-seamless-loop 28s linear infinite !important;
                     }
                 }
                 .group\\/ticker:hover .animate-ticker-marquee,
@@ -198,7 +208,7 @@ export default function FlipIndexTicker() {
                 </span>
             </div>
             
-            {/* 부드러운 무한 롤링 티커 스트림 (38초~45초 안심 속도) */}
+            {/* 부드러운 무한 롤링 티커 스트림 (3벌 루프로 절대로 리셋이나 튕김 없음) */}
             <div 
                 className="animate-ticker-marquee flex items-center gap-2.5 sm:gap-4 pl-3" 
                 style={{ 
@@ -207,9 +217,9 @@ export default function FlipIndexTicker() {
                     animationPlayState: isPaused ? 'paused' : 'running'
                 }}
             >
-                {[...indices, ...indices].map((idx, i) => (
+                {streamItems.map((idx, i) => (
                     <div 
-                        key={i} 
+                        key={`${idx.label}-${i}`} 
                         className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-white/[0.03] hover:bg-white/[0.08] active:bg-white/10 border border-white/5 hover:border-cyan-500/30 transition-all duration-200 group/item cursor-default"
                     >
                         <span className="text-xs sm:text-sm drop-shadow-sm">{idx.icon}</span>
