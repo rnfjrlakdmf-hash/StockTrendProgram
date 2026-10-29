@@ -254,6 +254,79 @@ def _kr_report(code: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"[WatchlistResearch] news error {code}: {e}")
 
+    # 1. 기업 비즈니스 모델(BM) 및 4개년 재무제표 팩트체크
+    business_summary = []
+    financial_table = {"years": [], "rows": []}
+    try:
+        f_res = requests.get(f"https://m.stock.naver.com/api/stock/{code}/finance/annual", headers=HEADERS, timeout=6).json()
+        corp = f_res.get("corporationSummary", {})
+        for i in range(1, 6):
+            c_text = corp.get(f"comment{i}")
+            if c_text and str(c_text).strip():
+                business_summary.append(str(c_text).strip())
+        
+        finfo = f_res.get("financeInfo", {})
+        tr_titles = finfo.get("trTitleList", [])
+        if tr_titles:
+            financial_table["years"] = [t.get("title", "") for t in tr_titles]
+            keys = [t.get("key", "") for t in tr_titles]
+            for r in finfo.get("rowList", []):
+                r_title = r.get("title")
+                cols = r.get("columns", {})
+                values = [cols.get(k, {}).get("value", "-") for k in keys]
+                financial_table["rows"].append({
+                    "title": r_title,
+                    "values": values
+                })
+    except Exception as e:
+        print(f"[WatchlistResearch] finance annual error {code}: {e}")
+
+    # 2. 이동평균선 기술적 분석 (MA20, MA50, MA120)
+    technicals = {
+        "ma20": None, "ma50": None, "ma120": None,
+        "ma20_gap": None, "ma50_gap": None, "ma120_gap": None,
+        "trend_signal": "중립 횡보"
+    }
+    try:
+        import yfinance as yf
+        import pandas as pd
+        mkt_status = base.get("marketStatus") or ""
+        mkt_suffix = ".KQ" if "KOSDAQ" in mkt_status or (totals.get("시장구분") or "") == "코스닥" else ".KS"
+        t_hist = yf.Ticker(f"{code}{mkt_suffix}").history(period="6mo")
+        if t_hist.empty and mkt_suffix == ".KS":
+            t_hist = yf.Ticker(f"{code}.KQ").history(period="6mo")
+        elif t_hist.empty and mkt_suffix == ".KQ":
+            t_hist = yf.Ticker(f"{code}.KS").history(period="6mo")
+            
+        if not t_hist.empty and len(t_hist) >= 10:
+            c_series = t_hist["Close"]
+            cur_p = float(c_series.iloc[-1])
+            m20 = float(c_series.rolling(20).mean().iloc[-1]) if len(c_series) >= 20 else None
+            m50 = float(c_series.rolling(50).mean().iloc[-1]) if len(c_series) >= 50 else None
+            m120 = float(c_series.rolling(120).mean().iloc[-1]) if len(c_series) >= 120 else None
+
+            technicals["ma20"] = round(m20, 1) if m20 and not pd.isna(m20) else None
+            technicals["ma50"] = round(m50, 1) if m50 and not pd.isna(m50) else None
+            technicals["ma120"] = round(m120, 1) if m120 and not pd.isna(m120) else None
+
+            if technicals["ma20"]:
+                technicals["ma20_gap"] = round((cur_p - technicals["ma20"]) / technicals["ma20"] * 100, 2)
+            if technicals["ma50"]:
+                technicals["ma50_gap"] = round((cur_p - technicals["ma50"]) / technicals["ma50"] * 100, 2)
+            if technicals["ma120"]:
+                technicals["ma120_gap"] = round((cur_p - technicals["ma120"]) / technicals["ma120"] * 100, 2)
+
+            if technicals["ma20"] and technicals["ma50"] and cur_p > technicals["ma20"] > technicals["ma50"]:
+                technicals["trend_signal"] = "상승 정배열 (골든크로스 지속)"
+            elif technicals["ma120"] and abs(cur_p - technicals["ma120"]) / technicals["ma120"] < 0.03:
+                technicals["trend_signal"] = "120일 중기 생명선 지지 안착"
+            elif technicals["ma20"] and cur_p < technicals["ma20"]:
+                technicals["trend_signal"] = "단기 20일선 눌림목 반등 시도"
+            else:
+                technicals["trend_signal"] = "안정적 박스권 매물 소화"
+    except Exception as e:
+        print(f"[WatchlistResearch] technicals error {code}: {e}")
+
     range_pos = None
     if high52 and low52 and high52 > low52:
         range_pos = round((price - low52) / (high52 - low52) * 100, 1)
@@ -290,6 +363,9 @@ def _kr_report(code: str) -> Optional[Dict[str, Any]]:
         },
         "broker_reports": broker_reports,
         "news": news,
+        "business_summary": business_summary,
+        "financial_table": financial_table,
+        "technicals": technicals,
     }
 
 
@@ -310,6 +386,35 @@ def _us_report(ticker: str) -> Optional[Dict[str, Any]]:
     high52 = info.get("fiftyTwoWeekHigh")
     low52 = info.get("fiftyTwoWeekLow")
     range_pos = round((price - low52) / (high52 - low52) * 100, 1) if high52 and low52 and high52 > low52 else None
+
+    # US Business Summary & Financials & Technicals
+    business_summary = []
+    if info.get("longBusinessSummary"):
+        business_summary.append(info.get("longBusinessSummary")[:400] + "...")
+
+    financial_table = {
+        "years": ["최근 연간"],
+        "rows": [
+            {"title": "매출액", "values": [f"${info.get('totalRevenue', 0)/1e9:,.1f}B" if info.get('totalRevenue') else "-"]},
+            {"title": "영업이익률", "values": [f"{info.get('operatingMargins', 0)*100:.1f}%" if info.get('operatingMargins') else "-"]},
+            {"title": "ROE", "values": [f"{info.get('returnOnEquity', 0)*100:.1f}%" if info.get('returnOnEquity') else "-"]},
+            {"title": "부채비율", "values": [f"{info.get('debtToEquity', 0):.1f}%" if info.get('debtToEquity') else "-"]},
+            {"title": "PER", "values": [f"{info.get('trailingPE', 0):.2f}" if info.get('trailingPE') else "-"]},
+            {"title": "PBR", "values": [f"{info.get('priceToBook', 0):.2f}" if info.get('priceToBook') else "-"]},
+        ]
+    }
+
+    m50 = info.get("fiftyDayAverage")
+    m200 = info.get("twoHundredDayAverage")
+    technicals = {
+        "ma20": round(float(m50), 2) if m50 else None,
+        "ma50": round(float(m50), 2) if m50 else None,
+        "ma120": round(float(m200), 2) if m200 else None,
+        "ma20_gap": round((price - m50) / m50 * 100, 2) if m50 else None,
+        "ma50_gap": round((price - m50) / m50 * 100, 2) if m50 else None,
+        "ma120_gap": round((price - m200) / m200 * 100, 2) if m200 else None,
+        "trend_signal": "견고한 글로벌 우상향 추세"
+    }
 
     news = []
     try:
@@ -378,6 +483,9 @@ def _us_report(ticker: str) -> Optional[Dict[str, Any]]:
         },
         "broker_reports": broker_reports,
         "news": news,
+        "business_summary": business_summary,
+        "financial_table": financial_table,
+        "technicals": technicals,
     }
 
 

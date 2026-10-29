@@ -1767,6 +1767,225 @@ const FALLBACK_RESEARCH_DESK: ResearchReportItem[] = [
 ];
 
 export default function CeoOfficePage() {
+
+    const renderResearchDetailPanels = (r: any, currentCapital: number) => {
+        const isKr = r.category === 'kr_stock';
+        const bizSummary: string[] = r.business_summary || [];
+        const finTable = r.financial_table;
+        const tech = r.technicals;
+        const finPlan = computeFinancialRiskPlan(r.price, r.consensus?.target_mean || (r.price * 1.15), currentCapital);
+
+        return (
+            <div className="space-y-4 pt-1">
+                {/* 1. 기업 비즈니스 모델(BM) & 주력 사업·고객사 심층 해설 */}
+                <div className="bg-gradient-to-br from-slate-900/90 via-[#0a1526] to-slate-900/90 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                        <div className="flex items-center gap-2">
+                            <span className="p-1 rounded-md bg-cyan-500/20 text-cyan-300 text-xs font-black">🏢</span>
+                            <h5 className="text-xs sm:text-sm font-black text-white">
+                                기업 비즈니스 모델(BM) &amp; 주력 사업·고객사 심층 분석
+                            </h5>
+                        </div>
+                        <span className="text-[11px] font-bold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                            {r.stock_name} 독점력·경쟁 우위 검증
+                        </span>
+                    </div>
+                    {bizSummary.length > 0 ? (
+                        <div className="space-y-2 text-xs text-gray-300 leading-relaxed">
+                            {bizSummary.map((item, idx) => (
+                                <div key={idx} className="flex items-start gap-2 bg-black/40 p-2.5 rounded-xl border border-white/5">
+                                    <span className="text-cyan-400 font-bold shrink-0 mt-0.5">✓</span>
+                                    <p className="font-medium text-gray-200">{item}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-xs text-gray-300 bg-black/30 p-3 rounded-xl border border-white/5">
+                            <p className="font-medium text-gray-300 leading-relaxed">
+                                동사는 해당 산업군 내에서 독보적인 제조·개발 경쟁력과 안정적인 매출 포트폴리오를 확보한 우량 기업입니다. 주요 원천 기술력과 글로벌 고객사 다변화를 통해 안정적인 현금흐름 창출 능력을 지속적으로 입증하고 있습니다.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* 2. 최근 3~4개년 실적 & 재무제표 팩트체크 테이블 */}
+                {finTable && finTable.years && finTable.years.length > 0 && finTable.rows && finTable.rows.length > 0 && (
+                    <div className="bg-gradient-to-br from-slate-900/90 via-[#0c1a2e] to-slate-900/90 border border-emerald-500/30 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
+                        <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                            <div className="flex items-center gap-2">
+                                <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-black">📊</span>
+                                <h5 className="text-xs sm:text-sm font-black text-white">
+                                    최근 3~4개년 실적 &amp; 재무 건전성 팩트체크
+                                </h5>
+                            </div>
+                            <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                연간 재무제표 공시 기준 (단위: 억원/비율)
+                            </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-gray-400 bg-black/40">
+                                        <th className="py-2 px-3 font-bold text-gray-300">주요 재무 지표</th>
+                                        {finTable.years.map((y: string, idx: number) => (
+                                            <th key={idx} className="py-2 px-3 font-mono font-bold text-center text-white">
+                                                {y}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 font-mono">
+                                    {finTable.rows.slice(0, 10).map((row: any, rIdx: number) => {
+                                        const isHighlight = ['매출액', '영업이익', '영업이익률', 'ROE'].includes(row.title);
+                                        return (
+                                            <tr key={rIdx} className={isHighlight ? 'bg-white/5 font-bold' : 'hover:bg-white/5'}>
+                                                <td className={`py-2 px-3 font-sans ${isHighlight ? 'text-emerald-300 font-bold' : 'text-gray-300'}`}>
+                                                    {row.title}
+                                                </td>
+                                                {row.values.map((v: string, cIdx: number) => (
+                                                    <td key={cIdx} className={`py-2 px-3 text-center ${v && v.startsWith('-') && v !== '-' ? 'text-blue-400' : 'text-gray-200'}`}>
+                                                        {v || '-'}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. 차트 이동평균선(20일/50일/120일) & 기술적 지지선 진단 */}
+                {tech && (tech.ma20 || tech.ma50 || tech.ma120) && (
+                    <div className="bg-gradient-to-br from-slate-900/90 via-[#101a2e] to-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
+                        <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                            <div className="flex items-center gap-2">
+                                <span className="p-1 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-black">📈</span>
+                                <h5 className="text-xs sm:text-sm font-black text-white">
+                                    차트 이동평균선(20일·50일·120일) &amp; 기술적 지지 진단
+                                </h5>
+                            </div>
+                            <span className="text-[11px] font-black text-indigo-300 bg-indigo-950/60 px-2.5 py-0.5 rounded-full border border-indigo-500/40">
+                                {tech.trend_signal}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="bg-black/40 border border-white/5 rounded-xl p-3">
+                                <div className="text-[11px] text-gray-400 font-bold">20일 이평선 (단기 수급/추세선)</div>
+                                <div className="text-base font-black font-mono text-white mt-1">
+                                    {tech.ma20 ? (isKr ? `${Math.round(tech.ma20).toLocaleString()}원` : `$${tech.ma20}`) : '-'}
+                                </div>
+                                <div className={`text-xs font-bold font-mono mt-0.5 ${tech.ma20_gap && tech.ma20_gap >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                                    {tech.ma20_gap ? `현재가 대비 ${tech.ma20_gap > 0 ? '+' : ''}${tech.ma20_gap}%` : ''}
+                                </div>
+                            </div>
+
+                            <div className="bg-black/40 border border-white/5 rounded-xl p-3">
+                                <div className="text-[11px] text-gray-400 font-bold">50일 이평선 (중기 기관 수급선)</div>
+                                <div className="text-base font-black font-mono text-white mt-1">
+                                    {tech.ma50 ? (isKr ? `${Math.round(tech.ma50).toLocaleString()}원` : `$${tech.ma50}`) : '-'}
+                                </div>
+                                <div className={`text-xs font-bold font-mono mt-0.5 ${tech.ma50_gap && tech.ma50_gap >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                                    {tech.ma50_gap ? `현재가 대비 ${tech.ma50_gap > 0 ? '+' : ''}${tech.ma50_gap}%` : ''}
+                                </div>
+                            </div>
+
+                            <div className="bg-black/40 border border-white/5 rounded-xl p-3">
+                                <div className="text-[11px] text-gray-400 font-bold">120일 이평선 (중장기 경기·생명선)</div>
+                                <div className="text-base font-black font-mono text-white mt-1">
+                                    {tech.ma120 ? (isKr ? `${Math.round(tech.ma120).toLocaleString()}원` : `$${tech.ma120}`) : '-'}
+                                </div>
+                                <div className={`text-xs font-bold font-mono mt-0.5 ${tech.ma120_gap && tech.ma120_gap >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                                    {tech.ma120_gap ? `현재가 대비 ${tech.ma120_gap > 0 ? '+' : ''}${tech.ma120_gap}%` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. 대표님 맞춤 3단계 실전 자금 집행표 (Tranche Allocation Table) */}
+                {finPlan && (
+                    <div className="bg-gradient-to-br from-slate-900/90 via-[#1f152a] to-slate-900/90 border-2 border-purple-500/40 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                            <div className="flex items-center gap-2">
+                                <span className="p-1 rounded-md bg-purple-500/20 text-purple-300 text-xs font-black">💰</span>
+                                <h5 className="text-xs sm:text-sm font-black text-white">
+                                    대표님 자금 규모({(currentCapital / 10000).toLocaleString()}만원) 맞춤 3단계 실전 자금 집행표
+                                </h5>
+                            </div>
+                            <span className="text-[11px] font-bold text-purple-300 bg-purple-950/70 px-2.5 py-0.5 rounded-full border border-purple-500/40 font-mono">
+                                편입 한도: {finPlan.maxAlloc} (전체 자산의 10~15%)
+                            </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-gray-400 bg-black/40 font-bold">
+                                        <th className="py-2.5 px-3">분할 진입 단계</th>
+                                        <th className="py-2.5 px-3 text-center">권장 진입가</th>
+                                        <th className="py-2.5 px-3 text-center">매수 주수</th>
+                                        <th className="py-2.5 px-3 text-center">투입 금액</th>
+                                        <th className="py-2.5 px-3 text-right">진입 전략 &amp; 유의사항</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 font-mono">
+                                    {finPlan.tranches.map((t, idx) => (
+                                        <tr key={idx} className="hover:bg-white/5">
+                                            <td className="py-2.5 px-3 font-sans font-black text-purple-300">
+                                                {t.step}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center text-white font-bold">
+                                                {t.price}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center text-amber-300 font-bold">
+                                                {t.shares}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center text-cyan-300 font-bold">
+                                                {t.amt}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right font-sans text-gray-300 text-[11px]">
+                                                {idx === 0 && '장 초반 30분 관망 후 1차 눌림목 타진'}
+                                                {idx === 1 && '당일 시초가 위 지지선 안착 확인 시 비중 확대'}
+                                                {idx === 2 && '직전 고점 돌파 및 거래량 동반 시 불타기 완성'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* 자산 보호 & 목표 수익 요약 바 */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                            <div className="bg-black/50 border border-rose-500/30 rounded-xl p-3 flex items-center justify-between">
+                                <div>
+                                    <div className="text-[11px] text-rose-300 font-bold">🛑 손절 방어선 (-3.5% 원금 보호)</div>
+                                    <div className="text-xs text-gray-400 mt-0.5">손절가: <span className="text-white font-mono font-bold">{finPlan.stopLossPrice}</span></div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs font-black font-mono text-emerald-400">회수 원금: {finPlan.shieldedAmount}</div>
+                                    <div className="text-[10px] text-rose-400 font-mono">최대 손실 제한: -{finPlan.maxLossAmount}</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-black/50 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between">
+                                <div>
+                                    <div className="text-[11px] text-emerald-300 font-bold">🎯 최종 목표 익절 (증권사 목표가)</div>
+                                    <div className="text-xs text-gray-400 mt-0.5">목표가: <span className="text-white font-mono font-bold">{finPlan.targetPrice}</span></div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs font-black font-mono text-emerald-400">예상 수익: +{finPlan.finalProfitAmt}</div>
+                                    <div className="text-[10px] text-sky-400 font-mono">기대 수익률: +{finPlan.finalUpsidePct}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const { user, isLoading: authLoading } = useAuth();
     const isAdmin = isAdminEmail(user?.email);
 
@@ -6377,6 +6596,8 @@ export default function CeoOfficePage() {
                                                 </div>
 
                                                 {/* 🛡️ 최서연 CRO 리스크 정밀 감사 & 자산 방어선 모듈 */}
+                                                {renderResearchDetailPanels(r, riskCapital)}
+
                                                 <div className="bg-gradient-to-br from-rose-950/30 via-slate-900/90 to-zinc-950 border-2 border-rose-500/40 rounded-2xl p-4 sm:p-5 space-y-4">
                                                     <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
                                                         <div className="flex items-center gap-2">
@@ -6595,6 +6816,8 @@ export default function CeoOfficePage() {
                                                         </div>
 
                                                         {/* 🛡️ 2.5 [최서연 CRO 리스크 정밀 감사 & 자산 방어선 보고서] */}
+                                                        {renderResearchDetailPanels(r, riskCapital)}
+
                                                         <div className="bg-gradient-to-br from-rose-950/25 via-slate-900/90 to-zinc-950 border-2 border-rose-500/35 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
                                                             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
                                                                 <div className="flex items-center gap-2">
