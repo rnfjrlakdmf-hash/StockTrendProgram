@@ -172,12 +172,12 @@ export default function FlipIndexTicker() {
                 .animate-ticker-marquee {
                     display: flex !important;
                     width: max-content !important;
-                    animation: ticker-marquee 38s linear infinite !important;
+                    animation: ticker-marquee 18s linear infinite !important;
                     will-change: transform;
                 }
                 @media (min-width: 768px) {
                     .animate-ticker-marquee {
-                        animation: ticker-marquee 45s linear infinite !important;
+                        animation: ticker-marquee 22s linear infinite !important;
                     }
                 }
                 .group\\/ticker:hover .animate-ticker-marquee,
