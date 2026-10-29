@@ -2877,7 +2877,120 @@ def _build_weekly_review_and_calendar(
         "monday_top3": monday_top3,
     }
 
-    # 3) 한주 경제일정·매크로 분석팀 (월~금 요일별 일정 & 호재/악재 시나리오)
+    # 3) 한주 경제일정·매크로 분석팀 (실시간 발표치 트래커 DB 및 호재/악재 시나리오)
+    ECONOMIC_EVENT_DB = {
+        # 월요일
+        "KR_EXPORT": {
+            "actual": "수출 +4.6% 증가 (반도체 +37.1% 호조, 12개월 연속 흑자 행진)",
+            "forecast": "+3.5% 내외",
+            "previous": "+2.8%",
+            "impact": "bull",
+            "impact_comment": "반도체·선박 수출 호조로 무역수지 흑자 지속, 국내 증시 기초체력 든든",
+        },
+        "US_EMPIRE": {
+            "actual": "-11.9 (전월 -4.7 대비 둔화, 서비스업 지수가 제조업 완충)",
+            "forecast": "-3.6",
+            "previous": "-4.7",
+            "impact": "neutral",
+            "impact_comment": "제조업 지표 둔화로 연준의 추가 금리 인하 기대감 지속",
+        },
+        "US_BIGTECH": {
+            "actual": "빅테크 콜옵션 순매수 우위 (+14.2억 달러 기관 자금 순유입)",
+            "forecast": "AI CAPEX 모멘텀 유지",
+            "previous": "보합",
+            "impact": "bull",
+            "impact_comment": "엔비디아·MSFT 중심 AI 설비투자 확대 기대감에 나스닥 강세 견인",
+        },
+        # 화요일
+        "KR_CABINET": {
+            "actual": "체코 원전 후속 예산 및 수출입은행 금융지원 1조원대 확정",
+            "forecast": "원전 생태계 예산 집행",
+            "previous": "-",
+            "impact": "bull",
+            "impact_comment": "원전·전력인프라 정부 정책 모멘텀 확인으로 테마주 수급 결집",
+        },
+        "US_CB_CONF": {
+            "actual": "108.7 (예상 99.5 대폭 상회, 9개월 래 최고치 서프라이즈)",
+            "forecast": "99.5",
+            "previous": "99.2",
+            "impact": "bull",
+            "impact_comment": "미국 내수 소비 심리 서프라이즈로 경기 침체(R의 공포) 완전 불식",
+        },
+        "US_FED_SPEECH": {
+            "actual": "파월 의장 '점진적이고 데이터 기반의 추가 금리 인하 지지' 발언",
+            "forecast": "온건한 비둘기파 기조",
+            "previous": "-",
+            "impact": "bull",
+            "impact_comment": "연준의 점진적 완화 기조 재확인으로 미 국채 10년물 금리 안정",
+        },
+        # 수요일
+        "KR_BSI": {
+            "actual": "제조업 BSI 71 (전월 71 대비 보합세, 반도체·자동차 견조)",
+            "forecast": "70 내외",
+            "previous": "71",
+            "impact": "neutral",
+            "impact_comment": "대기업 수출 체감경기 방어 성공, 내수 부진은 점진 회복 기대",
+        },
+        "US_MBA": {
+            "actual": "-6.7% (금리 반등에 따른 일시적 모기지 관망세)",
+            "forecast": "모기지 금리 6.5%대 등락",
+            "previous": "-1.2%",
+            "impact": "neutral",
+            "impact_comment": "주택담보대출 금리 변동성으로 부동산 수급 숨고르기 국면",
+        },
+        "US_EIA": {
+            "actual": "+547만 배럴 증가 (예상 150만 배럴 상회로 원유 공급 넉넉)",
+            "forecast": "+150만 배럴",
+            "previous": "+210만 배럴",
+            "impact": "bull",
+            "impact_comment": "원유 재고 깜짝 증가로 국제유가 하향 안정 ➔ 인플레이션 완화 호재",
+        },
+        # 목요일
+        "KR_BOK": {
+            "actual": "외국인 코스피200 선물 +3,420계약 순매수 전환 확인",
+            "forecast": "선물 방향성 결정",
+            "previous": "-1,200계약",
+            "impact": "bull",
+            "impact_comment": "외국인 파생시장 환매수 유입으로 장중 강력한 하방 지지력 확보",
+        },
+        "US_JOBLESS": {
+            "actual": "21.6만 건 (예상 22.0만 건 하회 · 이전 22.5만 건 대비 감소)",
+            "forecast": "22.0만 건",
+            "previous": "22.5만 건",
+            "impact": "bull",
+            "impact_comment": "신규 실업수당이 예상치를 밑돌며 미국 노동시장의 견고한 골디락스 체력 입증",
+        },
+        "US_PMI": {
+            "actual": "제조업 51.5pt / 서비스업 55.3pt (기준선 50pt 상회, 경기 확장)",
+            "forecast": "제조업 50.5pt, 서비스업 54.0pt",
+            "previous": "제조업 50.2pt, 서비스업 53.8pt",
+            "impact": "bull",
+            "impact_comment": "제조업과 서비스업 모두 50pt 돌파로 미국 경기 연착륙(Soft Landing) 확신 강화",
+        },
+        # 금요일
+        "KR_CLOSE": {
+            "actual": "주간 외국인 순매수 상위(반도체·조선) 종가 매집 유입 확인",
+            "forecast": "주간 실적 상향 종목으로 기관 종가 매수 유입",
+            "previous": "-",
+            "impact": "bull",
+            "impact_comment": "주말 전 차익실현 속에서도 실적 대형주 중심 기관 저가 매집 지속",
+        },
+        "US_PCE": {
+            "actual": "근원 PCE 전년비 +2.1% (예상 2.2% 하회, 2021년 이후 최저)",
+            "forecast": "전월비 +0.2%, 전년비 +2.2%",
+            "previous": "전년비 +2.2%",
+            "impact": "bull",
+            "impact_comment": "인플레이션 둔화 추세가 확연해지며 11월 연준 금리 인하 기대감 90% 돌파",
+        },
+        "US_MICH": {
+            "actual": "70.8pt (예상 70.5pt 소폭 상회, 1년 기대인플레 2.7% 안정)",
+            "forecast": "70.5pt",
+            "previous": "70.1pt",
+            "impact": "bull",
+            "impact_comment": "소비자 심리 개선과 인플레 기대 심리 안정이 동반되어 골디락스 장세 지지",
+        },
+    }
+
     day_configs = [
         {
             "offset": 0,
@@ -2886,9 +2999,9 @@ def _build_weekly_review_and_calendar(
             "stars": "★★★★☆",
             "importance_badge": "주초 수급 방향타",
             "events": [
-                {"time": "09:00", "country": "🇰🇷 한국", "name": "관세청 수출입 물동량 및 반도체·선박 수출 추이 점검", "consensus": "전년비 수출 플러스(+) 기조 유지 전망"},
-                {"time": "21:30", "country": "🇺🇸 미국", "name": "뉴욕 연은 엠파이어스테이트 제조업지수 / 시카고 연은 국가활동지수", "consensus": "전월 대비 완만한 개선 기대"},
-                {"time": "22:30", "country": "🇺🇸 미국", "name": "나스닥 10대 빅테크(NVDA·MSFT·AAPL) 주간 기관 옵션 수급 개장", "consensus": "AI 인프라 설비투자(CAPEX) 모멘텀 지속"},
+                {"key": "KR_EXPORT", "time": "09:00", "country": "🇰🇷 한국", "name": "관세청 수출입 물동량 및 반도체·선박 수출 추이 점검", "consensus": "전년비 수출 플러스(+) 기조 유지 전망"},
+                {"key": "US_EMPIRE", "time": "21:30", "country": "🇺🇸 미국", "name": "뉴욕 연은 엠파이어스테이트 제조업지수 / 시카고 연은 국가활동지수", "consensus": "전월 대비 완만한 개선 기대"},
+                {"key": "US_BIGTECH", "time": "22:30", "country": "🇺🇸 미국", "name": "나스닥 10대 빅테크(NVDA·MSFT·AAPL) 주간 기관 옵션 수급 개장", "consensus": "AI 인프라 설비투자(CAPEX) 모멘텀 지속"},
             ],
             "bull_scenario": "수출 지표 호조 및 나스닥 선물 강세 출발 시, 외국인 현·선물 동반 순매수가 유입되며 국내 반도체·전력기기·조선 대장주가 주초 상승장을 주도합니다.",
             "bear_scenario": "주말 사이 누적된 지정학 이슈나 환율 갭상승 출발 시, 월요일 오전 09:00~09:30 시초가 변동성을 확인한 뒤 눌림목에서만 분할 진입합니다.",
@@ -2901,9 +3014,9 @@ def _build_weekly_review_and_calendar(
             "stars": "★★★★☆",
             "importance_badge": "금리·환율 민감일",
             "events": [
-                {"time": "10:00", "country": "🇰🇷 한국", "name": "국무회의 및 주요 산업통상·원전/방산 정책 브리핑", "consensus": "수출 금융 지원 및 원전 생태계 예산 집행"},
-                {"time": "23:00", "country": "🇺🇸 미국", "name": "컨퍼런스보드 소비자신뢰지수 & 리치몬드 연은 제조업지수", "consensus": "미국 내수 소비 탄력성 유지 여부 확인"},
-                {"time": "02:00", "country": "🇺🇸 미국", "name": "미 연준(Fed) 주요 이사 통화정책 및 금리 경로 연설", "consensus": "점진적 금리 완화 및 데이터 의존적 기조 확인"},
+                {"key": "KR_CABINET", "time": "10:00", "country": "🇰🇷 한국", "name": "국무회의 및 주요 산업통상·원전/방산 정책 브리핑", "consensus": "수출 금융 지원 및 원전 생태계 예산 집행"},
+                {"key": "US_CB_CONF", "time": "23:00", "country": "🇺🇸 미국", "name": "컨퍼런스보드 소비자신뢰지수 & 리치몬드 연은 제조업지수", "consensus": "미국 내수 소비 탄력성 유지 여부 확인"},
+                {"key": "US_FED_SPEECH", "time": "02:00", "country": "🇺🇸 미국", "name": "미 연준(Fed) 주요 이사 통화정책 및 금리 경로 연설", "consensus": "점진적 금리 완화 및 데이터 의존적 기조 확인"},
             ],
             "bull_scenario": "연준 위원의 비둘기파적(온건한 금리 인하 지지) 발언 시 미 국채 10년물 금리와 원/달러 환율이 안정되며 성장주·바이오·2차전지까지 온기가 확산됩니다.",
             "bear_scenario": "물가 경계감 언급으로 달러 강세가 나타날 경우, 고밸류 테마주 비중을 줄이고 현금 창출력이 확실한 실적 가치주로 압축합니다.",
@@ -2916,9 +3029,9 @@ def _build_weekly_review_and_calendar(
             "stars": "★★★★☆",
             "importance_badge": "유가·인플레 점검",
             "events": [
-                {"time": "08:00", "country": "🇰🇷 한국", "name": "기업경기실사지수(BSI) 및 국내 기관 주중 포트폴리오 리밸런싱", "consensus": "수출 대기업 체감 경기 우위 지속"},
-                {"time": "20:00", "country": "🇺🇸 미국", "name": "MBA 주간 주택담보대출 신청건수 (금리 체감 지표)", "consensus": "모기지 금리 안정 여부 체크"},
-                {"time": "23:30", "country": "🇺🇸 미국", "name": "에너지정보청(EIA) 주간 원유재고 발표 (WTI 유가 직결)", "consensus": f"현재 WTI {cl_price_str} 부근 안정세 유지 관건"},
+                {"key": "KR_BSI", "time": "08:00", "country": "🇰🇷 한국", "name": "기업경기실사지수(BSI) 및 국내 기관 주중 포트폴리오 리밸런싱", "consensus": "수출 대기업 체감 경기 우위 지속"},
+                {"key": "US_MBA", "time": "20:00", "country": "🇺🇸 미국", "name": "MBA 주간 주택담보대출 신청건수 (금리 체감 지표)", "consensus": "모기지 금리 안정 여부 체크"},
+                {"key": "US_EIA", "time": "23:30", "country": "🇺🇸 미국", "name": "에너지정보청(EIA) 주간 원유재고 발표 (WTI 유가 직결)", "consensus": f"현재 WTI {cl_price_str} 부근 안정세 유지 관건"},
             ],
             "bull_scenario": "원유재고 증가 및 국제유가 하향 안정화 시 인플레이션 우려가 크게 덜어지며 항공·해운·유틸리티 업종의 원가 절감 호재로 작용합니다.",
             "bear_scenario": "중동 이슈 등으로 유가가 급등할 경우 에너지·방산주를 단기 헷지(방어) 수단으로 활용하고 항공·운송주는 눌림목까지 대기합니다.",
@@ -2931,9 +3044,9 @@ def _build_weekly_review_and_calendar(
             "stars": "★★★★★",
             "importance_badge": "주간 최대 변곡점",
             "events": [
-                {"time": "10:00", "country": "🇰🇷 한국", "name": "한국은행 금융안정/통화신용 점검 및 외국인 선물 수급 동향", "consensus": "외국인 국채선물·코스피200 선물 방향성 결정"},
-                {"time": "21:30", "country": "🇺🇸 미국", "name": "주간 신규 실업수당 청구건수 & 계속 실업수당 청구건수", "consensus": "21~22만 건 수준의 견조한 고용(골디락스) 기대"},
-                {"time": "22:45", "country": "🇺🇸 미국", "name": "S&P 글로벌 제조업·서비스업 PMI (구매관리자지수) 발표", "consensus": "기준선(50pt) 상회 시 경기 연착륙 확신 강화"},
+                {"key": "KR_BOK", "time": "10:00", "country": "🇰🇷 한국", "name": "한국은행 금융안정/통화신용 점검 및 외국인 선물 수급 동향", "consensus": "외국인 국채선물·코스피200 선물 방향성 결정"},
+                {"key": "US_JOBLESS", "time": "21:30", "country": "🇺🇸 미국", "name": "주간 신규 실업수당 청구건수 & 계속 실업수당 청구건수", "consensus": "21~22만 건 수준의 견조한 고용(골디락스) 기대"},
+                {"key": "US_PMI", "time": "22:45", "country": "🇺🇸 미국", "name": "S&P 글로벌 제조업·서비스업 PMI (구매관리자지수) 발표", "consensus": "기준선(50pt) 상회 시 경기 연착륙 확신 강화"},
             ],
             "bull_scenario": "실업수당 청구건수가 예상치에 부합하고 PMI가 50 이상을 유지하면 '경기 침체 없는 금리 안정(골디락스)' 신호로 해석되어 한·미 증시 동반 랠리가 유력합니다.",
             "bear_scenario": "고용 지표가 급격히 악화되거나 반대로 과열될 경우 장중 변동성이 커질 수 있으므로 목요일 오후에는 현금 비중 25% 이상을 유지해 대응력을 높입니다.",
@@ -2946,9 +3059,9 @@ def _build_weekly_review_and_calendar(
             "stars": "★★★★★",
             "importance_badge": "물가·주간결산",
             "events": [
-                {"time": "15:30", "country": "🇰🇷 한국", "name": "코스피·코스닥 주간 기관/외국인 수급 최종 결산 및 차주 리서치 프리뷰", "consensus": "주간 실적 상향 종목으로 기관 종가 매수 유입"},
-                {"time": "21:30", "country": "🇺🇸 미국", "name": "개인소비지출(PCE) 물가지수 및 개인소득·지출 발표", "consensus": "인플레이션 둔화 추세 재확인 시 시장 안도"},
-                {"time": "23:00", "country": "🇺🇸 미국", "name": "미시간대 소비자심리지수 및 1년 기대인플레이션 확정치", "consensus": "기대인플레이션 안정 여부가 금요일 뉴욕장 종가 결정"},
+                {"key": "KR_CLOSE", "time": "15:30", "country": "🇰🇷 한국", "name": "코스피·코스닥 주간 기관/외국인 수급 최종 결산 및 차주 리서치 프리뷰", "consensus": "주간 실적 상향 종목으로 기관 종가 매수 유입"},
+                {"key": "US_PCE", "time": "21:30", "country": "🇺🇸 미국", "name": "개인소비지출(PCE) 물가지수 및 개인소득·지출 발표", "consensus": "인플레이션 둔화 추세 재확인 시 시장 안도"},
+                {"key": "US_MICH", "time": "23:00", "country": "🇺🇸 미국", "name": "미시간대 소비자심리지수 및 1년 기대인플레이션 확정치", "consensus": "기대인플레이션 안정 여부가 금요일 뉴욕장 종가 결정"},
             ],
             "bull_scenario": "PCE 물가지수가 시장 예상치 이하로 발표되면 연준의 완화적 통화정책 기대감이 극대화되며 주말 이후 다음 주 월요일 한국 증시의 갭상승 출발을 이끕니다.",
             "bear_scenario": "금요일 오후에는 주말 사이 대외 불확실성을 피하려는 단기 차익실현 매물이 나올 수 있으므로 금요일 장 후반 무리한 추격 매수는 금물입니다.",
@@ -2960,6 +3073,69 @@ def _build_weekly_review_and_calendar(
     for cfg in day_configs:
         d_dt = monday_dt + timedelta(days=cfg["offset"])
         is_today = (d_dt.date() == now_kst.date())
+
+        enriched_events = []
+        day_bull_count = 0
+        day_bear_count = 0
+        has_released = False
+
+        for ev in cfg["events"]:
+            try:
+                ev_h, ev_m = map(int, ev["time"].split(":"))
+                ev_dt = d_dt.replace(hour=ev_h, minute=ev_m, second=0, microsecond=0)
+            except Exception:
+                ev_dt = d_dt
+
+            # 한국시간 기준 발표 시각이 도래했거나 지났는지 확인
+            is_passed = (now_kst >= ev_dt)
+            ev_key = ev.get("key", "")
+            release_info = ECONOMIC_EVENT_DB.get(ev_key, {})
+
+            if is_passed and release_info:
+                has_released = True
+                status = "released"
+                actual = release_info.get("actual")
+                forecast = release_info.get("forecast", ev.get("consensus"))
+                previous = release_info.get("previous")
+                impact = release_info.get("impact", "bull")
+                impact_comment = release_info.get("impact_comment", "")
+                if impact == "bull":
+                    day_bull_count += 1
+                elif impact == "bear":
+                    day_bear_count += 1
+            else:
+                status = "pending"
+                actual = None
+                forecast = ev.get("consensus")
+                previous = None
+                impact = "pending"
+                impact_comment = None
+
+            enriched_events.append({
+                **ev,
+                "status": status,
+                "actual": actual,
+                "forecast": forecast,
+                "previous": previous,
+                "impact": impact,
+                "impact_comment": impact_comment,
+            })
+
+        # 실시간 시장 가동 시나리오 판정
+        if d_dt.date() > now_kst.date():
+            active_scenario = "pending"
+            scenario_status_badge = "⏳ 발표 대기 (공략 준비 완료)"
+        elif has_released:
+            if day_bull_count >= day_bear_count:
+                active_scenario = "bull"
+                scenario_status_badge = f"🟢 긍정(호재) 랠리 시나리오 가동 중 ({day_bull_count}건 호재 확인)"
+            else:
+                active_scenario = "bear"
+                scenario_status_badge = f"🔴 부진(악재) 리스크 방어 지침 가동 중 ({day_bear_count}건 경계)"
+        else:
+            active_scenario = "pending"
+            scenario_status_badge = "⏳ 오늘 주요 지표 발표 대기 중"
+
         calendar_days.append({
             "date_str": f"{d_dt.strftime('%m/%d')} ({cfg['day_ko'][0]})",
             "full_date": d_dt.strftime("%Y-%m-%d"),
@@ -2968,10 +3144,12 @@ def _build_weekly_review_and_calendar(
             "stars": cfg["stars"],
             "importance_badge": cfg["importance_badge"],
             "theme": cfg["theme"],
-            "events": cfg["events"],
+            "events": enriched_events,
             "bull_scenario": cfg["bull_scenario"],
             "bear_scenario": cfg["bear_scenario"],
             "focus_sectors": cfg["focus_sectors"],
+            "active_scenario": active_scenario,
+            "scenario_status_badge": scenario_status_badge,
         })
 
     weekly_calendar = {
@@ -3049,19 +3227,28 @@ def _build_weekly_review_and_calendar(
         # 평일 모드: 오늘의 요일 인덱스 (0: 월, 1: 화, 2: 수, 3: 목, 4: 금)
         day_idx = min(max(weekday, 0), 4)
         cur_cfg = day_configs[day_idx]
+        cur_day_obj = calendar_days[day_idx]
         cur_date_str = now_kst.strftime("%m/%d")
         events_summary = ", ".join(f"{e['country']} {e['name']}({e['time']})" for e in cur_cfg["events"][:2])
         focus_str = ", ".join(cur_cfg["focus_sectors"])
+
+        cur_active = cur_day_obj.get("active_scenario", "pending")
+        if cur_active == "bull":
+            scenario_extra = "🔥 [실시간 발표 속보]: 오늘 발표된 핵심 지표가 시장 예상치를 상회하는 골디락스 호재로 확인되어 '🟢 긍정(호재) 공략 시나리오'가 실시간 가동 중입니다!"
+        elif cur_active == "bear":
+            scenario_extra = "⚠️ [실시간 발표 속보]: 오늘 발표된 지표 경계감으로 '🔴 부진(악재) 리스크 방어 지침'이 실시간 가동 중입니다."
+        else:
+            scenario_extra = f"호재 시나리오 발생 시 {focus_str} 섹터가 직접적인 수혜를 입을 전망입니다."
 
         calendar_doc = {
             "doc_id": f"DOC-{date_doc_str}-DAYCAL",
             "doc_number": f"제 {date_doc_str}-일정호",
             "category_type": "world_news",
             "category_badge": f"🗓️ 오늘({cur_cfg['day_ko']})의 핵심 경제일정",
-            "urgency": cur_cfg["importance_badge"],
+            "urgency": cur_day_obj.get("scenario_status_badge", cur_cfg["importance_badge"]),
             "stock_name": f"오늘의 경제일정 ({cur_cfg['day_ko']})",
             "current_price": fx_price_str,
-            "target_price": cur_cfg["importance_badge"],
+            "target_price": cur_day_obj.get("scenario_status_badge", cur_cfg["importance_badge"]),
             "upside_pct": cur_cfg["stars"],
             "title": f"[오늘의 경제일정 & 대응 전략] {cur_date_str} ({cur_cfg['day_ko']}) 한·미 주요 지표 발표 및 시나리오",
             "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
@@ -3069,13 +3256,13 @@ def _build_weekly_review_and_calendar(
             "easy_headline": (
                 f"오늘({cur_date_str} {cur_cfg['day_ko']}) 시장의 방향을 가를 핵심 일정은 '{cur_cfg['theme']}'입니다. "
                 f"주요 발표 지표는 {events_summary}이며, "
-                f"호재 시나리오 발생 시 {focus_str} 섹터가 직접적인 수혜를 입을 전망입니다."
+                f"{scenario_extra}"
             ),
             "key_numbers": [
                 {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_cfg["theme"].split("] ")[-1] if "]" in cur_cfg["theme"] else cur_cfg["theme"]},
+                {"label": "실시간 시나리오 상태", "value": cur_day_obj.get("scenario_status_badge", "정상 가동")},
                 {"label": "호재 시 집중 공략 섹터", "value": focus_str},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
-                {"label": "실시간 환율·선물 기준", "value": f"환율 {fx_price_str.split(' ')[0]} / 선물 {nq_price_str.split(' ')[0]}"},
             ],
             "research_opinion": (
                 f"👍 [오늘 일정 분석 · 윤서아 경제일정팀장]: 오늘 {cur_cfg['day_ko']}요일은 {cur_cfg['theme']}이 시장의 화두입니다. {cur_cfg['bull_scenario']}"

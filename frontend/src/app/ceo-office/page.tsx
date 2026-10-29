@@ -7659,6 +7659,17 @@ export default function CeoOfficePage() {
                                                                         ★ TODAY 오늘의 일정
                                                                     </span>
                                                                 )}
+                                                                {day.scenario_status_badge && (
+                                                                    <span className={`px-2.5 py-0.5 rounded-full font-black text-[11px] border flex items-center gap-1 ${
+                                                                        day.active_scenario === 'bull'
+                                                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                                                                            : day.active_scenario === 'bear'
+                                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
+                                                                            : 'bg-white/10 text-gray-300 border-white/20'
+                                                                    }`}>
+                                                                        {day.scenario_status_badge}
+                                                                    </span>
+                                                                )}
                                                                 <span className="text-sm sm:text-base font-black text-white">
                                                                     {day.theme}
                                                                 </span>
@@ -7673,37 +7684,106 @@ export default function CeoOfficePage() {
                                                             </div>
                                                         </div>
 
-                                                        {/* 시간대별 세부 일정 리스트 */}
+                                                        {/* 시간대별 세부 일정 리스트 (실시간 발표 결과 반영) */}
                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                                                             {(day.events || []).map((ev: any, eIdx: number) => (
-                                                                <div key={eIdx} className="bg-slate-900/90 border border-white/10 rounded-xl p-3 space-y-1">
+                                                                <div 
+                                                                    key={eIdx} 
+                                                                    className={`rounded-xl p-3 space-y-1.5 transition-all border ${
+                                                                        ev.status === 'released' 
+                                                                            ? 'bg-slate-900/95 border-emerald-500/40 shadow-md shadow-emerald-500/5' 
+                                                                            : 'bg-slate-900/80 border-white/10'
+                                                                    }`}
+                                                                >
                                                                     <div className="flex items-center justify-between text-[11px]">
-                                                                        <span className="font-black text-sky-300">{ev.country}</span>
-                                                                        <span className="font-mono text-amber-300 font-bold">⏰ {ev.time} KST</span>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="font-black text-sky-300">{ev.country}</span>
+                                                                            <span className="font-mono text-amber-300 font-bold">⏰ {ev.time} KST</span>
+                                                                        </div>
+                                                                        {ev.status === 'released' ? (
+                                                                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black text-[10px] flex items-center gap-1">
+                                                                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> 발표완료
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold text-[10px]">
+                                                                                ⏳ 발표 예정
+                                                                            </span>
+                                                                        )}
                                                                     </div>
+
                                                                     <div className="text-xs font-black text-white leading-snug">
                                                                         {ev.name}
                                                                     </div>
-                                                                    <div className="text-[11px] text-gray-400 pt-0.5">
-                                                                        • 예상/핵심: <span className="text-gray-200 font-semibold">{ev.consensus}</span>
-                                                                    </div>
+
+                                                                    {/* 실제 발표치 vs 사전 예상치 */}
+                                                                    {ev.status === 'released' && ev.actual ? (
+                                                                        <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-lg p-2 space-y-1 mt-1">
+                                                                            <div className="flex items-center justify-between text-xs font-black">
+                                                                                <span className="text-emerald-300 font-mono">📢 실제: {ev.actual}</span>
+                                                                                {ev.impact === 'bull' ? (
+                                                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-200 font-black">🟢 호재</span>
+                                                                                ) : ev.impact === 'bear' ? (
+                                                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-200 font-black">🔴 악재</span>
+                                                                                ) : (
+                                                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/30 text-sky-200 font-black">⚪ 부합</span>
+                                                                                )}
+                                                                            </div>
+                                                                            {ev.forecast && (
+                                                                                <div className="text-[10px] text-gray-400">
+                                                                                    (사전 예상: {ev.forecast})
+                                                                                </div>
+                                                                            )}
+                                                                            {ev.impact_comment && (
+                                                                                <div className="text-[11px] text-emerald-200/90 font-medium leading-snug pt-0.5">
+                                                                                    💡 {ev.impact_comment}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-[11px] text-gray-400 pt-0.5">
+                                                                            • 예상/핵심: <span className="text-gray-200 font-semibold">{ev.consensus || ev.forecast}</span>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
 
-                                                        {/* 호재 vs 악재 시나리오 양면 비교 */}
+                                                        {/* 호재 vs 악재 시나리오 양면 비교 (실시간 가동 공략 강조) */}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3 text-xs space-y-1">
-                                                                <div className="font-black text-emerald-300 flex items-center gap-1.5">
-                                                                    <span>🟢 긍정(호재) 발표 시 시장 시나리오 &amp; 공략</span>
+                                                            <div className={`rounded-xl p-3 text-xs space-y-1 transition-all ${
+                                                                day.active_scenario === 'bull'
+                                                                    ? 'bg-emerald-950/60 border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-400/50'
+                                                                    : 'bg-emerald-950/30 border border-emerald-500/30'
+                                                            }`}>
+                                                                <div className="font-black text-emerald-300 flex items-center justify-between gap-1.5">
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <span>🟢 긍정(호재) 발표 시 시장 시나리오 &amp; 공략</span>
+                                                                    </span>
+                                                                    {day.active_scenario === 'bull' && (
+                                                                        <span className="px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 font-black text-[10px] animate-pulse">
+                                                                            🔥 [실시간 가동 중인 공략]
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <p className="text-gray-200 leading-relaxed font-medium">
                                                                     {day.bull_scenario}
                                                                 </p>
                                                             </div>
-                                                            <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 text-xs space-y-1">
-                                                                <div className="font-black text-rose-300 flex items-center gap-1.5">
-                                                                    <span>🔴 부진(악재) 발표 시 리스크 방어 지침</span>
+
+                                                            <div className={`rounded-xl p-3 text-xs space-y-1 transition-all ${
+                                                                day.active_scenario === 'bear'
+                                                                    ? 'bg-rose-950/60 border-2 border-rose-400 shadow-[0_0_25px_rgba(244,63,94,0.25)] ring-1 ring-rose-400/50'
+                                                                    : 'bg-rose-950/30 border border-rose-500/30'
+                                                            }`}>
+                                                                <div className="font-black text-rose-300 flex items-center justify-between gap-1.5">
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <span>🔴 부진(악재) 발표 시 리스크 방어 지침</span>
+                                                                    </span>
+                                                                    {day.active_scenario === 'bear' && (
+                                                                        <span className="px-2 py-0.5 rounded-full bg-rose-400 text-slate-950 font-black text-[10px] animate-pulse">
+                                                                            ⚠️ [실시간 가동 중인 방어]
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <p className="text-gray-200 leading-relaxed font-medium">
                                                                     {day.bear_scenario}
