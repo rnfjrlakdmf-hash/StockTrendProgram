@@ -2703,6 +2703,230 @@ def _verify_ceo_clearance(*emails: Optional[str]) -> None:
 
 
 
+_LIVE_ECON_CAL_CACHE: Dict[str, Any] = {}
+
+_ECON_TITLE_KO_MAP = {
+    "ISM Manufacturing PMI": "ISM 제조업 구매관리자지수(PMI)",
+    "ISM Manufacturing Employment": "ISM 제조업 고용지수",
+    "ISM Manufacturing New Orders": "ISM 제조업 신규주문지수",
+    "ISM Manufacturing Prices": "ISM 제조업 물가지수",
+    "ISM Services PMI": "ISM 서비스업(비제조업) 구매관리자지수(PMI)",
+    "ISM Services Employment": "ISM 서비스업 고용지수",
+    "S&P Global Manufacturing PMI": "S&P 글로벌 제조업 PMI",
+    "S&P Global Services PMI": "S&P 글로벌 서비스업 PMI",
+    "S&P Global Composite PMI": "S&P 글로벌 종합 PMI",
+    "JOLTs Job Openings": "노동부 JOLTs 구인·이직 보고서 (구인건수)",
+    "ADP Employment Change": "ADP 비농업 민간고용 증감",
+    "Non Farm Payrolls": "비농업부문 신규고용자수 (NFP)",
+    "Unemployment Rate": "실업률 (Unemployment Rate)",
+    "Average Hourly Earnings MoM": "시간당 평균임금 상승률 (전월비)",
+    "Average Hourly Earnings YoY": "시간당 평균임금 상승률 (전년비)",
+    "Participation Rate": "경제활동참가율",
+    "Initial Jobless Claims": "주간 신규 실업수당 청구건수",
+    "Continuing Jobless Claims": "계속 실업수당 청구건수",
+    "Nonfarm Productivity QoQ Prel": "비농업 노동생산성 (전기비 예비치)",
+    "Unit Labor Costs QoQ Prel": "단위노동비용 (전기비 예비치)",
+    "Inflation Rate YoY": "소비자물가지수(CPI) 상승률 (전년비)",
+    "Inflation Rate MoM": "소비자물가지수(CPI) 상승률 (전월비)",
+    "Core Inflation Rate YoY": "근원 소비자물가지수(Core CPI, 전년비)",
+    "Core Inflation Rate MoM": "근원 소비자물가지수(Core CPI, 전월비)",
+    "PPI MoM": "생산자물가지수(PPI, 전월비)",
+    "PPI YoY": "생산자물가지수(PPI, 전년비)",
+    "Core PPI MoM": "근원 생산자물가지수(Core PPI, 전월비)",
+    "Core PCE Price Index YoY": "개인소비지출(근원 PCE) 물가지수 (전년비)",
+    "Core PCE Price Index MoM": "개인소비지출(근원 PCE) 물가지수 (전월비)",
+    "PCE Price Index YoY": "개인소비지출(PCE) 물가지수 (전년비)",
+    "PCE Price Index MoM": "개인소비지출(PCE) 물가지수 (전월비)",
+    "Retail Sales MoM": "소매판매 (Retail Sales, 전월비)",
+    "Retail Sales YoY": "소매판매 (Retail Sales, 전년비)",
+    "Core Retail Sales MoM": "핵심 소매판매 (전월비)",
+    "Industrial Production MoM": "광공업 산업생산 (전월비)",
+    "Industrial Production YoY": "광공업 산업생산 (전년비)",
+    "Factory Orders MoM": "제조업 공장주문 (전월비)",
+    "Durable Goods Orders MoM": "내구재 주문 (전월비)",
+    "Michigan Consumer Sentiment Prel": "미시간대 소비자심리지수 (예비치)",
+    "Michigan Consumer Sentiment Final": "미시간대 소비자심리지수 (확정치)",
+    "CB Consumer Confidence": "컨퍼런스보드 소비자신뢰지수",
+    "GDP Growth Rate QoQ Adv": "국내총생산(GDP) 성장률 (속보치)",
+    "GDP Growth Rate QoQ Est": "국내총생산(GDP) 성장률 (잠정치)",
+    "GDP Growth Rate QoQ Final": "국내총생산(GDP) 성장률 (확정치)",
+    "GDP Growth Rate QoQ": "국내총생산(GDP) 성장률 (전기비)",
+    "GDP Growth Rate YoY": "국내총생산(GDP) 성장률 (전년비)",
+    "Fed Interest Rate Decision": "연준(Fed) FOMC 기준금리 결정",
+    "BoK Interest Rate Decision": "한국은행 금융통화위원회 기준금리 결정",
+    "FOMC Minutes": "연준 FOMC 의사록 공개",
+    "Fed Chair Powell Speech": "파월 연준 의장 통화정책 연설",
+    "Midterm Elections": "중간선거 (상·하원 의회 선거)",
+    "Presidential Election": "대통령 선거",
+    "Balance of Trade": "무역수지 (Balance of Trade)",
+    "Exports YoY": "수출 증감률 (전년비)",
+    "Imports YoY": "수입 증감률 (전년비)",
+    "Current Account": "경상수지 (Current Account)",
+    "Foreign Exchange Reserves": "외환보유액 발표",
+    "EIA Crude Oil Stocks Change": "에너지정보청(EIA) 주간 원유재고 변동",
+    "EIA Gasoline Stocks Change": "에너지정보청(EIA) 주간 휘발유 재고 변동",
+    "API Crude Oil Stock Change": "미국석유협회(API) 주간 원유재고 변동",
+    "MBA 30-Year Mortgage Rate": "MBA 30년 주택담보대출 모기지 금리",
+    "Atlanta Fed GDPNow": "애틀랜타 연은 GDPNow 성장률 추정치",
+    "NY Empire State Manufacturing Index": "뉴욕 엠파이어스테이트 제조업지수",
+    "Philadelphia Fed Manufacturing Index": "필라델피아 연은 제조업지수",
+    "Housing Starts": "주택착공건수",
+    "Building Permits": "건축허가건수",
+    "Existing Home Sales": "기존주택판매",
+    "New Home Sales": "신규주택판매",
+}
+
+
+def _translate_econ_title(raw_title: str) -> str:
+    t = (raw_title or "").strip()
+    if t in _ECON_TITLE_KO_MAP:
+        return _ECON_TITLE_KO_MAP[t]
+    for eng, kor in _ECON_TITLE_KO_MAP.items():
+        if eng.lower() in t.lower():
+            return kor
+    if t.startswith("Fed ") and "Speech" in t:
+        speaker = t.replace("Fed ", "").replace("Speech", "").strip()
+        return f"미 연준(Fed) {speaker} 위원 통화정책 연설"
+    if "KTB Auction" in t:
+        yr = t.split("-")[0] if "-" in t else ""
+        return f"국고채 {yr}년물 입찰"
+    if "Note Auction" in t or "Bond Auction" in t:
+        return f"미국 국채 입찰 ({t})"
+    return t
+
+
+def _fmt_econ_val(val, unit: Optional[str], raw_title: str) -> Optional[str]:
+    if val is None:
+        return None
+    u = (unit or "").strip()
+    t_low = (raw_title or "").lower()
+    try:
+        v_num = float(val)
+        if u == "%" or "rate" in t_low or "yoy" in t_low or "mom" in t_low or "qoq" in t_low:
+            return f"{v_num:+.1f}%" if ("mom" in t_low or "qoq" in t_low) else f"{v_num:.1f}%"
+        if "jolts" in t_low:
+            return f"{v_num:.2f}백만 건 (약 {int(v_num * 100):,}만 건)"
+        if "non farm payrolls" in t_low or "adp employment" in t_low or "jobless claims" in t_low:
+            return f"{v_num:,.0f}천 건 (약 {v_num / 10:.1f}만)"
+        if "pmi" in t_low or "sentiment" in t_low or "confidence" in t_low or "index" in t_low:
+            return f"{v_num:.1f}pt"
+        if "crude oil" in t_low:
+            return f"{v_num:+.2f}백만 배럴"
+        if u == "$":
+            return f"${v_num:,.1f}B"
+        return f"{v_num}{u}"
+    except Exception:
+        return f"{val}{u}"
+
+
+def _fetch_live_economic_calendar_by_week(monday_dt) -> Dict[str, List[Dict[str, Any]]]:
+    """TradingView 글로벌 경제캘린더 실시간 API를 통해 해당 주간(월~금)의 실제 한·미 경제지표 일정을 조회합니다."""
+    import requests
+    from datetime import datetime, timezone, timedelta
+
+    week_key = monday_dt.strftime("%Y-%m-%d")
+    now_ts = time.time()
+    cached = _LIVE_ECON_CAL_CACHE.get(week_key)
+    if cached and (now_ts - cached[0] < 900):
+        return cached[1]
+
+    kst = timezone(timedelta(hours=9))
+    from_utc = (monday_dt - timedelta(days=1)).astimezone(timezone.utc).strftime("%Y-%m-%dT15:00:00.000Z")
+    to_utc = (monday_dt + timedelta(days=5)).astimezone(timezone.utc).strftime("%Y-%m-%dT06:00:00.000Z")
+    url = f"https://economic-calendar.tradingview.com/events?from={from_utc}&to={to_utc}&countries=US,KR"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Origin": "https://www.tradingview.com",
+        "Referer": "https://www.tradingview.com/",
+    }
+
+    by_day: Dict[str, List[Dict[str, Any]]] = {}
+    try:
+        r = requests.get(url, headers=headers, timeout=5)
+        if r.status_code == 200:
+            raw_list = r.json().get("result", [])
+            for ev in raw_list:
+                imp = int(ev.get("importance", -1))
+                country_code = ev.get("country", "US")
+                raw_title = (ev.get("title") or "").strip()
+                if not raw_title:
+                    continue
+                # 미국은 중요도 0 이상, 한국은 모든 주요 지표(입찰 제외) 수집
+                if country_code == "US" and imp < 0:
+                    continue
+                if "Auction" in raw_title or "Bill Purchases" in raw_title:
+                    continue
+
+                dt_utc = datetime.strptime(ev["date"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+                dt_kst = dt_utc.astimezone(kst)
+                # 한국 장 시작(06:00 KST) ~ 다음날 새벽 미국 장 마감(05:59 KST)을 하나의 거래일로 묶음
+                trading_date = (dt_kst - timedelta(hours=6)).strftime("%Y-%m-%d")
+
+                kor_title = _translate_econ_title(raw_title)
+                unit = ev.get("unit")
+                actual_str = _fmt_econ_val(ev.get("actual"), unit, raw_title)
+                forecast_str = _fmt_econ_val(ev.get("forecast"), unit, raw_title)
+                prev_str = _fmt_econ_val(ev.get("previous"), unit, raw_title)
+
+                country_label = "🇰🇷 한국" if country_code == "KR" else "🇺🇸 미국"
+                if forecast_str and prev_str:
+                    consensus_str = f"예상 {forecast_str} (이전 {prev_str})"
+                elif forecast_str:
+                    consensus_str = f"시장 예상치 {forecast_str}"
+                elif prev_str:
+                    consensus_str = f"이전 발표치 {prev_str}"
+                else:
+                    consensus_str = "발표 결과 및 시장 수급 반응 주목"
+
+                # 핵심 거시지표 가중치 부여 (ADP, CPI, PPI, PCE, NFP, ISM, JOLTs, 실업수당, 소매판매, GDP, 금리결정 등 최우선 배치)
+                priority_boost = 0
+                rt_low = raw_title.lower()
+                if any(k in rt_low for k in ["non farm", "adp employment", "ism ", "jolts", "inflation", "cpi", "ppi", "pce", "fomc", "interest rate", "gdp ", "retail sales", "unemployment rate", "jobless claims", "election", "current account", "balance of trade"]):
+                    priority_boost = 2
+                elif "crude oil" in rt_low or "consumer sentiment" in rt_low or "consumer confidence" in rt_low or "factory orders" in rt_low:
+                    priority_boost = 1
+
+                time_sort_key = (dt_kst.hour if dt_kst.hour >= 6 else dt_kst.hour + 24) * 60 + dt_kst.minute
+                disp_time = f"24:{dt_kst.strftime('%M')}" if dt_kst.hour == 0 else (f"익일 {dt_kst.strftime('%H:%M')}" if dt_kst.hour < 6 else dt_kst.strftime("%H:%M"))
+
+                by_day.setdefault(trading_date, []).append({
+                    "key": f"LIVE_{ev.get('id', raw_title[:12])}",
+                    "time": disp_time,
+                    "_sort_time": time_sort_key,
+                    "_priority": imp * 3 + priority_boost,
+                    "country": country_label,
+                    "name": kor_title,
+                    "raw_title": raw_title,
+                    "importance": imp,
+                    "consensus": consensus_str,
+                    "actual": actual_str,
+                    "forecast": forecast_str or consensus_str,
+                    "previous": prev_str,
+                    "status": "released" if actual_str is not None else "pending",
+                    "impact": "bull" if actual_str is not None else "pending",
+                    "impact_comment": f"실제 발표치 {actual_str} 확인 (예상 {forecast_str or '-'} / 이전 {prev_str or '-'})" if actual_str is not None else None,
+                })
+
+            # 각 날짜별로 중요도 높은 순 -> 시간 순 정렬 및 중복 제거 후 상위 4개 유지
+            for d_k, evs in list(by_day.items()):
+                evs_sorted = sorted(evs, key=lambda x: (-x["_priority"], x["_sort_time"]))
+                seen_names = set()
+                deduped = []
+                for e_item in evs_sorted:
+                    if e_item["name"] not in seen_names:
+                        seen_names.add(e_item["name"])
+                        deduped.append(e_item)
+                # 화면 표시 시에는 시간순(오전 -> 야간 -> 자정 이후)으로 보기 좋게 정렬
+                by_day[d_k] = sorted(deduped[:4], key=lambda x: x["_sort_time"])
+
+            if by_day:
+                _LIVE_ECON_CAL_CACHE[week_key] = (now_ts, by_day)
+    except Exception as e:
+        print(f"[LiveEconCalendar] fetch note: {e}")
+
+    return by_day
+
+
 def _build_weekly_review_and_calendar(
     now_kst,
     desk_company_reports,
@@ -3567,9 +3791,15 @@ def _build_weekly_review_and_calendar(
             },
         ]
 
+    live_events_by_day = _fetch_live_economic_calendar_by_week(monday_dt)
+
     calendar_days = []
+    live_early_names = []
+    live_late_names = []
+
     for cfg in day_configs:
         d_dt = monday_dt + timedelta(days=cfg["offset"])
+        d_str = d_dt.strftime("%Y-%m-%d")
         is_today = (d_dt.date() == now_kst.date())
 
         enriched_events = []
@@ -3577,7 +3807,38 @@ def _build_weekly_review_and_calendar(
         day_bear_count = 0
         has_released = False
 
+        live_day_evs = live_events_by_day.get(d_str, [])
+        if live_day_evs:
+            # 실시간 캘린더 API에서 해당 날짜의 실제 한·미 경제일정이 조회된 경우 우선 적용
+            for lev in live_day_evs:
+                if lev.get("status") == "released":
+                    has_released = True
+                    day_bull_count += 1
+                enriched_events.append(lev)
+
+            by_prio = sorted(live_day_evs, key=lambda x: (-x.get("_priority", 0), x.get("_sort_time", 0)))
+            top_names = [f"{e['country']} {e['name']}" for e in by_prio[:2]]
+            if top_names:
+                prefix = "🚨 [핵심 빅이벤트] " if cfg["offset"] in (3, 4) or any(e.get("importance", 0) >= 1 for e in live_day_evs) else ""
+                day_theme = f"{prefix}{' & '.join(top_names)}"
+            else:
+                day_theme = cfg["theme"]
+
+            short_top = by_prio[0]["name"].split("(")[0].strip()
+            if cfg["offset"] <= 2:
+                live_early_names.append(short_top)
+            else:
+                live_late_names.append(short_top)
+        else:
+            day_theme = cfg["theme"]
+
+        # 실시간 일정이 3개 미만이면 주차별 기본 핵심 일정으로 보완
+        existing_ev_names = {e["name"] for e in enriched_events}
         for ev in cfg["events"]:
+            if len(enriched_events) >= 4:
+                break
+            if ev["name"] in existing_ev_names:
+                continue
             try:
                 ev_h, ev_m = map(int, ev["time"].split(":"))
                 ev_dt = d_dt.replace(hour=ev_h, minute=ev_m, second=0, microsecond=0)
@@ -3622,11 +3883,11 @@ def _build_weekly_review_and_calendar(
         # 실시간 시장 가동 시나리오 판정
         if d_dt.date() > now_kst.date():
             active_scenario = "pending"
-            scenario_status_badge = "⏳ 발표 대기 (공략 준비 완료)"
+            scenario_status_badge = "⏳ 발표 대기 (실시간 일정 연동됨)"
         elif has_released:
             if day_bull_count >= day_bear_count:
                 active_scenario = "bull"
-                scenario_status_badge = f"🟢 긍정(호재) 랠리 시나리오 가동 중 ({day_bull_count}건 호재 확인)"
+                scenario_status_badge = f"🟢 긍정(호재) 랠리 시나리오 가동 중 ({day_bull_count}건 발표 확인)"
             else:
                 active_scenario = "bear"
                 scenario_status_badge = f"🔴 부진(악재) 리스크 방어 지침 가동 중 ({day_bear_count}건 경계)"
@@ -3636,12 +3897,12 @@ def _build_weekly_review_and_calendar(
 
         calendar_days.append({
             "date_str": f"{d_dt.strftime('%m/%d')} ({cfg['day_ko'][0]})",
-            "full_date": d_dt.strftime("%Y-%m-%d"),
+            "full_date": d_str,
             "day_name": cfg["day_ko"],
             "is_today": is_today,
             "stars": cfg["stars"],
             "importance_badge": cfg["importance_badge"],
-            "theme": cfg["theme"],
+            "theme": day_theme,
             "events": enriched_events,
             "bull_scenario": cfg["bull_scenario"],
             "bear_scenario": cfg["bear_scenario"],
@@ -3649,6 +3910,16 @@ def _build_weekly_review_and_calendar(
             "active_scenario": active_scenario,
             "scenario_status_badge": scenario_status_badge,
         })
+
+    if live_early_names:
+        early_week_label = " · ".join(dict.fromkeys(live_early_names))
+    if live_late_names:
+        late_week_label = " · ".join(dict.fromkeys(live_late_names))
+    if live_early_names or live_late_names:
+        wk_easy_headline = (
+            f"{week_range_str} 실시간 캘린더 조회 결과, 주초(월~수) 핵심 일정은 {early_week_label}이며, "
+            f"주후반(목~금) 빅이벤트는 {late_week_label}입니다. 요일별 호재·악재 시나리오와 수혜 섹터를 사전 수립했습니다."
+        )
 
     weekly_calendar = {
         "calendar_id": f"WK-CAL-{date_doc_str}",
@@ -3723,7 +3994,9 @@ def _build_weekly_review_and_calendar(
         cur_cfg = day_configs[day_idx]
         cur_day_obj = calendar_days[day_idx]
         cur_date_str = now_kst.strftime("%m/%d")
-        events_summary = ", ".join(f"{e['country']} {e['name']}({e['time']})" for e in cur_cfg["events"][:2])
+        cur_evs = cur_day_obj.get("events") or cur_cfg["events"]
+        cur_theme = cur_day_obj.get("theme") or cur_cfg["theme"]
+        events_summary = ", ".join(f"{e['country']} {e['name']}({e['time']})" for e in cur_evs[:2])
         focus_str = ", ".join(cur_cfg["focus_sectors"])
 
         cur_active = cur_day_obj.get("active_scenario", "pending")
@@ -3748,18 +4021,18 @@ def _build_weekly_review_and_calendar(
             "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
             "submitted_at": f"{time_str} 오늘({cur_cfg['day_ko']}) 한·미 경제일정 분석 완료",
             "easy_headline": (
-                f"오늘({cur_date_str} {cur_cfg['day_ko']}) 시장의 방향을 가를 핵심 일정은 '{cur_cfg['theme']}'입니다. "
+                f"오늘({cur_date_str} {cur_cfg['day_ko']}) 시장의 방향을 가를 핵심 일정은 '{cur_theme}'입니다. "
                 f"주요 발표 지표는 {events_summary}이며, "
                 f"{scenario_extra}"
             ),
             "key_numbers": [
-                {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_cfg["theme"].split("] ")[-1] if "]" in cur_cfg["theme"] else cur_cfg["theme"]},
+                {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_theme.split("] ")[-1] if "]" in cur_theme else cur_theme},
                 {"label": "실시간 시나리오 상태", "value": cur_day_obj.get("scenario_status_badge", "정상 가동")},
                 {"label": "호재 시 집중 공략 섹터", "value": focus_str},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
             ],
             "research_opinion": (
-                f"👍 [오늘 일정 분석 · 윤서아 경제일정팀장]: 오늘 {cur_cfg['day_ko']}요일은 {cur_cfg['theme']}이 시장의 화두입니다. {cur_cfg['bull_scenario']}"
+                f"👍 [오늘 일정 분석 · 윤서아 경제일정팀장]: 오늘 {cur_cfg['day_ko']}요일은 {cur_theme}이 시장의 화두입니다. {cur_cfg['bull_scenario']}"
             ),
             "quant_opinion": (
                 f"📊 [오늘 수급 시나리오 · 김도현 수급본부장]: 주요 지표 발표 전후로 외국인과 기관의 자금이 {focus_str} 대장주로 유입되는지 실시간 감시 중입니다. {cur_cfg['bear_scenario']}"
