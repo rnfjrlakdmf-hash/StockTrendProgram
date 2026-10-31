@@ -955,42 +955,89 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
             },
         ];
     } else if (sector === 'macro_fx') {
-        headline = `‘원/달러 환율(${currPriceStr})’은 1,380원대 후반 고환율 구간 지속에 따른 외국인 패시브 자금의 일시 이탈 및 환차손 회피 매물 출회에 대비해야 합니다.`;
-        factors = [
-            {
-                icon: "⏰",
-                title: "환율 변동성 & 1,400원 심리적 저항선",
-                tag: "외환당국 개입 경계선",
-                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
-                points: [
-                    `현재 환율(${currPriceStr})은 고환율 구간으로 1,400원 저항선 근접 시 변동성 확대 주의`,
-                    "1,400원 돌파 시 외환당국 구두개입 및 국민연금 외환스왑 가동 가능성 모니터링",
-                    "환율 급등 국면에서는 시초가 추격 매수를 자제하고 장중 지지선 안착 확인 필수",
-                ],
-            },
-            {
-                icon: "📉",
-                title: "외국인 환차익/환차손 수급 분기점",
-                tag: "외인 패시브 매도벽 감시",
-                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
-                points: [
-                    "환율 상승(원화 약세) 시 외국인은 달러 환전 손실을 우려해 한국 IT·반도체 대형주 매도세 전환 가능성",
-                    "반대로 환율이 1,380원 아래로 하향 안정화될 경우 외국인 선물 및 현물 순매수 유입 가속",
-                    "당일 외국인의 코스피 선물 순매도 금액 3,000억 원 초과 여부 필수 체크",
-                ],
-            },
-            {
-                icon: "🌐",
-                title: "거시 매크로 & 미 연준 금리/달러 인덱스",
-                tag: "DXY 달러 인덱스 연동",
-                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
-                points: [
-                    "미국 달러 인덱스(DXY) 103~105선 등락 및 미·한 기준금리 격차 영향 점검",
-                    "수출 대장주(현대차, 반도체)의 단기 환차익 수혜와 원자재 수입 물가 상승 영향 동시 점검",
-                    "대표님 지침: 환율 안정 시 승인 안건(10만원 예산) 계획대로 분할 체결",
-                ],
-            },
-        ];
+        const isCalendarDoc = sName.includes('경제일정');
+        const earlyEvt = doc.key_numbers?.find(k => k.label.includes('주초'))?.value || "한국 수출입 · 미국 ISM 제조업 PMI";
+        const lateEvt = doc.key_numbers?.find(k => k.label.includes('주후반') || k.label.includes('빅이벤트'))?.value || "미국 FOMC · 비농업고용(NFP)";
+        if (isCalendarDoc) {
+            headline = doc.risk_opinion
+                ? doc.risk_opinion.replace(/^⚠️\s*\[[^\]]+\]:\s*/, '')
+                : `이번 주 핵심 경제일정(${earlyEvt} ➔ ${lateEvt}) 발표 전후 금리·환율(${currPriceStr}) 및 외국인 선물 수급 변동성에 대비해야 합니다.`;
+            factors = [
+                {
+                    icon: "⏰",
+                    title: "주초(월~수) 지표 발표 & 분할 매집 타이밍",
+                    tag: "선행 지표 확인 후 진입",
+                    tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                    points: [
+                        `주초 핵심 일정: ${earlyEvt}`,
+                        "지표 발표 직후 오전 09:00~10:00 시초가 쏠림을 피하고 눌림목 지지선 안착 확인 후 분할 진입",
+                        `현재 원/달러 환율(${currPriceStr}) 안정 기조 유지 여부 동시 모니터링`,
+                    ],
+                },
+                {
+                    icon: "📉",
+                    title: "주후반(목~금) 빅이벤트 & 외국인 수급 분기점",
+                    tag: "야간 지표 변동성 감시",
+                    tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                    points: [
+                        `주후반 빅이벤트: ${lateEvt}`,
+                        "미국 핵심 지표가 예상치를 크게 벗어날 경우 외국인 코스피 선물 매물 출회 가능성 주의",
+                        "목·금요일 밤 미국 지표 발표 전에는 계좌 내 현금 비중을 20~30% 확보해 리스크 방어",
+                    ],
+                },
+                {
+                    icon: "🌐",
+                    title: "거시 매크로 & 시나리오별 포트폴리오 대응",
+                    tag: "골디락스 vs 방어 시나리오",
+                    tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                    points: [
+                        "고용·물가·제조업 지표가 예상치에 부합(골디락스) 시 반도체·전력설비·조선 대장주 비중 유지",
+                        "예상 밖 금리·환율 급등 시 고밸류 테마주를 줄이고 실적·배당 우량주로 압축 대응",
+                        "대표님 지침: 주간 일정 시나리오에 맞춰 승인 안건(10만원 예산) 계획대로 분할 체결",
+                    ],
+                },
+            ];
+        } else {
+            const isHighFx = priceNum >= 1370;
+            headline = isHighFx
+                ? `‘원/달러 환율(${currPriceStr})’은 고환율 구간 등락에 따른 외국인 패시브 자금의 일시 이탈 및 환차손 회피 매물 출회에 대비해야 합니다.`
+                : `‘원/달러 환율(${currPriceStr})’은 현재 안정권에서 등락 중이나, 미국 주요 경제지표 및 금리 변화에 따른 외국인 선물·현물 수급 전환점을 상시 점검해야 합니다.`;
+            factors = [
+                {
+                    icon: "⏰",
+                    title: "환율 변동성 & 주요 저항선 점검",
+                    tag: "외환시장 수급 경계선",
+                    tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                    points: [
+                        `현재 환율(${currPriceStr}) 기준 급격한 갭상승 발생 시 장중 변동성 확대 주의`,
+                        "대외 달러 강세 전환 시 외환당국 미세조정 및 기관 수급 변화 모니터링",
+                        "환율 급등 국면에서는 시초가 추격 매수를 자제하고 장중 지지선 안착 확인 필수",
+                    ],
+                },
+                {
+                    icon: "📉",
+                    title: "외국인 환차익/환차손 수급 분기점",
+                    tag: "외인 패시브 수급 감시",
+                    tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                    points: [
+                        "환율 급등(원화 약세) 시 외국인은 환차손을 우려해 한국 IT·반도체 대형주 매도세 전환 가능성",
+                        "반대로 환율이 현재처럼 하향 안정화될 경우 외국인 선물 및 현물 순매수 유입 가속",
+                        "당일 외국인의 코스피 선물 순매도 금액 3,000억 원 초과 여부 필수 체크",
+                    ],
+                },
+                {
+                    icon: "🌐",
+                    title: "거시 매크로 & 미 연준 금리/달러 인덱스",
+                    tag: "DXY 달러 인덱스 연동",
+                    tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                    points: [
+                        "미국 달러 인덱스(DXY) 등락 및 미·한 기준금리 격차 영향 점검",
+                        "수출 대장주(현대차, 반도체)의 환율 효과와 원자재 수입 원가 영향 동시 점검",
+                        "대표님 지침: 환율 안정 시 승인 안건(10만원 예산) 계획대로 분할 체결",
+                    ],
+                },
+            ];
+        }
     } else if (sector === 'macro_rate') {
         headline = `‘미국 10년물 국채금리(${currPriceStr})’는 4.2~4.3% 상회 시 글로벌 성장주 및 빅테크 밸류에이션(할인율) 급락 리스크를 경계해야 합니다.`;
         factors = [
