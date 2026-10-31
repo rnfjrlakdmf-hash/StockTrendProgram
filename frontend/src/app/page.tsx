@@ -140,26 +140,78 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* 1. 상단 통합 마켓 대시보드 (헤더 + 공포탐욕지수 + 실시간 시세 허브 + 거시지표) */}
-      <HomeClient />
+      {/* [에디토리얼 헤드라인 1] 구글 애드센스 승인 전용 고품질 금융 리서치 & 백과사전 매거진 (Above the Fold) */}
+      <div className="bg-gradient-to-b from-slate-950 via-zinc-950 to-dark-900 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-10 space-y-8">
+          
+          {/* 매거진 마스트헤드 */}
+          <div className="rounded-3xl bg-gradient-to-br from-blue-950/40 via-zinc-900/60 to-purple-950/20 border border-blue-500/20 p-6 md:p-8 backdrop-blur-xl shadow-2xl space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="px-3 py-1 rounded-xl bg-blue-500 text-white text-xs font-black tracking-wider shadow-sm">
+                  RESEARCH JOURNAL
+                </span>
+                <span className="text-xs text-gray-400 font-medium">
+                  발행 및 편집: 윤희원 (StockTrend Research Team)
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                KRX · DART · SEC 공식 공공데이터 인증 리서치
+              </div>
+            </div>
 
-      {/* 2. 하단 금융 리서치 칼럼 · 차트 아카데미 · 금융 백과사전 (깔끔한 3단 에디토리얼 정렬) */}
-      <div className="border-t border-white/10 bg-[#06070a]">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-10">
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-snug">
+                스마트 투자 비서 <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">금융 리서치 &amp; 주식 투자 아카데미</span>
+              </h1>
+              <p className="text-sm md:text-base text-gray-300 leading-relaxed max-w-4xl">
+                한국거래소(KRX)와 금융감독원 전자공시시스템(Open DART), 미국 증권거래위원회(SEC EDGAR)의 공식 데이터를 바탕으로 거시경제 시황 칼럼, 기업 재무제표 밸류에이션(PER·PBR·ROE) 연구 및 46대 필수 주식 용어 백과사전을 무료로 제공하는 금융 교육 미디어입니다.
+              </p>
+            </div>
 
-          {/* [섹션 1] 심층 금융 리서치 & 거시경제 분석 칼럼 6선 */}
-          <section aria-labelledby="featured-research-heading" className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
+            {/* 빠른 섹션 이동 탭 */}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <a
+                href="#market-dashboard"
+                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs md:text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
+              >
+                📊 실시간 마켓 대시보드로 이동 ↓
+              </a>
+              <Link
+                href="/guide"
+                className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs md:text-sm font-bold transition-all"
+              >
+                📚 46대 필수 주식 용어 백과
+              </Link>
+              <Link
+                href="/blog"
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs md:text-sm font-bold transition-all"
+              >
+                📰 마켓 리서치 칼럼 (25편)
+              </Link>
+              <Link
+                href="/theory"
+                className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs md:text-sm font-bold transition-all"
+              >
+                📘 실전 차트 스터디
+              </Link>
+            </div>
+          </div>
+
+          {/* [섹션 1] 심층 금융 리서치 & 거시경제 분석 칼럼 6선 (텍스트 풍부한 상단 배치) */}
+          <section aria-labelledby="featured-research-heading" className="bg-zinc-900/60 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
                 <h2 id="featured-research-heading" className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                  <Newspaper className="w-5 h-5 text-blue-400" /> 심층 금융 리서치 &amp; 거시경제 분석 칼럼
+                  <Newspaper className="w-5 h-5 text-blue-400" /> 오늘의 추천 금융 리서치 &amp; 거시경제 칼럼
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  재무제표 독해법, 금리·환율 거시경제 사이클, 기업 밸류에이션(PER·PBR·ROE)을 깊이 있게 분석한 오리지널 칼럼입니다.
+                  재무제표 독해법, 금리·환율 거시경제 사이클, 기업 밸류에이션(PER·PBR·ROE)을 깊이 있게 분석한 정통 리서치 칼럼입니다.
                 </p>
               </div>
               <Link href="/blog" className="text-xs font-bold text-blue-300 hover:text-white bg-blue-500/15 border border-blue-500/30 px-3.5 py-2 rounded-xl self-start sm:self-center shrink-0">
-                전체 칼럼 보기 →
+                전체 칼럼 25편 보기 →
               </Link>
             </div>
 
@@ -169,17 +221,22 @@ export default async function Home() {
                   .replace(/<[^>]*>?/gm, ' ')
                   .replace(/\s+/g, ' ')
                   .trim()
-                  .slice(0, 130);
+                  .slice(0, 140);
                 return (
                   <Link
                     key={post.slug}
                     href={`/blog/${encodeURIComponent(post.slug)}`}
-                    className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 hover:border-blue-500/40 transition-all flex flex-col justify-between gap-3 group"
+                    className="p-5 rounded-2xl bg-zinc-950/80 border border-white/10 hover:border-blue-500/40 transition-all flex flex-col justify-between gap-3 group shadow-sm hover:shadow-blue-500/5"
                   >
                     <div className="space-y-2">
-                      <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                        {(post as any).category || '금융 리서치'}
-                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                          {(post as any).category || '금융 리서치'}
+                        </span>
+                        <span className="text-[10px] text-gray-500">
+                          {new Date(post.createdAt).toLocaleDateString('ko-KR')}
+                        </span>
+                      </div>
                       <h3 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2 leading-snug">
                         {post.title}
                       </h3>
@@ -187,8 +244,8 @@ export default async function Home() {
                         {plainDesc}...
                       </p>
                     </div>
-                    <span className="text-[11px] font-bold text-blue-400">
-                      리서치 읽기 →
+                    <span className="text-[11px] font-bold text-blue-400 flex items-center gap-1 pt-1">
+                      리서치 전문 읽기 →
                     </span>
                   </Link>
                 );
@@ -196,7 +253,56 @@ export default async function Home() {
             </div>
           </section>
 
-          {/* [섹션 2] 실전 주식 차트 & 기술적 보조지표 아카데미 6선 */}
+          {/* [섹션 2] 46대 필수 주식 투자 백과사전 핵심 지표 해설 */}
+          <section aria-labelledby="encyclopedia-heading" className="bg-zinc-900/60 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div>
+                <h2 id="encyclopedia-heading" className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-purple-400" /> 46대 주식 투자 필수 용어 백과사전
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  기업 가치평가(PER·PBR·ROE)부터 거시경제 지표(FOMC·배당·공시)까지 체계적으로 정리한 금융 백과사전입니다.
+                </p>
+              </div>
+              <Link
+                href="/guide"
+                className="text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 border border-purple-500/30 px-3.5 py-2 rounded-xl self-start sm:self-center shrink-0"
+              >
+                전체 46개 사전 보기 →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {INVESTMENT_GUIDES.map(({ href, title, desc }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 hover:border-purple-500/40 transition-all group block shadow-sm"
+                >
+                  <h3 className="text-white text-xs sm:text-sm font-bold group-hover:text-purple-300 transition-colors truncate">
+                    {title}
+                  </h3>
+                  <p className="text-gray-400 text-[11px] mt-1 leading-relaxed line-clamp-2">
+                    {desc}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      {/* 2. 통합 마켓 대시보드 (헤더 검색 + 실시간 시세 허브 + 카카오 배너 광고 유지) */}
+      <div id="market-dashboard">
+        <HomeClient />
+      </div>
+
+      {/* 3. 하단 실전 차트 스터디 · 공공데이터 원칙 및 FAQ · 카카오 하단 광고 유지 */}
+      <div className="border-t border-white/10 bg-[#06070a]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-10">
+
+          {/* [섹션 3] 실전 주식 차트 & 기술적 보조지표 아카데미 6선 */}
           {latestTheoryPosts.length > 0 && (
             <section aria-labelledby="latest-academy-heading" className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -247,43 +353,6 @@ export default async function Home() {
               </div>
             </section>
           )}
-
-          {/* [섹션 3] 필수 금융 용어 백과사전 12선 */}
-          <section aria-labelledby="encyclopedia-heading" className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-              <div>
-                <h2 id="encyclopedia-heading" className="text-lg md:text-xl font-black text-white">
-                  📚 주식 투자 실전 백과사전 · 핵심 금융 지표 해설
-                </h2>
-                <p className="text-xs text-gray-400 mt-1">
-                  기업 가치평가(PER·PBR·ROE)부터 거시경제 지표(FOMC·배당·공시)까지 체계적으로 정리한 금융 백과사전입니다.
-                </p>
-              </div>
-              <Link
-                href="/guide"
-                className="text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 border border-purple-500/30 px-3.5 py-2 rounded-xl self-start sm:self-center shrink-0"
-              >
-                전체 46개 백과사전 →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {INVESTMENT_GUIDES.map(({ href, title, desc }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 hover:border-purple-500/40 transition-all group block"
-                >
-                  <h3 className="text-white text-xs sm:text-sm font-bold group-hover:text-purple-300 transition-colors truncate">
-                    {title}
-                  </h3>
-                  <p className="text-gray-400 text-[11px] mt-1 leading-relaxed line-clamp-2">
-                    {desc}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </section>
 
           {/* [섹션 4] 공공 데이터 수집 기준 & 자주 묻는 질문 (컴팩트 통합 카드) */}
           <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
