@@ -370,7 +370,9 @@ function detectSectorType(stockName: string, title: string = "", categoryBadge: 
 
 interface FinancialRiskPlan {
     isDollar: boolean;
+    isSingleShare: boolean;
     currPrice: string;
+    avgBuyPrice: string;
     targetPrice: string;
     maxAlloc: string;
     allocType: string;
@@ -378,16 +380,32 @@ interface FinancialRiskPlan {
     actualInvest: string;
     cashReserve: string;
     stopLossPrice: string;
+    stopLossProceeds: string;
     maxLossAmount: string;
     shieldedAmount: string;
     target1Price: string;
+    target1SharesLabel: string;
     target1CashIn: string;
     target1ProfitAmt: string;
+    finalSharesLabel: string;
+    finalStageCashIn: string;
     finalTotalVal: string;
     finalProfitAmt: string;
     finalUpsidePct: string;
     priceExceedsBudget: boolean;
-    tranches: { step: string; price: string; shares: string; amt: string }[];
+    tranches: { step: string; price: string; shares: string; amt: string; desc: string }[];
+}
+
+function roundToKrxTick(price: number, isDollar: boolean): number {
+    if (isDollar) return Number(price.toFixed(2));
+    const p = Math.round(price);
+    if (p < 2000) return p;
+    if (p < 5000) return Math.round(p / 5) * 5;
+    if (p < 20000) return Math.round(p / 10) * 10;
+    if (p < 50000) return Math.round(p / 50) * 50;
+    if (p < 200000) return Math.round(p / 100) * 100;
+    if (p < 500000) return Math.round(p / 500) * 500;
+    return Math.round(p / 1000) * 1000;
 }
 
 function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalCapital: number = 100000): FinancialRiskPlan | null {
@@ -397,7 +415,7 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     if (currP <= 0) return null;
 
     const tMatch = String(rawTargetPrice || '').split('(')[0].match(/([0-9,]+(?:\.[0-9]+)?)/);
-    const targetP = tMatch ? parseFloat(tMatch[1].replace(/,/g, '')) : (currP * 1.15);
+    const targetP = tMatch ? parseFloat(tMatch[1].replace(/,/g, '')) : roundToKrxTick(currP * 1.15, isDollar);
 
     const fmt = (v: number) => isDollar ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString()}원`;
 
@@ -405,7 +423,7 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     // 500만원 이하(10만, 30만, 50만, 100만, 300만, 500만) = 해당 종목 실전 직접 투입 예산으로 100% 배정
     // 1,000만원 이상(1천만, 3천만, 5천만, 1억 등) = 전체 계좌 포트폴리오 안전 분산 15% 비중 한도 적용
     const isDirectBudget = totalCapital <= 5000000;
-    const capital = isDollar ? (totalCapital <= 5000000 ? (totalCapital / 1400) : (totalCapital / 1400)) : totalCapital;
+    const capital = isDollar ? (totalCapital / 1400) : totalCapital;
     const maxAlloc = isDirectBudget ? capital : (capital * 0.15);
     const allocType = isDirectBudget 
         ? (isDollar ? '소액 실전 예산 (직접 투입)' : `소액 실전 맞춤 (${fmt(maxAlloc)} 직접 투입)`) 
@@ -418,22 +436,34 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
         priceExceedsBudget = true;
     }
 
-    // 3단계 분할 매수 수량 배분
+    const isSingleShare = totalShares === 1;
+
+    // 3단계 분할 매수 수량 및 호가 단가 배분 (1차+2차+3차 매수금액 합계 === 총 투자금액 100% 일치 보장)
     let share1 = 0;
     let share2 = 0;
     let share3 = 0;
+    let p1 = currP;
+    let p2 = roundToKrxTick(currP * 0.97, isDollar);
+    let p3 = currP;
+
     if (totalShares === 1) {
         share1 = 1;
         share2 = 0;
         share3 = 0;
+        p1 = currP;
     } else if (totalShares === 2) {
         share1 = 1;
         share2 = 1;
         share3 = 0;
+        p1 = currP;
+        p2 = roundToKrxTick(currP * 0.98, isDollar);
     } else if (totalShares === 3) {
         share1 = 1;
         share2 = 1;
         share3 = 1;
+        p1 = roundToKrxTick(currP * 0.985, isDollar);
+        p2 = roundToKrxTick(currP * 0.97, isDollar);
+        p3 = currP;
     } else {
         share1 = Math.max(1, Math.round(totalShares * 0.3));
         share2 = Math.max(1, Math.round(totalShares * 0.4));
@@ -442,41 +472,73 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
             share2 += share3;
             share3 = 0;
         }
+        p1 = roundToKrxTick(currP * 0.985, isDollar);
+        p2 = roundToKrxTick(currP * 0.97, isDollar);
+        p3 = currP;
     }
 
-    const safeEntry = isDollar ? Number((currP * 0.985).toFixed(2)) : Math.round(currP * 0.985);
-    const entry2 = isDollar ? Number((currP * 0.965).toFixed(2)) : Math.round(currP * 0.965);
-    const entry3 = currP;
+    const amt1 = isDollar ? Number((share1 * p1).toFixed(2)) : Math.round(share1 * p1);
+    const amt2 = isDollar ? Number((share2 * p2).toFixed(2)) : Math.round(share2 * p2);
+    const amt3 = isDollar ? Number((share3 * p3).toFixed(2)) : Math.round(share3 * p3);
 
-    const actualInvest = isDollar ? Number((totalShares * currP).toFixed(2)) : Math.round(totalShares * currP);
+    // 실제 총 투자금액 = 1차 + 2차 + 3차 투입 금액의 정확한 합계
+    const actualInvest = isDollar ? Number((amt1 + amt2 + amt3).toFixed(2)) : (amt1 + amt2 + amt3);
+    const avgBuyP = isDollar ? Number((actualInvest / totalShares).toFixed(2)) : Math.round(actualInvest / totalShares);
     const cashReserve = Math.max(0, isDollar ? Number((maxAlloc - actualInvest).toFixed(2)) : Math.round(maxAlloc - actualInvest));
 
-    const stopLossP = isDollar ? Number((currP * 0.965).toFixed(2)) : Math.round(currP * 0.965);
-    const lossPerShare = isDollar ? Number((currP - stopLossP).toFixed(2)) : Math.round(currP - stopLossP);
-    const maxLossAmt = isDollar ? Number((lossPerShare * totalShares).toFixed(2)) : Math.round(lossPerShare * totalShares);
-    // 철통 회수금: 손절 후 건져내는 주식 평가금 + 미투입 잔여 현금
+    // 손절 방어선 (평균 매수가 대비 -3.5%, 호가 단위 적용)
+    const stopLossP = roundToKrxTick(avgBuyP * 0.965, isDollar);
+    const stopLossProceeds = isDollar ? Number((totalShares * stopLossP).toFixed(2)) : Math.round(totalShares * stopLossP);
+    const maxLossAmt = Math.max(0, isDollar ? Number((actualInvest - stopLossProceeds).toFixed(2)) : (actualInvest - stopLossProceeds));
+    // 철통 회수금: 손절 매도 회수금 + 미투입 잔여 현금 (= 예산 - 최대손실액 100% 일치)
     const shieldedAmt = isDollar 
-        ? Number((actualInvest - maxLossAmt + (priceExceedsBudget ? 0 : cashReserve)).toFixed(2)) 
-        : (actualInvest - maxLossAmt + (priceExceedsBudget ? 0 : cashReserve));
+        ? Number((stopLossProceeds + (priceExceedsBudget ? 0 : cashReserve)).toFixed(2)) 
+        : (stopLossProceeds + (priceExceedsBudget ? 0 : cashReserve));
 
-    // 1차 익절가 (중간 목표가 또는 +8%)
+    // 1차 익절가 (중간 목표가 또는 +8%, 호가 단위 적용)
     const t1P = targetP > currP
-        ? (isDollar ? Number((currP + (targetP - currP) * 0.5).toFixed(2)) : Math.round(currP + (targetP - currP) * 0.5))
-        : (isDollar ? Number((currP * 1.08).toFixed(2)) : Math.round(currP * 1.08));
-    const t1Shares = Math.max(1, Math.floor(totalShares * 0.5));
-    const t1ProfitPerShare = isDollar ? Number((t1P - currP).toFixed(2)) : Math.round(t1P - currP);
-    const t1CashIn = isDollar ? Number((t1Shares * t1P).toFixed(2)) : Math.round(t1Shares * t1P);
-    const t1ProfitAmt = isDollar ? Number((t1ProfitPerShare * t1Shares).toFixed(2)) : Math.round(t1ProfitPerShare * t1Shares);
+        ? roundToKrxTick(currP + (targetP - currP) * 0.5, isDollar)
+        : roundToKrxTick(currP * 1.08, isDollar);
 
-    // 최종 목표가
-    const finalProfitPerShare = isDollar ? Number((targetP - currP).toFixed(2)) : Math.round(targetP - currP);
-    const finalTotalVal = isDollar ? Number((totalShares * targetP).toFixed(2)) : Math.round(totalShares * targetP);
-    const finalProfitAmt = isDollar ? Number((finalProfitPerShare * totalShares).toFixed(2)) : Math.round(finalProfitPerShare * totalShares);
-    const finalUpsidePct = ((targetP - currP) / currP * 100).toFixed(1);
+    let target1SharesLabel = '';
+    let t1CashIn = 0;
+    let t1ProfitAmt = 0;
+    let finalSharesLabel = '';
+    let finalStageCashIn = 0;
+    let finalTotalVal = 0;
+    let finalProfitAmt = 0;
+
+    if (isSingleShare) {
+        target1SharesLabel = '1주 보유 (선택A: 1차 익절 또는 본전 홀딩)';
+        t1CashIn = t1P;
+        t1ProfitAmt = isDollar ? Number((t1P - actualInvest).toFixed(2)) : (t1P - actualInvest);
+
+        finalSharesLabel = '1주 전량 매도 (선택B: 최종 목표가 홀딩 시)';
+        finalStageCashIn = targetP;
+        finalTotalVal = targetP;
+        finalProfitAmt = isDollar ? Number((targetP - actualInvest).toFixed(2)) : (targetP - actualInvest);
+    } else {
+        const t1Shares = Math.max(1, Math.floor(totalShares * 0.5));
+        const remShares = totalShares - t1Shares;
+        const t1Cost = isDollar ? Number((actualInvest * (t1Shares / totalShares)).toFixed(2)) : Math.round(actualInvest * (t1Shares / totalShares));
+
+        target1SharesLabel = `50% 분할 매도 (${t1Shares}주 매도 · ${remShares}주 보유)`;
+        t1CashIn = isDollar ? Number((t1Shares * t1P).toFixed(2)) : Math.round(t1Shares * t1P);
+        t1ProfitAmt = isDollar ? Number((t1CashIn - t1Cost).toFixed(2)) : (t1CashIn - t1Cost);
+
+        finalSharesLabel = `잔여 물량 전량 익절 (잔여 ${remShares}주 매도)`;
+        finalStageCashIn = isDollar ? Number((remShares * targetP).toFixed(2)) : Math.round(remShares * targetP);
+        finalTotalVal = isDollar ? Number((t1CashIn + finalStageCashIn).toFixed(2)) : (t1CashIn + finalStageCashIn);
+        finalProfitAmt = isDollar ? Number((finalTotalVal - actualInvest).toFixed(2)) : (finalTotalVal - actualInvest);
+    }
+
+    const finalUpsidePct = ((targetP - avgBuyP) / avgBuyP * 100).toFixed(1);
 
     return {
         isDollar,
+        isSingleShare,
         currPrice: fmt(currP),
+        avgBuyPrice: fmt(avgBuyP),
         targetPrice: fmt(targetP),
         maxAlloc: fmt(maxAlloc),
         allocType,
@@ -484,19 +546,47 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
         actualInvest: fmt(actualInvest),
         cashReserve: fmt(cashReserve),
         stopLossPrice: fmt(stopLossP),
+        stopLossProceeds: fmt(stopLossProceeds),
         maxLossAmount: fmt(maxLossAmt),
         shieldedAmount: fmt(shieldedAmt),
         target1Price: fmt(t1P),
+        target1SharesLabel,
         target1CashIn: fmt(t1CashIn),
         target1ProfitAmt: fmt(t1ProfitAmt),
+        finalSharesLabel,
+        finalStageCashIn: fmt(finalStageCashIn),
         finalTotalVal: fmt(finalTotalVal),
         finalProfitAmt: fmt(finalProfitAmt),
         finalUpsidePct: `${Number(finalUpsidePct) > 0 ? '+' : ''}${finalUpsidePct}%`,
         priceExceedsBudget,
         tranches: [
-            { step: '1차 (30%)', price: fmt(safeEntry), shares: `${share1}주`, amt: fmt(share1 * safeEntry) },
-            { step: '2차 (40%)', price: fmt(entry2), shares: `${share2}주`, amt: fmt(share2 * entry2) },
-            { step: '3차 (30%)', price: fmt(entry3), shares: `${share3}주`, amt: fmt(share3 * entry3) },
+            {
+                step: '1차 분할 매수',
+                price: fmt(p1),
+                shares: `${share1}주`,
+                amt: fmt(amt1),
+                desc: isSingleShare
+                    ? '1주 단가 특성상 분할 없이 지지선 확인 후 1주 단일 진입 (100%)'
+                    : `비중 ${Math.round((share1 / totalShares) * 100)}% · 오전 10시 이후 지지선 1차 진입`,
+            },
+            {
+                step: '2차 분할 매수',
+                price: share2 > 0 ? fmt(p2) : '-',
+                shares: `${share2}주`,
+                amt: fmt(amt2),
+                desc: share2 > 0
+                    ? `비중 ${Math.round((share2 / totalShares) * 100)}% · 눌림목 하방 지지력 확인 후 추가 체결`
+                    : '예산 내 1주 단일 매수 구간 (예산 증액 시 2차 분할 활성화)',
+            },
+            {
+                step: '3차 분할 매수',
+                price: share3 > 0 ? fmt(p3) : '-',
+                shares: `${share3}주`,
+                amt: fmt(amt3),
+                desc: share3 > 0
+                    ? `비중 ${Math.round((share3 / totalShares) * 100)}% · 추세 안착 확인 후 잔여 물량 체결`
+                    : '예산 내 추가 매수 없음 (잔여 현금은 안전 비상금으로 비축)',
+            },
         ],
     };
 }
@@ -532,21 +622,21 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
         return `${Math.round(n).toLocaleString()}원`;
     };
 
-    // 손절가 (-3.5%)
-    const stopLossNum = priceNum > 0 ? (isDollar ? priceNum * 0.965 : Math.round(priceNum * 0.965)) : 0;
+    // 손절가 (-3.5%, 호가단위 반영)
+    const stopLossNum = priceNum > 0 ? roundToKrxTick(priceNum * 0.965, isDollar) : 0;
     const stopLossFormatted = stopLossNum > 0 ? fmt(stopLossNum) : '-3.5% 또는 50일선';
 
-    // 권장 안전 진입가 (당일 1.5% 눌림목 또는 현재가)
-    const safeEntryNum = priceNum > 0 ? (isDollar ? priceNum * 0.985 : Math.round(priceNum * 0.985)) : 0;
+    // 권장 안전 진입가 (당일 1.5% 눌림목 또는 현재가, 호가단위 반영)
+    const safeEntryNum = priceNum > 0 ? roundToKrxTick(priceNum * 0.985, isDollar) : 0;
     const safeEntryFormatted = safeEntryNum > 0 ? fmt(safeEntryNum) : '오전 10시 지지선';
 
-    // 1차 분할 익절가 (중간값 또는 +7.5%)
+    // 1차 분할 익절가 (중간값 또는 +7.5%, 호가단위 반영)
     let target1Num = 0;
     if (priceNum > 0) {
         if (targetPrice.num > priceNum) {
-            target1Num = isDollar ? priceNum + (targetPrice.num - priceNum) * 0.5 : Math.round(priceNum + (targetPrice.num - priceNum) * 0.5);
+            target1Num = roundToKrxTick(priceNum + (targetPrice.num - priceNum) * 0.5, isDollar);
         } else {
-            target1Num = isDollar ? priceNum * 1.075 : Math.round(priceNum * 1.075);
+            target1Num = roundToKrxTick(priceNum * 1.075, isDollar);
         }
     }
     const target1Formatted = target1Num > 0 ? fmt(target1Num) : '1차 목표가 도달 시';
@@ -1258,12 +1348,14 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
         },
         {
             num: "④",
-            title: "1차 분할 익절",
+            title: "1차 목표가 대응",
             target: plan
-                ? `🎯 ${plan.target1Price} (+${plan.target1ProfitAmt} 확정)`
+                ? `🎯 ${plan.target1Price} (+${plan.target1ProfitAmt} 수익 구간)`
                 : `🎯 ${target1Formatted} (보유 물량 50%)`,
             desc: plan
-                ? `1차 목표 도달 시 절반 매도로 현금 ${plan.target1CashIn} 즉시 회수 (확정 순수익: +${plan.target1ProfitAmt})`
+                ? (plan.isSingleShare
+                    ? `1주 보유 시 1차 목표(${plan.target1Price})에서 익절하면 ${plan.target1CashIn} 회수(+${plan.target1ProfitAmt}), 홀딩 시 손절선을 매수가(${plan.avgBuyPrice})로 상향합니다.`
+                    : `1차 목표 도달 시 절반 매도로 현금 ${plan.target1CashIn} 즉시 회수 (확정 순수익: +${plan.target1ProfitAmt})`)
                 : `1차 목표가 ${target1Formatted} 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.`,
         },
     ];
@@ -4986,23 +5078,28 @@ export default function CeoOfficePage() {
                                                                                             <td className="py-2.5 px-2.5 font-bold text-sky-300">1차 분할 매수</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[0].price}</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[0].shares} ({riskData.financialPlan.tranches[0].amt})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">비중 30% · 오전 10시 이후 지지선 진입</td>
+                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">{riskData.financialPlan.tranches[0].desc}</td>
                                                                                         </tr>
                                                                                         <tr className="bg-white/[0.02]">
                                                                                             <td className="py-2.5 px-2.5 font-bold text-sky-300">2차 분할 매수</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[1].price}</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[1].shares} ({riskData.financialPlan.tranches[1].amt})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">비중 40% · 하방 지지력 확인 후 체결</td>
+                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">{riskData.financialPlan.tranches[1].desc}</td>
                                                                                         </tr>
                                                                                         <tr className="bg-white/[0.02]">
                                                                                             <td className="py-2.5 px-2.5 font-bold text-sky-300">3차 분할 매수</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[2].price}</td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[2].shares} ({riskData.financialPlan.tranches[2].amt})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">비중 30% · 전고점 상승 돌파 시 추가 매수</td>
+                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">{riskData.financialPlan.tranches[2].desc}</td>
                                                                                         </tr>
                                                                                         <tr className="bg-amber-500/10 font-bold border-y border-amber-500/25">
                                                                                             <td className="py-2.5 px-2.5 text-amber-300">⚖️ 총 투자 한도</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">현재가 {riskData.financialPlan.currPrice}</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">
+                                                                                                평균단가 {riskData.financialPlan.avgBuyPrice}
+                                                                                                {riskData.financialPlan.avgBuyPrice !== riskData.financialPlan.currPrice && (
+                                                                                                    <span className="text-gray-400 text-[10px] block font-normal">(현재가 {riskData.financialPlan.currPrice})</span>
+                                                                                                )}
+                                                                                            </td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-amber-300">
                                                                                                 총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})
                                                                                                 {riskData.financialPlan.cashReserve !== '0원' && !riskData.financialPlan.priceExceedsBudget && (
@@ -5022,33 +5119,33 @@ export default function CeoOfficePage() {
                                                                                                 <span>기계적 손절 방어</span>
                                                                                             </td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-rose-400">{riskData.financialPlan.stopLossPrice} (-3.5%)</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.totalShares})</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.totalShares} · {riskData.financialPlan.stopLossProceeds} 회수)</td>
                                                                                             <td className="py-2.5 px-2.5 text-rose-200">
                                                                                                 <strong className="text-rose-400">최대 손실 -{riskData.financialPlan.maxLossAmount} 한정</strong>
-                                                                                                <span className="text-gray-300 ml-1.5">(원금 {riskData.financialPlan.shieldedAmount} 철통 회수)</span>
+                                                                                                <span className="text-gray-300 ml-1.5">(매도금+잔여현금 총 {riskData.financialPlan.shieldedAmount} 철통 회수)</span>
                                                                                             </td>
                                                                                         </tr>
                                                                                         <tr className="bg-emerald-500/10 font-bold border-b border-emerald-500/25">
                                                                                             <td className="py-2.5 px-2.5 text-emerald-300 flex items-center gap-1">
                                                                                                 <span>🎯</span>
-                                                                                                <span>1차 분할 익절</span>
+                                                                                                <span>{riskData.financialPlan.isSingleShare ? '1차 목표가 도달 (선택A)' : '1차 분할 익절'}</span>
                                                                                             </td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-emerald-400">{riskData.financialPlan.target1Price}</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-emerald-300">보유 50% 분할 매도</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-emerald-300">{riskData.financialPlan.target1SharesLabel}</td>
                                                                                             <td className="py-2.5 px-2.5 text-emerald-200">
-                                                                                                <span>현금 회수: {riskData.financialPlan.target1CashIn}</span>
+                                                                                                <span>{riskData.financialPlan.isSingleShare ? '1차 익절 시 회수:' : '1차 현금 회수:'} {riskData.financialPlan.target1CashIn}</span>
                                                                                                 <strong className="text-emerald-400 ml-1.5">(확정 순수익: +{riskData.financialPlan.target1ProfitAmt})</strong>
                                                                                             </td>
                                                                                         </tr>
                                                                                         <tr className="bg-purple-500/10 font-bold">
                                                                                             <td className="py-2.5 px-2.5 text-purple-300 flex items-center gap-1">
                                                                                                 <span>🏆</span>
-                                                                                                <span>최종 목표가 달성</span>
+                                                                                                <span>{riskData.financialPlan.isSingleShare ? '최종 목표가 달성 (선택B)' : '최종 목표가 달성'}</span>
                                                                                             </td>
                                                                                             <td className="py-2.5 px-2.5 font-mono text-purple-300">{riskData.financialPlan.targetPrice} ({riskData.financialPlan.finalUpsidePct})</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-purple-200">잔여 50% 전량 익절</td>
+                                                                                            <td className="py-2.5 px-2.5 font-mono text-purple-200">{riskData.financialPlan.finalSharesLabel}</td>
                                                                                             <td className="py-2.5 px-2.5 text-purple-200">
-                                                                                                <span>총 평가 회수: {riskData.financialPlan.finalTotalVal}</span>
+                                                                                                <span>{riskData.financialPlan.isSingleShare ? '최종 매도 회수:' : '1차+최종 총 회수:'} {riskData.financialPlan.finalTotalVal}</span>
                                                                                                 <strong className="text-purple-300 ml-1.5">(최종 누적 순이익: +{riskData.financialPlan.finalProfitAmt})</strong>
                                                                                             </td>
                                                                                         </tr>
