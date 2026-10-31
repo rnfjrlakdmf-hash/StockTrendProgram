@@ -26,6 +26,7 @@ interface ResearchReportItem {
     item_name: string;
     item_code?: string | null;
     industry_name?: string | null;
+    company_profile?: string | null;
     goal_price?: string | null;
     goal_price_num?: number | null;
     opinion?: string | null;
@@ -56,6 +57,7 @@ interface MultiAssetResearchItem {
     analyst_count?: number;
     forward_pe?: number | null;
     div_yield?: number | null;
+    company_profile?: string | null;
     summary_points: string[];
     easy_summary: string;
     checkpoint: string;
@@ -647,6 +649,16 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                             </div>
 
+                                            {mItem.company_profile && (
+                                                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                                                    <Building2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                                    <div className="space-y-1">
+                                                        <div className="text-xs font-black text-amber-300">🏢 어떤 회사(상품)인가요? · {mItem.name}</div>
+                                                        <p className="text-xs sm:text-sm text-zinc-100 leading-relaxed">{mItem.company_profile}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* 1순위: 핵심 요약 & 체크포인트 */}
                                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
                                                 <div className="lg:col-span-2 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/45 via-indigo-950/30 to-zinc-900/80 border border-purple-500/35 space-y-2 shadow-inner">
@@ -1039,6 +1051,17 @@ export default function MultiAssetResearchPage() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* 어떤 회사인지 간단 소개 */}
+                                        {item.company_profile && (
+                                            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                                                <Building2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                                <div className="space-y-1">
+                                                    <div className="text-xs font-black text-amber-300">🏢 어떤 회사인가요? · {item.item_name}</div>
+                                                    <p className="text-xs sm:text-sm text-zinc-100 leading-relaxed">{item.company_profile}</p>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* 1순위: 한눈에 보는 핵심 요약 & 체크포인트 */}
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">

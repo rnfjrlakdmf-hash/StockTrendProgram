@@ -1412,6 +1412,46 @@ def get_live_rankings(market: str = "KR", category: str = "amount"):
         return {"status": "error", "message": str(e)}
 
 
+_KR_PROFILE_CACHE: Dict[str, Any] = {}
+
+
+def _get_kr_company_profile(code: str) -> str:
+    """국내 종목의 '어떤 회사인지' 쉬운 한 줄 소개 (네이버 기업개요 → WiseReport 순, 24시간 캐시)"""
+    import requests
+    now = time.time()
+    hit = _KR_PROFILE_CACHE.get(code)
+    if hit and now - hit[0] < 86400:
+        return hit[1]
+
+    text = ""
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        r = requests.get(f"https://m.stock.naver.com/api/stock/{code}/integration", headers=headers, timeout=4)
+        if r.status_code == 200:
+            text = (r.json().get("corporateOverview") or "").strip()
+    except Exception:
+        pass
+    if not text:
+        try:
+            from bs4 import BeautifulSoup
+            r = requests.get(f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}", headers=headers, timeout=4)
+            if r.status_code == 200:
+                el = BeautifulSoup(r.text, "html.parser").find("div", class_="cmp_comment")
+                if el:
+                    text = el.get_text(" ", strip=True)
+        except Exception:
+            pass
+
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > 200:
+        cut = text[:200]
+        end = max(cut.rfind("다."), cut.rfind(". "))
+        text = cut[:end + 1] if end > 60 else cut.rstrip() + "…"
+    if text:
+        _KR_PROFILE_CACHE[code] = (now, text)
+    return text
+
+
 @router.get("/research")
 @turbo_cache(ttl_seconds=180)
 def get_stock_research_reports(
@@ -1686,6 +1726,20 @@ def get_stock_research_reports(
     goal_prices = []
     buy_count = 0
 
+    # [회사 소개] 종목별 '어떤 회사인지' 한 줄 소개 (동일 종목 코드는 1회만 조회, 병렬 처리)
+    profile_map: Dict[str, str] = {}
+    if cat_key == "company":
+        codes = {str(i.get("itemCode") or resolved_code or "") for i in raw_items}
+        codes = {c for c in codes if re.match(r'^\d{6}$', c)}
+        if codes:
+            try:
+                from concurrent.futures import ThreadPoolExecutor
+                with ThreadPoolExecutor(max_workers=6) as ex:
+                    for c, p in zip(codes, ex.map(_get_kr_company_profile, list(codes))):
+                        profile_map[c] = p
+            except Exception as e:
+                print(f"[ResearchAPI] profile error: {e}")
+
     for item in raw_items:
         title = (item.get("title") or "").strip()
         if not title:
@@ -1742,6 +1796,7 @@ def get_stock_research_reports(
             "item_name": item_name,
             "item_code": item_code,
             "industry_name": industry_name,
+            "company_profile": profile_map.get(str(item_code or "")) or None,
             "goal_price": goal_price,
             "goal_price_num": goal_price_num,
             "opinion": opinion,
@@ -2002,6 +2057,7 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
         "forward_pe": forward_pe,
         "div_yield": div_yield,
         "desc": desc,
+        "company_profile": desc or None,
         "summary_points": summary_points,
         "easy_summary": easy_summary,
         "checkpoint": checkpoint,

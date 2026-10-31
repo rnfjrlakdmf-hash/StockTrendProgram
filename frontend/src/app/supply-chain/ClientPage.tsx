@@ -377,7 +377,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                             <div className="flex flex-wrap gap-1 mt-2.5">
                                                                 {node.themes.map((t: string, i: number) => (
                                                                     <span key={i} className="text-[9px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md border border-white/5">
-                                                                        #{t}
+                                                                        {t.startsWith('#') ? t : `#${t}`}
                                                                     </span>
                                                                 ))}
                                                             </div>
@@ -437,7 +437,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                             <div className="flex flex-wrap justify-center gap-1 my-2">
                                                 {(data.nodes || []).find((n: any) => n.group === 'target')?.themes.map((t: string, i: number) => (
                                                     <span key={i} className="text-[9px] bg-black/30 text-cyan-100 px-2 py-0.5 rounded-full border border-white/20 font-bold">
-                                                        #{t}
+                                                        {t.startsWith('#') ? t : `#${t}`}
                                                     </span>
                                                 ))}
                                             </div>
@@ -516,7 +516,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                     <div className="flex flex-wrap gap-1 mt-2.5">
                                                         {node.themes.map((t: string, i: number) => (
                                                             <span key={i} className="text-[9px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md border border-white/5">
-                                                                #{t}
+                                                                {t.startsWith('#') ? t : `#${t}`}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -582,7 +582,7 @@ export default function ClientPage({ initialQuery }: { initialQuery?: string }) 
                                                         <div className="flex flex-wrap gap-1 mt-2.5">
                                                             {node.themes.map((t: string, i: number) => (
                                                                 <span key={i} className="text-[9px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md border border-white/5">
-                                                                    #{t}
+                                                                    {t.startsWith('#') ? t : `#${t}`}
                                                                 </span>
                                                             ))}
                                                         </div>
