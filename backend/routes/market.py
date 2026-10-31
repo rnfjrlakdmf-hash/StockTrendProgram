@@ -2980,10 +2980,13 @@ def _build_weekly_review_and_calendar(
                 up_num = round(((s_gp_num - curr_p_num) / curr_p_num) * 100, 1)
                 up_str = f"{up_num:+.1f}%"
                 upsides.append(up_num)
+                diff_amt = int(s_gp_num - curr_p_num)
+                profit_per_share = f"주당 {diff_amt:+,}원 ({up_str})"
                 profit_10m = f"약 {int(10000000 * (up_num / 100)):+,}원"
             else:
                 up_num = 15.0
                 up_str = "+15.0%"
+                profit_per_share = f"주당 +{int(curr_p_num * 0.15):,}원 (+15.0%)"
                 profit_10m = "약 +1,500,000원"
         else:
             curr_p_str = "장마감 기준가 연동"
@@ -2991,6 +2994,7 @@ def _build_weekly_review_and_calendar(
             up_num = 22.5 if idx == 0 else (18.0 if idx == 1 else 14.5)
             up_str = f"+{up_num:.1f}%"
             upsides.append(up_num)
+            profit_per_share = f"기대수익 {up_str}"
             profit_10m = f"약 {int(10000000 * (up_num / 100)):+,}원"
 
         if up_num >= 30:
@@ -3020,6 +3024,7 @@ def _build_weekly_review_and_calendar(
             "target_price": s_gp,
             "upside_pct": up_str,
             "upside_num": up_num,
+            "profit_per_share": profit_per_share,
             "profit_10m": profit_10m,
             "verdict_badge": verdict_badge,
             "verdict_tone": verdict_tone,
@@ -3031,21 +3036,31 @@ def _build_weekly_review_and_calendar(
     review_items_sorted = sorted(review_items, key=lambda x: x["upside_num"], reverse=True)
     avg_upside = round(sum(upsides) / len(upsides), 1) if upsides else 24.5
 
-    # 2) 실전 모의투자 계좌 주간 매매 복기 데이터 구성
-    initial_cap = float(t_state.get("initial_capital_krw") or 100000000)
-    cash_krw = float(t_state.get("cash_krw") or 60000000)
+    # 2) 실전 모의투자 계좌 주간 매매 복기 데이터 구성 (ceo_trading_service 실제 키와 100% 연동)
+    initial_cap = float(t_state.get("total_capital") or t_state.get("initial_capital_krw") or 100000000)
+    realized_pnl = float(t_state.get("realized_pnl") or 0.0)
     positions = t_state.get("positions") or []
-    open_positions = [p for p in positions if p.get("status") != "CLOSED"]
+    open_positions = [p for p in positions if p.get("status") not in ("CLOSED", "CANCELLED")]
     closed_positions = [p for p in positions if p.get("status") == "CLOSED"]
 
     eval_sum = 0.0
+    invested_sum = 0.0
+    unrealized_sum = 0.0
     pos_reviews = []
     win_cnt = 0
     for p in open_positions:
-        inv = float(p.get("invested_krw") or 10000000)
-        pnl_pct = float(p.get("pnl_pct") or 0.0)
+        buy_p = float(p.get("buy_price") or p.get("entry_price") or 0)
+        curr_p = float(p.get("current_price") or buy_p)
+        qty = int(p.get("qty") or 1)
+        inv = float(p.get("invested_krw") or (buy_p * qty) or 10000000)
+        if buy_p > 0 and curr_p > 0:
+            pnl_pct = round(((curr_p - buy_p) / buy_p) * 100, 2)
+        else:
+            pnl_pct = float(p.get("pnl_pct") or 0.0)
         cur_eval = inv * (1.0 + pnl_pct / 100.0)
+        invested_sum += inv
         eval_sum += cur_eval
+        unrealized_sum += (cur_eval - inv)
         if pnl_pct >= 0:
             win_cnt += 1
         p_name = p.get("stock_name") or "운용종목"
@@ -3056,25 +3071,39 @@ def _build_weekly_review_and_calendar(
             p_comment = f"매수가 부근({pnl_pct:+.2f}%) 안착 — 50일선 지지 확인하며 목표가 홀딩"
             p_badge = "🔵 추세 유지"
         else:
-            p_comment = f"단기 숨고르기({pnl_pct:+.2f}%) — 손절 기준선({p.get('stop_loss_pct', -5.0)}%) 엄수 감시"
+            p_comment = f"단기 숨고르기({pnl_pct:+.2f}%) — 손절 기준선({p.get('stop_loss_pct', -3.5)}%) 엄수 감시"
             p_badge = "🟡 방어 감시"
+
+        is_kr = (p.get("category") or "kr_stock") in ("kr_stock", "국내주식")
+        entry_disp = p.get("entry_price_display") or (f"{int(buy_p):,}원" if is_kr else f"${buy_p:,.2f}")
+        curr_disp = p.get("current_price_display") or (f"{int(curr_p):,}원" if is_kr else f"${curr_p:,.2f}")
 
         pos_reviews.append({
             "stock_name": p_name,
             "stock_code": p.get("stock_code") or "",
-            "category": p.get("category") or "국내주식",
-            "entry_price_str": p.get("entry_price_display") or f"{int(float(p.get('entry_price') or 0)):,}원",
-            "current_price_str": p.get("current_price_display") or f"{int(float(p.get('current_price') or 0)):,}원",
+            "category": "국내주식" if is_kr else "미국주식",
+            "entry_price_str": entry_disp,
+            "current_price_str": curr_disp,
             "pnl_pct": round(pnl_pct, 2),
             "pnl_krw": int(cur_eval - inv),
             "badge": p_badge,
             "review_comment": p_comment,
         })
 
-    total_equity = int(cash_krw + eval_sum) if open_positions else int(initial_cap)
+    if t_state.get("available_cash") is not None:
+        cash_krw = float(t_state.get("available_cash"))
+        # 만약 초기 자본금 기준 현금+투자원금 합계가 어긋나 있으면 정확히 보정
+        if abs((cash_krw + invested_sum) - (initial_cap + realized_pnl)) > 1000:
+            cash_krw = max(0.0, (initial_cap + realized_pnl) - invested_sum)
+    else:
+        cash_krw = max(0.0, (initial_cap + realized_pnl) - invested_sum)
+
+    total_equity = int(cash_krw + eval_sum)
     total_ret_pct = round(((total_equity - initial_cap) / initial_cap) * 100, 2) if initial_cap > 0 else 0.0
-    win_rate = round((win_cnt / len(open_positions)) * 100, 1) if open_positions else 100.0
-    cash_ratio = round((cash_krw / total_equity) * 100, 1) if total_equity > 0 else 60.0
+    total_wins = int(t_state.get("win_count") or 0) + win_cnt
+    total_losses = int(t_state.get("loss_count") or 0) + max(0, len(open_positions) - win_cnt)
+    win_rate = round((total_wins / (total_wins + total_losses)) * 100, 1) if (total_wins + total_losses) > 0 else 100.0
+    cash_ratio = round((cash_krw / total_equity) * 100, 1) if total_equity > 0 else 100.0
 
     top1 = review_items_sorted[0] if review_items_sorted else {
         "stock_name": "두산에너빌리티", "target_price": "120,000원", "upside_pct": "+38.5%", "broker": "하나증권"
@@ -3940,37 +3969,45 @@ def _build_weekly_review_and_calendar(
 
     # 4) 전자결재 서류함(auto_approvals)에 올라갈 정식 기안서 2건 생성
     top3_names_str = ", ".join(f"{x['stock_name']}({x['upside_pct']})" for x in monday_top3)
+    top1_curr_price = top1.get("current_price") or "실시간 연동"
+    top1_target_price = top1.get("target_price") or f"평균여력 +{avg_upside:.1f}%"
+    top1_upside = top1.get("upside_pct") or f"+{avg_upside:.1f}%"
+    top1_profit_per_share = top1.get("profit_per_share") or f"기대수익 {top1_upside}"
+    top1_profit_10m = top1.get("profit_10m") or f"약 +{int(10000000 * (avg_upside / 100)):,}원"
     review_doc = {
         "doc_id": f"DOC-{date_doc_str}-WKREV",
         "doc_number": f"제 {date_doc_str}-복기호",
-        "category_type": "world_news",
+        "category_type": "kr_stock",
         "category_badge": "📋 주간 리서치·성과 복기팀",
         "urgency": "주간 복기 결산",
-        "stock_name": "주간 리서치·매매 복기",
-        "current_price": f"계좌수익 {total_ret_pct:+.2f}%",
-        "target_price": f"평균여력 +{avg_upside:.1f}%",
-        "upside_pct": f"+{avg_upside:.1f}%",
+        "stock_name": f"주간 리서치 복기 (1순위: {top1['stock_name']})",
+        "stock_code": top1.get("stock_code") or "",
+        "current_price": top1_curr_price,
+        "target_price": top1_target_price,
+        "upside_pct": top1_upside,
+        "profit_per_share": top1_profit_per_share,
+        "profit_10m": top1_profit_10m,
         "title": f"[주간 리서치·성과 복기] 추천주 {len(review_items)}선 성적표 복기 & 차주 월요일 개장 Top 3 전략",
         "proposer": "한지훈 이사 (주간복기팀장) · 박진우 부사장 (리서치) · 최서연 상무 (CRO)",
         "submitted_at": f"{time_str} 주간 리서치·실전계좌 합동 복기 완료",
         "easy_headline": (
-            f"이번 주 증권사 리포트 추천 종목 {len(review_items)}건의 평균 목표가 상승여력은 +{avg_upside:.1f}%이며, 실전 계좌는 누적 {total_ret_pct:+.2f}%(총자산 {total_equity:,}원)로 순항 중입니다. "
-            f"복기 결과 선정된 차주 월요일 최우선 공략 Top 3 종목은 {top3_names_str}입니다."
+            f"이번 주 증권사 리포트 추천 종목 {len(review_items)}건의 평균 목표가 상승여력은 +{avg_upside:.1f}%이며, 실전 운용 계좌는 누적 수익률 {total_ret_pct:+.2f}%(총자산 {total_equity:,}원, 보유 {len(open_positions)}종목)를 기록 중입니다. "
+            f"실시간 현재가 대비 목표주가 괴리율이 가장 높은 차주 월요일 최우선 공략 Top 3 종목은 {top3_names_str}입니다."
         ),
         "key_numbers": [
             {"label": "주간 복기 리포트", "value": f"총 {len(review_items)}종목 (평균여력 +{avg_upside:.1f}%)"},
             {"label": "실전 계좌 누적 성과", "value": f"{total_ret_pct:+.2f}% (총자산 {total_equity:,}원)"},
-            {"label": "차주 월요일 1순위", "value": f"{top1['stock_name']} (목표 {top1['target_price']})"},
+            {"label": f"1순위({top1['stock_name']}) 현재가→목표가", "value": f"{top1_curr_price.split(' ')[0]} ➔ {top1_target_price} ({top1_upside})"},
             {"label": "운용 현금 비중", "value": f"{cash_ratio:.1f}% (안전 방어력 확보)"},
         ],
         "research_opinion": (
             f"👍 [주간 리서치 복기 · 한지훈 복기팀장 & 박진우 부사장]: 한 주간 발간된 증권사 리포트를 전수 복기한 결과, 단순 테마주보다 실적과 수주 잔고가 뒷받침되는 {top3_names_str}의 목표주가 괴리율이 가장 매력적으로 유지되고 있습니다."
         ),
         "quant_opinion": (
-            f"📊 [실전 계좌 수급 복기 · 김도현 수급본부장]: 현재 실전 운용 계좌는 승률 {win_rate:.0f}%를 기록 중이며, 월요일 개장 시 시초가 급등 추격매수를 피하고 보합~+2% 이내 눌림목에서 분할 매수하는 전략이 유효합니다."
+            f"📊 [실전 계좌 수급 복기 · 김도현 수급본부장]: 현재 실전 운용 계좌(총자산 {total_equity:,}원, 보유 {len(open_positions)}건)는 승률 {win_rate:.0f}%를 기록 중이며, 1순위 공략주 {top1['stock_name']}(현재가 {top1_curr_price})은 월요일 개장 시 시초가 추격매수를 피하고 눌림목에서 분할 매수하는 전략이 유효합니다."
         ),
         "risk_opinion": (
-            "⚠️ [주간 매매 반성 & 감사 · 최서연 리스크본부장]: 수익 구간 종목은 1차 목표가에서 50% 분할 익절 원칙을 철저히 지키고, 손절 기준선(-3.5%~-5.0%) 이탈 시 지체 없이 자동 방어하도록 감사 완료했습니다."
+            f"⚠️ [주간 매매 반성 & 감사 · 최서연 리스크본부장]: 1순위 후보 '{top1['stock_name']}'(목표가 {top1_target_price}) 포함 모든 편입 종목은 1차 목표가에서 50% 분할 익절 원칙을 철저히 지키고, 손절 기준선(-3.5%~-5.0%) 이탈 시 지체 없이 자동 방어하도록 감사 완료했습니다."
         ),
         "secretary_conclusion": (
             "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 한지훈 이사의 주간 리서치·성과복기팀에서 이번 주 추천주와 실전 계좌를 깔끔하게 복기하고 월요일 Top 3 타겟을 올렸습니다. [승인 서명]을 눌러 차주 운용 전략을 재가해 주십시오!"
@@ -4452,7 +4489,7 @@ def get_ceo_office_boardroom(
     # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (실시간 현재가 & 기대수익금 정밀 계산!)
     from stock_names import STOCK_MAP
     kr_poll_codes = []
-    for rep in desk_company_reports[:4]:
+    for rep in desk_company_reports[:6]:
         c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name"))
         if c and c not in kr_poll_codes:
             kr_poll_codes.append(c)
@@ -5371,8 +5408,8 @@ def get_ceo_office_boardroom(
     directive_logs_data = []
     t_state = {}
     try:
-        from ceo_trading_service import load_trading_state
-        t_state = load_trading_state()
+        from ceo_trading_service import load_trading_state, update_realtime_quotes_for_positions
+        t_state = update_realtime_quotes_for_positions(load_trading_state())
         company_policy_data = t_state.get("company_policy", {})
         directive_logs_data = t_state.get("directive_logs", [])
         custom_docs = t_state.get("custom_approvals", [])
