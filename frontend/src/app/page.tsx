@@ -140,10 +140,15 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* [에디토리얼 헤드라인 1] 구글 애드센스 승인 전용 고품질 금융 리서치 & 백과사전 매거진 (Above the Fold) */}
-      <div className="bg-gradient-to-b from-slate-950 via-zinc-950 to-dark-900 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-8 pb-10 space-y-8">
-          
+      {/* 1. 통합 마켓 대시보드 (최상단 배치: 헤더 검색 + 실시간 시세 허브 + 카카오 배너 광고 유지) */}
+      <div id="market-dashboard">
+        <HomeClient />
+      </div>
+
+      {/* 2. 하단 금융 리서치 매거진 · 46대 백과사전 · 실전 차트 스터디 · FAQ (애드센스 & SEO 콘텐츠 영역) */}
+      <div className="border-t border-white/10 bg-[#06070a]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-10">
+
           {/* 매거진 마스트헤드 */}
           <div className="rounded-3xl bg-gradient-to-br from-blue-950/40 via-zinc-900/60 to-purple-950/20 border border-blue-500/20 p-6 md:p-8 backdrop-blur-xl shadow-2xl space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -176,7 +181,7 @@ export default async function Home() {
                 href="#market-dashboard"
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs md:text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
               >
-                📊 실시간 마켓 대시보드로 이동 ↓
+                📊 실시간 마켓 대시보드 상단으로 ↑
               </a>
               <Link
                 href="/guide"
@@ -199,7 +204,7 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* [섹션 1] 심층 금융 리서치 & 거시경제 분석 칼럼 6선 (텍스트 풍부한 상단 배치) */}
+          {/* [섹션 1] 심층 금융 리서치 & 거시경제 분석 칼럼 6선 */}
           <section aria-labelledby="featured-research-heading" className="bg-zinc-900/60 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
@@ -289,18 +294,6 @@ export default async function Home() {
               ))}
             </div>
           </section>
-
-        </div>
-      </div>
-
-      {/* 2. 통합 마켓 대시보드 (헤더 검색 + 실시간 시세 허브 + 카카오 배너 광고 유지) */}
-      <div id="market-dashboard">
-        <HomeClient />
-      </div>
-
-      {/* 3. 하단 실전 차트 스터디 · 공공데이터 원칙 및 FAQ · 카카오 하단 광고 유지 */}
-      <div className="border-t border-white/10 bg-[#06070a]">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-10">
 
           {/* [섹션 3] 실전 주식 차트 & 기술적 보조지표 아카데미 6선 */}
           {latestTheoryPosts.length > 0 && (
