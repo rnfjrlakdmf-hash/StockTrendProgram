@@ -39,6 +39,43 @@ DEFAULT_STATE = {
     "blotter": []
 }
 
+def _round_krx_tick(val: float) -> int:
+    if val <= 0:
+        return 0
+    if val < 2000:
+        return int(round(val))
+    if val < 5000:
+        return int(round(val / 5.0) * 5)
+    if val < 20000:
+        return int(round(val / 10.0) * 10)
+    if val < 50000:
+        return int(round(val / 50.0) * 50)
+    if val < 200000:
+        return int(round(val / 100.0) * 100)
+    if val < 500000:
+        return int(round(val / 500.0) * 500)
+    return int(round(val / 1000.0) * 1000)
+
+NON_STOCK_DOC_NAMES = {
+    "전체 시장 시스템", "글로벌 매크로", "글로벌 매크로 (환율·금리)",
+    "한주 경제일정 캘린더", "오늘의 경제일정", "시장 종합",
+    "전사 출근 브리핑", "07:20 모닝 글로벌 특보", "일일 시장 시스템"
+}
+
+def _is_valid_tradable_stock(stock_name: str, stock_code: str, category: str) -> bool:
+    s_name = (stock_name or "").strip()
+    s_code = (stock_code or "").strip()
+    cat = (category or "").strip()
+    if not s_name or s_name in NON_STOCK_DOC_NAMES:
+        return False
+    if any(k in s_name for k in ["경제일정", "전체 시장", "글로벌 매크로", "모닝 글로벌", "선물 (", "국채금리", "달러 인덱스", "원유 선물", "금 선물", "구리 선물"]):
+        return False
+    if cat not in ("kr_stock", "us_stock"):
+        return False
+    if "=F" in s_code or s_code.startswith("^") or "DX-Y" in s_code:
+        return False
+    return True
+
 def load_trading_state() -> Dict[str, Any]:
     if not os.path.exists(STATE_FILE):
         save_trading_state(DEFAULT_STATE)
@@ -56,6 +93,29 @@ def load_trading_state() -> Dict[str, Any]:
             data["directive_logs"] = []
         if "custom_approvals" not in data or not isinstance(data.get("custom_approvals"), list):
             data["custom_approvals"] = []
+
+        # 비종목(시황·거시·캘린더 등) 오등록 포지션 및 주문기록 자동 정화
+        raw_positions = data.get("positions", [])
+        clean_positions = [
+            p for p in raw_positions
+            if _is_valid_tradable_stock(p.get("stock_name", ""), p.get("stock_code", ""), p.get("category", ""))
+            and float(p.get("buy_price") or 0) > 0
+        ]
+        raw_blotter = data.get("blotter", [])
+        clean_blotter = [
+            b for b in raw_blotter
+            if (b.get("stock_name") or "").strip() not in NON_STOCK_DOC_NAMES
+            and not any(k in (b.get("stock_name") or "") for k in ["전체 시장", "경제일정", "글로벌 매크로"])
+        ]
+        if len(clean_positions) != len(raw_positions) or len(clean_blotter) != len(raw_blotter):
+            data["positions"] = clean_positions
+            data["blotter"] = clean_blotter
+            active_inv = sum(int(p.get("invested_krw") or 0) for p in clean_positions if p.get("status") in ("HOLDING", "PARTIAL_EXIT"))
+            tot_cap = int(data.get("total_capital") or 100000000)
+            real_pnl = int(data.get("realized_pnl") or 0)
+            data["available_cash"] = max(0, tot_cap + real_pnl - active_inv)
+            save_trading_state(data)
+
         return data
     except Exception as e:
         print(f"[TradingService] load_state error: {e}")
@@ -250,9 +310,20 @@ def execute_ceo_approved_stock_trade(doc_data: Dict[str, Any]) -> Dict[str, Any]
     트레이딩 팀이 즉시 적정 가격에 분할 매수 주문을 집행하여 포지션을 신규 등록합니다.
     """
     state = load_trading_state()
-    stock_name = doc_data.get("stock_name", "우량주")
-    stock_code = doc_data.get("stock_code") or ""
-    cat_type = doc_data.get("category_type") or "kr_stock"
+    stock_name = (doc_data.get("stock_name") or "우량주").strip()
+    m_top = re.search(r'1순위:\s*([^)]+)', stock_name)
+    if m_top:
+        stock_name = m_top.group(1).strip()
+    stock_code = (doc_data.get("stock_code") or "").strip()
+    cat_type = (doc_data.get("category_type") or doc_data.get("category") or "kr_stock").strip()
+    if cat_type == "kr_stock" and not stock_code:
+        try:
+            from stock_names import STOCK_MAP
+            stock_code = STOCK_MAP.get(stock_name, "")
+        except Exception:
+            pass
+    if not _is_valid_tradable_stock(stock_name, stock_code, cat_type):
+        return {"status": "macro_approved", "message": f"[{stock_name}] 전사 시황·일정 지침이 정식 승인되었습니다."}
     
     # 이미 동일 종목 포지션이 활성화되어 있는지 확인
     existing = next((p for p in state.get("positions", []) if p.get("stock_name") == stock_name and p.get("status") in ["HOLDING", "PARTIAL_EXIT"]), None)
@@ -293,8 +364,8 @@ def execute_ceo_approved_stock_trade(doc_data: Dict[str, Any]) -> Dict[str, Any]
         digits = re.sub(r'[^\d.]', '', curr_str.split(' ')[0] if curr_str else '')
         curr_num = float(digits) if digits else (100000.0 if cat_type == "kr_stock" else 150.0)
     
-    # 증권사 트레이딩 팀의 최적 분할 매수가 계산 (호가 매수 최적화: 현재가 대비 약 -0.3%~0% 유리한 가격에 체결)
-    buy_price = curr_num if cat_type != "kr_stock" else float(int(curr_num * 0.997))
+    # 증권사 트레이딩 팀의 최적 분할 매수가 계산 (KRX 호가단위 준수)
+    buy_price = curr_num if cat_type != "kr_stock" else float(_round_krx_tick(curr_num * 0.997))
     
     # 1회 배정 운용 자금: 대표이사 전사 운용 방침(company_policy) 연동 (기본 1,000만원)
     policy = state.get("company_policy", DEFAULT_POLICY)
@@ -315,9 +386,10 @@ def execute_ceo_approved_stock_trade(doc_data: Dict[str, Any]) -> Dict[str, Any]
     tg_digits = re.sub(r'[^\d.]', '', str(tg_str))
     tg_num = float(tg_digits) if tg_digits else (buy_price * (1.0 + tf_pct / 100.0))
     
-    target_1 = buy_price * (1.0 + t1_pct / 100.0)
-    target_final = tg_num if tg_num > target_1 else (buy_price * (1.0 + max(tf_pct, t1_pct + 10.0) / 100.0))
-    stop_loss = buy_price * (1.0 + sl_pct / 100.0)
+    target_1 = _round_krx_tick(buy_price * (1.0 + t1_pct / 100.0)) if cat_type == "kr_stock" else (buy_price * (1.0 + t1_pct / 100.0))
+    raw_tf = tg_num if tg_num > target_1 else (buy_price * (1.0 + max(tf_pct, t1_pct + 10.0) / 100.0))
+    target_final = _round_krx_tick(raw_tf) if cat_type == "kr_stock" else raw_tf
+    stop_loss = _round_krx_tick(buy_price * (1.0 + sl_pct / 100.0)) if cat_type == "kr_stock" else (buy_price * (1.0 + sl_pct / 100.0))
     
     new_pos = {
         "id": f"POS-{stock_code or int(time.time())}",

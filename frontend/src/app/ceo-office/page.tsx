@@ -1634,7 +1634,7 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
     {
         doc_id: 'DOC-DEFAULT-01',
         doc_number: '제 2026-01 호',
-        category_type: 'kr_stock',
+        category_type: 'all',
         category_badge: '🌐 전사 24시간·주말 무휴 종합 보고',
         urgency: '최우선 결재',
         stock_name: '전체 시장 시스템',
@@ -2505,6 +2505,7 @@ export default function CeoOfficePage() {
                 });
                 fetchTradingDesk();
                 fetchWatchlistAnalysis();
+                fetchOfficeData();
             } else if (data.status === 'already_exists') {
                 alert(data.message);
             }
@@ -2644,20 +2645,26 @@ export default function CeoOfficePage() {
         if (status === 'approved') {
             const doc = autoApprovals.find(d => d.doc_id === docId);
             const stockName = doc?.stock_name || '안건';
+            const isTradableStock = doc && (doc.category_type === 'kr_stock' || doc.category_type === 'us_stock') && !['전체 시장 시스템', '글로벌 매크로', '글로벌 매크로 (환율·금리)', '한주 경제일정 캘린더', '오늘의 경제일정'].includes(stockName);
 
-            // 💼 증권사 트레이딩 팀으로 매수 주문 자동 전송
-            if (doc) {
+            // 💼 실제 종목 안건만 트레이딩 팀으로 매수 주문 자동 전송
+            if (doc && isTradableStock) {
                 fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                     body: JSON.stringify(doc)
-                }).then(() => fetchTradingDesk()).catch(e => console.error(e));
-            }
+                }).then(() => { fetchTradingDesk(); fetchOfficeData(); }).catch(e => console.error(e));
 
-            setToastMessage({
-                title: `💼 [증권사 운용팀 주문 집행] '${stockName}' 매수 체결 완료!`,
-                desc: `대표이사 재가 승인 완료: 트레이딩 팀이 적정 매수가에 분할 매수를 집행하였으며, 실시간 P&L 및 1차/최종 목표가 분할 매도 감시가 시작되었습니다.`
-            });
+                setToastMessage({
+                    title: `💼 [증권사 운용팀 주문 집행] '${stockName}' 매수 체결 완료!`,
+                    desc: `대표이사 재가 승인 완료: 트레이딩 팀이 적정 매수가에 분할 매수를 집행하였으며, 실시간 P&L 및 1차/최종 목표가 분할 매도 감시가 시작되었습니다.`
+                });
+            } else {
+                setToastMessage({
+                    title: `🏛️ [대표이사 결재 가결] '${stockName}' 지침 승인 완료!`,
+                    desc: `전사 시황·경제일정 대응 시나리오가 정식 승인되어 각 본부 감시 체제에 즉시 반영되었습니다.`
+                });
+            }
             setTimeout(() => setToastMessage(null), 6000);
         }
     };
@@ -2676,15 +2683,18 @@ export default function CeoOfficePage() {
             }
             return next;
         });
-        // 💼 전 종목 트레이딩 팀 분할 매수 일괄 전송
+        // 💼 실제 매매 대상 종목만 트레이딩 팀 분할 매수 일괄 전송 (시황·일정 안건 제외)
         autoApprovals.forEach(doc => {
+            const sName = doc.stock_name || '';
+            const isTradable = (doc.category_type === 'kr_stock' || doc.category_type === 'us_stock') && !['전체 시장 시스템', '글로벌 매크로', '글로벌 매크로 (환율·금리)', '한주 경제일정 캘린더', '오늘의 경제일정'].includes(sName);
+            if (!isTradable) return;
             fetch(`${API_BASE_URL}/api/market/ceo-office/trading-desk/order?ceo_email=${encodeURIComponent(getCeoEmail())}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CEO-Email': user?.email || '' },
                 body: JSON.stringify(doc)
             }).catch(e => console.error(e));
         });
-        setTimeout(() => fetchTradingDesk(), 500);
+        setTimeout(() => { fetchTradingDesk(); fetchOfficeData(); }, 500);
 
         setToastMessage({
             title: `💼 [증권사 운용팀] 전 안건 일괄 재가 & 포트폴리오 편입 완료!`,
@@ -7741,7 +7751,7 @@ export default function CeoOfficePage() {
                                                     </div>
                                                 </div>
 
-                                                {Array.isArray(weeklyReview?.account_reflection?.positions) && weeklyReview.account_reflection.positions.length > 0 && (
+                                                {Array.isArray(weeklyReview?.account_reflection?.positions) && weeklyReview.account_reflection.positions.length > 0 ? (
                                                     <div className="pt-2 space-y-2">
                                                         <div className="text-xs font-black text-gray-300">
                                                             📌 현재 보유 운용 종목별 주간 복기 코멘트 ({weeklyReview.account_reflection.positions.length}종목)
@@ -7763,6 +7773,15 @@ export default function CeoOfficePage() {
                                                                     </div>
                                                                 </div>
                                                             ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 text-xs text-gray-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                        <div>
+                                                            <span className="font-black text-emerald-300">📌 현재 보유 운용 종목 없음 (가용 현금 100% · 총자산 {weeklyReview?.account_reflection?.total_equity_str || '100,000,000원'})</span>
+                                                            <p className="text-[11px] text-gray-400 mt-0.5">
+                                                                상단 Top 3 카드에서 [대표이사 직권 차주 포트폴리오 즉시 편입] 버튼을 누르시거나 전자결재 서류함에서 종목을 승인하시면 실시간 매수가·수익률 복기가 이곳에 자동 표시됩니다.
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 )}
