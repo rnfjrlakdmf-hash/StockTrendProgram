@@ -4412,8 +4412,8 @@ export default function CeoOfficePage() {
                                                 const quantBody = parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊").body || "최근 두 달 평균선(50일선) 위에서 외국인과 기관 큰손들의 수급 지지력을 정밀 감시하고 있습니다.";
                                                 const riskOpinionBody = parseExecutiveOpinion(activeDoc.risk_opinion, "리스크본부", "🛡️").body || riskData.headline;
 
-                                                const isCautiousResearch = /급락|하락|조정|매물|위축|주의|방어|축소/.test(researchBody);
-                                                const isCautiousQuant = /급락|매도|패닉|이탈|유출|관망|주의/.test(quantBody);
+                                                const isCautiousResearch = ['급락', '하락', '조정', '매물', '위축', '주의', '방어', '축소'].some(kw => researchBody.includes(kw));
+                                                const isCautiousQuant = ['급락', '매도', '패닉', '이탈', '유출', '관망', '주의'].some(kw => quantBody.includes(kw));
 
                                                 return (
                                                 <div className={`relative overflow-hidden rounded-3xl border-2 transition-all p-5 sm:p-6 shadow-2xl space-y-4 ${
@@ -5164,8 +5164,7 @@ export default function CeoOfficePage() {
                                                     </div>
                                                 </div>
                                                 );
-                                            })()
-                                            ) : (
+                                            })() : (
                                                 <div className="bg-[#0d1526] border border-white/10 rounded-3xl p-12 text-center text-gray-400 text-sm">
                                                     좌측 목록에서 결재할 서류를 선택해 주십시오.
                                                 </div>
