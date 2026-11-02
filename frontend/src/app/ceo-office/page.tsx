@@ -4102,161 +4102,167 @@ export default function CeoOfficePage() {
 
             <div ref={mainSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
                 {/* 🌟 대표이사 집무실 프리미엄 세그먼트 도크 (Luxury Executive Tab Bar) */}
-                <div className="bg-[#070b16]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 flex flex-wrap items-center justify-between gap-2.5 shadow-2xl">
-                    <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto no-scrollbar">
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('electronic_sign')}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'electronic_sign'
-                                    ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
-                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                            }`}
-                        >
-                            <span>🖋️ 대표이사 전자결재 서류함</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${
-                                activeTab === 'electronic_sign' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            }`}>
-                                대기 {pendingDocsCount}건
-                            </span>
-                        </button>
+                <div className="bg-[#070b16]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 sm:p-2.5 shadow-2xl">
+                    <div className="flex items-center justify-between gap-2">
+                        {/* 탭 목록: 부드러운 가로 스크롤 및 컴팩트한 필 디자인으로 줄바꿈 깨짐 없이 깔끔하게 1줄 표시 */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('electronic_sign')}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'electronic_sign'
+                                        ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
+                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                }`}
+                            >
+                                <span>🖋️ 전자결재 서류함</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-normal ${
+                                    activeTab === 'electronic_sign' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                }`}>
+                                    대기 {pendingDocsCount}건
+                                </span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('one_page_summary')}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'one_page_summary'
-                                    ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 text-slate-950 shadow-lg shadow-amber-500/25'
-                                    : 'bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 border border-amber-400/30'
-                            }`}
-                        >
-                            <span>📄 1장 요약 브리핑 카드</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                activeTab === 'one_page_summary' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
-                            }`}>
-                                한눈에 보기
-                            </span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('one_page_summary')}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'one_page_summary'
+                                        ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 text-slate-950 shadow-lg shadow-amber-500/25'
+                                        : 'bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 border border-amber-400/30'
+                                }`}
+                            >
+                                <span>📄 1장 요약 브리핑</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                    activeTab === 'one_page_summary' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
+                                }`}>
+                                    한눈에 보기
+                                </span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('weekly_review_calendar')}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'weekly_review_calendar'
-                                    ? 'bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400 text-slate-950 shadow-lg shadow-teal-500/25'
-                                    : 'bg-teal-500/10 text-teal-200 hover:bg-teal-500/20 border border-teal-400/30'
-                            }`}
-                        >
-                            <span>📋 주간 복기 &amp; 🗓️ 경제일정</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                                activeTab === 'weekly_review_calendar' ? 'bg-slate-950/30 text-slate-950' : 'bg-teal-400/20 text-teal-300'
-                            }`}>
-                                특화팀
-                            </span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('weekly_review_calendar')}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'weekly_review_calendar'
+                                        ? 'bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400 text-slate-950 shadow-lg shadow-teal-500/25'
+                                        : 'bg-teal-500/10 text-teal-200 hover:bg-teal-500/20 border border-teal-400/30'
+                                }`}
+                            >
+                                <span>📋 주간 복기 &amp; 🗓️ 경제일정</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                    activeTab === 'weekly_review_calendar' ? 'bg-slate-950/30 text-slate-950' : 'bg-teal-400/20 text-teal-300'
+                                }`}>
+                                    특화팀
+                                </span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('boardroom')}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'boardroom'
-                                    ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
-                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                            }`}
-                        >
-                            <span>🎙️ 임원 대면 토론실</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                activeTab === 'boardroom' ? 'bg-black/30 text-white' : 'bg-white/10 text-zinc-400'
-                            }`}>
-                                {debates.length}명
-                            </span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('boardroom')}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'boardroom'
+                                        ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-indigo-500/25'
+                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                }`}
+                            >
+                                <span>🎙️ 임원 대면 토론실</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                    activeTab === 'boardroom' ? 'bg-black/30 text-white' : 'bg-white/10 text-zinc-400'
+                                }`}>
+                                    {debates.length}명
+                                </span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('approved_tf');
-                                fetchTradingDesk();
-                            }}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'approved_tf'
-                                    ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-300 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
-                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                            }`}
-                        >
-                            <span>💼 트레이딩 운용팀</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                            }`}>
-                                {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 운용
-                            </span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab('approved_tf');
+                                    fetchTradingDesk();
+                                }}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'approved_tf'
+                                        ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-300 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
+                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                }`}
+                            >
+                                <span>💼 트레이딩 운용팀</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                    activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                }`}>
+                                    {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 운용
+                                </span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setActiveTab('watchlist_research');
-                                if (researchReports.length === 0) fetchWatchlistResearch();
-                            }}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'watchlist_research'
-                                    ? 'bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
-                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                            }`}
-                        >
-                            <span>🔬 맞춤 종목 리서치팀</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                                activeTab === 'watchlist_research' ? 'bg-slate-950/40 text-slate-950' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                            }`}>
-                                전담 신설
-                            </span>
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveTab('watchlist_research');
+                                    if (researchReports.length === 0) fetchWatchlistResearch();
+                                }}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'watchlist_research'
+                                        ? 'bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
+                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                }`}
+                            >
+                                <span>🔬 맞춤 종목 리서치</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                    activeTab === 'watchlist_research' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                                }`}>
+                                    전담
+                                </span>
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('history')}
-                            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                                activeTab === 'history'
-                                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
-                                    : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                            }`}
-                        >
-                            <span>🗂️ 결재·지시 기록</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                                activeTab === 'history' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-white/10 text-zinc-400'
-                            }`}>
-                                {approvedDocsCount + directiveLogs.length + chatLogs.length}
-                            </span>
-                        </button>
-                    </div>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('history')}
+                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                    activeTab === 'history'
+                                        ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                }`}
+                            >
+                                <span>🗂️ 결재·지시 기록</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                    activeTab === 'history' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-white/10 text-zinc-400'
+                                }`}>
+                                    {approvedDocsCount + directiveLogs.length + chatLogs.length}건
+                                </span>
+                            </button>
+                        </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setShowCommandDrawer(prev => !prev)}
-                            className={`px-3.5 py-2.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
-                                showCommandDrawer
-                                    ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-md shadow-amber-500/10'
-                                    : 'bg-white/5 hover:bg-white/10 border-amber-500/30 text-amber-300'
-                            }`}
-                        >
-                            <span>⚡</span>
-                            <span>{showCommandDrawer ? '지휘통제실 닫기 ▲' : '지휘통제실 열기 ▼'}</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                fetchOfficeData('', '', false);
-                                fetchTradingDesk();
-                            }}
-                            className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                            title="전 부서 보고 갱신"
-                        >
-                            <span>🔄</span>
-                            <span className="hidden sm:inline">새로고침</span>
-                        </button>
+                        {/* 우측 툴: 지휘통제실 & 전 부서 보고 새로고침 */}
+                        <div className="flex items-center gap-1.5 shrink-0 pl-1.5 border-l border-white/10">
+                            <button
+                                type="button"
+                                onClick={() => setShowCommandDrawer(prev => !prev)}
+                                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-sm whitespace-nowrap ${
+                                    showCommandDrawer
+                                        ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-md shadow-amber-500/10'
+                                        : 'bg-white/5 hover:bg-white/10 border-amber-500/30 text-amber-300'
+                                }`}
+                            >
+                                <span>⚡</span>
+                                <span className="hidden sm:inline">{showCommandDrawer ? '지휘통제실 닫기' : '지휘통제실'}</span>
+                                <span className="text-[10px]">{showCommandDrawer ? '▲' : '▼'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    fetchOfficeData('', '', false);
+                                    fetchTradingDesk();
+                                }}
+                                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                                title="전 부서 보고 갱신"
+                            >
+                                <span>🔄</span>
+                                <span className="hidden sm:inline">새로고침</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
+
 
                 {/* ⚡ 대표이사 심플 지시 & 자동운용 컨트롤 바 (임원회의 탭이거나 대표님이 지시창 버튼을 눌렀을 때만 깔끔하게 표시) */}
                 {(showCommandDrawer || activeTab === 'boardroom') && (
