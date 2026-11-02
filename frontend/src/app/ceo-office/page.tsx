@@ -268,7 +268,7 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
         // 한글 텍스트 데이터: font-mono를 배제하고 자연스러운 font-sans font-bold로 가독성 극대화!
         if (rawVal.includes('&')) {
             // "미국 ISM 구매관리자지수(PMI) & 미국 ISM 고용지수" -> 2줄 불릿으로 분리
-            const items = rawVal.split('&').map(s => s.trim()).filter(Boolean);
+            const items = rawVal.split('&').map((s: string) => s.trim()).filter(Boolean);
             renderedValue = (
                 <div className="space-y-1">
                     {items.map((it, idx) => (
@@ -302,7 +302,7 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
             );
         } else {
             // 섹터 나열: "AI 반도체 (HBM), 전력설비·변압기, 조선·해양플랜트"
-            const sectorItems = rawVal.split(',').map(s => s.trim()).filter(Boolean);
+            const sectorItems = rawVal.split(',').map((s: string) => s.trim()).filter(Boolean);
             if (sectorItems.length > 1) {
                 renderedValue = (
                     <div className="flex flex-wrap gap-1 mt-0.5">
@@ -3275,7 +3275,7 @@ export default function CeoOfficePage() {
 
     // 좌측 서류함 카드용 깔끔 2줄 핵심 불릿 추출기 (중복되는 증권사/현재가/목표가 서두 제거 후 핵심 요점만 2줄 요약)
     const getCleanCardBullets = (doc: AutoApprovalDoc): string[] => {
-        const raw = (doc.easy_headline || doc.plain_summary || '').trim();
+        const raw = (doc.easy_headline || (doc as any).plain_summary || '').trim();
         if (!raw) return [];
         const cleaned = raw
             .replace(/^[^.]+대비 목표가를 [^.]+제시했습니다\.\s*/g, '')
@@ -3286,11 +3286,11 @@ export default function CeoOfficePage() {
 
         const sentences = cleaned
             .split(/(?<=다\.|요\.|음\.|함\.|망\.)\s+/)
-            .map(s => s.trim())
-            .filter(s => s.length > 4 && !s.includes('기업 분석 리포트') && !s.includes('대비 목표가를'));
+            .map((s: string) => s.trim())
+            .filter((s: string) => s.length > 4 && !s.includes('기업 분석 리포트') && !s.includes('대비 목표가를'));
 
         const targetList = sentences.length > 0 ? sentences : [cleaned];
-        return targetList.slice(0, 2).map(s => {
+        return targetList.slice(0, 2).map((s: string) => {
             return s
                 .replace(/다가오는 실적 발표에서 시장 예상치\(컨센서스\)를 뛰어넘는/g, '시장 예상치를 뛰어넘는')
                 .replace(/핵심 긍정 요인으로 꼽았습니다\./g, '핵심 호재로 평가')
@@ -3554,21 +3554,20 @@ export default function CeoOfficePage() {
                                         <CheckCircle2 className="w-3.5 h-3.5" /> 5개 본부 전수 조사 완료
                                     </span>
                                 </div>
-                                <span className="text-[11px] text-gray-300 bg-white/[0.04] px-3 py-1 rounded-full border border-white/10 font-mono tracking-tight flex items-center gap-1.5">
-                                    <Clock className="w-3 h-3 text-amber-400" />
-                                    {officeStatus}
+                                <span className="text-[11px] text-zinc-300 bg-white/[0.05] px-3 py-1 rounded-full border border-white/10 font-medium tracking-normal flex items-center gap-1.5 shadow-sm">
+                                    <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                                    <span>{officeStatus}</span>
                                 </span>
                             </div>
 
                             {/* 메인 헤드라인 (품격 있는 프리미엄 타이포그래피) */}
                             <div>
-                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-black tracking-tight text-white leading-[1.25]">
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[34px] font-black tracking-tight text-white leading-snug">
                                     대표님, 오늘 시장 분석이 완료되었습니다. <br className="hidden sm:inline" />
-                                    총{' '}
-                                    <span className="inline-block px-2.5 py-0.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 border border-amber-400/40 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 font-mono font-black shadow-sm mx-1">
-                                        총 {totalDocs}건의 결재 기안서
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-500/25 border border-amber-400/50 text-amber-300 font-extrabold shadow-sm mr-2 align-middle my-1">
+                                        📋 총 {totalDocs}건의 결재 기안서
                                     </span>
-                                    를 검토 후 서명해 주십시오 🖋️
+                                    <span className="inline-block whitespace-nowrap text-zinc-100">검토 후 서명해 주십시오 🖋️</span>
                                 </h1>
                                 <div className="flex flex-wrap items-center gap-2 mt-3 text-xs sm:text-sm text-gray-300">
                                     <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-extrabold text-xs">
@@ -3580,60 +3579,69 @@ export default function CeoOfficePage() {
                                 </div>
                             </div>
 
-                            {/* 🌟 [1] 글로벌 4대 핵심 지표 한눈에 보기 (글래스모피즘 럭셔리 카드) */}
+                            {/* 🌟 [1] 글로벌 4대 핵심 지표 한눈에 보기 (단정하고 품격 있는 핀테크 카드) */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 transition-all rounded-2xl p-3.5 shadow-lg group">
-                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span className="flex items-center gap-1 text-gray-300">🇺🇸 미국 나스닥선물</span>
-                                        <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">NQ=F</span>
+                                <div className="bg-slate-900/70 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 transition-all rounded-2xl p-3 sm:p-3.5 shadow-lg group">
+                                    <div className="flex items-center justify-between text-[11px] text-zinc-300 font-extrabold mb-1">
+                                        <span className="flex items-center gap-1 truncate">
+                                            <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-500/30">미국</span>
+                                            <span className="truncate">나스닥 100 선물</span>
+                                        </span>
+                                        <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold shrink-0">NQ=F</span>
                                     </div>
-                                    <div className="text-base sm:text-lg font-black text-white font-mono tracking-tight">
+                                    <div className="text-sm sm:text-base lg:text-lg font-black text-white font-mono tracking-tight">
                                         {intelligenceMetrics.nqPrice}
                                     </div>
-                                    <div className="text-[10px] text-emerald-300/90 mt-1 font-bold truncate flex items-center gap-1">
+                                    <div className="text-[10px] text-emerald-300/90 mt-1 font-semibold truncate flex items-center gap-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                                         <span>선물 기안서 실시간 연동</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-sky-500/40 transition-all rounded-2xl p-3.5 shadow-lg group">
-                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span className="flex items-center gap-1 text-gray-300">🤖 글로벌 빅테크 대장</span>
-                                        <span className="text-[10px] text-sky-400 font-mono bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 rounded font-bold">{intelligenceMetrics.bigTechSymbol}</span>
+                                <div className="bg-slate-900/70 backdrop-blur-xl border border-white/10 hover:border-sky-500/40 transition-all rounded-2xl p-3 sm:p-3.5 shadow-lg group">
+                                    <div className="flex items-center justify-between text-[11px] text-zinc-300 font-extrabold mb-1">
+                                        <span className="flex items-center gap-1 truncate">
+                                            <span className="px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 text-[10px] font-black border border-sky-500/30">글로벌</span>
+                                            <span className="truncate">빅테크 대장</span>
+                                        </span>
+                                        <span className="text-[10px] text-sky-400 font-mono bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 rounded font-bold shrink-0">{intelligenceMetrics.bigTechSymbol}</span>
                                     </div>
-                                    <div className="text-base sm:text-lg font-black text-white font-mono tracking-tight">
+                                    <div className="text-sm sm:text-base lg:text-lg font-black text-white font-mono tracking-tight">
                                         {intelligenceMetrics.bigTechPrice}
                                     </div>
-                                    <div className="text-[10px] text-sky-300/90 mt-1 font-bold truncate flex items-center gap-1">
+                                    <div className="text-[10px] text-sky-300/90 mt-1 font-semibold truncate flex items-center gap-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
                                         <span>{intelligenceMetrics.bigTechUpside}</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 hover:border-amber-500/40 transition-all rounded-2xl p-3.5 shadow-lg group">
-                                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-bold mb-1">
-                                        <span className="flex items-center gap-1 text-gray-300">💵 실시간 원/달러 환율</span>
-                                        <span className="text-[10px] text-amber-400 font-mono bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">USD/KRW</span>
+                                <div className="bg-slate-900/70 backdrop-blur-xl border border-white/10 hover:border-amber-500/40 transition-all rounded-2xl p-3 sm:p-3.5 shadow-lg group">
+                                    <div className="flex items-center justify-between text-[11px] text-zinc-300 font-extrabold mb-1">
+                                        <span className="flex items-center gap-1 truncate">
+                                            <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-black border border-amber-500/30">환율</span>
+                                            <span className="truncate">원/달러 실시간</span>
+                                        </span>
+                                        <span className="text-[10px] text-amber-400 font-mono bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold shrink-0">USD/KRW</span>
                                     </div>
-                                    <div className="text-base sm:text-lg font-black text-amber-300 font-mono tracking-tight">
+                                    <div className="text-sm sm:text-base lg:text-lg font-black text-amber-300 font-mono tracking-tight">
                                         {intelligenceMetrics.usdKrwPrice}
                                     </div>
-                                    <div className="text-[10px] text-amber-200/90 mt-1 font-bold truncate flex items-center gap-1">
+                                    <div className="text-[10px] text-amber-200/90 mt-1 font-semibold truncate flex items-center gap-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                                         <span>실시간 외환·외인 수급 연동</span>
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-rose-950/40 via-slate-900/70 to-amber-950/30 backdrop-blur-xl border border-rose-500/35 hover:border-rose-400/60 transition-all rounded-2xl p-3.5 shadow-lg group">
-                                    <div className="flex items-center justify-between text-[11px] text-amber-300 font-bold mb-1">
-                                        <span>🎯 상정 종목 평균 기대수익</span>
-                                        <span className="text-[10px] text-rose-300 font-mono bg-rose-500/25 border border-rose-500/40 px-1.5 py-0.2 rounded font-black">TOP PICK</span>
+                                <div className="bg-gradient-to-br from-rose-950/40 via-slate-900/70 to-amber-950/30 backdrop-blur-xl border border-rose-500/35 hover:border-rose-400/60 transition-all rounded-2xl p-3 sm:p-3.5 shadow-lg group">
+                                    <div className="flex items-center justify-between text-[11px] text-amber-300 font-extrabold mb-1">
+                                        <span className="truncate">🎯 상정 평균 기대수익</span>
+                                        <span className="text-[10px] text-rose-300 font-mono bg-rose-500/25 border border-rose-500/40 px-1.5 py-0.2 rounded font-black shrink-0">TOP PICK</span>
                                     </div>
-                                    <div className="text-base sm:text-lg font-black text-rose-400 font-mono tracking-tight">
+                                    <div className="text-sm sm:text-base lg:text-lg font-black text-rose-400 font-mono tracking-tight">
                                         평균 +{intelligenceMetrics.avgUpside}%
                                     </div>
-                                    <div className="text-[10px] text-rose-300 mt-1 font-bold truncate flex items-center gap-1">
-                                        <span>🚀 1위:</span>
+                                    <div className="text-[10px] text-rose-300 mt-1 font-semibold truncate flex items-center gap-1">
+                                        <span className="text-amber-300 font-bold">🚀 1위:</span>
                                         <span className="text-white font-extrabold">{intelligenceMetrics.topStock.name}</span>
                                         <span className="text-rose-400 font-black">({intelligenceMetrics.topStock.upside})</span>
                                     </div>
@@ -3659,78 +3667,124 @@ export default function CeoOfficePage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                                     {/* 카드 1: 오늘 기안서에 실제 올라온 국내/미국 종목 */}
-                                    <div className="bg-black/50 border border-emerald-500/30 rounded-xl p-3.5 space-y-2 hover:border-emerald-500/50 transition-all">
-                                        <div className="text-emerald-300 font-black flex items-center justify-between">
-                                            <span className="flex items-center gap-1.5">
+                                    <div className="bg-slate-950/70 border border-emerald-500/30 rounded-xl p-3.5 space-y-2.5 hover:border-emerald-500/60 transition-all flex flex-col justify-between shadow-md">
+                                        <div className="flex items-center justify-between pb-1.5 border-b border-emerald-500/20">
+                                            <span className="text-xs sm:text-sm font-black text-emerald-300 flex items-center gap-1.5">
                                                 <span>💡</span>
-                                                <span>1. 오늘 어떤 종목이 올라왔나요?</span>
+                                                <span>1. 오늘 상정 종목 현황</span>
                                             </span>
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">실시간 기안</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                                                실시간 기안
+                                            </span>
                                         </div>
-                                        <ul className="space-y-1.5 text-gray-200 font-medium text-[11px] sm:text-xs">
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">국내 상정주 ({intelligenceMetrics.krDocs.length}건):</strong> <strong className="text-emerald-300">{intelligenceMetrics.krStockListStr}</strong></span>
-                                            </li>
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">미국 빅테크 ({intelligenceMetrics.usDocs.length}건):</strong> <strong className="text-sky-300">{intelligenceMetrics.usStockListStr}</strong></span>
-                                            </li>
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">선정 기준:</strong> 증권사 목표가 제시 & 분기 흑자 검증 기업</span>
-                                            </li>
-                                        </ul>
+                                        <div className="space-y-2 text-[11px] sm:text-xs">
+                                            <div className="flex items-start gap-1.5">
+                                                <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-extrabold text-[10px] shrink-0 border border-emerald-500/30">
+                                                    국내 {intelligenceMetrics.krDocs.length}건
+                                                </span>
+                                                <span className="text-zinc-200 font-medium leading-snug break-keep">
+                                                    {intelligenceMetrics.krStockListStr}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5">
+                                                <span className="px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 font-extrabold text-[10px] shrink-0 border border-sky-500/30">
+                                                    미국 {intelligenceMetrics.usDocs.length}건
+                                                </span>
+                                                <span className="text-zinc-200 font-medium leading-snug break-keep">
+                                                    {intelligenceMetrics.usStockListStr}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5 pt-1 border-t border-white/5">
+                                                <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold text-[10px] shrink-0 border border-white/10">
+                                                    선별 기준
+                                                </span>
+                                                <span className="text-zinc-300 text-[11px] leading-snug">
+                                                    증권사 목표가 제시 & 분기 흑자 검증 기업
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* 카드 2: 오늘 기안서의 실시간 선물·환율·수급 */}
-                                    <div className="bg-black/50 border border-cyan-500/30 rounded-xl p-3.5 space-y-2 hover:border-cyan-500/50 transition-all">
-                                        <div className="text-cyan-300 font-black flex items-center justify-between">
-                                            <span className="flex items-center gap-1.5">
+                                    <div className="bg-slate-950/70 border border-cyan-500/30 rounded-xl p-3.5 space-y-2.5 hover:border-cyan-500/60 transition-all flex flex-col justify-between shadow-md">
+                                        <div className="flex items-center justify-between pb-1.5 border-b border-cyan-500/20">
+                                            <span className="text-xs sm:text-sm font-black text-cyan-300 flex items-center gap-1.5">
                                                 <span>📈</span>
-                                                <span>2. 글로벌 선물 & 환율·수급은?</span>
+                                                <span>2. 글로벌 거시 & 수급</span>
                                             </span>
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">24H 거시 연동</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+                                                24H 거시 연동
+                                            </span>
                                         </div>
-                                        <ul className="space-y-1.5 text-gray-200 font-medium text-[11px] sm:text-xs">
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-cyan-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">글로벌 선물:</strong> {intelligenceMetrics.futuresListStr} (<strong className="text-cyan-300">나스닥 {intelligenceMetrics.nqPrice}</strong>)</span>
-                                            </li>
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-cyan-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">실시간 환율:</strong> <strong className="text-amber-300">원/달러 {intelligenceMetrics.usdKrwPrice}</strong> (외국인 수급 직결)</span>
-                                            </li>
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-cyan-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">매매 기준선:</strong> 두 달 평균가(<strong className="text-cyan-300">50일선</strong>) 지지 확인 후 분할 접근</span>
-                                            </li>
-                                        </ul>
+                                        <div className="space-y-2 text-[11px] sm:text-xs">
+                                            <div className="flex items-start gap-1.5">
+                                                <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-extrabold text-[10px] shrink-0 border border-cyan-500/30">
+                                                    선물 지표
+                                                </span>
+                                                <span className="text-zinc-200 font-medium leading-snug break-keep">
+                                                    {intelligenceMetrics.futuresListStr} (<strong className="text-cyan-300 font-bold">나스닥 {intelligenceMetrics.nqPrice}</strong>)
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5">
+                                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold text-[10px] shrink-0 border border-amber-500/30">
+                                                    환율·외인
+                                                </span>
+                                                <span className="text-zinc-200 font-medium leading-snug break-keep">
+                                                    원/달러 <strong className="text-amber-300 font-bold">{intelligenceMetrics.usdKrwPrice}</strong> (외인 수급 직결)
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5 pt-1 border-t border-white/5">
+                                                <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold text-[10px] shrink-0 border border-white/10">
+                                                    원칙 기준
+                                                </span>
+                                                <span className="text-zinc-300 text-[11px] leading-snug">
+                                                    두 달 평균가(<strong className="text-cyan-300 font-bold">50일선</strong>) 지지 확인 후 분할 매수
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* 카드 3: 오늘 기안서 기대수익 1위·2위 & 결재 효과 */}
-                                    <div className="bg-black/50 border border-rose-500/30 rounded-xl p-3.5 space-y-2 hover:border-rose-500/50 transition-all">
-                                        <div className="text-rose-300 font-black flex items-center justify-between">
-                                            <span className="flex items-center gap-1.5">
+                                    <div className="bg-slate-950/70 border border-rose-500/30 rounded-xl p-3.5 space-y-2.5 hover:border-rose-500/60 transition-all flex flex-col justify-between shadow-md">
+                                        <div className="flex items-center justify-between pb-1.5 border-b border-rose-500/20">
+                                            <span className="text-xs sm:text-sm font-black text-rose-300 flex items-center gap-1.5">
                                                 <span>🛡️</span>
-                                                <span>3. 오늘 기대수익 TOP & 결재 효과</span>
+                                                <span>3. 기대수익 TOP & 결재 효과</span>
                                             </span>
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">TFT 즉시 가동</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                                                TFT 즉시 가동
+                                            </span>
                                         </div>
-                                        <ul className="space-y-1.5 text-gray-200 font-medium text-[11px] sm:text-xs">
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-rose-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">기대수익 1위:</strong> <strong className="text-rose-300">{intelligenceMetrics.topStock.name} ({intelligenceMetrics.topStock.upside}, 목표 {intelligenceMetrics.topStock.target})</strong></span>
-                                            </li>
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-rose-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">기대수익 2위:</strong> <strong className="text-amber-300">{intelligenceMetrics.secondStock.name} ({intelligenceMetrics.secondStock.upside}, 목표 {intelligenceMetrics.secondStock.target})</strong></span>
-                                            </li>
-                                            <li className="flex items-start gap-1.5">
-                                                <span className="text-rose-400 font-black shrink-0">•</span>
-                                                <span><strong className="text-white">1천만원 투자 시:</strong> 최고 <strong className="text-emerald-300">{intelligenceMetrics.topStock.profit10m || '약 +872만원'}</strong> 기대 (서명 시 TFT 가동)</span>
-                                            </li>
-                                        </ul>
+                                        <div className="space-y-2 text-[11px] sm:text-xs">
+                                            <div className="flex items-start gap-1.5">
+                                                <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 font-extrabold text-[10px] shrink-0 border border-rose-500/30">
+                                                    1위 종목
+                                                </span>
+                                                <span className="text-zinc-200 font-medium leading-snug break-keep">
+                                                    <strong className="text-white font-extrabold">{intelligenceMetrics.topStock.name}</strong>{' '}
+                                                    <strong className="text-rose-300 font-bold font-mono">({intelligenceMetrics.topStock.upside})</strong>
+                                                    <span className="text-zinc-400 text-[11px] ml-1">목표 {intelligenceMetrics.topStock.target}</span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5">
+                                                <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold text-[10px] shrink-0 border border-amber-500/30">
+                                                    2위 종목
+                                                </span>
+                                                <span className="text-zinc-200 font-medium leading-snug break-keep">
+                                                    <strong className="text-white font-extrabold">{intelligenceMetrics.secondStock.name}</strong>{' '}
+                                                    <strong className="text-amber-300 font-bold font-mono">({intelligenceMetrics.secondStock.upside})</strong>
+                                                    <span className="text-zinc-400 text-[11px] ml-1">목표 {intelligenceMetrics.secondStock.target}</span>
+                                                </span>
+                                            </div>
+                                            <div className="flex items-start gap-1.5 pt-1 border-t border-white/5">
+                                                <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px] shrink-0 border border-emerald-500/30">
+                                                    1천만 운용
+                                                </span>
+                                                <span className="text-zinc-200 text-[11px] leading-snug font-medium">
+                                                    최고 <strong className="text-emerald-300 font-bold font-mono">{intelligenceMetrics.topStock.profit10m || '약 +872만원'}</strong> 기대 (서명 즉시 TFT 가동)
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -5806,7 +5860,7 @@ export default function CeoOfficePage() {
                                                                             ) : (
                                                                                 <button
                                                                                     type="button"
-                                                                                    onClick={() => handleSignDoc(doc.doc_id, 'approved')}
+                                                                                    onClick={() => updateSignature(doc.doc_id, 'approved')}
                                                                                     className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
                                                                                 >
                                                                                     🖋️ 즉시 승인
@@ -5849,7 +5903,7 @@ export default function CeoOfficePage() {
                                                                     ) : (
                                                                         <button
                                                                             type="button"
-                                                                            onClick={() => handleSignDoc(doc.doc_id, 'approved')}
+                                                                            onClick={() => updateSignature(doc.doc_id, 'approved')}
                                                                             className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black cursor-pointer"
                                                                         >
                                                                             🖋️ 즉시 승인
