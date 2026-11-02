@@ -157,7 +157,7 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
     });
 }
 
-// 문장 속 핵심 수치(%·금액)와 강조 키워드를 자동으로 형광펜 하이라이트 렌더링하는 헬퍼 (대표님 눈높이 시원한 큰 글씨!)
+// 문장 속 핵심 수치(%·금액)와 강조 키워드를 자동으로 형광펜 하이라이트 렌더링하는 헬퍼 (적당한 크기 & 줄바꿈 깨짐 방지)
 function renderHighlightedExecutiveText(text: string): React.ReactNode {
     if (!text) return null;
     const pattern = /([+\-]\d+(?:\.\d+)?%|\d{1,3}(?:,\d{3})+(?:\.\d+)?원|\$\d+(?:\.\d+)?|뇌동매매\(추격매수\) 절대 금지!|뇌동매매는 절대 금합니다|추격매수 금지|단기 매물 출회 주의|프로그램 매도 출회 경계|방어적 대응 필수|분할 매수|환율 안정세|이탈은 제한적|오전 10시 지지선|➔)/g;
@@ -165,38 +165,38 @@ function renderHighlightedExecutiveText(text: string): React.ReactNode {
     return parts.map((part, i) => {
         if (!part) return null;
         if (part === '➔') {
-            return <span key={i} className="text-amber-400 font-black mx-1.5 text-sm sm:text-base">➔</span>;
+            return <span key={i} className="text-amber-400 font-black mx-1 inline-block text-xs">➔</span>;
         }
         if (/^-\d+(\.\d+)?%$/.test(part) || part.includes('매물 출회 주의') || part.includes('매도 출회 경계')) {
             return (
-                <span key={i} className="px-2 py-0.5 mx-0.5 rounded-md bg-sky-500/30 text-sky-200 font-mono font-black border border-sky-400/40 text-[13px] sm:text-sm">
+                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-sky-500/25 text-sky-200 font-mono font-bold border border-sky-400/35 text-xs">
                     {part}
                 </span>
             );
         }
         if (/^\+\d+(\.\d+)?%$/.test(part)) {
             return (
-                <span key={i} className="px-2 py-0.5 mx-0.5 rounded-md bg-rose-500/30 text-rose-200 font-mono font-black border border-rose-400/40 text-[13px] sm:text-sm">
+                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-rose-500/25 text-rose-200 font-mono font-bold border border-rose-400/35 text-xs">
                     {part}
                 </span>
             );
         }
         if (part.includes('절대 금지') || part.includes('방어적 대응 필수')) {
             return (
-                <span key={i} className="px-2 py-0.5 mx-0.5 rounded-md bg-rose-500/35 text-rose-100 font-black border border-rose-400/50 underline decoration-rose-300 decoration-2 text-[13px] sm:text-sm">
+                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-rose-500/30 text-rose-100 font-black border border-rose-400/40 text-xs">
                     {part}
                 </span>
             );
         }
         if (part.includes('분할 매수') || part.includes('환율 안정') || part.includes('제한적') || part.includes('오전 10시 지지선')) {
             return (
-                <span key={i} className="px-2 py-0.5 mx-0.5 rounded-md bg-emerald-500/30 text-emerald-200 font-black border border-emerald-400/40 text-[13px] sm:text-sm">
+                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-emerald-500/25 text-emerald-200 font-bold border border-emerald-400/35 text-xs">
                     {part}
                 </span>
             );
         }
         if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?원$/.test(part) || /^\$\d+/.test(part)) {
-            return <strong key={i} className="text-amber-300 font-mono font-black text-[13px] sm:text-sm">{part}</strong>;
+            return <strong key={i} className="whitespace-nowrap text-amber-300 font-mono font-bold text-xs">{part}</strong>;
         }
         return <React.Fragment key={i}>{part}</React.Fragment>;
     });
@@ -4661,9 +4661,9 @@ export default function CeoOfficePage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* ── [STEP 1] 📊 최상단 4대 핵심 지표 전광판 (시원하고 선명한 폰트) ── */}
+                                                    {/* ── [STEP 1] 📊 최상단 4대 핵심 지표 전광판 (적당한 크기 & 세련된 가독성) ── */}
                                                     {activeDoc.key_numbers && activeDoc.key_numbers.length > 0 && (
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                             {activeDoc.key_numbers.slice(0, 4).map((kn, i) => {
                                                                 const valStr = String(kn.value || "");
                                                                 const isDown = valStr.includes("-") && (valStr.includes("%") || valStr.includes("하락") || valStr.includes("▼"));
@@ -4673,30 +4673,30 @@ export default function CeoOfficePage() {
                                                                     ? "text-sky-300 font-mono" 
                                                                     : isUp 
                                                                     ? "text-rose-300 font-mono" 
-                                                                    : "text-amber-200 font-mono";
+                                                                    : "text-amber-300 font-mono";
 
                                                                 const cardStyle = isDown 
-                                                                    ? "border-sky-500/40 bg-gradient-to-br from-sky-950/45 to-slate-950/95" 
+                                                                    ? "border-sky-500/35 bg-gradient-to-br from-sky-950/30 to-slate-950/90" 
                                                                     : isUp 
-                                                                    ? "border-rose-500/40 bg-gradient-to-br from-rose-950/45 to-slate-950/95" 
-                                                                    : "border-amber-500/35 bg-gradient-to-br from-zinc-900/95 to-slate-950/95";
+                                                                    ? "border-rose-500/35 bg-gradient-to-br from-rose-950/30 to-slate-950/90" 
+                                                                    : "border-amber-500/30 bg-gradient-to-br from-zinc-900/90 to-slate-950/90";
 
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className={`rounded-2xl p-3.5 sm:p-4 border transition-all shadow-md flex flex-col justify-between ${cardStyle}`}
+                                                                        className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between ${cardStyle}`}
                                                                     >
-                                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                            <span className="text-xs sm:text-sm text-zinc-100 font-black tracking-tight truncate">
+                                                                        <div className="flex items-center justify-between gap-1 mb-1">
+                                                                            <span className="text-[11px] sm:text-xs text-zinc-300 font-extrabold tracking-tight truncate">
                                                                                 {kn.label}
                                                                             </span>
-                                                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-md ${
-                                                                                isDown ? 'bg-sky-500/25 text-sky-200 border border-sky-400/40' : isUp ? 'bg-rose-500/25 text-rose-200 border border-rose-400/40' : 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
+                                                                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded shrink-0 ${
+                                                                                isDown ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30' : isUp ? 'bg-rose-500/20 text-rose-300 border border-rose-400/30' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
                                                                             }`}>
                                                                                 {isDown ? '▼ 조정' : isUp ? '▲ 강세' : '핵심'}
                                                                             </span>
                                                                         </div>
-                                                                        <div className={`text-base sm:text-lg font-black leading-snug break-words ${valColor}`}>
+                                                                        <div className={`text-xs sm:text-sm font-black leading-snug break-words ${valColor}`}>
                                                                             {kn.value}
                                                                         </div>
                                                                     </div>
@@ -4705,7 +4705,7 @@ export default function CeoOfficePage() {
                                                         </div>
                                                     )}
 
-                                                    {/* ── [STEP 2] ⚡ 3초 한눈에 보는 핵심 신호등 요약판 (선명하고 큼직한 가독성 업그레이드) ── */}
+                                                    {/* ── [STEP 2] ⚡ 3초 핵심 브리핑 (적당하고 정돈된 크기 & 시원한 가독성) ── */}
                                                     {(() => {
                                                         const summaryBullets = toCrispExecutiveBullets(activeDoc.easy_headline || researchBody, 'summary');
                                                         const researchBullets = toCrispExecutiveBullets(researchBody, 'research');
@@ -4716,7 +4716,7 @@ export default function CeoOfficePage() {
                                                             .replace(/^👩‍💼\s*정유진 비서실장\s*\[[^\]]+\]:\s*/g, '')
                                                             .trim();
 
-                                                        // 카드별 1초 한줄 결론 헤드라인 도출
+                                                        // 카드별 1초 한줄 결론 헤드라인 도출 (적당한 12~13px)
                                                         const card1Headline = isMacroDoc
                                                             ? (isCautiousResearch ? '⚠️ 미 반도체·기술주 급락 여파 · 장초반 매물 주의 (환율은 안정)' : '🟢 글로벌 거시환경 우호적 · 수출·대형주 모멘텀 양호')
                                                             : `🚀 목표가 ${activeDoc.target_price || '상향'} (${activeDoc.upside_pct || '모멘텀 우수'}) · 실적·수주 성장세 뚜렷`;
@@ -4731,33 +4731,33 @@ export default function CeoOfficePage() {
 
                                                         return (
                                                             <>
-                                                                {/* 상단 3초 핵심 요약 보드 (원인 ➔ 영향/결론 + 비서실장 1줄 건의) */}
-                                                                <div className="bg-gradient-to-r from-amber-500/20 via-slate-900/95 to-purple-950/45 border-2 border-amber-400/60 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-3.5">
-                                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/15">
+                                                                {/* 상단 3초 핵심 요약 보드 */}
+                                                                <div className="bg-gradient-to-r from-amber-500/15 via-slate-900/90 to-purple-950/30 border border-amber-400/40 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-2.5">
+                                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/10">
                                                                         <div className="flex items-center gap-2">
-                                                                            <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-xs sm:text-sm inline-flex items-center gap-1.5 shadow-md">
+                                                                            <span className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-sm">
                                                                                 <span>⚡</span>
                                                                                 <span>대표님 3초 핵심 브리핑 (한눈에 보기)</span>
                                                                             </span>
-                                                                            <span className="text-xs sm:text-sm font-black text-amber-300 hidden sm:inline">
-                                                                                긴 줄글 없이 핵심만 시원하게 정리했습니다!
+                                                                            <span className="text-[11px] font-bold text-amber-200/90 hidden sm:inline">
+                                                                                핵심만 시원하고 간결하게 정리했습니다
                                                                             </span>
                                                                         </div>
                                                                         {activeDoc.recommendation && (
-                                                                            <span className="px-3 py-1 rounded-xl bg-emerald-500/25 text-emerald-200 text-xs sm:text-sm font-black border border-emerald-400/50 shadow-sm">
-                                                                                👩‍💼 비서실장 건의: {activeDoc.recommendation}
+                                                                            <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/35">
+                                                                                👩‍💼 건의: {activeDoc.recommendation}
                                                                             </span>
                                                                         )}
                                                                     </div>
 
-                                                                    {/* 2단 큰 글씨 핵심 요점 (해외·원인 / 국내·대응) */}
-                                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                                                    {/* 2단 핵심 요점 (해외·원인 / 국내·대응) - 부담 없는 적당한 12.5px 폰트 */}
+                                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                                                                         {summaryBullets.map((item, idx) => (
-                                                                            <div key={idx} className="bg-black/70 border border-white/15 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3 shadow-md">
-                                                                                <span className={`px-2.5 py-1 rounded-lg text-xs sm:text-[13px] font-black border shrink-0 mt-0.5 shadow-sm ${item.tagColor}`}>
+                                                                            <div key={idx} className="bg-black/60 border border-white/10 rounded-xl p-2.5 sm:p-3 flex items-start gap-2 shadow-xs">
+                                                                                <span className={`px-2 py-0.5 rounded text-[11px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                     {item.tag}
                                                                                 </span>
-                                                                                <p className="text-sm sm:text-base font-bold text-white leading-relaxed break-keep">
+                                                                                <p className="text-xs sm:text-[13px] font-semibold text-zinc-100 leading-snug break-keep">
                                                                                     {renderHighlightedExecutiveText(item.text)}
                                                                                 </p>
                                                                             </div>
@@ -4765,99 +4765,99 @@ export default function CeoOfficePage() {
                                                                     </div>
 
                                                                     {/* 비서실장 1줄 실행 가이드 바 */}
-                                                                    <div className="bg-purple-950/50 border border-purple-400/40 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs sm:text-sm">
-                                                                        <div className="flex items-center gap-2 text-purple-100 font-bold">
-                                                                            <span className="text-purple-300 font-black text-sm shrink-0">👩‍💼 결재 시 즉각 이행:</span>
-                                                                            <span className="break-keep text-zinc-100 font-extrabold">{cleanSecretary}</span>
+                                                                    <div className="bg-purple-950/40 border border-purple-400/30 rounded-xl px-3 py-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                                                                        <div className="flex items-center gap-1.5 text-purple-100 font-bold min-w-0">
+                                                                            <span className="text-purple-300 font-black shrink-0">👩‍💼 결재 시:</span>
+                                                                            <span className="truncate text-zinc-200 font-medium">{cleanSecretary}</span>
                                                                         </div>
-                                                                        <span className="text-xs sm:text-sm text-amber-300 font-black shrink-0">
-                                                                            🔒 미결재 시 0원 (100% 대표님 허가제)
+                                                                        <span className="text-[10px] text-amber-300 font-bold shrink-0">
+                                                                            🔒 100% 대표님 승인 안건만 집행
                                                                         </span>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* ── [STEP 3] 🗂️ 세부 브리핑 3단 깔끔 탭 네비게이션 바 ── */}
-                                                                <div className="bg-black/60 border border-white/15 rounded-2xl p-1.5 flex flex-wrap items-center justify-between gap-2">
-                                                                    <div className="flex flex-wrap items-center gap-1.5 flex-1">
+                                                                <div className="bg-black/50 border border-white/10 rounded-2xl p-1 flex flex-wrap items-center justify-between gap-1.5">
+                                                                    <div className="flex flex-wrap items-center gap-1 flex-1">
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => { setExpandAllDocSections(false); setDocSubTab('core'); }}
-                                                                            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                                                                                 !expandAllDocSections && docSubTab === 'core'
-                                                                                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-lg'
-                                                                                    : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                                                                                    ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                                                                                    : 'text-zinc-300 hover:bg-white/5 hover:text-white'
                                                                             }`}
                                                                         >
                                                                             <span>🎯</span>
-                                                                            <span>1. 3대 본부 핵심 요약 {!isMacroDoc ? '& 자금배분' : '& 행동수칙'}</span>
+                                                                            <span>1. 3대 본부 요약 {!isMacroDoc ? '& 자금배분' : '& 행동수칙'}</span>
                                                                         </button>
 
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => { setExpandAllDocSections(false); setDocSubTab('risk'); }}
-                                                                            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                                                                                 !expandAllDocSections && docSubTab === 'risk'
-                                                                                    ? 'bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-lg'
-                                                                                    : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                                                                                    ? 'bg-rose-500 text-white font-black shadow-md'
+                                                                                    : 'text-zinc-300 hover:bg-white/5 hover:text-white'
                                                                             }`}
                                                                         >
                                                                             <span>🛡️</span>
-                                                                            <span>2. CRO 세부 리스크 &amp; 방어 매뉴얼</span>
+                                                                            <span>2. CRO 리스크 &amp; 방어 매뉴얼</span>
                                                                         </button>
 
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => { setExpandAllDocSections(false); setDocSubTab('terms'); }}
-                                                                            className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                                                                                 !expandAllDocSections && docSubTab === 'terms'
-                                                                                    ? 'bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-lg'
-                                                                                    : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                                                                                    ? 'bg-sky-400 text-slate-950 font-black shadow-md'
+                                                                                    : 'text-zinc-300 hover:bg-white/5 hover:text-white'
                                                                             }`}
                                                                         >
                                                                             <span>📖</span>
-                                                                            <span>3. 초보자 3초 용어풀이 ({activeDoc.easy_terms?.length || 0})</span>
+                                                                            <span>3. 3초 용어풀이 ({activeDoc.easy_terms?.length || 0})</span>
                                                                         </button>
                                                                     </div>
 
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => setExpandAllDocSections(!expandAllDocSections)}
-                                                                        className="px-3.5 py-2 rounded-xl text-xs font-black bg-white/10 hover:bg-white/15 text-zinc-200 border border-white/15 cursor-pointer shrink-0"
+                                                                        className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 cursor-pointer shrink-0"
                                                                     >
-                                                                        {expandAllDocSections ? '🗂️ 탭으로 깔끔히 접기' : '📑 한눈에 전체 펼치기'}
+                                                                        {expandAllDocSections ? '🗂️ 탭으로 접기' : '📑 전체 펼치기'}
                                                                     </button>
                                                                 </div>
 
                                                                 {/* ── [TAB 1: 🎯 3대 본부 핵심 브리핑 & 실전 타점/대응지침] ── */}
                                                                 {(expandAllDocSections || docSubTab === 'core') && (
-                                                                    <div className="space-y-4">
-                                                                        {/* 3대 임원 핵심 요약 카드 (선명하고 큼직한 폰트) */}
-                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                                                    <div className="space-y-3">
+                                                                        {/* 3대 임원 핵심 요약 카드 (너무 크지 않고 딱 정돈된 폰트) */}
+                                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                                                                             {/* 1. 리서치센터 핵심 분석 */}
-                                                                            <div className="bg-gradient-to-b from-emerald-950/45 via-zinc-900/90 to-zinc-950 border-2 border-emerald-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col justify-between shadow-lg">
-                                                                                <div className="space-y-3">
-                                                                                    <div className="flex items-center justify-between gap-1.5 text-xs sm:text-sm font-black text-emerald-300 pb-2 border-b border-emerald-500/25">
-                                                                                        <span className="flex items-center gap-1.5">
-                                                                                            <span className="text-base">{isMacroDoc ? '🌎' : '🚀'}</span>
-                                                                                            <span className="text-zinc-100">{isMacroDoc ? '1. 시황 핵심 & 파급' : '1. 상승 동력 (왜 오를까?)'}</span>
+                                                                            <div className="bg-gradient-to-b from-emerald-950/30 via-zinc-900/80 to-zinc-950 border border-emerald-500/35 rounded-2xl p-3 flex flex-col justify-between shadow-md">
+                                                                                <div className="space-y-2">
+                                                                                    <div className="flex items-center justify-between gap-1 text-xs font-black text-emerald-300 pb-1.5 border-b border-emerald-500/20">
+                                                                                        <span className="flex items-center gap-1">
+                                                                                            <span>{isMacroDoc ? '🌎' : '🚀'}</span>
+                                                                                            <span className="text-zinc-100">{isMacroDoc ? '1. 시황 핵심 & 파급' : '1. 상승 동력'}</span>
                                                                                         </span>
-                                                                                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-black border ${
-                                                                                            isCautiousResearch ? 'bg-amber-500/25 text-amber-200 border-amber-400/40' : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
+                                                                                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                                                                            isCautiousResearch ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
                                                                                         }`}>
                                                                                             {isCautiousResearch ? '⚠️ 변동성 주의' : '🟢 모멘텀 우수'}
                                                                                         </span>
                                                                                     </div>
 
-                                                                                    {/* 1초 결론 하이라이트 박스 (시원시원한 14~15px 굵은 글씨) */}
-                                                                                    <div className="bg-emerald-500/20 border-2 border-emerald-400/40 rounded-xl p-3 text-xs sm:text-sm font-black text-emerald-100 leading-snug break-keep shadow-sm">
+                                                                                    {/* 1초 결론 하이라이트 박스 (적당한 12px 굵은 글씨) */}
+                                                                                    <div className="bg-emerald-500/15 border border-emerald-400/30 rounded-lg p-2 text-xs font-bold text-emerald-100 leading-snug break-keep">
                                                                                         {card1Headline}
                                                                                     </div>
 
                                                                                     {/* 개조식 단문 태그 리스트 */}
-                                                                                    <div className="space-y-2">
+                                                                                    <div className="space-y-1.5">
                                                                                         {researchBullets.map((item, bIdx) => (
-                                                                                            <div key={bIdx} className="text-xs sm:text-sm text-zinc-100 leading-relaxed font-semibold flex items-start gap-2">
-                                                                                                <span className={`px-2 py-0.5 rounded-md text-xs font-black border shrink-0 mt-0.5 shadow-xs ${item.tagColor}`}>
+                                                                                            <div key={bIdx} className="text-xs text-zinc-200 leading-snug font-medium flex items-start gap-1.5">
+                                                                                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                                     {item.tag}
                                                                                                 </span>
                                                                                                 <span className="break-keep">{renderHighlightedExecutiveText(item.text)}</span>
@@ -4865,37 +4865,37 @@ export default function CeoOfficePage() {
                                                                                         ))}
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300 font-bold">
-                                                                                    <span>기안: 박진우 부사장 (리서치)</span>
-                                                                                    <span className="text-emerald-300 font-black">팩트체크 완료</span>
+                                                                                <div className="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-400">
+                                                                                    <span>기안: 박진우 부사장</span>
+                                                                                    <span className="text-emerald-400 font-bold">리서치센터</span>
                                                                                 </div>
                                                                             </div>
 
                                                                             {/* 2. 큰손 수급 & 시장 흐름 */}
-                                                                            <div className="bg-gradient-to-b from-cyan-950/45 via-zinc-900/90 to-zinc-950 border-2 border-cyan-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col justify-between shadow-lg">
-                                                                                <div className="space-y-3">
-                                                                                    <div className="flex items-center justify-between gap-1.5 text-xs sm:text-sm font-black text-cyan-300 pb-2 border-b border-cyan-500/25">
-                                                                                        <span className="flex items-center gap-1.5">
-                                                                                            <span className="text-base">📈</span>
-                                                                                            <span className="text-zinc-100">2. 외국인·기관 수급</span>
+                                                                            <div className="bg-gradient-to-b from-cyan-950/30 via-zinc-900/80 to-zinc-950 border border-cyan-500/35 rounded-2xl p-3 flex flex-col justify-between shadow-md">
+                                                                                <div className="space-y-2">
+                                                                                    <div className="flex items-center justify-between gap-1 text-xs font-black text-cyan-300 pb-1.5 border-b border-cyan-500/20">
+                                                                                        <span className="flex items-center gap-1">
+                                                                                            <span>📈</span>
+                                                                                            <span className="text-zinc-100">2. 외인·기관 수급</span>
                                                                                         </span>
-                                                                                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-black border ${
-                                                                                            isCautiousQuant ? 'bg-amber-500/25 text-amber-200 border-amber-400/40' : 'bg-cyan-500/25 text-cyan-200 border-cyan-400/40'
+                                                                                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                                                                            isCautiousQuant ? 'bg-amber-500/20 text-amber-300' : 'bg-cyan-500/20 text-cyan-300'
                                                                                         }`}>
                                                                                             {isCautiousQuant ? '📊 장초반 관찰' : '📊 지지력 확보'}
                                                                                         </span>
                                                                                     </div>
 
                                                                                     {/* 1초 결론 하이라이트 박스 */}
-                                                                                    <div className="bg-cyan-500/20 border-2 border-cyan-400/40 rounded-xl p-3 text-xs sm:text-sm font-black text-cyan-100 leading-snug break-keep shadow-sm">
+                                                                                    <div className="bg-cyan-500/15 border border-cyan-400/30 rounded-lg p-2 text-xs font-bold text-cyan-100 leading-snug break-keep">
                                                                                         {card2Headline}
                                                                                     </div>
 
                                                                                     {/* 개조식 단문 태그 리스트 */}
-                                                                                    <div className="space-y-2">
+                                                                                    <div className="space-y-1.5">
                                                                                         {quantBullets.map((item, bIdx) => (
-                                                                                            <div key={bIdx} className="text-xs sm:text-sm text-zinc-100 leading-relaxed font-semibold flex items-start gap-2">
-                                                                                                <span className={`px-2 py-0.5 rounded-md text-xs font-black border shrink-0 mt-0.5 shadow-xs ${item.tagColor}`}>
+                                                                                            <div key={bIdx} className="text-xs text-zinc-200 leading-snug font-medium flex items-start gap-1.5">
+                                                                                                <span className={`px-1.5 py-0.2 rounded text-[10px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                                     {item.tag}
                                                                                                 </span>
                                                                                                 <span className="break-keep">{renderHighlightedExecutiveText(item.text)}</span>
@@ -4903,74 +4903,74 @@ export default function CeoOfficePage() {
                                                                                         ))}
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300 font-bold">
-                                                                                    <span>기안: 김도현 상무 (퀀트수급)</span>
-                                                                                    <span className="text-cyan-300 font-black">실시간 감시 중</span>
+                                                                                <div className="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-400">
+                                                                                    <span>기안: 김도현 상무</span>
+                                                                                    <span className="text-cyan-400 font-bold">퀀트수급본부</span>
                                                                                 </div>
                                                                             </div>
 
                                                                             {/* 3. 실전 대응 지침 & 목표 타점 */}
-                                                                            <div className="bg-gradient-to-b from-purple-950/45 via-zinc-900/90 to-zinc-950 border-2 border-purple-500/40 rounded-2xl p-4 sm:p-4.5 flex flex-col justify-between shadow-lg">
-                                                                                <div className="space-y-3">
-                                                                                    <div className="flex items-center justify-between gap-1.5 text-xs sm:text-sm font-black text-purple-300 pb-2 border-b border-purple-500/25">
-                                                                                        <span className="flex items-center gap-1.5">
-                                                                                            <span className="text-base">🎯</span>
-                                                                                            <span className="text-zinc-100">{isMacroDoc ? '3. 오늘의 행동 지침' : '3. 목표가 & 매매 원칙'}</span>
+                                                                            <div className="bg-gradient-to-b from-purple-950/30 via-zinc-900/80 to-zinc-950 border border-purple-500/35 rounded-2xl p-3 flex flex-col justify-between shadow-md">
+                                                                                <div className="space-y-2">
+                                                                                    <div className="flex items-center justify-between gap-1 text-xs font-black text-purple-300 pb-1.5 border-b border-purple-500/20">
+                                                                                        <span className="flex items-center gap-1">
+                                                                                            <span>🎯</span>
+                                                                                            <span className="text-zinc-100">{isMacroDoc ? '3. 오늘의 행동 지침' : '3. 목표가 & 원칙'}</span>
                                                                                         </span>
-                                                                                        <span className="px-2 py-0.5 rounded-md bg-purple-500/25 text-purple-200 border border-purple-400/40 text-[11px] font-black">
+                                                                                        <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold">
                                                                                             {isMacroDoc ? '🛡️ 분할 대응' : '💎 눌림목 매수'}
                                                                                         </span>
                                                                                     </div>
 
                                                                                     {/* 1초 결론 하이라이트 박스 */}
-                                                                                    <div className="bg-purple-500/20 border-2 border-purple-400/40 rounded-xl p-3 text-xs sm:text-sm font-black text-purple-100 leading-snug break-keep shadow-sm">
+                                                                                    <div className="bg-purple-500/15 border border-purple-400/30 rounded-lg p-2 text-xs font-bold text-purple-100 leading-snug break-keep">
                                                                                         {card3Headline}
                                                                                     </div>
 
                                                                                     {/* 개조식 단문 태그 리스트 */}
-                                                                                    <div className="space-y-2">
+                                                                                    <div className="space-y-1.5">
                                                                                         {!isMacroDoc && activeDoc.current_price && activeDoc.target_price ? (
                                                                                             <>
-                                                                                                <div className="text-xs sm:text-sm text-zinc-100 leading-relaxed font-semibold flex items-start gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded-md text-xs font-black border bg-amber-500/30 text-amber-200 border-amber-400/50 shrink-0 mt-0.5">
+                                                                                                <div className="text-xs text-zinc-200 leading-snug font-medium flex items-start gap-1.5">
+                                                                                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-black border bg-amber-500/20 text-amber-200 border-amber-400/30 shrink-0 mt-0.5">
                                                                                                         목표타점
                                                                                                     </span>
-                                                                                                    <span>{activeDoc.current_price} <span className="text-amber-400 font-black">➔</span> <strong className="text-amber-300 font-mono text-sm">{activeDoc.target_price}</strong> ({activeDoc.upside_pct || '상승 여력'})</span>
+                                                                                                    <span>{activeDoc.current_price} <span className="text-amber-400">➔</span> <strong className="text-amber-300 font-mono">{activeDoc.target_price}</strong> ({activeDoc.upside_pct || '상승 여력'})</span>
                                                                                                 </div>
-                                                                                                <div className="text-xs sm:text-sm text-zinc-100 leading-relaxed font-semibold flex items-start gap-2">
-                                                                                                    <span className="px-2 py-0.5 rounded-md text-xs font-black border bg-rose-500/30 text-rose-200 border-rose-400/50 shrink-0 mt-0.5">
+                                                                                                <div className="text-xs text-zinc-200 leading-snug font-medium flex items-start gap-1.5">
+                                                                                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-black border bg-rose-500/20 text-rose-200 border-rose-400/30 shrink-0 mt-0.5">
                                                                                                         진입원칙
                                                                                                     </span>
-                                                                                                    <span>시초가 추격 금지 <span className="text-amber-400 font-black">➔</span> <strong className="text-emerald-300 font-black">오전 10시 지지선 분할 매수</strong></span>
+                                                                                                    <span>시초가 추격 금지 <span className="text-amber-400">➔</span> <strong className="text-emerald-300">오전 10시 지지선 분할 매수</strong></span>
                                                                                                 </div>
                                                                                             </>
                                                                                         ) : (
                                                                                             actionBullets.map((item, bIdx) => (
-                                                                                                <div key={bIdx} className="text-xs sm:text-sm text-zinc-100 leading-relaxed font-semibold flex items-start gap-2">
-                                                                                                    <span className={`px-2 py-0.5 rounded-md text-xs font-black border shrink-0 mt-0.5 shadow-xs ${item.tagColor}`}>
+                                                                                                <div key={bIdx} className="text-xs text-zinc-200 leading-snug font-medium flex items-start gap-1.5">
+                                                                                                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                                         {item.tag}
                                                                                                     </span>
                                                                                                     <span className="break-keep">{renderHighlightedExecutiveText(item.text)}</span>
-                                                                                                </div>
+                                                                                            </div>
                                                                                             ))
                                                                                         )}
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300 font-bold">
-                                                                                    <span>기안: 최서연 상무 (CRO)</span>
-                                                                                    <span className="text-purple-300 font-black">-3.5% 손절선 엄수</span>
+                                                                                <div className="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-400">
+                                                                                    <span>기안: 최서연 상무</span>
+                                                                                    <span className="text-purple-300 font-bold">-3.5% 손절선 엄수</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* CRO 핵심 경보 + 4대 행동 수칙 통합 1눈 요약 바 (선명한 텍스트 대비) */}
-                                                                        <div className="bg-gradient-to-r from-rose-950/50 via-zinc-950 to-slate-950 border-2 border-rose-500/40 rounded-2xl p-4 space-y-3 shadow-lg">
-                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                                                    <span className="px-2.5 py-1 rounded-lg bg-rose-500/30 border border-rose-400/50 text-rose-200 font-black text-xs sm:text-sm shrink-0">
+                                                                        {/* CRO 핵심 경보 + 4대 행동 수칙 통합 바 (슬림 & 고가독성) */}
+                                                                        <div className="bg-gradient-to-r from-rose-950/40 via-zinc-950 to-slate-950 border border-rose-500/35 rounded-2xl p-3 space-y-2">
+                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                                                                <div className="flex items-center gap-2 min-w-0">
+                                                                                    <span className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-xs shrink-0">
                                                                                         ⚠️ CRO 경보
                                                                                     </span>
-                                                                                    <p className="text-xs sm:text-sm text-rose-100 font-bold truncate">
+                                                                                    <p className="text-xs text-rose-100 font-medium truncate">
                                                                                         {riskData.headline}
                                                                                     </p>
                                                                                 </div>
@@ -4978,21 +4978,21 @@ export default function CeoOfficePage() {
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => setDocSubTab('risk')}
-                                                                                        className="shrink-0 px-3 py-1.5 rounded-xl bg-rose-500/25 hover:bg-rose-500/35 text-rose-100 border border-rose-400/50 text-xs font-black cursor-pointer shadow-sm"
+                                                                                        className="shrink-0 px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/35 text-[11px] font-bold cursor-pointer"
                                                                                     >
                                                                                         세부 방어 매뉴얼 열기 →
                                                                                     </button>
                                                                                 )}
                                                                             </div>
 
-                                                                            {/* 4대 핵심 행동 수칙 1줄 초간결 배지 그리드 (선명한 텍스트) */}
-                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1.5 border-t border-white/15">
+                                                                            {/* 4대 핵심 행동 수칙 1줄 초간결 배지 그리드 */}
+                                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-white/10">
                                                                                 {riskData.defenseRules.map((rule, rIdx) => (
-                                                                                    <div key={rIdx} className="bg-black/70 border border-white/15 rounded-xl px-3 py-2.5 flex flex-col justify-center shadow-xs">
-                                                                                        <div className="text-xs font-black text-zinc-200 truncate">
+                                                                                    <div key={rIdx} className="bg-black/60 border border-white/10 rounded-xl px-2.5 py-1.5 flex flex-col justify-center">
+                                                                                        <div className="text-[10px] font-bold text-zinc-400 truncate">
                                                                                             {rule.num} {rule.title}
                                                                                         </div>
-                                                                                        <div className="text-xs sm:text-sm font-black text-amber-300 font-mono truncate mt-0.5">
+                                                                                        <div className="text-xs font-bold text-amber-300 font-mono truncate mt-0.5">
                                                                                             {rule.target}
                                                                                         </div>
                                                                                     </div>
@@ -5002,7 +5002,7 @@ export default function CeoOfficePage() {
 
                                                                         {/* 종목 문서일 경우: 💰 실전 자금 배분 & 철통 손익 방어 계산표 */}
                                                                         {!isMacroDoc && riskData.financialPlan && (
-                                                                            <div className="bg-black/75 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                                                                            <div className="bg-black/70 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
                                                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <span className="text-base">💰</span>
@@ -5058,60 +5058,60 @@ export default function CeoOfficePage() {
                                                                                 </div>
 
                                                                                 <div className="overflow-x-auto">
-                                                                                    <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                                                                                    <table className="w-full text-left text-xs border-collapse">
                                                                                         <thead>
-                                                                                            <tr className="border-b border-white/10 text-gray-300 text-xs">
-                                                                                                <th className="py-2.5 px-3 font-black">진행 단계</th>
-                                                                                                <th className="py-2.5 px-3 font-black">기준 단가</th>
-                                                                                                <th className="py-2.5 px-3 font-black">매수 수량 및 투입 금액</th>
-                                                                                                <th className="py-2.5 px-3 font-black">리스크 통제 &amp; 손익 결과</th>
+                                                                                            <tr className="border-b border-white/10 text-gray-400 text-[11px]">
+                                                                                                <th className="py-2 px-2.5 font-bold">진행 단계</th>
+                                                                                                <th className="py-2 px-2.5 font-bold">기준 단가</th>
+                                                                                                <th className="py-2 px-2.5 font-bold">매수 수량 및 투입 금액</th>
+                                                                                                <th className="py-2 px-2.5 font-bold">리스크 통제 &amp; 손익 결과</th>
                                                                                             </tr>
                                                                                         </thead>
-                                                                                        <tbody className="divide-y divide-white/5 text-gray-200">
+                                                                                        <tbody className="divide-y divide-white/5 text-gray-200 text-xs">
                                                                                             {riskData.financialPlan.tranches.map((tr, tIdx) => (
                                                                                                 <tr key={tIdx} className="bg-white/[0.02]">
-                                                                                                    <td className="py-2.5 px-3 font-black text-sky-300">{tr.step}</td>
-                                                                                                    <td className="py-2.5 px-3 font-mono text-white font-bold">{tr.price}</td>
-                                                                                                    <td className="py-2.5 px-3 font-mono text-white font-bold">{tr.shares} ({tr.amt})</td>
-                                                                                                    <td className="py-2.5 px-3 text-zinc-200 font-medium">{tr.desc}</td>
+                                                                                                    <td className="py-2 px-2.5 font-bold text-sky-300">{tr.step}</td>
+                                                                                                    <td className="py-2 px-2.5 font-mono text-white">{tr.price}</td>
+                                                                                                    <td className="py-2 px-2.5 font-mono text-white">{tr.shares} ({tr.amt})</td>
+                                                                                                    <td className="py-2 px-2.5 text-gray-300 font-medium">{tr.desc}</td>
                                                                                                 </tr>
                                                                                             ))}
                                                                                             <tr className="bg-amber-500/10 font-bold border-y border-amber-500/25">
-                                                                                                <td className="py-2.5 px-3 text-amber-300 font-black">⚖️ 총 투자 한도</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-amber-300 font-black">
+                                                                                                <td className="py-2 px-2.5 text-amber-300">⚖️ 총 투자 한도</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-amber-300">
                                                                                                     평균단가 {riskData.financialPlan.avgBuyPrice}
                                                                                                 </td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-amber-300 font-black">
+                                                                                                <td className="py-2 px-2.5 font-mono text-amber-300">
                                                                                                     총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})
                                                                                                     {riskData.financialPlan.cashReserve !== '0원' && !riskData.financialPlan.priceExceedsBudget && (
-                                                                                                        <span className="text-zinc-300 text-xs ml-1.5 font-normal">(잔여 {riskData.financialPlan.cashReserve})</span>
+                                                                                                        <span className="text-gray-400 text-[10px] ml-1.5 font-normal">(잔여 {riskData.financialPlan.cashReserve})</span>
                                                                                                     )}
                                                                                                 </td>
-                                                                                                <td className="py-2.5 px-3 text-amber-200 font-semibold">{riskData.financialPlan.allocType}</td>
+                                                                                                <td className="py-2 px-2.5 text-amber-200">{riskData.financialPlan.allocType}</td>
                                                                                             </tr>
                                                                                             <tr className="bg-rose-500/10 font-bold border-b border-rose-500/30">
-                                                                                                <td className="py-2.5 px-3 text-rose-300 font-black">🛑 기계적 손절 (-3.5%)</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-rose-300 font-black">{riskData.financialPlan.stopLossPrice}</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.stopLossProceeds} 회수)</td>
-                                                                                                <td className="py-2.5 px-3 text-rose-200">
-                                                                                                    <strong className="text-rose-400 font-black">최대 손실 -{riskData.financialPlan.maxLossAmount} 한정</strong>
-                                                                                                    <span className="text-zinc-300 ml-1">(총 {riskData.financialPlan.shieldedAmount} 보존)</span>
+                                                                                                <td className="py-2 px-2.5 text-rose-300">🛑 기계적 손절 (-3.5%)</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-rose-400">{riskData.financialPlan.stopLossPrice}</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.stopLossProceeds} 회수)</td>
+                                                                                                <td className="py-2 px-2.5 text-rose-200">
+                                                                                                    <strong className="text-rose-400">최대 손실 -{riskData.financialPlan.maxLossAmount} 한정</strong>
+                                                                                                    <span className="text-gray-300 ml-1">(총 {riskData.financialPlan.shieldedAmount} 보존)</span>
                                                                                                 </td>
                                                                                             </tr>
                                                                                             <tr className="bg-emerald-500/10 font-bold border-b border-emerald-500/25">
-                                                                                                <td className="py-2.5 px-3 text-emerald-300 font-black">🎯 {riskData.financialPlan.isSingleShare ? '1차 목표가 (선택A)' : '1차 분할 익절'}</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-emerald-300 font-black">{riskData.financialPlan.target1Price}</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-emerald-300">{riskData.financialPlan.target1SharesLabel}</td>
-                                                                                                <td className="py-2.5 px-3 text-emerald-200">
-                                                                                                    회수 {riskData.financialPlan.target1CashIn} <strong className="text-emerald-400 font-black ml-1">(순익 +{riskData.financialPlan.target1ProfitAmt})</strong>
+                                                                                                <td className="py-2 px-2.5 text-emerald-300">🎯 {riskData.financialPlan.isSingleShare ? '1차 목표가 (선택A)' : '1차 분할 익절'}</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-emerald-400">{riskData.financialPlan.target1Price}</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-emerald-300">{riskData.financialPlan.target1SharesLabel}</td>
+                                                                                                <td className="py-2 px-2.5 text-emerald-200">
+                                                                                                    회수 {riskData.financialPlan.target1CashIn} <strong className="text-emerald-400 ml-1">(순익 +{riskData.financialPlan.target1ProfitAmt})</strong>
                                                                                                 </td>
                                                                                             </tr>
                                                                                             <tr className="bg-purple-500/10 font-bold">
-                                                                                                <td className="py-2.5 px-3 text-purple-300 font-black">🏆 최종 목표 달성</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-purple-300 font-black">{riskData.financialPlan.targetPrice} ({riskData.financialPlan.finalUpsidePct})</td>
-                                                                                                <td className="py-2.5 px-3 font-mono text-purple-200">{riskData.financialPlan.finalSharesLabel}</td>
-                                                                                                <td className="py-2.5 px-3 text-purple-200">
-                                                                                                    총 회수 {riskData.financialPlan.finalTotalVal} <strong className="text-purple-300 font-black ml-1">(누적 순익 +{riskData.financialPlan.finalProfitAmt})</strong>
+                                                                                                <td className="py-2 px-2.5 text-purple-300">🏆 최종 목표 달성</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-purple-300">{riskData.financialPlan.targetPrice} ({riskData.financialPlan.finalUpsidePct})</td>
+                                                                                                <td className="py-2 px-2.5 font-mono text-purple-200">{riskData.financialPlan.finalSharesLabel}</td>
+                                                                                                <td className="py-2 px-2.5 text-purple-200">
+                                                                                                    총 회수 {riskData.financialPlan.finalTotalVal} <strong className="text-purple-300 ml-1">(누적 순익 +{riskData.financialPlan.finalProfitAmt})</strong>
                                                                                                 </td>
                                                                                             </tr>
                                                                                         </tbody>
