@@ -4220,164 +4220,194 @@ export default function CeoOfficePage() {
 
                                     {/* 이메일형 2단 마스터-디테일 결재 서류함 */}
                                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                                        {/* 좌측 서류 목록 (Mail Master List) */}
+                                        {/* 좌측 서류 목록 (Mail Master List - 카테고리 그룹핑 & 2줄 초슬림 인덱스 카드) */}
                                         <div className={`lg:col-span-5 xl:col-span-4 space-y-2.5 ${mobileDetailOpen ? 'hidden lg:block' : 'block'}`}>
-                                            <div className="flex items-center justify-between px-1 text-xs text-gray-400 font-bold mb-1">
-                                                <span>📬 상정된 서류함 ({filteredDocs.length}건)</span>
-                                                <span className="text-[11px] text-amber-300">클릭 시 우측 상세 열람</span>
+                                            <div className="flex items-center justify-between px-1.5 py-1 bg-[#0a101f]/90 border border-white/10 rounded-xl text-xs text-gray-300 font-bold">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>📬 상정 서류함</span>
+                                                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-black text-[11px]">
+                                                        {filteredDocs.length}건
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] text-amber-300/90 font-semibold">
+                                                    👉 항목 클릭 시 우측 상세 보고서 열람
+                                                </span>
                                             </div>
 
-                                            <div className="space-y-2.5">
+                                            <div className="space-y-3 lg:max-h-[880px] lg:overflow-y-auto pr-1">
                                                 {filteredDocs.length === 0 ? (
                                                     <div className="bg-black/30 border border-white/10 rounded-2xl p-8 text-center text-gray-400 text-xs">
                                                         해당 조건에 맞는 결재 서류가 없습니다.
                                                     </div>
-                                                ) : (
-                                                    filteredDocs.map((doc) => {
-                                                        const signInfo = signMap[doc.doc_id];
-                                                        const status: SignStatus = signInfo?.status || 'pending';
-                                                        const isSelected = activeDoc?.doc_id === doc.doc_id;
+                                                ) : (() => {
+                                                    const getDocGroupKey = (d: AutoApprovalDoc) => {
+                                                        if (d.category_type === 'kr_stock') return 'kr_stock';
+                                                        if (d.category_type === 'us_stock') return 'us_stock';
+                                                        if (d.category_type === 'global_futures') return 'global_futures';
+                                                        return 'macro_brief';
+                                                    };
 
-                                                        return (
-                                                            <div
-                                                                key={doc.doc_id}
-                                                                onClick={() => {
-                                                                    setSelectedDocId(doc.doc_id);
-                                                                    setMobileDetailOpen(true);
-                                                                    setTimeout(() => {
-                                                                        detailReaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                                    }, 60);
-                                                                }}
-                                                                className={`group relative rounded-2xl border-2 transition-all p-3.5 sm:p-4 cursor-pointer text-left ${
-                                                                    isSelected
-                                                                        ? 'border-amber-400/80 bg-gradient-to-br from-[#182645] to-[#0f172a] shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/40'
-                                                                        : status === 'approved'
-                                                                        ? 'border-emerald-500/30 bg-[#0a1518]/70 hover:border-emerald-500/60'
-                                                                        : status === 'hold'
-                                                                        ? 'border-rose-500/30 bg-[#160d15]/70 hover:border-rose-500/60'
-                                                                        : 'border-white/10 bg-[#0d1526]/80 hover:border-white/25 hover:bg-[#111c33]'
-                                                                }`}
-                                                            >
-                                                                {/* 선택 좌측 하이라이트 바 */}
-                                                                {isSelected && (
-                                                                    <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-gradient-to-b from-amber-400 to-yellow-300 rounded-r-full" />
-                                                                )}
+                                                    const groupMeta: Record<string, { title: string; badgeClass: string }> = {
+                                                        macro_brief: {
+                                                            title: '📌 1. 핵심 시황 · 경제일정 · 주간복기',
+                                                            badgeClass: 'text-amber-300 bg-amber-500/15 border-amber-500/30',
+                                                        },
+                                                        kr_stock: {
+                                                            title: '🇰🇷 2. 국내 증권사 추천 우량주',
+                                                            badgeClass: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30',
+                                                        },
+                                                        us_stock: {
+                                                            title: '🌎 3. 미국 빅테크 주도주',
+                                                            badgeClass: 'text-sky-300 bg-sky-500/15 border-sky-500/30',
+                                                        },
+                                                        global_futures: {
+                                                            title: '📊 4. 글로벌 선물 · 거시 위험도 지표',
+                                                            badgeClass: 'text-purple-300 bg-purple-500/15 border-purple-500/30',
+                                                        },
+                                                    };
 
-                                                                {/* 1. 상단: 문서번호 & 카테고리 뱃지 & 결재상태 */}
-                                                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2 pl-1.5">
-                                                                    <div className="flex flex-wrap items-center gap-1.5">
-                                                                        <span className="text-[10px] font-mono font-extrabold text-slate-300 bg-white/5 px-1.5 py-0.5 rounded">
-                                                                            {doc.doc_number}
-                                                                        </span>
-                                                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                                                            {doc.category_badge}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="shrink-0">
-                                                                        {status === 'approved' && (
-                                                                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-300 bg-emerald-500/20 border border-emerald-400/40 px-2 py-0.5 rounded-full">
-                                                                                💮 결재완료
-                                                                            </span>
-                                                                        )}
-                                                                        {status === 'hold' && (
-                                                                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-300 bg-rose-500/20 border border-rose-400/40 px-2 py-0.5 rounded-full">
-                                                                                ⏸️ 보류
-                                                                            </span>
-                                                                        )}
-                                                                        {status === 'pending' && (
-                                                                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-300 bg-amber-500/20 border border-amber-400/40 px-2 py-0.5 rounded-full">
-                                                                                ⏳ 미결재
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
+                                                    const orderedGroupKeys = ['macro_brief', 'kr_stock', 'us_stock', 'global_futures'];
+                                                    const groups = categoryFilter === 'all'
+                                                        ? orderedGroupKeys
+                                                            .map(k => ({
+                                                                key: k,
+                                                                meta: groupMeta[k],
+                                                                docs: filteredDocs.filter(d => getDocGroupKey(d) === k),
+                                                            }))
+                                                            .filter(g => g.docs.length > 0)
+                                                        : [{ key: 'single', meta: null, docs: filteredDocs }];
+
+                                                    return groups.map(group => (
+                                                        <div key={group.key} className="space-y-1.5">
+                                                            {group.meta && (
+                                                                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-white/10">
+                                                                    <span className="text-[11px] font-black text-gray-200 tracking-tight">
+                                                                        {group.meta.title}
+                                                                    </span>
+                                                                    <span className={`text-[10px] font-black px-2 py-0.2 rounded-full border ${group.meta.badgeClass}`}>
+                                                                        {group.docs.length}건
+                                                                    </span>
                                                                 </div>
+                                                            )}
 
-                                                                {/* 2. 종목명 하이라이트 + 핵심 한줄 제목 */}
-                                                                {(() => {
+                                                            <div className="space-y-1.5">
+                                                                {group.docs.map((doc) => {
+                                                                    const signInfo = signMap[doc.doc_id];
+                                                                    const status: SignStatus = signInfo?.status || 'pending';
+                                                                    const isSelected = activeDoc?.doc_id === doc.doc_id;
                                                                     const { badgeName, mainTitle } = getCleanCardTitle(doc);
-                                                                    const bullets = getCleanCardBullets(doc);
+                                                                    const shortNum = doc.doc_number.replace(/^제\s*\d+-/, '#').replace(/\s*호$/, '');
+                                                                    const brokerMatch = doc.category_badge?.match(/\(([^)]+)\)/);
+                                                                    const shortSource = brokerMatch ? brokerMatch[1] : doc.category_badge?.replace(/^[^\s]+\s*/, '');
+                                                                    const currShort = doc.current_price ? doc.current_price.split(' ')[0] : '';
+                                                                    const hasValidUpside = Boolean(
+                                                                        doc.upside_pct &&
+                                                                        doc.upside_pct !== '컨센서스 유지' &&
+                                                                        doc.upside_pct !== '집계 중' &&
+                                                                        !doc.upside_pct.includes('★')
+                                                                    );
+
                                                                     return (
-                                                                        <>
-                                                                            <div className="pl-1.5 space-y-1">
-                                                                                {badgeName && (
-                                                                                    <div className="inline-flex items-center gap-1.5">
-                                                                                        <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-500/25 to-yellow-500/15 border border-amber-400/40 text-amber-200 font-black text-xs">
-                                                                                            🎯 {badgeName}
+                                                                        <div
+                                                                            key={doc.doc_id}
+                                                                            onClick={() => {
+                                                                                setSelectedDocId(doc.doc_id);
+                                                                                setMobileDetailOpen(true);
+                                                                                setTimeout(() => {
+                                                                                    detailReaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                                                }, 60);
+                                                                            }}
+                                                                            className={`group relative rounded-xl border transition-all px-3 py-2.5 cursor-pointer text-left ${
+                                                                                isSelected
+                                                                                    ? 'border-amber-400/90 bg-gradient-to-r from-[#1b2b4f] to-[#111c35] shadow-md shadow-amber-500/10 ring-1 ring-amber-400/40'
+                                                                                    : status === 'approved'
+                                                                                    ? 'border-emerald-500/30 bg-[#0a1518]/75 hover:border-emerald-500/60'
+                                                                                    : status === 'hold'
+                                                                                    ? 'border-rose-500/30 bg-[#160d15]/75 hover:border-rose-500/60'
+                                                                                    : 'border-white/10 bg-[#0d1526]/85 hover:border-white/25 hover:bg-[#131f38]'
+                                                                            }`}
+                                                                        >
+                                                                            {/* 선택 좌측 하이라이트 바 */}
+                                                                            {isSelected && (
+                                                                                <div className="absolute left-0 top-2 bottom-2 w-1 bg-gradient-to-b from-amber-400 to-yellow-300 rounded-r-full" />
+                                                                            )}
+
+                                                                            {/* 1줄: 번호 · 종목/안건 뱃지 · 출처 · 기대수익 · 원클릭 서명 */}
+                                                                            <div className="flex items-center justify-between gap-2 pl-1">
+                                                                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                                    <span className="text-[10px] font-mono font-bold text-slate-400 shrink-0">
+                                                                                        {shortNum}
+                                                                                    </span>
+                                                                                    <span className={`px-2 py-0.5 rounded-md font-black text-xs truncate ${
+                                                                                        isSelected
+                                                                                            ? 'bg-amber-400 text-slate-950'
+                                                                                            : 'bg-amber-500/20 text-amber-200 border border-amber-400/30'
+                                                                                    }`}>
+                                                                                        {badgeName || doc.stock_name}
+                                                                                    </span>
+                                                                                    {shortSource && (
+                                                                                        <span className="hidden sm:inline-block text-[10px] font-bold text-gray-400 bg-white/5 px-1.5 py-0.5 rounded truncate max-w-[95px]">
+                                                                                            {shortSource}
                                                                                         </span>
-                                                                                    </div>
-                                                                                )}
-                                                                                <h4 className={`text-[13px] sm:text-sm font-black leading-snug break-keep ${
-                                                                                    isSelected ? 'text-white' : 'text-gray-100 group-hover:text-white'
-                                                                                }`}>
-                                                                                    {mainTitle}
-                                                                                </h4>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                                                    {hasValidUpside && (
+                                                                                        <span className="px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono font-black text-[10px]">
+                                                                                            {doc.upside_pct}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {status === 'hold' && (
+                                                                                        <span className="text-[10px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded">
+                                                                                            ⏸️보류
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            updateSignature(doc.doc_id, status === 'approved' ? 'pending' : 'approved');
+                                                                                        }}
+                                                                                        className={`px-2 py-0.5 rounded-md text-[10px] font-black transition-all cursor-pointer ${
+                                                                                            status === 'approved'
+                                                                                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/30'
+                                                                                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm'
+                                                                                        }`}
+                                                                                    >
+                                                                                        {status === 'approved' ? '💮완료' : '서명'}
+                                                                                    </button>
+                                                                                </div>
                                                                             </div>
 
-                                                                            {/* 3. 💰 현재가 ➔ 목표가 & 기대수익 하이라이트 박스 (확 눈에 띄게!) */}
-                                                                            {(doc.current_price || doc.target_price) && (
-                                                                                <div className="mt-2.5 ml-1.5 p-2 rounded-xl bg-black/50 border border-white/10 flex flex-wrap items-center justify-between gap-1.5 text-[11px] font-mono">
-                                                                                    <div className="flex flex-wrap items-center gap-1.5">
-                                                                                        {doc.current_price && (
-                                                                                            <span className="text-gray-200 font-bold">
-                                                                                                현재 <strong className="text-white">{doc.current_price.split(' ')[0]}</strong>
-                                                                                            </span>
-                                                                                        )}
+                                                                            {/* 2줄: 핵심 한줄 제목 + 현재가 ➔ 목표가 요약 */}
+                                                                            <div className="mt-1.5 pl-1 flex items-center justify-between gap-2 text-[11px]">
+                                                                                <p className={`truncate flex-1 font-bold ${
+                                                                                    isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'
+                                                                                }`}>
+                                                                                    {mainTitle}
+                                                                                </p>
+                                                                                {(currShort || doc.target_price) && (
+                                                                                    <div className="shrink-0 font-mono text-[10px] flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded border border-white/5">
+                                                                                        {currShort && <span className="text-gray-300">{currShort}</span>}
                                                                                         {doc.target_price && (
                                                                                             <>
-                                                                                                <span className="text-amber-400 font-black">➔</span>
-                                                                                                <span className="text-amber-300 font-black">
-                                                                                                    목표 {doc.target_price}
+                                                                                                <span className="text-amber-400">➔</span>
+                                                                                                <span className="text-amber-300 font-bold truncate max-w-[110px]">
+                                                                                                    {doc.target_price}
                                                                                                 </span>
                                                                                             </>
                                                                                         )}
                                                                                     </div>
-                                                                                    {doc.upside_pct && doc.upside_pct !== '컨센서스 유지' && doc.upside_pct !== '집계 중' && (
-                                                                                        <span className="px-2 py-0.5 rounded-md bg-rose-500/25 border border-rose-500/40 text-rose-300 font-black text-[11px]">
-                                                                                            기대 {doc.upside_pct}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* 4. 📌 핵심 요점 2줄 불릿 요약 (중복 서두 없이 깔끔하게!) */}
-                                                                            {bullets.length > 0 && (
-                                                                                <ul className="mt-2 pl-1.5 space-y-1 text-[11px] text-gray-200 leading-snug break-keep">
-                                                                                    {bullets.map((b, bIdx) => (
-                                                                                        <li key={bIdx} className="flex items-start gap-1.5">
-                                                                                            <span className="text-amber-400 font-black shrink-0 mt-0.5">•</span>
-                                                                                            <span>{b}</span>
-                                                                                        </li>
-                                                                                    ))}
-                                                                                </ul>
-                                                                            )}
-                                                                        </>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
                                                                     );
-                                                                })()}
-
-                                                                {/* 5. 하단: 기안 임원 요약 & 서명 퀵버튼 */}
-                                                                <div className="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t border-white/10 pl-1.5 text-[10px] text-gray-400">
-                                                                    <span className="flex-1 leading-snug break-keep">✍️ {doc.proposer}</span>
-                                                                    <div className="flex items-center gap-1 shrink-0">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                updateSignature(doc.doc_id, status === 'approved' ? 'pending' : 'approved');
-                                                                            }}
-                                                                            className={`px-2 py-1 rounded-md text-[10px] font-black transition-all cursor-pointer ${
-                                                                                status === 'approved'
-                                                                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30'
-                                                                                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm'
-                                                                            }`}
-                                                                        >
-                                                                            {status === 'approved' ? '취소' : '서명'}
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
+                                                                })}
                                                             </div>
-                                                        );
-                                                    })
-                                                )}
+                                                        </div>
+                                                    ));
+                                                })()}
                                             </div>
                                         </div>
 
