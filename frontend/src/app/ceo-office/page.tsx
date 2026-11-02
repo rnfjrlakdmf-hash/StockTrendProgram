@@ -202,6 +202,135 @@ function renderHighlightedExecutiveText(text: string): React.ReactNode {
     });
 }
 
+// 4대 핵심 지표(전광판) 깔끔 렌더링 헬퍼: 숫자/금융 데이터는 font-mono, 한글 텍스트/테마/섹터는 font-sans로 자간 깨짐 없이 자연스럽게 출력!
+function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
+    badgeText: string;
+    badgeStyle: string;
+    cardStyle: string;
+    renderedValue: React.ReactNode;
+} {
+    let rawVal = String(kn.value || '').trim();
+    const rawLabel = String(kn.label || '').trim();
+
+    // 소문자 'us ' 접두사를 단정한 국기 이모지 '🇺🇸 '로 정제
+    rawVal = rawVal.replace(/\bus\s+/gi, '🇺🇸 ');
+    rawVal = rawVal.replace(/\bkr\s+/gi, '🇰🇷 ');
+
+    const isDown = rawVal.includes('-') && (rawVal.includes('%') || rawVal.includes('하락') || rawVal.includes('▼'));
+    const isUp = rawVal.includes('+') && (rawVal.includes('%') || rawVal.includes('상승') || rawVal.includes('▲'));
+
+    // 숫자/시세 중심인지, 한글 서술/테마/섹터 텍스트인지 판별
+    const isFinancialPrice = /^[\$₩]?[0-9,]+(?:\.[0-9]+)?(?:원|pt|%|달러)?(?:\s*\([+\-]?[0-9,]+(?:\.[0-9]+)?%?\))?$/i.test(rawVal.trim()) ||
+        (/[0-9,]+(?:\.[0-9]+)?\s*\([+\-]\d+(?:\.\d+)?%\)/.test(rawVal) && rawVal.length < 35);
+
+    // 라벨과 값에 따른 스마트 뱃지 판별
+    let badgeText = '핵심';
+    let badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
+    let cardStyle = 'border-amber-500/30 bg-gradient-to-br from-zinc-900/90 to-slate-950/90';
+
+    if (isDown) {
+        badgeText = '▼ 조정';
+        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
+        cardStyle = 'border-sky-500/35 bg-gradient-to-br from-sky-950/30 to-slate-950/90';
+    } else if (isUp) {
+        badgeText = '▲ 강세';
+        badgeStyle = 'bg-rose-500/20 text-rose-300 border-rose-400/30';
+        cardStyle = 'border-rose-500/35 bg-gradient-to-br from-rose-950/30 to-slate-950/90';
+    } else if (rawLabel.includes('테마') || rawLabel.includes('일정')) {
+        badgeText = '핵심 테마';
+        badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
+        cardStyle = 'border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('시나리오') || rawLabel.includes('상태')) {
+        badgeText = '실시간 판정';
+        badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
+        cardStyle = 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('섹터') || rawLabel.includes('공략') || rawLabel.includes('수혜')) {
+        badgeText = '수혜 섹터';
+        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
+        cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('중요도') || rawLabel.includes('별')) {
+        badgeText = '중요도';
+        badgeStyle = 'bg-purple-500/20 text-purple-300 border-purple-400/30';
+        cardStyle = 'border-purple-500/30 bg-gradient-to-br from-purple-950/20 via-zinc-900/90 to-slate-950/90';
+    }
+
+    let renderedValue: React.ReactNode = null;
+
+    if (isFinancialPrice) {
+        // 시세/가격 데이터: font-mono로 깔끔한 정렬
+        const valColor = isDown ? "text-sky-300" : isUp ? "text-rose-300" : "text-amber-300";
+        renderedValue = (
+            <div className={`text-xs sm:text-sm font-black font-mono leading-snug break-words ${valColor}`}>
+                {rawVal}
+            </div>
+        );
+    } else {
+        // 한글 텍스트 데이터: font-mono를 배제하고 자연스러운 font-sans font-bold로 가독성 극대화!
+        if (rawVal.includes('&')) {
+            // "미국 ISM 구매관리자지수(PMI) & 미국 ISM 고용지수" -> 2줄 불릿으로 분리
+            const items = rawVal.split('&').map(s => s.trim()).filter(Boolean);
+            renderedValue = (
+                <div className="space-y-1">
+                    {items.map((it, idx) => (
+                        <div key={idx} className="text-xs font-bold text-amber-200 leading-snug flex items-start gap-1">
+                            <span className="text-amber-400 text-[10px] shrink-0 mt-0.5">•</span>
+                            <span className="break-keep">{it}</span>
+                        </div>
+                    ))}
+                </div>
+            );
+        } else if (rawVal.includes('🟢') || rawVal.includes('호재') || rawVal.includes('시나리오')) {
+            renderedValue = (
+                <div className="text-xs font-bold text-emerald-200 leading-snug break-keep flex items-start gap-1.5">
+                    <span className="shrink-0 mt-0.5">🟢</span>
+                    <span>{rawVal.replace(/^🟢\s*/, '')}</span>
+                </div>
+            );
+        } else if (rawVal.includes('★')) {
+            const starMatch = rawVal.match(/^(★+)\s*(.*)$/);
+            renderedValue = (
+                <div className="space-y-0.5">
+                    <div className="text-amber-400 font-black text-xs tracking-wider">
+                        {starMatch ? starMatch[1] : '★★★★★'}
+                    </div>
+                    {starMatch && starMatch[2] && (
+                        <div className="text-[11px] text-zinc-300 font-bold leading-tight break-keep">
+                            {starMatch[2]}
+                        </div>
+                    )}
+                </div>
+            );
+        } else {
+            // 섹터 나열: "AI 반도체 (HBM), 전력설비·변압기, 조선·해양플랜트"
+            const sectorItems = rawVal.split(',').map(s => s.trim()).filter(Boolean);
+            if (sectorItems.length > 1) {
+                renderedValue = (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                        {sectorItems.map((sec, idx) => (
+                            <span key={idx} className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-amber-200 text-[11px] font-bold">
+                                {sec}
+                            </span>
+                        ))}
+                    </div>
+                );
+            } else {
+                renderedValue = (
+                    <div className="text-xs font-bold text-zinc-100 leading-snug break-keep">
+                        {rawVal}
+                    </div>
+                );
+            }
+        }
+    }
+
+    return {
+        badgeText,
+        badgeStyle,
+        cardStyle,
+        renderedValue,
+    };
+}
+
 interface Executive {
     id: string;
     name: string;
@@ -4615,12 +4744,30 @@ export default function CeoOfficePage() {
 
                                                         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
                                                             <div>
-                                                                <h3 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight">
-                                                                    {activeDoc.title}
-                                                                </h3>
+                                                                {(() => {
+                                                                    let titleStr = activeDoc.title || '';
+                                                                    let prefixTag = '';
+                                                                    const m = titleStr.match(/^\[([^\]]+)\]\s*(.*)$/);
+                                                                    if (m) {
+                                                                        prefixTag = m[1];
+                                                                        titleStr = m[2];
+                                                                    }
+                                                                    return (
+                                                                        <div className="space-y-1">
+                                                                            {prefixTag && (
+                                                                                <div className="inline-block px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-amber-300 font-bold text-xs mr-2">
+                                                                                    {prefixTag}
+                                                                                </div>
+                                                                            )}
+                                                                            <h3 className="text-base sm:text-lg font-black text-white leading-snug tracking-tight inline">
+                                                                                {titleStr}
+                                                                            </h3>
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                                 <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-400">
-                                                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300 font-bold">기안</span>
-                                                                    <span className="text-zinc-200 font-semibold">{activeDoc.proposer}</span>
+                                                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300 font-bold">✍️ 기안</span>
+                                                                    <span className="text-zinc-200 font-medium">{activeDoc.proposer}</span>
                                                                 </div>
                                                             </div>
 
@@ -4661,43 +4808,27 @@ export default function CeoOfficePage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* ── [STEP 1] 📊 최상단 4대 핵심 지표 전광판 (적당한 크기 & 세련된 가독성) ── */}
+                                                    {/* ── [STEP 1] 📊 최상단 4대 핵심 지표 전광판 (한글 자간 깨짐 없이 깔끔한 고품질 렌더링) ── */}
                                                     {activeDoc.key_numbers && activeDoc.key_numbers.length > 0 && (
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                                                             {activeDoc.key_numbers.slice(0, 4).map((kn, i) => {
-                                                                const valStr = String(kn.value || "");
-                                                                const isDown = valStr.includes("-") && (valStr.includes("%") || valStr.includes("하락") || valStr.includes("▼"));
-                                                                const isUp = valStr.includes("+") && (valStr.includes("%") || valStr.includes("상승") || valStr.includes("▲"));
-
-                                                                const valColor = isDown 
-                                                                    ? "text-sky-300 font-mono" 
-                                                                    : isUp 
-                                                                    ? "text-rose-300 font-mono" 
-                                                                    : "text-amber-300 font-mono";
-
-                                                                const cardStyle = isDown 
-                                                                    ? "border-sky-500/35 bg-gradient-to-br from-sky-950/30 to-slate-950/90" 
-                                                                    : isUp 
-                                                                    ? "border-rose-500/35 bg-gradient-to-br from-rose-950/30 to-slate-950/90" 
-                                                                    : "border-amber-500/30 bg-gradient-to-br from-zinc-900/90 to-slate-950/90";
+                                                                const { badgeText, badgeStyle, cardStyle, renderedValue } = renderExecutiveKeyNumber(kn);
 
                                                                 return (
                                                                     <div
                                                                         key={i}
                                                                         className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between ${cardStyle}`}
                                                                     >
-                                                                        <div className="flex items-center justify-between gap-1 mb-1">
+                                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
                                                                             <span className="text-[11px] sm:text-xs text-zinc-300 font-extrabold tracking-tight truncate">
                                                                                 {kn.label}
                                                                             </span>
-                                                                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded shrink-0 ${
-                                                                                isDown ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30' : isUp ? 'bg-rose-500/20 text-rose-300 border border-rose-400/30' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                                                                            }`}>
-                                                                                {isDown ? '▼ 조정' : isUp ? '▲ 강세' : '핵심'}
+                                                                            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded shrink-0 border ${badgeStyle}`}>
+                                                                                {badgeText}
                                                                             </span>
                                                                         </div>
-                                                                        <div className={`text-xs sm:text-sm font-black leading-snug break-words ${valColor}`}>
-                                                                            {kn.value}
+                                                                        <div className="min-h-[38px] flex items-center">
+                                                                            {renderedValue}
                                                                         </div>
                                                                     </div>
                                                                 );
