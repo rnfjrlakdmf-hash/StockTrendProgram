@@ -4,10 +4,18 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   Gauge, TrendingUp, TrendingDown, RefreshCw, 
-  Sparkles, Activity, Scale, ChevronRight
+  Sparkles, Activity, Scale, ChevronRight, ShieldAlert
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
+
+interface VixInfo {
+  value: number;
+  change: number;
+  change_pct: number;
+  label: string;
+  desc: string;
+}
 
 interface FearGreedData {
   score: number;
@@ -17,6 +25,7 @@ interface FearGreedData {
     volatility?: number;
     momentum?: number;
   };
+  vix?: VixInfo;
   marketSignal?: string;
   reason?: string;
 }
@@ -30,12 +39,46 @@ export default function FearGreedSpeedometer() {
       volatility: 73,
       momentum: 100,
     },
+    vix: {
+      value: 15.40,
+      change: -0.35,
+      change_pct: -2.22,
+      label: "정상·안정권",
+      desc: "현재 VIX 20 이하 안정권에 머물며 글로벌 투자심리가 양호합니다.",
+    },
     marketSignal: "초강세장 (Strong Bullish)",
     reason: "코스피 및 코스닥 전반에 걸쳐 외인·기관 대량 순매수와 상승 모멘텀이 매우 강하게 유지되고 있습니다.",
   });
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("");
+
+  const getVixFallback = (volScore: number): VixInfo => {
+    // vix_score = 100 - ((vix - 10) / 20 * 100) => vix = 10 + (100 - vix_score) * 0.2
+    const estimated = Math.max(10, Math.min(45, Number((10 + (100 - volScore) * 0.2).toFixed(2))));
+    let label = "정상·안정권";
+    let desc = `현재 VIX ${estimated.toFixed(2)}pt로 20 이하 안정권에 머물며 글로벌 투자심리가 양호합니다.`;
+    if (estimated < 15) {
+      label = "초안정 (강세장)";
+      desc = `현재 VIX ${estimated.toFixed(2)}pt로 15 미만의 매우 평온한 강세장 구간입니다.`;
+    } else if (estimated >= 30) {
+      label = "극단적 공포 (패닉)";
+      desc = `현재 VIX ${estimated.toFixed(2)}pt로 30을 돌파한 패닉 구간입니다. 역사적으로 우량주 저점 분할매수 기회였습니다.`;
+    } else if (estimated >= 25) {
+      label = "공포 주의 (조정장)";
+      desc = `현재 VIX ${estimated.toFixed(2)}pt로 시장 공포감이 커진 상태입니다. 추격매수보다 분할매수가 유리합니다.`;
+    } else if (estimated >= 20) {
+      label = "경계 (변동성 확대)";
+      desc = `현재 VIX ${estimated.toFixed(2)}pt로 평소(20)보다 높아져 단기 출렁임에 주의가 필요한 구간입니다.`;
+    }
+    return {
+      value: estimated,
+      change: 0,
+      change_pct: 0,
+      label,
+      desc,
+    };
+  };
 
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -49,6 +92,7 @@ export default function FearGreedSpeedometer() {
       let score = 75;
       let label = "극단적 탐욕";
       let factors = { ad_ratio: 44, volatility: 73, momentum: 100 };
+      let vixData: VixInfo | undefined = undefined;
       let reason = "상승 모멘텀과 시장 수급이 강하게 유지되는 활황 장세입니다.";
       let signal = "초강세장 (Strong Bullish)";
 
@@ -60,12 +104,25 @@ export default function FearGreedSpeedometer() {
           label = fg.label || label;
           if (fg.factors) {
             factors = {
-              ad_ratio: Math.round(fg.factors.ad_ratio || 44),
-              volatility: Math.round(fg.factors.volatility || 73),
-              momentum: Math.round(fg.factors.momentum || 100),
+              ad_ratio: Math.round(fg.factors.ad_ratio ?? 44),
+              volatility: Math.round(fg.factors.volatility ?? 73),
+              momentum: Math.round(fg.factors.momentum ?? 100),
+            };
+          }
+          if (fg.vix && typeof fg.vix.value === "number") {
+            vixData = {
+              value: Number(fg.vix.value),
+              change: Number(fg.vix.change ?? 0),
+              change_pct: Number(fg.vix.change_pct ?? 0),
+              label: fg.vix.label || "정상·안정권",
+              desc: fg.vix.desc || "",
             };
           }
         }
+      }
+
+      if (!vixData) {
+        vixData = getVixFallback(factors.volatility);
       }
 
       if (resStatus && resStatus.ok) {
@@ -80,6 +137,7 @@ export default function FearGreedSpeedometer() {
         score,
         label,
         factors,
+        vix: vixData,
         marketSignal: signal,
         reason,
       });
@@ -143,6 +201,48 @@ export default function FearGreedSpeedometer() {
   const status = getStatusConfig(data.score);
   // -90도(0) ~ +90도(100)
   const needleAngle = -90 + (data.score / 100) * 180;
+
+  const vixVal = data.vix?.value ?? 19.4;
+  const vixPct = data.vix?.change_pct ?? 0;
+  const vixChange = data.vix?.change ?? 0;
+  const vixLabel = data.vix?.label ?? (vixVal < 20 ? "정상·안정권" : vixVal < 25 ? "경계 (변동성 확대)" : "공포 주의");
+  // VIX 게이지 퍼센트 (10~40 구간을 0~100%로 표시)
+  const vixBarPct = Math.max(8, Math.min(100, Math.round(((vixVal - 10) / 30) * 100)));
+
+  const getVixStyle = (val: number) => {
+    if (val < 15) {
+      return {
+        text: "text-emerald-400",
+        badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+        bar: "from-emerald-500 to-teal-400",
+        dot: "🟢",
+      };
+    }
+    if (val < 20) {
+      return {
+        text: "text-cyan-400",
+        badge: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
+        bar: "from-cyan-500 to-emerald-400",
+        dot: "🟢",
+      };
+    }
+    if (val < 25) {
+      return {
+        text: "text-amber-400",
+        badge: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+        bar: "from-amber-500 to-orange-400",
+        dot: "🟡",
+      };
+    }
+    return {
+      text: "text-rose-400",
+      badge: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+      bar: "from-orange-500 to-rose-500",
+      dot: "🔴",
+    };
+  };
+
+  const vixStyle = getVixStyle(vixVal);
 
   return (
     <div className="w-full bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md flex flex-col justify-between h-full group hover:border-white/20 transition-all duration-300">
@@ -264,9 +364,9 @@ export default function FearGreedSpeedometer() {
         </div>
       </div>
 
-      {/* 3. Three Sub-Indicators (Clean Segmented Bars) */}
-      <div className="px-4 sm:px-5 py-2">
-        <div className="grid grid-cols-3 gap-2 bg-zinc-950/60 border border-white/5 rounded-2xl p-2.5">
+      {/* 3. Four Sub-Indicators (모멘텀 · 변동성 · 등락비율 · VIX 지수) + VIX 상세 바 */}
+      <div className="px-4 sm:px-5 py-2 space-y-2">
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 bg-zinc-950/60 border border-white/5 rounded-2xl p-2.5">
           <div className="text-center">
             <div className="text-[11px] text-gray-400 font-medium flex items-center justify-center gap-1 mb-1">
               <TrendingUp className="w-3 h-3 text-orange-400" /> 모멘텀
@@ -280,7 +380,7 @@ export default function FearGreedSpeedometer() {
             </div>
           </div>
 
-          <div className="text-center border-x border-white/5 px-1">
+          <div className="text-center border-l border-white/5 pl-1">
             <div className="text-[11px] text-gray-400 font-medium flex items-center justify-center gap-1 mb-1">
               <Activity className="w-3 h-3 text-cyan-400" /> 변동성
             </div>
@@ -293,7 +393,7 @@ export default function FearGreedSpeedometer() {
             </div>
           </div>
 
-          <div className="text-center">
+          <div className="text-center border-x border-white/5 px-1">
             <div className="text-[11px] text-gray-400 font-medium flex items-center justify-center gap-1 mb-1">
               <Scale className="w-3 h-3 text-emerald-400" /> 등락비율
             </div>
@@ -305,6 +405,48 @@ export default function FearGreedSpeedometer() {
               />
             </div>
           </div>
+
+          <div className="text-center">
+            <div className="text-[11px] text-gray-300 font-bold flex items-center justify-center gap-1 mb-1">
+              <ShieldAlert className={`w-3 h-3 ${vixStyle.text}`} /> VIX 지수
+            </div>
+            <div className={`text-sm font-black font-mono ${vixStyle.text}`}>
+              {vixVal.toFixed(2)}
+            </div>
+            <div className="w-full bg-zinc-800/80 h-1.5 rounded-full overflow-hidden mt-1">
+              <div 
+                className={`bg-gradient-to-r ${vixStyle.bar} h-full rounded-full transition-all duration-500`} 
+                style={{ width: `${vixBarPct}%` }} 
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 실시간 VIX 공포지수 (월가 변동성 지수) 전용 스트립 */}
+        <div className="bg-zinc-950/75 border border-white/10 rounded-2xl px-3 py-2 flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-black text-gray-300">
+                🚨 실시간 VIX(공포지수)
+              </span>
+              <span className={`text-xs sm:text-sm font-black font-mono ${vixStyle.text}`}>
+                {vixVal.toFixed(2)}pt
+              </span>
+              {vixPct !== 0 && (
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                  vixPct > 0 ? "bg-rose-500/15 text-rose-300" : "bg-emerald-500/15 text-emerald-300"
+                }`}>
+                  {vixChange > 0 ? `+${vixChange.toFixed(2)}` : vixChange.toFixed(2)} ({vixPct > 0 ? `+${vixPct.toFixed(2)}` : vixPct.toFixed(2)}%)
+                </span>
+              )}
+            </div>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${vixStyle.badge}`}>
+              {vixStyle.dot} {vixLabel}
+            </span>
+          </div>
+          <p className="text-[10px] text-gray-400 leading-snug">
+            💡 <span className="text-gray-300 font-semibold">VIX 기준:</span> 20 이하 안정권 · 20~30 경계 · 30 이상 패닉(역발상 분할매수 구간)
+          </p>
         </div>
       </div>
 

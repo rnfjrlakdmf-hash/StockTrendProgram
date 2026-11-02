@@ -3543,15 +3543,50 @@ def get_market_summary_stats():
         # 2. Volatility (VIX 지수 기반 점수 - 30% 비중)
         # VIX가 높을수록 공포(점수 하락), 낮을수록 탐욕(점수 상승)
         vix_score = 50
+        vix_price = 19.5
+        vix_change = 0.0
+        vix_change_pct = 0.0
         try:
-            vix_info = yf.Ticker('^VIX').fast_info
-            vix_price = float(vix_info.get('lastPrice', 20.0))
+            vix_ticker = yf.Ticker('^VIX')
+            vix_hist = vix_ticker.history(period='5d')
+            if not vix_hist.empty and 'Close' in vix_hist:
+                closes = vix_hist['Close'].dropna()
+                if len(closes) >= 2:
+                    vix_price = float(closes.iloc[-1])
+                    prev_vix = float(closes.iloc[-2])
+                    vix_change = vix_price - prev_vix
+                    vix_change_pct = (vix_change / prev_vix * 100.0) if prev_vix else 0.0
+                elif len(closes) == 1:
+                    vix_price = float(closes.iloc[-1])
+            else:
+                vix_info = vix_ticker.fast_info
+                vix_price = float(vix_info.get('last_price') or vix_info.get('lastPrice') or 19.5)
+                prev_vix = float(vix_info.get('previous_close') or vix_info.get('previousClose') or vix_price)
+                vix_change = vix_price - prev_vix
+                vix_change_pct = (vix_change / prev_vix * 100.0) if prev_vix else 0.0
+
             # VIX 기준: 15 이하(탐욕 80+), 30 이상(공포 20-)
             # 선형 변환: score = 100 - ((vix - 10) / 20 * 100)
             vix_score_raw = 100 - ((vix_price - 10) / 20 * 100)
             vix_score = max(0, min(100, vix_score_raw))
-        except:
-            pass
+        except Exception as vix_err:
+            print(f"[VIX Fetch Error] {vix_err}")
+
+        if vix_price < 15:
+            vix_label = "초안정 (강세장)"
+            vix_desc = f"현재 VIX {vix_price:.2f}pt로 15 미만의 매우 평온한 강세장 구간입니다."
+        elif vix_price < 20:
+            vix_label = "정상·안정권"
+            vix_desc = f"현재 VIX {vix_price:.2f}pt로 20 이하 안정권에 머물며 글로벌 투자심리가 양호합니다."
+        elif vix_price < 25:
+            vix_label = "경계 (변동성 확대)"
+            vix_desc = f"현재 VIX {vix_price:.2f}pt로 평소(20)보다 높아져 단기 출렁임에 주의가 필요한 구간입니다."
+        elif vix_price < 30:
+            vix_label = "공포 주의 (조정장)"
+            vix_desc = f"현재 VIX {vix_price:.2f}pt로 시장 공포감이 커진 상태입니다. 추격매수보다 분할매수가 유리합니다."
+        else:
+            vix_label = "극단적 공포 (패닉)"
+            vix_desc = f"현재 VIX {vix_price:.2f}pt로 30을 돌파한 패닉 구간입니다. 역사적으로 우량주 저점 분할매수 기회였습니다."
 
         # 3. Market Momentum (코스피 20일 이동평균선 이격도 - 40% 비중)
         momentum_score = 50
@@ -3587,12 +3622,30 @@ def get_market_summary_stats():
                 "ad_ratio": int(round(ad_score)),
                 "volatility": int(round(vix_score)),
                 "momentum": int(round(momentum_score))
+            },
+            "vix": {
+                "value": round(vix_price, 2),
+                "change": round(vix_change, 2),
+                "change_pct": round(vix_change_pct, 2),
+                "label": vix_label,
+                "desc": vix_desc
             }
         }
 
     except Exception as e:
         print(f"Market stats fetch error: {e}")
-        stats['fear_greed'] = {"score": 50, "label": "중립", "factors": {"ad_ratio": 50, "volatility": 50, "momentum": 50}}
+        stats['fear_greed'] = {
+            "score": 50,
+            "label": "중립",
+            "factors": {"ad_ratio": 50, "volatility": 50, "momentum": 50},
+            "vix": {
+                "value": 19.5,
+                "change": 0.0,
+                "change_pct": 0.0,
+                "label": "정상·안정권",
+                "desc": "현재 VIX 20 이하 안정권으로 글로벌 투자심리가 평온한 구간입니다."
+            }
+        }
 
     return stats
 
