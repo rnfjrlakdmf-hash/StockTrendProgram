@@ -3908,9 +3908,9 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left group"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white break-keep group-hover:text-emerald-300 transition-colors">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-emerald-300 transition-colors">{doc.stock_name}</span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.target_price && <span className="text-gray-300">목표 {doc.target_price}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -3951,9 +3951,9 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left group"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white break-keep group-hover:text-sky-300 transition-colors">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-sky-300 transition-colors">{doc.stock_name}</span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.current_price && <span className="text-gray-300">{doc.current_price.split(' ')[0]}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -3994,9 +3994,9 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all cursor-pointer text-left group"
+                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white break-keep group-hover:text-purple-300 transition-colors">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-purple-300 transition-colors">{doc.stock_name}</span>
                                                 <span className="text-[11px] font-mono text-purple-300 font-bold shrink-0">
                                                     {doc.current_price ? doc.current_price.split(' ')[0] : '24H 감시'}
                                                 </span>
@@ -4029,19 +4029,40 @@ export default function CeoOfficePage() {
                                         </span>
                                     </div>
                                     <div className="space-y-1.5">
-                                        {intelligenceMetrics.newsDocs.map(doc => (
-                                            <button
-                                                key={doc.doc_id}
-                                                type="button"
-                                                onClick={() => handleJumpToDoc(doc.doc_id)}
-                                                className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all cursor-pointer text-left group"
-                                            >
-                                                <span className="font-extrabold text-white break-keep group-hover:text-amber-300 transition-colors">{doc.stock_name}</span>
-                                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0 font-bold">
-                                                    {doc.urgency}
-                                                </span>
-                                            </button>
-                                        ))}
+                                        {intelligenceMetrics.newsDocs.map(doc => {
+                                            // 뱃지 내용이 지나치게 긴 경우 품격 있는 핵심 요약 태그로 정제
+                                            let badgeText = (doc.urgency || '').trim();
+                                            if (badgeText.includes('긍정') || badgeText.includes('호재')) {
+                                                badgeText = '🟢 호재 랠리 가동';
+                                            } else if (badgeText.includes('부정') || badgeText.includes('악재') || badgeText.includes('경계')) {
+                                                badgeText = '🔴 리스크 경계';
+                                            } else if (badgeText.includes('07:20')) {
+                                                badgeText = '07:20 특보';
+                                            } else if (badgeText.includes('거시경제') || badgeText.includes('거시')) {
+                                                badgeText = '글로벌 거시';
+                                            } else if (badgeText.length > 12) {
+                                                badgeText = badgeText.slice(0, 11) + '..';
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={doc.doc_id}
+                                                    type="button"
+                                                    onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                    className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-amber-500/15 border border-transparent hover:border-amber-500/30 transition-all cursor-pointer text-left group min-w-0"
+                                                >
+                                                    <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-amber-300 transition-colors" title={doc.stock_name}>
+                                                        {doc.stock_name}
+                                                    </span>
+                                                    <span
+                                                        className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0 font-bold max-w-[130px] truncate"
+                                                        title={doc.urgency}
+                                                    >
+                                                        {badgeText || '특보'}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                                 <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-amber-400 font-bold">
