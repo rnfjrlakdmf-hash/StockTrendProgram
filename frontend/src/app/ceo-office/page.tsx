@@ -2342,8 +2342,11 @@ export default function CeoOfficePage() {
     const [searchedRiskReport, setSearchedRiskReport] = useState<any>(null);
     const [riskSearchError, setRiskSearchError] = useState<string>('');
     const [copiedRiskStock, setCopiedRiskStock] = useState<string>('');
-    // 💰 [NEW] 대표이사 실전 투자금 기준 상태 (기본 1,000만원)
+    // 💰 [NEW] 대표이사 실전 투자금 기준 상태 (기본 10만원)
     const [riskCapital, setRiskCapital] = useState<number>(100000);
+    // 🗂️ 결재 서류 상세 열람실 깔끔 탭 상태 ('core' | 'risk' | 'terms') 및 전체 펼침 토글
+    const [docSubTab, setDocSubTab] = useState<'core' | 'risk' | 'terms'>('core');
+    const [expandAllDocSections, setExpandAllDocSections] = useState<boolean>(false);
 
     // 📚 관심종목 리서치 보고서 상태
     const [researchReports, setResearchReports] = useState<any[]>([]);
@@ -4378,18 +4381,50 @@ export default function CeoOfficePage() {
                                             </div>
                                         </div>
 
-                                        {/* 우측 상세 열람실 (Detail Dossier Reader) */}
+                                        {/* 우측 상세 열람실 (Detail Dossier Reader - 한눈에 들어오는 프리미엄 대시보드형 UI) */}
                                         <div ref={detailReaderRef} className={`lg:col-span-7 xl:col-span-8 scroll-mt-6 ${mobileDetailOpen ? 'block' : 'hidden lg:block'}`}>
-                                            {activeDoc ? (
-                                                <div className={`relative overflow-hidden rounded-3xl border-2 transition-all p-5 sm:p-7 shadow-2xl ${
-                                                    (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                            {activeDoc ? (() => {
+                                                const docStatus = signMap[activeDoc.doc_id]?.status || 'pending';
+                                                const isMarketSystem = activeDoc.stock_name === '전체 시장 시스템' || 
+                                                    activeDoc.category_type === 'all' || 
+                                                    activeDoc.category_badge?.includes('종합') || 
+                                                    activeDoc.category_badge?.includes('특보') || 
+                                                    activeDoc.category_badge?.includes('브리핑') ||
+                                                    activeDoc.stock_name?.includes('종합 보고');
+
+                                                const isMacroDoc = 
+                                                    activeDoc.category_type === 'global_futures' || 
+                                                    activeDoc.category_type === 'world_news' || 
+                                                    activeDoc.category_type === 'macro' ||
+                                                    activeDoc.category_badge?.includes('지표') || 
+                                                    activeDoc.category_badge?.includes('뉴스') || 
+                                                    activeDoc.category_badge?.includes('특보') ||
+                                                    activeDoc.stock_name?.includes('VIX') || 
+                                                    activeDoc.stock_name?.includes('환율') || 
+                                                    activeDoc.stock_name?.includes('금리') || 
+                                                    activeDoc.stock_name?.includes('시스템') ||
+                                                    activeDoc.stock_name?.includes('선물') ||
+                                                    activeDoc.stock_name?.includes('경제일정') ||
+                                                    activeDoc.stock_name?.includes('주간 리서치');
+
+                                                const riskData = getDetailedRiskBreakdown(activeDoc, riskCapital);
+                                                const researchBody = parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡").body || activeDoc.easy_headline || "";
+                                                const quantBody = parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊").body || "최근 두 달 평균선(50일선) 위에서 외국인과 기관 큰손들의 수급 지지력을 정밀 감시하고 있습니다.";
+                                                const riskOpinionBody = parseExecutiveOpinion(activeDoc.risk_opinion, "리스크본부", "🛡️").body || riskData.headline;
+
+                                                const isCautiousResearch = /급락|하락|조정|매물|위축|주의|방어|축소/.test(researchBody);
+                                                const isCautiousQuant = /급락|매도|패닉|이탈|유출|관망|주의/.test(quantBody);
+
+                                                return (
+                                                <div className={`relative overflow-hidden rounded-3xl border-2 transition-all p-5 sm:p-6 shadow-2xl space-y-4 ${
+                                                    docStatus === 'approved'
                                                         ? 'border-emerald-500/50 bg-gradient-to-br from-[#0b1d19] via-[#0c1626] to-[#09101d]'
-                                                        : (signMap[activeDoc.doc_id]?.status || 'pending') === 'hold'
+                                                        : docStatus === 'hold'
                                                         ? 'border-rose-500/40 bg-[#170f18]'
                                                         : 'border-white/15 bg-gradient-to-br from-[#10192e] to-[#0a101f]'
                                                 }`}>
                                                     {/* 모바일 전용 뒤로가기 버튼 */}
-                                                    <div className="lg:hidden mb-4">
+                                                    <div className="lg:hidden">
                                                         <button
                                                             type="button"
                                                             onClick={() => setMobileDetailOpen(false)}
@@ -4400,924 +4435,695 @@ export default function CeoOfficePage() {
                                                         </button>
                                                     </div>
 
-                                                    {/* 우측 상단 대표이사 결재 도장 스탬프 */}
-                                                    {signMap[activeDoc.doc_id]?.status === 'approved' && (
-                                                        <div className="sm:absolute sm:top-6 sm:right-7 mb-3 sm:mb-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-emerald-400 bg-emerald-500/20 text-emerald-300 font-black text-xs shadow-lg">
-                                                            <span>💮 대표이사 결재완료</span>
-                                                            <span className="text-[10px] text-emerald-200/80">
-                                                                ({signMap[activeDoc.doc_id]?.signedAt})
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {signMap[activeDoc.doc_id]?.status === 'hold' && (
-                                                        <div className="sm:absolute sm:top-6 sm:right-7 mb-3 sm:mb-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-2 border-rose-400 bg-rose-500/20 text-rose-300 font-black text-xs">
-                                                            <span>⏸️ 대표이사 보류 지시 ({signMap[activeDoc.doc_id]?.signedAt})</span>
-                                                        </div>
-                                                    )}
-                                                    {signMap[activeDoc.doc_id]?.status === 'reexamine' && (
-                                                        <div className="sm:absolute sm:top-6 sm:right-7 mb-3 sm:mb-0 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-2 border-sky-400 bg-sky-500/20 text-sky-200 font-black text-xs shadow-lg">
-                                                            <span>🔄 심층 재검토 지시됨 ({signMap[activeDoc.doc_id]?.signedAt})</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setActiveTab('boardroom');
-                                                                    setTimeout(() => {
-                                                                        boardroomDebateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                                    }, 200);
-                                                                }}
-                                                                className="underline text-amber-300 hover:text-amber-200 font-extrabold text-[11px] ml-1 cursor-pointer"
-                                                            >
-                                                                대면 회의실 입장 →
-                                                            </button>
-                                                        </div>
-                                                    )}
-
-                                                    {/* 문서 번호 & 카테고리 헤더 */}
-                                                    <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                                                        <span className="px-2.5 py-0.5 rounded-md bg-white/10 text-gray-200 font-mono text-xs font-bold">
-                                                            문서번호 {activeDoc.doc_number}
-                                                        </span>
-                                                        <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-extrabold">
-                                                            {activeDoc.category_badge}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400">
-                                                            · {activeDoc.submitted_at}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* 안건 제목 & 기안자 */}
-                                                    <h3 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight pr-0 sm:pr-48">
-                                                        {activeDoc.title}
-                                                    </h3>
-                                                    <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400">
-                                                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300 font-bold">기안</span>
-                                                        <span className="text-zinc-200 font-semibold">{activeDoc.proposer}</span>
-                                                    </div>
-
-                                                    {/* 💡 대표님을 위한 10초 쉬운 해설 (가독성 극대화 프리미엄 박스) */}
-                                                    {activeDoc.easy_headline && (
-                                                        <div className="mt-4 bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-zinc-950 border-2 border-amber-400/40 rounded-2xl p-4 sm:p-5 shadow-xl shadow-amber-950/30 relative overflow-hidden">
-                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
-                                                            <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs inline-flex items-center gap-1.5 shadow-md">
-                                                                        <span>💡</span>
-                                                                        <span>대표님을 위한 10초 쉬운 해설</span>
-                                                                    </span>
-                                                                    <span className="text-amber-300/90 text-xs font-bold">
-                                                                        (쉽게 말해 무슨 뜻인가요?)
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[11px] font-mono text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/25">
-                                                                    EXECUTIVE SUMMARY
+                                                    {/* ── [HEADER] 문서 정보 & 상단 원클릭 결재 컨트롤 바 ── */}
+                                                    <div className="pb-4 border-b border-white/10 space-y-3">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="px-2.5 py-0.5 rounded-md bg-white/10 text-gray-200 font-mono text-xs font-bold">
+                                                                    문서번호 {activeDoc.doc_number}
+                                                                </span>
+                                                                <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-extrabold">
+                                                                    {activeDoc.category_badge}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400">
+                                                                    · {activeDoc.submitted_at}
                                                                 </span>
                                                             </div>
-                                                            <ul className="space-y-1.5 text-sm sm:text-[15px] font-bold text-zinc-100 leading-relaxed">
-                                                                {splitIntoBullets(activeDoc.easy_headline).map((line, lIdx) => (
-                                                                    <li key={lIdx} className="flex items-start gap-2">
-                                                                        <span className="text-amber-400 font-black shrink-0 mt-0.5">✓</span>
-                                                                        <span>{line}</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    )}
 
-                                                    {/* 💰 [대표님 실시간 시세 & 목표 수익 시뮬레이터 / 거시지표 전광판 분기] */}
-                                                    {(() => {
-                                                        const isMacroDoc = 
-                                                            activeDoc.category_type === 'global_futures' || 
-                                                            activeDoc.category_type === 'world_news' || 
-                                                            activeDoc.category_type === 'macro' ||
-                                                            activeDoc.category_badge?.includes('지표') || 
-                                                            activeDoc.category_badge?.includes('뉴스') || 
-                                                            activeDoc.category_badge?.includes('특보') ||
-                                                            activeDoc.stock_name?.includes('VIX') || 
-                                                            activeDoc.stock_name?.includes('환율') || 
-                                                            activeDoc.stock_name?.includes('금리') || 
-                                                            activeDoc.stock_name?.includes('시스템') ||
-                                                            activeDoc.stock_name?.includes('선물');
-
-                                                        const hasPrice = Boolean(activeDoc.current_price || activeDoc.key_numbers.some(k => k.label.includes('현재가') || k.label.includes('현재 주가') || k.label.includes('현재 시세')));
-                                                        if (!hasPrice) return null;
-
-                                                        if (isMacroDoc) {
-                                                            const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
-                                                            const vixVal = parseFloat((activeDoc.current_price || '18').replace(/[^0-9.]/g, '')) || 18.39;
-                                                            return (
-                                                                <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-950/40 via-slate-900 to-indigo-950/30 border border-sky-500/40 shadow-xl relative overflow-hidden">
-                                                                    <div className="absolute top-0 right-0 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
-                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-                                                                        <div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-sm sm:text-base font-black text-sky-300 flex items-center gap-1.5">
-                                                                                    <span className="text-lg">📊</span>
-                                                                                    <span>[글로벌 거시 지표] 실시간 위험도 &amp; 시장 체온계 진단표</span>
-                                                                                </span>
-                                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/40 animate-pulse">
-                                                                                    ● 24시간 실시간 글로벌 시장 지표 연동
-                                                                                </span>
-                                                                            </div>
-                                                                            <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
-                                                                                ※ 개별 매수 종목이 아니며, 오늘 주식시장 전체의 <strong className="text-amber-300">'위험도(공포 수위)'와 대외 환경을 진단하는 핵심 계기판</strong>입니다.
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="text-left sm:text-right shrink-0 bg-emerald-500/15 px-3 py-1.5 rounded-xl border border-emerald-500/30">
-                                                                            <div className="text-[10px] text-emerald-300/90 font-bold">시장 날씨 판정</div>
-                                                                            <div className="text-sm sm:text-base font-black text-emerald-400 font-mono tracking-tight flex items-center sm:justify-end gap-1">
-                                                                                <span>{isVix ? (vixVal < 20 ? '☀️ 맑음 (안도 랠리)' : vixVal < 30 ? '⛅ 흐림 (주의 관망)' : '⛈️ 폭풍우 (패닉 경보)') : '🌐 글로벌 시장 지표'}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* 4단 거시 지표 진단 카드 */}
-                                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
-                                                                        <div className="bg-black/50 rounded-xl p-3 border border-white/10">
-                                                                            <div className="text-[11px] text-zinc-400 font-medium">① 실시간 지표 수치</div>
-                                                                            <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
-                                                                                {isVix ? (activeDoc.current_price?.includes('pt') ? activeDoc.current_price : `${(parseFloat((activeDoc.current_price || '18.39').replace(/[^0-9.]/g, '')) || 18.39).toFixed(2)}pt`) : (activeDoc.current_price || '실시간 연동 중')}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="bg-black/50 rounded-xl p-3 border border-sky-500/20">
-                                                                            <div className="text-[11px] text-sky-300 font-medium">② 지표 성격</div>
-                                                                            <div className="text-xs sm:text-sm font-black text-sky-200 mt-0.5 truncate">
-                                                                                시장 위험도 측정기 (매수X)
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="bg-black/50 rounded-xl p-3 border border-emerald-500/20">
-                                                                            <div className="text-[11px] text-emerald-300 font-medium">③ 시장 공포 수준</div>
-                                                                            <div className="text-xs sm:text-sm font-black text-emerald-300 mt-0.5">
-                                                                                {isVix ? (vixVal < 20 ? '낮음 (안정 구간 / 20 미만)' : '경계 구간') : '정상 범위 내 등락'}
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="bg-gradient-to-br from-sky-950/40 to-emerald-950/30 rounded-xl p-3 border border-emerald-500/30">
-                                                                            <div className="text-[11px] text-emerald-300/90 font-bold">④ 대표님 행동 지침</div>
-                                                                            <div className="text-xs sm:text-sm font-black text-emerald-300 mt-0.5">
-                                                                                우량주 분할 매수 적합
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        return (
-                                                        <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-zinc-900 via-slate-900 to-zinc-900 border border-amber-500/40 shadow-xl relative overflow-hidden">
-                                                            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-                                                            
-                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-sm sm:text-base font-black text-amber-400 flex items-center gap-1.5">
-                                                                            <span className="text-lg">💰</span>
-                                                                            <span>실시간 현재가 & 목표 기대수익 예측표</span>
-                                                                        </span>
-                                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse">
-                                                                            ● 장중 실시간 호가 연동
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
-                                                                        대표님께서 지금 매수 후 전문가 목표가에 도달했을 때 <span className="text-amber-300 font-bold">얼마의 수익(차익)</span>이 발생하는지 실시간으로 계산해 드립니다.
-                                                                    </p>
-                                                                </div>
-                                                                {activeDoc.upside_pct && activeDoc.upside_pct !== '컨센서스 유지' && (
-                                                                    <div className="text-left sm:text-right shrink-0 bg-rose-500/15 px-3 py-1.5 rounded-xl border border-rose-500/30">
-                                                                        <div className="text-[10px] text-rose-300/90 font-bold">목표 달성 시 기대수익률</div>
-                                                                        <div className="text-xl sm:text-2xl font-black text-rose-400 font-mono tracking-tight flex items-center sm:justify-end gap-1">
-                                                                            <span>{activeDoc.upside_pct}</span>
-                                                                            <span className="text-xs font-normal text-rose-300">상승 여력</span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            {/* 4단 실시간 시세 및 예상 수익 지표 */}
-                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
-                                                                <div className="bg-black/50 rounded-xl p-3 border border-white/10">
-                                                                    <div className="text-[11px] text-zinc-400 font-medium">① 실시간 현재가</div>
-                                                                    <div className="text-sm sm:text-base font-black text-white font-mono mt-0.5">
-                                                                        {activeDoc.current_price || activeDoc.key_numbers.find(k => k.label.includes('현재가') || k.label.includes('현재 주가') || k.label.includes('현재 시세'))?.value || '실시간 연동 중'}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="bg-black/50 rounded-xl p-3 border border-white/10">
-                                                                    <div className="text-[11px] text-zinc-400 font-medium">② 전문가 목표주가</div>
-                                                                    <div className="text-sm sm:text-base font-black text-amber-300 font-mono mt-0.5">
-                                                                        {activeDoc.target_price || activeDoc.key_numbers.find(k => k.label.includes('목표가'))?.value || '컨센서스 유지'}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="bg-black/50 rounded-xl p-3 border border-white/10">
-                                                                    <div className="text-[11px] text-zinc-400 font-medium">③ 1주당 기대 차익</div>
-                                                                    <div className="text-sm sm:text-base font-black text-emerald-400 font-mono mt-0.5">
-                                                                        {activeDoc.profit_per_share || activeDoc.key_numbers.find(k => k.label.includes('주당'))?.value || '집계 중'}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="bg-gradient-to-br from-amber-950/40 to-rose-950/30 rounded-xl p-3 border border-amber-500/30">
-                                                                    <div className="text-[11px] text-amber-300/90 font-bold">④ 1,000만원 투자 시 기대수익</div>
-                                                                    <div className="text-sm sm:text-base font-black text-amber-300 font-mono mt-0.5">
-                                                                        {activeDoc.profit_10m || activeDoc.key_numbers.find(k => k.label.includes('1,000만원'))?.value || '모니터링 중'}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()}
-
-                                                    {/* 🎯 대표님을 위한 종목 심층 3대 핵심 분석 & 팩트체크 */}
-                                                    <div className="mt-4 bg-gradient-to-br from-[#0c1427] via-[#09101f] to-[#0d162b] border border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-3 border-b border-white/10">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                                                                <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
-                                                                    <span>🎯</span>
-                                                                    <span>[{activeDoc.stock_name}] 대표님 전용 세부 심층 분석 & 투자 팩트체크</span>
-                                                                </h4>
-                                                            </div>
-                                                            <span className="text-[11px] font-extrabold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/25">
-                                                                💡 초보자 눈높이 맞춤 해설
-                                                            </span>
+                                                            {/* 결재 상태 배지 */}
+                                                            {docStatus === 'approved' && (
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-emerald-400 bg-emerald-500/20 text-emerald-300 font-black text-xs">
+                                                                    <span>💮 대표이사 결재완료</span>
+                                                                    <span className="text-[10px] text-emerald-200/80">({signMap[activeDoc.doc_id]?.signedAt})</span>
+                                                                </span>
+                                                            )}
+                                                            {docStatus === 'hold' && (
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-rose-400 bg-rose-500/20 text-rose-300 font-black text-xs">
+                                                                    <span>⏸️ 보류 지시됨 ({signMap[activeDoc.doc_id]?.signedAt})</span>
+                                                                </span>
+                                                            )}
+                                                            {docStatus === 'reexamine' && (
+                                                                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl border border-sky-400 bg-sky-500/20 text-sky-200 font-black text-xs">
+                                                                    <span>🔄 심층 재검토 지시됨</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setActiveTab('boardroom');
+                                                                            setTimeout(() => {
+                                                                                boardroomDebateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                                            }, 200);
+                                                                        }}
+                                                                        className="underline text-amber-300 hover:text-amber-200 font-extrabold text-[11px] cursor-pointer"
+                                                                    >
+                                                                        회의실 입장 →
+                                                                    </button>
+                                                                </span>
+                                                            )}
                                                         </div>
 
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                            {/* 1. 핵심 호재 & 왜 오르나요? */}
-                                                            <div className="bg-gradient-to-b from-emerald-950/25 via-zinc-900/60 to-zinc-950 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col justify-between">
-                                                                <div>
-                                                                    <div className="flex items-center justify-between gap-1.5 text-xs font-black text-emerald-300 mb-2 pb-1.5 border-b border-emerald-500/15">
-                                                                        <span className="flex items-center gap-1">
-                                                                            <span>{activeDoc.category_type === 'global_futures' || activeDoc.category_badge?.includes('지표') ? '📊' : '🚀'}</span>
-                                                                            <span>{activeDoc.category_type === 'global_futures' || activeDoc.category_badge?.includes('지표') ? '1. 지표의 핵심 의미 (무슨 뜻인가요?)' : '1. 왜 오를까요? (성장 동력)'}</span>
-                                                                        </span>
-                                                                        <span className="text-[10px] text-emerald-400">박진우 부사장</span>
-                                                                    </div>
-                                                                    <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                        {splitIntoBullets(parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡").body || activeDoc.easy_headline || "").map((b, bIdx) => (
-                                                                            <li key={bIdx} className="flex items-start gap-1.5">
-                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                                                <span>{b}</span>
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                                <div className="mt-3 pt-2 border-t border-emerald-500/15 flex items-center justify-between text-[11px] text-emerald-400 font-bold">
-                                                                    <span>실적 모멘텀</span>
-                                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 font-black">🟢 성장성 우수</span>
+                                                        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                                                            <div>
+                                                                <h3 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight">
+                                                                    {activeDoc.title}
+                                                                </h3>
+                                                                <div className="flex items-center gap-2 mt-1.5 text-xs text-zinc-400">
+                                                                    <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-zinc-300 font-bold">기안</span>
+                                                                    <span className="text-zinc-200 font-semibold">{activeDoc.proposer}</span>
                                                                 </div>
                                                             </div>
 
-                                                            {/* 2. 외인/기관 큰손 수급 상태 */}
-                                                            <div className="bg-gradient-to-b from-cyan-950/25 via-zinc-900/60 to-zinc-950 border border-cyan-500/30 rounded-xl p-3.5 flex flex-col justify-between">
-                                                                <div>
-                                                                    <div className="flex items-center justify-between gap-1.5 text-xs font-black text-cyan-300 mb-2 pb-1.5 border-b border-cyan-500/15">
-                                                                        <span className="flex items-center gap-1">
-                                                                            <span>📈</span>
-                                                                            <span>2. 큰손 수급 흐름</span>
-                                                                        </span>
-                                                                        <span className="text-[10px] text-cyan-400">김도현 상무</span>
-                                                                    </div>
-                                                                    <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                        {splitIntoBullets(parseExecutiveOpinion(activeDoc.quant_opinion, "수급분석본부", "📊").body || "최근 두 달 평균선(50일선) 위에서 외국인과 기관 큰손들의 수급 지지력을 정밀 감시하고 있습니다.").map((b, bIdx) => (
-                                                                            <li key={bIdx} className="flex items-start gap-1.5">
-                                                                                <span className="text-cyan-400 font-black shrink-0">•</span>
-                                                                                <span>{b}</span>
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                                <div className="mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between text-[11px] text-cyan-400 font-bold">
-                                                                    <span>50일선 추세</span>
-                                                                    <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 font-black">📊 지지력 확보</span>
-                                                                </div>
+                                                            {/* 상단 퀵 결재 버튼 (스크롤 없이 즉시 서명 가능) */}
+                                                            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => updateSignature(activeDoc.doc_id, 'approved')}
+                                                                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                                        docStatus === 'approved'
+                                                                            ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25'
+                                                                            : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-md shadow-amber-500/20'
+                                                                    }`}
+                                                                >
+                                                                    <span>{docStatus === 'approved' ? '✅ 승인 완료' : '🖋️ 승인 서명 (재가)'}</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => updateSignature(activeDoc.doc_id, 'hold')}
+                                                                    className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
+                                                                        docStatus === 'hold'
+                                                                            ? 'bg-rose-500 text-white border-rose-400'
+                                                                            : 'bg-white/5 hover:bg-white/10 text-gray-300 border-white/15'
+                                                                    }`}
+                                                                >
+                                                                    ⏸️ 보류
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleReexamineDoc(activeDoc)}
+                                                                    className="px-3 py-2 rounded-xl text-xs font-black bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/40 transition-all cursor-pointer flex items-center gap-1"
+                                                                    title="5개 본부 임원을 회의실로 긴급 소집하여 대면 보고를 받습니다"
+                                                                >
+                                                                    <span>👥</span>
+                                                                    <span>대면보고 소집</span>
+                                                                </button>
                                                             </div>
+                                                        </div>
+                                                    </div>
 
-                                                            {/* 3. 목표가와 안전마진 / 거시 지표일 경우 위험도 판정 */}
-                                                            {(() => {
-                                                                const isMarketSystem = activeDoc.stock_name === '전체 시장 시스템' || 
-                                                                    activeDoc.category_type === 'all' || 
-                                                                    activeDoc.category_badge?.includes('종합') || 
-                                                                    activeDoc.category_badge?.includes('특보') || 
-                                                                    activeDoc.category_badge?.includes('브리핑') ||
-                                                                    activeDoc.stock_name?.includes('종합 보고');
+                                                    {/* ── [STEP 1] 📊 최상단 4대 핵심 지표 전광판 (기존 맨 아래에 숨어있던 핵심 수치를 최상단 배치!) ── */}
+                                                    {activeDoc.key_numbers && activeDoc.key_numbers.length > 0 && (
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                            {activeDoc.key_numbers.slice(0, 4).map((kn, i) => {
+                                                                const valStr = String(kn.value || "");
+                                                                const isDown = valStr.includes("-") && (valStr.includes("%") || valStr.includes("하락") || valStr.includes("▼"));
+                                                                const isUp = valStr.includes("+") && (valStr.includes("%") || valStr.includes("상승") || valStr.includes("▲"));
 
-                                                                const isMacroDoc = 
-                                                                    activeDoc.category_type === 'global_futures' || 
-                                                                    activeDoc.category_type === 'world_news' || 
-                                                                    activeDoc.category_badge?.includes('지표') || 
-                                                                    activeDoc.stock_name?.includes('VIX') || 
-                                                                    activeDoc.stock_name?.includes('환율') || 
-                                                                    activeDoc.stock_name?.includes('금리');
+                                                                const valColor = isDown 
+                                                                    ? "text-sky-400 font-mono" 
+                                                                    : isUp 
+                                                                    ? "text-rose-400 font-mono" 
+                                                                    : "text-amber-300 font-mono";
 
-                                                                if (isMarketSystem) {
-                                                                    return (
-                                                                        <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
-                                                                            <div>
-                                                                                <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2 pb-1.5 border-b border-purple-500/15">
-                                                                                    <span className="flex items-center gap-1">
-                                                                                        <span>🎯</span>
-                                                                                        <span>3. 증시 목표 밴드 &amp; 실천 지침 요약</span>
-                                                                                    </span>
-                                                                                    <span className="text-[10px] text-purple-400">자산배분 전략</span>
-                                                                                </div>
-                                                                                <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                                    <li className="flex items-start gap-1.5">
-                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                        <span><strong className="text-white">코스피 목표 밴드:</strong> 주요 증권사 리서치센터의 단기 상단 목표 밴드는 <strong className="text-amber-300">2,650~2,750pt</strong>이며, 반도체 대형주 중심의 완만한 우상향이 기대됩니다.</span>
-                                                                                    </li>
-                                                                                    <li className="flex items-start gap-1.5">
-                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                        <span><strong className="text-white">대표님 자산배분 원칙:</strong> 지수 전체를 무리하게 추격하기보다, 실적 호조가 확인된 <strong className="text-rose-400">수출·수주 알짜 우량주(종목당 10~15% 한도)</strong>로 분할 진입하는 것이 가장 안전합니다.</span>
-                                                                                    </li>
-                                                                                    <li className="flex items-start gap-1.5">
-                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                        <span><strong className="text-white">1천만원 운용 가이드:</strong> 계좌 현금 30~50%를 상시 안전판으로 확보하고, 오늘 [승인 서명] 안건(기업은행·두산에너빌리티 등)에 <strong className="text-emerald-300">10만~100만원 소액 맞춤 분할 집행</strong>이 적합합니다.</span>
-                                                                                    </li>
-                                                                                </ul>
-                                                                            </div>
-                                                                            <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
-                                                                                <span>시장 투자 매력도</span>
-                                                                                <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-black">💎 알짜 실적주 분할 매수 유리</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
-
-                                                                if (isMacroDoc) {
-                                                                    const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
-                                                                    return (
-                                                                        <div className="bg-gradient-to-b from-sky-950/25 via-zinc-900/60 to-zinc-950 border border-sky-500/30 rounded-xl p-3.5 flex flex-col justify-between">
-                                                                            <div>
-                                                                                <div className="flex items-center justify-between gap-1.5 text-xs font-black text-sky-300 mb-2 pb-1.5 border-b border-sky-500/15">
-                                                                                    <span className="flex items-center gap-1">
-                                                                                        <span>🛡️</span>
-                                                                                        <span>3. 시장 위험도 판정 &amp; 행동 지침</span>
-                                                                                    </span>
-                                                                                    <span className="text-[10px] text-sky-400">거시 리스크</span>
-                                                                                </div>
-                                                                                <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                                    {isVix ? (
-                                                                                        <>
-                                                                                            <li className="flex items-start gap-1.5">
-                                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                                                                <span><strong className="text-white">공포 수위 판정:</strong> 현재 VIX 지수({isVix ? (activeDoc.current_price?.includes('pt') ? activeDoc.current_price : `${(parseFloat((activeDoc.current_price || '18.39').replace(/[^0-9.]/g, '')) || 18.39).toFixed(2)}pt`) : activeDoc.current_price})는 <strong className="text-emerald-300">20 미만의 안정 구간</strong>으로 시장에 공포가 없습니다.</span>
-                                                                                            </li>
-                                                                                            <li className="flex items-start gap-1.5">
-                                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                                                                <span><strong className="text-white">외국인 수급 환경:</strong> 위험 회피 심리가 낮아 글로벌 큰손들의 한국 우량주 매수 유입에 우호적입니다.</span>
-                                                                                            </li>
-                                                                                            <li className="flex items-start gap-1.5">
-                                                                                                <span className="text-emerald-400 font-black shrink-0">•</span>
-                                                                                                <span><strong className="text-white">대표님 행동 지침:</strong> 승인하신 실전 종목(기업은행 등)을 10만원 예산 내에서 <strong className="text-amber-300">계획대로 분할 매수하셔도 안전</strong>합니다.</span>
-                                                                                            </li>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            <li className="flex items-start gap-1.5">
-                                                                                                <span className="text-sky-400 font-black shrink-0">•</span>
-                                                                                                <span><strong className="text-white">거시 지표 흐름:</strong> {activeDoc.current_price} 수준에서 안정적인 등락을 유지하고 있습니다.</span>
-                                                                                            </li>
-                                                                                            <li className="flex items-start gap-1.5">
-                                                                                                <span className="text-sky-400 font-black shrink-0">•</span>
-                                                                                                <span><strong className="text-white">포트폴리오 영향:</strong> 대외 급변 요인이 제한적이므로 정상 투자 전략을 유지합니다.</span>
-                                                                                            </li>
-                                                                                        </>
-                                                                                    )}
-                                                                                </ul>
-                                                                            </div>
-                                                                            <div className="mt-3 pt-2 border-t border-sky-500/15 flex items-center justify-between text-[11px] text-sky-300 font-bold">
-                                                                                <span>투자 환경 판정</span>
-                                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-black">☀️ 시장 날씨 맑음</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
+                                                                const cardStyle = isDown 
+                                                                    ? "border-sky-500/35 bg-gradient-to-br from-sky-950/35 to-slate-950/90" 
+                                                                    : isUp 
+                                                                    ? "border-rose-500/35 bg-gradient-to-br from-rose-950/35 to-slate-950/90" 
+                                                                    : "border-amber-500/30 bg-gradient-to-br from-zinc-900/90 to-slate-950/90";
 
                                                                 return (
-                                                                    <div className="bg-gradient-to-b from-purple-950/25 via-zinc-900/60 to-zinc-950 border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between">
-                                                                        <div>
-                                                                            <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2 pb-1.5 border-b border-purple-500/15">
-                                                                                <span className="flex items-center gap-1">
-                                                                                    <span>🎯</span>
-                                                                                    <span>3. 목표가 &amp; 기대수익 요약</span>
-                                                                                </span>
-                                                                                <span className="text-[10px] text-purple-400">밸류에이션</span>
-                                                                            </div>
-                                                                            <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
-                                                                                {activeDoc.current_price && activeDoc.target_price ? (
-                                                                                    <>
-                                                                                        <li className="flex items-start gap-1.5">
-                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                            <span><strong className="text-white">현재가 ➔ 목표가:</strong> {activeDoc.current_price} ➔ <strong className="text-amber-300">{activeDoc.target_price}</strong></span>
-                                                                                        </li>
-                                                                                        <li className="flex items-start gap-1.5">
-                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                            <span><strong className="text-white">기대 상승폭:</strong> <strong className="text-rose-400">{activeDoc.upside_pct || '상승 여력 충분'}</strong> ({activeDoc.profit_per_share || '안전마진 확보'})</span>
-                                                                                        </li>
-                                                                                        <li className="flex items-start gap-1.5">
-                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                            <span><strong className="text-white">1천만원 투자 시:</strong> <strong className="text-emerald-300">{activeDoc.profit_10m || '높은 기대수익'}</strong> 예상</span>
-                                                                                        </li>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <li className="flex items-start gap-1.5">
-                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                            <span><strong className="text-white">증권가 컨센서스 평가:</strong> 국내외 주요 증권사 애널리스트들의 투자의견(Buy) 및 밸류에이션 리포트를 종합 분석 중인 종목입니다.</span>
-                                                                                        </li>
-                                                                                        <li className="flex items-start gap-1.5">
-                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                            <span><strong className="text-white">목표 안전마진 도출:</strong> 최근 50일 이동평균선 지지력과 업종 평균 대비 저평가 매력이 높아 <strong className="text-rose-400">+15~20% 내외의 잠재 상승 여력</strong>이 유효합니다.</span>
-                                                                                        </li>
-                                                                                        <li className="flex items-start gap-1.5">
-                                                                                            <span className="text-purple-400 font-black shrink-0">•</span>
-                                                                                            <span><strong className="text-white">실전 매매 가이드:</strong> 단기 시초가 급등 추격을 피하고, 오전 장중 지지선 안착을 확인한 후 <strong className="text-emerald-300">3단계 분할 매수</strong>로 안전마진을 확보하십시오.</span>
-                                                                                        </li>
-                                                                                    </>
-                                                                                )}
-                                                                            </ul>
+                                                                    <div
+                                                                        key={i}
+                                                                        className={`rounded-2xl p-3 sm:p-3.5 border transition-all shadow-md flex flex-col justify-between ${cardStyle}`}
+                                                                    >
+                                                                        <div className="flex items-center justify-between gap-1 mb-1">
+                                                                            <span className="text-[11px] text-zinc-300 font-extrabold tracking-tight truncate">
+                                                                                {kn.label}
+                                                                            </span>
+                                                                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded ${
+                                                                                isDown ? 'bg-sky-500/20 text-sky-300' : isUp ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+                                                                            }`}>
+                                                                                {isDown ? '▼ 조정' : isUp ? '▲ 강세' : '핵심'}
+                                                                            </span>
                                                                         </div>
-                                                                        <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] text-purple-300 font-bold">
-                                                                            <span>가격 매력도</span>
-                                                                            <span className="px-1.5 py-0.5 rounded bg-purple-500/20 font-black">💎 상승 여력 충분</span>
+                                                                        <div className={`text-sm sm:text-base font-black leading-snug break-words ${valColor}`}>
+                                                                            {kn.value}
                                                                         </div>
                                                                     </div>
                                                                 );
-                                                            })()}
+                                                            })}
                                                         </div>
+                                                    )}
 
-                                                        {/* 4. 대표이사 리스크 정밀 진단 & 세부 방어 매뉴얼 */}
-                                                        {(() => {
-                                                            const riskData = getDetailedRiskBreakdown(activeDoc, riskCapital);
-                                                            return (
-                                                                <div className="mt-4 bg-gradient-to-br from-rose-950/30 via-zinc-950/90 to-red-950/20 border border-rose-500/35 rounded-2xl p-4 sm:p-4.5 shadow-lg space-y-3.5">
-                                                                    {/* 상단 타이틀 바 */}
-                                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-rose-500/20">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="w-6 h-6 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center justify-center text-xs">
-                                                                                🛡️
-                                                                            </span>
-                                                                            <h5 className="text-xs sm:text-sm font-black text-rose-200 tracking-tight flex items-center gap-1.5">
-                                                                                <span>4. 리스크 정밀 진단 & 세부 방어 매뉴얼</span>
-                                                                                <span className="text-[10px] text-zinc-400 font-normal">| 최서연 리스크관리본부장 (CRO)</span>
-                                                                            </h5>
-                                                                        </div>
-                                                                        <span className="text-[10px] font-black text-rose-300 bg-rose-500/15 px-2 py-0.5 rounded-md border border-rose-500/30 flex items-center gap-1">
-                                                                            <span>⚠️</span>
-                                                                            <span>손실 방어 1순위 감사 완료</span>
+                                                    {/* ── [STEP 2] 💡 10초 핵심 요약 & 👩‍💼 비서실장 결재 건의 (2열 투톤 핵심 보드) ── */}
+                                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                                                        {/* 좌측 7칸: 대표님을 위한 10초 쉬운 해설 */}
+                                                        {activeDoc.easy_headline && (
+                                                            <div className="lg:col-span-7 bg-gradient-to-br from-amber-500/15 via-yellow-500/5 to-zinc-950 border border-amber-400/40 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+                                                                <div>
+                                                                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                                                                        <span className="px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-sm">
+                                                                            <span>💡</span>
+                                                                            <span>대표님을 위한 10초 핵심 요약</span>
+                                                                        </span>
+                                                                        <span className="text-[10px] font-mono text-amber-300/90 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/25 font-bold">
+                                                                            쉽게 말해 무슨 뜻인가요?
                                                                         </span>
                                                                     </div>
+                                                                    <ul className="space-y-1.5 text-xs sm:text-sm font-bold text-zinc-100 leading-relaxed">
+                                                                        {splitIntoBullets(activeDoc.easy_headline).map((line, lIdx) => (
+                                                                            <li key={lIdx} className="flex items-start gap-2">
+                                                                                <span className="text-amber-400 font-black shrink-0 mt-0.5">✓</span>
+                                                                                <span>{line}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        )}
 
-                                                                    {/* CRO 핵심 경고 헤드라인 */}
-                                                                    <div className="bg-black/50 border border-rose-500/25 rounded-xl p-3 flex items-start gap-2.5">
-                                                                        <span className="text-rose-400 font-black text-xs shrink-0 mt-0.5">📌</span>
-                                                                        <p className="text-xs text-rose-100/95 font-medium leading-relaxed">
-                                                                            <span className="font-black text-rose-300 mr-1.5">[CRO 핵심 경보]:</span>
-                                                                            {riskData.headline}
-                                                                        </p>
+                                                        {/* 우측 5칸: 정유진 비서실장 최종 결재 건의 */}
+                                                        <div className={`${activeDoc.easy_headline ? 'lg:col-span-5' : 'lg:col-span-12'} bg-gradient-to-br from-purple-950/45 via-indigo-950/30 to-zinc-950 border border-purple-500/40 rounded-2xl p-4 shadow-lg flex flex-col justify-between`}>
+                                                            <div>
+                                                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                                                                    <span className="px-2.5 py-0.5 rounded-lg bg-purple-500/25 text-purple-200 text-xs font-black border border-purple-400/40">
+                                                                        👩‍💼 비서실장 최종 결재 건의
+                                                                    </span>
+                                                                    {activeDoc.recommendation && (
+                                                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-500/35">
+                                                                            건의: {activeDoc.recommendation}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs sm:text-[13px] text-purple-100 font-bold leading-relaxed break-keep">
+                                                                    {activeDoc.secretary_conclusion}
+                                                                </p>
+                                                            </div>
+                                                            <div className="mt-2.5 pt-2 border-t border-purple-500/20 flex items-center justify-between text-[10px] text-purple-300 font-semibold">
+                                                                <span>🔒 100% 대표님 승인 안건만 집행 (미결재 시 0원)</span>
+                                                                <span className="text-amber-300 font-black">결재 대기 중</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* ── [STEP 3] 🗂️ 세부 브리핑 3단 깔끔 탭 네비게이션 바 ── */}
+                                                    <div className="bg-black/50 border border-white/10 rounded-2xl p-1.5 flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex flex-wrap items-center gap-1.5 flex-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setExpandAllDocSections(false); setDocSubTab('core'); }}
+                                                                className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                    !expandAllDocSections && docSubTab === 'core'
+                                                                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md'
+                                                                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                                                }`}
+                                                            >
+                                                                <span>🎯</span>
+                                                                <span>1. 3대 본부 핵심 브리핑 {!isMacroDoc ? '& 자금배분' : '& 대응지침'}</span>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setExpandAllDocSections(false); setDocSubTab('risk'); }}
+                                                                className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                    !expandAllDocSections && docSubTab === 'risk'
+                                                                        ? 'bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-md'
+                                                                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                                                }`}
+                                                            >
+                                                                <span>🛡️</span>
+                                                                <span>2. CRO 세부 리스크 &amp; 방어 4원칙</span>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setExpandAllDocSections(false); setDocSubTab('terms'); }}
+                                                                className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                    !expandAllDocSections && docSubTab === 'terms'
+                                                                        ? 'bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-md'
+                                                                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                                                }`}
+                                                            >
+                                                                <span>📖</span>
+                                                                <span>3. 초보자 3초 용어풀이 ({activeDoc.easy_terms?.length || 0})</span>
+                                                            </button>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExpandAllDocSections(!expandAllDocSections)}
+                                                            className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 cursor-pointer shrink-0"
+                                                        >
+                                                            {expandAllDocSections ? '🗂️ 탭으로 깔끔히 접기' : '📑 한눈에 전체 펼치기'}
+                                                        </button>
+                                                    </div>
+
+                                                    {/* ── [TAB 1: 🎯 3대 본부 핵심 브리핑 & 실전 타점/대응지침] ── */}
+                                                    {(expandAllDocSections || docSubTab === 'core') && (
+                                                        <div className="space-y-4">
+                                                            {/* 3대 임원 핵심 요약 카드 (박진우 부사장 · 김도현 상무 · 최서연 상무) */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                                {/* 1. 리서치센터 핵심 분석 */}
+                                                                <div className="bg-gradient-to-b from-emerald-950/30 via-zinc-900/70 to-zinc-950 border border-emerald-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-md">
+                                                                    <div>
+                                                                        <div className="flex items-center justify-between gap-1.5 text-xs font-black text-emerald-300 mb-2.5 pb-2 border-b border-emerald-500/15">
+                                                                            <span className="flex items-center gap-1">
+                                                                                <span>{isMacroDoc ? '🌎' : '🚀'}</span>
+                                                                                <span>{isMacroDoc ? '1. 시황 핵심 & 파급 영향' : '1. 왜 오를까요? (성장 동력)'}</span>
+                                                                            </span>
+                                                                            <span className="text-[10px] text-emerald-400">박진우 부사장</span>
+                                                                        </div>
+                                                                        <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                            {splitIntoBullets(researchBody).map((b, bIdx) => (
+                                                                                <li key={bIdx} className="flex items-start gap-1.5">
+                                                                                    <span className="text-emerald-400 font-black shrink-0">•</span>
+                                                                                    <span>{b}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                    <div className="mt-3 pt-2 border-t border-emerald-500/15 flex items-center justify-between text-[11px] font-bold">
+                                                                        <span className="text-zinc-400">{isMacroDoc ? '시장 파급 판정' : '실적 모멘텀'}</span>
+                                                                        <span className={`px-2 py-0.5 rounded font-black ${
+                                                                            isCautiousResearch
+                                                                                ? 'bg-amber-500/20 text-amber-300'
+                                                                                : 'bg-emerald-500/20 text-emerald-300'
+                                                                        }`}>
+                                                                            {isCautiousResearch ? '⚠️ 단기 변동성 주의' : '🟢 성장 모멘텀 우수'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* 2. 큰손 수급 & 시장 흐름 */}
+                                                                <div className="bg-gradient-to-b from-cyan-950/30 via-zinc-900/70 to-zinc-950 border border-cyan-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-md">
+                                                                    <div>
+                                                                        <div className="flex items-center justify-between gap-1.5 text-xs font-black text-cyan-300 mb-2.5 pb-2 border-b border-cyan-500/15">
+                                                                            <span className="flex items-center gap-1">
+                                                                                <span>📈</span>
+                                                                                <span>2. 외국인·기관 수급 흐름</span>
+                                                                            </span>
+                                                                            <span className="text-[10px] text-cyan-400">김도현 상무</span>
+                                                                        </div>
+                                                                        <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                            {splitIntoBullets(quantBody).map((b, bIdx) => (
+                                                                                <li key={bIdx} className="flex items-start gap-1.5">
+                                                                                    <span className="text-cyan-400 font-black shrink-0">•</span>
+                                                                                    <span>{b}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                    <div className="mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between text-[11px] font-bold">
+                                                                        <span className="text-zinc-400">수급 에너지</span>
+                                                                        <span className={`px-2 py-0.5 rounded font-black ${
+                                                                            isCautiousQuant
+                                                                                ? 'bg-amber-500/20 text-amber-300'
+                                                                                : 'bg-cyan-500/20 text-cyan-300'
+                                                                        }`}>
+                                                                            {isCautiousQuant ? '📊 장초반 수급 관찰' : '📊 지지력 확보'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* 3. 실전 대응 지침 & 목표 타점 */}
+                                                                <div className="bg-gradient-to-b from-purple-950/30 via-zinc-900/70 to-zinc-950 border border-purple-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-md">
+                                                                    <div>
+                                                                        <div className="flex items-center justify-between gap-1.5 text-xs font-black text-purple-300 mb-2.5 pb-2 border-b border-purple-500/15">
+                                                                            <span className="flex items-center gap-1">
+                                                                                <span>🎯</span>
+                                                                                <span>{isMacroDoc ? '3. 오늘의 대응 & 행동 지침' : '3. 목표가 & 안전마진 요약'}</span>
+                                                                            </span>
+                                                                            <span className="text-[10px] text-purple-400">최서연 상무</span>
+                                                                        </div>
+                                                                        <ul className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-medium">
+                                                                            {!isMacroDoc && activeDoc.current_price && activeDoc.target_price ? (
+                                                                                <>
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span><strong className="text-white">현재가 ➔ 목표가:</strong> {activeDoc.current_price} ➔ <strong className="text-amber-300">{activeDoc.target_price}</strong></span>
+                                                                                    </li>
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span><strong className="text-white">기대 상승폭:</strong> <strong className="text-rose-400">{activeDoc.upside_pct || '상승 여력 충분'}</strong> ({activeDoc.profit_per_share || '안전마진 확보'})</span>
+                                                                                    </li>
+                                                                                    <li className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span><strong className="text-white">핵심 방어 원칙:</strong> 시초가 추격매수 금지 · 오전 10시 이후 지지선 분할 진입</span>
+                                                                                    </li>
+                                                                                </>
+                                                                            ) : (
+                                                                                splitIntoBullets(riskOpinionBody).slice(0, 3).map((b, bIdx) => (
+                                                                                    <li key={bIdx} className="flex items-start gap-1.5">
+                                                                                        <span className="text-purple-400 font-black shrink-0">•</span>
+                                                                                        <span>{b}</span>
+                                                                                    </li>
+                                                                                ))
+                                                                            )}
+                                                                        </ul>
+                                                                    </div>
+                                                                    <div className="mt-3 pt-2 border-t border-purple-500/15 flex items-center justify-between text-[11px] font-bold">
+                                                                        <span className="text-zinc-400">핵심 대응 전략</span>
+                                                                        <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-black">
+                                                                            {isMacroDoc ? '🛡️ 확인 후 분할 대응' : '💎 눌림목 분할 매수'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* CRO 핵심 경보 1줄 요약 바 (세부 리스크 탭 바로가기 연동) */}
+                                                            <div className="bg-gradient-to-r from-rose-950/40 via-zinc-950 to-zinc-950 border border-rose-500/35 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                                                <div className="flex items-start gap-2.5">
+                                                                    <span className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-black text-[11px] shrink-0 mt-0.5">
+                                                                        ⚠️ CRO 핵심 경보
+                                                                    </span>
+                                                                    <p className="text-xs text-rose-100/95 font-medium leading-relaxed">
+                                                                        {riskData.headline}
+                                                                    </p>
+                                                                </div>
+                                                                {!expandAllDocSections && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setDocSubTab('risk')}
+                                                                        className="shrink-0 px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/35 text-[11px] font-black cursor-pointer"
+                                                                    >
+                                                                        세부 방어 매뉴얼 보기 →
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 종목 문서일 경우: 💰 실전 자금 배분 & 철통 손익 방어 계산표 */}
+                                                            {!isMacroDoc && riskData.financialPlan && (
+                                                                <div className="bg-black/70 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-base">💰</span>
+                                                                            <h6 className="text-xs sm:text-sm font-black text-white">
+                                                                                {activeDoc.stock_name} 실전 자금 배분 &amp; 철통 손익 방어 계산표
+                                                                            </h6>
+                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                                100% 금액 계산 완료
+                                                                            </span>
+                                                                        </div>
+
+                                                                        {/* 투자금 변경 퀵 버튼 & 직접 입력 */}
+                                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                                            <span className="text-[11px] text-gray-400 font-bold shrink-0">운용 예산:</span>
+                                                                            {[
+                                                                                { label: '🌟 10만원', val: 100000 },
+                                                                                { label: '30만원', val: 300000 },
+                                                                                { label: '50만원', val: 500000 },
+                                                                                { label: '100만원', val: 1000000 },
+                                                                                { label: '300만원', val: 3000000 },
+                                                                                { label: '500만원', val: 5000000 },
+                                                                                { label: '1,000만원', val: 10000000 },
+                                                                            ].map((btn) => (
+                                                                                <button
+                                                                                    key={btn.val}
+                                                                                    type="button"
+                                                                                    onClick={() => setRiskCapital(btn.val)}
+                                                                                    className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                                                                        riskCapital === btn.val
+                                                                                            ? 'bg-amber-400 text-slate-950 font-black shadow-md ring-1 ring-amber-300'
+                                                                                            : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                                                                                    }`}
+                                                                                >
+                                                                                    {btn.label}
+                                                                                </button>
+                                                                            ))}
+                                                                            <div className="flex items-center gap-1 bg-black/60 border border-white/15 rounded-lg px-2 py-0.5">
+                                                                                <span className="text-[10px] text-gray-400 font-bold">직접:</span>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    step="10000"
+                                                                                    min="10000"
+                                                                                    value={riskCapital}
+                                                                                    onChange={(e) => {
+                                                                                        const n = parseInt(e.target.value, 10);
+                                                                                        if (!isNaN(n) && n > 0) setRiskCapital(n);
+                                                                                    }}
+                                                                                    className="w-20 bg-transparent text-[10px] font-mono text-amber-300 font-bold focus:outline-none text-right"
+                                                                                />
+                                                                                <span className="text-[10px] text-gray-400">원</span>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
 
-                                                                    {/* 3대 정밀 리스크 요인 분석 카드 그리드 */}
-                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                                                                        {riskData.factors.map((f, fIdx) => (
-                                                                            <div key={fIdx} className="bg-zinc-950/80 border border-white/10 rounded-xl p-3 flex flex-col justify-between">
-                                                                                <div>
-                                                                                    <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-white/5">
-                                                                                        <span className="text-xs font-black text-white flex items-center gap-1">
-                                                                                            <span>{f.icon}</span>
-                                                                                            <span>{f.title}</span>
-                                                                                        </span>
-                                                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${f.tagColor}`}>
-                                                                                            {f.tag}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <ul className="space-y-1.5 text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium">
-                                                                                        {f.points.map((pt, pIdx) => (
-                                                                                            <li key={pIdx} className="flex items-start gap-1.5">
-                                                                                                <span className="text-rose-400 font-bold shrink-0">•</span>
-                                                                                                <span>{pt}</span>
-                                                                                            </li>
-                                                                                        ))}
-                                                                                    </ul>
-                                                                                </div>
+                                                                    <div className="overflow-x-auto">
+                                                                        <table className="w-full text-left text-xs border-collapse">
+                                                                            <thead>
+                                                                                <tr className="border-b border-white/10 text-gray-400 text-[11px]">
+                                                                                    <th className="py-2 px-2.5 font-bold">진행 단계</th>
+                                                                                    <th className="py-2 px-2.5 font-bold">기준 단가</th>
+                                                                                    <th className="py-2 px-2.5 font-bold">매수 수량 및 투입 금액</th>
+                                                                                    <th className="py-2 px-2.5 font-bold">리스크 통제 &amp; 손익 결과</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody className="divide-y divide-white/5 text-gray-200 text-xs">
+                                                                                {riskData.financialPlan.tranches.map((tr, tIdx) => (
+                                                                                    <tr key={tIdx} className="bg-white/[0.02]">
+                                                                                        <td className="py-2 px-2.5 font-bold text-sky-300">{tr.step}</td>
+                                                                                        <td className="py-2 px-2.5 font-mono text-white">{tr.price}</td>
+                                                                                        <td className="py-2 px-2.5 font-mono text-white">{tr.shares} ({tr.amt})</td>
+                                                                                        <td className="py-2 px-2.5 text-gray-300 font-medium">{tr.desc}</td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                                <tr className="bg-amber-500/10 font-bold border-y border-amber-500/25">
+                                                                                    <td className="py-2 px-2.5 text-amber-300">⚖️ 총 투자 한도</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-amber-300">
+                                                                                        평균단가 {riskData.financialPlan.avgBuyPrice}
+                                                                                    </td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-amber-300">
+                                                                                        총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})
+                                                                                        {riskData.financialPlan.cashReserve !== '0원' && !riskData.financialPlan.priceExceedsBudget && (
+                                                                                            <span className="text-gray-400 text-[10px] ml-1.5 font-normal">(잔여 {riskData.financialPlan.cashReserve})</span>
+                                                                                        )}
+                                                                                    </td>
+                                                                                    <td className="py-2 px-2.5 text-amber-200">{riskData.financialPlan.allocType}</td>
+                                                                                </tr>
+                                                                                <tr className="bg-rose-500/10 font-bold border-b border-rose-500/30">
+                                                                                    <td className="py-2 px-2.5 text-rose-300">🛑 기계적 손절 (-3.5%)</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-rose-400">{riskData.financialPlan.stopLossPrice}</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.stopLossProceeds} 회수)</td>
+                                                                                    <td className="py-2 px-2.5 text-rose-200">
+                                                                                        <strong className="text-rose-400">최대 손실 -{riskData.financialPlan.maxLossAmount} 한정</strong>
+                                                                                        <span className="text-gray-300 ml-1">(총 {riskData.financialPlan.shieldedAmount} 보존)</span>
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <tr className="bg-emerald-500/10 font-bold border-b border-emerald-500/25">
+                                                                                    <td className="py-2 px-2.5 text-emerald-300">🎯 {riskData.financialPlan.isSingleShare ? '1차 목표가 (선택A)' : '1차 분할 익절'}</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-emerald-400">{riskData.financialPlan.target1Price}</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-emerald-300">{riskData.financialPlan.target1SharesLabel}</td>
+                                                                                    <td className="py-2 px-2.5 text-emerald-200">
+                                                                                        회수 {riskData.financialPlan.target1CashIn} <strong className="text-emerald-400 ml-1">(순익 +{riskData.financialPlan.target1ProfitAmt})</strong>
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <tr className="bg-purple-500/10 font-bold">
+                                                                                    <td className="py-2 px-2.5 text-purple-300">🏆 최종 목표 달성</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-purple-300">{riskData.financialPlan.targetPrice} ({riskData.financialPlan.finalUpsidePct})</td>
+                                                                                    <td className="py-2 px-2.5 font-mono text-purple-200">{riskData.financialPlan.finalSharesLabel}</td>
+                                                                                    <td className="py-2 px-2.5 text-purple-200">
+                                                                                        총 회수 {riskData.financialPlan.finalTotalVal} <strong className="text-purple-300 ml-1">(누적 순익 +{riskData.financialPlan.finalProfitAmt})</strong>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* 시황/거시 문서일 경우: 한눈에 보는 4대 실천 수칙 컴팩트 스트립 */}
+                                                            {isMacroDoc && (
+                                                                <div className="bg-black/45 border border-amber-500/25 rounded-2xl p-3.5">
+                                                                    <div className="flex items-center justify-between mb-2.5">
+                                                                        <span className="text-xs font-black text-amber-300 flex items-center gap-1.5">
+                                                                            <Target className="w-3.5 h-3.5 text-amber-400" />
+                                                                            <span>오늘의 대표님 자산 방어 4대 핵심 행동 수칙</span>
+                                                                        </span>
+                                                                        <span className="text-[10px] text-zinc-400">전사 리스크 통제 기준</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                        {riskData.defenseRules.map((rule, rIdx) => (
+                                                                            <div key={rIdx} className="bg-zinc-950/80 border border-white/10 rounded-xl p-2.5">
+                                                                                <div className="text-[10px] font-bold text-zinc-400">{rule.num} {rule.title}</div>
+                                                                                <div className="text-xs font-black text-amber-300 font-mono mt-0.5">{rule.target}</div>
+                                                                                <div className="text-[10px] text-zinc-300 mt-1 leading-snug">{rule.desc}</div>
                                                                             </div>
                                                                         ))}
                                                                     </div>
-
-                                                                    {/* 🔒 [안전 게이트키퍼] 대표이사 독점 결재권 보증 안내 배너 */}
-                                                                    <div className="bg-gradient-to-r from-sky-950/40 via-blue-950/30 to-indigo-950/30 border border-sky-500/35 rounded-xl p-3 sm:p-3.5 flex items-start gap-3">
-                                                                        <div className="p-2 rounded-lg bg-sky-500/20 text-sky-300 text-lg shrink-0">
-                                                                            🔒
-                                                                        </div>
-                                                                        <div className="space-y-1">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-xs font-black text-sky-200">
-                                                                                    대표이사 독점 결재권(Human-in-the-Loop Safe Guard) 가동 중
-                                                                                </span>
-                                                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                                                                    100% 허가제
-                                                                                </span>
-                                                                            </div>
-                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
-                                                                                자동매매는 대표님께서 기안서를 검토하시고 <strong className="text-amber-300">[승인 서명(재가)]</strong>을 누르신 <strong>‘허가 안건’</strong>에 한해서만, 대표님이 정하신 소액 예산(10만원 등) 한도 내에서 안전하게 체결됩니다. <strong className="text-rose-300">미결재·반려 안건은 계좌에서 1원도 무단 매매되지 않으므로 안심하셔도 됩니다.</strong>
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* 🎯 대표님 전용 철통 자산 방어 4대 실천 수칙 */}
-                                                                    <div className="pt-2 border-t border-rose-500/20">
-                                                                        <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5 mb-2">
-                                                                            <Target className="w-3.5 h-3.5 text-amber-400" />
-                                                                            <span>대표님 전용 '철통 자산 방어 실천 4원칙' (구체적 실행 수칙)</span>
-                                                                        </div>
-                                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                                            {riskData.defenseRules.map((rule, rIdx) => (
-                                                                                <div key={rIdx} className="bg-black/60 border border-amber-500/20 rounded-xl p-3 flex flex-col justify-between">
-                                                                                    <div>
-                                                                                        <div className="flex items-center justify-between text-[11px] font-black text-zinc-300">
-                                                                                            <span>{rule.num} {rule.title}</span>
-                                                                                        </div>
-                                                                                        <div className="text-xs sm:text-[13px] font-black text-amber-300 font-mono mt-1.5 leading-snug">
-                                                                                            {rule.target}
-                                                                                        </div>
-                                                                                        <p className="text-[11px] text-zinc-300 mt-1.5 leading-relaxed font-medium">
-                                                                                            {rule.desc}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* 💰 [NEW] 대표이사 실전 자금 배분 & 철통 손익 계산표 / 거시 지표 신호등 분기 */}
-                                                                    {(() => {
-                                                                        const isMacroDoc = 
-                                                                            activeDoc.category_type === 'global_futures' || 
-                                                                            activeDoc.category_type === 'world_news' || 
-                                                                            activeDoc.category_badge?.includes('지표') || 
-                                                                            activeDoc.stock_name?.includes('VIX') || 
-                                                                            activeDoc.stock_name?.includes('환율') || 
-                                                                            activeDoc.stock_name?.includes('금리');
-
-                                                                        if (isMacroDoc) {
-                                                                            const isVix = activeDoc.stock_name?.includes('VIX') || activeDoc.title?.includes('VIX');
-                                                                            return (
-                                                                                <div className="mt-3.5 bg-black/70 border-2 border-sky-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
-                                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span className="text-base">🧭</span>
-                                                                                            <h6 className="text-xs sm:text-sm font-black text-white">
-                                                                                                {activeDoc.stock_name} 시장 날씨 판정 &amp; 대표님 자산 운용 신호등
-                                                                                            </h6>
-                                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                                                                                                거시 환경 종합 진단
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    
-                                                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                                                                                        <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-3.5 space-y-1.5">
-                                                                                            <div className="text-[11px] font-black text-emerald-300 flex items-center gap-1.5">
-                                                                                                <span>🟢</span>
-                                                                                                <span>초록불: VIX 20 미만 (현재 18.39)</span>
-                                                                                            </div>
-                                                                                            <div className="text-sm font-black text-white">안도 랠리 · 정상 매수 허용</div>
-                                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
-                                                                                                시장에 공포가 없는 안정 구간입니다. 대표님이 서명하신 개별 우량주(기업은행 등)를 10만원 예산 내에서 계획대로 매수 체결하셔도 안전합니다.
-                                                                                            </p>
-                                                                                        </div>
-                                                                                        
-                                                                                        <div className="bg-amber-950/20 border border-amber-500/25 rounded-xl p-3.5 space-y-1.5">
-                                                                                            <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5">
-                                                                                                <span>🟡</span>
-                                                                                                <span>노란불: VIX 20 ~ 30</span>
-                                                                                            </div>
-                                                                                            <div className="text-sm font-black text-amber-200">변동성 주의 · 보수적 접근</div>
-                                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
-                                                                                                시장이 긴장하고 있는 상태입니다. 시초가 추격 매수를 엄금하고 오전 10시 이후 지지선 안착을 확인한 뒤에만 분할 진입합니다.
-                                                                                            </p>
-                                                                                        </div>
-                                                                                        
-                                                                                        <div className="bg-rose-950/20 border border-rose-500/25 rounded-xl p-3.5 space-y-1.5">
-                                                                                            <div className="text-[11px] font-black text-rose-300 flex items-center gap-1.5">
-                                                                                                <span>🔴</span>
-                                                                                                <span>빨간불: VIX 30 이상</span>
-                                                                                            </div>
-                                                                                            <div className="text-sm font-black text-rose-300">시장 패닉 · 매수 전면 보류</div>
-                                                                                            <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
-                                                                                                전쟁·위기 등 폭풍우 구간입니다. 신규 매수를 전면 중단하고 -3.5% 손절선을 엄수하여 현금을 90% 이상 비축합니다.
-                                                                                            </p>
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
-                                                                                        ※ <strong>[결재 가이드]</strong>: 본 안건에 [승인 서명]을 누르시더라도 VIX를 직접 매수하지 않으며, <strong className="text-amber-300">“현재 시장 날씨(VIX 18.39)가 맑고 정상이므로, 다른 우량 실전 종목들의 정상 매매를 허가한다”</strong>는 전사 거시 환경 승인으로 자동 처리됩니다.
-                                                                                    </p>
-                                                                                </div>
-                                                                            );
-                                                                        }
-
-                                                                        if (!riskData.financialPlan) return null;
-                                                                        return (
-                                                                        <div className="mt-3.5 bg-black/70 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xl">
-                                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/10">
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className="text-base">💰</span>
-                                                                                    <h6 className="text-xs sm:text-sm font-black text-white">
-                                                                                        {activeDoc.stock_name} 실전 자금 배분 &amp; 철통 손익 방어 계산표
-                                                                                    </h6>
-                                                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                                                                        100% 금액 계산 완료
-                                                                                    </span>
-                                                                                </div>
-
-                                                                                {/* 투자금 변경 퀵 버튼 & 직접 입력 */}
-                                                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                                                    <span className="text-[11px] text-gray-400 font-bold shrink-0">운용 예산:</span>
-                                                                                    {[
-                                                                                        { label: '🌟 10만원 (소액 실전)', val: 100000 },
-                                                                                        { label: '30만원', val: 300000 },
-                                                                                        { label: '50만원', val: 500000 },
-                                                                                        { label: '100만원', val: 1000000 },
-                                                                                        { label: '300만원', val: 3000000 },
-                                                                                        { label: '500만원', val: 5000000 },
-                                                                                        { label: '1,000만원 (15% 비중)', val: 10000000 },
-                                                                                        { label: '5,000만원', val: 50000000 },
-                                                                                        { label: '1억원', val: 100000000 },
-                                                                                    ].map((btn) => (
-                                                                                        <button
-                                                                                            key={btn.val}
-                                                                                            type="button"
-                                                                                            onClick={() => setRiskCapital(btn.val)}
-                                                                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                                                                                                riskCapital === btn.val
-                                                                                                    ? 'bg-amber-400 text-slate-950 font-black shadow-md ring-1 ring-amber-300'
-                                                                                                    : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                                                                                            }`}
-                                                                                        >
-                                                                                            {btn.label}
-                                                                                        </button>
-                                                                                    ))}
-                                                                                    <div className="flex items-center gap-1 bg-black/60 border border-white/15 rounded-lg px-2 py-0.5 ml-1">
-                                                                                        <span className="text-[10px] text-gray-400 font-bold">직접:</span>
-                                                                                        <input
-                                                                                            type="number"
-                                                                                            step="10000"
-                                                                                            min="10000"
-                                                                                            value={riskCapital}
-                                                                                            onChange={(e) => {
-                                                                                                const n = parseInt(e.target.value, 10);
-                                                                                                if (!isNaN(n) && n > 0) setRiskCapital(n);
-                                                                                            }}
-                                                                                            className="w-20 bg-transparent text-[10px] font-mono text-amber-300 font-bold focus:outline-none text-right"
-                                                                                        />
-                                                                                        <span className="text-[10px] text-gray-400">원</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            {/* 상세 표 */}
-                                                                            <div className="overflow-x-auto">
-                                                                                <table className="w-full text-left text-xs border-collapse">
-                                                                                    <thead>
-                                                                                        <tr className="border-b border-white/10 text-gray-400 text-[11px]">
-                                                                                            <th className="py-2 px-2.5 font-bold">진행 단계</th>
-                                                                                            <th className="py-2 px-2.5 font-bold">기준 단가</th>
-                                                                                            <th className="py-2 px-2.5 font-bold">매수 수량 및 투입 금액</th>
-                                                                                            <th className="py-2 px-2.5 font-bold">리스크 통제 &amp; 손익 결과</th>
-                                                                                        </tr>
-                                                                                    </thead>
-                                                                                    <tbody className="divide-y divide-white/5 text-gray-200 text-xs">
-                                                                                        <tr className="bg-white/[0.02]">
-                                                                                            <td className="py-2.5 px-2.5 font-bold text-sky-300">1차 분할 매수</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[0].price}</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[0].shares} ({riskData.financialPlan.tranches[0].amt})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">{riskData.financialPlan.tranches[0].desc}</td>
-                                                                                        </tr>
-                                                                                        <tr className="bg-white/[0.02]">
-                                                                                            <td className="py-2.5 px-2.5 font-bold text-sky-300">2차 분할 매수</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[1].price}</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[1].shares} ({riskData.financialPlan.tranches[1].amt})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">{riskData.financialPlan.tranches[1].desc}</td>
-                                                                                        </tr>
-                                                                                        <tr className="bg-white/[0.02]">
-                                                                                            <td className="py-2.5 px-2.5 font-bold text-sky-300">3차 분할 매수</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[2].price}</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-white">{riskData.financialPlan.tranches[2].shares} ({riskData.financialPlan.tranches[2].amt})</td>
-                                                                                            <td className="py-2.5 px-2.5 text-gray-300 font-medium">{riskData.financialPlan.tranches[2].desc}</td>
-                                                                                        </tr>
-                                                                                        <tr className="bg-amber-500/10 font-bold border-y border-amber-500/25">
-                                                                                            <td className="py-2.5 px-2.5 text-amber-300">⚖️ 총 투자 한도</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">
-                                                                                                평균단가 {riskData.financialPlan.avgBuyPrice}
-                                                                                                {riskData.financialPlan.avgBuyPrice !== riskData.financialPlan.currPrice && (
-                                                                                                    <span className="text-gray-400 text-[10px] block font-normal">(현재가 {riskData.financialPlan.currPrice})</span>
-                                                                                                )}
-                                                                                            </td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-amber-300">
-                                                                                                총 {riskData.financialPlan.totalShares} ({riskData.financialPlan.actualInvest})
-                                                                                                {riskData.financialPlan.cashReserve !== '0원' && !riskData.financialPlan.priceExceedsBudget && (
-                                                                                                    <span className="text-gray-400 text-[10px] ml-1.5 font-normal">(잔여 현금 {riskData.financialPlan.cashReserve} 비축)</span>
-                                                                                                )}
-                                                                                            </td>
-                                                                                            <td className="py-2.5 px-2.5 text-amber-200">
-                                                                                                {riskData.financialPlan.allocType}
-                                                                                                {riskData.financialPlan.priceExceedsBudget && (
-                                                                                                    <span className="text-rose-400 text-[10px] block font-normal">※ 1주 단가가 예산보다 높아 최소 1주 기준으로 시뮬레이션</span>
-                                                                                                )}
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                        <tr className="bg-rose-500/10 font-bold border-b border-rose-500/30">
-                                                                                            <td className="py-2.5 px-2.5 text-rose-300 flex items-center gap-1">
-                                                                                                <span>🛑</span>
-                                                                                                <span>기계적 손절 방어</span>
-                                                                                            </td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-rose-400">{riskData.financialPlan.stopLossPrice} (-3.5%)</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-rose-300">전량 매도 ({riskData.financialPlan.totalShares} · {riskData.financialPlan.stopLossProceeds} 회수)</td>
-                                                                                            <td className="py-2.5 px-2.5 text-rose-200">
-                                                                                                <strong className="text-rose-400">최대 손실 -{riskData.financialPlan.maxLossAmount} 한정</strong>
-                                                                                                <span className="text-gray-300 ml-1.5">(매도금+잔여현금 총 {riskData.financialPlan.shieldedAmount} 철통 회수)</span>
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                        <tr className="bg-emerald-500/10 font-bold border-b border-emerald-500/25">
-                                                                                            <td className="py-2.5 px-2.5 text-emerald-300 flex items-center gap-1">
-                                                                                                <span>🎯</span>
-                                                                                                <span>{riskData.financialPlan.isSingleShare ? '1차 목표가 도달 (선택A)' : '1차 분할 익절'}</span>
-                                                                                            </td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-emerald-400">{riskData.financialPlan.target1Price}</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-emerald-300">{riskData.financialPlan.target1SharesLabel}</td>
-                                                                                            <td className="py-2.5 px-2.5 text-emerald-200">
-                                                                                                <span>{riskData.financialPlan.isSingleShare ? '1차 익절 시 회수:' : '1차 현금 회수:'} {riskData.financialPlan.target1CashIn}</span>
-                                                                                                <strong className="text-emerald-400 ml-1.5">(확정 순수익: +{riskData.financialPlan.target1ProfitAmt})</strong>
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                        <tr className="bg-purple-500/10 font-bold">
-                                                                                            <td className="py-2.5 px-2.5 text-purple-300 flex items-center gap-1">
-                                                                                                <span>🏆</span>
-                                                                                                <span>{riskData.financialPlan.isSingleShare ? '최종 목표가 달성 (선택B)' : '최종 목표가 달성'}</span>
-                                                                                            </td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-purple-300">{riskData.financialPlan.targetPrice} ({riskData.financialPlan.finalUpsidePct})</td>
-                                                                                            <td className="py-2.5 px-2.5 font-mono text-purple-200">{riskData.financialPlan.finalSharesLabel}</td>
-                                                                                            <td className="py-2.5 px-2.5 text-purple-200">
-                                                                                                <span>{riskData.financialPlan.isSingleShare ? '최종 매도 회수:' : '1차+최종 총 회수:'} {riskData.financialPlan.finalTotalVal}</span>
-                                                                                                <strong className="text-purple-300 ml-1.5">(최종 누적 순이익: +{riskData.financialPlan.finalProfitAmt})</strong>
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    </tbody>
-                                                                                </table>
-                                                                            </div>
-                                                                            <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
-                                                                                ※ 대표님의 소중한 원금을 지키기 위해, 최악의 경우에도 <strong className="text-rose-300">최대 손실을 -{riskData.financialPlan.maxLossAmount}으로 철저히 차단</strong>하고 <strong className="text-emerald-300">원금 {riskData.financialPlan.shieldedAmount}을 안전하게 확보</strong>하도록 설계된 실전 리스크 매뉴얼입니다.
-                                                                            </p>
-                                                                        </div>
-                                                                        );
-                                                                    })()}
                                                                 </div>
-                                                            );
-                                                        })()}
-                                                    </div>
-
-                                                    {/* 🏛️ 대표이사 재가 연동: 전담 TFT 신설 안내 배너 */}
-                                                    <div className={`mt-4 rounded-2xl p-4 sm:p-4.5 border transition-all ${
-                                                        (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
-                                                            ? 'bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border-emerald-500/50 shadow-lg shadow-emerald-950/20'
-                                                            : 'bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-950 border-amber-500/30'
-                                                    }`}>
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                            <div className="flex items-start gap-3">
-                                                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl shrink-0 ${
-                                                                    (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
-                                                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                                                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                                                }`}>
-                                                                    {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' ? '🚀' : '🏛️'}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="text-xs sm:text-sm font-black flex items-center gap-2">
-                                                                        <span className={(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' ? 'text-emerald-300' : 'text-amber-300'}>
-                                                                            {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
-                                                                                ? `[대표이사 재가 완료] '${activeDoc.stock_name}' 특별 집중 분석 전담 TFT 가동 중!`
-                                                                                : `[대표이사 특명 권한] 서명(재가) 시 '${activeDoc.stock_name}' 전담 분석 TFT 자동 신설`}
-                                                                        </span>
-                                                                        {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 font-bold animate-pulse">
-                                                                                24시간 밀착 감시
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="text-[11px] sm:text-xs text-gray-300 font-medium mt-0.5 leading-relaxed">
-                                                                        {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
-                                                                            ? '리서치센터(박진우)·수급퀀트(김도현)·리스크(최서연) 4대 전담관이 배치되어 목표가 도달 및 실시간 수급을 밀착 추적합니다.'
-                                                                            : '대표님께서 하단 [승인 서명 (재가)]을 누르시면, 즉시 이 종목만을 24시간 전담하는 특별 분석 TFT가 발족됩니다.'}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved' && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setActiveTab('approved_tf')}
-                                                                    className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
-                                                                >
-                                                                    <span>🏛️</span>
-                                                                    <span>전담 TFT 지휘본부 입장 →</span>
-                                                                </button>
                                                             )}
                                                         </div>
-                                                    </div>
+                                                    )}
 
-                                                    {/* 핵심 수치 요약 표 (상승/하락 직관적 컬러 반영 & 말줄임 없이 전체 표기) */}
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
-                                                        {activeDoc.key_numbers.map((kn, i) => {
-                                                            const valStr = String(kn.value || "");
-                                                            const isDown = valStr.includes("-") && (valStr.includes("%") || valStr.includes("하락") || valStr.includes("▼"));
-                                                            const isUp = valStr.includes("+") && (valStr.includes("%") || valStr.includes("상승") || valStr.includes("▲"));
-
-                                                            const valColor = isDown 
-                                                                ? "text-blue-400 font-mono" 
-                                                                : isUp 
-                                                                ? "text-rose-400 font-mono" 
-                                                                : "text-amber-300 font-sans";
-
-                                                            const cardBorder = isDown 
-                                                                ? "border-blue-500/25 bg-blue-950/20" 
-                                                                : isUp 
-                                                                ? "border-rose-500/25 bg-rose-950/20" 
-                                                                : "border-white/10 bg-zinc-900/60";
-
-                                                            return (
-                                                                <div
-                                                                    key={i}
-                                                                    className={`rounded-2xl p-3 sm:p-3.5 border transition-all shadow-sm flex flex-col justify-between min-h-[78px] sm:min-h-[84px] ${cardBorder}`}
-                                                                >
-                                                                    <div className="text-[11px] text-zinc-400 font-bold tracking-tight leading-snug mb-1">
-                                                                        {kn.label}
-                                                                    </div>
-                                                                    <div className={`text-xs sm:text-[13px] font-black leading-snug break-words ${valColor}`}>
-                                                                        {kn.value}
-                                                                    </div>
+                                                    {/* ── [TAB 2: 🛡️ CRO 세부 리스크 & 방어 매뉴얼] ── */}
+                                                    {(expandAllDocSections || docSubTab === 'risk') && (
+                                                        <div className="bg-gradient-to-br from-rose-950/30 via-zinc-950/90 to-red-950/20 border border-rose-500/35 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+                                                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-rose-500/20">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="w-6 h-6 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center justify-center text-xs">
+                                                                        🛡️
+                                                                    </span>
+                                                                    <h5 className="text-xs sm:text-sm font-black text-rose-200 tracking-tight flex items-center gap-1.5">
+                                                                        <span>리스크 정밀 진단 &amp; 세부 방어 매뉴얼</span>
+                                                                        <span className="text-[10px] text-zinc-400 font-normal">| 최서연 리스크관리본부장 (CRO)</span>
+                                                                    </h5>
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </div>
-
-                                                    {/* 📖 이 보고서에 나온 어려운 단어 3초 풀이 (사전형 카드 그리드) */}
-                                                    {activeDoc.easy_terms && activeDoc.easy_terms.length > 0 && (
-                                                        <div className="mt-5 bg-gradient-to-br from-zinc-900/90 via-slate-950 to-zinc-950 border border-white/15 rounded-2xl p-4 sm:p-5 shadow-lg">
-                                                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
-                                                                <div className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-2">
-                                                                    <span className="text-base">📖</span>
-                                                                    <span>이 보고서에 등장한 어려운 단어 3초 풀이</span>
-                                                                </div>
-                                                                <span className="text-[11px] text-zinc-400 font-bold hidden sm:inline">
-                                                                    초보자를 위한 친절한 금융 용어집
+                                                                <span className="text-[10px] font-black text-rose-300 bg-rose-500/15 px-2 py-0.5 rounded-md border border-rose-500/30">
+                                                                    ⚠️ 손실 방어 1순위 감사 완료
                                                                 </span>
                                                             </div>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                                                {activeDoc.easy_terms.map((t, idx) => (
-                                                                    <div
-                                                                        key={idx}
-                                                                        className="bg-zinc-900/70 border border-white/10 hover:border-amber-400/30 rounded-xl p-3 text-xs leading-relaxed transition-all"
-                                                                    >
-                                                                        <div className="font-black text-amber-300 mb-1 flex items-center gap-1.5">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                                                            <span>{t.term}</span>
-                                                                        </div>
-                                                                        <div className="text-zinc-300 font-medium pl-3 border-l-2 border-amber-400/30">
-                                                                            {t.desc}
+
+                                                            {/* 3대 정밀 리스크 요인 분석 카드 그리드 */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                                                                {riskData.factors.map((f, fIdx) => (
+                                                                    <div key={fIdx} className="bg-zinc-950/80 border border-white/10 rounded-xl p-3.5 flex flex-col justify-between">
+                                                                        <div>
+                                                                            <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-white/5">
+                                                                                <span className="text-xs font-black text-white flex items-center gap-1">
+                                                                                    <span>{f.icon}</span>
+                                                                                    <span>{f.title}</span>
+                                                                                </span>
+                                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${f.tagColor}`}>
+                                                                                    {f.tag}
+                                                                                </span>
+                                                                            </div>
+                                                                            <ul className="space-y-1.5 text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium">
+                                                                                {f.points.map((pt, pIdx) => (
+                                                                                    <li key={pIdx} className="flex items-start gap-1.5">
+                                                                                        <span className="text-rose-400 font-bold shrink-0">•</span>
+                                                                                        <span>{pt}</span>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
                                                                         </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
+
+                                                            {/* 대표님 전용 철통 자산 방어 4대 실천 수칙 */}
+                                                            <div className="pt-2 border-t border-rose-500/20">
+                                                                <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5 mb-2">
+                                                                    <Target className="w-3.5 h-3.5 text-amber-400" />
+                                                                    <span>대표님 전용 '철통 자산 방어 실천 4원칙' (구체적 실행 수칙)</span>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                    {riskData.defenseRules.map((rule, rIdx) => (
+                                                                        <div key={rIdx} className="bg-black/60 border border-amber-500/20 rounded-xl p-3 flex flex-col justify-between">
+                                                                            <div>
+                                                                                <div className="text-[11px] font-black text-zinc-300">{rule.num} {rule.title}</div>
+                                                                                <div className="text-xs sm:text-[13px] font-black text-amber-300 font-mono mt-1 leading-snug">{rule.target}</div>
+                                                                                <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed font-medium">{rule.desc}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 🔒 대표이사 독점 결재권 보증 안내 배너 */}
+                                                            <div className="bg-gradient-to-r from-sky-950/40 via-blue-950/30 to-indigo-950/30 border border-sky-500/35 rounded-xl p-3 flex items-start gap-3">
+                                                                <div className="p-2 rounded-lg bg-sky-500/20 text-sky-300 text-base shrink-0">🔒</div>
+                                                                <div className="space-y-0.5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-xs font-black text-sky-200">
+                                                                            대표이사 독점 결재권(Human-in-the-Loop Safe Guard) 가동 중
+                                                                        </span>
+                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                                            100% 허가제
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
+                                                                        자동매매는 대표님께서 <strong className="text-amber-300">[승인 서명(재가)]</strong>을 누르신 허가 안건에 한해서만 지정 예산 한도 내에서 안전하게 집행됩니다. <strong className="text-rose-300">미결재·보류 안건은 계좌에서 1원도 무단 매매되지 않습니다.</strong>
+                                                                    </p>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     )}
 
-                                                    {/* 비서실장 최종 결재 건의문 */}
-                                                    <div className="mt-5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-zinc-900 border border-purple-500/40 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-lg shadow-purple-950/20">
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-purple-500/20">
-                                                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/25 text-purple-200 text-xs font-black border border-purple-400/40 shrink-0">
-                                                                비서실장 최종 검토
-                                                            </span>
-                                                            {activeDoc.recommendation && (
-                                                                <span className="px-3 py-1 rounded-xl bg-purple-500/30 text-purple-200 text-xs font-black border border-purple-400/50 shadow-sm break-keep-all text-left">
-                                                                    건의: {activeDoc.recommendation}
-                                                                </span>
+                                                    {/* ── [TAB 3: 📖 초보자 3초 용어풀이 & 전담 TFT] ── */}
+                                                    {(expandAllDocSections || docSubTab === 'terms') && (
+                                                        <div className="space-y-3.5">
+                                                            {activeDoc.easy_terms && activeDoc.easy_terms.length > 0 ? (
+                                                                <div className="bg-gradient-to-br from-zinc-900/90 via-slate-950 to-zinc-950 border border-white/15 rounded-2xl p-4 sm:p-5 shadow-lg">
+                                                                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+                                                                        <div className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-2">
+                                                                            <span className="text-base">📖</span>
+                                                                            <span>이 보고서에 등장한 어려운 단어 3초 풀이</span>
+                                                                        </div>
+                                                                        <span className="text-[11px] text-zinc-400 font-bold">
+                                                                            초보자를 위한 친절한 금융 용어집
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                                        {activeDoc.easy_terms.map((t, idx) => (
+                                                                            <div
+                                                                                key={idx}
+                                                                                className="bg-zinc-900/70 border border-white/10 hover:border-amber-400/30 rounded-xl p-3 text-xs leading-relaxed transition-all"
+                                                                            >
+                                                                                <div className="font-black text-amber-300 mb-1 flex items-center gap-1.5">
+                                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                                                                    <span>{t.term}</span>
+                                                                                </div>
+                                                                                <div className="text-zinc-300 font-medium pl-3 border-l-2 border-amber-400/30">
+                                                                                    {t.desc}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-5 text-center text-xs text-gray-400">
+                                                                    이 안건에는 별도의 전문 용어 해설 항목이 없습니다.
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                        <div className="w-full text-xs sm:text-sm text-purple-100 font-bold leading-relaxed break-keep-all whitespace-normal">
-                                                            {activeDoc.secretary_conclusion}
-                                                        </div>
-                                                    </div>
 
-                                                    {/* 하단 대표이사 전자서명 버튼 바 */}
-                                                    <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                                                            {/* 전담 TFT 신설 안내 배너 */}
+                                                            <div className={`rounded-2xl p-4 border transition-all ${
+                                                                docStatus === 'approved'
+                                                                    ? 'bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border-emerald-500/50'
+                                                                    : 'bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-950 border-amber-500/30'
+                                                            }`}>
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                                    <div className="flex items-start gap-3">
+                                                                        <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center text-lg shrink-0">
+                                                                            {docStatus === 'approved' ? '🚀' : '🏛️'}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="text-xs font-black text-amber-300">
+                                                                                {docStatus === 'approved'
+                                                                                    ? `[대표이사 재가 완료] '${activeDoc.stock_name}' 특별 집중 분석 전담 TFT 가동 중!`
+                                                                                    : `[대표이사 특명 권한] 서명(재가) 시 '${activeDoc.stock_name}' 전담 분석 TFT 자동 신설`}
+                                                                            </div>
+                                                                            <p className="text-[11px] text-gray-300 mt-0.5">
+                                                                                하단 또는 상단 [승인 서명 (재가)]을 누르시면 4대 전담관이 배치되어 실시간 수급 및 목표가를 24시간 밀착 추적합니다.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    {docStatus === 'approved' && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setActiveTab('approved_tf')}
+                                                                            className="shrink-0 px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs cursor-pointer"
+                                                                        >
+                                                                            🏛️ 전담 TFT 입장 →
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* ── [FOOTER] 하단 대표이사 전자서명 & 원문 링크 바 ── */}
+                                                    <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => updateSignature(activeDoc.doc_id, 'approved')}
                                                                 className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                                                                    (signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                                                    docStatus === 'approved'
                                                                         ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25'
                                                                         : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-md shadow-amber-500/20'
                                                                 }`}
                                                             >
                                                                 <span>
-                                                                    {(signMap[activeDoc.doc_id]?.status || 'pending') === 'approved'
+                                                                    {docStatus === 'approved'
                                                                         ? '✅ 대표이사 승인 서명 완료'
                                                                         : '🖋️ 대표이사 승인 서명 (재가)'}
                                                                 </span>
@@ -5327,7 +5133,7 @@ export default function CeoOfficePage() {
                                                                 type="button"
                                                                 onClick={() => updateSignature(activeDoc.doc_id, 'hold')}
                                                                 className={`px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
-                                                                    (signMap[activeDoc.doc_id]?.status || 'pending') === 'hold'
+                                                                    docStatus === 'hold'
                                                                         ? 'bg-rose-500 text-white border-rose-400'
                                                                         : 'bg-white/5 hover:bg-white/10 text-gray-300 border-white/15'
                                                                 }`}
@@ -5338,21 +5144,11 @@ export default function CeoOfficePage() {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleReexamineDoc(activeDoc)}
-                                                                className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-sky-500/20 via-indigo-500/25 to-sky-500/20 hover:from-sky-500/35 hover:to-indigo-500/35 text-sky-200 border border-sky-400/50 shadow-lg shadow-sky-500/15 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-                                                                title="5개 본부 임원을 회의실로 긴급 소집하여 대면 심층 보고 및 질의응답을 받습니다"
+                                                                className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-sky-500/20 via-indigo-500/25 to-sky-500/20 hover:from-sky-500/35 hover:to-indigo-500/35 text-sky-200 border border-sky-400/50 transition-all cursor-pointer flex items-center gap-1.5"
                                                             >
-                                                                <span className="text-base">👥</span>
+                                                                <span>👥</span>
                                                                 <span>임원 대면 심층보고 소집</span>
                                                             </button>
-                                                        </div>
-
-                                                        <div className="w-full mt-2.5 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
-                                                            <span className="flex items-center gap-1.5">
-                                                                <span className="text-amber-400 text-xs">💡</span>
-                                                                <span>
-                                                                    <strong className="text-gray-200 font-bold">[임원 대면 심층보고 소집]</strong>을 누르시면 5개 본부 임원이 회의실로 즉각 소집되어 해당 안건의 쟁점과 분석을 실시간 대면 보고합니다.
-                                                                </span>
-                                                            </span>
                                                         </div>
 
                                                         {activeDoc.detail_url && (
@@ -5367,6 +5163,8 @@ export default function CeoOfficePage() {
                                                         )}
                                                     </div>
                                                 </div>
+                                                );
+                                            })()
                                             ) : (
                                                 <div className="bg-[#0d1526] border border-white/10 rounded-3xl p-12 text-center text-gray-400 text-sm">
                                                     좌측 목록에서 결재할 서류를 선택해 주십시오.
