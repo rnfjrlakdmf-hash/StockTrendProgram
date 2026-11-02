@@ -4531,22 +4531,23 @@ export default function CeoOfficePage() {
                                     </div>
 
                                     {/* 이메일형 2단 마스터-디테일 결재 서류함 */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                                        {/* 좌측 서류 목록 (Mail Master List - 카테고리 그룹핑 & 2줄 초슬림 인덱스 카드) */}
-                                        <div className={`lg:col-span-5 xl:col-span-4 space-y-2.5 ${mobileDetailOpen ? 'hidden lg:block' : 'block'}`}>
-                                            <div className="flex items-center justify-between px-1.5 py-1 bg-[#0a101f]/90 border border-white/10 rounded-xl text-xs text-gray-300 font-bold">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span>📬 상정 서류함</span>
-                                                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-black text-[11px]">
-                                                        {filteredDocs.length}건
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                                        {/* 좌측 서류 목록 (Mail Master List - 카테고리 그룹핑 & 2줄 초슬림 인덱스 카드, 우측 상세 열람실과 하단 높이 완벽 정렬) */}
+                                        <div className={`lg:col-span-5 xl:col-span-4 space-y-2.5 flex flex-col justify-between ${mobileDetailOpen ? 'hidden lg:block' : 'block'}`}>
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#0a101f]/90 border border-white/10 rounded-xl text-xs text-gray-300 font-bold shadow-sm">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span>📬 상정 서류함</span>
+                                                        <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-black text-[11px]">
+                                                            {filteredDocs.length}건
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[11px] text-amber-300/90 font-semibold">
+                                                        👉 항목 클릭 시 우측 상세 열람
                                                     </span>
                                                 </div>
-                                                <span className="text-[11px] text-amber-300/90 font-semibold">
-                                                    👉 항목 클릭 시 우측 상세 보고서 열람
-                                                </span>
-                                            </div>
 
-                                            <div className="space-y-3 lg:max-h-[880px] lg:overflow-y-auto pr-1">
+                                                <div className="space-y-3 pr-0.5">
                                                 {filteredDocs.length === 0 ? (
                                                     <div className="bg-black/30 border border-white/10 rounded-2xl p-8 text-center text-gray-400 text-xs">
                                                         해당 조건에 맞는 결재 서류가 없습니다.
@@ -4720,6 +4721,25 @@ export default function CeoOfficePage() {
                                                         </div>
                                                     ));
                                                 })()}
+                                                </div>
+                                            </div>
+
+                                            {/* 하단 바닥 라인 맞춤용 전자결재 실천 원칙 안내 카드 */}
+                                            <div className="pt-2 border-t border-white/10 mt-auto">
+                                                <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900/80 to-slate-950 border border-amber-500/25 text-xs shadow-md space-y-1">
+                                                    <div className="flex items-center justify-between text-amber-300 font-extrabold text-[11px]">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span>🛡️</span>
+                                                            <span>대표이사 전자결재 집행 원칙</span>
+                                                        </span>
+                                                        <span className="text-[10px] text-emerald-300 font-bold bg-emerald-500/15 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                                                            100% 재가 집행
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-300 leading-snug">
+                                                        대표님께서 서명하신 기안서는 <strong className="text-amber-200 font-bold">5개 본부 TFT</strong>로 즉시 전달되어 50일선 지지 확인 및 분할 매매가 기계적으로 실행됩니다.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
 
