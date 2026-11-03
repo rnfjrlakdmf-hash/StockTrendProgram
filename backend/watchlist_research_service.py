@@ -158,6 +158,677 @@ def _resolve_symbols(user_id: Optional[str], requested: Optional[List[str]]) -> 
     return out[:MAX_SYMBOLS]
 
 
+
+
+def _classify_disclosure_easy(report_nm: str, flr_nm: str = "") -> Dict[str, str]:
+    """공시 제목을 분석해 초보자도 3초 만에 이해하는 호재/악재/중립 판정 및 직격탄 해설을 반환합니다."""
+    title = (report_nm or "").strip()
+    clean = re.sub(r"\s+", "", title)
+
+    # 1. 악재 / 물량출회 / 하락 직격탄 공시
+    if any(k in clean for k in ["유상증자결정", "주주배정후실권주", "일반공모유상증자"]) and "제3자배정" not in clean:
+        return {
+            "badge": "🔴 악재·물량희석 직격탄",
+            "tone": "negative",
+            "easy_meaning": "새로 주식을 대량 발행해 돈을 조달하는 공시로, 기존 주주 지분 가치가 묽어져 주가 하락 직격탄이 될 수 있습니다."
+        }
+    if any(k in clean for k in ["전환사채권발행", "신주인수권부사채", "교환사채권발행", "전환청구권행사", "신주인수권행사"]):
+        return {
+            "badge": "🔴 주의·잠재물량 출회",
+            "tone": "negative",
+            "easy_meaning": "채권(CB·BW)이 주식으로 바뀌어 시장에 매도 물량(오버행)으로 쏟아질 수 있어 단기 주가 눌림 요인이 됩니다."
+        }
+    if any(k in clean for k in ["공급계약해지", "판매ㆍ공급계약해지", "소송등의제기", "횡령ㆍ배임", "불성실공시", "거래정지", "투자경고", "투자위험", "관리종목"]):
+        return {
+            "badge": "🔴 중대 리스크 경보",
+            "tone": "negative",
+            "easy_meaning": "수주 계약 취소나 법적 분쟁·공시 위반 등 기업 신뢰도에 타격을 주는 악재 공시이므로 각별한 주의가 필요합니다."
+        }
+    if "단일판매" in clean and "정정" in clean:
+        return {
+            "badge": "🟡 수주 계약조건 변경",
+            "tone": "neutral",
+            "easy_meaning": "기존에 따냈던 공급계약의 금액이나 기간이 변경된 공시입니다 (계약금액 축소인지 연장인지 원문 확인 권장)."
+        }
+
+    # 2. 호재 / 수주 / 주주환원 공시
+    if any(k in clean for k in ["단일판매ㆍ공급계약체결", "단일판매·공급계약체결", "공급계약체결"]):
+        return {
+            "badge": "🟢 호재·대규모 일감 수주",
+            "tone": "positive",
+            "easy_meaning": "새로운 대규모 판매·공급 계약을 따낸 호재 공시로, 향후 매출·영업이익 증가와 주가 상승 모멘텀이 됩니다."
+        }
+    if any(k in clean for k in ["자기주식취득결정", "자기주식소각결정", "주식소각결정", "자기주식취득신탁"]):
+        return {
+            "badge": "🟢 강력호재·자사주 매입/소각",
+            "tone": "positive",
+            "easy_meaning": "회사가 직접 자기 주식을 사들이거나 소각해 유통 주식 수를 줄이는 대표적인 주가 부양(주주친화) 호재 공시입니다."
+        }
+    if any(k in clean for k in ["현금ㆍ현물배당결정", "배당결정", "분기배당", "중간배당"]):
+        return {
+            "badge": "🟢 호재·주주 배당금 지급",
+            "tone": "positive",
+            "easy_meaning": "벌어들인 이익을 주주들에게 배당금으로 돌려주는 호재 공시로, 하방 지지력을 높여줍니다."
+        }
+    if any(k in clean for k in ["특허권취득", "품목허가", "임상시험", "무상증자결정", "제3자배정"]):
+        return {
+            "badge": "🟢 호재·기술/자금 모멘텀",
+            "tone": "positive",
+            "easy_meaning": "신기술 특허 취득, 허가 승인 또는 외부 전략적 투자 유치 등 기업 성장 동력을 높이는 긍정적 공시입니다."
+        }
+    if "타법인주식및출자증권취득결정" in clean or "영업양수결정" in clean:
+        return {
+            "badge": "🟢 신사업·지분 투자 확대",
+            "tone": "positive",
+            "easy_meaning": "미래 성장동력 확보를 위해 다른 회사의 지분을 인수하거나 사업을 확장하는 투자 공시입니다."
+        }
+    if "타법인주식및출자증권처분결정" in clean or "자산총액" in clean:
+        return {
+            "badge": "🟡 보유지분/자산 매각 현금화",
+            "tone": "neutral",
+            "easy_meaning": "보유 중인 타사 주식이나 자산을 처분해 현금을 확보하는 공시입니다 (재무구조 개선 또는 투자금 회수 목적)."
+        }
+
+    # 3. 지분 / 정기실적 / 일반 공시
+    if "임원ㆍ주요주주" in clean:
+        return {
+            "badge": "⚪ 임원·대주주 지분 변동",
+            "tone": "neutral",
+            "easy_meaning": f"회사 임원이나 주요 주주({flr_nm or '내부자'})가 주식을 장내 매수(호재) 또는 매도했음을 투명하게 신고한 공시입니다."
+        }
+    if "대량보유상황보고서" in clean:
+        return {
+            "badge": "⚪ 5% 이상 큰손 지분 변동",
+            "tone": "neutral",
+            "easy_meaning": f"국민연금·자산운용사 등 5% 이상 대주주({flr_nm or '기관/큰손'})의 지분율 변동을 보고한 수급 공시입니다."
+        }
+    if any(k in clean for k in ["잠정)실적", "매출액또는손익구조", "사업보고서", "반기보고서", "분기보고서"]):
+        return {
+            "badge": "📊 공식 실적 성적표 발표",
+            "tone": "neutral",
+            "easy_meaning": "회사의 분기·연간 매출액과 영업이익 성적표를 금융감독원에 공식 제출한 실적 공시입니다."
+        }
+    if "기업설명회" in clean:
+        return {
+            "badge": "📢 기관·투자자 설명회(IR)",
+            "tone": "neutral",
+            "easy_meaning": "회사가 증권사 애널리스트 및 기관 투자자들을 대상으로 실적과 향후 비전을 발표하는 설명회 개최 공시입니다."
+        }
+
+    return {
+        "badge": "📋 일반 경영·정기 공시",
+        "tone": "neutral",
+        "easy_meaning": "금융감독원 전자공시시스템(DART)에 제출된 공식 경영 보고서로, 주가에 급격한 충격을 주는 특이 악재는 아닙니다."
+    }
+
+
+def _fetch_dart_disclosures(code: str, max_items: int = 5) -> List[Dict[str, Any]]:
+    """금융감독원 OpenDART에서 종목의 최근 공시를 조회하고 쉬운 해설을 덧붙입니다."""
+    disclosures: List[Dict[str, Any]] = []
+    try:
+        from dart_api_client import dart_api_client
+        if not dart_api_client.is_available():
+            return []
+        corp_code = dart_api_client._load_corp_code(code)
+        if not corp_code:
+            return []
+        bgn_de = (datetime.now(KST) - timedelta(days=90)).strftime("%Y%m%d")
+        res = requests.get(
+            "https://opendart.fss.or.kr/api/list.json",
+            params={
+                "crtfc_key": dart_api_client.api_key,
+                "corp_code": corp_code,
+                "bgn_de": bgn_de,
+                "page_count": str(max_items),
+            },
+            timeout=4,
+        )
+        if res.status_code == 200:
+            data = res.json()
+            if data.get("status") == "000":
+                for item in (data.get("list") or [])[:max_items]:
+                    rcp_no = item.get("rcept_no") or ""
+                    rcp_dt = str(item.get("rcept_dt") or "")
+                    dt_fmt = f"{rcp_dt[:4]}.{rcp_dt[4:6]}.{rcp_dt[6:8]}" if len(rcp_dt) == 8 else rcp_dt
+                    rep_nm = (item.get("report_nm") or "").strip()
+                    flr_nm = (item.get("flr_nm") or "").strip()
+                    cls_info = _classify_disclosure_easy(rep_nm, flr_nm)
+                    disclosures.append({
+                        "title": rep_nm,
+                        "filer": flr_nm,
+                        "date": dt_fmt,
+                        "rcept_no": rcp_no,
+                        "url": f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcp_no}" if rcp_no else None,
+                        "badge": cls_info["badge"],
+                        "tone": cls_info["tone"],
+                        "easy_meaning": cls_info["easy_meaning"],
+                    })
+    except Exception as e:
+        print(f"[WatchlistResearch] DART disclosure fetch error for {code}: {e}")
+    return disclosures
+
+
+def _build_drop_and_global_impact_intel(r: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    대표님 특별 요청:
+    1) '해외에 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는가?'를 한눈에 보여주는 직관적 글로벌-종목 직격탄 인과관계
+    2) '오늘 왜 떨어졌나요?(또는 왜 오르나요?)' 뉴스·공시(DART)·외인/기관 수급·해외지표를 교차 분석한 리서치팀 3초 해답
+    """
+    name = str(r.get("stock_name") or "").strip()
+    code = str(r.get("stock_code") or "").strip().upper()
+    is_kr = r.get("category") == "kr_stock"
+    chg = float(r.get("change_pct") or 0.0)
+    biz_text = " ".join(r.get("business_summary") or [])
+    combined = f"{name} {code} {biz_text}".lower()
+
+    # --- 1. 종목별·섹터별 해외 직격탄 연결고리 프로필 판별 ---
+    if any(k in combined for k in ["하이닉스", "삼성전자", "한미반도체", "리노공업", "이오테크닉스", "주성엔지니어링", "hbm", "반도체", "웨이퍼", "파운드리", "메모리", "디램", "dram", "nand"]):
+        overseas_chain_badge = "🌏 미국 엔비디아(NVDA) · 빅테크 AI 서버 · 대중국 수출규제 직결주"
+        direct_hit_one_liner = (
+            f"미국에서 『엔비디아(NVDA)·필라델피아 반도체지수 급락』이나 『구글·MS 등 빅테크의 AI 데이터센터 투자 축소』, "
+            f"또는 『미국 정부의 대중국 반도체 수출 통제 강화』가 터지면 ➔ AI 칩과 서버에 들어가는 메모리(HBM·D램)·장비 주문이 줄어들까 봐 "
+            f"외국인 프로그램 매물이 가장 먼저 쏟아지며 {name} 주가가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🤖",
+                "trigger": "🇺🇸 미국 엔비디아(NVDA) 급락 & AI 거품론 대두",
+                "chain": "미국 AI 반도체 대장주가 흔들리면 글로벌 패시브 자금이 한국 반도체 밸류체인(HBM·전공정·후공정)부터 기계적으로 매도하여 장초반 직격탄을 맞습니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🚫",
+                "trigger": "🏛️ 미국 상무부의 대중국 반도체 수출 통제·관세 폭탄",
+                "chain": "중국향 첨단 메모리·장비 수출이 제한되거나 반도체 품목 관세가 부과되면 글로벌 공급망 위축 우려로 주가가 즉각 하락 압력을 받습니다.",
+                "impact_degree": "⚠️ 고위험 뇌관"
+            },
+            {
+                "icon": "💻",
+                "trigger": "📉 글로벌 스마트폰·PC 판매 부진 & D램/낸드 가격 하락",
+                "chain": "애플 아이폰 등 IT 기기 수요 둔화 뉴스가 나오면 범용 메모리 반도체 고정거래가격 하락 우려로 실적 눈높이가 낮아집니다.",
+                "impact_degree": "⚡ 업황 둔화 요인"
+            },
+        ]
+    elif any(k in combined for k in ["현대차", "기아", "현대모비스", "현대글로비스", "현대위아", "한온시스템", "타이어", "자동차", "완성차"]):
+        overseas_chain_badge = "🌏 미국 수입차 관세 · 북미 자동차 판매량 · 원/달러 환율 직결주"
+        direct_hit_one_liner = (
+            f"미국에서 『한국산 수입 자동차·부품 고율 관세 부과(무역장벽·IRA 보조금 축소)』 뉴스가 터지거나, "
+            f"『미국 소비 둔화(고금리 할부 부담)』 또는 『원/달러 환율 급락(원화 강세)』이 발생하면 ➔ "
+            f"북미 수출로 역대급 이익을 내는 {name}의 수출 마진이 바로 깎이기 때문에 직격탄을 맞아 주가가 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🛃",
+                "trigger": "🇺🇸 미국의 수입 자동차·부품 보편관세 부과 & 보조금 축소",
+                "chain": "미국 시장 매출 비중이 절대적인 구조상, 관세 부과나 전기차 보조금 제외 뉴스가 뜨면 가격 경쟁력 약화 우려로 직격탄을 맞습니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "💱",
+                "trigger": "💵 원/달러 환율 급락 (원화 강세로 수출 환차익 감소)",
+                "chain": "해외에서 달러로 차를 팔아 원화로 환산할 때 환율이 급락하면 가만히 앉아서 영업이익이 수천억 원씩 줄어드는 효과가 발생합니다.",
+                "impact_degree": "⚠️ 수익성 직격"
+            },
+            {
+                "icon": "🚗",
+                "trigger": "🏷️ 미국·유럽 신차 소비 둔화 & 도요타·테슬라 할인 전쟁",
+                "chain": "해외 자동차 재고가 늘어나 딜러 인센티브(할인 보조금) 지출이 커지면 대당 마진율(OPM)이 꺾이며 주가가 조정을 받습니다.",
+                "impact_degree": "⚡ 마진 축소 요인"
+            },
+        ]
+    elif "한국전력" in name or code == "015760" or "지역난방" in name or "가스공사" in name:
+        overseas_chain_badge = "🌏 중동 국제유가(WTI) · 글로벌 LNG 가스가격 · 원/달러 환율 직결주"
+        direct_hit_one_liner = (
+            f"중동 전쟁·지정학적 위기 등으로 해외에서 『국제유가(WTI)·LNG 천연가스 가격 폭등』이 터지거나 "
+            f"『원/달러 환율이 급등』하면 ➔ 비싼 달러를 주고 발전용 연료를 수입해야 해서 적자(역마진) 부담이 눈덩이처럼 커지며 "
+            f"{name} 주가가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🛢️",
+                "trigger": "🔥 중동 분쟁 격화로 인한 국제유가(WTI)·LNG 가격 급등",
+                "chain": "발전 원가의 핵심인 유연탄·LNG 수입 단가가 치솟으면 전기요금을 즉시 올리지 못하는 구조상 영업이익이 급감하며 직격탄을 맞습니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "💱",
+                "trigger": "📈 원/달러 환율 급등 (외화 연료 수입비 & 달러 부채 부담)",
+                "chain": "에너지를 100% 달러로 수입하고 외화 사채 비중이 높아, 환율이 급등하면 환차손과 수입 원가가 동시에 폭증합니다.",
+                "impact_degree": "⚠️ 재무 직격탄"
+            },
+            {
+                "icon": "🏛️",
+                "trigger": "❄️ 물가 안정을 위한 정부의 공공요금(전기료) 동결 압박",
+                "chain": "글로벌 인플레이션 우려로 정부가 전기요금 인상을 보류하면 재무구조 개선 기대감이 꺾이며 매물이 출회됩니다.",
+                "impact_degree": "⚡ 정책 리스크"
+            },
+        ]
+    elif any(k in combined for k in ["두산에너빌리티", "효성중공업", "현대일렉트릭", "일진전기", "제룡전기", "산일전기", "ls electric", "변압기", "전력기기", "원전", "발전기", "가스터빈", "smr"]):
+        overseas_chain_badge = "🌏 미국 AI 데이터센터 전력망 · 북미 초고압 변압기 · 글로벌 원전(SMR) 직결주"
+        direct_hit_one_liner = (
+            f"미국·유럽에서 『빅테크들의 AI 데이터센터 전력망 투자 지연』이 터지거나, "
+            f"『미국의 한국산 변압기 반덤핑 관세·무역 규제』 또는 『해외 원전(SMR·체코 등) 본계약 지연·정치적 제동』 뉴스가 나오면 ➔ "
+            f"해외 수주 폭발 기대감으로 프리미엄을 받던 {name}가 직격탄을 맞아 차익실현 매물이 쏟아집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "⚡",
+                "trigger": "🇺🇸 미국 빅테크 AI 데이터센터 전력망·SMR 투자 속도 조절",
+                "chain": "마이크로소프트·아마존 등이 데이터센터 증설이나 원전 전력 구매 계약을 늦춘다는 소식이 뜨면 전력기기·원전주 전반에 투매가 나옵니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🛡️",
+                "trigger": "🏛️ 미국 상무부의 초고압 변압기 반덤핑 관세 · 보호무역 강화",
+                "chain": "북미 전력청(유틸리티) 수주 마진이 가장 높은데, 고율 관세나 미국 현지 생산 의무화가 강화되면 이익률 하락 우려로 흔들립니다.",
+                "impact_degree": "⚠️ 수출 마진 위협"
+            },
+            {
+                "icon": "🧱",
+                "trigger": "📉 구리(전기동)·특수강 원자재 가격 급변 및 수주 본계약 지연",
+                "chain": "핵심 원자재인 구리 가격이 급등하거나 기대했던 해외 대형 플랜트 본계약 서명이 지연되면 단기 실망 매물이 출회됩니다.",
+                "impact_degree": "⚡ 원가·일정 변수"
+            },
+        ]
+    elif any(k in combined for k in ["한미약품", "알테오젠", "삼성바이오", "셀트리온", "유한양행", "리가켐", "에이비엘", "삼천당", "휴젤", "파마리서치", "바이오", "제약", "신약", "임상", "의약품"]):
+        overseas_chain_badge = "🌏 미국 FDA 임상/승인 · 미 연준 금리(국채금리) · 글로벌 빅파마 기술수출 직결주"
+        direct_hit_one_liner = (
+            f"미국에서 『연준(Fed)의 금리 인하 지연으로 미국 국채 금리가 급등』하거나, "
+            f"해외 파트너 빅파마(머크·일라이릴리 등)의 『임상 지연·FDA 허가 보류(CRL)·미국 약가 인하 압박』 이슈가 터지면 ➔ "
+            f"미래 신약 가치와 로열티 기대감으로 움직이는 {name} 주가가 가장 민감하게 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🧬",
+                "trigger": "🇺🇸 미국 FDA 품목허가 보류(CRL) · 글로벌 임상 데이터 아쉬움",
+                "chain": "경쟁 약물 대비 효능·안전성 데이터가 기대에 못 미치거나 FDA 승인 일정이 밀리면 기술수출 가치 재평가로 급락이 나옵니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🏦",
+                "trigger": "📈 미국 물가 반등으로 인한 미 국채금리 급등 (금리인하 지연)",
+                "chain": "바이오 업종은 미래 이익을 현재 가치로 당겨와 평가받기 때문에, 미국 금리가 오르면 글로벌 성장주·바이오 투자심리가 즉각 얼어붙습니다.",
+                "impact_degree": "⚠️ 밸류에이션 직격"
+            },
+            {
+                "icon": "💊",
+                "trigger": "🏛️ 미국 정부의 의약품 약가 인하 압박 & 생물보안법·관세 변수",
+                "chain": "미국 정부의 약가 인하 정책이나 글로벌 제약사들의 R&D 파이프라인 구조조정 발표 시 동반 조정을 받습니다.",
+                "impact_degree": "⚡ 정책·파트너 변수"
+            },
+        ]
+    elif any(k in combined for k in ["에스엠씨지", "아모레", "코스맥스", "한국콜마", "에이피알", "클리오", "실리콘투", "화장품", "뷰티", "용기", "유리용기", "패키징"]):
+        overseas_chain_badge = "🌏 미국(아마존·세포라)·일본·중국 K-뷰티 화장품 수출 & 소비재 관세 직결주"
+        direct_hit_one_liner = (
+            f"해외에서 『미국·일본·중국향 한국 화장품 수출 성장률 둔화』 데이터가 나오거나, "
+            f"『미국의 수입 소비재 보편관세 부과』 또는 『글로벌 럭셔리·인디 뷰티 브랜드들의 재고 조정(발주 축소)』 이슈가 터지면 ➔ "
+            f"K-뷰티 수출 호황과 화장품 용기·제조 발주 증가로 성장하는 {name}가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "💄",
+                "trigger": "🌎 미국·일본·중국 월간 화장품 수출 통관 데이터 둔화",
+                "chain": "관세청 수출 데이터나 해외 대형 유통망(아마존·세포라·올리브영 글로벌) 판매 성장세가 꺾이면 K-뷰티 밸류체인 전반에 차익 매물이 쏟아집니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "📦",
+                "trigger": "🏢 글로벌 및 국내 주요 화장품 고객사의 재고 조정 · 신제품 발주 지연",
+                "chain": "전방 화장품 브랜드사들이 경기 둔화로 용기·패키징·ODM 주문을 줄이면 공장 가동률과 영업이익률이 즉각 영향을 받습니다.",
+                "impact_degree": "⚠️ 수주 물량 직격"
+            },
+            {
+                "icon": "🛃",
+                "trigger": "🇺🇸 미국의 해외 소비재 보편관세 부과 & 중국 내수 소비 침체",
+                "chain": "미국향 수출품에 관세가 붙어 소비자 가격이 오르거나 중국 소비 부진이 장기화되면 수출주 투자심리가 위축됩니다.",
+                "impact_degree": "⚡ 대외 수출 변수"
+            },
+        ]
+    elif any(k in combined for k in ["엘지에너지", "lg에너지", "삼성sdi", "에코프로", "포스코퓨처엠", "엘앤에프", "엔켐", "배터리", "2차전지", "이차전지", "양극재", "전해액", "전기차"]):
+        overseas_chain_badge = "🌏 미국 테슬라(TSLA)·GM 판매량 · 미국 IRA 전기차 보조금 · 리튬 광물가 직결주"
+        direct_hit_one_liner = (
+            f"미국·유럽에서 『테슬라(TSLA)·글로벌 완성차의 전기차 판매 부진(캐즘)』이 심화되거나, "
+            f"『미국 정부의 IRA 전기차 보조금·세액공제(AMPC) 축소/폐지』 또는 『리튬·니켈 광물 가격 하락』이 터지면 ➔ "
+            f"배터리 출하량과 납품 단가가 동시에 깎여 {name}가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🔋",
+                "trigger": "🇺🇸 미국 IRA 전기차 보조금·첨단제조세액공제(AMPC) 축소/폐지",
+                "chain": "미국 정책 보조금이 깎이면 북미 배터리 공장의 수익성과 전기차 수요가 동시에 타격을 입어 가장 강력한 하락 뇌관이 됩니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🚗",
+                "trigger": "📉 테슬라(TSLA) 급락 & 글로벌 완성차 전기차 합작공장 감산",
+                "chain": "GM·포드·폭스바겐 등 해외 고객사가 전기차 출시를 미루거나 배터리 주문을 줄이면 가동률 하락으로 직결됩니다.",
+                "impact_degree": "⚠️ 전방 수요 직격"
+            },
+            {
+                "icon": "⛏️",
+                "trigger": "🌏 중국발 리튬·니켈 광물 가격 하락 & 중국 CATL 저가 배터리 공세",
+                "chain": "광물 가격에 연동해 배터리·양극재 판매가격(판가)이 떨어지면 비싸게 사둔 원재료 때문에 재고평가손실이 발생합니다.",
+                "impact_degree": "⚡ 판가·마진 하락"
+            },
+        ]
+    elif any(k in combined for k in ["대한항공", "아시아나", "진에어", "제주항공", "티웨이", "항공", "해운", "hmm", "팬오션"]):
+        overseas_chain_badge = "🌏 국제유가(항공유/선박유) · 원/달러 환율 · 글로벌 여객/화물 운임 직결주"
+        direct_hit_one_liner = (
+            f"해외에서 『중동 리스크 등으로 국제유가(WTI·항공유)가 급등』하고 『원/달러 환율이 동반 급등』하거나, "
+            f"『글로벌 경기 침체로 해외여행·항공화물 운임이 하락』하면 ➔ "
+            f"연료비와 달러 비행기 리스 부채 이자가 폭증하면서 {name}가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🛢️",
+                "trigger": "🔥 국제유가(WTI) 및 항공유 급등 (영업원가 급증)",
+                "chain": "유류비가 전체 영업비용의 약 30%를 차지하므로, 유가가 급등하면 매출이 잘 나와도 영업이익이 크게 깎입니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "💱",
+                "trigger": "📈 원/달러 환율 급등 (외화 부채 환산손실 + 해외여행 심리 위축)",
+                "chain": "항공기 대여료와 유류비를 모두 달러로 결제하기 때문에 환율이 오르면 비용 증가와 외화환산손실이 동시에 발생합니다.",
+                "impact_degree": "⚠️ 비용·환차손 직격"
+            },
+            {
+                "icon": "✈️",
+                "trigger": "📉 미·중 무역 갈등으로 인한 글로벌 IT 항공화물 물동량 감소",
+                "chain": "알짜 수익원인 반도체·전자상거래 항공화물 운임이 꺾이면 분기 이익 전망치가 하향 조정됩니다.",
+                "impact_degree": "⚡ 화물 마진 둔화"
+            },
+        ]
+    elif any(k in combined for k in ["한화에어로", "현대로템", "lig넥스원", "한국항공우주", "풍산", "방산", "전차", "유도무기", "자주포"]):
+        overseas_chain_badge = "🌏 러·우 전쟁 및 중동 분쟁 휴전 협상 · 유럽/중동 국방예산 직결주"
+        direct_hit_one_liner = (
+            f"해외에서 『러시아-우크라이나 전쟁이나 중동 분쟁의 휴전·종전 협상 타결』 속보가 터지거나, "
+            f"『유럽(폴란드·루마니아 등)의 방위비 예산 축소·수출 금융 지연』 이슈가 나오면 ➔ "
+            f"글로벌 재무장 긴장감이 완화되며 방산주 차익실현 매물이 쏟아져 {name}가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🕊️",
+                "trigger": "🌍 우크라이나·중동 전쟁 휴전·종전 협상 급물살 속보",
+                "chain": "실제 수주 잔고는 탄탄하더라도, 전쟁 종료 뉴스가 뜨는 날에는 글로벌 방산주 전반에 단기 투매(셀온)가 집중됩니다.",
+                "impact_degree": "🔥 1순위 센티먼트 직격"
+            },
+            {
+                "icon": "🇪🇺",
+                "trigger": "🏛️ 유럽(NATO)의 역내 유럽산 무기 우선 구매 규제 강화",
+                "chain": "유럽 국가들이 자국 방산업체만 지원하고 비유럽권 무기 수입을 제한하려는 움직임이 나오면 추가 수주 기대감이 둔화됩니다.",
+                "impact_degree": "⚠️ 수주 확장 제약"
+            },
+            {
+                "icon": "📑",
+                "trigger": "⏳ 폴란드·중동향 후속 본계약(실행계약) 서명 일정 지연",
+                "chain": "상대국 정권 교체나 수출금융 한도 문제로 계약 체결 시점이 다음 분기로 밀리면 단기 실망 매물이 출회됩니다.",
+                "impact_degree": "⚡ 일정 지연 변수"
+            },
+        ]
+    elif any(k in combined for k in ["삼성중공업", "한국조선해양", "현대중공업", "현대미포", "한화오션", "조선", "선박", "lng선", "해양플랜트"]):
+        overseas_chain_badge = "🌏 글로벌 LNG선 발주 · 국제유가(WTI) · 미 해군 MRO/해운 물동량 직결주"
+        direct_hit_one_liner = (
+            f"해외에서 『국제유가(WTI)·천연가스 가격 급락으로 에너지 기업들이 LNG선·해양플랜트 발주를 중단』하거나, "
+            f"『글로벌 무역 전쟁으로 해운 물동량이 급감』하면 ➔ "
+            f"신규 선박 수주와 신조선가(배값) 상승세가 꺾일 수 있어 {name}가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🚢",
+                "trigger": "📉 글로벌 선주들의 LNG운반선·컨테이너선 신규 발주 둔화(피크아웃)",
+                "chain": "배값(신조선가) 지수가 꺾이거나 분기 수주 실적이 줄어들면 '조선업 고점 논란'이 불거지며 기관 매물이 출회됩니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🛢️",
+                "trigger": "❄️ 국제유가 급락으로 인한 해외 오일메이저의 해양플랜트(FLNG) 투자 연기",
+                "chain": "유가가 지나치게 떨어지면 바다에서 가스·원유를 뽑아 올리는 대형 해양플랜트 발주가 지연됩니다.",
+                "impact_degree": "⚠️ 수주 모멘텀 약화"
+            },
+            {
+                "icon": "🔩",
+                "trigger": "📈 후판(선박용 두꺼운 철강) 가격 인상 및 숙련 인력 인건비 상승",
+                "chain": "선박 건조 원가의 20%를 차지하는 후판 가격이 오르면 건조 마진이 축소될 수 있습니다.",
+                "impact_degree": "⚡ 원가 부담 요인"
+            },
+        ]
+    elif any(k in combined for k in ["kb금융", "신한지주", "하나금융", "우리금융", "기업은행", "메리츠금융", "삼성화재", "db손해보험", "은행", "금융지주", "보험", "증권"]):
+        overseas_chain_badge = "🌏 원/달러 환율(외국인 수급) · 한·미 기준금리 · 밸류업 주주환원 직결주"
+        direct_hit_one_liner = (
+            f"해외 금융시장 불안으로 『원/달러 환율이 급등(외국인 자금 대거 이탈)』하거나, "
+            f"『급격한 금리 인하로 은행 예대마진(NIM)이 축소』 또는 『배당·자사주 소각 등 주주환원(밸류업) 축소』 이슈가 터지면 ➔ "
+            f"외국인 지분율이 40~70%에 달하는 금융주 특성상 외국인 매도 폭탄을 맞아 {name}가 직격탄으로 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "💱",
+                "trigger": "📈 대외 쇼크로 인한 원/달러 환율 급등 & 외국인 패시브 자금 이탈",
+                "chain": "환율이 급등하면 은행의 보통주자본비율(CET1)이 하락해 주주환원 여력이 줄어들고, 외국인이 가장 먼저 현금화에 나섭니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🏦",
+                "trigger": "📉 시장 금리 급락으로 인한 순이자마진(NIM) 축소 및 대손충당금 증가",
+                "chain": "대출 금리가 빠르게 내려가거나 경기 침체로 기업·가계 연체율이 오르면 은행 순이익이 감소합니다.",
+                "impact_degree": "⚠️ 실적 둔화 요인"
+            },
+            {
+                "icon": "🏛️",
+                "trigger": "⚖️ 금융당국의 가계대출 규제 강화 · 상생금융 출연금 압박",
+                "chain": "배당이나 자사주 소각 대신 공적 기금 출연 요구가 커지면 외국인 밸류업 투자심리가 위축됩니다.",
+                "impact_degree": "⚡ 정책·배당 변수"
+            },
+        ]
+    elif code == "NVDA" or "nvidia" in combined or "엔비디아" in combined:
+        overseas_chain_badge = "🌎 글로벌 AI 반도체 총대장 · 미 상무부 수출규제 · 빅테크 AI CAPEX 직결주"
+        direct_hit_one_liner = (
+            "미국 정부가 『중국·중동향 AI 칩 추가 수출 금지령』을 내리거나, "
+            "마이크로소프트·메타·구글 등 빅테크 고객사들이 『AI 데이터센터 과잉투자 논란으로 주문을 줄이고 자체 칩(ASIC) 비중을 늘린다』는 뉴스가 터지면 ➔ "
+            "초고마진(75%) 독점 체제가 흔들릴까 봐 엔비디아(NVDA)가 직격탄을 맞아 급락합니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🏛️",
+                "trigger": "🇺🇸 미 상무부의 대중국·제3국 우회 AI 가속기 수출 전면 차단",
+                "chain": "해외 매출 제한이 확대되면 분기 매출 가이던스가 깎이며 월가 기관들의 차익실현 빌미가 됩니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🏢",
+                "trigger": "💻 빅테크(MS·아마존·구글·메타)의 AI 투자 수익성(ROI) 회의론",
+                "chain": "최대 고객사인 빅테크들이 실적 발표에서 '설비투자(CAPEX) 속도 조절'을 시사하면 가장 먼저 직격탄을 맞습니다.",
+                "impact_degree": "⚠️ 수요 피크아웃 뇌관"
+            },
+            {
+                "icon": "⚙️",
+                "trigger": "🏭 대만 TSMC 첨단 패키징(CoWoS) 병목 · 차세대 칩 발열/수율 지연",
+                "chain": "신제품 GPU 출하 일정이 지연되거나 매출총이익률(GPM)이 소폭이라도 낮아지면 고밸류에이션 부담으로 흔들립니다.",
+                "impact_degree": "⚡ 공급망·마진 변수"
+            },
+        ]
+    elif code == "TSLA" or "tesla" in combined or "테슬라" in combined:
+        overseas_chain_badge = "🌎 미국 금리/보조금 · 중국 BYD 전기차 가격전쟁 · 자율주행(FSD) 규제 직결주"
+        direct_hit_one_liner = (
+            "중국·유럽에서 『BYD 등 중국 전기차와의 출혈 할인 전쟁으로 차량 판매량·마진율이 하락』하거나, "
+            "미국에서 『고금리 장기화 및 로보택시·자율주행(FSD) 안전성 리콜/승인 지연』 뉴스가 터지면 ➔ "
+            "높은 성장성 프리미엄을 받는 테슬라(TSLA)가 직격탄을 맞아 급락합니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🚗",
+                "trigger": "🇨🇳 중국 BYD 등과의 가격 인하 경쟁 심화 & 분기 차량 인도량 쇼크",
+                "chain": "차량 가격을 계속 깎아 팔면 자동차 부문 매출총이익률이 낮아져 월가 목표주가 하향의 직격탄이 됩니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "🏛️",
+                "trigger": "🇺🇸 미국 도로교통안전국(NHTSA)의 자율주행(FSD)·로보택시 규제 조사",
+                "chain": "테슬라 기업가치의 핵심인 완전자율주행 및 로보택시 상용화 일정에 제동이 걸리면 투자심리가 급격히 식습니다.",
+                "impact_degree": "⚠️ 핵심 모멘텀 위협"
+            },
+            {
+                "icon": "🏦",
+                "trigger": "📈 미국 고금리 장기화 및 전기차 세액공제 혜택 폐지",
+                "chain": "자동차 할부 금리가 높게 유지되면 소비자들이 고가 전기차 구매를 미루어 판매 성장이 둔화됩니다.",
+                "impact_degree": "⚡ 거시 소비 변수"
+            },
+        ]
+    elif not is_kr:
+        overseas_chain_badge = "🌎 미국 연준(Fed) 금리 · 미·중 무역갈등 · 월가 빅테크 실적 가이던스 직결주"
+        direct_hit_one_liner = (
+            f"미국에서 『물가 반등으로 연준(Fed) 금리 인하가 무산되어 미 10년물 국채금리가 급등』하거나, "
+            f"『미·중 관세 보복 및 EU 디지털 반독점 과징금·실적 가이던스 하향』 이슈가 터지면 ➔ "
+            f"글로벌 기관 자금이 기술주에서 빠져나가며 {name}({code})가 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🏦",
+                "trigger": "🇺🇸 미국 CPI 물가 쇼크 & 미 국채 10년물 금리 급등",
+                "chain": "금리가 치솟으면 월스트리트 알고리즘이 기술·성장주 멀티플을 일제히 축소하며 매도 물량을 쏟아냅니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "📊",
+                "trigger": "📉 분기 실적 발표 시 '다음 분기 가이던스(전망치)' 월가 예상 하회",
+                "chain": "이번 분기 실적이 좋아도 다음 분기 성장률 전망이 1~2%만 낮아지면 시간외 거래에서 즉각 급락이 발생합니다.",
+                "impact_degree": "⚠️ 어닝 가이던스 뇌관"
+            },
+            {
+                "icon": "🌐",
+                "trigger": "⚖️ 미국 법무부(DOJ)·유럽연합(EU) 반독점 규제 및 미·중 관세 분쟁",
+                "chain": "글로벌 빅테크 규제나 해외 공급망 관세 부과 시 해외 매출 타격 우려로 조정을 받습니다.",
+                "impact_degree": "⚡ 규제·무역 변수"
+            },
+        ]
+    else:
+        overseas_chain_badge = "🌏 미국 나스닥·원/달러 환율 · 글로벌 수출 경기 & 외국인 수급 연동주"
+        direct_hit_one_liner = (
+            f"해외에서 『미국 나스닥 급락 및 글로벌 경기 침체 우려』로 『원/달러 환율이 급등(원화 약세)』하거나, "
+            f"『미국의 수입 관세 장벽 강화 및 원자재 가격 급등』이 터지면 ➔ "
+            f"외국인·기관 투자자들이 한국 증시에서 위험자산을 일제히 축소하면서 {name} 주가도 직격탄을 맞아 떨어집니다!"
+        )
+        overseas_triggers = [
+            {
+                "icon": "🌎",
+                "trigger": "🇺🇸 미국 증시(나스닥·S&P500) 급락 & 외국인 한국 증시 패시브 매도",
+                "chain": "밤사이 미국 기술주가 급락하면 개장 직후 외국인과 기관의 프로그램 매도세가 출회되며 동반 하락 압력을 받습니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "💱",
+                "trigger": "📈 원/달러 환율 급등 및 해외 원자재·물류비 상승",
+                "chain": "환율 변동성이 커지면 외국인 수급이 이탈하고 기업의 원재료 조달 원가 부담이 커져 영업이익률이 압박받습니다.",
+                "impact_degree": "⚠️ 수급·원가 직격"
+            },
+            {
+                "icon": "📢",
+                "trigger": "📑 전방 고객사 발주 지연 또는 전환사채(CB)·유상증자 등 물량 공시",
+                "chain": "주요 매출처의 투자 지연이나 주식 수가 늘어나는 자금조달 공시가 나올 경우 단기 주가가 민감하게 반응합니다.",
+                "impact_degree": "⚡ 기업 고유 변수"
+            },
+        ]
+
+    # --- 2. 오늘 왜 떨어졌나요? (또는 왜 오르나요?) 실시간 뉴스·공시·수급·해외지표 교차 판독 ---
+    disclosures = r.get("disclosures") or []
+    news_list = r.get("news") or []
+    fl = r.get("flow") or {}
+    f_today = fl.get("foreign_today")
+    o_today = fl.get("organ_today")
+
+    neg_disclosures = [d for d in disclosures if d.get("tone") == "negative"]
+    pos_disclosures = [d for d in disclosures if d.get("tone") == "positive"]
+
+    # 뉴스 헤드라인 감성 스캔
+    drop_keywords = ["하락", "급락", "약세", "부진", "우려", "적자", "감소", "축소", "지연", "관세", "매도", "차익", "하향", "쇼크", "위기", "리스크", "불확실"]
+    rise_keywords = ["상승", "급등", "강세", "호조", "최대", "수주", "계약", "흑자", "돌파", "상향", "매수", "기대", "서프라이즈", "신고가", "체결"]
+
+    matched_drop_news = [n["title"] for n in news_list if any(k in (n.get("title") or "") for k in drop_keywords)]
+    matched_rise_news = [n["title"] for n in news_list if any(k in (n.get("title") or "") for k in rise_keywords)]
+
+    # 수급 요약 문장
+    if is_kr and (f_today is not None or o_today is not None):
+        if (f_today or 0) < 0 and (o_today or 0) < 0:
+            flow_verdict = f"🔴 오늘 외국인({_signed(f_today)})과 기관({_signed(o_today)})이 동반 순매도하며 주가를 누르고 있습니다."
+        elif (f_today or 0) < 0:
+            flow_verdict = f"🟡 오늘 외국인({_signed(f_today)}) 매도 물량이 출회되었으나 기관({_signed(o_today)})이 일부 받아내고 있습니다."
+        elif (o_today or 0) < 0:
+            flow_verdict = f"🟡 오늘 기관({_signed(o_today)}) 차익 매물이 나왔으나 외국인({_signed(f_today)}) 매수세가 유입 중입니다."
+        else:
+            flow_verdict = f"🟢 오늘 외국인({_signed(f_today)})과 기관({_signed(o_today)}) 큰손 자금이 순매수로 든든하게 유입되고 있습니다."
+    else:
+        flow_verdict = "🌎 글로벌 기관 및 알고리즘 거래 대금이 50일 이동평균선을 중심으로 유입·소화 중입니다."
+
+    # 공시 요약 문장
+    if neg_disclosures:
+        d0 = neg_disclosures[0]
+        disc_verdict = f"🚨 최근 주의 공시 포착: [{d0['date']} {d0['title']}] — {d0['easy_meaning']}"
+    elif pos_disclosures:
+        d0 = pos_disclosures[0]
+        disc_verdict = f"🟢 호재 공시 확인: [{d0['date']} {d0['title']}] — {d0['easy_meaning']}"
+    elif disclosures:
+        d0 = disclosures[0]
+        disc_verdict = f" ✅ 악재성 공시(유상증자·CB·계약해지 등) 0건! 최근 공시는 [{d0['date']} {d0['title']}]로 회사 내부 돌발 악재는 없습니다."
+    else:
+        disc_verdict = "✅ 최근 90일 내 주가를 떨어뜨릴 만한 악재성 공시(유상증자·CB 발행·적자 전환 등)가 전혀 없습니다."
+
+    # 뉴스 요약 문장
+    if chg < 0 and matched_drop_news:
+        news_verdict = f"📰 하락 관련 최신 뉴스 포착: 『{matched_drop_news[0]}』 이슈가 단기 투자심리에 영향을 주고 있습니다."
+    elif matched_rise_news:
+        news_verdict = f"📰 긍정 모멘텀 뉴스 유효: 『{matched_rise_news[0]}』 등 기업 펀더멘털 호재 뉴스가 살아 있습니다."
+    elif news_list:
+        news_verdict = f"📰 최신 언론 보도 점검: 『{news_list[0]['title']}』 외 특별한 기업 내부 악재 보도는 없는 상태입니다."
+    else:
+        news_verdict = "📰 현재 언론에 보도된 특이 악재 속보는 없으며, 시장 지수 및 수급에 연동되어 움직이고 있습니다."
+
+    # 실시간 종합 1줄 결론 (왜 떨어졌나 / 왜 올랐나)
+    if chg <= -2.0:
+        status_badge = f"🚨 현재 {chg}% 하락 · 긴급 원인 판독 완료"
+        status_tone = "drop"
+        if neg_disclosures:
+            primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 최근 공시된 '{neg_disclosures[0]['title']}' 물량/악재 부담과 단기 매도 수급이 겹쳐 하락 중입니다!"
+            action_guide = "공시로 인한 물량 소화 과정이 필요하므로 성급한 물타기를 멈추고 -3.5% 방어선과 20일·50일선 지지 여부를 먼저 확인하십시오."
+        elif matched_drop_news:
+            primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 공시상 내부 악재는 없으나, '{matched_drop_news[0]}' 관련 대외 뉴스와 차익실현 매물로 조정을 받고 있습니다!"
+            action_guide = "회사 본업이 망가진 것이 아닌 뉴스·심리 위축에 따른 조정이므로, 오전장 매물 소화 후 지지선 안착 시 분할 대응이 유리합니다."
+        elif (f_today or 0) < 0 or (o_today or 0) < 0:
+            primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 회사 내부 악재 공시는 0건! 간밤 해외 시장 변동성 여파로 외국인·기관의 단기 프로그램 매물이 출회된 '수급성 눌림목'입니다."
+            action_guide = "기업 가치(펀더멘털) 훼손 없는 수급성 하락이므로 공포에 던지는 패닉셀을 금하고, 권장 진입가 부근에서 차분히 지지력을 점검하십시오."
+        else:
+            primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 특이 악재 공시 없이 대외 업종 지수 조정 및 단기 고점 차익실현 매물을 소화하는 과정입니다."
+            action_guide = "추격 매도보다는 50일 이동평균선 지지 여부를 확인하며 분할 관점으로 리스크를 관리해 주십시오."
+    elif chg < 0:
+        status_badge = f"📉 현재 {chg}% 소폭 약세 · 원인 진단"
+        status_tone = "mild_drop"
+        primary_cause_title = f"💡 [{name} 약세 원인 판독]: 회사 악재 공시(0건) 때문이 아니라, 해외 증시 숨고르기와 단기 매물 소화에 따른 자연스러운 눌림목({chg}%)입니다."
+        action_guide = "펀더멘털 이상 징후가 전혀 없으므로 흔들릴 필요가 없으며, 오히려 추격매수 대신 안전 진입 타점을 노릴 수 있는 구간입니다."
+    elif chg >= 2.0:
+        status_badge = f"🔥 현재 +{chg}% 강세 · 상승 동력 판독"
+        status_tone = "rise"
+        primary_cause_title = f"🚀 [{name} 강세 원인 판독]: 호재 모멘텀과 매수 수급이 유입되며 +{chg}% 강세를 기록 중입니다! (단, 아래 해외 직격탄 이슈 발생 여부만 상시 감시)"
+        action_guide = "강세 구간에서는 급등 추격매수를 피하고, 목표주가까지 보유하되 아래 3대 해외 직격탄 이슈가 터지는지만 체크하십시오."
+    else:
+        status_badge = f"🟢 현재 {chg:+.2f}% 안정 흐름 · 직격탄 감시 중"
+        status_tone = "stable"
+        primary_cause_title = f"✅ [{name} 현재 상태 판독]: 악재 공시 없이 안정적인 흐름({chg:+.2f}%)을 유지 중입니다. 향후 주가가 떨어질 수 있는 아래 『3대 해외 직격탄 뇌관』만 미리 숙지해 두십시오!"
+        action_guide = "현재 특이 악재가 없으므로 계획된 분할 진입가와 목표주가를 유지하며 해외 연결고리 지표만 모니터링하시면 됩니다."
+
+    return {
+        "overseas_chain_badge": overseas_chain_badge,
+        "direct_hit_one_liner": direct_hit_one_liner,
+        "overseas_triggers": overseas_triggers,
+        "live_diagnosis": {
+            "status_badge": status_badge,
+            "status_tone": status_tone,
+            "primary_cause_title": primary_cause_title,
+            "flow_verdict": flow_verdict,
+            "disc_verdict": disc_verdict,
+            "news_verdict": news_verdict,
+            "action_guide": action_guide,
+        }
+    }
+
+
 def _kr_report(code: str) -> Optional[Dict[str, Any]]:
     base = requests.get(f"https://m.stock.naver.com/api/stock/{code}/basic", headers=HEADERS, timeout=6).json()
     integ = requests.get(f"https://m.stock.naver.com/api/stock/{code}/integration", headers=HEADERS, timeout=6).json()
@@ -363,6 +1034,7 @@ def _kr_report(code: str) -> Optional[Dict[str, Any]]:
         },
         "broker_reports": broker_reports,
         "news": news,
+        "disclosures": _fetch_dart_disclosures(code, max_items=5),
         "business_summary": business_summary,
         "financial_table": financial_table,
         "technicals": technicals,
@@ -483,6 +1155,7 @@ def _us_report(ticker: str) -> Optional[Dict[str, Any]]:
         },
         "broker_reports": broker_reports,
         "news": news,
+        "disclosures": [],
         "business_summary": business_summary,
         "financial_table": financial_table,
         "technicals": technicals,
@@ -611,6 +1284,7 @@ def build_watchlist_research(user_id: Optional[str] = None, requested_symbols: O
                 return None
             r["opinion"] = _build_opinion(r)
             r["headline"] = _headline(r, r["opinion"])
+            r["drop_impact_intel"] = _build_drop_and_global_impact_intel(r)
             return r
         except Exception as e:
             print(f"[WatchlistResearch] {sym} failed: {e}")

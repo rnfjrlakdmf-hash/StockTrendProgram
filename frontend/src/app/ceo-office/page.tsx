@@ -2136,6 +2136,137 @@ const FALLBACK_RESEARCH_DESK: ResearchReportItem[] = [
     },
 ];
 
+
+// 🌏 종목별 "해외에서 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는가?" 직관적 인과관계 헬퍼
+function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string, extraContext?: string): {
+    chainBadge: string;
+    oneLiner: string;
+    triggers: { icon: string; trigger: string; chain: string; impact_degree: string }[];
+} {
+    const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
+
+    if (['하이닉스', '삼성전자', '한미반도체', '리노공업', 'hbm', '반도체', '메모리', '디램'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 미국 엔비디아(NVDA) · 빅테크 AI 서버 · 대중국 수출규제 직결주',
+            oneLiner: `미국에서 『엔비디아(NVDA)·필라델피아 반도체지수 급락』이나 『구글·MS 등 빅테크의 AI 데이터센터 투자 축소』, 또는 『미국의 대중국 반도체 수출 통제 강화』가 터지면 ➔ AI 칩에 들어가는 메모리(HBM·D램)·장비 주문이 줄어들까 봐 외국인 매물이 쏟아지며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🤖', trigger: '🇺🇸 미국 엔비디아(NVDA) 급락 & AI 거품론', chain: '미국 AI 반도체 대장주가 흔들리면 외국인 알고리즘이 한국 반도체(HBM·장비)부터 기계적으로 매도합니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🚫', trigger: '🏛️ 미국 상무부의 대중국 반도체 수출 통제·관세', chain: '중국향 메모리·장비 수출이 막히거나 품목 관세가 부과되면 글로벌 공급망 위축 우려로 직격탄을 맞습니다.', impact_degree: '⚠️ 고위험 뇌관' },
+                { icon: '💻', trigger: '📉 글로벌 스마트폰·PC 수요 둔화 & D램 가격 하락', chain: 'IT 기기 판매 부진 뉴스가 나오면 범용 메모리 가격 하락 우려로 실적 눈높이가 낮아집니다.', impact_degree: '⚡ 업황 변수' },
+            ],
+        };
+    }
+    if (['현대차', '기아', '현대모비스', '현대글로비스', '자동차', '완성차', '모빌리티'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 미국 수입차 관세 · 북미 자동차 판매량 · 원/달러 환율 직결주',
+            oneLiner: `미국에서 『한국산 수입 자동차·부품 고율 관세 부과(보편관세·IRA 축소)』 뉴스가 터지거나, 『미국 고금리 할부 부담으로 인한 북미 신차 판매 둔화』 또는 『원/달러 환율 급락(원화 강세)』이 발생하면 ➔ 북미 수출로 최대 이익을 내는 ${stockName}의 수출 채산성이 바로 깎여 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🛃', trigger: '🇺🇸 미국 수입차·부품 보편관세 부과 & 보조금 축소', chain: '북미 매출 비중이 절대적인 구조상 관세 부과 뉴스가 뜨면 가격 경쟁력 약화 우려로 직격탄을 맞습니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💱', trigger: '💵 원/달러 환율 급락 (원화 강세로 수출 환차익 감소)', chain: '달러로 차를 팔아 원화로 바꾸는 수출 기업 특성상 환율이 급락하면 영업이익이 수천억 원씩 줄어듭니다.', impact_degree: '⚠️ 수익성 직격' },
+                { icon: '🚗', trigger: '🏷️ 북미·유럽 소비 둔화 & 글로벌 완성차 할인 전쟁', chain: '해외 딜러 인센티브(할인 보조금) 지출이 늘어나면 대당 마진율이 꺾이며 조정을 받습니다.', impact_degree: '⚡ 마진 변수' },
+            ],
+        };
+    }
+    if (stockName.includes('한국전력') || stockCode === '015760' || stockName.includes('가스공사')) {
+        return {
+            chainBadge: '🌏 중동 국제유가(WTI) · 글로벌 LNG 가스가격 · 원/달러 환율 직결주',
+            oneLiner: `중동 분쟁 등으로 해외에서 『국제유가(WTI)·LNG 천연가스 가격 폭등』이 터지거나 『원/달러 환율이 급등』하면 ➔ 비싼 달러를 주고 발전용 연료를 수입해야 해서 적자 부담이 커지며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🛢️', trigger: '🔥 중동 위기로 인한 국제유가(WTI)·LNG 가격 급등', chain: '발전 연료 수입 단가가 치솟으면 전기요금을 즉시 올리지 못해 영업이익이 급감하며 직격탄을 맞습니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💱', trigger: '📈 원/달러 환율 급등 (외화 연료비 & 달러 부채 부담)', chain: '연료를 달러로 수입하고 외화 부채가 많아 환율 급등 시 환차손과 원가 부담이 동시에 폭증합니다.', impact_degree: '⚠️ 재무 직격탄' },
+                { icon: '🏛️', trigger: '❄️ 물가 안정을 위한 정부의 공공요금(전기료) 동결', chain: '전기요금 인상이 보류되면 재무구조 개선 기대감이 꺾이며 매물이 출회됩니다.', impact_degree: '⚡ 정책 변수' },
+            ],
+        };
+    }
+    if (['두산에너빌리티', '효성중공업', '현대일렉트릭', '일진전기', '제룡전기', 'ls electric', '변압기', '전력', '원전', 'smr'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 미국 AI 데이터센터 전력망 · 북미 초고압 변압기 · 글로벌 원전(SMR) 직결주',
+            oneLiner: `미국·유럽에서 『빅테크들의 AI 데이터센터 전력망 투자 지연』이 터지거나, 『미국의 한국산 변압기 반덤핑 관세·무역 규제』 또는 『해외 원전(SMR·체코 등) 본계약 지연』 뉴스가 나오면 ➔ 해외 수주 폭발 기대감으로 오른 ${stockName}가 직격탄을 맞아 차익 매물이 쏟아집니다!`,
+            triggers: [
+                { icon: '⚡', trigger: '🇺🇸 미국 빅테크 AI 데이터센터 전력망·SMR 투자 속도 조절', chain: 'MS·아마존 등이 데이터센터 증설이나 전력 구매 계약을 늦춘다는 소식이 뜨면 전력기기·원전주에 투매가 나옵니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🛡️', trigger: '🏛️ 미국의 초고압 변압기 반덤핑 관세 · 보호무역 강화', chain: '북미 전력청 수주 마진이 가장 높은데 고율 관세가 부과되면 이익률 하락 우려로 흔들립니다.', impact_degree: '⚠️ 수출 마진 위협' },
+                { icon: '🧱', trigger: '📉 구리(전기동) 원자재 가격 급변 및 수주 본계약 지연', chain: '핵심 원자재 가격 급등이나 해외 대형 플랜트 본계약 서명 지연 시 단기 실망 매물이 출회됩니다.', impact_degree: '⚡ 원가·일정 변수' },
+            ],
+        };
+    }
+    if (['한미약품', '알테오젠', '삼성바이오', '셀트리온', '유한양행', '바이오', '제약', '신약', '임상'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 미국 FDA 임상/승인 · 미 연준 금리(국채금리) · 글로벌 빅파마 기술수출 직결주',
+            oneLiner: `미국에서 『연준(Fed) 금리 인하 지연으로 미 국채금리가 급등』하거나, 해외 파트너 빅파마(머크·일라이릴리 등)의 『임상 지연·FDA 허가 보류(CRL)·미국 약가 인하 압박』이 터지면 ➔ 신약 기술수출 가치로 평가받는 ${stockName}가 직격탄을 맞아 급락합니다!`,
+            triggers: [
+                { icon: '🧬', trigger: '🇺🇸 미국 FDA 허가 보류(CRL) · 글로벌 임상 데이터 차질', chain: '임상 효능 데이터가 기대에 못 미치거나 FDA 승인 일정이 밀리면 기술수출 가치 하락으로 급락합니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🏦', trigger: '📈 미국 물가 반등으로 인한 미 국채금리 급등', chain: '미국 금리가 치솟으면 미래 성장 가치를 할인받는 바이오 업종 투자심리가 즉각 얼어붙습니다.', impact_degree: '⚠️ 밸류에이션 직격' },
+                { icon: '💊', trigger: '🏛️ 미국 정부의 의약품 약가 인하 압박 & 파트너사 전략 변경', chain: '글로벌 제약사들의 파이프라인 축소나 약가 인하 정책 발표 시 동반 조정을 받습니다.', impact_degree: '⚡ 정책·파트너 변수' },
+            ],
+        };
+    }
+    if (['에스엠씨지', '아모레', '코스맥스', '한국콜마', '에이피알', '화장품', '뷰티', '용기'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 미국(아마존·세포라)·일본·중국 K-뷰티 화장품 수출 & 소비재 관세 직결주',
+            oneLiner: `해외에서 『미국·일본·중국향 한국 화장품 수출 성장률 둔화』 데이터가 나오거나, 『미국의 수입 소비재 보편관세 부과·글로벌 뷰티 브랜드 발주 축소』 이슈가 터지면 ➔ K-뷰티 수출과 화장품 용기·제조 발주로 성장하는 ${stockName}가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '💄', trigger: '🌎 미국·일본·중국 월간 화장품 수출 통관 데이터 둔화', chain: '관세청 수출 데이터나 해외 대형 유통망 판매 성장세가 꺾이면 K-뷰티 밸류체인 전반에 차익 매물이 쏟아집니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '📦', trigger: '🏢 글로벌·국내 화장품 브랜드 고객사의 재고 조정', chain: '전방 브랜드사들이 경기 둔화로 용기·패키징·ODM 주문을 줄이면 공장 가동률이 영향을 받습니다.', impact_degree: '⚠️ 수주 물량 직격' },
+                { icon: '🛃', trigger: '🇺🇸 미국의 해외 소비재 보편관세 부과 & 중국 내수 침체', chain: '미국향 수출 관세 부과나 중국 소비 부진 장기화 시 수출주 투자심리가 위축됩니다.', impact_degree: '⚡ 대외 수출 변수' },
+            ],
+        };
+    }
+    if (['대한항공', '아시아나', '항공', '해운', 'hmm'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 국제유가(항공유) · 원/달러 환율 · 글로벌 여객/항공화물 운임 직결주',
+            oneLiner: `해외에서 『중동 전쟁 등으로 국제유가(항공유)가 급등』하고 『원/달러 환율이 동반 급등』하거나, 『글로벌 경기 침체로 항공화물·여객 운임이 하락』하면 ➔ 연료비와 달러 리스 부채 이자가 폭증하며 ${stockName}가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🛢️', trigger: '🔥 국제유가(WTI) 및 항공유 급등 (영업원가 급증)', chain: '유류비가 영업비용의 약 30%를 차지해 유가 급등 시 영업이익이 크게 깎입니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💱', trigger: '📈 원/달러 환율 급등 (외화 부채 환산손실 + 여행 위축)', chain: '항공기 리스료와 유류비를 달러로 결제하므로 환율 급등 시 비용과 환차손이 동시에 늘어납니다.', impact_degree: '⚠️ 비용·환차손 직격' },
+                { icon: '✈️', trigger: '📉 미·중 무역 갈등으로 인한 글로벌 항공화물 물동량 감소', chain: '알짜 수익원인 IT·반도체 항공화물 운임이 꺾이면 이익 전망치가 하향됩니다.', impact_degree: '⚡ 화물 마진 변수' },
+            ],
+        };
+    }
+    if (['nvda', '엔비디아', 'nvidia'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌎 글로벌 AI 반도체 총대장 · 미 상무부 수출규제 · 빅테크 AI CAPEX 직결주',
+            oneLiner: `미국 정부가 『중국·중동향 AI 칩 추가 수출 금지령』을 내리거나, MS·메타·구글·아마존 등 빅테크 고객사들이 『AI 데이터센터 설비투자(CAPEX) 축소 및 자체 칩 전환』을 발표하면 ➔ 독점 고마진이 흔들릴까 봐 엔비디아(NVDA)가 직격탄을 맞아 급락합니다!`,
+            triggers: [
+                { icon: '🏛️', trigger: '🇺🇸 미 상무부의 대중국·우회국 AI 가속기 수출 전면 차단', chain: '해외 매출 제한이 확대되면 분기 매출 가이던스가 깎이며 월가 차익실현 빌미가 됩니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🏢', trigger: '💻 빅테크(MS·아마존·구글·메타)의 AI 투자 수익성 회의론', chain: '최대 고객사인 빅테크들이 설비투자 속도 조절을 시사하면 가장 먼저 직격탄을 맞습니다.', impact_degree: '⚠️ 수요 피크아웃 뇌관' },
+                { icon: '⚙️', trigger: '🏭 대만 TSMC 패키징 병목 · 차세대 GPU 수율/출하 지연', chain: '신제품 출하가 지연되거나 매출총이익률(75%)이 낮아지면 고밸류에이션 부담으로 흔들립니다.', impact_degree: '⚡ 공급망·마진 변수' },
+            ],
+        };
+    }
+    if (['tsla', '테슬라', 'tesla'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌎 미국 금리/보조금 · 중국 BYD 전기차 가격전쟁 · 자율주행(FSD) 규제 직결주',
+            oneLiner: `중국·유럽에서 『BYD 등 중국 전기차와의 출혈 할인 전쟁으로 차량 판매량·마진율이 하락』하거나, 미국에서 『고금리 장기화 및 자율주행(FSD)·로보택시 규제 조사/리콜』이 터지면 ➔ 높은 성장성 프리미엄을 받는 테슬라(TSLA)가 직격탄을 맞아 급락합니다!`,
+            triggers: [
+                { icon: '🚗', trigger: '🇨🇳 중국 BYD 등과의 가격 인하 경쟁 & 분기 인도량 부진', chain: '차량 가격 인하로 자동차 매출총이익률이 낮아지면 월가 목표주가 하향의 직격탄이 됩니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🏛️', trigger: '🇺🇸 미국 교통당국(NHTSA)의 자율주행(FSD)·로보택시 규제 조사', chain: '기업가치 핵심인 완전자율주행 상용화 일정에 제동이 걸리면 투자심리가 급격히 식습니다.', impact_degree: '⚠️ 핵심 모멘텀 위협' },
+                { icon: '🏦', trigger: '📈 미국 고금리 장기화 및 전기차 세액공제 혜택 축소', chain: '자동차 할부 금리가 높게 유지되면 소비자들이 전기차 구매를 미루어 판매 성장이 둔화됩니다.', impact_degree: '⚡ 거시 소비 변수' },
+            ],
+        };
+    }
+    if (['amzn', '아마존', 'msft', '마이크로소프트', 'pltr', '팔란티어', 'googl', '구글', 'aapl', '애플', 'meta', '메타'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌎 미국 연준(Fed) 국채금리 · 클라우드/AI 설비투자 수익성 · EU/미국 반독점 규제 직결주',
+            oneLiner: `미국에서 『물가 반등으로 미 10년물 국채금리가 급등』하거나, 실적 발표에서 『막대한 AI·클라우드 투자비 대비 수익(가이던스)이 월가 기대치를 밑돈다』는 평가 또는 『미 법무부·EU 반독점 제재』가 터지면 ➔ ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '📊', trigger: '📉 분기 실적 발표 시 클라우드·AI 성장률 가이던스 둔화', chain: 'AI 설비투자는 늘었는데 클라우드 매출 성장률이 1~2%만 기대를 밑돌아도 시간외에서 급락합니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🏦', trigger: '🇺🇸 미국 물가(CPI) 반등 & 미 국채 10년물 금리 급등', chain: '금리가 치솟으면 월가 알고리즘이 빅테크 기술주 밸류에이션 멀티플을 일제히 축소합니다.', impact_degree: '⚠️ 거시 금리 직격' },
+                { icon: '⚖️', trigger: '🏛️ 미국 법무부(DOJ)·유럽연합(EU) 반독점 과징금 및 규제', chain: '독점 규제나 미·중 무역 보복 관세가 부과되면 글로벌 매출 타격 우려로 조정을 받습니다.', impact_degree: '⚡ 규제·무역 변수' },
+            ],
+        };
+    }
+
+    return {
+        chainBadge: '🌏 미국 나스닥·원/달러 환율 · 글로벌 수출 경기 & 외국인 수급 직결주',
+        oneLiner: `해외에서 『미국 나스닥 급락 및 글로벌 경기 침체 우려로 원/달러 환율이 급등』하거나, 『미국의 수입 관세 장벽 강화 및 전방 고객사 발주 지연』 이슈가 터지면 ➔ 외국인·기관의 프로그램 매도세가 출회되며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+        triggers: [
+            { icon: '🌎', trigger: '🇺🇸 미국 증시(나스닥·S&P500) 급락 & 외국인 패시브 매도', chain: '밤사이 미국 기술주가 급락하면 개장 직후 외국인·기관의 프로그램 매도세가 출회되며 동반 하락합니다.', impact_degree: '🔥 1순위 직격탄' },
+            { icon: '💱', trigger: '📈 원/달러 환율 급등 및 해외 원자재·물류비 상승', chain: '환율 급등 시 외국인 수급이 이탈하고 원재료 조달 부담이 커져 영업이익률이 압박받습니다.', impact_degree: '⚠️ 수급·원가 직격' },
+            { icon: '📢', trigger: '📑 전방 고객사 발주 지연 또는 CB·유상증자 등 물량 공시', chain: '주요 매출처 투자 지연이나 주식 수가 늘어나는 자금조달 공시 발생 시 단기 주가가 흔들립니다.', impact_degree: '⚡ 기업 고유 변수' },
+        ],
+    };
+}
+
 export default function CeoOfficePage() {
 
     const renderResearchDetailPanels = (r: any, currentCapital: number) => {
@@ -2144,9 +2275,197 @@ export default function CeoOfficePage() {
         const finTable = r.financial_table;
         const tech = r.technicals;
         const finPlan = computeFinancialRiskPlan(r.price, r.consensus?.target_mean || (r.price * 1.15), currentCapital);
+        const fallbackHit = getStockOverseasDirectHitSummary(r.stock_name, r.stock_code, bizSummary.join(' '));
+        const dropIntel = r.drop_impact_intel || {
+            overseas_chain_badge: fallbackHit.chainBadge,
+            direct_hit_one_liner: fallbackHit.oneLiner,
+            overseas_triggers: fallbackHit.triggers,
+            live_diagnosis: null,
+        };
+        const disclosures: any[] = r.disclosures || [];
+        const liveDiag = dropIntel.live_diagnosis;
+        const isDroppingNow = (r.change_pct || 0) < 0;
 
         return (
             <div className="space-y-4 pt-1">
+                {/* 🚨 0-1. [핵심!] 해외에서 무슨 이슈가 터지면 이 회사가 직격탄을 맞아 떨어지나요? + 실시간 하락/상승 원인 판독 */}
+                <div className={`rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl border-2 ${
+                    isDroppingNow
+                        ? 'bg-gradient-to-br from-rose-950/45 via-[#131122] to-slate-950 border-rose-500/60'
+                        : 'bg-gradient-to-br from-amber-950/35 via-[#11182b] to-slate-950 border-amber-500/50'
+                }`}>
+                    {/* 상단 헤더 */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 shadow-md ${
+                                isDroppingNow ? 'bg-rose-500 text-white' : 'bg-amber-400 text-slate-950'
+                            }`}>
+                                <span>{isDroppingNow ? '🚨 하락 원인 & 해외 직격탄 판독' : '🌏 해외 직격탄 연결고리 & 실시간 판독'}</span>
+                            </span>
+                            <span className="text-xs sm:text-sm font-black text-white">
+                                &ldquo;해외에서 무슨 일이 터지면 {r.stock_name} 주가가 직격탄을 맞아 떨어지나요?&rdquo;
+                            </span>
+                        </div>
+                        <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-white/10 text-amber-300 border border-amber-400/30">
+                            {dropIntel.overseas_chain_badge}
+                        </span>
+                    </div>
+
+                    {/* 💡 1줄 직관적 인과관계 해답 박스 (가장 눈에 확 들어오게!) */}
+                    <div className="bg-black/65 border-2 border-amber-400/45 rounded-2xl p-3.5 sm:p-4 space-y-2 shadow-inner">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
+                            <span>💣</span>
+                            <span>리서치팀의 직관적 3초 결론 (이 종목이 가장 무서워하는 해외 직격탄)</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-white font-extrabold leading-relaxed break-keep">
+                            {dropIntel.direct_hit_one_liner}
+                        </p>
+                    </div>
+
+                    {/* 3대 해외 직격탄 뇌관 카드 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                        {(dropIntel.overseas_triggers || []).map((t: any, tIdx: number) => (
+                            <div key={tIdx} className="bg-black/50 border border-white/10 hover:border-amber-400/40 rounded-xl p-3 space-y-1.5 transition-all">
+                                <div className="flex items-center justify-between gap-1">
+                                    <span className="text-xs font-black text-amber-300 flex items-center gap-1">
+                                        <span>{t.icon || '🌏'}</span>
+                                        <span>해외 뇌관 {tIdx + 1}</span>
+                                    </span>
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+                                        tIdx === 0
+                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                            : 'bg-amber-500/20 text-amber-200 border-amber-500/30'
+                                    }`}>
+                                        {t.impact_degree}
+                                    </span>
+                                </div>
+                                <div className="text-xs font-extrabold text-white leading-snug break-keep">
+                                    {t.trigger}
+                                </div>
+                                <p className="text-[11px] text-gray-300 leading-relaxed break-keep">
+                                    {t.chain}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 🔍 오늘 왜 떨어졌나요? / 왜 움직이나요? (실시간 뉴스·DART공시·수급 교차 판독) */}
+                    {liveDiag && (
+                        <div className={`rounded-2xl p-3.5 sm:p-4 space-y-3 border ${
+                            isDroppingNow
+                                ? 'bg-rose-950/35 border-rose-500/40'
+                                : 'bg-emerald-950/25 border-emerald-500/35'
+                        }`}>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-black ${
+                                        isDroppingNow ? 'bg-rose-500 text-white' : 'bg-emerald-400 text-slate-950'
+                                    }`}>
+                                        {liveDiag.status_badge}
+                                    </span>
+                                    <span className="text-xs font-black text-white">
+                                        오늘 주가 변동({r.change_pct > 0 ? `+${r.change_pct}%` : `${r.change_pct}%`}) 실시간 뉴스·공시·수급 교차 판독
+                                    </span>
+                                </div>
+                                <span className="text-[10px] text-gray-300 font-bold">
+                                    박진우 리서치센터장 · 최서연 CRO 합동
+                                </span>
+                            </div>
+
+                            <div className="bg-black/60 border border-white/10 rounded-xl p-3 text-xs sm:text-[13px] font-bold text-white leading-relaxed break-keep">
+                                {liveDiag.primary_cause_title}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                                <div className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
+                                    <div className="text-[11px] font-black text-amber-300">📢 1. 전자공시(DART)·고시 판독</div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">{liveDiag.disc_verdict}</p>
+                                </div>
+                                <div className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
+                                    <div className="text-[11px] font-black text-sky-300">📰 2. 최신 언론 뉴스·이슈 판독</div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">{liveDiag.news_verdict}</p>
+                                </div>
+                                <div className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
+                                    <div className="text-[11px] font-black text-emerald-300">💰 3. 외국인·기관 큰손 수급 판독</div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">{liveDiag.flow_verdict}</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-black/70 border border-amber-500/35 rounded-xl px-3 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div className="text-gray-200 font-bold break-keep">
+                                    <span className="text-amber-300 font-black mr-1.5">🛡️ 리서치팀 &amp; CRO 행동 지침:</span>
+                                    {liveDiag.action_guide}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 📢 최근 금융감독원 전자공시(DART) & 주요 고시 쉬운 해설 리스트 */}
+                    {isKr && (
+                        <div className="bg-black/50 border border-white/10 rounded-2xl p-3.5 sm:p-4 space-y-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded bg-indigo-500/25 text-indigo-300 border border-indigo-400/40 text-[11px] font-black">
+                                        📢 금융감독원 DART 공식 고시·공시
+                                    </span>
+                                    <span className="text-xs font-black text-white">
+                                        최근 90일 내 {r.stock_name} 주요 공시 팩트체크 &amp; 쉬운 뜻풀이 ({disclosures.length}건)
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-gray-400">
+                                    유상증자·CB·수주·지분변동 자동 감시
+                                </span>
+                            </div>
+
+                            {disclosures.length === 0 ? (
+                                <div className="bg-emerald-950/20 border border-emerald-500/25 rounded-xl p-3 text-xs text-emerald-200 font-bold flex items-center gap-2">
+                                    <span>✅</span>
+                                    <span>최근 90일 이내 금융감독원(DART)에 제출된 특이 공시나 물량 희석(유상증자·전환사채) 악재 공시가 없습니다.</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {disclosures.map((d: any, dIdx: number) => (
+                                        <div key={dIdx} className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all">
+                                            <div className="space-y-1 min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+                                                        d.tone === 'negative'
+                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                            : d.tone === 'positive'
+                                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                                : 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                                                    }`}>
+                                                        {d.badge}
+                                                    </span>
+                                                    <span className="text-[11px] font-mono text-gray-400">{d.date}</span>
+                                                    <span className="text-xs font-extrabold text-white">{d.title}</span>
+                                                    {d.filer && (
+                                                        <span className="text-[10px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">
+                                                            제출: {d.filer}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-amber-100/90 font-medium leading-snug break-keep">
+                                                    💡 <strong>쉬운 해설:</strong> {d.easy_meaning}
+                                                </p>
+                                            </div>
+                                            {d.url && (
+                                                <a
+                                                    href={d.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[11px] font-black shrink-0 self-start sm:self-center"
+                                                >
+                                                    DART 원문 →
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
                 {/* 1. 기업 비즈니스 모델(BM) & 주력 사업·고객사 심층 해설 */}
                 <div className="bg-gradient-to-br from-slate-900/90 via-[#0a1526] to-slate-900/90 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg">
                     <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
@@ -5194,6 +5513,55 @@ export default function CeoOfficePage() {
                                                                                 </div>
                                                                             </div>
                                                                         </div>
+
+                                                                        {/* 🌏 [개별 종목 전용] 해외에 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는지 3초 직관 브리핑 + 리서치팀 공시·하락원인 직행 버튼 */}
+                                                                        {!isMacroDoc && (() => {
+                                                                            const hitInfo = getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
+                                                                            return (
+                                                                                <div className="bg-gradient-to-r from-amber-950/35 via-[#13182b] to-rose-950/30 border border-amber-500/45 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+                                                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                                            <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[11px]">
+                                                                                                🌏 해외 직격탄 연결고리
+                                                                                            </span>
+                                                                                            <span className="text-xs font-black text-white">
+                                                                                                해외에 무슨 이슈가 터지면 {activeDoc.stock_name} 주가가 직격탄을 맞아 떨어지나요?
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                const q = activeDoc.stock_code || activeDoc.stock_name;
+                                                                                                setRiskSearchQuery(activeDoc.stock_name);
+                                                                                                setActiveTab('watchlist_research');
+                                                                                                handleSearchStockRisk(q);
+                                                                                            }}
+                                                                                            className="px-3 py-1 rounded-xl bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-300 hover:to-indigo-300 text-slate-950 font-black text-[11px] cursor-pointer shadow-md flex items-center gap-1 shrink-0"
+                                                                                        >
+                                                                                            <span>🔬</span>
+                                                                                            <span>공시(DART)·뉴스·하락원인 리서치팀 정밀판독 →</span>
+                                                                                        </button>
+                                                                                    </div>
+
+                                                                                    <div className="bg-black/60 border border-amber-400/35 rounded-xl p-2.5 text-xs text-amber-100 font-bold leading-relaxed break-keep">
+                                                                                        💣 {hitInfo.oneLiner}
+                                                                                    </div>
+
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                                                        {hitInfo.triggers.map((t, idx) => (
+                                                                                            <div key={idx} className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
+                                                                                                <div className="flex items-center justify-between text-[10px] font-black">
+                                                                                                    <span className="text-amber-300">{t.icon} 해외 뇌관 {idx + 1}</span>
+                                                                                                    <span className="text-rose-300">{t.impact_degree}</span>
+                                                                                                </div>
+                                                                                                <div className="text-[11px] font-extrabold text-white leading-snug break-keep">{t.trigger}</div>
+                                                                                                <div className="text-[10px] text-gray-300 leading-snug break-keep">{t.chain}</div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })()}
 
                                                                         {/* CRO 핵심 경보 + 4대 행동 수칙 통합 바 (슬림 & 고가독성) */}
                                                                         <div className="bg-gradient-to-r from-rose-950/40 via-zinc-950 to-slate-950 border border-rose-500/35 rounded-2xl p-3 space-y-2">
