@@ -281,17 +281,20 @@ def get_latest_morning_macro_doc() -> Optional[Dict[str, Any]]:
 
 def send_morning_macro_push(doc: Dict[str, Any]) -> int:
     """
-    대표님 및 전 회원 스마트폰/PC로 07:20 모닝 특보 푸시 발송
+    대표님 전용 단말기(CEO 계정)로만 07:20 모닝 특보 푸시 발송 (일반 회원 발송 제외)
     """
     try:
         from firebase_config import send_multicast_notification
-        from db_manager import get_all_fcm_tokens_with_user
+        from ceo_risk_radar_service import get_ceo_user_ids, get_ceo_fcm_tokens
 
-        tokens_data = get_all_fcm_tokens_with_user()
-        all_tokens = list({t[1] for t in tokens_data if len(t) > 1 and t[1]})
+        ceo_ids = get_ceo_user_ids()
+        if not ceo_ids:
+            logger.warning("[MorningMacro] No CEO user ID found in DB. Skip push (CEO-only mode).")
+            return 0
 
-        if not all_tokens:
-            logger.warning("[MorningMacro] No FCM tokens found to send push.")
+        tokens = get_ceo_fcm_tokens(ceo_ids)
+        if not tokens:
+            logger.warning(f"[MorningMacro] No FCM tokens found for CEO user_ids={ceo_ids}. Skip push.")
             return 0
 
         title = "🌅 [대표님 07:20 모닝 특보] 밤사이 글로벌 경제뉴스 & 국내외 증시 영향"
@@ -304,12 +307,14 @@ def send_morning_macro_push(doc: Dict[str, Any]) -> int:
             "type": "morning_macro",
             "url": "/ceo-office",
             "doc_id": doc.get("doc_id", ""),
-            "click_action": "/ceo-office"
+            "click_action": "/ceo-office",
+            "is_global": "false",
+            "is_ceo_only": "true"
         }
 
-        resp = send_multicast_notification(all_tokens, title, body, data=push_data)
-        success_cnt = resp.get("success_count", len(all_tokens))
-        logger.info(f"[MorningMacro] Push successfully sent to {success_cnt}/{len(all_tokens)} devices.")
+        resp = send_multicast_notification(tokens, title, body, data=push_data, target_users=ceo_ids)
+        success_cnt = resp.get("success_count", len(tokens)) if isinstance(resp, dict) else len(tokens)
+        logger.info(f"[MorningMacro] Push successfully sent to {success_cnt}/{len(tokens)} CEO devices (user_ids={ceo_ids}).")
         return success_cnt
     except Exception as e:
         logger.error(f"[MorningMacro] Push notification error: {e}")
