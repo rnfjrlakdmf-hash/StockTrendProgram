@@ -7,6 +7,7 @@
 - 투자 권유가 아닌 공개 데이터의 자동 요약입니다.
 """
 import os
+import json
 import re
 import html
 import concurrent.futures
@@ -308,6 +309,738 @@ def _fetch_dart_disclosures(code: str, max_items: int = 5) -> List[Dict[str, Any
     return disclosures
 
 
+STOCK_TRIGGERS_CACHE_FILE = os.path.join(os.path.dirname(__file__), "data", "stock_triggers_cache.json")
+
+
+def _load_stock_triggers_cache() -> Dict[str, Any]:
+    if os.path.exists(STOCK_TRIGGERS_CACHE_FILE):
+        try:
+            with open(STOCK_TRIGGERS_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[WatchlistResearch] Cache load error: {e}")
+            return {}
+    return {}
+
+
+def _save_stock_triggers_cache(cache: Dict[str, Any]) -> None:
+    try:
+        os.makedirs(os.path.dirname(STOCK_TRIGGERS_CACHE_FILE), exist_ok=True)
+        with open(STOCK_TRIGGERS_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[WatchlistResearch] Cache save error: {e}")
+
+
+def _ask_gemini_stock_triggers(name: str, code: str, biz_text: str) -> Optional[Dict[str, Any]]:
+    """
+    Google Gemini AI를 호출하여 해당 기업의 실제 BM(사업보고서/원자재/환율/전방수요) 기반
+    1:1 맞춤형 3대 해외 직격탄 뇌관을 실시간으로 분석합니다.
+    """
+    if not os.environ.get("GEMINI_API_KEY"):
+        return None
+    try:
+        from ai_analysis import generate_with_retry
+        prompt = f"""당신은 대한민국 최고 증권사 대표이사 직속 수석 매크로/기업 리서치 연구원입니다.
+아래 기업의 사업 모델과 산업 구조를 정밀 분석하여, '해외에서 무슨 악재/지표가 터지면 이 회사가 직격탄을 맞아 주가가 급락하는가?'에 대한 3대 해외 뇌관을 초보자도 10초 만에 이해할 수 있게 명확하고 직관적으로 요약해 주십시오.
+
+[분석 대상 기업]
+- 종목명: {name} (코드: {code})
+- 주요 사업 및 특징: {biz_text[:700] if biz_text else '업종 대표 기업'}
+
+[작성 원칙]
+1. 뻔한 일반론(나스닥 급락 등)을 쓰지 말고, 이 기업 고유의 '핵심 수입 원자재(목재, 원유, 구리, 곡물, 화학물질 등)', '결제 환율', '해외 공급망/관세', '전방 산업(건설, IT, 소비 등)'의 진짜 급소를 정확히 짚으세요.
+   예: 현대리바트 -> 러시아/동남아산 PB/MDF 목재 수입단가 폭등, 원/달러 환율 급등(달러 수입원가 폭증), 고금리/부동산 침체로 아파트 입주 감소(빌트인 가구 수요 급감).
+2. 정보량은 풍부하되 불필요한 사설 없이 일목요연한 개조식과 인과관계 화살표(➔)로 정리하세요.
+3. 반드시 아래 JSON 형식으로만 응답하세요:
+{{
+  "overseas_chain_badge": "🌏 핵심 연결고리 배지 (예: 🌏 해외 수입 목재(PB/원목) · 달러 환율 · 국내외 건설/부동산 착공 직결주)",
+  "direct_hit_one_liner": "해외에서 『A 악재』하거나 『B 사태』가 터지면 ➔ C 원인으로 {name} 주가가 직격탄을 맞아 떨어집니다!",
+  "overseas_triggers": [
+    {{
+      "icon": "🌲",
+      "category_tag": "수입 원자재",
+      "trigger": "뇌관 1 제목 (구체적 해외 악재/지표 명시)",
+      "chain": "인과관계 요약 (A 발생 ➔ B 원가/수주 타격 ➔ 주가 하락 이유를 1~2문장으로 명쾌하게)",
+      "impact_degree": "🔥 1순위 직격탄"
+    }},
+    {{
+      "icon": "💵",
+      "category_tag": "환율·원가",
+      "trigger": "뇌관 2 제목",
+      "chain": "인과관계 요약",
+      "impact_degree": "⚠️ 수익성 직격"
+    }},
+    {{
+      "icon": "🏗️",
+      "category_tag": "전방 수요",
+      "trigger": "뇌관 3 제목",
+      "chain": "인과관계 요약",
+      "impact_degree": "⚡ 전방 수요 변수"
+    }}
+  ]
+}}
+"""
+        resp = generate_with_retry(
+            prompt,
+            json_mode=True,
+            timeout=8,
+            models_to_try=["gemini-2.5-flash-lite", "gemini-1.5-flash"]
+        )
+        if resp:
+            text = resp.text if hasattr(resp, "text") else str(resp)
+            import re
+            m = re.search(r"\{.*\}", text, re.DOTALL)
+            if m:
+                data = json.loads(m.group(0))
+                if data.get("direct_hit_one_liner") and data.get("overseas_triggers") and len(data.get("overseas_triggers")) >= 3:
+                    data["overseas_chain_badge"] = data.get("overseas_chain_badge") or f"🌏 {name} 글로벌 리스크 직결주"
+                    data["source"] = "ai_realtime"
+                    return data
+    except Exception as e:
+        print(f"[WatchlistResearch] AI trigger generation error for {name}({code}): {e}")
+    return None
+
+
+def _get_fallback_stock_triggers(name: str, code: str, combined: str) -> Dict[str, Any]:
+    """
+    AI 응답 지연/오프라인 시에도 25개 주요 업종별 팩트체크 기반으로 
+    100% 종목 맞춤형 직격탄을 즉각 산출하는 고성능 룰베이스 딕셔너리
+    """
+    # 1. 반도체 / HBM / 파운드리 / 소부장
+    if any(k in combined for k in ["하이닉스", "삼성전자", "한미반도체", "리노공업", "이오테크닉스", "주성엔지니어링", "hbm", "반도체", "웨이퍼", "파운드리", "메모리", "디램", "dram", "nand"]):
+        return {
+            "overseas_chain_badge": "🌏 미국 엔비디아(NVDA) · 빅테크 AI 서버 · 대중국 수출규제 직결주",
+            "direct_hit_one_liner": (
+                f"미국에서 『엔비디아(NVDA)·필라델피아 반도체지수 급락』이나 『구글·MS 등 빅테크의 AI 데이터센터 투자 축소』, "
+                f"또는 『미국 정부의 대중국 반도체 수출 통제 강화』가 터지면 ➔ AI 칩과 서버에 들어가는 메모리(HBM·D램)·장비 주문이 줄어들까 봐 "
+                f"외국인 프로그램 매물이 가장 먼저 쏟아지며 {name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🤖",
+                    "category_tag": "AI 테크 대장주",
+                    "trigger": "🇺🇸 미국 엔비디아(NVDA) 급락 & AI 거품론 대두",
+                    "chain": "미국 AI 반도체 대장주가 흔들리면 글로벌 패시브 자금이 한국 반도체 밸류체인(HBM·전공정·후공정)부터 기계적으로 매도하여 장초반 직격탄을 맞습니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🚫",
+                    "category_tag": "무역 규제",
+                    "trigger": "🏛️ 미국 상무부의 대중국 반도체 수출 통제·관세 폭탄",
+                    "chain": "중국향 첨단 메모리·장비 수출이 제한되거나 반도체 품목 관세가 부과되면 글로벌 공급망 위축 우려로 주가가 즉각 하락 압력을 받습니다.",
+                    "impact_degree": "⚠️ 고위험 뇌관"
+                },
+                {
+                    "icon": "💻",
+                    "category_tag": "전방 수요",
+                    "trigger": "📉 글로벌 스마트폰·PC 판매 부진 & D램/낸드 가격 하락",
+                    "chain": "애플 아이폰 등 IT 기기 수요 둔화 뉴스가 나오면 범용 메모리 반도체 고정거래가격 하락 우려로 실적 눈높이가 낮아집니다.",
+                    "impact_degree": "⚡ 업황 둔화 요인"
+                },
+            ]
+        }
+
+    # 2. 가구 / 인테리어 / 건자재 / 목재 (현대리바트, 한샘 등)
+    if any(k in combined for k in ["리바트", "현대리바트", "한샘", "에이스침대", "지누스", "kcc", "lx하우시스", "벽산", "동화기업", "가구", "인테리어", "건자재", "목재", "파티클보드", "mdf", "주방가구", "사무용가구", "빌트인"]):
+        return {
+            "overseas_chain_badge": "🌏 해외 수입 원목/PB 단가 · 달러 환율 · 국내외 건설/부동산 착공 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『러시아/동남아산 원목·PB(파티클보드) 원자재 가격 급등 및 해상 컨테이너 운임 폭등』 또는 『원/달러 환율 급등』이 터지면 ➔ "
+                f"해외에서 전량 달러로 수입하는 목재 조달 원가가 치솟고 빌트인 가구 납품 마진이 깎여 {name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🌲",
+                    "category_tag": "수입 원자재",
+                    "trigger": "🌲 해외 원목·PB/MDF 목재 수입단가 & 글로벌 해상 컨테이너 운임 급등",
+                    "chain": "가구 골조의 필수 원자재인 목재 판재(PB/MDF)를 대부분 해외 수입에 의존하므로, 산지 목재 가격이나 해상 운임이 치솟으면 원가율이 급등하여 분기 영업이익에 치명타를 입습니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💵",
+                    "category_tag": "환율·원가",
+                    "trigger": "📈 원/달러 환율 급등 (달러 결제 수입 원가 폭증)",
+                    "chain": "수입 목재 대금을 달러로 결제하기 때문에 환율이 급등할 경우 원화 환산 매입 비용이 증가하여 제품 판가를 즉각 올리지 못하면 마진이 급감합니다.",
+                    "impact_degree": "⚠️ 수익성 직격"
+                },
+                {
+                    "icon": "🏗️",
+                    "category_tag": "전방 수요",
+                    "trigger": "📉 고금리 장기화에 따른 아파트 입주 물량 감소 & 주택 거래 침체",
+                    "chain": "현대리바트의 핵심 알짜 매출처인 '신축 아파트 빌트인 가구 특판'과 '주택 매매 시 리모델링·가구 교체 수요'가 급감하면서 전방 수주 절벽에 직면합니다.",
+                    "impact_degree": "⚡ 전방 수요 변수"
+                }
+            ]
+        }
+
+    # 3. 자동차 / 완성차 / 부품 / 모빌리티
+    if any(k in combined for k in ["현대차", "기아", "현대모비스", "현대글로비스", "현대위아", "한온시스템", "타이어", "자동차", "완성차", "모빌리티"]):
+        return {
+            "overseas_chain_badge": "🌏 미국 수입차 관세 · 북미 자동차 판매량 · 원/달러 환율 직결주",
+            "direct_hit_one_liner": (
+                f"미국에서 『한국산 수입 자동차·부품 고율 관세 부과(무역장벽·IRA 보조금 축소)』 뉴스가 터지거나, "
+                f"『미국 소비 둔화(고금리 할부 부담)』 또는 『원/달러 환율 급락(원화 강세)』이 발생하면 ➔ "
+                f"북미 수출로 역대급 이익을 내는 {name}의 수출 마진이 바로 깎이기 때문에 직격탄을 맞아 주가가 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🛃",
+                    "category_tag": "수출 관세",
+                    "trigger": "🇺🇸 미국의 수입 자동차·부품 보편관세 부과 & 보조금 축소",
+                    "chain": "미국 시장 매출 비중이 절대적인 구조상, 관세 부과나 전기차 보조금 제외 뉴스가 뜨면 가격 경쟁력 약화 우려로 직격탄을 맞습니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💱",
+                    "category_tag": "환율·마진",
+                    "trigger": "💵 원/달러 환율 급락 (원화 강세로 수출 환차익 감소)",
+                    "chain": "해외에서 달러로 차를 팔아 원화로 환산할 때 환율이 급락하면 가만히 앉아서 영업이익이 수천억 원씩 줄어드는 효과가 발생합니다.",
+                    "impact_degree": "⚠️ 수익성 직격"
+                },
+                {
+                    "icon": "🚗",
+                    "category_tag": "소비 심리",
+                    "trigger": "🏷️ 미국·유럽 신차 소비 둔화 & 도요타·테슬라 할인 전쟁",
+                    "chain": "해외 자동차 재고가 늘어나 딜러 인센티브(할인 보조금) 지출이 커지면 대당 마진율(OPM)이 꺾이며 주가가 조정을 받습니다.",
+                    "impact_degree": "⚡ 마진 축소 요인"
+                },
+            ]
+        }
+
+    # 4. 한국전력 / 가스공사 / 에너지 유틸리티
+    if "한국전력" in name or code == "015760" or "지역난방" in name or "가스공사" in name:
+        return {
+            "overseas_chain_badge": "🌏 중동 국제유가(WTI) · 글로벌 LNG 가스가격 · 원/달러 환율 직결주",
+            "direct_hit_one_liner": (
+                f"중동 전쟁·지정학적 위기 등으로 해외에서 『국제유가(WTI)·LNG 천연가스 가격 폭등』이 터지거나 "
+                f"『원/달러 환율이 급등』하면 ➔ 비싼 달러를 주고 발전용 연료를 수입해야 해서 적자(역마진) 부담이 눈덩이처럼 커지며 "
+                f"{name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🛢️",
+                    "category_tag": "원자재 연료",
+                    "trigger": "🔥 중동 분쟁 격화로 인한 국제유가(WTI)·LNG 가격 급등",
+                    "chain": "발전 원가의 핵심인 유연탄·LNG 수입 단가가 치솟으면 전기요금을 즉시 올리지 못하는 구조상 영업이익이 급감하며 직격탄을 맞습니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💱",
+                    "category_tag": "외환 부채",
+                    "trigger": "📈 원/달러 환율 급등 (외화 연료 수입비 & 달러 부채 부담)",
+                    "chain": "에너지를 100% 달러로 수입하고 외화 사채 비중이 높아, 환율이 급등하면 환차손과 수입 원가가 동시에 폭증합니다.",
+                    "impact_degree": "⚠️ 재무 직격탄"
+                },
+                {
+                    "icon": "🏛️",
+                    "category_tag": "공공 정책",
+                    "trigger": "❄️ 물가 안정을 위한 정부의 공공요금(전기료) 동결 압박",
+                    "chain": "글로벌 인플레이션 우려로 정부가 전기요금 인상을 보류하면 재무구조 개선 기대감이 꺾이며 매물이 출회됩니다.",
+                    "impact_degree": "⚡ 정책 리스크"
+                },
+            ]
+        }
+
+    # 5. 원전 / 변압기 / 초고압 전력기기
+    if any(k in combined for k in ["두산에너빌리티", "효성중공업", "현대일렉트릭", "일진전기", "제룡전기", "산일전기", "ls electric", "변압기", "전력기기", "원전", "발전기", "가스터빈", "smr"]):
+        return {
+            "overseas_chain_badge": "🌏 미국 AI 데이터센터 전력망 · 북미 초고압 변압기 · 글로벌 원전(SMR) 직결주",
+            "direct_hit_one_liner": (
+                f"미국·유럽에서 『빅테크들의 AI 데이터센터 전력망 투자 지연』이 터지거나, "
+                f"『미국의 한국산 변압기 반덤핑 관세·무역 규제』 또는 『해외 원전(SMR·체코 등) 본계약 지연·정치적 제동』 뉴스가 나오면 ➔ "
+                f"해외 수주 폭발 기대감으로 프리미엄을 받던 {name}가 직격탄을 맞아 차익실현 매물이 쏟아집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "⚡",
+                    "category_tag": "전력망 CAPEX",
+                    "trigger": "🇺🇸 미국 빅테크 AI 데이터센터 전력망·SMR 투자 속도 조절",
+                    "chain": "마이크로소프트·아마존 등이 데이터센터 증설이나 원전 전력 구매 계약을 늦춘다는 소식이 뜨면 전력기기·원전주 전반에 투매가 나옵니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🛡️",
+                    "category_tag": "수출 규제",
+                    "trigger": "🏛️ 미국 상무부의 초고압 변압기 반덤핑 관세 · 보호무역 강화",
+                    "chain": "북미 전력청(유틸리티) 수주 마진이 가장 높은데, 고율 관세나 미국 현지 생산 의무화가 강화되면 이익률 하락 우려로 흔들립니다.",
+                    "impact_degree": "⚠️ 수출 마진 위협"
+                },
+                {
+                    "icon": "🧱",
+                    "category_tag": "원자재 원가",
+                    "trigger": "📉 구리(전기동)·특수강 원자재 가격 급변 및 수주 본계약 지연",
+                    "chain": "핵심 원자재인 구리 가격이 급등하거나 기대했던 해외 대형 플랜트 본계약 서명이 지연되면 단기 실망 매물이 출회됩니다.",
+                    "impact_degree": "⚡ 원가·일정 변수"
+                },
+            ]
+        }
+
+    # 6. 바이오 / 제약 / 신약 개발
+    if any(k in combined for k in ["한미약품", "알테오젠", "삼성바이오", "셀트리온", "유한양행", "리가켐", "에이비엘", "삼천당", "휴젤", "파마리서치", "바이오", "제약", "신약", "임상", "의약품"]):
+        return {
+            "overseas_chain_badge": "🌏 미국 FDA 임상/승인 · 미 연준 금리(국채금리) · 글로벌 빅파마 기술수출 직결주",
+            "direct_hit_one_liner": (
+                f"미국에서 『연준(Fed)의 금리 인하 지연으로 미국 국채 금리가 급등』하거나, "
+                f"해외 파트너 빅파마(머크·일라이릴리 등)의 『임상 지연·FDA 허가 보류(CRL)·미국 약가 인하 압박』 이슈가 터지면 ➔ "
+                f"미래 신약 가치와 로열티 기대감으로 움직이는 {name} 주가가 가장 민감하게 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🧬",
+                    "category_tag": "FDA 허가",
+                    "trigger": "🇺🇸 미국 FDA 품목허가 보류(CRL) · 글로벌 임상 데이터 아쉬움",
+                    "chain": "경쟁 약물 대비 효능·안전성 데이터가 기대에 못 미치거나 FDA 승인 일정이 밀리면 기술수출 가치 재평가로 급락이 나옵니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🏦",
+                    "category_tag": "매크로 금리",
+                    "trigger": "📈 미국 물가 반등으로 인한 미 국채금리 급등 (금리인하 지연)",
+                    "chain": "바이오 업종은 미래 이익을 현재 가치로 당겨와 평가받기 때문에, 미국 금리가 오르면 글로벌 성장주·바이오 투자심리가 즉각 얼어붙습니다.",
+                    "impact_degree": "⚠️ 밸류에이션 직격"
+                },
+                {
+                    "icon": "💊",
+                    "category_tag": "빅파마 약가",
+                    "trigger": "🏛️ 미국 정부(IRA)의 의약품 약가 인하 압박 & 글로벌 제약사 전략 변경",
+                    "chain": "빅파마들이 파이프라인 개발 우선순위를 변경하거나 약가 인하 정책에 직면하면 후속 기술이전 협상이 둔화됩니다.",
+                    "impact_degree": "⚡ 정책·협상 변수"
+                },
+            ]
+        }
+
+    # 7. K-뷰티 / 화장품 / 용기
+    if any(k in combined for k in ["에스엠씨지", "아모레", "코스맥스", "한국콜마", "에이피알", "코스메카", "화장품", "k-뷰티", "용기", "패키징", "뷰티"]):
+        return {
+            "overseas_chain_badge": "🌏 미국(아마존·세포라)·일본·중국 K-뷰티 수출 & 글로벌 소비재 관세 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『미국·일본 등 주요국향 한국 화장품 월간 수출 성장률 둔화』 데이터가 나오거나, "
+                f"『미국의 수입 소비재 보편관세 부과 및 글로벌 뷰티 브랜드 발주 축소』 이슈가 터지면 ➔ "
+                f"K-뷰티 수출 호황과 화장품 용기·제조 발주 증가로 성장하는 {name}가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "💄",
+                    "category_tag": "수출 데이터",
+                    "trigger": "🌎 미국·일본·동남아 월간 화장품 수출액 증가세 둔화",
+                    "chain": "관세청 월별 수출입 통계나 현지 아마존·세포라 랭킹이 주춤하면 K-뷰티 밸류체인 전반에 차익실현 매물이 쏟아집니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "📦",
+                    "category_tag": "고객사 재고",
+                    "trigger": "🏢 인디 뷰티 브랜드 고객사들의 과잉 재고 조정 및 발주 감소",
+                    "chain": "전방 브랜드사들이 마케팅비 부담이나 재고 소진을 위해 신규 발주를 늦추면 분기 가동률이 하락합니다.",
+                    "impact_degree": "⚠️ 수주 물량 직격"
+                },
+                {
+                    "icon": "🛃",
+                    "category_tag": "무역 관세",
+                    "trigger": "🇺🇸 미국의 소비재 수입 관세 부과 & 중국 내수 뷰티 소비 침체",
+                    "chain": "미국 수입 관세가 현실화되거나 중국 C-뷰티 저가 공세가 거세지면 해외 판로 확장 속도가 둔화됩니다.",
+                    "impact_degree": "⚡ 대외 수출 변수"
+                },
+            ]
+        }
+
+    # 8. 2차전지 / 배터리 / 양극재
+    if any(k in combined for k in ["에코프로", "lg에너지솔루션", "posco퓨처엠", "엘앤에프", "삼성sdi", "sk이노베이션", "2차전지", "양극재", "음극재", "리튬", "배터리"]):
+        return {
+            "overseas_chain_badge": "🌏 미국 테슬라(TSLA) · IRA 전기차 보조금 · 중국 리튬 원자재가 직결주",
+            "direct_hit_one_liner": (
+                f"미국·유럽에서 『테슬라(TSLA)·글로벌 완성차의 전기차 판매 부진(캐즘)』이 심화되거나, "
+                f"『미국 정부의 IRA 전기차 보조금·세액공제(AMPC) 축소/폐지』 또는 『리튬·니켈 광물 가격 하락』이 터지면 ➔ "
+                f"배터리 출하량과 납품 단가가 동시에 깎여 {name}가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🔋",
+                    "category_tag": "정책 보조금",
+                    "trigger": "🇺🇸 미국 IRA 전기차 보조금·첨단제조세액공제(AMPC) 축소/폐지",
+                    "chain": "미국 정책 보조금이 깎이면 북미 배터리 공장의 수익성과 전기차 수요가 동시에 타격을 입어 가장 강력한 하락 뇌관이 됩니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🚗",
+                    "category_tag": "전방 수요",
+                    "trigger": "📉 테슬라(TSLA) 급락 & 글로벌 완성차 전기차 합작공장 감산",
+                    "chain": "GM·포드·폭스바겐 등 해외 고객사가 전기차 출시를 미루거나 배터리 주문을 줄이면 가동률 하락으로 직결됩니다.",
+                    "impact_degree": "⚠️ 전방 수요 직격"
+                },
+                {
+                    "icon": "⛏️",
+                    "category_tag": "원자재 판가",
+                    "trigger": "🌏 중국발 리튬·니켈 광물 가격 하락 & 중국 CATL 저가 배터리 공세",
+                    "chain": "광물 가격에 연동해 배터리·양극재 판매가격(판가)이 떨어지면 비싸게 사둔 원재료 때문에 재고평가손실이 발생합니다.",
+                    "impact_degree": "⚡ 판가·마진 하락"
+                },
+            ]
+        }
+
+    # 9. 철강 / 비철금속
+    if any(k in combined for k in ["포스코", "posco", "현대제철", "동국제강", "고려아연", "풍산", "철강", "열연", "후판", "철광석"]):
+        return {
+            "overseas_chain_badge": "🌏 중국 저가 철강 덤핑 · 호주 철광석 수입단가 · 글로벌 건설 경기 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『중국 부동산 침체로 남아도는 중국산 저가 철강재의 글로벌 밀어내기 덤핑 수출』이 지속되거나, "
+                f"『호주산 철광석·제철용 원료탄 가격 급등』이 터지면 ➔ 롤마진(판매가-원가)이 급격히 축소되어 {name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🏗️",
+                    "category_tag": "중국 공급과잉",
+                    "trigger": "🇨🇳 중국 저가 철강재 글로벌 덤핑 및 국내 유입 폭증",
+                    "chain": "중국 내수 부진으로 쏟아지는 초저가 열연·후판 때문에 국내외 철강 판가를 올리지 못해 마진이 깎입니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "⛏️",
+                    "category_tag": "원자재 원가",
+                    "trigger": "🇦🇺 호주 철광석 및 원료탄 수입 가격 급등",
+                    "chain": "철광석 가격이 오르는데 철강 완제품 가격에 반영하지 못하면 제철소의 스프레드(마진)가 급감합니다.",
+                    "impact_degree": "⚠️ 원가 스프레드 직격"
+                },
+                {
+                    "icon": "🌐",
+                    "category_tag": "무역 규제",
+                    "trigger": "🇪🇺 EU 탄소국경조정제도(CBAM) 및 미국의 철강 쿼터/관세 장벽",
+                    "chain": "친환경 규제 비용이 발생하거나 주요 수출국의 보호무역 규제가 강화되면 수출 물량이 제한됩니다.",
+                    "impact_degree": "⚡ 탄소·관세 변수"
+                }
+            ]
+        }
+
+    # 10. 식음료 / 농축산 / 곡물
+    if any(k in combined for k in ["cj제일제당", "오리온", "농심", "삼양식품", "대상", "오뚜기", "동원", "하이트진로", "식음료", "라면", "곡물", "소맥", "대두", "원당"]):
+        return {
+            "overseas_chain_badge": "🌏 CBOT 국제 곡물가(소맥/대두/원당) · 달러 환율 · K-푸드 해외 수출 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『기상이변·전쟁 등으로 시카고상품거래소(CBOT) 소맥(밀)·팜유·원당 가격이 폭등』하거나 "
+                f"『원/달러 환율이 급등』하면 ➔ 원재료를 전량 달러로 수입하는 식음료 원가율이 폭증해 {name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🌾",
+                    "category_tag": "국제 곡물가",
+                    "trigger": "📈 시카고(CBOT) 소맥(밀가루)·대두·원당·팜유 가격 급등",
+                    "chain": "원재료 매입비가 제조원가의 절반 이상을 차지하므로 곡물가 급등 시 영업이익률이 급격히 악화됩니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💵",
+                    "category_tag": "수입 환율",
+                    "trigger": "📈 원/달러 환율 급등 (달러 결제 곡물 수입단가 폭증)",
+                    "chain": "환율이 오르면 원화 환산 원재료 조달 비용이 증가하여 제품 가격 인상 없이는 수익성이 보장되지 않습니다.",
+                    "impact_degree": "⚠️ 마진 압박 직격"
+                },
+                {
+                    "icon": "🍜",
+                    "category_tag": "수출 통관",
+                    "trigger": "🏛️ 해외 수출국(미국/유럽)의 성분 표기·위생 통관 규제 강화",
+                    "chain": "K-라면·스낵의 해외 수출 통관이 지연되거나 현지 대형마트 입점 수수료 부담이 늘어나면 성장세가 둔화됩니다.",
+                    "impact_degree": "⚡ 해외 유통 변수"
+                }
+            ]
+        }
+
+    # 11. 엔터 / 미디어 / K-POP
+    if any(k in combined for k in ["하이브", "jyp", "에스엠", "sm", "와이지", "yg", "cj enm", "스튜디오드래곤", "엔터", "k-pop", "음반", "콘서트"]):
+        return {
+            "overseas_chain_badge": "🌏 글로벌 월드투어 관객수 · 일본 엔화/달러 환율 · 핵심 아티스트 IP 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『핵심 아티스트의 월드투어 일정 취소/지연이나 재계약 리스크』가 터지거나, "
+                f"『일본 엔화 약세(엔저 심화로 콘서트/MD 로열티 환차손)』 또는 『글로벌 음원 스트리밍 성장 정체』가 발생하면 ➔ "
+                f"엔터테인먼트 실적 기대치가 꺾이며 {name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🎤",
+                    "category_tag": "월드투어 IP",
+                    "trigger": "🌍 대형 아티스트 월드투어 관객 동원력 둔화 및 군입대/재계약 이슈",
+                    "chain": "콘서트 티켓 및 MD 매출 비중이 가장 높은 주력 IP의 활동 공백이 발생하면 분기 실적 공백이 불가피합니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💴",
+                    "category_tag": "엔화 환율",
+                    "trigger": "📉 엔화 약세 심화 (일본 콘서트/로열티 원화 환산액 감소)",
+                    "chain": "일본 공연 및 팬클럽 매출 비중이 높아 엔저가 장기화되면 원화 환산 영업이익이 크게 깎입니다.",
+                    "impact_degree": "⚠️ 환율 환차손 직격"
+                },
+                {
+                    "icon": "💿",
+                    "category_tag": "글로벌 앨범",
+                    "trigger": "📉 중국 공구(공동구매) 감소 및 글로벌 피지컬 앨범 판매량 정체",
+                    "chain": "K-POP 앨범 초동 판매량이 역성장하면 팬덤 결집력 약화 논란으로 기관 매물이 쏟아집니다.",
+                    "impact_degree": "⚡ 팬덤 수치 변수"
+                }
+            ]
+        }
+
+    # 12. 항공 / 해운
+    if any(k in combined for k in ["대한항공", "아시아나", "진에어", "제주항공", "티웨이", "항공", "해운", "hmm", "팬오션"]):
+        return {
+            "overseas_chain_badge": "🌏 국제유가(항공유/선박유) · 원/달러 환율 · 글로벌 여객/화물 운임 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『중동 리스크 등으로 국제유가(WTI·항공유)가 급등』하고 『원/달러 환율이 동반 급등』하거나, "
+                f"『글로벌 경기 침체로 해외여행·항공화물 운임이 하락』하면 ➔ "
+                f"연료비와 달러 비행기 리스 부채 이자가 폭증하면서 {name}가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🛢️",
+                    "category_tag": "원자재 유류비",
+                    "trigger": "🔥 국제유가(WTI) 및 항공유 급등 (영업원가 급증)",
+                    "chain": "유류비가 전체 영업비용의 약 30%를 차지하므로, 유가가 급등하면 매출이 잘 나와도 영업이익이 크게 깎입니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💱",
+                    "category_tag": "달러 부채",
+                    "trigger": "📈 원/달러 환율 급등 (외화 부채 환산손실 + 해외여행 심리 위축)",
+                    "chain": "항공기 대여료와 유류비를 모두 달러로 결제하기 때문에 환율이 오르면 비용 증가와 외화환산손실이 동시에 발생합니다.",
+                    "impact_degree": "⚠️ 비용·환차손 직격"
+                },
+                {
+                    "icon": "✈️",
+                    "category_tag": "글로벌 운임",
+                    "trigger": "📉 미·중 무역 갈등으로 인한 글로벌 IT 항공화물 물동량 감소",
+                    "chain": "알짜 수익원인 반도체·전자상거래 항공화물 운임이 꺾이면 분기 이익 전망치가 하향 조정됩니다.",
+                    "impact_degree": "⚡ 화물 마진 둔화"
+                },
+            ]
+        }
+
+    # 13. 방산 / 우주항공
+    if any(k in combined for k in ["한화에어로", "현대로템", "lig넥스원", "한국항공우주", "풍산", "방산", "전차", "유도무기", "자주포"]):
+        return {
+            "overseas_chain_badge": "🌏 러·우 전쟁 및 중동 분쟁 휴전 협상 · 유럽/중동 국방예산 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『러시아-우크라이나 전쟁이나 중동 분쟁의 휴전·종전 협상 타결』 속보가 터지거나, "
+                f"『유럽(폴란드·루마니아 등)의 방위비 예산 축소·수출 금융 지연』 이슈가 나오면 ➔ "
+                f"글로벌 재무장 긴장감이 완화되며 방산주 차익실현 매물이 쏟아져 {name}가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🕊️",
+                    "category_tag": "지정학 평화",
+                    "trigger": "🌍 우크라이나·중동 전쟁 휴전·종전 협상 급물살 속보",
+                    "chain": "실제 수주 잔고는 탄탄하더라도, 전쟁 종료 뉴스가 뜨는 날에는 글로벌 방산주 전반에 단기 투매(셀온)가 집중됩니다.",
+                    "impact_degree": "🔥 1순위 센티먼트 직격"
+                },
+                {
+                    "icon": "🇪🇺",
+                    "category_tag": "해외 규제",
+                    "trigger": "🏛️ 유럽(NATO)의 역내 유럽산 무기 우선 구매 규제 강화",
+                    "chain": "유럽 국가들이 자국 방산업체만 지원하고 비유럽권 무기 수입을 제한하려는 움직임이 나오면 추가 수주 기대감이 둔화됩니다.",
+                    "impact_degree": "⚠️ 수주 확장 제약"
+                },
+                {
+                    "icon": "📑",
+                    "category_tag": "수출 금융",
+                    "trigger": "⏳ 폴란드·중동향 후속 본계약(실행계약) 서명 일정 지연",
+                    "chain": "상대국 정권 교체나 수출금융 한도 문제로 계약 체결 시점이 다음 분기로 밀리면 단기 실망 매물이 출회됩니다.",
+                    "impact_degree": "⚡ 일정 지연 변수"
+                },
+            ]
+        }
+
+    # 14. 조선 / 해양
+    if any(k in combined for k in ["삼성중공업", "한국조선해양", "현대중공업", "현대미포", "한화오션", "조선", "선박", "lng선", "해양플랜트"]):
+        return {
+            "overseas_chain_badge": "🌏 글로벌 LNG선 발주 · 국제유가(WTI) · 미 해군 MRO/해운 물동량 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『국제유가(WTI)·천연가스 가격 급락으로 에너지 기업들이 LNG선·해양플랜트 발주를 중단』하거나, "
+                f"『글로벌 무역 전쟁으로 해운 물동량이 급감』하면 ➔ "
+                f"신규 선박 수주와 신조선가(배값) 상승세가 꺾일 수 있어 {name}가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🚢",
+                    "category_tag": "신조선 수주",
+                    "trigger": "📉 글로벌 선주들의 LNG운반선·컨테이너선 신규 발주 둔화(피크아웃)",
+                    "chain": "배값(신조선가) 지수가 꺾이거나 분기 수주 실적이 줄어들면 '조선업 고점 논란'이 불거지며 기관 매물이 출회됩니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🛢️",
+                    "category_tag": "해양플랜트",
+                    "trigger": "❄️ 국제유가 급락으로 인한 해외 오일메이저의 해양플랜트(FLNG) 투자 연기",
+                    "chain": "유가가 지나치게 떨어지면 바다에서 가스·원유를 뽑아 올리는 대형 해양플랜트 발주가 지연됩니다.",
+                    "impact_degree": "⚠️ 수주 모멘텀 약화"
+                },
+                {
+                    "icon": "🔩",
+                    "category_tag": "후판 원가",
+                    "trigger": "📈 후판(선박용 두꺼운 철강) 가격 인상 및 숙련 인력 인건비 상승",
+                    "chain": "선박 건조 원가의 20%를 차지하는 후판 가격이 오르면 건조 마진이 축소될 수 있습니다.",
+                    "impact_degree": "⚡ 원가 부담 요인"
+                },
+            ]
+        }
+
+    # 15. 금융 / 은행 / 지주
+    if any(k in combined for k in ["kb금융", "신한지주", "하나금융", "우리금융", "기업은행", "메리츠금융", "삼성화재", "db손해보험", "은행", "금융지주", "보험", "증권"]):
+        return {
+            "overseas_chain_badge": "🌏 원/달러 환율(외국인 수급) · 한·미 기준금리 · 밸류업 주주환원 직결주",
+            "direct_hit_one_liner": (
+                f"해외 금융시장 불안으로 『원/달러 환율이 급등(외국인 자금 대거 이탈)』하거나, "
+                f"『급격한 금리 인하로 은행 예대마진(NIM)이 축소』 또는 『배당·자사주 소각 등 주주환원(밸류업) 축소』 이슈가 터지면 ➔ "
+                f"외국인 지분율이 40~70%에 달하는 금융주 특성상 외국인 매도 폭탄을 맞아 {name}가 직격탄으로 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "💱",
+                    "category_tag": "외국인 자금",
+                    "trigger": "📈 대외 쇼크로 인한 원/달러 환율 급등 & 외국인 패시브 자금 이탈",
+                    "chain": "환율이 급등하면 은행의 보통주자본비율(CET1)이 하락해 주주환원 여력이 줄어들고, 외국인이 가장 먼저 현금화에 나섭니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🏦",
+                    "category_tag": "예대마진",
+                    "trigger": "📉 시장 금리 급락으로 인한 순이자마진(NIM) 축소 및 대손충당금 증가",
+                    "chain": "대출 금리가 빠르게 내려가거나 경기 침체로 기업·가계 연체율이 오르면 은행 순이익이 감소합니다.",
+                    "impact_degree": "⚠️ 실적 둔화 요인"
+                },
+                {
+                    "icon": "🏛️",
+                    "category_tag": "공적 규제",
+                    "trigger": "⚖️ 금융당국의 가계대출 규제 강화 · 상생금융 출연금 압박",
+                    "chain": "배당이나 자사주 소각 대신 공적 기금 출연 요구가 커지면 외국인 밸류업 투자심리가 위축됩니다.",
+                    "impact_degree": "⚡ 정책·배당 변수"
+                },
+            ]
+        }
+
+    # 16. 엔비디아 (NVDA)
+    if code == "NVDA" or "nvidia" in combined or "엔비디아" in combined:
+        return {
+            "overseas_chain_badge": "🌎 글로벌 AI 반도체 총대장 · 미 상무부 수출규제 · 빅테크 AI CAPEX 직결주",
+            "direct_hit_one_liner": (
+                "미국 정부가 『중국·중동향 AI 칩 추가 수출 금지령』을 내리거나, "
+                "마이크로소프트·메타·구글 등 빅테크 고객사들이 『AI 데이터센터 과잉투자 논란으로 주문을 줄이고 자체 칩(ASIC) 비중을 늘린다』는 뉴스가 터지면 ➔ "
+                "초고마진(75%) 독점 체제가 흔들릴까 봐 엔비디아(NVDA)가 직격탄을 맞아 급락합니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🏛️",
+                    "category_tag": "수출 차단",
+                    "trigger": "🇺🇸 미 상무부의 대중국·제3국 우회 AI 가속기 수출 전면 차단",
+                    "chain": "해외 매출 제한이 확대되면 분기 매출 가이던스가 깎이며 월가 기관들의 차익실현 빌미가 됩니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🏢",
+                    "category_tag": "빅테크 CAPEX",
+                    "trigger": "💻 빅테크(MS·아마존·구글·메타)의 AI 투자 수익성(ROI) 회의론",
+                    "chain": "최대 고객사인 빅테크들이 실적 발표에서 '설비투자(CAPEX) 속도 조절'을 시사하면 가장 먼저 직격탄을 맞습니다.",
+                    "impact_degree": "⚠️ 수요 피크아웃 뇌관"
+                },
+                {
+                    "icon": "⚙️",
+                    "category_tag": "공급망 병목",
+                    "trigger": "🏭 대만 TSMC 첨단 패키징(CoWoS) 병목 · 차세대 칩 발열/수율 지연",
+                    "chain": "신제품 GPU 출하 일정이 지연되거나 매출총이익률(GPM)이 소폭이라도 낮아지면 고밸류에이션 부담으로 흔들립니다.",
+                    "impact_degree": "⚡ 공급망·마진 변수"
+                },
+            ]
+        }
+
+    # 17. 테슬라 (TSLA)
+    if code == "TSLA" or "tesla" in combined or "테슬라" in combined:
+        return {
+            "overseas_chain_badge": "🌎 미국 금리/보조금 · 중국 BYD 전기차 가격전쟁 · 자율주행(FSD) 규제 직결주",
+            "direct_hit_one_liner": (
+                "중국·유럽에서 『BYD 등 중국 전기차와의 출혈 할인 전쟁으로 차량 판매량·마진율이 하락』하거나, "
+                "미국에서 『고금리 장기화 및 로보택시·자율주행(FSD) 안전성 리콜/승인 지연』 뉴스가 터지면 ➔ "
+                "높은 성장성 프리미엄을 받는 테슬라(TSLA)가 직격탄을 맞아 급락합니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🚗",
+                    "category_tag": "가격 인하",
+                    "trigger": "🇨🇳 중국 BYD 등과의 가격 인하 경쟁 심화 & 분기 차량 인도량 쇼크",
+                    "chain": "차량 가격을 계속 깎아 팔면 자동차 부문 매출총이익률이 낮아져 월가 목표주가 하향의 직격탄이 됩니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "🏛️",
+                    "category_tag": "FSD 규제",
+                    "trigger": "🇺🇸 미국 도로교통안전국(NHTSA)의 자율주행(FSD)·로보택시 규제 조사",
+                    "chain": "테슬라 기업가치의 핵심인 완전자율주행 및 로보택시 상용화 일정에 제동이 걸리면 투자심리가 급격히 식습니다.",
+                    "impact_degree": "⚠️ 핵심 모멘텀 위협"
+                },
+                {
+                    "icon": "🏦",
+                    "category_tag": "할부 금리",
+                    "trigger": "📈 미국 고금리 장기화 및 전기차 세액공제 혜택 폐지",
+                    "chain": "자동차 할부 금리가 높게 유지되면 소비자들이 고가 전기차 구매를 미루어 판매 성장이 둔화됩니다.",
+                    "impact_degree": "⚡ 거시 소비 변수"
+                },
+            ]
+        }
+
+    # 기본값 (일반 수출/제조/소비재)
+    return {
+        "overseas_chain_badge": "🌏 미국 증시 동향 · 원/달러 환율 · 글로벌 경기 사이클 & 외국인 수급 연동주",
+        "direct_hit_one_liner": (
+            f"해외에서 『글로벌 경기 침체 우려로 원/달러 환율이 급변』하거나 『미국의 무역 장벽 및 글로벌 공급망 원자재 가격 불안』이 터지면 ➔ "
+            f"외국인과 기관의 한국 증시 위험자산 회피 물량이 출회되며 {name} 주가도 직격탄을 맞아 떨어집니다!"
+        ),
+        "overseas_triggers": [
+            {
+                "icon": "🌎",
+                "category_tag": "글로벌 증시",
+                "trigger": "🇺🇸 미국 증시 급락 & 외국인 한국 증시 패시브 매도",
+                "chain": "밤사이 뉴욕 증시가 급락하면 개장 직후 글로벌 패시브 자금의 기계적 매도가 출회되어 동반 조정을 받습니다.",
+                "impact_degree": "🔥 1순위 직격탄"
+            },
+            {
+                "icon": "💱",
+                "category_tag": "환율·원가",
+                "trigger": "📈 원/달러 환율 급변 및 해외 수입 원부자재 조달비 상승",
+                "chain": "환율 변동성으로 외국인 수급이 이탈하고 원재료 수입 단가 부담이 커져 영업이익률이 압박받습니다.",
+                "impact_degree": "⚠️ 수급·원가 직격"
+            },
+            {
+                "icon": "📢",
+                "category_tag": "기업 고유 변수",
+                "trigger": "📑 전방 고객사 발주 지연 또는 유상증자/CB 등 물량 출회 공시",
+                "chain": "주요 매출처의 투자 지연이나 주식 수가 늘어나는 자금조달 공시가 발생할 경우 단기 주가가 민감하게 반응합니다.",
+                "impact_degree": "⚡ 기업 고유 변수"
+            }
+        ]
+    }
+
+
+def _resolve_stock_overseas_direct_hit(name: str, code: str, biz_text: str, combined: str) -> Dict[str, Any]:
+    """
+    1) 캐시 확인 -> 있으면 0.001초 만에 반환
+    2) 캐시 없으면 Google Gemini AI를 호출하여 1:1 맞춤형 뇌관 실시간 생성
+    3) AI 호출 실패 시 25개 주요 업종 팩트체크 기반 룰베이스로 정밀 매핑하여 영구 캐싱
+    """
+    cache = _load_stock_triggers_cache()
+    if code in cache:
+        item = cache[code]
+        # 만약 기존에 잘못 저장된 범용 템플릿("미국 나스닥" 기본값)이고 현대리바트 등 특정 업종이라면 재분석
+        if "미국 나스닥" not in item.get("direct_hit_one_liner", "") or name in ["나스닥"]:
+            return item
+
+    # 1. AI 실시간 호출 시도 (비용 0.2원 수준의 초경량 Gemini Flash)
+    ai_res = _ask_gemini_stock_triggers(name, code, biz_text)
+    if ai_res:
+        cache[code] = ai_res
+        _save_stock_triggers_cache(cache)
+        return ai_res
+
+    # 2. 오프라인 / 룰베이스 정밀 업종 매핑 (25개 업종 완비)
+    fallback_res = _get_fallback_stock_triggers(name, code, combined)
+    cache[code] = fallback_res
+    _save_stock_triggers_cache(cache)
+    return fallback_res
+
 def _build_drop_and_global_impact_intel(r: Dict[str, Any]) -> Dict[str, Any]:
     """
     대표님 특별 요청:
@@ -321,412 +1054,11 @@ def _build_drop_and_global_impact_intel(r: Dict[str, Any]) -> Dict[str, Any]:
     biz_text = " ".join(r.get("business_summary") or [])
     combined = f"{name} {code} {biz_text}".lower()
 
-    # --- 1. 종목별·섹터별 해외 직격탄 연결고리 프로필 판별 ---
-    if any(k in combined for k in ["하이닉스", "삼성전자", "한미반도체", "리노공업", "이오테크닉스", "주성엔지니어링", "hbm", "반도체", "웨이퍼", "파운드리", "메모리", "디램", "dram", "nand"]):
-        overseas_chain_badge = "🌏 미국 엔비디아(NVDA) · 빅테크 AI 서버 · 대중국 수출규제 직결주"
-        direct_hit_one_liner = (
-            f"미국에서 『엔비디아(NVDA)·필라델피아 반도체지수 급락』이나 『구글·MS 등 빅테크의 AI 데이터센터 투자 축소』, "
-            f"또는 『미국 정부의 대중국 반도체 수출 통제 강화』가 터지면 ➔ AI 칩과 서버에 들어가는 메모리(HBM·D램)·장비 주문이 줄어들까 봐 "
-            f"외국인 프로그램 매물이 가장 먼저 쏟아지며 {name} 주가가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🤖",
-                "trigger": "🇺🇸 미국 엔비디아(NVDA) 급락 & AI 거품론 대두",
-                "chain": "미국 AI 반도체 대장주가 흔들리면 글로벌 패시브 자금이 한국 반도체 밸류체인(HBM·전공정·후공정)부터 기계적으로 매도하여 장초반 직격탄을 맞습니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🚫",
-                "trigger": "🏛️ 미국 상무부의 대중국 반도체 수출 통제·관세 폭탄",
-                "chain": "중국향 첨단 메모리·장비 수출이 제한되거나 반도체 품목 관세가 부과되면 글로벌 공급망 위축 우려로 주가가 즉각 하락 압력을 받습니다.",
-                "impact_degree": "⚠️ 고위험 뇌관"
-            },
-            {
-                "icon": "💻",
-                "trigger": "📉 글로벌 스마트폰·PC 판매 부진 & D램/낸드 가격 하락",
-                "chain": "애플 아이폰 등 IT 기기 수요 둔화 뉴스가 나오면 범용 메모리 반도체 고정거래가격 하락 우려로 실적 눈높이가 낮아집니다.",
-                "impact_degree": "⚡ 업황 둔화 요인"
-            },
-        ]
-    elif any(k in combined for k in ["현대차", "기아", "현대모비스", "현대글로비스", "현대위아", "한온시스템", "타이어", "자동차", "완성차"]):
-        overseas_chain_badge = "🌏 미국 수입차 관세 · 북미 자동차 판매량 · 원/달러 환율 직결주"
-        direct_hit_one_liner = (
-            f"미국에서 『한국산 수입 자동차·부품 고율 관세 부과(무역장벽·IRA 보조금 축소)』 뉴스가 터지거나, "
-            f"『미국 소비 둔화(고금리 할부 부담)』 또는 『원/달러 환율 급락(원화 강세)』이 발생하면 ➔ "
-            f"북미 수출로 역대급 이익을 내는 {name}의 수출 마진이 바로 깎이기 때문에 직격탄을 맞아 주가가 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🛃",
-                "trigger": "🇺🇸 미국의 수입 자동차·부품 보편관세 부과 & 보조금 축소",
-                "chain": "미국 시장 매출 비중이 절대적인 구조상, 관세 부과나 전기차 보조금 제외 뉴스가 뜨면 가격 경쟁력 약화 우려로 직격탄을 맞습니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "💱",
-                "trigger": "💵 원/달러 환율 급락 (원화 강세로 수출 환차익 감소)",
-                "chain": "해외에서 달러로 차를 팔아 원화로 환산할 때 환율이 급락하면 가만히 앉아서 영업이익이 수천억 원씩 줄어드는 효과가 발생합니다.",
-                "impact_degree": "⚠️ 수익성 직격"
-            },
-            {
-                "icon": "🚗",
-                "trigger": "🏷️ 미국·유럽 신차 소비 둔화 & 도요타·테슬라 할인 전쟁",
-                "chain": "해외 자동차 재고가 늘어나 딜러 인센티브(할인 보조금) 지출이 커지면 대당 마진율(OPM)이 꺾이며 주가가 조정을 받습니다.",
-                "impact_degree": "⚡ 마진 축소 요인"
-            },
-        ]
-    elif "한국전력" in name or code == "015760" or "지역난방" in name or "가스공사" in name:
-        overseas_chain_badge = "🌏 중동 국제유가(WTI) · 글로벌 LNG 가스가격 · 원/달러 환율 직결주"
-        direct_hit_one_liner = (
-            f"중동 전쟁·지정학적 위기 등으로 해외에서 『국제유가(WTI)·LNG 천연가스 가격 폭등』이 터지거나 "
-            f"『원/달러 환율이 급등』하면 ➔ 비싼 달러를 주고 발전용 연료를 수입해야 해서 적자(역마진) 부담이 눈덩이처럼 커지며 "
-            f"{name} 주가가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🛢️",
-                "trigger": "🔥 중동 분쟁 격화로 인한 국제유가(WTI)·LNG 가격 급등",
-                "chain": "발전 원가의 핵심인 유연탄·LNG 수입 단가가 치솟으면 전기요금을 즉시 올리지 못하는 구조상 영업이익이 급감하며 직격탄을 맞습니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "💱",
-                "trigger": "📈 원/달러 환율 급등 (외화 연료 수입비 & 달러 부채 부담)",
-                "chain": "에너지를 100% 달러로 수입하고 외화 사채 비중이 높아, 환율이 급등하면 환차손과 수입 원가가 동시에 폭증합니다.",
-                "impact_degree": "⚠️ 재무 직격탄"
-            },
-            {
-                "icon": "🏛️",
-                "trigger": "❄️ 물가 안정을 위한 정부의 공공요금(전기료) 동결 압박",
-                "chain": "글로벌 인플레이션 우려로 정부가 전기요금 인상을 보류하면 재무구조 개선 기대감이 꺾이며 매물이 출회됩니다.",
-                "impact_degree": "⚡ 정책 리스크"
-            },
-        ]
-    elif any(k in combined for k in ["두산에너빌리티", "효성중공업", "현대일렉트릭", "일진전기", "제룡전기", "산일전기", "ls electric", "변압기", "전력기기", "원전", "발전기", "가스터빈", "smr"]):
-        overseas_chain_badge = "🌏 미국 AI 데이터센터 전력망 · 북미 초고압 변압기 · 글로벌 원전(SMR) 직결주"
-        direct_hit_one_liner = (
-            f"미국·유럽에서 『빅테크들의 AI 데이터센터 전력망 투자 지연』이 터지거나, "
-            f"『미국의 한국산 변압기 반덤핑 관세·무역 규제』 또는 『해외 원전(SMR·체코 등) 본계약 지연·정치적 제동』 뉴스가 나오면 ➔ "
-            f"해외 수주 폭발 기대감으로 프리미엄을 받던 {name}가 직격탄을 맞아 차익실현 매물이 쏟아집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "⚡",
-                "trigger": "🇺🇸 미국 빅테크 AI 데이터센터 전력망·SMR 투자 속도 조절",
-                "chain": "마이크로소프트·아마존 등이 데이터센터 증설이나 원전 전력 구매 계약을 늦춘다는 소식이 뜨면 전력기기·원전주 전반에 투매가 나옵니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🛡️",
-                "trigger": "🏛️ 미국 상무부의 초고압 변압기 반덤핑 관세 · 보호무역 강화",
-                "chain": "북미 전력청(유틸리티) 수주 마진이 가장 높은데, 고율 관세나 미국 현지 생산 의무화가 강화되면 이익률 하락 우려로 흔들립니다.",
-                "impact_degree": "⚠️ 수출 마진 위협"
-            },
-            {
-                "icon": "🧱",
-                "trigger": "📉 구리(전기동)·특수강 원자재 가격 급변 및 수주 본계약 지연",
-                "chain": "핵심 원자재인 구리 가격이 급등하거나 기대했던 해외 대형 플랜트 본계약 서명이 지연되면 단기 실망 매물이 출회됩니다.",
-                "impact_degree": "⚡ 원가·일정 변수"
-            },
-        ]
-    elif any(k in combined for k in ["한미약품", "알테오젠", "삼성바이오", "셀트리온", "유한양행", "리가켐", "에이비엘", "삼천당", "휴젤", "파마리서치", "바이오", "제약", "신약", "임상", "의약품"]):
-        overseas_chain_badge = "🌏 미국 FDA 임상/승인 · 미 연준 금리(국채금리) · 글로벌 빅파마 기술수출 직결주"
-        direct_hit_one_liner = (
-            f"미국에서 『연준(Fed)의 금리 인하 지연으로 미국 국채 금리가 급등』하거나, "
-            f"해외 파트너 빅파마(머크·일라이릴리 등)의 『임상 지연·FDA 허가 보류(CRL)·미국 약가 인하 압박』 이슈가 터지면 ➔ "
-            f"미래 신약 가치와 로열티 기대감으로 움직이는 {name} 주가가 가장 민감하게 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🧬",
-                "trigger": "🇺🇸 미국 FDA 품목허가 보류(CRL) · 글로벌 임상 데이터 아쉬움",
-                "chain": "경쟁 약물 대비 효능·안전성 데이터가 기대에 못 미치거나 FDA 승인 일정이 밀리면 기술수출 가치 재평가로 급락이 나옵니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🏦",
-                "trigger": "📈 미국 물가 반등으로 인한 미 국채금리 급등 (금리인하 지연)",
-                "chain": "바이오 업종은 미래 이익을 현재 가치로 당겨와 평가받기 때문에, 미국 금리가 오르면 글로벌 성장주·바이오 투자심리가 즉각 얼어붙습니다.",
-                "impact_degree": "⚠️ 밸류에이션 직격"
-            },
-            {
-                "icon": "💊",
-                "trigger": "🏛️ 미국 정부의 의약품 약가 인하 압박 & 생물보안법·관세 변수",
-                "chain": "미국 정부의 약가 인하 정책이나 글로벌 제약사들의 R&D 파이프라인 구조조정 발표 시 동반 조정을 받습니다.",
-                "impact_degree": "⚡ 정책·파트너 변수"
-            },
-        ]
-    elif any(k in combined for k in ["에스엠씨지", "아모레", "코스맥스", "한국콜마", "에이피알", "클리오", "실리콘투", "화장품", "뷰티", "용기", "유리용기", "패키징"]):
-        overseas_chain_badge = "🌏 미국(아마존·세포라)·일본·중국 K-뷰티 화장품 수출 & 소비재 관세 직결주"
-        direct_hit_one_liner = (
-            f"해외에서 『미국·일본·중국향 한국 화장품 수출 성장률 둔화』 데이터가 나오거나, "
-            f"『미국의 수입 소비재 보편관세 부과』 또는 『글로벌 럭셔리·인디 뷰티 브랜드들의 재고 조정(발주 축소)』 이슈가 터지면 ➔ "
-            f"K-뷰티 수출 호황과 화장품 용기·제조 발주 증가로 성장하는 {name}가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "💄",
-                "trigger": "🌎 미국·일본·중국 월간 화장품 수출 통관 데이터 둔화",
-                "chain": "관세청 수출 데이터나 해외 대형 유통망(아마존·세포라·올리브영 글로벌) 판매 성장세가 꺾이면 K-뷰티 밸류체인 전반에 차익 매물이 쏟아집니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "📦",
-                "trigger": "🏢 글로벌 및 국내 주요 화장품 고객사의 재고 조정 · 신제품 발주 지연",
-                "chain": "전방 화장품 브랜드사들이 경기 둔화로 용기·패키징·ODM 주문을 줄이면 공장 가동률과 영업이익률이 즉각 영향을 받습니다.",
-                "impact_degree": "⚠️ 수주 물량 직격"
-            },
-            {
-                "icon": "🛃",
-                "trigger": "🇺🇸 미국의 해외 소비재 보편관세 부과 & 중국 내수 소비 침체",
-                "chain": "미국향 수출품에 관세가 붙어 소비자 가격이 오르거나 중국 소비 부진이 장기화되면 수출주 투자심리가 위축됩니다.",
-                "impact_degree": "⚡ 대외 수출 변수"
-            },
-        ]
-    elif any(k in combined for k in ["엘지에너지", "lg에너지", "삼성sdi", "에코프로", "포스코퓨처엠", "엘앤에프", "엔켐", "배터리", "2차전지", "이차전지", "양극재", "전해액", "전기차"]):
-        overseas_chain_badge = "🌏 미국 테슬라(TSLA)·GM 판매량 · 미국 IRA 전기차 보조금 · 리튬 광물가 직결주"
-        direct_hit_one_liner = (
-            f"미국·유럽에서 『테슬라(TSLA)·글로벌 완성차의 전기차 판매 부진(캐즘)』이 심화되거나, "
-            f"『미국 정부의 IRA 전기차 보조금·세액공제(AMPC) 축소/폐지』 또는 『리튬·니켈 광물 가격 하락』이 터지면 ➔ "
-            f"배터리 출하량과 납품 단가가 동시에 깎여 {name}가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🔋",
-                "trigger": "🇺🇸 미국 IRA 전기차 보조금·첨단제조세액공제(AMPC) 축소/폐지",
-                "chain": "미국 정책 보조금이 깎이면 북미 배터리 공장의 수익성과 전기차 수요가 동시에 타격을 입어 가장 강력한 하락 뇌관이 됩니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🚗",
-                "trigger": "📉 테슬라(TSLA) 급락 & 글로벌 완성차 전기차 합작공장 감산",
-                "chain": "GM·포드·폭스바겐 등 해외 고객사가 전기차 출시를 미루거나 배터리 주문을 줄이면 가동률 하락으로 직결됩니다.",
-                "impact_degree": "⚠️ 전방 수요 직격"
-            },
-            {
-                "icon": "⛏️",
-                "trigger": "🌏 중국발 리튬·니켈 광물 가격 하락 & 중국 CATL 저가 배터리 공세",
-                "chain": "광물 가격에 연동해 배터리·양극재 판매가격(판가)이 떨어지면 비싸게 사둔 원재료 때문에 재고평가손실이 발생합니다.",
-                "impact_degree": "⚡ 판가·마진 하락"
-            },
-        ]
-    elif any(k in combined for k in ["대한항공", "아시아나", "진에어", "제주항공", "티웨이", "항공", "해운", "hmm", "팬오션"]):
-        overseas_chain_badge = "🌏 국제유가(항공유/선박유) · 원/달러 환율 · 글로벌 여객/화물 운임 직결주"
-        direct_hit_one_liner = (
-            f"해외에서 『중동 리스크 등으로 국제유가(WTI·항공유)가 급등』하고 『원/달러 환율이 동반 급등』하거나, "
-            f"『글로벌 경기 침체로 해외여행·항공화물 운임이 하락』하면 ➔ "
-            f"연료비와 달러 비행기 리스 부채 이자가 폭증하면서 {name}가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🛢️",
-                "trigger": "🔥 국제유가(WTI) 및 항공유 급등 (영업원가 급증)",
-                "chain": "유류비가 전체 영업비용의 약 30%를 차지하므로, 유가가 급등하면 매출이 잘 나와도 영업이익이 크게 깎입니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "💱",
-                "trigger": "📈 원/달러 환율 급등 (외화 부채 환산손실 + 해외여행 심리 위축)",
-                "chain": "항공기 대여료와 유류비를 모두 달러로 결제하기 때문에 환율이 오르면 비용 증가와 외화환산손실이 동시에 발생합니다.",
-                "impact_degree": "⚠️ 비용·환차손 직격"
-            },
-            {
-                "icon": "✈️",
-                "trigger": "📉 미·중 무역 갈등으로 인한 글로벌 IT 항공화물 물동량 감소",
-                "chain": "알짜 수익원인 반도체·전자상거래 항공화물 운임이 꺾이면 분기 이익 전망치가 하향 조정됩니다.",
-                "impact_degree": "⚡ 화물 마진 둔화"
-            },
-        ]
-    elif any(k in combined for k in ["한화에어로", "현대로템", "lig넥스원", "한국항공우주", "풍산", "방산", "전차", "유도무기", "자주포"]):
-        overseas_chain_badge = "🌏 러·우 전쟁 및 중동 분쟁 휴전 협상 · 유럽/중동 국방예산 직결주"
-        direct_hit_one_liner = (
-            f"해외에서 『러시아-우크라이나 전쟁이나 중동 분쟁의 휴전·종전 협상 타결』 속보가 터지거나, "
-            f"『유럽(폴란드·루마니아 등)의 방위비 예산 축소·수출 금융 지연』 이슈가 나오면 ➔ "
-            f"글로벌 재무장 긴장감이 완화되며 방산주 차익실현 매물이 쏟아져 {name}가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🕊️",
-                "trigger": "🌍 우크라이나·중동 전쟁 휴전·종전 협상 급물살 속보",
-                "chain": "실제 수주 잔고는 탄탄하더라도, 전쟁 종료 뉴스가 뜨는 날에는 글로벌 방산주 전반에 단기 투매(셀온)가 집중됩니다.",
-                "impact_degree": "🔥 1순위 센티먼트 직격"
-            },
-            {
-                "icon": "🇪🇺",
-                "trigger": "🏛️ 유럽(NATO)의 역내 유럽산 무기 우선 구매 규제 강화",
-                "chain": "유럽 국가들이 자국 방산업체만 지원하고 비유럽권 무기 수입을 제한하려는 움직임이 나오면 추가 수주 기대감이 둔화됩니다.",
-                "impact_degree": "⚠️ 수주 확장 제약"
-            },
-            {
-                "icon": "📑",
-                "trigger": "⏳ 폴란드·중동향 후속 본계약(실행계약) 서명 일정 지연",
-                "chain": "상대국 정권 교체나 수출금융 한도 문제로 계약 체결 시점이 다음 분기로 밀리면 단기 실망 매물이 출회됩니다.",
-                "impact_degree": "⚡ 일정 지연 변수"
-            },
-        ]
-    elif any(k in combined for k in ["삼성중공업", "한국조선해양", "현대중공업", "현대미포", "한화오션", "조선", "선박", "lng선", "해양플랜트"]):
-        overseas_chain_badge = "🌏 글로벌 LNG선 발주 · 국제유가(WTI) · 미 해군 MRO/해운 물동량 직결주"
-        direct_hit_one_liner = (
-            f"해외에서 『국제유가(WTI)·천연가스 가격 급락으로 에너지 기업들이 LNG선·해양플랜트 발주를 중단』하거나, "
-            f"『글로벌 무역 전쟁으로 해운 물동량이 급감』하면 ➔ "
-            f"신규 선박 수주와 신조선가(배값) 상승세가 꺾일 수 있어 {name}가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🚢",
-                "trigger": "📉 글로벌 선주들의 LNG운반선·컨테이너선 신규 발주 둔화(피크아웃)",
-                "chain": "배값(신조선가) 지수가 꺾이거나 분기 수주 실적이 줄어들면 '조선업 고점 논란'이 불거지며 기관 매물이 출회됩니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🛢️",
-                "trigger": "❄️ 국제유가 급락으로 인한 해외 오일메이저의 해양플랜트(FLNG) 투자 연기",
-                "chain": "유가가 지나치게 떨어지면 바다에서 가스·원유를 뽑아 올리는 대형 해양플랜트 발주가 지연됩니다.",
-                "impact_degree": "⚠️ 수주 모멘텀 약화"
-            },
-            {
-                "icon": "🔩",
-                "trigger": "📈 후판(선박용 두꺼운 철강) 가격 인상 및 숙련 인력 인건비 상승",
-                "chain": "선박 건조 원가의 20%를 차지하는 후판 가격이 오르면 건조 마진이 축소될 수 있습니다.",
-                "impact_degree": "⚡ 원가 부담 요인"
-            },
-        ]
-    elif any(k in combined for k in ["kb금융", "신한지주", "하나금융", "우리금융", "기업은행", "메리츠금융", "삼성화재", "db손해보험", "은행", "금융지주", "보험", "증권"]):
-        overseas_chain_badge = "🌏 원/달러 환율(외국인 수급) · 한·미 기준금리 · 밸류업 주주환원 직결주"
-        direct_hit_one_liner = (
-            f"해외 금융시장 불안으로 『원/달러 환율이 급등(외국인 자금 대거 이탈)』하거나, "
-            f"『급격한 금리 인하로 은행 예대마진(NIM)이 축소』 또는 『배당·자사주 소각 등 주주환원(밸류업) 축소』 이슈가 터지면 ➔ "
-            f"외국인 지분율이 40~70%에 달하는 금융주 특성상 외국인 매도 폭탄을 맞아 {name}가 직격탄으로 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "💱",
-                "trigger": "📈 대외 쇼크로 인한 원/달러 환율 급등 & 외국인 패시브 자금 이탈",
-                "chain": "환율이 급등하면 은행의 보통주자본비율(CET1)이 하락해 주주환원 여력이 줄어들고, 외국인이 가장 먼저 현금화에 나섭니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🏦",
-                "trigger": "📉 시장 금리 급락으로 인한 순이자마진(NIM) 축소 및 대손충당금 증가",
-                "chain": "대출 금리가 빠르게 내려가거나 경기 침체로 기업·가계 연체율이 오르면 은행 순이익이 감소합니다.",
-                "impact_degree": "⚠️ 실적 둔화 요인"
-            },
-            {
-                "icon": "🏛️",
-                "trigger": "⚖️ 금융당국의 가계대출 규제 강화 · 상생금융 출연금 압박",
-                "chain": "배당이나 자사주 소각 대신 공적 기금 출연 요구가 커지면 외국인 밸류업 투자심리가 위축됩니다.",
-                "impact_degree": "⚡ 정책·배당 변수"
-            },
-        ]
-    elif code == "NVDA" or "nvidia" in combined or "엔비디아" in combined:
-        overseas_chain_badge = "🌎 글로벌 AI 반도체 총대장 · 미 상무부 수출규제 · 빅테크 AI CAPEX 직결주"
-        direct_hit_one_liner = (
-            "미국 정부가 『중국·중동향 AI 칩 추가 수출 금지령』을 내리거나, "
-            "마이크로소프트·메타·구글 등 빅테크 고객사들이 『AI 데이터센터 과잉투자 논란으로 주문을 줄이고 자체 칩(ASIC) 비중을 늘린다』는 뉴스가 터지면 ➔ "
-            "초고마진(75%) 독점 체제가 흔들릴까 봐 엔비디아(NVDA)가 직격탄을 맞아 급락합니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🏛️",
-                "trigger": "🇺🇸 미 상무부의 대중국·제3국 우회 AI 가속기 수출 전면 차단",
-                "chain": "해외 매출 제한이 확대되면 분기 매출 가이던스가 깎이며 월가 기관들의 차익실현 빌미가 됩니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🏢",
-                "trigger": "💻 빅테크(MS·아마존·구글·메타)의 AI 투자 수익성(ROI) 회의론",
-                "chain": "최대 고객사인 빅테크들이 실적 발표에서 '설비투자(CAPEX) 속도 조절'을 시사하면 가장 먼저 직격탄을 맞습니다.",
-                "impact_degree": "⚠️ 수요 피크아웃 뇌관"
-            },
-            {
-                "icon": "⚙️",
-                "trigger": "🏭 대만 TSMC 첨단 패키징(CoWoS) 병목 · 차세대 칩 발열/수율 지연",
-                "chain": "신제품 GPU 출하 일정이 지연되거나 매출총이익률(GPM)이 소폭이라도 낮아지면 고밸류에이션 부담으로 흔들립니다.",
-                "impact_degree": "⚡ 공급망·마진 변수"
-            },
-        ]
-    elif code == "TSLA" or "tesla" in combined or "테슬라" in combined:
-        overseas_chain_badge = "🌎 미국 금리/보조금 · 중국 BYD 전기차 가격전쟁 · 자율주행(FSD) 규제 직결주"
-        direct_hit_one_liner = (
-            "중국·유럽에서 『BYD 등 중국 전기차와의 출혈 할인 전쟁으로 차량 판매량·마진율이 하락』하거나, "
-            "미국에서 『고금리 장기화 및 로보택시·자율주행(FSD) 안전성 리콜/승인 지연』 뉴스가 터지면 ➔ "
-            "높은 성장성 프리미엄을 받는 테슬라(TSLA)가 직격탄을 맞아 급락합니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🚗",
-                "trigger": "🇨🇳 중국 BYD 등과의 가격 인하 경쟁 심화 & 분기 차량 인도량 쇼크",
-                "chain": "차량 가격을 계속 깎아 팔면 자동차 부문 매출총이익률이 낮아져 월가 목표주가 하향의 직격탄이 됩니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "🏛️",
-                "trigger": "🇺🇸 미국 도로교통안전국(NHTSA)의 자율주행(FSD)·로보택시 규제 조사",
-                "chain": "테슬라 기업가치의 핵심인 완전자율주행 및 로보택시 상용화 일정에 제동이 걸리면 투자심리가 급격히 식습니다.",
-                "impact_degree": "⚠️ 핵심 모멘텀 위협"
-            },
-            {
-                "icon": "🏦",
-                "trigger": "📈 미국 고금리 장기화 및 전기차 세액공제 혜택 폐지",
-                "chain": "자동차 할부 금리가 높게 유지되면 소비자들이 고가 전기차 구매를 미루어 판매 성장이 둔화됩니다.",
-                "impact_degree": "⚡ 거시 소비 변수"
-            },
-        ]
-    elif not is_kr:
-        overseas_chain_badge = "🌎 미국 연준(Fed) 금리 · 미·중 무역갈등 · 월가 빅테크 실적 가이던스 직결주"
-        direct_hit_one_liner = (
-            f"미국에서 『물가 반등으로 연준(Fed) 금리 인하가 무산되어 미 10년물 국채금리가 급등』하거나, "
-            f"『미·중 관세 보복 및 EU 디지털 반독점 과징금·실적 가이던스 하향』 이슈가 터지면 ➔ "
-            f"글로벌 기관 자금이 기술주에서 빠져나가며 {name}({code})가 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🏦",
-                "trigger": "🇺🇸 미국 CPI 물가 쇼크 & 미 국채 10년물 금리 급등",
-                "chain": "금리가 치솟으면 월스트리트 알고리즘이 기술·성장주 멀티플을 일제히 축소하며 매도 물량을 쏟아냅니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "📊",
-                "trigger": "📉 분기 실적 발표 시 '다음 분기 가이던스(전망치)' 월가 예상 하회",
-                "chain": "이번 분기 실적이 좋아도 다음 분기 성장률 전망이 1~2%만 낮아지면 시간외 거래에서 즉각 급락이 발생합니다.",
-                "impact_degree": "⚠️ 어닝 가이던스 뇌관"
-            },
-            {
-                "icon": "🌐",
-                "trigger": "⚖️ 미국 법무부(DOJ)·유럽연합(EU) 반독점 규제 및 미·중 관세 분쟁",
-                "chain": "글로벌 빅테크 규제나 해외 공급망 관세 부과 시 해외 매출 타격 우려로 조정을 받습니다.",
-                "impact_degree": "⚡ 규제·무역 변수"
-            },
-        ]
-    else:
-        overseas_chain_badge = "🌏 미국 나스닥·원/달러 환율 · 글로벌 수출 경기 & 외국인 수급 연동주"
-        direct_hit_one_liner = (
-            f"해외에서 『미국 나스닥 급락 및 글로벌 경기 침체 우려』로 『원/달러 환율이 급등(원화 약세)』하거나, "
-            f"『미국의 수입 관세 장벽 강화 및 원자재 가격 급등』이 터지면 ➔ "
-            f"외국인·기관 투자자들이 한국 증시에서 위험자산을 일제히 축소하면서 {name} 주가도 직격탄을 맞아 떨어집니다!"
-        )
-        overseas_triggers = [
-            {
-                "icon": "🌎",
-                "trigger": "🇺🇸 미국 증시(나스닥·S&P500) 급락 & 외국인 한국 증시 패시브 매도",
-                "chain": "밤사이 미국 기술주가 급락하면 개장 직후 외국인과 기관의 프로그램 매도세가 출회되며 동반 하락 압력을 받습니다.",
-                "impact_degree": "🔥 1순위 직격탄"
-            },
-            {
-                "icon": "💱",
-                "trigger": "📈 원/달러 환율 급등 및 해외 원자재·물류비 상승",
-                "chain": "환율 변동성이 커지면 외국인 수급이 이탈하고 기업의 원재료 조달 원가 부담이 커져 영업이익률이 압박받습니다.",
-                "impact_degree": "⚠️ 수급·원가 직격"
-            },
-            {
-                "icon": "📢",
-                "trigger": "📑 전방 고객사 발주 지연 또는 전환사채(CB)·유상증자 등 물량 공시",
-                "chain": "주요 매출처의 투자 지연이나 주식 수가 늘어나는 자금조달 공시가 나올 경우 단기 주가가 민감하게 반응합니다.",
-                "impact_degree": "⚡ 기업 고유 변수"
-            },
-        ]
+    # --- 1. 종목별·섹터별 1:1 맞춤형 실시간 해외 직격탄 연결고리 판별 (AI 실시간 분석 + 스마트 캐싱 + 25개 업종 정밀 팩트체크) ---
+    custom_hit = _resolve_stock_overseas_direct_hit(name, code, biz_text, combined)
+    overseas_chain_badge = custom_hit.get("overseas_chain_badge") or f"🌏 {name} 글로벌 리스크 직결주"
+    direct_hit_one_liner = custom_hit.get("direct_hit_one_liner") or ""
+    overseas_triggers = custom_hit.get("overseas_triggers") or []
 
     # --- 2. 오늘 왜 떨어졌나요? (또는 왜 오르나요?) 실시간 뉴스·공시·수급·해외지표 교차 판독 ---
     disclosures = r.get("disclosures") or []

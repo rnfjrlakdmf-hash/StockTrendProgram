@@ -2167,6 +2167,39 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
             ],
         };
     }
+    if (['리바트', '현대리바트', '한샘', '에이스침대', '지누스', 'kcc', 'lx하우시스', '가구', '인테리어', '건자재', '목재', '파티클보드', 'mdf'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 해외 수입 원목/PB 단가 · 달러 환율 · 국내외 건설/부동산 착공 직결주',
+            oneLiner: `해외에서 『러시아/동남아산 원목·PB(파티클보드) 원자재 가격 급등 및 해상 컨테이너 운임 폭등』 또는 『원/달러 환율 급등』이 터지면 ➔ 해외에서 전량 달러로 수입하는 목재 조달 원가가 치솟고 빌트인 가구 납품 마진이 깎여 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🌲', trigger: '🌲 해외 원목·PB/MDF 목재 수입단가 & 글로벌 해상 컨테이너 운임 급등', chain: '가구 골조의 필수 원자재인 목재 판재(PB/MDF)를 대부분 해외 수입에 의존하므로, 산지 목재 가격이나 해상 운임이 치솟으면 원가율이 급등하여 분기 영업이익에 치명타를 입습니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💵', trigger: '📈 원/달러 환율 급등 (달러 결제 수입 원가 폭증)', chain: '수입 목재 대금을 달러로 결제하기 때문에 환율이 급등할 경우 원화 환산 매입 비용이 증가하여 제품 판가를 즉각 올리지 못하면 마진이 급감합니다.', impact_degree: '⚠️ 수익성 직격' },
+                { icon: '🏗️', trigger: '📉 고금리 장기화에 따른 아파트 입주 물량 감소 & 주택 거래 침체', chain: '현대리바트의 핵심 알짜 매출처인 "신축 아파트 빌트인 가구 특판"과 "주택 매매 시 리모델링·가구 교체 수요"가 급감하면서 전방 수주 절벽에 직면합니다.', impact_degree: '⚡ 전방 수요 변수' },
+            ],
+        };
+    }
+    if (['포스코', 'posco', '현대제철', '동국제강', '고려아연', '철강', '열연', '후판'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 중국 저가 철강 덤핑 · 호주 철광석 수입단가 · 글로벌 인프라 경기 직결주',
+            oneLiner: `해외에서 『중국산 저가 철강재(열연/후판) 밀어내기 덤핑 수출』이 지속되거나 『호주 철광석/원료탄 수입가 급등』이 터지면 ➔ 판매가 대비 마진(스프레드)이 급격히 축소되어 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🏗️', trigger: '🇨🇳 중국 저가 철강재 글로벌 덤핑 및 국내 유입 폭증', chain: '중국 내수 부진으로 쏟아지는 초저가 열연·후판 때문에 철강 판가를 올리지 못해 마진이 깎입니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '⛏️', trigger: '🇦🇺 호주 철광석 및 원료탄 수입 가격 급등', chain: '철광석 가격이 오르는데 완제품 가격에 전가하지 못하면 제철소의 마진이 급감합니다.', impact_degree: '⚠️ 원가 스프레드 직격' },
+                { icon: '🌐', trigger: '🇪🇺 EU 탄소국경세(CBAM) 및 미국의 철강 관세 장벽', chain: '친환경 규제 비용이나 주요 수출국의 보호무역 규제가 강화되면 수출 물량이 제한됩니다.', impact_degree: '⚡ 탄소·관세 변수' },
+            ],
+        };
+    }
+    if (['cj제일제당', '오리온', '농심', '삼양식품', '대상', '오뚜기', '식음료', '라면', '곡물'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 CBOT 국제 곡물가(소맥/대두/원당) · 달러 환율 · K-푸드 해외 수출 직결주',
+            oneLiner: `해외에서 『시카고상품거래소(CBOT) 소맥(밀가루)·원당·팜유 가격이 폭등』하거나 『원/달러 환율이 급등』하면 ➔ 원재료를 전량 달러로 수입하는 식음료 원가율이 폭증해 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🌾', trigger: '📈 시카고(CBOT) 소맥·대두·원당·팜유 가격 급등', chain: '원재료 매입비가 제조원가의 절반 이상을 차지하므로 곡물가 급등 시 영업이익률이 급격히 악화됩니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💵', trigger: '📈 원/달러 환율 급등 (달러 결제 곡물 수입단가 폭증)', chain: '환율이 오르면 원화 환산 원재료 조달 비용이 증가하여 제품 가격 인상 없이는 수익성이 보장되지 않습니다.', impact_degree: '⚠️ 마진 압박 직격' },
+                { icon: '🍜', trigger: '🏛️ 해외 수출국(미국/유럽)의 위생 통관 규제 및 유통 경쟁', chain: 'K-라면·스낵의 해외 수출 통관이 지연되거나 현지 대형마트 입점 수수료 부담이 늘어나면 성장세가 둔화됩니다.', impact_degree: '⚡ 해외 유통 변수' },
+            ],
+        };
+    }
     if (stockName.includes('한국전력') || stockCode === '015760' || stockName.includes('가스공사')) {
         return {
             chainBadge: '🌏 중동 국제유가(WTI) · 글로벌 LNG 가스가격 · 원/달러 환율 직결주',
@@ -2498,29 +2531,42 @@ export default function CeoOfficePage() {
                         </p>
                     </div>
 
-                    {/* 3대 해외 직격탄 뇌관 카드 */}
+                    {/* 3대 해외 직격탄 뇌관 카드 (정보량 풍부 & 일목요연한 3단계 직관 요약) */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                         {(dropIntel.overseas_triggers || []).map((t: any, tIdx: number) => (
-                            <div key={tIdx} className="bg-black/50 border border-white/10 hover:border-amber-400/40 rounded-xl p-3 space-y-1.5 transition-all">
-                                <div className="flex items-center justify-between gap-1">
-                                    <span className="text-xs font-black text-amber-300 flex items-center gap-1">
-                                        <span>{t.icon || '🌏'}</span>
-                                        <span>해외 뇌관 {tIdx + 1}</span>
-                                    </span>
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
-                                        tIdx === 0
-                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                            : 'bg-amber-500/20 text-amber-200 border-amber-500/30'
-                                    }`}>
-                                        {t.impact_degree}
-                                    </span>
+                            <div key={tIdx} className="bg-gradient-to-b from-black/60 to-slate-950/80 border border-white/15 hover:border-amber-400/50 rounded-xl p-3.5 space-y-2 transition-all shadow-md flex flex-col justify-between">
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/10">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className="text-base">{t.icon || '🌏'}</span>
+                                            <span className="text-xs font-black text-amber-300 truncate">
+                                                해외 뇌관 {tIdx + 1}
+                                            </span>
+                                            {t.category_tag && (
+                                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-400/15 text-amber-200 border border-amber-400/30 shrink-0">
+                                                    {t.category_tag}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border shrink-0 ${
+                                            tIdx === 0 || (t.impact_degree || '').includes('1순위')
+                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                : 'bg-amber-500/20 text-amber-200 border-amber-500/30'
+                                        }`}>
+                                            {t.impact_degree}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs sm:text-[13px] font-black text-white leading-snug break-keep pt-0.5">
+                                        {t.trigger}
+                                    </div>
+                                    <div className="text-[11px] text-gray-200 leading-relaxed break-keep bg-white/[0.03] p-2 rounded-lg border border-white/5">
+                                        {t.chain}
+                                    </div>
                                 </div>
-                                <div className="text-xs font-extrabold text-white leading-snug break-keep">
-                                    {t.trigger}
+                                <div className="text-[10px] text-gray-400 font-mono flex items-center justify-between pt-1 border-t border-white/5">
+                                    <span className="text-amber-400/80">⚡ 영향 경로:</span>
+                                    <span className="text-gray-300 font-semibold truncate ml-1">{tIdx === 0 ? '원가율/수급 직격' : tIdx === 1 ? '영업이익률 압박' : '전방 수주/출하량'}</span>
                                 </div>
-                                <p className="text-[11px] text-gray-300 leading-relaxed break-keep">
-                                    {t.chain}
-                                </p>
                             </div>
                         ))}
                     </div>
