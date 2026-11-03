@@ -2267,6 +2267,182 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     };
 }
 
+
+// 🚨 대표님 전용 글로벌 리스크 레이더 패널: 해외·국내 사건을 감지해 '내 관심종목'에 영향이 있는 것만 보여줍니다.
+function RiskRadarPanel({ email }: { email: string }) {
+    const [report, setReport] = useState<any>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [open, setOpen] = useState<boolean>(true);
+    const [errorMsg, setErrorMsg] = useState<string>('');
+
+    const load = useCallback(async (scan: boolean) => {
+        if (!email) return;
+        try {
+            setLoading(true);
+            setErrorMsg('');
+            const url = `${API_BASE_URL}/api/market/ceo-office/risk-radar${scan ? '/scan' : ''}?ceo_email=${encodeURIComponent(email)}`;
+            const res = await fetch(url, {
+                method: scan ? 'POST' : 'GET',
+                headers: { 'X-CEO-Email': email },
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.status === 'success') setReport(json.data);
+            } else {
+                setErrorMsg('리스크 레이더를 불러오지 못했습니다.');
+            }
+        } catch (e) {
+            setErrorMsg('리스크 레이더 통신 오류');
+        } finally {
+            setLoading(false);
+        }
+    }, [email]);
+
+    useEffect(() => {
+        load(false);
+        const timer = setInterval(() => load(false), 5 * 60 * 1000);
+        return () => clearInterval(timer);
+    }, [load]);
+
+    if (!email) return null;
+
+    const events: any[] = report?.events || [];
+    const watchEvents = events.filter((e: any) => e.affects_watchlist);
+    const otherEvents = events.filter((e: any) => !e.affects_watchlist);
+    const watchlist: any[] = report?.watchlist || [];
+    const hasRisk = watchEvents.some((e: any) => (e.risk_stocks || []).length > 0);
+
+    return (
+        <div className={`rounded-2xl border-2 p-4 sm:p-5 space-y-3 shadow-xl ${
+            hasRisk
+                ? 'bg-gradient-to-br from-rose-950/40 via-[#10101c] to-slate-950 border-rose-500/50'
+                : 'bg-gradient-to-br from-emerald-950/25 via-[#0d1424] to-slate-950 border-emerald-500/30'
+        }`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-2 cursor-pointer text-left">
+                    <span className={`px-2.5 py-1 rounded-lg font-black text-xs ${hasRisk ? 'bg-rose-500 text-white' : 'bg-emerald-400 text-slate-950'}`}>
+                        🚨 대표님 전용 글로벌 리스크 레이더
+                    </span>
+                    <span className="text-xs font-black text-white">
+                        {watchEvents.length > 0
+                            ? `내 관심종목에 영향 있는 사건 ${watchEvents.length}건`
+                            : '현재 내 관심종목에 영향 주는 사건 없음'}
+                    </span>
+                    <span className="text-[11px] text-gray-400">{open ? '▲ 접기' : '▼ 펼치기'}</span>
+                </button>
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-400">
+                        {report?.generated_at ? `점검 ${report.generated_at}` : '점검 전'}
+                        {report?.headline_scanned ? ` · 뉴스 ${report.headline_scanned}건 확인` : ''}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => load(true)}
+                        disabled={loading}
+                        className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-50 text-gray-100 border border-white/15 text-[11px] font-bold cursor-pointer"
+                    >
+                        {loading ? '점검 중...' : '🔄 지금 점검'}
+                    </button>
+                </div>
+            </div>
+
+            {open && (
+                <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                        <span className="text-gray-400 font-bold">감시 중인 내 관심종목:</span>
+                        {watchlist.length === 0 ? (
+                            <span className="text-amber-300 font-bold">{report?.note || '관심종목을 찾지 못했습니다.'}</span>
+                        ) : (
+                            watchlist.map((s: any) => (
+                                <span key={s.symbol} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-200 font-bold">
+                                    {s.name}
+                                </span>
+                            ))
+                        )}
+                    </div>
+
+                    {errorMsg && <div className="text-xs text-rose-300 font-bold">{errorMsg}</div>}
+
+                    {watchEvents.length === 0 && watchlist.length > 0 && !errorMsg && (
+                        <div className="bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-gray-300 font-medium">
+                            ✅ 최근 하루 뉴스·공시를 점검한 결과, 내 관심종목에 직접 영향을 주는 위험·수혜 사건은 아직 없습니다. 10분마다 자동 점검하며, 생기면 대표님 기기로만 알려드립니다.
+                        </div>
+                    )}
+
+                    {watchEvents.map((ev: any) => (
+                        <div key={ev.key} className="bg-black/50 border border-white/10 rounded-xl p-3.5 space-y-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-black text-white">{ev.icon} {ev.label}</span>
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+                                        ev.severity === 'high'
+                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                            : 'bg-amber-500/20 text-amber-200 border-amber-500/30'
+                                    }`}>
+                                        {ev.kind === 'dart_negative' ? '공시' : `관련 기사 ${ev.headline_count}건`}
+                                    </span>
+                                </div>
+                                <span className="text-[11px] font-bold text-sky-200 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded-full">
+                                    {ev.team?.avatar} {ev.team?.name} {ev.team?.role} · {ev.team?.dept} 리스크 보고
+                                </span>
+                            </div>
+
+                            <p className="text-xs text-gray-200 font-medium leading-relaxed break-keep">💡 {ev.easy}</p>
+
+                            {(ev.risk_stocks || []).length > 0 && (
+                                <div className="bg-rose-950/30 border border-rose-500/30 rounded-lg p-2.5 space-y-1">
+                                    <div className="text-[11px] font-black text-rose-300">⚠️ 내 관심종목 중 위험 (악재 가능)</div>
+                                    {ev.risk_stocks.map((s: any, i: number) => (
+                                        <div key={i} className="text-[11px] text-gray-200 leading-snug">
+                                            <strong className="text-white">{s.name}</strong>
+                                            <span className="text-gray-400"> ({s.sector})</span> — {s.why}
+                                        </div>
+                                    ))}
+                                    <div className="text-[11px] text-rose-200/90 font-bold pt-0.5">🛡️ {ev.guide_risk}</div>
+                                </div>
+                            )}
+
+                            {(ev.benefit_stocks || []).length > 0 && (
+                                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-2.5 space-y-1">
+                                    <div className="text-[11px] font-black text-emerald-300">🟢 내 관심종목 중 수혜 (호재 가능)</div>
+                                    {ev.benefit_stocks.map((s: any, i: number) => (
+                                        <div key={i} className="text-[11px] text-gray-200 leading-snug">
+                                            <strong className="text-white">{s.name}</strong>
+                                            <span className="text-gray-400"> ({s.sector})</span> — {s.why}
+                                        </div>
+                                    ))}
+                                    <div className="text-[11px] text-emerald-200/90 font-bold pt-0.5">{ev.guide_benefit}</div>
+                                </div>
+                            )}
+
+                            <div className="space-y-0.5">
+                                {(ev.evidence || []).slice(0, 2).map((h: any, i: number) => (
+                                    <div key={i} className="text-[11px] text-gray-400 truncate">
+                                        📰 {h.url ? (
+                                            <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:underline">{h.title}</a>
+                                        ) : h.title}
+                                        <span className="text-gray-500"> ({h.source}{h.published ? ` · ${h.published}` : ''})</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+
+                    {otherEvents.length > 0 && (
+                        <div className="text-[11px] text-gray-500">
+                            참고: 내 관심종목과 관련 없는 감지 사건 {otherEvents.length}건 — {otherEvents.map((e: any) => e.label).join(' · ')}
+                        </div>
+                    )}
+
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                        ※ 뉴스 제목의 키워드를 규칙표로 분석한 1차 감지이며 AI의 판단이 아닙니다. 같은 사건을 다룬 서로 다른 기사가 2건 이상일 때만 표시합니다. 투자 권유가 아닌 참고 정보이며 이 알림은 대표님 계정에게만 전달됩니다.
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function CeoOfficePage() {
 
     const renderResearchDetailPanels = (r: any, currentCapital: number) => {
@@ -4420,6 +4596,9 @@ export default function CeoOfficePage() {
             </div>
 
             <div ref={mainSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+                {/* 🚨 대표님 전용 글로벌 리스크 레이더 (내 관심종목 자동 판단) */}
+                <RiskRadarPanel email={getCeoEmail()} />
+
                 {/* 🌟 대표이사 집무실 프리미엄 세그먼트 도크 (Luxury Executive Tab Bar) */}
                 <div className="bg-[#070b16]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 sm:p-2.5 shadow-2xl">
                     <div className="flex items-center justify-between gap-2">

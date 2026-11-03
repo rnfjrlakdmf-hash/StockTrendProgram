@@ -5705,6 +5705,28 @@ def post_watchlist_trading_analysis(
     return analyze_watchlist_for_trading_desk(user_id=x_user_id, requested_symbols=syms)
 
 
+@router.get("/ceo-office/risk-radar")
+def get_ceo_risk_radar(
+    ceo_email: Optional[str] = Query(None),
+    x_ceo_email: Optional[str] = Header(None),
+):
+    """대표이사 전용 글로벌 리스크 레이더 최신 결과 (대표 계정만 열람 가능)"""
+    _verify_ceo_clearance(x_ceo_email, ceo_email)
+    from ceo_risk_radar_service import get_latest_report
+    return {"status": "success", "data": get_latest_report()}
+
+
+@router.post("/ceo-office/risk-radar/scan")
+def scan_ceo_risk_radar(
+    ceo_email: Optional[str] = Query(None),
+    x_ceo_email: Optional[str] = Header(None),
+):
+    """지금 즉시 점검 (화면 표시용 - 푸시는 보내지 않음)"""
+    _verify_ceo_clearance(x_ceo_email, ceo_email)
+    from ceo_risk_radar_service import run_radar_scan
+    return {"status": "success", "data": run_radar_scan(push=False)}
+
+
 @router.post("/ceo-office/execute-directive")
 def execute_ceo_office_directive(
     payload: Dict[str, Any] = Body(...),

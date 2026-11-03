@@ -2053,3 +2053,20 @@ async def morning_macro_scheduler_loop():
         except Exception as e:
             logger.error(f"[MorningMacro] Scheduler loop error: {e}")
             await asyncio.sleep(30)
+
+
+async def ceo_risk_radar_scheduler_loop():
+    """
+    🚨 [대표님 전용] 글로벌 리스크 레이더: 10분마다 해외·국내 뉴스와 공시를 점검해
+    대표 계정의 관심종목에 영향이 있으면 대표 기기로만 푸시를 보냅니다.
+    """
+    import asyncio
+    logger.info("[RiskRadar] Scheduler Loop Active (every 10 minutes, CEO-only push).")
+    await asyncio.sleep(90)
+    while True:
+        try:
+            from ceo_risk_radar_service import run_radar_scan
+            await asyncio.to_thread(run_radar_scan, True)
+        except Exception as e:
+            logger.error(f"[RiskRadar] Scheduler loop error: {e}")
+        await asyncio.sleep(600)
