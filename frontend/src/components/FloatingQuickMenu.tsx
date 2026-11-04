@@ -15,9 +15,11 @@ export default function FloatingQuickMenu() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [watchlist, setWatchlist] = useState<any[]>([]);
+    const [isCustomWatchlist, setIsCustomWatchlist] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [preferredBroker, setPreferredBroker] = useState<BrokerInfo>(BROKER_LIST[0]);
     const menuRef = useRef<HTMLDivElement>(null);
+    const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const router = useRouter();
     const { user } = useAuth();
 
@@ -47,18 +49,130 @@ export default function FloatingQuickMenu() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Get effective user ID from auth state or localStorage
+    const getEffectiveUserId = (): string | null => {
+        if (user?.id) return String(user.id);
+        if ((user as any)?.uid) return String((user as any).uid);
+        if (typeof window !== "undefined") {
+            try {
+                const rawUser = localStorage.getItem("stock_user");
+                if (rawUser) {
+                    const parsed = JSON.parse(rawUser);
+                    if (parsed?.id) return String(parsed.id);
+                    if (parsed?.uid) return String(parsed.uid);
+                    if (parsed?.email) return String(parsed.email);
+                }
+            } catch (e) {}
+        }
+        return null;
+    };
+
+    // 실시간 시세를 quotes/multi API에서 가져와 병합
+    const fetchRealtimeQuotes = async (stockList: any[]) => {
+        if (!stockList || stockList.length === 0) return stockList;
+        
+        try {
+            const symbols = stockList.map(item => {
+                const s = item.symbol || item.code || "";
+                return s.replace(/\.(KS|KQ|O)$/i, "").trim();
+            }).filter(Boolean);
+
+            if (symbols.length === 0) return stockList;
+
+            const res = await fetch(`${API_BASE_URL}/api/market/stock/quotes/multi?symbols=${encodeURIComponent(symbols.join(','))}`);
+            const json = await res.json();
+            
+            if (json.status === "success" && json.data) {
+                const quotesMap = json.data;
+                return stockList.map(item => {
+                    const rawSym = item.symbol || item.code || "";
+                    const cleanCode = rawSym.replace(/\.(KS|KQ|O)$/i, "").trim();
+                    const q = quotesMap[cleanCode] || quotesMap[rawSym];
+                    
+                    if (q) {
+                        return {
+                            ...item,
+                            name: q.name || item.name || cleanCode,
+                            code: cleanCode,
+                            symbol: rawSym,
+                            price: q.price,
+                            price_krw: q.price_krw,
+                            currency: q.currency || "KRW",
+                            change_rate: q.change_percent || q.change,
+                            up: q.up,
+                            market_status: q.market_status,
+                        };
+                    }
+                    return {
+                        ...item,
+                        code: cleanCode,
+                        symbol: rawSym,
+                    };
+                });
+            }
+        } catch (e) {
+            console.error("Failed to fetch quotes for mini watchlist:", e);
+        }
+        return stockList;
+    };
+
     const fetchWatchlist = async () => {
-        if (!user) return;
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-            const res = await fetch(`${API_BASE_URL}/api/watchlist`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-            });
-            const json = await res.json();
-            if (json.status === "success" && Array.isArray(json.data)) {
-                setWatchlist(json.data);
+            const uid = getEffectiveUserId();
+            let rawItems: any[] = [];
+            let isUserList = false;
+
+            // 1. 로그인 유저의 경우 서버에서 실제 등록된 관심종목 호출
+            if (uid && !uid.toLowerCase().startsWith("guest")) {
+                const token = typeof window !== "undefined" ? (localStorage.getItem("token") || sessionStorage.getItem("token")) : null;
+                const headers: Record<string, string> = {
+                    "X-User-ID": uid,
+                };
+                if (token) headers["Authorization"] = `Bearer ${token}`;
+
+                const res = await fetch(`${API_BASE_URL}/api/watchlist`, { headers });
+                const json = await res.json();
+                if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
+                    rawItems = json.data;
+                    isUserList = true;
+                    if (typeof window !== "undefined") {
+                        localStorage.setItem("cached_watchlist", JSON.stringify(rawItems));
+                    }
+                }
             }
+
+            // 2. 만약 서버 응답이 없거나 비로그인이면 로컬 캐시 확인
+            if (rawItems.length === 0 && typeof window !== "undefined") {
+                try {
+                    const cached = localStorage.getItem("cached_watchlist");
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            rawItems = parsed;
+                            isUserList = true;
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            // 3. 등록된 관심종목이 아예 없는 경우 시장 대표 주도주 기본 목록 제공
+            if (rawItems.length === 0) {
+                rawItems = [
+                    { name: "삼성전자", code: "005930", symbol: "005930.KS", sector: "반도체 대표주" },
+                    { name: "SK하이닉스", code: "000660", symbol: "000660.KS", sector: "HBM·메모리" },
+                    { name: "현대리바트", code: "079430", symbol: "079430.KS", sector: "가구·인테리어" },
+                    { name: "NVIDIA", code: "NVDA", symbol: "NVDA.O", sector: "AI 가속기" },
+                    { name: "Tesla", code: "TSLA", symbol: "TSLA.O", sector: "자율주행·전기차" },
+                ];
+                isUserList = false;
+            }
+
+            setIsCustomWatchlist(isUserList);
+
+            // 4. 모든 종목에 대해 실시간 가격(quotes) 연동
+            const enriched = await fetchRealtimeQuotes(rawItems);
+            setWatchlist(enriched);
         } catch (error) {
             console.error("Failed to fetch watchlist for quick menu:", error);
         } finally {
@@ -67,11 +181,28 @@ export default function FloatingQuickMenu() {
     };
 
     const toggleWatchlist = () => {
-        if (!isWatchlistOpen) {
+        const nextState = !isWatchlistOpen;
+        setIsWatchlistOpen(nextState);
+        if (nextState) {
             fetchWatchlist();
+            // 패널이 열려있는 동안 12초마다 실시간 시세 자동 갱신
+            if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+            refreshTimerRef.current = setInterval(() => {
+                fetchWatchlist();
+            }, 12000);
+        } else {
+            if (refreshTimerRef.current) {
+                clearInterval(refreshTimerRef.current);
+                refreshTimerRef.current = null;
+            }
         }
-        setIsWatchlistOpen(!isWatchlistOpen);
     };
+
+    useEffect(() => {
+        return () => {
+            if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+        };
+    }, []);
 
     const toggleSearch = () => {
         setIsSearchOpen(!isSearchOpen);
@@ -108,74 +239,119 @@ export default function FloatingQuickMenu() {
     return (
         <>
         <div ref={menuRef} className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-[70] flex flex-col items-end">
-            {/* Mini Watchlist Panel */}
+            {/* Mini Watchlist Panel (실시간 시세 및 내 관심종목 연동) */}
             <div 
-                className={`absolute bottom-16 right-16 w-72 mb-4 bg-black/80 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl shadow-[0_8px_32px_rgba(6,182,212,0.2)] overflow-hidden transition-all duration-300 transform origin-bottom-right ${
+                className={`absolute bottom-16 right-16 w-80 sm:w-88 mb-4 bg-slate-950/95 backdrop-blur-2xl border border-amber-400/30 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_20px_rgba(245,158,11,0.15)] overflow-hidden transition-all duration-300 transform origin-bottom-right ${
                     isWatchlistOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
                 }`}
             >
-                <div className="flex items-center justify-between p-3 border-b border-white/10 bg-white/5">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        미니 관심종목
-                    </h3>
-                    <div className="flex items-center gap-2">
-                        <button onClick={fetchWatchlist} className="p-1 hover:bg-white/10 rounded-md transition-colors" disabled={isLoading}>
-                            <RefreshCw className={`w-3.5 h-3.5 text-gray-400 ${isLoading ? 'animate-spin' : ''}`} />
+                {/* Header */}
+                <div className="flex items-center justify-between p-3 border-b border-white/10 bg-gradient-to-r from-amber-500/10 to-transparent">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Star className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                        <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5 truncate">
+                            <span>미니 관심종목</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                {isCustomWatchlist ? "내 관심종목" : "시장 주도주"}
+                            </span>
+                        </h3>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <button 
+                            onClick={fetchWatchlist} 
+                            className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors" 
+                            disabled={isLoading}
+                            title="실시간 시세 새로고침"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
                         </button>
-                        <button onClick={() => setIsWatchlistOpen(false)} className="p-1 hover:bg-white/10 rounded-md transition-colors">
-                            <X className="w-4 h-4 text-gray-400" />
+                        <button 
+                            onClick={() => setIsWatchlistOpen(false)} 
+                            className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                        >
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
                 
-                <div className="max-h-64 overflow-y-auto custom-scrollbar p-2">
-                    {!user || watchlist.length === 0 ? (
-                        <div className="flex flex-col gap-1.5">
-                            {[
-                                { name: "삼성전자", code: "005930", sector: "반도체 대표주" },
-                                { name: "SK하이닉스", code: "000660", sector: "HBM·메모리" },
-                                { name: "NVIDIA", code: "NVDA", sector: "AI 가속기" },
-                                { name: "Tesla", code: "TSLA", sector: "자율주행·전기차" },
-                            ].map((item) => (
-                                <Link key={item.code} href={`/discovery?q=${item.code}`} onClick={() => setIsWatchlistOpen(false)}>
-                                    <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 cursor-pointer">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-white truncate max-w-[120px]">{item.name}</span>
-                                            <span className="text-[10px] text-gray-500">{item.code}</span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
-                                            {item.sector}
-                                        </span>
-                                    </div>
-                                </Link>
-                            ))}
+                {/* Stock List Body */}
+                <div className="max-h-72 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                    {isLoading && watchlist.length === 0 ? (
+                        <div className="flex flex-col justify-center items-center py-10 gap-2">
+                            <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs text-gray-400">실시간 시세를 불러오는 중...</span>
                         </div>
-                    ) : isLoading && watchlist.length === 0 ? (
-                        <div className="flex justify-center items-center py-8">
-                            <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                    ) : watchlist.length === 0 ? (
+                        <div className="text-center py-8 px-4 space-y-2">
+                            <p className="text-xs text-gray-400">등록된 관심종목이 없습니다.</p>
+                            <Link href="/watchlist" onClick={() => setIsWatchlistOpen(false)}>
+                                <span className="inline-block text-[11px] font-bold text-amber-400 hover:underline">
+                                    + 첫 관심종목 등록하러 가기
+                                </span>
+                            </Link>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1">
                             {watchlist.map((item, idx) => {
-                                const changeRate = typeof item.change_rate === 'number' ? item.change_rate : parseFloat(item.change_rate) || 0;
-                                const isUp = changeRate > 0;
-                                const isDown = changeRate < 0;
+                                const rawRate = item.change_rate;
+                                const rateNum = typeof rawRate === 'number' 
+                                    ? rawRate 
+                                    : parseFloat(String(rawRate || '').replace('%', '').replace('+', '')) || 0;
+                                const isUp = item.up === true || rateNum > 0;
+                                const isDown = item.up === false || rateNum < 0;
+                                const targetCode = item.code || (item.symbol ? item.symbol.replace(/\.(KS|KQ|O)$/i, '') : '');
+
                                 return (
-                                    <Link key={idx} href={`/analysis?code=${item.code}`} onClick={() => setIsWatchlistOpen(false)}>
-                                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5 cursor-pointer">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-white truncate max-w-[120px]">{item.name}</span>
-                                                <span className="text-[10px] text-gray-500">{item.code}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className={`text-xs font-bold ${isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-300'}`}>
-                                                    {Number(item.price || 0).toLocaleString()}원
-                                                </span>
-                                                <div className={`flex items-center gap-0.5 text-[10px] font-bold ${isUp ? 'text-red-400' : isDown ? 'text-blue-400' : 'text-gray-400'}`}>
-                                                    {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : isDown ? <TrendingDown className="w-2.5 h-2.5" /> : null}
-                                                    {isUp ? '+' : ''}{changeRate.toFixed(2)}%
+                                    <Link key={idx} href={`/discovery?q=${encodeURIComponent(targetCode)}`} onClick={() => setIsWatchlistOpen(false)}>
+                                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-all border border-transparent hover:border-white/10 cursor-pointer group">
+                                            {/* 왼쪽: 종목명 & 종목코드 & 섹터 */}
+                                            <div className="flex flex-col min-w-0 pr-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs sm:text-[13px] font-bold text-white group-hover:text-amber-300 transition-colors truncate max-w-[120px]">
+                                                        {item.name || targetCode}
+                                                    </span>
+                                                    {item.sector && !item.price && (
+                                                        <span className="text-[9px] font-semibold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.2 rounded border border-cyan-500/20 shrink-0">
+                                                            {item.sector}
+                                                        </span>
+                                                    )}
                                                 </div>
+                                                <span className="text-[10px] text-gray-400 font-mono">
+                                                    {targetCode}
+                                                </span>
+                                            </div>
+
+                                            {/* 오른쪽: 실시간 현재가 & 등락률 */}
+                                            <div className="flex flex-col items-end shrink-0">
+                                                {item.price ? (
+                                                    <>
+                                                        <span className={`text-xs sm:text-[13px] font-black tracking-tight ${
+                                                            isUp ? 'text-rose-400' : isDown ? 'text-blue-400' : 'text-gray-200'
+                                                        }`}>
+                                                            {item.currency === 'USD' ? `$${item.price}` : (String(item.price).includes('원') ? item.price : `${item.price}원`)}
+                                                        </span>
+                                                        <div className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                                            isUp 
+                                                                ? 'text-rose-300 bg-rose-500/15 border border-rose-500/30' 
+                                                                : isDown 
+                                                                    ? 'text-blue-300 bg-blue-500/15 border border-blue-500/30' 
+                                                                    : 'text-gray-300 bg-white/5 border border-white/10'
+                                                        }`}>
+                                                            {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : isDown ? <TrendingDown className="w-2.5 h-2.5" /> : null}
+                                                            <span>
+                                                                {isUp && !String(item.change_rate).startsWith('+') ? '+' : ''}
+                                                                {item.change_rate ? item.change_rate : '0.00%'}
+                                                            </span>
+                                                        </div>
+                                                        {item.currency === 'USD' && item.price_krw && (
+                                                            <span className="text-[9px] text-gray-500 font-mono">
+                                                                ≈ {item.price_krw}원
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xs text-gray-500">시세 확인 중</span>
+                                                )}
                                             </div>
                                         </div>
                                     </Link>
@@ -184,12 +360,18 @@ export default function FloatingQuickMenu() {
                         </div>
                     )}
                 </div>
-                <div className="p-2 border-t border-white/5 bg-black/40">
+
+                {/* Footer Link & Auto-refresh status */}
+                <div className="p-2.5 border-t border-white/10 bg-black/60 flex flex-col gap-1.5">
                     <Link href="/watchlist" onClick={() => setIsWatchlistOpen(false)}>
-                        <button className="w-full py-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 text-[11px] font-bold hover:bg-cyan-500/20 transition-colors border border-cyan-500/30">
-                            관심종목 관리 바로가기
+                        <button className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 text-xs font-bold transition-all border border-amber-500/30 shadow-sm flex items-center justify-center gap-1.5">
+                            <span>⭐ 관심종목 관리 바로가기</span>
                         </button>
                     </Link>
+                    <div className="text-[10px] text-gray-500 text-center font-mono flex items-center justify-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>12초 주기 실시간 시세 자동 갱신 중</span>
+                    </div>
                 </div>
             </div>
 
