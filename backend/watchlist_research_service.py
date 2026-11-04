@@ -1247,11 +1247,11 @@ def _build_drop_and_global_impact_intel(r: Dict[str, Any]) -> Dict[str, Any]:
 
     # 실시간 종합 1줄 결론 (왜 떨어졌나 / 왜 올랐나)
     if chg <= -2.0:
-        status_badge = f"🚨 현재 {chg}% 하락 · 긴급 원인 판독 완료"
+        status_badge = f"🚨 현재 {chg}% 하락 · 긴급 하락 원인 판독"
         status_tone = "drop"
         if neg_disclosures:
             primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 최근 공시된 '{neg_disclosures[0]['title']}' 물량/악재 부담과 단기 매도 수급이 겹쳐 하락 중입니다!"
-            action_guide = "공시로 인한 물량 소화 과정이 필요하므로 성급한 물타기를 멈추고 -3.5% 방어선과 20일·50일선 지지 여부를 먼저 확인하십시오."
+            action_guide = "공시로 인한 물량 소화 과정이 필요하므로 성급한 물타기를 멈추고 방어선과 지지선 안착 여부를 먼저 확인하십시오."
         elif matched_drop_news:
             primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 공시상 내부 악재는 없으나, '{matched_drop_news[0]}' 관련 대외 뉴스와 차익실현 매물로 조정을 받고 있습니다!"
             action_guide = "회사 본업이 망가진 것이 아닌 뉴스·심리 위축에 따른 조정이므로, 오전장 매물 소화 후 지지선 안착 시 분할 대응이 유리합니다."
@@ -1262,20 +1262,48 @@ def _build_drop_and_global_impact_intel(r: Dict[str, Any]) -> Dict[str, Any]:
             primary_cause_title = f"🚨 [{name} 하락 원인 판독]: 특이 악재 공시 없이 대외 업종 지수 조정 및 단기 고점 차익실현 매물을 소화하는 과정입니다."
             action_guide = "추격 매도보다는 50일 이동평균선 지지 여부를 확인하며 분할 관점으로 리스크를 관리해 주십시오."
     elif chg < 0:
-        status_badge = f"📉 현재 {chg}% 소폭 약세 · 원인 진단"
+        status_badge = f"📉 현재 {chg}% 소폭 약세 · 약세 원인 진단"
         status_tone = "mild_drop"
         primary_cause_title = f"💡 [{name} 약세 원인 판독]: 회사 악재 공시(0건) 때문이 아니라, 해외 증시 숨고르기와 단기 매물 소화에 따른 자연스러운 눌림목({chg}%)입니다."
         action_guide = "펀더멘털 이상 징후가 전혀 없으므로 흔들릴 필요가 없으며, 오히려 추격매수 대신 안전 진입 타점을 노릴 수 있는 구간입니다."
     elif chg >= 2.0:
-        status_badge = f"🔥 현재 +{chg}% 강세 · 상승 동력 판독"
+        status_badge = f"🔥 현재 +{chg}% 급등/강세 · 실시간 상승 원인 판독"
         status_tone = "rise"
-        primary_cause_title = f"🚀 [{name} 강세 원인 판독]: 호재 모멘텀과 매수 수급이 유입되며 +{chg}% 강세를 기록 중입니다! (단, 아래 해외 직격탄 이슈 발생 여부만 상시 감시)"
-        action_guide = "강세 구간에서는 급등 추격매수를 피하고, 목표주가까지 보유하되 아래 3대 해외 직격탄 이슈가 터지는지만 체크하십시오."
+        if pos_disclosures:
+            primary_cause_title = f"🚀 [{name} 급등 원인 판독]: 최근 공시된 '{pos_disclosures[0]['title']}' 실적/계약 호재 모멘텀이 폭발하며 +{chg}% 강세를 주도하고 있습니다!"
+            action_guide = "공시 호재에 따른 단기 급등 구간이므로 추격 매수보다는 1차 목표가 분할 익절 및 5일선 지지 여부를 체크하십시오."
+        elif matched_rise_news:
+            primary_cause_title = f"🚀 [{name} 급등 원인 판독]: 최신 보도 '{matched_rise_news[0]}' 등 업황 턴어라운드 및 성장 모멘텀이 부각되며 +{chg}% 강력한 상승세를 견인 중입니다!"
+            action_guide = "뉴스 모멘텀 발동 구간으로 거래량이 유지되는 한 홀딩이 유효하며, 과열 시 분할 매도를 권장합니다."
+        elif (f_today or 0) > 0 and (o_today or 0) > 0:
+            primary_cause_title = f"🚀 [{name} 급등 원인 판독]: 외국인과 기관 큰손의 '쌍끌이 대량 순매수'가 집중 유입되며 +{chg}% 탄력적인 급등 랠리가 전개되고 있습니다!"
+            action_guide = "메이저 수급 주체(외인·기관)의 이탈 징후가 없으므로 목표주가까지 차분히 수익을 극대화하십시오."
+        elif (f_today or 0) > 0 or (o_today or 0) > 0:
+            primary_cause_title = f"🚀 [{name} 급등 원인 판독]: 기관/외국인 수급 유입 및 업종 섹터 순환매 훈풍으로 매수세가 결집되며 +{chg}% 상승세를 시현 중입니다!"
+            action_guide = "섹터 순환매 주도권이 확인되므로 목표가 도달 시까지 안정적인 보유 전략이 유리합니다."
+        else:
+            primary_cause_title = f"🚀 [{name} 급등 원인 판독]: 내부 악재 공시 부재 속에서 전방 업황 개선 기대감과 차트 돌파 매수세가 맞물려 +{chg}% 강세를 기록 중입니다!"
+            action_guide = "단기 급등에 따른 이격도를 감안하여 목표주가 분할 익절 원칙을 지켜주십시오."
+    elif chg > 0:
+        status_badge = f"📈 현재 +{chg}% 견조한 상승 · 실시간 상승 원인 판독"
+        status_tone = "mild_rise"
+        if pos_disclosures:
+            primary_cause_title = f"✨ [{name} 상승 원인 판독]: 공시된 '{pos_disclosures[0]['title']}' 긍정적 재료와 함께 견조한 매수세가 유입되며 +{chg}% 우상향 중입니다."
+            action_guide = "안정적인 상승 궤도에 진입하고 있으므로 기존 진입가 유지 및 홀딩 전략이 적절합니다."
+        elif matched_rise_news:
+            primary_cause_title = f"✨ [{name} 상승 원인 판독]: '{matched_rise_news[0]}' 등 우호적 언론 보도에 힘입어 +{chg}% 견조한 매수 우위를 점하고 있습니다."
+            action_guide = "뉴스 재료의 연속성을 점검하며 분할 매수 타점을 고려할 수 있는 구간입니다."
+        elif (f_today or 0) > 0 or (o_today or 0) > 0:
+            primary_cause_title = f"✨ [{name} 상승 원인 판독]: 외국인/기관의 양호한 순매수 지원과 함께 +{chg}% 안정적인 상승 흐름을 이어가고 있습니다."
+            action_guide = "수급이 든든하게 받쳐주는 흐름이므로 흔들림 없이 기존 포지션을 유지하십시오."
+        else:
+            primary_cause_title = f"✨ [{name} 상승 원인 판독]: 시장 지수 반등 및 저가 매수세 유입에 힘입어 +{chg}% 완만한 반등 흐름을 시현 중입니다."
+            action_guide = "특별한 대외 악재가 없는 안정 구간이므로 기존 투자 비중을 유지하며 대응하십시오."
     else:
-        status_badge = f"🟢 현재 {chg:+.2f}% 안정 흐름 · 직격탄 감시 중"
+        status_badge = "⚪ 현재 보합(0.00%) · 균형 흐름"
         status_tone = "stable"
-        primary_cause_title = f"✅ [{name} 현재 상태 판독]: 악재 공시 없이 안정적인 흐름({chg:+.2f}%)을 유지 중입니다. 향후 주가가 떨어질 수 있는 아래 『3대 해외 직격탄 뇌관』만 미리 숙지해 두십시오!"
-        action_guide = "현재 특이 악재가 없으므로 계획된 분할 진입가와 목표주가를 유지하며 해외 연결고리 지표만 모니터링하시면 됩니다."
+        primary_cause_title = f"⚖️ [{name} 보합 원인 판독]: 악재 공시 없는 상태에서 매수세와 매도세가 팽팽하게 맞서며 차기 방향성을 탐색 중인 보합 상태입니다."
+        action_guide = "방향성이 결정되기 전까지 성급한 진입보다는 해외 연결고리 지표와 수급 흐름을 관망하십시오."
 
     return {
         "overseas_chain_badge": overseas_chain_badge,

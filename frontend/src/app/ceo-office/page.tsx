@@ -2631,7 +2631,11 @@ export default function CeoOfficePage() {
                                         {liveDiag.status_badge}
                                     </span>
                                     <span className="text-xs font-black text-white">
-                                        오늘 주가 변동({r.change_pct > 0 ? `+${r.change_pct}%` : `${r.change_pct}%`}) 실시간 뉴스·공시·수급 교차 판독
+                                        {(r.change_pct || 0) < 0
+                                            ? `🚨 오늘 왜 떨어지나요? (${r.change_pct}% 하락 원인 3초 해답)`
+                                            : (r.change_pct || 0) > 0
+                                            ? `🚀 오늘 왜 오르나요? (+${r.change_pct}% 상승 원인 3초 해답)`
+                                            : `⚖️ 오늘 주가 흐름 판독 (보합 0.00% 원인 판독)`}
                                     </span>
                                 </div>
                                 <span className="text-[10px] text-gray-300 font-bold">
