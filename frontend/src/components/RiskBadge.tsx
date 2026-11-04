@@ -248,7 +248,7 @@ export default function RiskBadge({ symbol, autoLoad = true }: RiskBadgeProps) {
                             <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                                 <h3 className="text-white font-bold mb-4">위험 요인 상세</h3>
                                 <div className="space-y-3">
-                                    {detailedReport.risk_analysis.risk_factors.map((factor, idx) => (
+                                    {(detailedReport?.risk_analysis?.risk_factors || []).map((factor, idx) => (
                                         <div key={idx} className="flex items-start gap-3 p-3 bg-black/30 rounded-lg">
                                             <span className={`text-lg ${getSeverityColor(factor.severity)}`}>
                                                 {factor.severity === "고" ? "🔴" : factor.severity === "중" ? "🟡" : "🟢"}
@@ -267,7 +267,7 @@ export default function RiskBadge({ symbol, autoLoad = true }: RiskBadgeProps) {
                                 <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                                     <h3 className="text-white font-bold mb-4">최근 뉴스</h3>
                                     <div className="space-y-2">
-                                        {detailedReport.recent_news.map((news, idx) => (
+                                        {(detailedReport?.recent_news || []).map((news, idx) => (
                                             <a
                                                 key={idx}
                                                 href={news.link}

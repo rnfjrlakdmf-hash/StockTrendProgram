@@ -120,7 +120,7 @@ export default function WatchlistPage() {
                 headers: { "X-User-ID": user.id || (user as any).uid }
             });
             const json = await res.json();
-            if (json.status === "success" && json.data.length > 0) {
+            if (json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
                 const items = json.data.map((item: any) => {
                     if (typeof item === 'string') return { symbol: item, name: item };
                     return item;
@@ -1380,7 +1380,7 @@ export default function WatchlistPage() {
 
                                                 {/* 5대 핵심 리스크 검사 그리드 */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    {stock.checklist && stock.checklist.map((item: any, cIdx: number) => (
+                                                    {Array.isArray(stock.checklist) && stock.checklist.map((item: any, cIdx: number) => (
                                                         <div 
                                                             key={cIdx} 
                                                             className="p-3.5 rounded-xl bg-black/40 border border-white/5 flex items-start justify-between gap-3"

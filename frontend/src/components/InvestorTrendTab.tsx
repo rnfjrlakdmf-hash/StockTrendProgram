@@ -463,8 +463,8 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                 </span>
                             </div>
                             <div className="p-5 space-y-3 flex-1">
-                                {cleanBrokerage.sell.length > 0 ? (
-                                    cleanBrokerage.sell.map((b: any, i: number) => {
+                                {(cleanBrokerage.sell || []).length > 0 ? (
+                                    (cleanBrokerage.sell || []).map((b: any, i: number) => {
                                         const pct = Math.min(100, Math.max(8, (b.volume / cleanBrokerage.maxSellVol) * 100));
                                         const foreign = b.isForeign || isForeignBroker(b.name);
                                         return (
@@ -526,8 +526,8 @@ export default function InvestorTrendTab({ symbol, stockName }: InvestorTrendTab
                                 </span>
                             </div>
                             <div className="p-5 space-y-3 flex-1">
-                                {cleanBrokerage.buy.length > 0 ? (
-                                    cleanBrokerage.buy.map((b: any, i: number) => {
+                                {(cleanBrokerage.buy || []).length > 0 ? (
+                                    (cleanBrokerage.buy || []).map((b: any, i: number) => {
                                         const pct = Math.min(100, Math.max(8, (b.volume / cleanBrokerage.maxBuyVol) * 100));
                                         const foreign = b.isForeign || isForeignBroker(b.name);
                                         return (

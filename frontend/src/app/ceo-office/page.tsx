@@ -2470,7 +2470,7 @@ function RiskRadarPanel({ email }: { email: string }) {
                             {(ev.risk_stocks || []).length > 0 && (
                                 <div className="bg-rose-950/30 border border-rose-500/30 rounded-lg p-2.5 space-y-1">
                                     <div className="text-[11px] font-black text-rose-300">⚠️ 내 관심종목 중 위험 (악재 가능)</div>
-                                    {ev.risk_stocks.map((s: any, i: number) => (
+                                    {(ev.risk_stocks || []).map((s: any, i: number) => (
                                         <div key={i} className="text-[11px] text-gray-200 leading-snug">
                                             <strong className="text-white">{s.name}</strong>
                                             <span className="text-gray-400"> ({s.sector})</span> — {s.why}
@@ -2483,7 +2483,7 @@ function RiskRadarPanel({ email }: { email: string }) {
                             {(ev.benefit_stocks || []).length > 0 && (
                                 <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-lg p-2.5 space-y-1">
                                     <div className="text-[11px] font-black text-emerald-300">🟢 내 관심종목 중 수혜 (호재 가능)</div>
-                                    {ev.benefit_stocks.map((s: any, i: number) => (
+                                    {(ev.benefit_stocks || []).map((s: any, i: number) => (
                                         <div key={i} className="text-[11px] text-gray-200 leading-snug">
                                             <strong className="text-white">{s.name}</strong>
                                             <span className="text-gray-400"> ({s.sector})</span> — {s.why}
@@ -2695,7 +2695,7 @@ export default function CeoOfficePage() {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {disclosures.map((d: any, dIdx: number) => (
+                                    {(disclosures || []).map((d: any, dIdx: number) => (
                                         <div key={dIdx} className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all">
                                             <div className="space-y-1 min-w-0 flex-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
@@ -2752,7 +2752,7 @@ export default function CeoOfficePage() {
                     </div>
                     {bizSummary.length > 0 ? (
                         <div className="space-y-2 text-xs text-gray-300 leading-relaxed">
-                            {bizSummary.map((item, idx) => (
+                            {(bizSummary || []).map((item, idx) => (
                                 <div key={idx} className="flex items-start gap-2 bg-black/40 p-2.5 rounded-xl border border-white/5">
                                     <span className="text-cyan-400 font-bold shrink-0 mt-0.5">✓</span>
                                     <p className="font-medium text-gray-200">{item}</p>
@@ -2923,7 +2923,7 @@ export default function CeoOfficePage() {
                                     <thead>
                                         <tr className="border-b border-white/10 text-gray-300 bg-white/5">
                                             <th className="py-2.5 px-3 font-bold">재무 지표 &amp; 쉬운 뜻</th>
-                                            {finTable.years.map((y: string, idx: number) => (
+                                            {(finTable?.years || []).map((y: string, idx: number) => (
                                                 <th key={idx} className="py-2.5 px-3 font-mono font-bold text-center text-white">
                                                     {y}
                                                 </th>
@@ -2949,7 +2949,7 @@ export default function CeoOfficePage() {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    {row.values.map((v: string, cIdx: number) => (
+                                                    {(row.values || []).map((v: string, cIdx: number) => (
                                                         <td key={cIdx} className={`py-2.5 px-3 text-center ${v && v.startsWith('-') && v !== '-' ? 'text-blue-400 font-bold' : 'text-gray-200'}`}>
                                                             {v || '-'}
                                                         </td>
@@ -3039,7 +3039,7 @@ export default function CeoOfficePage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5 font-mono">
-                                    {finPlan.tranches.map((t, idx) => (
+                                    {(finPlan.tranches || []).map((t, idx) => (
                                         <tr key={idx} className="hover:bg-white/5">
                                             <td className="py-2.5 px-3 font-sans font-black text-purple-300">
                                                 {t.step}
@@ -3344,7 +3344,7 @@ export default function CeoOfficePage() {
         if (!watchlistSearchInput.trim()) return;
         const target = watchlistSearchInput.trim();
         setWatchlistSearchInput('');
-        const currentCodes = watchlistAnalysis.map(a => a.stock_code || a.symbol);
+        const currentCodes = (watchlistAnalysis || []).map(a => a.stock_code || a.symbol);
         const nextList = [target, ...currentCodes.filter(c => c !== target)];
         await fetchWatchlistAnalysis(nextList);
     };
@@ -8139,7 +8139,7 @@ export default function CeoOfficePage() {
 
                                                             {brokerReports.length > 0 ? (
                                                                 <div className="grid grid-cols-1 gap-3">
-                                                                    {brokerReports.map((br: any, bIdx: number) => (
+                                                                    {(brokerReports || []).map((br: any, bIdx: number) => (
                                                                         <div
                                                                             key={br.id || bIdx}
                                                                             className="bg-black/50 border border-white/10 hover:border-amber-500/40 rounded-xl p-4 transition-all space-y-2.5"
@@ -8192,7 +8192,7 @@ export default function CeoOfficePage() {
 
                                                                             {br.summary_bullets && br.summary_bullets.length > 0 && (
                                                                                 <ul className="space-y-1.5 pt-1 text-xs text-gray-200 leading-relaxed font-medium">
-                                                                                    {br.summary_bullets.map((line: string, lIdx: number) => (
+                                                                                    {(br.summary_bullets || []).map((line: string, lIdx: number) => (
                                                                                         <li key={lIdx} className="flex items-start gap-2">
                                                                                             <span className="text-amber-400 font-black shrink-0 mt-0.5">•</span>
                                                                                             <span>{line}</span>
@@ -8283,7 +8283,7 @@ export default function CeoOfficePage() {
                                                                 <div className="text-xs text-gray-500">최근 뉴스가 없습니다.</div>
                                                             ) : (
                                                                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
-                                                                    {r.news.map((n: any, i: number) => (
+                                                                    {(r.news || []).map((n: any, i: number) => (
                                                                         <li key={i} className="text-xs leading-snug flex items-start gap-1.5 truncate">
                                                                             <span className="text-sky-400 font-bold shrink-0">•</span>
                                                                             <div className="truncate">

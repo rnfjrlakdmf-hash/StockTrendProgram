@@ -633,7 +633,7 @@ export default function MorningBriefWidget() {
                                                             
                                                             {isExpanded && (
                                                                 <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                                                                    {(isSimpleMode && brief.simple_summary_bullets ? brief.simple_summary_bullets : brief.summary_bullets).map((b: string, i: number) => (
+                                                                    {((isSimpleMode && brief.simple_summary_bullets ? brief.simple_summary_bullets : brief.summary_bullets) || []).map((b: string, i: number) => (
                                                                         <div key={i} className="flex items-start gap-2.5 group/item">
                                                                             <div className="w-1 h-1 rounded-full bg-blue-500/40 mt-1.5 shrink-0 group-hover/item:bg-blue-400 transition-colors"></div>
                                                                             <p className="text-[11px] text-gray-400 leading-relaxed font-medium group-hover/item:text-gray-300 transition-colors">{b}</p>

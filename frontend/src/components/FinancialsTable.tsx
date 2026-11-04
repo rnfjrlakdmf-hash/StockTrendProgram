@@ -524,7 +524,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
-                        {aiSummary.points.map((pt, i) => (
+                        {(aiSummary.points || []).map((pt, i) => (
                             <div key={i} className="p-5 rounded-2xl bg-zinc-900/95 border border-white/10 hover:border-indigo-500/40 transition-all flex flex-col justify-between shadow-lg space-y-2.5 min-h-[150px]">
                                 <div>
                                     <div className="flex items-center justify-between text-xs font-black mb-2.5">
@@ -792,7 +792,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                         {group.keys.map((key) => {
                                             const config = METRIC_CONFIG[key];
                                             const metric = (data as any)[key];
-                                            if (!config || !metric) return null;
+                                            if (!config || !metric || !Array.isArray(metric.values)) return null;
                                             const isSelected = selectedMetricKey === key;
 
                                             return (
@@ -823,7 +823,7 @@ export default function FinancialsTable({ data: rawData, currency }: FinancialsT
                                                         </div>
                                                 </td>
 
-                                                {metric.values.map((val: any, idx: number) => {
+                                                {(metric?.values || []).map((val: any, idx: number) => {
                                                     const isQuarter = isQuarterDate(dates[idx] || '');
                                                     const isFirstQ = isQuarter && !isQuarterDate(dates[idx - 1] || '');
                                                     const trend = getTrend(metric.values, idx);

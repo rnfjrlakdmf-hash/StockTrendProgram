@@ -3872,14 +3872,14 @@ function DiscoveryContent() {
                                                         )}
 
                                                         {/* Key Global Presence Ribbon */}
-                                                        {parsed.globalPresence.length > 0 && (
+                                                        {(parsed.globalPresence || []).length > 0 && (
                                                             <div className="mb-6 p-4 rounded-2xl bg-zinc-900/70 border border-white/10 relative z-10 flex flex-wrap items-center justify-between gap-3 shadow-md">
                                                                 <div className="flex items-center gap-2">
                                                                     <Globe className="w-4 h-4 text-blue-400" />
                                                                     <span className="text-xs font-bold text-zinc-300">글로벌 거점 및 시장 네트워크</span>
                                                                 </div>
                                                                 <div className="flex flex-wrap items-center gap-1.5">
-                                                                    {parsed.globalPresence.map((country, idx) => (
+                                                                    {(parsed.globalPresence || []).map((country, idx) => (
                                                                         <span key={idx} className="text-xs font-bold text-blue-300 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-xl shadow-sm flex items-center gap-1.5">
                                                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                                                                             {country}
@@ -3892,7 +3892,7 @@ function DiscoveryContent() {
                                                         {/* Segmented Pillars Grid */}
                                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 relative z-10">
                                                             {/* 1. 핵심 생산 제품 */}
-                                                            {parsed.products.length > 0 && (
+                                                            {(parsed.products || []).length > 0 && (
                                                                 <div className="bg-zinc-950/80 border border-white/10 hover:border-indigo-500/40 p-5 rounded-2xl shadow-xl transition-all">
                                                                     <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-white/5">
                                                                         <h5 className="text-xs md:text-sm font-black text-indigo-300 flex items-center gap-2">
@@ -3903,7 +3903,7 @@ function DiscoveryContent() {
                                                                         </span>
                                                                     </div>
                                                                     <div className="flex flex-wrap gap-2">
-                                                                        {parsed.products.map((item, idx) => (
+                                                                        {(parsed.products || []).map((item, idx) => (
                                                                             <span key={idx} className="text-xs font-bold text-zinc-200 bg-zinc-900/90 hover:bg-zinc-800 border border-white/10 hover:border-indigo-400/50 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
                                                                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
                                                                                 {item}
@@ -3914,7 +3914,7 @@ function DiscoveryContent() {
                                                             )}
 
                                                             {/* 2. 핵심 기술 & 솔루션 또는 전방 응용 분야 */}
-                                                            {(parsed.technologies.length > 0 || parsed.applications.length > 0) && (
+                                                            {((parsed.technologies || []).length > 0 || (parsed.applications || []).length > 0) && (
                                                                 <div className="bg-zinc-950/80 border border-white/10 hover:border-purple-500/40 p-5 rounded-2xl shadow-xl transition-all">
                                                                     <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-white/5">
                                                                         <h5 className="text-xs md:text-sm font-black text-purple-300 flex items-center gap-2">
@@ -3925,13 +3925,13 @@ function DiscoveryContent() {
                                                                         </span>
                                                                     </div>
                                                                     <div className="flex flex-wrap gap-2">
-                                                                        {parsed.technologies.map((item, idx) => (
+                                                                        {(parsed.technologies || []).map((item, idx) => (
                                                                             <span key={`tech-${idx}`} className="text-xs font-bold text-purple-200 bg-purple-950/40 hover:bg-purple-900/40 border border-purple-500/30 hover:border-purple-400/50 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
                                                                                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]"></span>
                                                                                 {item}
                                                                             </span>
                                                                         ))}
-                                                                        {parsed.applications.map((item, idx) => (
+                                                                        {(parsed.applications || []).map((item, idx) => (
                                                                             <span key={`app-${idx}`} className="text-xs font-bold text-emerald-200 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 hover:border-emerald-400/50 px-3 py-1.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
                                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
                                                                                 {item}

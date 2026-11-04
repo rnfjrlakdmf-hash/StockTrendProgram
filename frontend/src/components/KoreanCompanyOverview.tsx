@@ -78,7 +78,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
             <History className="w-4 h-4" /> <span>최근 주요 연혁</span>
           </h4>
           <div className="bg-slate-900/40 rounded-2xl border border-white/10 p-5 space-y-4">
-            {history.slice(0, 10).map((h: any, i: number) => (
+            {(history || []).slice(0, 10).map((h: any, i: number) => (
               <div key={i} className="flex gap-4 group">
                 <div className="w-20 text-[11px] font-mono text-blue-400 font-bold pt-0.5 flex-shrink-0">
                   <span>{h.date}</span>
@@ -114,7 +114,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                     nameKey="product"
                     labelLine={false}
                   >
-                    {sales_composition.map((entry: any, index: number) => (
+                    {(sales_composition || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -136,7 +136,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {sales_composition.map((s: any, i: number) => (
+                  {(sales_composition || []).map((s: any, i: number) => (
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       <td className="py-3 px-4 flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
@@ -171,7 +171,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {rnd_status.map((row: any, i: number) => (
+                  {(rnd_status || []).map((row: any, i: number) => (
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       {Object.values(row).map((val: any, j: number) => (
                         <td key={j} className={`py-3 px-4 font-medium whitespace-nowrap ${j === 0 ? 'text-blue-300 font-bold' : 'text-slate-300'}`}>
@@ -204,7 +204,7 @@ export default function KoreanCompanyOverview({ symbol, stockName }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {staff_status.map((row: any, i: number) => (
+                  {(staff_status || []).map((row: any, i: number) => (
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       {Object.values(row).map((val: any, j: number) => (
                         <td key={j} className={`py-3 px-4 font-medium whitespace-nowrap ${j === 0 ? 'text-blue-300 font-bold' : 'text-slate-300'}`}>
