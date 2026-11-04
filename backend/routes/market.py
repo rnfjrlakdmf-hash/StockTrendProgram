@@ -2524,8 +2524,15 @@ def _create_us_stock_approval_doc(
     us_profit_share = f"주당 +${diff_usd:.2f} (약 +{diff_krw:,}원)" if diff_usd >= 0 else f"주당 ${diff_usd:.2f}"
 
     seq_str = f"{seq:02d}"
+    try:
+        from watchlist_research_service import _resolve_stock_overseas_direct_hit
+        _hit = _resolve_stock_overseas_direct_hit(name_ko, sym, desc, f"{name_ko} {sym} {desc}".lower())
+    except Exception as _e:
+        _hit = None
+
     return {
         "doc_id": f"DOC-{date_doc_str}-{seq_str}",
+        "drop_impact_intel": _hit,
         "doc_number": f"제 {date_doc_str}-{seq_str} 호",
         "category_type": "us_stock",
         "category_badge": f"🌎 미국 빅테크 ({sym})",
@@ -4691,8 +4698,16 @@ def get_ceo_office_boardroom(
         s_easy = s_easy_clean
         gp_explain = f"현재가({curr_price_str}) 대비 목표주가 {s_gp}(기대수익 {upside_str}) 제시 — " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else "" 
 
+        # 종목별 1:1 맞춤형 실시간 해외 직격탄 뇌관 연동 (Gemini AI + 25개 섹터)
+        try:
+            from watchlist_research_service import _resolve_stock_overseas_direct_hit
+            _hit = _resolve_stock_overseas_direct_hit(s_name, s_code, f"{s_name} {s_title} {s_easy}", f"{s_name} {s_code} {s_title} {s_easy}".lower())
+        except Exception as _e:
+            _hit = None
+
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-0{idx}",
+            "drop_impact_intel": _hit,
             "doc_number": f"제 {date_doc_str}-0{idx} 호",
             "category_type": "kr_stock",
             "category_badge": f"🏢 국내 주식 ({s_broker})",
