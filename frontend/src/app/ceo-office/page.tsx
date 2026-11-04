@@ -2145,6 +2145,17 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
 } {
     const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
 
+    if (['씨엠티엑스', 'cmtx', '388210', '하나머티리얼즈', '티씨케이', '원익qnc', '월덱스', '케이엔제이', '식각', '증착', '소부장', '실리콘카바이드', 'sic', '쿼츠', '전공정 부품'].some(k => combined.includes(k))) {
+        return {
+            chainBadge: '🌏 글로벌 반도체 팹(삼성·TSMC) 가동률 · 식각 Si/SiC 소재 조달 · 글로벌 CAPEX 직결주',
+            oneLiner: `해외에서 『글로벌 빅테크의 AI/반도체 설비투자(CAPEX) 축소 발표』가 나오거나 『식각·증착 핵심 원소재(고순도 SiC/희토류) 해외 조달가 급등』이 터지면 ➔ 전방 칩 제조사의 소모성 링/부품 교체 주기가 늘어나고 주문이 줄어 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🏭', trigger: '📉 글로벌 반도체 팹(삼성전자·TSMC·인텔) 설비투자(CAPEX) 감축 및 가동률 하락', chain: `${stockName}의 실리콘/세라믹 부품은 칩 제조 시 마모되는 소모품이므로, 해외 파운드리·메모리 팹 가동률이 떨어지면 교체 주기 연장으로 수주가 급감합니다.`, impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💎', trigger: '🇨🇳 중국 등 해외 고순도 SiC/세라믹 원소재 수출 통제 및 조달단가 급등', chain: '핵심 고순도 원소재의 해외 수입 의존도가 높아 공급망 리스크나 원재료가 급등 시 제조 원가율이 치솟아 분기 마진이 깎입니다.', impact_degree: '⚠️ 원가율 직격' },
+                { icon: '💵', trigger: '📈 원/달러 환율 급등 및 필라델피아 반도체지수 조정에 따른 패시브 매도', chain: '환율 급등 시 원화 환산 원재료 조달 비용이 늘어나며, 미국 반도체 지수 조정 시 코스닥 소부장 섹터에서 외국인 프로그램 매도가 가장 먼저 출회됩니다.', impact_degree: '⚡ 수급·환율 변수' },
+            ],
+        };
+    }
     if (['하이닉스', '삼성전자', '한미반도체', '리노공업', 'hbm', '반도체', '메모리', '디램'].some(k => combined.includes(k))) {
         return {
             chainBadge: '🌏 미국 엔비디아(NVDA) · 빅테크 AI 서버 · 대중국 수출규제 직결주',
@@ -5741,7 +5752,7 @@ export default function CeoOfficePage() {
 
                                                                         {/* 🌏 [개별 종목 전용] 해외에 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는지 3초 직관 브리핑 + 리서치팀 공시·하락원인 직행 버튼 */}
                                                                         {!isMacroDoc && (() => {
-                                                                            const hitInfo = getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
+                                                                            const hitInfo = (activeDoc as any).drop_impact_intel || getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
                                                                             return (
                                                                                 <div className="bg-gradient-to-r from-amber-950/35 via-[#13182b] to-rose-950/30 border border-amber-500/45 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
                                                                                     <div className="flex flex-wrap items-center justify-between gap-2">
