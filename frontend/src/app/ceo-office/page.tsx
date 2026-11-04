@@ -2431,7 +2431,7 @@ function RiskRadarPanel({ email }: { email: string }) {
                         {watchlist.length === 0 ? (
                             <span className="text-amber-300 font-bold">{report?.note || '관심종목을 찾지 못했습니다.'}</span>
                         ) : (
-                            watchlist.map((s: any) => (
+                            (watchlist || []).map((s: any) => (
                                 <span key={s.symbol} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-200 font-bold">
                                     {s.name}
                                 </span>
@@ -5790,7 +5790,11 @@ export default function CeoOfficePage() {
 
                                                                         {/* 🌏 [개별 종목 전용] 해외에 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는지 3초 직관 브리핑 + 리서치팀 공시·하락원인 직행 버튼 */}
                                                                         {!isMacroDoc && (() => {
-                                                                            const hitInfo = (activeDoc as any).drop_impact_intel || getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
+                                                                            const dropIntel = (activeDoc as any).drop_impact_intel;
+                                                                            const fallbackHit = getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
+                                                                            const oneLiner = dropIntel?.direct_hit_one_liner || fallbackHit?.oneLiner || "";
+                                                                            const triggers = dropIntel?.overseas_triggers || fallbackHit?.triggers || [];
+                                                                            const chainBadge = dropIntel?.overseas_chain_badge || fallbackHit?.chainBadge || "";
                                                                             return (
                                                                                 <div className="bg-gradient-to-r from-amber-950/35 via-[#13182b] to-rose-950/30 border border-amber-500/45 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
                                                                                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -5801,6 +5805,11 @@ export default function CeoOfficePage() {
                                                                                             <span className="text-xs font-black text-white">
                                                                                                 해외에 무슨 이슈가 터지면 {activeDoc.stock_name} 주가가 직격탄을 맞아 떨어지나요?
                                                                                             </span>
+                                                                                            {chainBadge && (
+                                                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-200 border border-amber-400/30">
+                                                                                                    {chainBadge}
+                                                                                                </span>
+                                                                                            )}
                                                                                         </div>
                                                                                         <button
                                                                                             type="button"
@@ -5818,18 +5827,18 @@ export default function CeoOfficePage() {
                                                                                     </div>
 
                                                                                     <div className="bg-black/60 border border-amber-400/35 rounded-xl p-2.5 text-xs text-amber-100 font-bold leading-relaxed break-keep">
-                                                                                        💣 {hitInfo.oneLiner}
+                                                                                        💣 {oneLiner}
                                                                                     </div>
 
                                                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                                                                        {hitInfo.triggers.map((t, idx) => (
+                                                                                        {(triggers || []).map((t: any, idx: number) => (
                                                                                             <div key={idx} className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
                                                                                                 <div className="flex items-center justify-between text-[10px] font-black">
-                                                                                                    <span className="text-amber-300">{t.icon} 해외 뇌관 {idx + 1}</span>
-                                                                                                    <span className="text-rose-300">{t.impact_degree}</span>
+                                                                                                    <span className="text-amber-300">{t?.icon || '🌏'} 해외 뇌관 {idx + 1}</span>
+                                                                                                    <span className="text-rose-300">{t?.impact_degree}</span>
                                                                                                 </div>
-                                                                                                <div className="text-[11px] font-extrabold text-white leading-snug break-keep">{t.trigger}</div>
-                                                                                                <div className="text-[10px] text-gray-300 leading-snug break-keep">{t.chain}</div>
+                                                                                                <div className="text-[11px] font-extrabold text-white leading-snug break-keep">{t?.trigger}</div>
+                                                                                                <div className="text-[10px] text-gray-300 leading-snug break-keep">{t?.chain}</div>
                                                                                             </div>
                                                                                         ))}
                                                                                     </div>
@@ -5861,7 +5870,7 @@ export default function CeoOfficePage() {
 
                                                                             {/* 4대 핵심 행동 수칙 1줄 초간결 배지 그리드 */}
                                                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-white/10">
-                                                                                {riskData.defenseRules.map((rule, rIdx) => (
+                                                                                {(riskData.defenseRules || []).map((rule, rIdx) => (
                                                                                     <div key={rIdx} className="bg-black/60 border border-white/10 rounded-xl px-2.5 py-1.5 flex flex-col justify-center">
                                                                                         <div className="text-[10px] font-bold text-zinc-400 truncate">
                                                                                             {rule.num} {rule.title}
@@ -5942,7 +5951,7 @@ export default function CeoOfficePage() {
                                                                                             </tr>
                                                                                         </thead>
                                                                                         <tbody className="divide-y divide-white/5 text-gray-200 text-xs">
-                                                                                            {riskData.financialPlan.tranches.map((tr, tIdx) => (
+                                                                                            {(riskData.financialPlan?.tranches || []).map((tr, tIdx) => (
                                                                                                 <tr key={tIdx} className="bg-white/[0.02]">
                                                                                                     <td className="py-2 px-2.5 font-bold text-sky-300">{tr.step}</td>
                                                                                                     <td className="py-2 px-2.5 font-mono text-white">{tr.price}</td>
@@ -6019,7 +6028,7 @@ export default function CeoOfficePage() {
 
                                                             {/* 3대 정밀 리스크 요인 분석 카드 그리드 */}
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                                                                {riskData.factors.map((f, fIdx) => (
+                                                                {(riskData.factors || []).map((f, fIdx) => (
                                                                     <div key={fIdx} className="bg-zinc-950/80 border border-white/10 rounded-xl p-3.5 flex flex-col justify-between">
                                                                         <div>
                                                                             <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-white/5">
@@ -6032,7 +6041,7 @@ export default function CeoOfficePage() {
                                                                                 </span>
                                                                             </div>
                                                                             <ul className="space-y-1.5 text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium">
-                                                                                {f.points.map((pt, pIdx) => (
+                                                                                {(f.points || []).map((pt, pIdx) => (
                                                                                     <li key={pIdx} className="flex items-start gap-1.5">
                                                                                         <span className="text-rose-400 font-bold shrink-0">•</span>
                                                                                         <span>{pt}</span>
@@ -6051,7 +6060,7 @@ export default function CeoOfficePage() {
                                                                     <span>대표님 전용 '철통 자산 방어 실천 4원칙' (구체적 실행 수칙)</span>
                                                                 </div>
                                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                                    {riskData.defenseRules.map((rule, rIdx) => (
+                                                                    {(riskData.defenseRules || []).map((rule, rIdx) => (
                                                                         <div key={rIdx} className="bg-black/60 border border-amber-500/20 rounded-xl p-3 flex flex-col justify-between">
                                                                             <div>
                                                                                 <div className="text-[11px] font-black text-zinc-300">{rule.num} {rule.title}</div>
@@ -6098,7 +6107,7 @@ export default function CeoOfficePage() {
                                                                         </span>
                                                                     </div>
                                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                                                        {activeDoc.easy_terms.map((t, idx) => (
+                                                                        {(activeDoc.easy_terms || []).map((t, idx) => (
                                                                             <div
                                                                                 key={idx}
                                                                                 className="bg-zinc-900/70 border border-white/10 hover:border-amber-400/30 rounded-xl p-3 text-xs leading-relaxed transition-all"
@@ -6677,7 +6686,7 @@ export default function CeoOfficePage() {
 
                                         {agenda.key_metrics && agenda.key_metrics.length > 0 && (
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-4 border-t border-white/10">
-                                                {agenda.key_metrics.map((m, idx) => (
+                                                {(agenda?.key_metrics || []).map((m, idx) => (
                                                     <div
                                                         key={idx}
                                                         className="bg-black/40 border border-white/10 rounded-xl p-3"
@@ -6726,7 +6735,7 @@ export default function CeoOfficePage() {
 
                                             {agenda.discovery_reason.key_drivers && agenda.discovery_reason.key_drivers.length > 0 && (
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4 pt-3.5 border-t border-white/10">
-                                                    {agenda.discovery_reason.key_drivers.map((kd, idx) => (
+                                                    {(agenda?.discovery_reason?.key_drivers || []).map((kd, idx) => (
                                                         <div key={idx} className="bg-black/40 border border-white/10 rounded-xl p-3 flex items-start gap-2">
                                                             <span className="text-amber-400 font-black text-xs shrink-0 mt-0.5">#{idx + 1}</span>
                                                             <span className="text-xs text-gray-200 font-semibold leading-snug">{kd}</span>
@@ -6753,7 +6762,7 @@ export default function CeoOfficePage() {
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                                                {agenda.buy_reasons.cards.map((c, idx) => (
+                                                {(agenda?.buy_reasons?.cards || []).map((c, idx) => (
                                                     <div
                                                         key={idx}
                                                         className="bg-[#080e1a]/85 border border-white/10 hover:border-emerald-400/40 rounded-xl p-4 flex flex-col justify-between transition-all"
@@ -6813,7 +6822,7 @@ export default function CeoOfficePage() {
                                                 {/* 참석 임원 명단 */}
                                                 <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-white/10">
                                                     <span className="text-[11px] text-gray-400 font-bold">참석 임원:</span>
-                                                    {agenda.meeting_minutes.attendees.map((att, i) => (
+                                                    {(agenda?.meeting_minutes?.attendees || []).map((att, i) => (
                                                         <span
                                                             key={i}
                                                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-xs text-gray-200"
@@ -6834,7 +6843,7 @@ export default function CeoOfficePage() {
                                                 </div>
 
                                                 <div className="space-y-2.5">
-                                                    {agenda.meeting_minutes.dialogue.map((dlg, i) => (
+                                                    {(agenda?.meeting_minutes?.dialogue || []).map((dlg, i) => (
                                                         <div
                                                             key={i}
                                                             className="bg-black/35 border border-white/10 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-start gap-3 hover:border-white/20 transition-all"
@@ -7841,7 +7850,7 @@ export default function CeoOfficePage() {
 
                                                     {/* 3대 정밀 리스크 팩터 세부 진단 */}
                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                        {audit.factors.map((f, fIdx) => (
+                                                        {(audit?.factors || []).map((f, fIdx) => (
                                                             <div key={fIdx} className="bg-black/50 border border-white/10 rounded-xl p-3.5 space-y-2">
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex items-center gap-1.5 text-xs font-black text-white">
@@ -7853,7 +7862,7 @@ export default function CeoOfficePage() {
                                                                     </span>
                                                                 </div>
                                                                 <ul className="space-y-1.5 text-[11px] text-gray-300 leading-relaxed font-medium">
-                                                                    {f.points.map((pt, pIdx) => (
+                                                                    {(f.points || []).map((pt, pIdx) => (
                                                                         <li key={pIdx} className="flex items-start gap-1.5">
                                                                             <span className="text-rose-400 font-black shrink-0">•</span>
                                                                             <span>{pt}</span>
@@ -8084,7 +8093,7 @@ export default function CeoOfficePage() {
 
                                                             {/* 3대 정밀 리스크 팩터 세부 진단 */}
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                                                                {audit.factors.map((f, fIdx) => (
+                                                                {(audit?.factors || []).map((f, fIdx) => (
                                                                     <div key={fIdx} className="bg-black/40 border border-white/10 rounded-xl p-3 space-y-1.5">
                                                                         <div className="flex items-center justify-between">
                                                                             <div className="flex items-center gap-1.5 text-xs font-black text-white">
@@ -8096,7 +8105,7 @@ export default function CeoOfficePage() {
                                                                             </span>
                                                                         </div>
                                                                         <ul className="space-y-1 text-[11px] text-gray-300 leading-relaxed font-medium">
-                                                                            {f.points.map((pt, pIdx) => (
+                                                                            {(f.points || []).map((pt, pIdx) => (
                                                                                 <li key={pIdx} className="flex items-start gap-1">
                                                                                     <span className="text-rose-400 font-black shrink-0">•</span>
                                                                                     <span>{pt}</span>
@@ -8600,7 +8609,7 @@ export default function CeoOfficePage() {
                                                             📌 현재 보유 운용 종목별 주간 복기 코멘트 ({weeklyReview.account_reflection.positions.length}종목)
                                                         </div>
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                                                            {weeklyReview.account_reflection.positions.map((pos: any, i: number) => (
+                                                            {(weeklyReview?.account_reflection?.positions || []).map((pos: any, i: number) => (
                                                                 <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs space-y-1">
                                                                     <div className="flex items-center justify-between">
                                                                         <span className="font-black text-white">{pos.stock_name}</span>
@@ -8877,7 +8886,7 @@ export default function CeoOfficePage() {
                                                     <div className="text-xs font-bold text-emerald-300">{log.headline_result}</div>
                                                     {Array.isArray(log.workflow_steps) && (
                                                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5 pt-1">
-                                                            {log.workflow_steps.map((st: any, sIdx: number) => (
+                                                            {(log?.workflow_steps || []).map((st: any, sIdx: number) => (
                                                                 <div key={sIdx} className="bg-white/5 rounded-lg p-2 text-[10px]">
                                                                     <div className="font-black text-white">{st.avatar} {st.dept}</div>
                                                                     <div className="text-emerald-300 font-bold">{st.status}</div>
