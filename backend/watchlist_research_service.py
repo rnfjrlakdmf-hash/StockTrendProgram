@@ -378,7 +378,42 @@ def _ask_gemini_stock_triggers(name: str, code: str, biz_text: str) -> Optional[
       "chain": "인과관계 요약",
       "impact_degree": "⚡ 전방 수요 변수"
     }}
-  ]
+  ],
+  "rise_chain_badge": "🔥 핵심 상승 모멘텀 연결고리 (예: 🔥 글로벌 AI 반도체 팹 가동률 · 핵심 소모품 수주 급증 수혜주)",
+  "rise_one_liner": "해외에서 『A 글로벌 훈풍』이 불거나 『B 전방 수요 회복』이 일어나면 ➔ C 수혜로 {name} 주가가 강한 상승 탄력을 받습니다!",
+  "rise_triggers": [
+    {{
+      "icon": "🚀",
+      "category_tag": "핵심 호재",
+      "trigger": "상승 동력 1 제목 (구체적 성장 요인/호재 명시)",
+      "chain": "인과관계 요약 (A 수요 폭증 ➔ B 마진 확대 ➔ 주가 상승)",
+      "detailed_explanation": "왜 이런 호재가 발생하는지 구체적 산업 배경, 주요 고객사 발주 추이, 마진율 개선 효과를 3~4문장으로 친절하고 상세하게 설명",
+      "impact_degree": "🔥 1순위 상승 동력"
+    }},
+    {{
+      "icon": "💰",
+      "category_tag": "수급 집중",
+      "trigger": "상승 동력 2 제목",
+      "chain": "인과관계 요약",
+      "detailed_explanation": "외국인·기관의 순매수 유입 배경과 패시브 자금/숏커버링 등 수급 메커니즘을 상세히 설명",
+      "impact_degree": "✨ 수급 모멘텀"
+    }},
+    {{
+      "icon": "🌐",
+      "category_tag": "글로벌 훈풍",
+      "trigger": "상승 동력 3 제목",
+      "chain": "인과관계 요약",
+      "detailed_explanation": "해외 주요 시장 환경(미국 빅테크 동향, 환율/원자재 추이)과 수출 마진에 미치는 영향을 상세히 설명",
+      "impact_degree": "⚡ 글로벌 수혜"
+    }}
+  ],
+  "deep_report": {{
+    "summary_headline": "대표님을 위한 핵심 심층 인과 브리핑 1문장",
+    "business_model_context": "이 회사의 매출/수출 구조 및 글로벌 밸류체인 내 핵심 역할 상세 해설 (2~3문장)",
+    "transmission_mechanism": "해외 거시경제(환율·금리·원자재·관세)가 기업 영업이익과 주가로 전달되는 구체적 인과 메커니즘 (2~3문장)",
+    "smart_money_logic": "외국인·기관 큰손들이 이 종목을 매수하거나 매도하는 핵심 펀더멘털 판단 기준 (2문장)",
+    "key_inflection_points": "향후 주가 추세를 바꿀 수 있는 핵심 모니터링 변곡점 (2~3개 체크포인트)"
+  }}
 }}
 """
         resp = generate_with_retry(
@@ -1305,10 +1340,50 @@ def _build_drop_and_global_impact_intel(r: Dict[str, Any]) -> Dict[str, Any]:
         primary_cause_title = f"⚖️ [{name} 보합 원인 판독]: 악재 공시 없는 상태에서 매수세와 매도세가 팽팽하게 맞서며 차기 방향성을 탐색 중인 보합 상태입니다."
         action_guide = "방향성이 결정되기 전까지 성급한 진입보다는 해외 연결고리 지표와 수급 흐름을 관망하십시오."
 
+    # 주가 상승 시 노출할 3대 핵심 상승 모멘텀 및 배지
+    rise_chain_badge = custom_hit.get("rise_chain_badge") or f"🔥 {name} 글로벌 호황 수혜 & 실적 성장주"
+    rise_one_liner = custom_hit.get("rise_one_liner") or (
+        f"해외에서 『글로벌 전방 시장 호황 및 기술 경쟁력 부각』이 나타나며 ➔ "
+        f"외인·기관 쌍끌이 매수세 결집과 분기 실적 턴어라운드로 {name} 주가가 강력하게 상승하고 있습니다!"
+    )
+    rise_triggers = custom_hit.get("rise_triggers") or [
+        {
+            "icon": "🚀",
+            "category_tag": "핵심 호재",
+            "trigger": f"🔥 {name} 전방 산업 수요 회복 및 실적 턴어라운드",
+            "chain": "주요 전방 고객사 발주가 늘어나고 신규 수주 모멘텀이 가시화되면서 실적 개선 기대감이 주가를 견인합니다.",
+            "impact_degree": "🔥 1순위 상승 동력"
+        },
+        {
+            "icon": "💰",
+            "category_tag": "수급 집중",
+            "trigger": "📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입",
+            "chain": "기업 펀더멘털 개선과 우호적 밸류에이션 매력이 부각되며 메이저 수급이 집중되고 있습니다.",
+            "impact_degree": "✨ 수급 모멘텀"
+        },
+        {
+            "icon": "🌐",
+            "category_tag": "글로벌 훈풍",
+            "trigger": "🇺🇸 글로벌 기술주 랠리 및 전방 시장 점유율 확대",
+            "chain": "해외 주요 시장 환경이 개선되고 수출 마진이 우호적으로 작용하며 우상향 추세를 지원합니다.",
+            "impact_degree": "⚡ 글로벌 수혜"
+        }
+    ]
+
     return {
         "overseas_chain_badge": overseas_chain_badge,
         "direct_hit_one_liner": direct_hit_one_liner,
         "overseas_triggers": overseas_triggers,
+        "rise_chain_badge": rise_chain_badge,
+        "rise_one_liner": rise_one_liner,
+        "rise_triggers": rise_triggers,
+        "deep_report": custom_hit.get("deep_report") or {
+            "summary_headline": f"{name} 주가 변동의 핵심 원인 및 글로벌 밸류체인 심층 진단",
+            "business_model_context": f"{name}은(는) 해당 업종 내 핵심 제조·공급망을 담당하고 있으며, 전방 주요 고객사의 가동률 및 글로벌 수요 변동에 직접적인 영향을 받는 사업 구조를 가지고 있습니다.",
+            "transmission_mechanism": f"해외 원자재 조달가 및 환율 변동은 제조원가에 즉각 반영되며, 글로벌 시장의 수급 환경 변화가 분기 영업이익률을 결정짓는 핵심 고리로 작동합니다.",
+            "smart_money_logic": f"외국인과 기관 큰손들은 단순 테마성 급등락보다는 전방 산업의 신규 수주 잔고와 분기 실적 턴어라운드 가시성을 최우선 매매 지표로 삼고 있습니다.",
+            "key_inflection_points": f"① 전방 고객사의 추가 발주 공시 여부, ② 주요 수출 결제 환율의 안정화 추이, ③ 메이저 수급 주체(외인·기관)의 5거래일 연속 순매수 지속성"
+        },
         "live_diagnosis": {
             "status_badge": status_badge,
             "status_tone": status_tone,

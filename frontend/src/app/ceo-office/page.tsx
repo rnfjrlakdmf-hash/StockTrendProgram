@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
-import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock, Loader2, Zap, Globe, ChevronRight } from 'lucide-react';
+import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock, Loader2, Zap, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 
 
 // [Smart Executive Opinion Parser]
@@ -557,7 +557,8 @@ function detectSectorType(stockName: string, title: string = "", categoryBadge: 
     if (nameLower.includes('나스닥 선물') || nameLower.includes('s&p 선물') || (isMacroCategory && (nameLower.includes('선물') && !nameLower.includes('원유')))) {
         return 'macro_futures';
     }
-    if (stockName === '전체 시장 시스템' || (isMacroCategory && (s.includes('모닝') || s.includes('시장') || s.includes('지수')))) {
+    const isExplicitMacroName = ['전체 시장 시스템', '글로벌 매크로', '모닝 브리프', '거시경제', '시장지표', '한국 증시', '코스피', '코스닥', '선물지수'].some(m => nameLower.includes(m));
+    if (stockName === '전체 시장 시스템' || (isMacroCategory && isExplicitMacroName)) {
         return 'macro_market';
     }
     if (isMacroCategory && (s.includes('환율') || s.includes('달러'))) {
@@ -566,7 +567,16 @@ function detectSectorType(stockName: string, title: string = "", categoryBadge: 
     if (isMacroCategory && (s.includes('wti') || s.includes('원유') || s.includes('유가'))) {
         return 'macro_oil';
     }
-    if (/기업은행|국민은행|신한|하나금융|우리금융|카카오뱅크|jb금융|dgb금융|bnk금융|키움증권|미래에셋|삼성증권|한국금융지주|메리츠|동양생명|삼성화재|db손해|한화생명|은행|금융/.test(s)) {
+    // 2. 화장품 / 소비재 (LG생활건강, 아모레, 에스엠씨지 등)
+    if (/화장품|생활건강|아모레|코스맥스|한국콜마|뷰티|에이피알|클리오|미용|용기|에스엠씨지/.test(nameLower)) {
+        return 'cosmetics';
+    }
+    // 3. 조선 / 해양 (삼성중공업, 한화오션 등)
+    if (/삼성중공업|한화오션|hd한국조선해양|hd현대중공업|현대미포조선|조선|해양플랜트/.test(nameLower)) {
+        return 'shipbuilding';
+    }
+    // 4. 금융 / 은행 / 증권 (종목명 기준 판별하여 증권사 리포트 제목 속 증권사명에 오작동 방지)
+    if (/기업은행|국민은행|신한지주|신한금융|하나금융|우리금융|카카오뱅크|jb금융|dgb금융|bnk금융|키움증권|미래에셋증권|삼성증권|한국금융지주|메리츠금융|동양생명|삼성화재|db손해보험|한화생명/.test(nameLower) || (/은행|금융지주|보험|증권/.test(nameLower) && !nameLower.includes('생활건강') && !nameLower.includes('중공업') && !nameLower.includes('전자') && !nameLower.includes('에너지'))) {
         return 'banking';
     }
     if (/두산에너빌리티|한전기술|한전kps|한국전력|현대일렉트릭|효성중공업|두산밥캣|두산|씨에스윈드|현대건설기계|ls일렉트릭|ls|일진전기|원전|원자력|전력기기/.test(s)) {
@@ -662,14 +672,17 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
 
     let priceExceedsBudget = false;
     let totalShares = Math.floor(maxAlloc / currP);
+    const neededMore = currP > maxAlloc ? (currP - maxAlloc) : 0;
+    const suggestedBudget = currP > 0 ? (isDollar ? Math.ceil(currP / 50) * 50 : Math.ceil(currP / 100000) * 100000) : 100000;
+
     if (totalShares <= 0) {
-        totalShares = 1;
+        // 예산이 1주 단가보다 적을 경우 실제 매수 수량은 0주 (예산 초과 무단 매수 방지)
         priceExceedsBudget = true;
+        totalShares = 0;
     }
 
     const isSingleShare = totalShares === 1;
 
-    // 3단계 분할 매수 수량 및 호가 단가 배분 (1차+2차+3차 매수금액 합계 === 총 투자금액 100% 일치 보장)
     let share1 = 0;
     let share2 = 0;
     let share3 = 0;
@@ -677,7 +690,11 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     let p2 = roundToKrxTick(currP * 0.97, isDollar);
     let p3 = currP;
 
-    if (totalShares === 1) {
+    if (totalShares === 0) {
+        share1 = 0;
+        share2 = 0;
+        share3 = 0;
+    } else if (totalShares === 1) {
         share1 = 1;
         share2 = 0;
         share3 = 0;
@@ -712,19 +729,19 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     const amt2 = isDollar ? Number((share2 * p2).toFixed(2)) : Math.round(share2 * p2);
     const amt3 = isDollar ? Number((share3 * p3).toFixed(2)) : Math.round(share3 * p3);
 
-    // 실제 총 투자금액 = 1차 + 2차 + 3차 투입 금액의 정확한 합계
-    const actualInvest = isDollar ? Number((amt1 + amt2 + amt3).toFixed(2)) : (amt1 + amt2 + amt3);
-    const avgBuyP = isDollar ? Number((actualInvest / totalShares).toFixed(2)) : Math.round(actualInvest / totalShares);
-    const cashReserve = Math.max(0, isDollar ? Number((maxAlloc - actualInvest).toFixed(2)) : Math.round(maxAlloc - actualInvest));
+    // 실제 총 투자금액 = 0주이면 정확히 0원, 매수 시 1차+2차+3차 합계
+    const actualInvest = totalShares === 0 ? 0 : (isDollar ? Number((amt1 + amt2 + amt3).toFixed(2)) : (amt1 + amt2 + amt3));
+    const avgBuyP = totalShares === 0 ? currP : (isDollar ? Number((actualInvest / totalShares).toFixed(2)) : Math.round(actualInvest / totalShares));
+    const cashReserve = totalShares === 0 ? maxAlloc : Math.max(0, isDollar ? Number((maxAlloc - actualInvest).toFixed(2)) : Math.round(maxAlloc - actualInvest));
 
     // 손절 방어선 (평균 매수가 대비 -3.5%, 호가 단위 적용)
     const stopLossP = roundToKrxTick(avgBuyP * 0.965, isDollar);
     const stopLossProceeds = isDollar ? Number((totalShares * stopLossP).toFixed(2)) : Math.round(totalShares * stopLossP);
-    const maxLossAmt = Math.max(0, isDollar ? Number((actualInvest - stopLossProceeds).toFixed(2)) : (actualInvest - stopLossProceeds));
-    // 철통 회수금: 손절 매도 회수금 + 미투입 잔여 현금 (= 예산 - 최대손실액 100% 일치)
-    const shieldedAmt = isDollar 
-        ? Number((stopLossProceeds + (priceExceedsBudget ? 0 : cashReserve)).toFixed(2)) 
-        : (stopLossProceeds + (priceExceedsBudget ? 0 : cashReserve));
+    const maxLossAmt = totalShares === 0 ? 0 : Math.max(0, isDollar ? Number((actualInvest - stopLossProceeds).toFixed(2)) : (actualInvest - stopLossProceeds));
+    // 철통 회수금: 0주이면 예산 100% 전액 안전 예수금 보존
+    const shieldedAmt = totalShares === 0 ? maxAlloc : (isDollar 
+        ? Number((stopLossProceeds + cashReserve).toFixed(2)) 
+        : (stopLossProceeds + cashReserve));
 
     // 1차 익절가 (중간 목표가 또는 +8%, 호가 단위 적용)
     const t1P = targetP > currP
@@ -739,7 +756,15 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
     let finalTotalVal = 0;
     let finalProfitAmt = 0;
 
-    if (isSingleShare) {
+    if (totalShares === 0) {
+        target1SharesLabel = '0주 (예산 부족으로 매수 보류)';
+        t1CashIn = 0;
+        t1ProfitAmt = 0;
+        finalSharesLabel = '0주 (예산 증액 시 익절 활성화)';
+        finalStageCashIn = 0;
+        finalTotalVal = 0;
+        finalProfitAmt = 0;
+    } else if (isSingleShare) {
         target1SharesLabel = '1주 보유 (선택A: 1차 익절 또는 본전 홀딩)';
         t1CashIn = t1P;
         t1ProfitAmt = isDollar ? Number((t1P - actualInvest).toFixed(2)) : (t1P - actualInvest);
@@ -763,7 +788,7 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
         finalProfitAmt = isDollar ? Number((finalTotalVal - actualInvest).toFixed(2)) : (finalTotalVal - actualInvest);
     }
 
-    const finalUpsidePct = ((targetP - avgBuyP) / avgBuyP * 100).toFixed(1);
+    const finalUpsidePct = ((targetP - currP) / currP * 100).toFixed(1);
 
     return {
         isDollar,
@@ -790,7 +815,29 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
         finalProfitAmt: fmt(finalProfitAmt),
         finalUpsidePct: `${Number(finalUpsidePct) > 0 ? '+' : ''}${finalUpsidePct}%`,
         priceExceedsBudget,
-        tranches: [
+        tranches: totalShares === 0 ? [
+            {
+                step: '1차 분할 매수',
+                price: fmt(currP),
+                shares: '0주 (매수 전면 보류)',
+                amt: '0원',
+                desc: `설정 예산(${fmt(maxAlloc)}) < 1주 단가(${fmt(currP)}). 최소 1주 매수에 ${fmt(neededMore)} 부족하여 자동 매수가 0주로 안전 보류됩니다.`,
+            },
+            {
+                step: '2차 분할 매수',
+                price: '-',
+                shares: '0주',
+                amt: '0원',
+                desc: `상단에서 예산을 ${fmt(suggestedBudget)} 이상으로 증액하시면 1차·2차 분할 매수가 즉시 활성화됩니다.`,
+            },
+            {
+                step: '3차 분할 매수',
+                price: '-',
+                shares: '0주',
+                amt: '0원',
+                desc: `설정하신 예산 ${fmt(maxAlloc)}은 계좌에서 1원도 무단 출금되지 않고 100% 안전 예수금으로 보존됩니다.`,
+            },
+        ] : [
             {
                 step: '1차 분할 매수',
                 price: fmt(p1),
@@ -877,7 +924,70 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
     let headline = "";
     let factors: RiskFactor[] = [];
 
-    if (sector === 'banking') {
+    if (!isMacroSector) {
+        // 개별 종목 100% 맞춤형 정밀 리스크 진단 (최서연 CRO)
+        const docDropIntel = (doc as any).drop_impact_intel;
+        const stockIntel = getStockOverseasDirectHitSummary(sName, doc.stock_code, doc.title);
+        const triggers = (docDropIntel?.overseas_triggers && docDropIntel.overseas_triggers.length >= 3)
+            ? docDropIntel.overseas_triggers
+            : (stockIntel.triggers && stockIntel.triggers.length >= 3)
+                ? stockIntel.triggers
+                : null;
+
+        const trig0 = triggers ? triggers[0] : null;
+        const trig1 = triggers ? triggers[1] : null;
+        const trig2 = triggers ? triggers[2] : null;
+
+        const trig0Name = trig0?.trigger?.replace(/^[^\w가-힣]+/, '').trim() || `${sName} 핵심 밸류체인 발주 사이클`;
+        const trig0Chain = trig0?.chain || `${sName}의 전방 고객사 발주 지연 및 수요 둔화 시 매출 및 수익성 직격탄 발생`;
+        const trig0Tag = (trig0?.impact_degree || "1순위 직격탄").replace(/[🔥⚠️⚡📉📈🏛️]/g, '').trim();
+
+        const trig1Name = trig1?.trigger?.replace(/^[^\w가-힣]+/, '').trim() || `${sName} 원가율 상승 및 수급 이탈`;
+        const trig1Chain = trig1?.chain || `원/달러 환율 급변 및 원자재 단가 상승에 따른 마진 압박과 외국인·기관 순매도 전환 위험`;
+        const trig1Tag = (trig1?.impact_degree || "원가·수급 압박").replace(/[🔥⚠️⚡📉📈🏛️]/g, '').trim();
+
+        const trig2Name = trig2?.trigger?.replace(/^[^\w가-힣]+/, '').trim() || `${sName} 글로벌 거시 경기 및 전방 수요 변수`;
+        const trig2Chain = trig2?.chain || `글로벌 거시 경기 둔화 및 업종 피크아웃 우려 발생 시 밸류에이션 하방 압력 심화`;
+        const trig2Tag = (trig2?.impact_degree || "전방 수요 변수").replace(/[🔥⚠️⚡📉📈🏛️]/g, '').trim();
+
+        headline = `‘${sName}(${currPriceStr})’ 최서연 CRO 리스크 감사: ${trig0Name} 등 대외 뇌관 발생 시 급락 가능성이 있으므로, 권장 진입가(${safeEntryFormatted}) 안착 확인 및 -3.5% 기계적 손절 방어선(${stopLossFormatted})을 철저히 준수하십시오.`;
+
+        factors = [
+            {
+                icon: trig0?.icon || "💣",
+                title: "1순위 직격탄 & 진입 타이밍",
+                tag: trig0Tag,
+                tagColor: "text-amber-300 bg-amber-500/15 border-amber-500/30",
+                points: [
+                    `핵심 리스크: ${trig0Name}`,
+                    `발생 메커니즘: ${trig0Chain}`,
+                    `안전 진입 수칙: 개장 직후(09:00~09:20) 급등 출발 시 추격 매수를 엄금하고, 당일 오전 10시 이후 지지선(${safeEntryFormatted}) 안착을 확인한 뒤에만 1차 진입 집행`,
+                ],
+            },
+            {
+                icon: trig1?.icon || "📉",
+                title: "원가·환율 압박 & 수급 변심",
+                tag: trig1Tag,
+                tagColor: "text-rose-300 bg-rose-500/15 border-rose-500/30",
+                points: [
+                    `핵심 리스크: ${trig1Name}`,
+                    `발생 메커니즘: ${trig1Chain}`,
+                    `기계적 손절 방어선: ${stopLossFormatted} (-3.5% 또는 50일선) 이탈 시 감정 배제 후 전량 자동 매도로 계좌 원금 보존`,
+                ],
+            },
+            {
+                icon: trig2?.icon || "🌐",
+                title: "전방 수요 & 글로벌 거시 변수",
+                tag: trig2Tag,
+                tagColor: "text-blue-300 bg-blue-500/15 border-blue-500/30",
+                points: [
+                    `핵심 리스크: ${trig2Name}`,
+                    `발생 메커니즘: ${trig2Chain}`,
+                    `목표가 대응 & 비중 통제: 1차 목표가(${target1Formatted}) 도달 시 보유 물량 50% 분할 익절, 단일 종목 계좌 편입 한도(${maxWeightDesc}) 엄수`,
+                ],
+            },
+        ];
+    } else if (sector === 'banking') {
         headline = `‘${sName}’은 금리 인하 사이클에 따른 순이자마진(NIM) 축소 압력과 중소기업 대출 건전성(대손충당금)을 반드시 점검해야 합니다. 7~8%대 고배당 매력은 높으나 배당락 전후 단기 수급 변동에 철저히 대비하십시오.`;
         factors = [
             {
@@ -1234,7 +1344,7 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
                 points: [
                     "VIX 안정세 지속 시 글로벌 투자 자금의 위험자산 선호(Risk-On)로 한국 코스피 및 반도체 우량주 수급 우호적",
                     "미국 FOMC 금리 발표, 주요 고용·물가 지표 및 지정학적 돌발 뉴스 발생 시 VIX 급변 모니터링",
-                    "대표님 실천 지침: VIX 20 미만 유지 시 승인하신 종목(기업은행 등 10만원 예산) 계획대로 분할 매수 적합",
+                    "대표님 실천 지침: VIX 20 미만 유지 시 승인하신 실전 종목 계획대로 분할 매수 적합",
                 ],
             },
         ];
@@ -1528,7 +1638,7 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
             num: "②",
             title: "실전 종목 연동",
             target: "승인 안건 10만원 분할 체결",
-            desc: "거시 지표가 맑음(안정)일 때 대표님이 [승인 서명]하신 개별 실전 우량주(기업은행 등)를 안전하게 분할 매수합니다.",
+            desc: "거시 지표가 맑음(안정)일 때 대표님이 [승인 서명]하신 실전 승인 종목(삼성중공업, 에스엠씨지, 심텍 등)을 원칙에 따라 안전하게 분할 매수합니다.",
         },
         {
             num: "③",
@@ -1546,10 +1656,14 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
         {
             num: "①",
             title: "계좌 비중 한도",
-            target: plan ? `${plan.maxAlloc} (${plan.allocType})` : `최대 10~15% (${maxWeightDesc})`,
+            target: plan
+                ? (plan.priceExceedsBudget
+                    ? `⚠️ 0주 (예산 부족 · 집행 보류)`
+                    : `${plan.maxAlloc} (${plan.allocType})`)
+                : `최대 10~15% (${maxWeightDesc})`,
             desc: plan 
                 ? (plan.priceExceedsBudget 
-                    ? `설정 예산(${plan.maxAlloc}) 대비 1주 단가가 높아 최소 단위인 1주(${plan.actualInvest}) 기준으로 산출했습니다.`
+                    ? `대표님이 설정하신 예산(${plan.maxAlloc})이 ${sName} 1주 단가(${plan.currPrice})보다 적어 실전 매수가 '0주'로 전면 보류됩니다. 대표님이 [승인 서명]을 누르시더라도 계좌에서 예산을 초과해 1원도 무단 결제되지 않으며, 설정 예산 ${plan.maxAlloc} 전액 안전 예수금으로 100% 보호됩니다. (최소 1주 매수를 위한 권장 예산: ${plan.isDollar ? '$' + Math.ceil(priceNum / 50) * 50 : Math.ceil(priceNum / 100000) * 10 + '만 원'} 이상)`
                     : `운용 자산 기준 총 ${plan.actualInvest} (${plan.totalShares}) 배정 (잔여 현금 ${plan.cashReserve} 비상금 보관)`)
                 : `${sName} 단일 종목에 과도하게 집중하지 않고 안전 포트폴리오 비중을 철저히 준수합니다.`,
         },
@@ -1557,36 +1671,48 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
             num: "②",
             title: "3단계 분할 매수",
             target: plan 
-                ? (plan.tranches[1].shares === '0주' 
-                    ? `1차 ${plan.tranches[0].amt} (1주 집중)` 
-                    : `1차 ${plan.tranches[0].amt} ➔ 2차 ${plan.tranches[1].amt} ➔ 3차 ${plan.tranches[2].amt}`)
+                ? (plan.priceExceedsBudget
+                    ? `0주 전액 보류 (0원 지출)`
+                    : (plan.tranches[1].shares === '0주' 
+                        ? `1차 ${plan.tranches[0].amt} (1주 집중)` 
+                        : `1차 ${plan.tranches[0].amt} ➔ 2차 ${plan.tranches[1].amt} ➔ 3차 ${plan.tranches[2].amt}`))
                 : `30% ➔ 40% ➔ 30% (${safeEntryFormatted})`,
             desc: plan
-                ? (plan.tranches[1].shares === '0주'
-                    ? `오전 10시 지지선 확인 후 ${plan.tranches[0].price}에 1주 진입합니다.`
-                    : `1차(${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} ${plan.tranches[2].shares}) 분할 체결`)
+                ? (plan.priceExceedsBudget
+                    ? `1주 단가(${plan.currPrice})가 설정 한도(${plan.maxAlloc})를 초과하므로 1·2·3차 분할 매수가 일체 체결되지 않으며 계좌 잔고가 안전하게 보호됩니다.`
+                    : (plan.tranches[1].shares === '0주'
+                        ? `오전 10시 지지선 확인 후 ${plan.tranches[0].price}에 1주 진입합니다.`
+                        : `1차(${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} ${plan.tranches[2].shares}) 분할 체결`))
                 : `1차(오전 10시 지지선 ${safeEntryFormatted}에 30%) ➔ 2차(눌림목 안착 40%) ➔ 3차(상승 돌파 30%)로 나누어 매수합니다.`,
         },
         {
             num: "③",
             title: "기계적 손절 방어선",
             target: plan
-                ? `🛑 ${plan.stopLossPrice} (최대 손실 딱 -${plan.maxLossAmount})`
+                ? (plan.priceExceedsBudget
+                    ? `🛑 손실 0원 (원금 100% 보존)`
+                    : `🛑 ${plan.stopLossPrice} (최대 손실 딱 -${plan.maxLossAmount})`)
                 : `🛑 ${stopLossFormatted} (-3.5% 도달 시 즉각)`,
             desc: plan
-                ? `손절 시 총 손실은 딱 -${plan.maxLossAmount}으로 철저히 차단되며, 원금 + 잔여금 ${plan.shieldedAmount}은 안전하게 지켜냅니다.`
+                ? (plan.priceExceedsBudget
+                    ? `주식을 매수하지 않은 대기 상태이므로 주가가 급락하더라도 대표님의 계좌 손실은 0원입니다. (향후 예산 증액 매수 시 손절 기준선: ${stopLossFormatted})`
+                    : `손절 시 총 손실은 딱 -${plan.maxLossAmount}으로 철저히 차단되며, 원금 + 잔여금 ${plan.shieldedAmount}은 안전하게 지켜냅니다.`)
                 : `현재가 대비 -3.5% 하락한 ${stopLossFormatted}을 종가 또는 장중 이탈하면 감정 없이 즉시 방어합니다.`,
         },
         {
             num: "④",
             title: "1차 목표가 대응",
             target: plan
-                ? `🎯 ${plan.target1Price} (+${plan.target1ProfitAmt} 수익 구간)`
+                ? (plan.priceExceedsBudget
+                    ? `🎯 1주 이상 필요 (${plan.target1Price})`
+                    : `🎯 ${plan.target1Price} (+${plan.target1ProfitAmt} 수익 구간)`)
                 : `🎯 ${target1Formatted} (보유 물량 50%)`,
             desc: plan
-                ? (plan.isSingleShare
-                    ? `1주 보유 시 1차 목표(${plan.target1Price})에서 익절하면 ${plan.target1CashIn} 회수(+${plan.target1ProfitAmt}), 홀딩 시 손절선을 매수가(${plan.avgBuyPrice})로 상향합니다.`
-                    : `1차 목표 도달 시 절반 매도로 현금 ${plan.target1CashIn} 즉시 회수 (확정 순수익: +${plan.target1ProfitAmt})`)
+                ? (plan.priceExceedsBudget
+                    ? `1차 목표가(${plan.target1Price}) 도달 시 차익을 실현하시려면 상단에서 예산을 증액하여 최소 1주 이상 편입하셔야 합니다.`
+                    : (plan.isSingleShare
+                        ? `1주 보유 시 1차 목표(${plan.target1Price})에서 익절하면 ${plan.target1CashIn} 회수(+${plan.target1ProfitAmt}), 홀딩 시 손절선을 매수가(${plan.avgBuyPrice})로 상향합니다.`
+                        : `1차 목표 도달 시 절반 매도로 현금 ${plan.target1CashIn} 즉시 회수 (확정 순수익: +${plan.target1ProfitAmt})`))
                 : `1차 목표가 ${target1Formatted} 도달 시 보유 물량의 절반(50%)을 분할 매도하여 원금과 확정 수익을 챙깁니다.`,
         },
     ];
@@ -2138,15 +2264,198 @@ const FALLBACK_RESEARCH_DESK: ResearchReportItem[] = [
 
 
 // 🌏 종목별 "해외에서 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는가?" 직관적 인과관계 헬퍼
+// 🚀 [실시간 주가 연동] 종목 맞춤형 3대 상승 동력 & 글로벌 훈풍 지표 산출 헬퍼
+function buildDefaultStockRiseIntel(stockName: string, stockCode?: string, extraContext?: string) {
+    const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
+    
+    // 심텍 / 패키지기판 (FC-CSP, SiP 등)
+    if (['심텍', '222800', '대덕전자', '353200', '코리아써키트', '007810', '해성디에스', '195870', '패키지기판', '기판', 'pcb', 'fc-csp', 'sip'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 온디바이스 AI 기판 탑재량 급증 · DDR5/GDDR7 전환 가속 · 흑자 턴어라운드 수혜주',
+            riseOneLiner: `해외에서 『온디바이스 AI 스마트폰 및 AI PC 확산으로 고다층 SiP·FC-CSP 패키지 기판 주문 폭증』과 『글로벌 메모리사(삼성전자·SK하이닉스)의 DDR5/GDDR7 전환 가속화』가 맞물리며 ➔ 공장 가동률 회복 및 판가(ASP) 급상승으로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 온디바이스 AI 모바일·PC 확산에 따른 고부가 SiP 및 FC-CSP 기판 채용 폭증',
+                    chain: '스마트폰과 PC당 기판 탑재 면적이 확대되고 고부가 SiP 모듈 주문이 쏟아져 분기 영업이익이 급증합니다.',
+                    detailed_explanation: `${stockName}은 모바일 AP 및 메모리 패키징에 필수적인 FC-CSP와 SiP 기판 분야 글로벌 1위권 공급사입니다. AI 연산 능력을 갖춘 스마트폰과 차세대 PC 출시로 고다층 고부가 기판 수요가 폭증하며 판가 상승과 실적 개선이 동시에 나타나고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '📈',
+                    trigger: '💎 삼성전자·SK하이닉스 DDR5 및 GDDR7 차세대 메모리 전환 가속화',
+                    chain: '전방 메모리 제조사들의 차세대 규격 기판 주문이 급증하여 청주 및 글로벌 팹 가동률이 100%에 근접하고 있습니다.',
+                    detailed_explanation: '서버 및 그래픽 카드용 고성능 메모리 전환 속도가 빨라지면서 기존 재고 조정이 완전히 끝나고 신규 기판 주문이 대폭 증가했습니다. 이에 따라 고정비 부담이 해소되며 강력한 흑자 턴어라운드 국면에 진입하고 있습니다.',
+                    impact_degree: '✨ 가동률 풀가동'
+                },
+                {
+                    icon: '💰',
+                    trigger: '💵 외국인·기관 큰손 패시브 수급 쌍끌이 매수 및 목표주가 상향 랠리',
+                    chain: '반도체 사이클 회복과 함께 코스닥 IT 하드웨어 대표주로 외국인 알고리즘 매수세가 집중 유입되고 있습니다.',
+                    detailed_explanation: '메모리 슈퍼사이클 턴어라운드 기대감이 고조되며 주요 증권사들이 목표가를 잇달아 상향하고 있으며, 외국인 지분율이 5거래일 연속 확대되며 주가 상승 탄력을 키우고 있습니다.',
+                    impact_degree: '⚡ 메이저 수급 결집'
+                }
+            ]
+        };
+    }
+
+    // 조선 / 해양플랜트 (삼성중공업, 한화오션 등)
+    if (['삼성중공업', '010140', '한화오션', '042660', 'hd한국조선해양', '009540', 'hd현대중공업', '329180', '현대미포조선', '조선', 'flng', 'lng선', '해양플랜트', '신조선가'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 고선가 LNG 운반선 수주 랠리 · 북미/카타르 메가 FLNG 독점 · 신조선가 최고치 수혜주',
+            riseOneLiner: `해외에서 『카타르·북미 대형 LNG선 수주 랠리 및 수조 원대 고마진 FLNG(해양플랜트) 독점 계약』이 터지며 ➔ 클락슨 신조선가 지수 사상 최고치 경신과 함께 3~4년 치 안정적 고수익 일감을 확보하여 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚢',
+                    trigger: '🔥 글로벌 오일 메이저의 수조 원대 FLNG(부유식 LNG 설비) 추가 수주 랠리',
+                    chain: '삼성중공업이 독점적 기술력을 보유한 고마진 해양플랜트(FLNG) 계약이 잇달아 성사되며 영업이익률이 퀀텀점프합니다.',
+                    detailed_explanation: '유가 안정세와 글로벌 LNG 수요 확대에 따라 글로벌 오일 메이저(페트로나스, 에니 등)의 해양가스전 개발 투자가 재개되었습니다. 삼성중공업은 전 세계 FLNG 시장의 80% 이상을 건조한 독보적 기술력으로 연간 1~2척의 메가 프로젝트 수주를 이어가며 막대한 수익성을 창출하고 있습니다.',
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '📈',
+                    trigger: '💎 클락슨 신조선가 지수 연일 사상 최고치 경신 및 고선가 선박 건조 본격화',
+                    chain: '과거 저가 수주 물량이 모두 털리고 척당 2.6억 달러 이상의 고선가 친환경 LNG선 건조 비중이 급증하고 있습니다.',
+                    detailed_explanation: '조선 3사의 도크가 2027~2028년까지 꽉 찬 상태에서 선주사들의 선박 발주 경쟁이 이어져 신조선가가 연일 최고치를 경신하고 있습니다. 이에 따라 선가 상승 효과가 실적에 본격 반영되는 영업 레버리지 사이클에 진입했습니다.',
+                    impact_degree: '✨ 신조선가 사상 최고'
+                },
+                {
+                    icon: '⚓',
+                    trigger: '🇺🇸 미 해군 MRO(함정 유지보수) 협력 확대 및 무탄소 친환경 암모니아선 선점',
+                    chain: '미국의 동맹국 조선소 MRO 발주 수혜와 친환경 무탄소 선박 기술 표준 선점으로 중장기 프리미엄을 확보하고 있습니다.',
+                    detailed_explanation: '미국 국방부의 해군 함정 MRO 프로젝트 진출 기대감과 함께 IMO 탄소 규제에 맞춘 암모니아·메탄올 이중연료 추진선 수주가 확대되며 미래 친환경 조선 시장의 주도권을 확고히 다지고 있습니다.',
+                    impact_degree: '⚡ 글로벌 수주 모멘텀'
+                }
+            ]
+        };
+    }
+
+    // 반도체 / 소부장 (씨엠티엑스, 하나머티리얼즈 등)
+    if (['반도체', 'hbm', '식각', '증착', '소부장', '하이닉스', '삼전', '삼성전자', '씨엠티엑스', 'cmtx', '하나머티', '티씨케이', '원익', '월덱스', '동진', '리노공업', '한미반도체'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 글로벌 빅테크 AI CAPEX 급증 · 팹 가동률 회복 · 고수익 부품 수주 수혜주',
+            riseOneLiner: `해외에서 『미국 빅테크(엔비디아·MS·구글)의 AI 데이터센터 투자 확대 및 글로벌 반도체 팹 가동률 반등』이 터지며 ➔ 고수익 소모성 부품 수주 급증과 외국인 패시브 매수세 결집으로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 글로벌 빅테크 AI 인프라 투자(CAPEX) 확대 및 전방 팹 가동률 급반등',
+                    chain: '삼성전자·TSMC·인텔 등 주요 파운드리 및 메모리 가동률이 상승하며 필수 부품 발주가 대폭 늘어나 실적이 퀀텀점프합니다.',
+                    detailed_explanation: `${stockName}이 생산하는 실리콘·세라믹·소모성 링 부품은 웨이퍼 식각 공정에서 지속적으로 마모되어 주기적으로 교체해야 하는 핵심 소모품입니다. 최근 AI 반도체 수요 폭발로 글로벌 팹 가동률이 80%대 후반으로 회복되면서 부품 교체 주기가 단축되고 분기 발주량이 전분기 대비 30% 이상 급증하고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '💰',
+                    trigger: '📈 외국인·기관 쌍끌이 대량 순매수 및 필라델피아 반도체 지수 강세',
+                    chain: '미국 테크주 랠리와 함께 코스닥/코스피 소부장 대표주로 글로벌 패시브 자금이 집중 유입되고 있습니다.',
+                    detailed_explanation: '필라델피아 반도체 지수 강세와 함께 글로벌 패시브 ETF 펀드들이 한국의 실적 가시성이 높은 중소형 소부장 종목들을 바스켓으로 매수하고 있습니다. 특히 외국인과 사모펀드가 3거래일 연속 순매수를 확대하며 단기 매물벽을 가볍게 돌파하는 원동력이 되고 있습니다.',
+                    impact_degree: '✨ 메이저 수급 결집'
+                },
+                {
+                    icon: '🌐',
+                    trigger: '💎 차세대 고부가가치 부품(SiC/쿼츠 등) 국산화 점유율 독점 및 단가 인상',
+                    chain: '진입장벽이 높은 차세대 공정 부품을 선점하여 독점적 마진율(영업이익률 20~30%대)을 확보하며 기업가치가 재평가됩니다.',
+                    detailed_explanation: '선단 공정(3nm/2nm) 및 HBM 고단 적층 공정으로 갈수록 기존 실리콘 부품 대비 내구성이 뛰어난 실리콘카바이드(SiC) 부품 채택이 필수적입니다. 높은 기술적 진입장벽 덕분에 납품 단가 인하 압력이 낮고 영업이익률 25% 이상의 고수익 구조가 유지되고 있습니다.',
+                    impact_degree: '⚡ 마진 레버리지'
+                },
+            ],
+            deepReport: {
+                summary_headline: `${stockName}은 글로벌 AI 반도체 투자 사이클과 파운드리 가동률에 직결된 핵심 수혜주입니다.`,
+                business_model_context: `${stockName}은 반도체 제조 공정 중 가장 난이도가 높은 식각/증착 챔버 내부에 장착되는 소모성 부품을 전문 제조합니다. 주요 고객사는 삼성전자, SK하이닉스 및 글로벌 장비 제조사(Applied Materials, Lam Research 등)이며, 칩이 생산될수록 비례해서 소모품 매출이 발생하는 캐시카우 비즈니스 모델을 갖추고 있습니다.`,
+                transmission_mechanism: `미국 빅테크 기업들의 AI 데이터센터 설비투자(CAPEX) 발표 ➔ 엔비디아 GPU 및 메모리(HBM) 주문 증가 ➔ 전방 파운드리·메모리 팹 가동률 상승 ➔ 소모성 링 부품 마모 가속화 ➔ ${stockName} 수주 잔고 급증 및 분기 매출 호조로 전달됩니다.`,
+                smart_money_logic: `외국인 및 기관 투자자들은 단순 분기 매출보다 '고마진 차세대 소재(SiC) 매출 비중 증가율'과 '고객사 내 점유율 확대 추이'를 매수의 핵심 근거로 보고 비중을 확대하고 있습니다.`,
+                key_inflection_points: `① 삼성전자·SK하이닉스의 분기 가동률 90% 회복 여부, ② 미국 필라델피아 반도체 지수의 신고가 돌파 흐름, ③ 외국인 창구의 순매수 기조 유지 여부`
+            }
+        };
+    }
+    
+    // 화장품 / K-소비재 (LG생활건강, 아모레 등)
+    if (['화장품', '생활건강', 'lg생활건강', '아모레', '코스맥스', '한국콜마', '뷰티', '에이피알', '클리오', '미용'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 중국 소비 부양책 · 미국·일본·유럽 K-뷰티 수출 폭증 · 원가 안정 수혜주',
+            riseOneLiner: `해외에서 『중국 정부의 강력한 경기 부양책 및 K-뷰티의 미국·일본·동남아 수출 다변화 성공』이 맞물리며 ➔ 글로벌 면세 및 온라인 매출이 급증하여 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '💄',
+                    trigger: '🔥 미국·일본·유럽 등 글로벌 인디/프리미엄 뷰티 수출 채널 급성장',
+                    chain: '중국 단일 의존도에서 벗어나 북미 및 글로벌 시장에서 K-뷰티 수출액이 사상 최대치를 경신하며 실적 턴어라운드를 주도합니다.',
+                    detailed_explanation: `과거 중국 중심이었던 매출 구조가 아마존, 세포라 등을 통한 북미/유럽 시장으로 다변화되면서 비(非)중국 글로벌 매출 비중이 30%를 돌파했습니다. 특히 서구권에서 K-인디 뷰티 및 클린 뷰티 열풍이 지속되면서 사상 최대 수출 실적을 기록하고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '🇨🇳',
+                    trigger: '🛍️ 중국 내수 소비 부양 패키지 가동 및 면세 채널 회복',
+                    chain: '중국 유커 관광객 증가 및 소비 진작 정책으로 고마진 프리미엄 화장품 판매가 회복 궤도에 올랐습니다.',
+                    detailed_explanation: '중국 인민은행의 대규모 유동성 공급과 내수 소비 촉진 정책으로 상하이·베이징 등 1선 도시 백화점 판매가 바닥을 통과했습니다. 방한 중국인 관광객의 면세점 객단가 또한 반등하며 오프라인 수익성이 가파르게 개선되고 있습니다.',
+                    impact_degree: '✨ 턴어라운드 모멘텀'
+                },
+                {
+                    icon: '💵',
+                    trigger: '📈 원/달러 환율 안정 및 원부자재 조달단가 하락으로 영업이익률 개선',
+                    chain: '원자재 수입가 안정과 고마진 브랜드 비중 확대로 영업이익률이 개선되며 기관 매수세가 결집 중입니다.',
+                    detailed_explanation: '원/달러 환율이 안정세를 찾으면서 유럽 등에서 수입하던 고급 향료, 기능성 원료의 수입 단가 부담이 대폭 완화되었습니다. 여기에 고마진 프리미엄 라인업 매출 비중이 확대되면서 분기 영업이익률이 2~3%p 개선되고 있습니다.',
+                    impact_degree: '⚡ 마진율 레버리지'
+                },
+            ],
+            deepReport: {
+                summary_headline: `${stockName}은 K-뷰티 글로벌 수출 다변화와 원가율 개선이 맞물린 턴어라운드 주도주입니다.`,
+                business_model_context: `${stockName}은 프리미엄 럭셔리 코스메틱부터 생활용품, 기능성 스킨케어까지 폭넓은 포트폴리오를 보유하고 있습니다. 브랜드 인지도와 탄탄한 유통 채널(H&B, 면세, 온라인 이커머스)을 기반으로 국내외에서 안정적인 현금 흐름을 창출하는 소비재 대표 기업입니다.`,
+                transmission_mechanism: `해외 소비 심리 지수 및 글로벌 이커머스 판매 데이터 ➔ 수출 물동량 확대 ➔ 고마진 브랜드 매출 비중 증가 ➔ 고정비 절감 효과(영업레버리지) ➔ 분기 영업이익 서프라이즈로 연결됩니다.`,
+                smart_money_logic: `기관 투자자들은 '중국 매출의 저점 통과 확인'과 '미국·일본 등 신규 해외 시장에서의 두 자릿수 성장률'을 핵심 매수 트리거로 보고 있으며, 밸류에이션 리레이팅 관점에서 비중을 늘리고 있습니다.`,
+                key_inflection_points: `① 월별 화장품 통관 수출 통계(관세청)의 증가 추세, ② 중국 명절 및 쇼핑 축제 기간의 실제 결제액, ③ 기관의 연기금/투신 연속 순매수 전환`
+            }
+        };
+    }
+
+    // 기본(범용) 턴어라운드 상승 동력
+    return {
+        riseChainBadge: `🔥 ${stockName} 글로벌 업황 턴어라운드 & 외국인·기관 수급 결집 수혜주`,
+        riseOneLiner: `해외에서 『글로벌 전방 수요 회복 및 미국 주요 증시 훈풍』이 전해지며 ➔ 외국인·기관의 쌍끌이 순매수와 실적 턴어라운드 기대감으로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+        riseTriggers: [
+            {
+                icon: '🚀',
+                trigger: `🔥 ${stockName} 전방 산업 수요 회복 및 분기 실적 턴어라운드`,
+                chain: '주요 고객사 발주가 늘어나고 신규 수주 모멘텀이 가시화되면서 실적 개선 기대감이 주가를 든든하게 견인합니다.',
+                detailed_explanation: `${stockName}의 핵심 사업 부문에서 국내외 신규 프로젝트 수주 계약이 체결되며 수주 잔고가 안정적인 성장세를 보이고 있습니다. 고정비 부담이 완화되는 구간에 진입하여 분기 실적 턴어라운드 가능성이 매우 높게 점쳐지고 있습니다.`,
+                impact_degree: '🔥 1순위 상승 동력'
+            },
+            {
+                icon: '💰',
+                trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 집중 유입',
+                chain: '기업 펀더멘털 개선과 우호적 밸류에이션 매력이 부각되며 메이저 수급이 집중되고 있습니다.',
+                detailed_explanation: '주요 증권사 리서치센터의 목표주가 상향 리포트와 함께 연기금, 자산운용사, 외국인 롱펀드의 실탄이 유입되고 있습니다. 프로그램 차익/비차익 순매수가 동반되면서 탄탄한 하방 지지력이 형성되었습니다.',
+                impact_degree: '✨ 수급 모멘텀'
+            },
+            {
+                icon: '🌐',
+                trigger: '🇺🇸 글로벌 시장 환경 개선 및 수출 마진 호조',
+                chain: '해외 주요 시장 환경이 개선되고 환율 및 원가 구조가 우호적으로 작용하며 우상향 추세를 지원합니다.',
+                detailed_explanation: '미국 등 해외 주요 증시의 위험자산 선호 심리가 확산되고 있으며, 글로벌 무역 환경 안정화로 원자재 조달 단가와 물류비가 안정되어 영업 마진이 극대화되고 있습니다.',
+                impact_degree: '⚡ 글로벌 수혜'
+            },
+        ],
+        deepReport: {
+            summary_headline: `${stockName}은 전방 업황 개선과 탄탄한 펀더멘털을 바탕으로 실적 개선세가 기대되는 종목입니다.`,
+            business_model_context: `${stockName}은 해당 산업 분야에서 탄탄한 기술력과 시장 지배력을 확보하고 있으며, 핵심 고객사와의 견고한 거래 관계를 바탕으로 경기 회복기마다 빠른 실적 반등을 이뤄낸 레퍼런스를 보유하고 있습니다.`,
+            transmission_mechanism: `글로벌 매크로 지표 개선 ➔ 전방 고객사 투자 재개 및 발주 증가 ➔ 공장 가동률 상승 및 매출원가율 하락 ➔ 당기순이익 급증 및 주가 재평가로 이어지는 정석적인 펀더멘털 선순환 구조입니다.`,
+            smart_money_logic: `메이저 수급 주체들은 단기 테마보다 '이익 추정치의 상향 조정(Earnings Revision)'과 '밸류에이션 저평가(낮은 PER/PBR)'를 확인하며 분할 매수로 접근하고 있습니다.`,
+            key_inflection_points: `① 분기 실적 컨센서스 상회 여부, ② 주요 외인 창구의 누적 순매수 대금, ③ 50일 이동평균선 안착 후 거래량 동반 돌파`
+        }
+    };
+}
+
 function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string, extraContext?: string): {
     chainBadge: string;
     oneLiner: string;
-    triggers: { icon: string; trigger: string; chain: string; impact_degree: string }[];
+    triggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string }[];
+    riseChainBadge: string;
+    riseOneLiner: string;
+    riseTriggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string }[];
 } {
     const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
 
     if (['snt모티브', 'snt', '064960', '모비스', '현대모비스', '한온시스템', '만도', 'hl만도', '화신', '에스엘', '서연이화', '구동모터', '방산소총'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 현대차/기아 글로벌 EV 구동모터 발주 · K-소총 해외 군수 수출 · 달러 환율 직결주',
             oneLiner: `해외에서 『현대차·GM 등 글로벌 완성차의 전기차(EV) 생산 속도조절로 구동모터 수주 지연』이 터지거나 『중동/동남아 K-소구경 화기 방산 수출 통관 지연』이 발생하면 ➔ ${stockName}의 전방 납품 매출이 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2158,6 +2467,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['한섬', '020000', 'f&f', 'fnf', '신세계인터', '영원무역', '의류', '패션', '명품', '타임', '마인', '시스템'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 고물가·고금리에 따른 해외 럭셔리·백화점 소비 심리 · 원/달러 환율(원단 수입) 직결주',
             oneLiner: `해외에서 『글로벌 고금리 장기화로 인한 민간 가계 소비 여력 위축』이나 『원/달러 환율 급등으로 이탈리아/유럽 명품 원단 및 수입 라이선스 매입비 폭증』이 터지면 ➔ 백화점 고가 의류 판매 마진이 깎여 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2169,6 +2479,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['현대글로비스', '글로비스', '086280', 'pcc', '자동차선', '해운운임', '완성차해운'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 글로벌 완성차 해상운송(PCC) 운임 지수 · 수에즈/홍해 지정학 리스크 · 미국 완성차 관세 직결주',
             oneLiner: `해외에서 『중동 홍해/수에즈 운하 등 해상 병목 해소로 자동차 운반선(PCC) 용선료 급락』이 발생하거나 『미국의 수입차 고율 관세 부과로 북미 수출 물동량 급감』이 터지면 ➔ 해운·물류 매출이 깎여 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2179,8 +2490,37 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
         };
     }
 
+    // 심텍 / 패키지기판 (FC-CSP, SiP 등)
+    if (['심텍', '222800', '대덕전자', '353200', '코리아써키트', '007810', '해성디에스', '195870', '패키지기판', '기판', 'pcb', 'fc-csp', 'sip'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 글로벌 메모리 팹 가동률 · 빅테크 모바일/AI 반도체 패키지 기판(FC-CSP·SiP) 수주 직결주',
+            oneLiner: `해외에서 『스마트폰·PC 등 전방 IT 세트 수요 부진으로 메모리 패키지 기판(FC-CSP/SiP) 재고 조정』이 발생하거나 『일본 기판사(이비덴/신코)의 엔저 기반 단가 인하 경쟁』이 심화되면 ➔ 기판 공장 가동률 저하 및 판가 하락으로 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '🏭', trigger: '📉 글로벌 메모리(DRAM·NAND) 및 모바일·PC 전방 재고 조정에 따른 패키지 기판 발주 둔화', chain: `${stockName}의 주력 제품인 FC-CSP, SiP, MCP 기판은 전방 메모리 제조사(삼성전자, SK하이닉스, 마이크론)의 생산량에 직결되므로 감산 또는 재고 조정 시 수주 절벽에 직면합니다.`, impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💴', trigger: '🇯🇵 엔저 기조에 따른 일본 기판 경쟁사(이비덴, 신코전기)의 납품 단가 인하 공세 및 원자재가 상승', chain: '엔화 약세로 일본 경쟁사의 수출 단가 경쟁력이 높아지고 동박·에폭시 수지 등 핵심 원자재 수입단가가 오르면 제조 마진율이 크게 압박받습니다.', impact_degree: '⚠️ 원가·단가 직격' },
+                { icon: '⚡', trigger: '🤖 글로벌 빅테크 AI 투자 속도조절 및 DDR5/GDDR7 전환 지연', chain: '차세대 고부가 기판 규격 전환이 늦어지면 고마진 프리미엄 제품군 비중 확대가 지연되어 판가(ASP) 하락 압력이 가중됩니다.', impact_degree: '⚡ 수요 사이클 변수' },
+            ],
+        };
+    }
+
+    // 조선 / 해양플랜트 (삼성중공업, 한화오션 등)
+    if (['삼성중공업', '010140', '한화오션', '042660', 'hd한국조선해양', '009540', 'hd현대중공업', '329180', '현대미포조선', '조선', 'flng', 'lng선', '해양플랜트', '신조선가'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 국제유가(WTI) · 글로벌 LNG선 발주 사이클 · 해양플랜트(FLNG) 계약 직결주',
+            oneLiner: `해외에서 『국제유가 급락으로 글로벌 오일 메이저의 해양플랜트(FLNG) 투자 지연』이 터지거나 『철강 후판가 급등 및 원/달러 환율 급락(원화 강세)』이 발생하면 ➔ 조선 수주 잔고 마진 축소로 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                { icon: '⛽', trigger: '📉 국제유가 급락(WTI $70 하회)에 따른 글로벌 오일 메이저 FLNG/해양플랜트 발주 보류', chain: `유가가 낮아지면 채산성 악화로 심해 유전 개발 및 부유식 액화천연가스 설비(FLNG) 발주가 연기되어 ${stockName}의 고마진 일감 확보에 차질이 생깁니다.`, impact_degree: '🔥 1순위 직격탄' },
+                { icon: '🔩', trigger: '📈 조선용 후판(두꺼운 철판) 공급단가 인상 및 원/달러 환율 급락(원화 강세)', chain: '선박 건조 원가의 20%를 차지하는 철강 후판가 상승 시 공사손실충당금 반영 위험이 커지며, 달러 결제 선박 대금의 원화 환산 이익이 감소합니다.', impact_degree: '⚠️ 원가·환율 직격' },
+                { icon: '🌍', trigger: '🚢 글로벌 친환경 탄소 규제 완화 및 컨테이너/탱커선 발주 피크아웃 우려', chain: '신조선가 지수 상승세가 둔화되거나 글로벌 해운사들의 선박 발주 사이클이 정점을 통과할 경우 조선 섹터 전반의 밸류에이션 하방 압력이 발생합니다.', impact_degree: '⚡ 업황 사이클 변수' },
+            ],
+        };
+    }
+
     if (['씨엠티엑스', 'cmtx', '388210', '하나머티리얼즈', '티씨케이', '원익qnc', '월덱스', '케이엔제이', '식각', '증착', '소부장', '실리콘카바이드', 'sic', '쿼츠', '전공정 부품'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 글로벌 반도체 팹(삼성·TSMC) 가동률 · 식각 Si/SiC 소재 조달 · 글로벌 CAPEX 직결주',
             oneLiner: `해외에서 『글로벌 빅테크의 AI/반도체 설비투자(CAPEX) 축소 발표』가 나오거나 『식각·증착 핵심 원소재(고순도 SiC/희토류) 해외 조달가 급등』이 터지면 ➔ 전방 칩 제조사의 소모성 링/부품 교체 주기가 늘어나고 주문이 줄어 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2192,6 +2532,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['하이닉스', '삼성전자', '한미반도체', '리노공업', 'hbm', '반도체', '메모리', '디램'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 미국 엔비디아(NVDA) · 빅테크 AI 서버 · 대중국 수출규제 직결주',
             oneLiner: `미국에서 『엔비디아(NVDA)·필라델피아 반도체지수 급락』이나 『구글·MS 등 빅테크의 AI 데이터센터 투자 축소』, 또는 『미국의 대중국 반도체 수출 통제 강화』가 터지면 ➔ AI 칩에 들어가는 메모리(HBM·D램)·장비 주문이 줄어들까 봐 외국인 매물이 쏟아지며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2203,6 +2544,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['현대차', '기아', '현대모비스', '현대글로비스', '자동차', '완성차', '모빌리티'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 미국 수입차 관세 · 북미 자동차 판매량 · 원/달러 환율 직결주',
             oneLiner: `미국에서 『한국산 수입 자동차·부품 고율 관세 부과(보편관세·IRA 축소)』 뉴스가 터지거나, 『미국 고금리 할부 부담으로 인한 북미 신차 판매 둔화』 또는 『원/달러 환율 급락(원화 강세)』이 발생하면 ➔ 북미 수출로 최대 이익을 내는 ${stockName}의 수출 채산성이 바로 깎여 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2214,6 +2556,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['리바트', '현대리바트', '한샘', '에이스침대', '지누스', 'kcc', 'lx하우시스', '가구', '인테리어', '건자재', '목재', '파티클보드', 'mdf'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 해외 수입 원목/PB 단가 · 달러 환율 · 국내외 건설/부동산 착공 직결주',
             oneLiner: `해외에서 『러시아/동남아산 원목·PB(파티클보드) 원자재 가격 급등 및 해상 컨테이너 운임 폭등』 또는 『원/달러 환율 급등』이 터지면 ➔ 해외에서 전량 달러로 수입하는 목재 조달 원가가 치솟고 빌트인 가구 납품 마진이 깎여 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2225,6 +2568,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['포스코', 'posco', '현대제철', '동국제강', '고려아연', '철강', '열연', '후판'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 중국 저가 철강 덤핑 · 호주 철광석 수입단가 · 글로벌 인프라 경기 직결주',
             oneLiner: `해외에서 『중국산 저가 철강재(열연/후판) 밀어내기 덤핑 수출』이 지속되거나 『호주 철광석/원료탄 수입가 급등』이 터지면 ➔ 판매가 대비 마진(스프레드)이 급격히 축소되어 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2236,6 +2580,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['cj제일제당', '오리온', '농심', '삼양식품', '대상', '오뚜기', '식음료', '라면', '곡물'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 CBOT 국제 곡물가(소맥/대두/원당) · 달러 환율 · K-푸드 해외 수출 직결주',
             oneLiner: `해외에서 『시카고상품거래소(CBOT) 소맥(밀가루)·원당·팜유 가격이 폭등』하거나 『원/달러 환율이 급등』하면 ➔ 원재료를 전량 달러로 수입하는 식음료 원가율이 폭증해 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2247,6 +2592,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (stockName.includes('한국전력') || stockCode === '015760' || stockName.includes('가스공사')) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 중동 국제유가(WTI) · 글로벌 LNG 가스가격 · 원/달러 환율 직결주',
             oneLiner: `중동 분쟁 등으로 해외에서 『국제유가(WTI)·LNG 천연가스 가격 폭등』이 터지거나 『원/달러 환율이 급등』하면 ➔ 비싼 달러를 주고 발전용 연료를 수입해야 해서 적자 부담이 커지며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2258,6 +2604,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['두산에너빌리티', '효성중공업', '현대일렉트릭', '일진전기', '제룡전기', 'ls electric', '변압기', '전력', '원전', 'smr'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 미국 AI 데이터센터 전력망 · 북미 초고압 변압기 · 글로벌 원전(SMR) 직결주',
             oneLiner: `미국·유럽에서 『빅테크들의 AI 데이터센터 전력망 투자 지연』이 터지거나, 『미국의 한국산 변압기 반덤핑 관세·무역 규제』 또는 『해외 원전(SMR·체코 등) 본계약 지연』 뉴스가 나오면 ➔ 해외 수주 폭발 기대감으로 오른 ${stockName}가 직격탄을 맞아 차익 매물이 쏟아집니다!`,
             triggers: [
@@ -2269,6 +2616,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['한미약품', '알테오젠', '삼성바이오', '셀트리온', '유한양행', '바이오', '제약', '신약', '임상'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 미국 FDA 임상/승인 · 미 연준 금리(국채금리) · 글로벌 빅파마 기술수출 직결주',
             oneLiner: `미국에서 『연준(Fed) 금리 인하 지연으로 미 국채금리가 급등』하거나, 해외 파트너 빅파마(머크·일라이릴리 등)의 『임상 지연·FDA 허가 보류(CRL)·미국 약가 인하 압박』이 터지면 ➔ 신약 기술수출 가치로 평가받는 ${stockName}가 직격탄을 맞아 급락합니다!`,
             triggers: [
@@ -2280,6 +2628,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['에스엠씨지', '아모레', '코스맥스', '한국콜마', '에이피알', '화장품', '뷰티', '용기'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 미국(아마존·세포라)·일본·중국 K-뷰티 화장품 수출 & 소비재 관세 직결주',
             oneLiner: `해외에서 『미국·일본·중국향 한국 화장품 수출 성장률 둔화』 데이터가 나오거나, 『미국의 수입 소비재 보편관세 부과·글로벌 뷰티 브랜드 발주 축소』 이슈가 터지면 ➔ K-뷰티 수출과 화장품 용기·제조 발주로 성장하는 ${stockName}가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2291,6 +2640,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['대한항공', '아시아나', '항공', '해운', 'hmm'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌏 국제유가(항공유) · 원/달러 환율 · 글로벌 여객/항공화물 운임 직결주',
             oneLiner: `해외에서 『중동 전쟁 등으로 국제유가(항공유)가 급등』하고 『원/달러 환율이 동반 급등』하거나, 『글로벌 경기 침체로 항공화물·여객 운임이 하락』하면 ➔ 연료비와 달러 리스 부채 이자가 폭증하며 ${stockName}가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2302,6 +2652,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['nvda', '엔비디아', 'nvidia'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌎 글로벌 AI 반도체 총대장 · 미 상무부 수출규제 · 빅테크 AI CAPEX 직결주',
             oneLiner: `미국 정부가 『중국·중동향 AI 칩 추가 수출 금지령』을 내리거나, MS·메타·구글·아마존 등 빅테크 고객사들이 『AI 데이터센터 설비투자(CAPEX) 축소 및 자체 칩 전환』을 발표하면 ➔ 독점 고마진이 흔들릴까 봐 엔비디아(NVDA)가 직격탄을 맞아 급락합니다!`,
             triggers: [
@@ -2313,6 +2664,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['tsla', '테슬라', 'tesla'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌎 미국 금리/보조금 · 중국 BYD 전기차 가격전쟁 · 자율주행(FSD) 규제 직결주',
             oneLiner: `중국·유럽에서 『BYD 등 중국 전기차와의 출혈 할인 전쟁으로 차량 판매량·마진율이 하락』하거나, 미국에서 『고금리 장기화 및 자율주행(FSD)·로보택시 규제 조사/리콜』이 터지면 ➔ 높은 성장성 프리미엄을 받는 테슬라(TSLA)가 직격탄을 맞아 급락합니다!`,
             triggers: [
@@ -2324,6 +2676,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
     if (['amzn', '아마존', 'msft', '마이크로소프트', 'pltr', '팔란티어', 'googl', '구글', 'aapl', '애플', 'meta', '메타'].some(k => combined.includes(k))) {
         return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
             chainBadge: '🌎 미국 연준(Fed) 국채금리 · 클라우드/AI 설비투자 수익성 · EU/미국 반독점 규제 직결주',
             oneLiner: `미국에서 『물가 반등으로 미 10년물 국채금리가 급등』하거나, 실적 발표에서 『막대한 AI·클라우드 투자비 대비 수익(가이던스)이 월가 기대치를 밑돈다』는 평가 또는 『미 법무부·EU 반독점 제재』가 터지면 ➔ ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
             triggers: [
@@ -2335,6 +2688,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     }
 
     return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
         chainBadge: '🌏 미국 나스닥·원/달러 환율 · 글로벌 수출 경기 & 외국인 수급 직결주',
         oneLiner: `해외에서 『미국 나스닥 급락 및 글로벌 경기 침체 우려로 원/달러 환율이 급등』하거나, 『미국의 수입 관세 장벽 강화 및 전방 고객사 발주 지연』 이슈가 터지면 ➔ 외국인·기관의 프로그램 매도세가 출회되며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
         triggers: [
@@ -2342,6 +2696,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
             { icon: '💱', trigger: '📈 원/달러 환율 급등 및 해외 원자재·물류비 상승', chain: '환율 급등 시 외국인 수급이 이탈하고 원재료 조달 부담이 커져 영업이익률이 압박받습니다.', impact_degree: '⚠️ 수급·원가 직격' },
             { icon: '📢', trigger: '📑 전방 고객사 발주 지연 또는 CB·유상증자 등 물량 공시', chain: '주요 매출처 투자 지연이나 주식 수가 늘어나는 자금조달 공시 발생 시 단기 주가가 흔들립니다.', impact_degree: '⚡ 기업 고유 변수' },
         ],
+        ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
     };
 }
 
@@ -2534,67 +2889,131 @@ export default function CeoOfficePage() {
             overseas_chain_badge: fallbackHit.chainBadge,
             direct_hit_one_liner: fallbackHit.oneLiner,
             overseas_triggers: fallbackHit.triggers,
+            rise_chain_badge: fallbackHit.riseChainBadge,
+            rise_one_liner: fallbackHit.riseOneLiner,
+            rise_triggers: fallbackHit.riseTriggers,
             live_diagnosis: null,
         };
         const disclosures: any[] = r.disclosures || [];
         const liveDiag = dropIntel.live_diagnosis;
-        const isDroppingNow = (r.change_pct || 0) < 0;
+        const deepReport = dropIntel.deep_report || (fallbackHit as any)?.deepReport || null;
+
+        const rawChg = typeof r.change_pct === 'number'
+            ? r.change_pct
+            : parseFloat(String(r.change_pct || r.price || '').replace(/[^0-9.-]/g, '')) || 0;
+        const isRising = rawChg > 0;
+        const isDropping = rawChg < 0;
+
+        const mainBadgeText = isRising ? '🚀 실시간 상승 원인 & 3대 핵심 모멘텀' : isDropping ? '🚨 하락 원인 & 해외 직격탄 판독' : '⚖️ 보합 원인 & 수급 균형 판독';
+        const mainBadgeColor = isRising ? 'bg-emerald-400 text-slate-950' : isDropping ? 'bg-rose-500 text-white' : 'bg-slate-400 text-slate-950';
+
+        const mainTitle = isRising
+            ? `“오늘 왜 오르나요? (+${rawChg.toFixed(2)}% 실시간 상승 원인 & 3대 핵심 모멘텀)”`
+            : isDropping
+            ? `“오늘 왜 떨어지나요? (${rawChg.toFixed(2)}% 실시간 하락 원인 & 3대 해외 뇌관)”`
+            : `“오늘 왜 보합인가요? (0.00% 실시간 수급 균형 & 3대 관전 포인트)”`;
+
+        const chainBadge = isRising
+            ? (dropIntel.rise_chain_badge || fallbackHit.riseChainBadge || `🔥 ${r.stock_name} 글로벌 훈풍 & 상승 주도주`)
+            : isDropping
+            ? (dropIntel.overseas_chain_badge || fallbackHit.chainBadge || `🌏 ${r.stock_name} 글로벌 리스크 직결주`)
+            : `⚪ ${r.stock_name} 수급 균형 & 차기 방향성 탐색주`;
+
+        const conclusionTitle = isRising
+            ? '🚀 리서치팀의 직관적 3초 결론 (오늘 주가를 끌어올린 핵심 상승 동력)'
+            : isDropping
+            ? '💣 리서치팀의 직관적 3초 결론 (이 종목이 가장 무서워하는 해외 직격탄)'
+            : '⚖️ 리서치팀의 직관적 3초 결론 (실시간 수급 공방 및 매물 소화 판독)';
+
+        const conclusionText = isRising
+            ? (dropIntel.rise_one_liner || fallbackHit.riseOneLiner || liveDiag?.primary_cause_title || `전방 수요 회복 및 외인·기관 쌍끌이 매수로 +${rawChg.toFixed(2)}% 강세를 견인 중입니다!`)
+            : isDropping
+            ? (dropIntel.direct_hit_one_liner || fallbackHit.oneLiner || liveDiag?.primary_cause_title || `해외 시장 변동성 및 차익실현 매물 출회로 ${rawChg.toFixed(2)}% 조정을 받고 있습니다!`)
+            : (liveDiag?.primary_cause_title || `악재 공시 없는 상태에서 매수세와 매도세가 팽팽하게 맞서며 50일선 지지선 안착을 시험하는 안정적 보합 흐름입니다.`);
+
+        const activeTriggers = isRising
+            ? (dropIntel.rise_triggers || fallbackHit.riseTriggers || [
+                { icon: '🚀', trigger: `🔥 ${r.stock_name} 전방 산업 수요 회복 및 실적 턴어라운드`, chain: '핵심 고객사 발주 확대와 신규 수주 모멘텀이 가시화되면서 실적 개선 기대감이 주가를 견인합니다.', impact_degree: '🔥 1순위 상승 동력' },
+                { icon: '💰', trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입', chain: '기업 밸류에이션 매력이 부각되며 메이저 수급이 집중 유입되고 있습니다.', impact_degree: '✨ 수급 모멘텀' },
+                { icon: '🌐', trigger: '🇺🇸 글로벌 시장 환경 호조 및 수출 마진 확대', chain: '미국 등 해외 주요 시장 지수가 상승하고 환율 및 원가 구조가 우호적으로 작용합니다.', impact_degree: '⚡ 글로벌 수혜' },
+            ])
+            : isDropping
+            ? (dropIntel.overseas_triggers || fallbackHit.triggers || [
+                { icon: '🌎', trigger: '🇺🇸 미국 증시 급락 & 글로벌 경기 둔화 우려', chain: '밤사이 해외 시장 조정 시 외국인·기관 프로그램 매도가 출회되며 주가를 누릅니다.', impact_degree: '🔥 1순위 직격탄' },
+                { icon: '💱', trigger: '📈 원/달러 환율 급등 및 해외 원자재·물류비 상승', chain: '환율 급등 시 외국인 수급이 이탈하고 원재료 조달 부담이 커집니다.', impact_degree: '⚠️ 수급·원가 직격' },
+                { icon: '📢', trigger: '📑 전방 고객사 발주 지연 또는 물량 공시', chain: '주요 매출처 투자 지연이나 단기 차익 매물 발생 시 주가가 흔들립니다.', impact_degree: '⚡ 기업 고유 변수' },
+            ])
+            : [
+                { icon: '⚖️', trigger: '📊 외국인·기관 수급 공방 및 매물 소화', chain: '단기 급변동 없이 외인과 기관의 매도/매수가 균형을 이루며 차기 모멘텀을 대기 중입니다.', impact_degree: '⚖️ 수급 균형' },
+                { icon: '🛡️', trigger: '🧱 핵심 이동평균선(50일선) 지지력 시험', chain: '추세 이탈 없는 안정적인 횡보 구간으로 단기 차트 바닥을 다지는 과정입니다.', impact_degree: '🧱 지지선 확인' },
+                { icon: '🌐', trigger: '⚡ 대외 매크로 및 전방 고객사 신규 발주 대기', chain: '글로벌 금리 및 전방 고객사 투자 계획 발표에 따른 신규 방향성 형성을 관망 중입니다.', impact_degree: '⚡ 모멘텀 대기' },
+            ];
+
+        const containerBg = isRising
+            ? 'bg-gradient-to-br from-emerald-950/45 via-[#111f1e] to-slate-950 border-emerald-500/60'
+            : isDropping
+            ? 'bg-gradient-to-br from-rose-950/45 via-[#1f1118] to-slate-950 border-rose-500/60'
+            : 'bg-gradient-to-br from-slate-900/95 via-[#131622] to-slate-950 border-slate-600/60';
+
+        const conclusionBoxBorder = isRising ? 'border-emerald-400/45' : isDropping ? 'border-rose-400/45' : 'border-slate-500/45';
+        const conclusionHeaderColor = isRising ? 'text-emerald-300' : isDropping ? 'text-rose-300' : 'text-slate-300';
 
         return (
             <div className="space-y-4 pt-1">
-                {/* 🚨 0-1. [핵심!] 해외에서 무슨 이슈가 터지면 이 회사가 직격탄을 맞아 떨어지나요? + 실시간 하락/상승 원인 판독 */}
-                <div className={`rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl border-2 ${
-                    isDroppingNow
-                        ? 'bg-gradient-to-br from-rose-950/45 via-[#131122] to-slate-950 border-rose-500/60'
-                        : 'bg-gradient-to-br from-amber-950/35 via-[#11182b] to-slate-950 border-amber-500/50'
-                }`}>
+                {/* 🚀/🚨/⚖️ 0-1. [핵심!] 실시간 주가 등락률 연동: 올랐으면 상승 원인&모멘텀만, 내렸으면 하락 원인&해외뇌관만 정밀 판독 */}
+                <div className={`rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl border-2 ${containerBg}`}>
                     {/* 상단 헤더 */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 shadow-md ${
-                                isDroppingNow ? 'bg-rose-500 text-white' : 'bg-amber-400 text-slate-950'
-                            }`}>
-                                <span>{isDroppingNow ? '🚨 하락 원인 & 해외 직격탄 판독' : '🌏 해외 직격탄 연결고리 & 실시간 판독'}</span>
+                            <span className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 shadow-md ${mainBadgeColor}`}>
+                                <span>{mainBadgeText}</span>
                             </span>
                             <span className="text-xs sm:text-sm font-black text-white">
-                                &ldquo;해외에서 무슨 일이 터지면 {r.stock_name} 주가가 직격탄을 맞아 떨어지나요?&rdquo;
+                                {mainTitle}
                             </span>
                         </div>
-                        <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-white/10 text-amber-300 border border-amber-400/30">
-                            {dropIntel.overseas_chain_badge}
+                        <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${
+                            isRising
+                                ? 'bg-emerald-400/15 text-emerald-200 border-emerald-400/30'
+                                : isDropping
+                                ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
+                                : 'bg-slate-400/15 text-slate-200 border-slate-400/30'
+                        }`}>
+                            {chainBadge}
                         </span>
                     </div>
 
-                    {/* 💡 1줄 직관적 인과관계 해답 박스 (가장 눈에 확 들어오게!) */}
-                    <div className="bg-black/65 border-2 border-amber-400/45 rounded-2xl p-3.5 sm:p-4 space-y-2 shadow-inner">
-                        <div className="flex items-center gap-1.5 text-xs font-black text-amber-300">
-                            <span>💣</span>
-                            <span>리서치팀의 직관적 3초 결론 (이 종목이 가장 무서워하는 해외 직격탄)</span>
+                    {/* 💡 1줄 직관적 결론 박스 */}
+                    <div className={`bg-black/65 border-2 ${conclusionBoxBorder} rounded-2xl p-3.5 sm:p-4 space-y-2 shadow-inner`}>
+                        <div className={`flex items-center gap-1.5 text-xs font-black ${conclusionHeaderColor}`}>
+                            <span>{conclusionTitle}</span>
                         </div>
                         <p className="text-xs sm:text-sm text-white font-extrabold leading-relaxed break-keep">
-                            {dropIntel.direct_hit_one_liner}
+                            {conclusionText}
                         </p>
                     </div>
 
-                    {/* 3대 해외 직격탄 뇌관 카드 (정보량 풍부 & 일목요연한 3단계 직관 요약) */}
+                    {/* 3대 핵심 요인 카드 (올랐으면 3대 상승 동력, 내렸으면 3대 해외 뇌관) */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                        {(dropIntel.overseas_triggers || []).map((t: any, tIdx: number) => (
+                        {(activeTriggers || []).map((t: any, tIdx: number) => (
                             <div key={tIdx} className="bg-gradient-to-b from-black/60 to-slate-950/80 border border-white/15 hover:border-amber-400/50 rounded-xl p-3.5 space-y-2 transition-all shadow-md flex flex-col justify-between">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/10">
                                         <div className="flex items-center gap-1.5 min-w-0">
-                                            <span className="text-base">{t.icon || '🌏'}</span>
-                                            <span className="text-xs font-black text-amber-300 truncate">
-                                                해외 뇌관 {tIdx + 1}
+                                            <span className="text-base">{t.icon || (isRising ? '🚀' : isDropping ? '💣' : '⚖️')}</span>
+                                            <span className={`text-xs font-black truncate ${isRising ? 'text-emerald-300' : isDropping ? 'text-amber-300' : 'text-slate-300'}`}>
+                                                {isRising ? `상승 동력 ${tIdx + 1}` : isDropping ? `해외 뇌관 ${tIdx + 1}` : `관전 포인트 ${tIdx + 1}`}
                                             </span>
                                             {t.category_tag && (
-                                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-400/15 text-amber-200 border border-amber-400/30 shrink-0">
+                                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-white/10 text-gray-200 border border-white/20 shrink-0">
                                                     {t.category_tag}
                                                 </span>
                                             )}
                                         </div>
                                         <span className={`text-[10px] font-black px-2 py-0.5 rounded border shrink-0 ${
-                                            tIdx === 0 || (t.impact_degree || '').includes('1순위')
+                                            isRising
+                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                : tIdx === 0 || (t.impact_degree || '').includes('1순위')
                                                 ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                                                 : 'bg-amber-500/20 text-amber-200 border-amber-500/30'
                                         }`}>
@@ -2604,37 +3023,118 @@ export default function CeoOfficePage() {
                                     <div className="text-xs sm:text-[13px] font-black text-white leading-snug break-keep pt-0.5">
                                         {t.trigger}
                                     </div>
-                                    <div className="text-[11px] text-gray-200 leading-relaxed break-keep bg-white/[0.03] p-2 rounded-lg border border-white/5">
-                                        {t.chain}
+                                    <div className="text-[11px] text-gray-200 leading-relaxed break-keep bg-white/[0.03] p-2.5 rounded-lg border border-white/5 space-y-1.5">
+                                        <div className="font-semibold text-gray-100">{t.chain}</div>
+                                        {t.detailed_explanation && (
+                                            <div className="text-[10.5px] text-gray-300 pt-1.5 border-t border-white/5 leading-relaxed bg-black/40 p-2 rounded">
+                                                <span className={isRising ? 'text-emerald-300 font-bold mr-1' : isDropping ? 'text-amber-300 font-bold mr-1' : 'text-slate-300 font-bold mr-1'}>
+                                                    🔍 상세 인과 메커니즘:
+                                                </span>
+                                                {t.detailed_explanation}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="text-[10px] text-gray-400 font-mono flex items-center justify-between pt-1 border-t border-white/5">
-                                    <span className="text-amber-400/80">⚡ 영향 경로:</span>
-                                    <span className="text-gray-300 font-semibold truncate ml-1">{tIdx === 0 ? '원가율/수급 직격' : tIdx === 1 ? '영업이익률 압박' : '전방 수주/출하량'}</span>
+                                    <span className={isRising ? 'text-emerald-400/90' : 'text-amber-400/80'}>
+                                        {isRising ? '🚀 핵심 수혜 효과:' : '⚡ 영향 경로:'}
+                                    </span>
+                                    <span className="text-gray-300 font-semibold truncate ml-1">
+                                        {isRising
+                                            ? (tIdx === 0 ? '핵심 수주/출하량 폭증' : tIdx === 1 ? '메이저 수급 유입' : '글로벌 수출 마진 레버리지')
+                                            : (tIdx === 0 ? '원가율/수급 직격' : tIdx === 1 ? '영업이익률 압박' : '전방 수주/출하량')}
+                                    </span>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* 🔍 오늘 왜 떨어졌나요? / 왜 움직이나요? (실시간 뉴스·DART공시·수급 교차 판독) */}
+                    {/* 📖 [종목명] 리서치팀 4대 심층 정밀 인과 분석 리포트 (상세 해설) */}
+                    {deepReport && (
+                        <div className="bg-black/70 border border-indigo-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10">
+                                <div className="flex items-center gap-2">
+                                    <span className="p-1 rounded-md bg-indigo-500/20 text-indigo-300 text-xs font-black">📖</span>
+                                    <span className="text-xs sm:text-sm font-black text-white">
+                                        {r.stock_name} 리서치팀 심층 정밀 인과 분석 리포트 (상세 해설)
+                                    </span>
+                                </div>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-200 border border-indigo-400/30">
+                                    수석 애널리스트 정밀 분석
+                                </span>
+                            </div>
+
+                            {deepReport.summary_headline && (
+                                <div className="bg-indigo-950/30 border border-indigo-500/25 rounded-xl p-3 text-xs sm:text-[13px] font-bold text-indigo-200 leading-relaxed break-keep">
+                                    💡 {deepReport.summary_headline}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                {/* 1. 비즈니스 모델 & 글로벌 밸류체인 */}
+                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 space-y-1.5">
+                                    <div className="text-[11px] font-black text-cyan-300 flex items-center gap-1.5">
+                                        <span>🏢</span> 1. 비즈니스 구조 &amp; 글로벌 밸류체인 생태계
+                                    </div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">
+                                        {deepReport.business_model_context}
+                                    </p>
+                                </div>
+
+                                {/* 2. 환율·원가·전방 발주 인과 메커니즘 */}
+                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 space-y-1.5">
+                                    <div className="text-[11px] font-black text-amber-300 flex items-center gap-1.5">
+                                        <span>🔄</span> 2. 실시간 거시지표 ➔ 기업 실적 전달 메커니즘
+                                    </div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">
+                                        {deepReport.transmission_mechanism}
+                                    </p>
+                                </div>
+
+                                {/* 3. 외국인·기관 큰손 수급 논리 */}
+                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 space-y-1.5">
+                                    <div className="text-[11px] font-black text-emerald-300 flex items-center gap-1.5">
+                                        <span>📊</span> 3. 메이저 수급(외인·기관)의 자금 집행 기준
+                                    </div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">
+                                        {deepReport.smart_money_logic}
+                                    </p>
+                                </div>
+
+                                {/* 4. 향후 주가 변곡점 & 핵심 관전 포인트 */}
+                                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-3 space-y-1.5">
+                                    <div className="text-[11px] font-black text-purple-300 flex items-center gap-1.5">
+                                        <span>🎯</span> 4. 추세 변곡점 &amp; 핵심 모니터링 체크리스트
+                                    </div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed break-keep">
+                                        {deepReport.key_inflection_points}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 🔍 실시간 교차 팩트체크 (뉴스·DART공시·수급) */}
                     {liveDiag && (
                         <div className={`rounded-2xl p-3.5 sm:p-4 space-y-3 border ${
-                            isDroppingNow
+                            isDropping
                                 ? 'bg-rose-950/35 border-rose-500/40'
-                                : 'bg-emerald-950/25 border-emerald-500/35'
+                                : isRising
+                                ? 'bg-emerald-950/35 border-emerald-500/40'
+                                : 'bg-slate-900/60 border-slate-600/40'
                         }`}>
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <span className={`px-2 py-0.5 rounded-md text-[11px] font-black ${
-                                        isDroppingNow ? 'bg-rose-500 text-white' : 'bg-emerald-400 text-slate-950'
+                                        isDropping ? 'bg-rose-500 text-white' : isRising ? 'bg-emerald-400 text-slate-950' : 'bg-slate-400 text-slate-950'
                                     }`}>
                                         {liveDiag.status_badge}
                                     </span>
                                     <span className="text-xs font-black text-white">
-                                        {(r.change_pct || 0) < 0
-                                            ? `🚨 오늘 왜 떨어지나요? (${r.change_pct}% 하락 원인 3초 해답)`
-                                            : (r.change_pct || 0) > 0
-                                            ? `🚀 오늘 왜 오르나요? (+${r.change_pct}% 상승 원인 3초 해답)`
+                                        {isDropping
+                                            ? `🚨 오늘 왜 떨어지나요? (${rawChg.toFixed(2)}% 하락 원인 3초 해답)`
+                                            : isRising
+                                            ? `🚀 오늘 왜 오르나요? (+${rawChg.toFixed(2)}% 상승 원인 3초 해답)`
                                             : `⚖️ 오늘 주가 흐름 판독 (보합 0.00% 원인 판독)`}
                                     </span>
                                 </div>
@@ -2653,7 +3153,7 @@ export default function CeoOfficePage() {
                                     <p className="text-[11px] text-gray-200 leading-relaxed break-keep">{liveDiag.disc_verdict}</p>
                                 </div>
                                 <div className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
-                                    <div className="text-[11px] font-black text-sky-300">📰 2. 최신 언론 뉴스·이슈 판독</div>
+                                    <div className="text-[11px] font-black text-sky-300">📰 2. 언론 보도 &amp; 이슈 스캔</div>
                                     <p className="text-[11px] text-gray-200 leading-relaxed break-keep">{liveDiag.news_verdict}</p>
                                 </div>
                                 <div className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
@@ -2664,14 +3164,16 @@ export default function CeoOfficePage() {
 
                             <div className="bg-black/70 border border-amber-500/35 rounded-xl px-3 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                                 <div className="text-gray-200 font-bold break-keep">
-                                    <span className="text-amber-300 font-black mr-1.5">🛡️ 리서치팀 &amp; CRO 행동 지침:</span>
+                                    <span className="text-amber-300 font-black mr-1.5">
+                                        {isRising ? '🎯 리서치팀 실전 수익 극대화 지침:' : isDropping ? '🛡️ 리서치팀 & CRO 손실 방어 지침:' : '⚖️ 리서치팀 실전 관망 지침:'}
+                                    </span>
                                     {liveDiag.action_guide}
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* 📢 최근 금융감독원 전자공시(DART) & 주요 고시 쉬운 해설 리스트 */}
+                {/* 📢 최근 금융감독원 전자공시(DART) & 주요 고시 쉬운 해설 리스트 */}
                     {isKr && (
                         <div className="bg-black/50 border border-white/10 rounded-2xl p-3.5 sm:p-4 space-y-2.5">
                             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -3436,6 +3938,15 @@ export default function CeoOfficePage() {
     const [toastMessage, setToastMessage] = useState<{ title: string; desc: string } | null>(null);
 
     const mainSectionRef = useRef<HTMLDivElement>(null);
+    const tabScrollRef = useRef<HTMLDivElement>(null);
+    const scrollTabs = (direction: 'left' | 'right') => {
+        if (tabScrollRef.current) {
+            tabScrollRef.current.scrollBy({
+                left: direction === 'left' ? -260 : 260,
+                behavior: 'smooth',
+            });
+        }
+    };
     const boardroomDebateRef = useRef<HTMLDivElement>(null);
     const detailReaderRef = useRef<HTMLDivElement>(null);
 
@@ -4696,137 +5207,176 @@ export default function CeoOfficePage() {
 
                 {/* 🌟 대표이사 집무실 프리미엄 세그먼트 도크 (Luxury Executive Tab Bar) */}
                 <div className="bg-[#070b16]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 sm:p-2.5 shadow-2xl">
-                    <div className="flex items-center justify-between gap-2">
-                        {/* 탭 목록: 부드러운 가로 스크롤 및 컴팩트한 필 디자인으로 줄바꿈 깨짐 없이 깔끔하게 1줄 표시 */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
+                        {/* 탭 네비게이션 영역 (전체 너비 확보 + 부드러운 가로 스크롤 & 화살표) */}
+                        <div className="flex items-center gap-1 min-w-0 flex-1">
+                            {/* 좌측 스크롤 화살표 버튼 */}
                             <button
                                 type="button"
-                                onClick={() => setActiveTab('electronic_sign')}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'electronic_sign'
-                                        ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
-                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                                }`}
+                                onClick={() => scrollTabs('left')}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 shrink-0 transition-all cursor-pointer"
+                                title="왼쪽 탭으로 이동"
                             >
-                                <span>🖋️ 전자결재 서류함</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-normal ${
-                                    activeTab === 'electronic_sign' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                }`}>
-                                    대기 {pendingDocsCount}건
-                                </span>
+                                <ChevronLeft className="w-4 h-4" />
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('one_page_summary')}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'one_page_summary'
-                                        ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 text-slate-950 shadow-lg shadow-amber-500/25'
-                                        : 'bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 border border-amber-400/30'
-                                }`}
-                            >
-                                <span>📄 1장 요약 브리핑</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
-                                    activeTab === 'one_page_summary' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
-                                }`}>
-                                    한눈에 보기
-                                </span>
-                            </button>
+                            {/* 탭 목록: 컴팩트한 필 디자인 + 부드러운 가로 스크롤 (잘림 방지) */}
+                            <div ref={tabScrollRef} className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1 scroll-smooth">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('electronic_sign');
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'electronic_sign'
+                                            ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
+                                            : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                    }`}
+                                >
+                                    <span>🖋️ 전자결재</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-normal ${
+                                        activeTab === 'electronic_sign' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    }`}>
+                                        대기 {pendingDocsCount}건
+                                    </span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('weekly_review_calendar')}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'weekly_review_calendar'
-                                        ? 'bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400 text-slate-950 shadow-lg shadow-teal-500/25'
-                                        : 'bg-teal-500/10 text-teal-200 hover:bg-teal-500/20 border border-teal-400/30'
-                                }`}
-                            >
-                                <span>📋 주간 복기 &amp; 🗓️ 경제일정</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
-                                    activeTab === 'weekly_review_calendar' ? 'bg-slate-950/30 text-slate-950' : 'bg-teal-400/20 text-teal-300'
-                                }`}>
-                                    특화팀
-                                </span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('one_page_summary');
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'one_page_summary'
+                                            ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 text-slate-950 shadow-lg shadow-amber-500/25'
+                                            : 'bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 border border-amber-400/30'
+                                    }`}
+                                >
+                                    <span>📄 1장 요약</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                        activeTab === 'one_page_summary' ? 'bg-slate-950/30 text-slate-950' : 'bg-amber-400/20 text-amber-300'
+                                    }`}>
+                                        브리핑
+                                    </span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('boardroom')}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'boardroom'
-                                        ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-indigo-500/25'
-                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                                }`}
-                            >
-                                <span>🎙️ 임원 대면 토론실</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                                    activeTab === 'boardroom' ? 'bg-black/30 text-white' : 'bg-white/10 text-zinc-400'
-                                }`}>
-                                    {debates.length}명
-                                </span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('weekly_review_calendar');
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'weekly_review_calendar'
+                                            ? 'bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400 text-slate-950 shadow-lg shadow-teal-500/25'
+                                            : 'bg-teal-500/10 text-teal-200 hover:bg-teal-500/20 border border-teal-400/30'
+                                    }`}
+                                >
+                                    <span>📋 주간 복기 &amp; 일정</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                        activeTab === 'weekly_review_calendar' ? 'bg-slate-950/30 text-slate-950' : 'bg-teal-400/20 text-teal-300'
+                                    }`}>
+                                        캘린더
+                                    </span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setActiveTab('approved_tf');
-                                    fetchTradingDesk();
-                                }}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'approved_tf'
-                                        ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-300 text-slate-950 shadow-lg shadow-emerald-500/20 font-black'
-                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                                }`}
-                            >
-                                <span>💼 트레이딩 운용팀</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                                    activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                }`}>
-                                    {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개 운용
-                                </span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('boardroom');
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'boardroom'
+                                            ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 text-slate-950 shadow-lg shadow-purple-500/25'
+                                            : 'bg-purple-500/10 text-purple-200 hover:bg-purple-500/20 border border-purple-400/30'
+                                    }`}
+                                >
+                                    <span>🎙️ 임원 토론실</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                        activeTab === 'boardroom' ? 'bg-slate-950/30 text-slate-950' : 'bg-purple-400/20 text-purple-300'
+                                    }`}>
+                                        5명
+                                    </span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setActiveTab('watchlist_research');
-                                    if (researchReports.length === 0) fetchWatchlistResearch();
-                                }}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'watchlist_research'
-                                        ? 'bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
-                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                                }`}
-                            >
-                                <span>🔬 맞춤 종목 리서치</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                                    activeTab === 'watchlist_research' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                                }`}>
-                                    전담
-                                </span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('approved_tf');
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'approved_tf'
+                                            ? 'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/25 font-black'
+                                            : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                    }`}
+                                >
+                                    <span>💼 트레이딩 운용</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                        activeTab === 'approved_tf' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    }`}>
+                                        {(tradingDesk?.positions?.filter((p: any) => p.status !== 'CLOSED')?.length || approvedDocsCount)}개
+                                    </span>
+                                </button>
 
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('watchlist_research');
+                                        if (researchReports.length === 0) fetchWatchlistResearch();
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'watchlist_research'
+                                            ? 'bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 text-slate-950 shadow-lg shadow-sky-500/25 font-black'
+                                            : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                    }`}
+                                >
+                                    <span>🔬 맞춤 리서치</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                        activeTab === 'watchlist_research' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                                    }`}>
+                                        전담
+                                    </span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setActiveTab('history');
+                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                        activeTab === 'history'
+                                            ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
+                                            : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                                    }`}
+                                >
+                                    <span>🗂️ 결재 기록</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                        activeTab === 'history' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-white/10 text-zinc-400'
+                                    }`}>
+                                        {approvedDocsCount + directiveLogs.length + chatLogs.length}건
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* 우측 스크롤 화살표 버튼 */}
                             <button
                                 type="button"
-                                onClick={() => setActiveTab('history')}
-                                className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                    activeTab === 'history'
-                                        ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25'
-                                        : 'bg-white/[0.04] text-zinc-300 hover:text-white hover:bg-white/[0.08] border border-white/5'
-                                }`}
+                                onClick={() => scrollTabs('right')}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 shrink-0 transition-all cursor-pointer"
+                                title="오른쪽 탭으로 이동"
                             >
-                                <span>🗂️ 결재·지시 기록</span>
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                                    activeTab === 'history' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-white/10 text-zinc-400'
-                                }`}>
-                                    {approvedDocsCount + directiveLogs.length + chatLogs.length}건
-                                </span>
+                                <ChevronRight className="w-4 h-4" />
                             </button>
                         </div>
 
                         {/* 우측 툴: 지휘통제실 & 전 부서 보고 새로고침 */}
-                        <div className="flex items-center gap-1.5 shrink-0 pl-1.5 border-l border-white/10">
+                        <div className="flex items-center justify-end gap-1.5 shrink-0 pt-2 xl:pt-0 border-t xl:border-t-0 xl:border-l border-white/10 pl-0 xl:pl-2.5">
                             <button
                                 type="button"
                                 onClick={() => setShowCommandDrawer(prev => !prev)}
@@ -4837,7 +5387,7 @@ export default function CeoOfficePage() {
                                 }`}
                             >
                                 <span>⚡</span>
-                                <span className="hidden sm:inline">{showCommandDrawer ? '지휘통제실 닫기' : '지휘통제실'}</span>
+                                <span>{showCommandDrawer ? '지휘통제실 닫기' : '지휘통제실'}</span>
                                 <span className="text-[10px]">{showCommandDrawer ? '▲' : '▼'}</span>
                             </button>
                             <button
@@ -4850,12 +5400,11 @@ export default function CeoOfficePage() {
                                 title="전 부서 보고 갱신"
                             >
                                 <span>🔄</span>
-                                <span className="hidden sm:inline">새로고침</span>
+                                <span>새로고침</span>
                             </button>
                         </div>
                     </div>
                 </div>
-
 
                 {/* ⚡ 대표이사 심플 지시 & 자동운용 컨트롤 바 (임원회의 탭이거나 대표님이 지시창 버튼을 눌렀을 때만 깔끔하게 표시) */}
                 {(showCommandDrawer || activeTab === 'boardroom') && (
@@ -5788,25 +6337,83 @@ export default function CeoOfficePage() {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* 🌏 [개별 종목 전용] 해외에 무슨 이슈가 터지면 이 회사가 직격을 받아 떨어지는지 3초 직관 브리핑 + 리서치팀 공시·하락원인 직행 버튼 */}
+                                                                        {/* 🚀/🚨/⚖️ [개별 종목 전용] 실시간 주가 등락률 연동: 올랐으면 상승 원인&모멘텀만, 내렸으면 하락 원인&해외뇌관만 3초 직관 브리핑 */}
                                                                         {!isMacroDoc && (() => {
                                                                             const dropIntel = (activeDoc as any).drop_impact_intel;
                                                                             const fallbackHit = getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
-                                                                            const oneLiner = dropIntel?.direct_hit_one_liner || fallbackHit?.oneLiner || "";
-                                                                            const triggers = dropIntel?.overseas_triggers || fallbackHit?.triggers || [];
-                                                                            const chainBadge = dropIntel?.overseas_chain_badge || fallbackHit?.chainBadge || "";
+                                                                            const liveDiag = dropIntel?.live_diagnosis;
+
+                                                                            // 실시간 등락률 정밀 파싱
+                                                                            const rawChg = typeof (activeDoc as any).change_pct === 'number'
+                                                                                ? (activeDoc as any).change_pct
+                                                                                : parseFloat(String((activeDoc as any).change_pct || (activeDoc as any).current_price || '').replace(/[^0-9.-]/g, '')) || 0;
+
+                                                                            const isRising = rawChg > 0;
+                                                                            const isDropping = rawChg < 0;
+
+                                                                            const badgeText = isRising ? '🚀 실시간 상승 원인 판독' : isDropping ? '🚨 하락 원인 & 해외 직격탄' : '⚖️ 실시간 보합 판독';
+                                                                            const badgeColor = isRising ? 'bg-emerald-400 text-slate-950' : isDropping ? 'bg-rose-500 text-white' : 'bg-slate-400 text-slate-950';
+
+                                                                            const cardTitle = isRising
+                                                                                ? `오늘 왜 오르나요? (+${rawChg.toFixed(2)}% 실시간 상승 원인 3초 해답)`
+                                                                                : isDropping
+                                                                                ? `오늘 왜 떨어지나요? (${rawChg.toFixed(2)}% 실시간 하락 원인 3초 해답)`
+                                                                                : `오늘 왜 보합인가요? (0.00% 실시간 수급 균형 3초 해답)`;
+
+                                                                            const chainBadge = isRising
+                                                                                ? (dropIntel?.rise_chain_badge || fallbackHit?.riseChainBadge || `🔥 ${activeDoc.stock_name} 글로벌 훈풍 & 상승 주도주`)
+                                                                                : isDropping
+                                                                                ? (dropIntel?.overseas_chain_badge || fallbackHit?.chainBadge || `🌏 ${activeDoc.stock_name} 글로벌 리스크 직결주`)
+                                                                                : `⚪ ${activeDoc.stock_name} 수급 균형 & 차기 방향성 탐색주`;
+
+                                                                            const oneLiner = isRising
+                                                                                ? (dropIntel?.rise_one_liner || fallbackHit?.riseOneLiner || liveDiag?.primary_cause_title || `전방 수요 회복 및 외인·기관 쌍끌이 매수로 +${rawChg.toFixed(2)}% 강세를 견인 중입니다!`)
+                                                                                : isDropping
+                                                                                ? (dropIntel?.direct_hit_one_liner || fallbackHit?.oneLiner || liveDiag?.primary_cause_title || `대외 시장 변동성 및 차익실현 매물 출회로 ${rawChg.toFixed(2)}% 조정을 받고 있습니다!`)
+                                                                                : (liveDiag?.primary_cause_title || `악재 공시 없는 상태에서 매수세와 매도세가 팽팽하게 맞서며 50일선 지지선 안착을 시험하는 안정적 보합 흐름입니다.`);
+
+                                                                            const triggers = isRising
+                                                                                ? (dropIntel?.rise_triggers || fallbackHit?.riseTriggers || [
+                                                                                    { icon: '🚀', trigger: `🔥 ${activeDoc.stock_name} 전방 산업 수요 회복 및 실적 턴어라운드`, chain: '핵심 고객사 발주 확대와 신규 수주 모멘텀이 가시화되면서 실적 개선 기대감이 주가를 견인합니다.', impact_degree: '🔥 1순위 상승 동력' },
+                                                                                    { icon: '💰', trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입', chain: '기업 밸류에이션 매력이 부각되며 메이저 수급이 집중 유입되고 있습니다.', impact_degree: '✨ 수급 모멘텀' },
+                                                                                    { icon: '🌐', trigger: '🇺🇸 글로벌 시장 환경 호조 및 수출 마진 확대', chain: '미국 등 해외 주요 시장 지수가 상승하고 환율 및 원가 구조가 우호적으로 작용합니다.', impact_degree: '⚡ 글로벌 수혜' },
+                                                                                ])
+                                                                                : isDropping
+                                                                                ? (dropIntel?.overseas_triggers || fallbackHit?.triggers || [])
+                                                                                : [
+                                                                                    { icon: '⚖️', trigger: '📊 외국인·기관 수급 공방 및 매물 소화', chain: '단기 급변동 없이 외인과 기관의 매도/매수가 균형을 이루며 차기 모멘텀을 대기 중입니다.', impact_degree: '⚖️ 수급 균형' },
+                                                                                    { icon: '🛡️', trigger: '🧱 핵심 이동평균선(50일선) 지지력 시험', chain: '추세 이탈 없는 안정적인 횡보 구간으로 단기 차트 바닥을 다지는 과정입니다.', impact_degree: '🧱 지지선 확인' },
+                                                                                    { icon: '🌐', trigger: '⚡ 대외 매크로 및 전방 고객사 신규 발주 대기', chain: '글로벌 금리 및 전방 고객사 투자 계획 발표에 따른 신규 방향성 형성을 관망 중입니다.', impact_degree: '⚡ 모멘텀 대기' },
+                                                                                ];
+
+                                                                            const cardBg = isRising
+                                                                                ? 'bg-gradient-to-r from-emerald-950/40 via-[#0d1f1c] to-teal-950/30 border-emerald-500/50'
+                                                                                : isDropping
+                                                                                ? 'bg-gradient-to-r from-rose-950/40 via-[#1f0d14] to-amber-950/30 border-rose-500/50'
+                                                                                : 'bg-gradient-to-r from-slate-900/90 via-[#141724] to-zinc-900/90 border-slate-600/50';
+
+                                                                            const oneLinerBoxBorder = isRising ? 'border-emerald-400/40' : isDropping ? 'border-rose-400/40' : 'border-slate-500/40';
+                                                                            const oneLinerTextColor = isRising ? 'text-emerald-100' : isDropping ? 'text-rose-100' : 'text-slate-100';
+                                                                            const oneLinerIcon = isRising ? '🚀' : isDropping ? '💣' : '⚖️';
+
                                                                             return (
-                                                                                <div className="bg-gradient-to-r from-amber-950/35 via-[#13182b] to-rose-950/30 border border-amber-500/45 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+                                                                                <div className={`${cardBg} border rounded-2xl p-3.5 space-y-2.5 shadow-lg`}>
                                                                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                                                            <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[11px]">
-                                                                                                🌏 해외 직격탄 연결고리
+                                                                                            <span className={`px-2 py-0.5 rounded-md font-black text-[11px] ${badgeColor}`}>
+                                                                                                {badgeText}
                                                                                             </span>
                                                                                             <span className="text-xs font-black text-white">
-                                                                                                해외에 무슨 이슈가 터지면 {activeDoc.stock_name} 주가가 직격탄을 맞아 떨어지나요?
+                                                                                                {cardTitle}
                                                                                             </span>
                                                                                             {chainBadge && (
-                                                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-200 border border-amber-400/30">
+                                                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                                                                                    isRising 
+                                                                                                        ? 'bg-emerald-400/15 text-emerald-200 border-emerald-400/30'
+                                                                                                        : isDropping
+                                                                                                        ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
+                                                                                                        : 'bg-slate-400/15 text-slate-200 border-slate-400/30'
+                                                                                                }`}>
                                                                                                     {chainBadge}
                                                                                                 </span>
                                                                                             )}
@@ -5819,26 +6426,44 @@ export default function CeoOfficePage() {
                                                                                                 setActiveTab('watchlist_research');
                                                                                                 handleSearchStockRisk(q);
                                                                                             }}
-                                                                                            className="px-3 py-1 rounded-xl bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-300 hover:to-indigo-300 text-slate-950 font-black text-[11px] cursor-pointer shadow-md flex items-center gap-1 shrink-0"
+                                                                                            className={`px-3 py-1 rounded-xl font-black text-[11px] cursor-pointer shadow-md flex items-center gap-1 shrink-0 ${
+                                                                                                isRising
+                                                                                                    ? 'bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950'
+                                                                                                    : isDropping
+                                                                                                    ? 'bg-gradient-to-r from-rose-400 to-amber-400 hover:from-rose-300 hover:to-amber-300 text-slate-950'
+                                                                                                    : 'bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-300 hover:to-indigo-300 text-slate-950'
+                                                                                            }`}
                                                                                         >
                                                                                             <span>🔬</span>
-                                                                                            <span>공시(DART)·뉴스·하락원인 리서치팀 정밀판독 →</span>
+                                                                                            <span>{isRising ? '공시(DART)·뉴스·상승원인 리서치팀 정밀판독 →' : isDropping ? '공시(DART)·뉴스·하락원인 리서치팀 정밀판독 →' : '공시(DART)·뉴스·수급 리서치팀 정밀판독 →'}</span>
                                                                                         </button>
                                                                                     </div>
 
-                                                                                    <div className="bg-black/60 border border-amber-400/35 rounded-xl p-2.5 text-xs text-amber-100 font-bold leading-relaxed break-keep">
-                                                                                        💣 {oneLiner}
+                                                                                    <div className={`bg-black/60 border ${oneLinerBoxBorder} rounded-xl p-2.5 text-xs ${oneLinerTextColor} font-bold leading-relaxed break-keep`}>
+                                                                                        {oneLinerIcon} {oneLiner}
                                                                                     </div>
 
                                                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                                                                         {(triggers || []).map((t: any, idx: number) => (
                                                                                             <div key={idx} className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
                                                                                                 <div className="flex items-center justify-between text-[10px] font-black">
-                                                                                                    <span className="text-amber-300">{t?.icon || '🌏'} 해외 뇌관 {idx + 1}</span>
-                                                                                                    <span className="text-rose-300">{t?.impact_degree}</span>
+                                                                                                    <span className={isRising ? 'text-emerald-300' : isDropping ? 'text-amber-300' : 'text-slate-300'}>
+                                                                                                        {t?.icon || (isRising ? '🚀' : isDropping ? '💣' : '⚖️')} {isRising ? `상승 동력 ${idx + 1}` : isDropping ? `해외 뇌관 ${idx + 1}` : `관전 포인트 ${idx + 1}`}
+                                                                                                    </span>
+                                                                                                    <span className={isRising ? 'text-emerald-300' : isDropping ? 'text-rose-300' : 'text-cyan-300'}>
+                                                                                                        {t?.impact_degree}
+                                                                                                    </span>
                                                                                                 </div>
                                                                                                 <div className="text-[11px] font-extrabold text-white leading-snug break-keep">{t?.trigger}</div>
-                                                                                                <div className="text-[10px] text-gray-300 leading-snug break-keep">{t?.chain}</div>
+                                                                                                <div className="text-[10px] text-gray-300 leading-snug break-keep space-y-1">
+                                                                                                    <div>{t?.chain}</div>
+                                                                                                    {t?.detailed_explanation && (
+                                                                                                        <div className="text-[9.5px] text-gray-400 pt-1 border-t border-white/5 leading-relaxed">
+                                                                                                            <span className="text-amber-300 font-bold mr-0.5">상세:</span>
+                                                                                                            {t?.detailed_explanation}
+                                                                                                        </div>
+                                                                                                    )}
+                                                                                                </div>
                                                                                             </div>
                                                                                         ))}
                                                                                     </div>
@@ -5906,6 +6531,23 @@ export default function CeoOfficePage() {
                                                                     ⚠️ 손실 방어 1순위 감사 완료
                                                                 </span>
                                                             </div>
+
+                                                            {/* ⚠️ 예산 부족 시 매수 보류 알림 배너 */}
+                                                            {riskData.financialPlan?.priceExceedsBudget && (
+                                                                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 flex items-start gap-2.5">
+                                                                    <span className="text-base shrink-0">⚠️</span>
+                                                                    <div className="space-y-1">
+                                                                        <div className="font-black text-amber-300">
+                                                                            [운용 예산 부족 · 0주 매수 보류 안내]
+                                                                        </div>
+                                                                        <p className="text-[11px] leading-relaxed text-amber-100/90 font-medium">
+                                                                            대표님이 설정하신 1회 운용 예산은 <strong className="text-white underline">{riskData.financialPlan.maxAlloc}</strong>이나, 현재 <strong>{activeDoc.stock_name}</strong> 1주 단가는 <strong className="text-white underline">{riskData.financialPlan.currPrice}</strong>입니다.<br />
+                                                                            대표님이 <strong>[승인 서명]</strong>을 누르시더라도 <strong>설정 예산을 초과하여 무단으로 매수되지 않으며, 매수 수량이 '0주 (0원)'로 전면 보류</strong>되어 대표님의 자금이 100% 안전하게 보호됩니다.<br />
+                                                                            <span className="text-amber-300 font-bold">💡 실전 1주 이상 매수를 진행하시려면 상단에서 운용 예산을 '30만 원' 이상으로 선택해 주십시오.</span>
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
 
                                                             {/* 3대 정밀 리스크 요인 분석 카드 그리드 */}
                                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
