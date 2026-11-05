@@ -877,6 +877,7 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
 } {
     const sName = doc.stock_name || "해당 안건";
     const sector = detectSectorType(doc.stock_name, doc.title || "", doc.category_badge || "");
+    const isMacroSector = sector.startsWith('macro_');
     const isUSStock = doc.category_type === 'us_stock' || sector === 'us_tech';
 
     // 1. 가격 추출 및 실전 자산 방어선 수치 산출
@@ -1623,7 +1624,6 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
 
     // 실전 자금 리스크 계산 플랜 도출
     const plan = computeFinancialRiskPlan(rawPrice, rawTarget, capitalOverride);
-    const isMacroSector = sector.startsWith('macro_');
 
     const defenseRules: RiskDefenseRule[] = isMacroSector ? [
         {
