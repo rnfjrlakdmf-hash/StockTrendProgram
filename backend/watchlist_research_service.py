@@ -1112,6 +1112,34 @@ def _get_fallback_stock_triggers(name: str, code: str, combined: str) -> Dict[st
                     "chain": "신제품 GPU 출하 일정이 지연되거나 매출총이익률(GPM)이 소폭이라도 낮아지면 고밸류에이션 부담으로 흔들립니다.",
                     "impact_degree": "⚡ 공급망·마진 변수"
                 },
+            ],
+            "rise_chain_badge": "🔥 글로벌 빅테크 AI CAPEX 폭증 · 차세대 블랙웰 매진 랠리 · 독점적 CUDA 생태계 수혜주",
+            "rise_one_liner": (
+                "해외에서 『빅테크(MS·구글·메타·아마존)의 AI 데이터센터 설비투자(CAPEX) 대폭 증액 및 차세대 블랙웰 GPU 공급 부족』이 터지며 ➔ "
+                "분기 사상 최대 실적 경신과 독점 프리미엄으로 엔비디아(NVDA) 주가가 강력하게 상승하고 있습니다!"
+            ),
+            "rise_triggers": [
+                {
+                    "icon": "🚀",
+                    "category_tag": "빅테크 CAPEX",
+                    "trigger": "🔥 글로벌 빅테크의 분기 수십조 원대 AI 데이터센터 인프라 CAPEX 증액",
+                    "chain": "생성형 AI 모델 학습과 추론 수요 급증으로 엔비디아 최고 사양 GPU(B200/H200) 선주문이 쇄도하여 실적이 퀀텀점프합니다.",
+                    "impact_degree": "🔥 1순위 상승 동력"
+                },
+                {
+                    "icon": "💎",
+                    "category_tag": "블랙웰 완판",
+                    "trigger": "📈 차세대 블랙웰(Blackwell) 아키텍처 양산 및 12개월 치 예약 완판",
+                    "chain": "전 세대(Hopper) 대비 연산 능력이 대폭 향상된 고마진 차세대 가속기가 완판되어 평균판매단가(ASP)와 70%대 마진율이 유지됩니다.",
+                    "impact_degree": "✨ 실적 폭발 모멘텀"
+                },
+                {
+                    "icon": "🌐",
+                    "category_tag": "CUDA 독점",
+                    "trigger": "⚡ 500만 개발자 락인(Lock-in) CUDA 소프트웨어 생태계 독점 프리미엄",
+                    "chain": "빅테크들이 자체 ASIC 칩을 개발하더라도 소프트웨어 생태계 호환성 때문에 엔비디아 GPU를 필수로 병행 구매할 수밖에 없습니다.",
+                    "impact_degree": "⚡ 독점적 해자"
+                },
             ]
         }
 

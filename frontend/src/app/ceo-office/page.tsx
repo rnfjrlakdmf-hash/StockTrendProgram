@@ -536,6 +536,38 @@ function getCategoryTheme(doc: AutoApprovalDoc): { icon: string; shortLabel: str
     };
 }
 
+/**
+ * 실시간 등락률 정밀 파서 (가격 문자열과 등락률 안전 분리)
+ * e.g. parseChangePct(-3.17, "$200.13 (-3.17%)") => -3.17
+ *      parseChangePct(undefined, "$200.13 (-3.17%)") => -3.17
+ *      parseChangePct(undefined, "232,000원 (+11.45%)") => +11.45
+ *      parseChangePct(undefined, "232,000원") => 0.0 (가격을 등락률로 착각하지 않음)
+ */
+function parseChangePct(changePctVal: any, priceStrVal?: any): number {
+    if (typeof changePctVal === 'number' && !isNaN(changePctVal)) {
+        return changePctVal;
+    }
+    if (changePctVal !== undefined && changePctVal !== null) {
+        const s = String(changePctVal).trim();
+        const parenMatch = s.match(/\(([+-]?[0-9]+(?:\.[0-9]+)?)%\)/);
+        if (parenMatch) return parseFloat(parenMatch[1]);
+        const numMatch = s.match(/^([+-]?[0-9]+(?:\.[0-9]+)?)/);
+        if (numMatch) {
+            const parsed = parseFloat(numMatch[1]);
+            if (!isNaN(parsed)) return parsed;
+        }
+    }
+    if (priceStrVal !== undefined && priceStrVal !== null) {
+        const p = String(priceStrVal);
+        const parenMatch = p.match(/\(([+-]?[0-9]+(?:\.[0-9]+)?)%\)/);
+        if (parenMatch) {
+            const parsed = parseFloat(parenMatch[1]);
+            if (!isNaN(parsed)) return parsed;
+        }
+    }
+    return 0;
+}
+
 function detectSectorType(stockName: string, title: string = "", categoryBadge: string = ""): string {
     const s = `${stockName} ${title} ${categoryBadge}`.toLowerCase();
     const nameLower = (stockName || '').toLowerCase();
@@ -2268,6 +2300,75 @@ const FALLBACK_RESEARCH_DESK: ResearchReportItem[] = [
 function buildDefaultStockRiseIntel(stockName: string, stockCode?: string, extraContext?: string) {
     const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
     
+    // 미국 AI 반도체 대장주 (엔비디아 NVDA)
+    if (['엔비디아', 'nvda', 'nvidia'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 글로벌 빅테크 AI CAPEX 폭증 · 차세대 블랙웰 완판 · 독점적 CUDA 생태계 수혜주',
+            riseOneLiner: `해외에서 『빅테크(MS·구글·메타·아마존)의 AI 데이터센터 설비투자(CAPEX) 대폭 증액 및 차세대 블랙웰 GPU 공급 부족』이 터지며 ➔ 분기 사상 최대 실적 경신과 독점 프리미엄으로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 글로벌 빅테크의 분기 수십조 원대 AI 데이터센터 인프라 CAPEX 증액',
+                    chain: '생성형 AI 모델 학습과 추론 수요 급증으로 엔비디아 최고 사양 GPU(B200/H200) 선주문이 쇄도하여 실적이 퀀텀점프합니다.',
+                    detailed_explanation: `${stockName}은 전 세계 AI 가속기 시장의 80% 이상을 장악한 독보적 대장주입니다. 마이크로소프트, 구글, 메타, 아마존 등 빅테크 기업들이 AI 주도권 경쟁을 위해 분기 수십조 원 단위로 인프라 투자를 늘리면서 엔비디아의 핵심 GPU 제품군이 1년 이상 선주문 매진되는 초호황을 누리고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '💎',
+                    trigger: '📈 차세대 블랙웰(Blackwell) 아키텍처 양산 및 12개월 치 예약 완판',
+                    chain: '전 세대(Hopper) 대비 연산 능력이 대폭 향상된 고마진 차세대 가속기가 완판되어 평균판매단가(ASP)와 70%대 마진율이 유지됩니다.',
+                    detailed_explanation: '차세대 B200·GB200 블랙웰 플랫폼이 글로벌 클라우드 서비스 기업들(CSP)에 본격 공급되기 시작했습니다. 이전 세대 대비 추론 성능이 최대 30배 개선되어 고객사들의 교체 수요가 폭발적이며, 높은 기술 장벽으로 70%를 웃도는 압도적인 영업이익률이 지속되고 있습니다.',
+                    impact_degree: '✨ 실적 폭발 모멘텀'
+                },
+                {
+                    icon: '🌐',
+                    trigger: '⚡ 500만 개발자 락인(Lock-in) CUDA 소프트웨어 생태계 독점 프리미엄',
+                    chain: '빅테크들이 자체 ASIC 칩을 개발하더라도 소프트웨어 생태계 호환성 때문에 엔비디아 GPU를 필수로 병행 구매할 수밖에 없습니다.',
+                    detailed_explanation: '전 세계 AI 연구원과 엔지니어들이 엔비디아의 병렬 연산 플랫폼인 CUDA를 기반으로 모델을 개발하기 때문에 타사 칩으로의 전환 비용이 매우 큽니다. 이러한 소프트웨어 해자가 빅테크의 독자 칩 개발 리스크를 방어하며 대체 불가능한 밸류에이션 프리미엄을 유지시키는 원동력입니다.',
+                    impact_degree: '⚡ 독점적 해자'
+                }
+            ],
+            deepReport: {
+                summary_headline: `${stockName}은 생성형 AI 혁명의 핵심 인프라를 독점하는 글로벌 반도체 총대장주입니다.`,
+                business_model_context: `${stockName}은 하드웨어 GPU뿐만 아니라 CUDA 소프트웨어 생태계를 완벽히 장악하여 전 세계 데이터센터 가속기 시장의 80% 이상을 점유하고 있습니다. 한국의 SK하이닉스·삼성전자(HBM) 및 TSMC(CoWoS 패키징) 밸류체인과 직결되어 글로벌 테크 시장의 나침반 역할을 합니다.`,
+                transmission_mechanism: `빅테크 기업들의 AI 데이터센터 투자 확대 ➔ 엔비디아 GPU 주문 쇄도 및 분기 영업이익률 60~70%대 기록 ➔ 한국 반도체 수출 호조 및 글로벌 테크주 동반 랠리로 전달됩니다.`,
+                smart_money_logic: `글로벌 헤지펀드와 기관 투자자들은 빅테크 4대장의 분기 자본지출(CAPEX) 가이던스와 블랙웰 출하 일정을 매수의 핵심 척도로 삼고 있습니다.`,
+                key_inflection_points: `① 미국 빅테크의 AI CAPEX 증액 지속 여부, ② 차세대 블랙웰 패키징 및 출하 속도, ③ 미국 국채 금리 및 미·중 반도체 수출 통제 정책`
+            }
+        };
+    }
+
+    // 미국 맞춤형 AI 칩 & 초고속 통신 대장주 (브로드컴 AVGO)
+    if (['브로드컴', 'avgo', 'broadcom'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 빅테크 커스텀 AI 가속기(ASIC) 독점 수주 · 초고속 네트워킹 스위치 1위 수혜주',
+            riseOneLiner: `해외에서 『구글·메타·바이트댄스 등 글로벌 빅테크의 맞춤형 자체 AI 칩(ASIC) 설계 발주 확대 및 800G/1.6T 초고속 이더넷 스위치 수요 급증』이 터지며 ➔ 강력한 실적 성장세로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 구글 TPU·메타 MTIA 등 빅테크 차세대 커스텀 AI 반도체(ASIC) 독점 파트너십',
+                    chain: '빅테크 기업들이 비용 절감을 위해 자체 AI 칩을 늘릴수록 브로드컴의 맞춤형 ASIC 설계 수주가 비례해서 급증합니다.',
+                    detailed_explanation: `${stockName}은 구글 TPU, 메타 MTIA 등 세계 최고 빅테크들의 커스텀 AI 칩을 독점 설계하는 핵심 파트너입니다. 자체 칩 전환 흐름의 최대 수혜를 입어 분기 두 자릿수 매출 성장을 지속하고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '💎',
+                    trigger: '📈 AI 데이터센터 클러스터용 Tomahawk/Jericho 초고속 스위치 시장 1위 독점',
+                    chain: '수만 개의 GPU를 병렬 연결하는 800G 및 1.6T 초고속 네트워크 스위치 칩 수요가 폭증하여 영업이익률이 퀀텀점프합니다.',
+                    detailed_explanation: 'AI 데이터센터에서는 GPU 간 통신 병목을 해결하는 스위치 칩이 필수적입니다. 브로드컴의 스위치 칩 점유율은 70% 이상으로 대체 불가능한 고수익 캐시카우 역할을 합니다.',
+                    impact_degree: '✨ 네트워킹 독점'
+                },
+                {
+                    icon: '🌐',
+                    trigger: '⚡ VMware 인수 시너지 본격화에 따른 안정적 엔터프라이즈 구독 매출 결합',
+                    chain: '기업용 클라우드 가상화 소프트웨어 구독 매출이 결합되어 반도체 경기 사이클 변동성을 흡수하고 안정적 현금흐름을 창출합니다.',
+                    detailed_explanation: 'VMware 라이선스의 클라우드 구독 모델 전환이 성공적으로 안착하며 연간 120억 달러 이상의 반복 소프트웨어 매출이 발생하여 기업 밸류에이션을 한 단계 끌어올리고 있습니다.',
+                    impact_degree: '⚡ 소프트웨어 시너지'
+                }
+            ]
+        };
+    }
+
     // 심텍 / 패키지기판 (FC-CSP, SiP 등)
     if (['심텍', '222800', '대덕전자', '353200', '코리아써키트', '007810', '해성디에스', '195870', '패키지기판', '기판', 'pcb', 'fc-csp', 'sip'].some(k => combined.includes(k))) {
         return {
@@ -2452,6 +2553,64 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
     riseTriggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string }[];
 } {
     const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
+
+    // 미국 AI 반도체 대장주 (엔비디아 NVDA)
+    if (['엔비디아', 'nvda', 'nvidia'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 미국 10년물 국채 금리 · 빅테크 AI 투자 속도조절(ROI) · 미 상무부 대중국 반도체 규제 직결주',
+            oneLiner: `미국에서 『국채 금리 급등으로 인한 고밸류 성장주 차익 실현』이나 『빅테크의 AI 설비투자 속도조절(수익화 지연 우려)』, 또는 『미 상무부의 대중국 첨단 반도체 수출 통제 강화』가 터지면 ➔ 밸류에이션 부담과 패시브 매물 출회로 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                {
+                    icon: '📉',
+                    trigger: '🇺🇸 미국 국채 10년물 금리 급등 및 빅테크 밸류에이션 부담에 따른 차익 실현',
+                    chain: '금리가 상승하면 미래 기대 이익의 현재 할인율이 높아져 PER이 높은 AI 주도주에서 기관들의 비중 축소 및 단기 차익 매물이 가장 먼저 출회됩니다.',
+                    impact_degree: '🔥 1순위 직격탄'
+                },
+                {
+                    icon: '🏛️',
+                    trigger: '🚫 미국 정부(상무부)의 대중국 AI 칩 수출 통제 강화 및 지정학적 리스크',
+                    chain: '중국 시장향 맞춤형 칩(H20 등)의 추가 수출 금지나 중동 등 제3국 우회 수출 라이선스 규제가 발표되면 글로벌 매출 공백 우려로 주가가 급락합니다.',
+                    impact_degree: '⚠️ 정책 뇌관'
+                },
+                {
+                    icon: '⚡',
+                    trigger: '🤖 빅테크의 AI 투자 수익화(ROI) 검증 및 차세대 블랙웰 양산 노이즈',
+                    chain: '고객사들의 AI 서비스 수익성 회수 속도가 늦어지거나 신규 칩 패키징 발열/출하 지연 루머가 나오면 실적 피크아웃 우려가 확산되며 변동성이 커집니다.',
+                    impact_degree: '⚡ 실적·업황 변수'
+                }
+            ]
+        };
+    }
+
+    // 미국 맞춤형 AI 가속기 & 통신 (브로드컴 AVGO)
+    if (['브로드컴', 'avgo', 'broadcom'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 빅테크 ASIC 발주 추이 · 미국 국채 금리 · 대중국 반도체 수출 통제 직결주',
+            oneLiner: `미국에서 『빅테크 기업들의 자체 커스텀 AI 가속기(ASIC) 개발 속도조절 및 투자 축소』나 『미국의 대중국 반도체 장비·스위치 수출 추가 제재』가 터지면 ➔ 고마진 통신 부품과 칩 설계 수주 둔화 우려로 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                {
+                    icon: '📉',
+                    trigger: '🇺🇸 빅테크 자체 AI 칩(ASIC) 개발 주기 지연 및 CAPEX 투자 속도조절',
+                    chain: '구글, 메타 등 주요 고객사의 자체 반도체 개발 일정이 늦춰지거나 데이터센터 증설 속도를 조절하면 주문 감소로 직격탄을 맞습니다.',
+                    impact_degree: '🔥 1순위 직격탄'
+                },
+                {
+                    icon: '🏛️',
+                    trigger: '🚫 미국 상무부의 중국 통신 인프라 및 AI 네트워킹 장비 수출 제재 강화',
+                    chain: '중국 데이터센터향 초고속 스위치 칩 및 통신 인터페이스 수출길이 좁아지면 글로벌 분기 매출 가이던스가 깎입니다.',
+                    impact_degree: '⚠️ 대외 규제 뇌관'
+                },
+                {
+                    icon: '⚡',
+                    trigger: '💵 미국 국채 금리 변동성에 따른 고멀티플 테크주 밸류에이션 압박',
+                    chain: '금리 상승 시 인수 부채에 따른 금융비용 부담과 기술주 전반의 멀티플 하락이 겹쳐 단기 매물이 출회됩니다.',
+                    impact_degree: '⚡ 금리·수급 변수'
+                }
+            ]
+        };
+    }
 
     if (['snt모티브', 'snt', '064960', '모비스', '현대모비스', '한온시스템', '만도', 'hl만도', '화신', '에스엘', '서연이화', '구동모터', '방산소총'].some(k => combined.includes(k))) {
         return {
@@ -2898,9 +3057,7 @@ export default function CeoOfficePage() {
         const liveDiag = dropIntel.live_diagnosis;
         const deepReport = dropIntel.deep_report || (fallbackHit as any)?.deepReport || null;
 
-        const rawChg = typeof r.change_pct === 'number'
-            ? r.change_pct
-            : parseFloat(String(r.change_pct || r.price || '').replace(/[^0-9.-]/g, '')) || 0;
+        const rawChg = parseChangePct(r.change_pct, r.price);
         const isRising = rawChg > 0;
         const isDropping = rawChg < 0;
 
@@ -6298,10 +6455,8 @@ export default function CeoOfficePage() {
                                                                             const fallbackHit = getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
                                                                             const liveDiag = dropIntel?.live_diagnosis;
 
-                                                                            // 실시간 등락률 정밀 파싱
-                                                                            const rawChg = typeof (activeDoc as any).change_pct === 'number'
-                                                                                ? (activeDoc as any).change_pct
-                                                                                : parseFloat(String((activeDoc as any).change_pct || (activeDoc as any).current_price || '').replace(/[^0-9.-]/g, '')) || 0;
+                                                                            // 실시간 등락률 정밀 파싱 (가격 문자열 속 퍼센트만 안전하게 추출)
+                                                                            const rawChg = parseChangePct((activeDoc as any).change_pct, (activeDoc as any).current_price);
 
                                                                             const isRising = rawChg > 0;
                                                                             const isDropping = rawChg < 0;
