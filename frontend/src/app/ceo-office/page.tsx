@@ -235,43 +235,47 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
 // 문장 속 핵심 수치(%·금액)와 강조 키워드를 자동으로 형광펜 하이라이트 렌더링하는 헬퍼 (적당한 크기 & 줄바꿈 깨짐 방지)
 function renderHighlightedExecutiveText(text: string): React.ReactNode {
     if (!text) return null;
-    const pattern = /([+\-]\d+(?:\.\d+)?%|\d{1,4}(?:,\d{3})*(?:\.\d+)?(?:조|억|만)?원|\$\d+(?:\.\d+)?|뇌동매매\(추격매수\) 절대 금지!|뇌동매매는 절대 금합니다|추격매수 금지|단기 매물 출회 주의|프로그램 매도 출회 경계|방어적 대응 필수|분할\s*매수|나눠 사 모으기\(분할매수\)|나눠 사기\(분할매수\)|환율 안정세|이탈은 제한적|오전 10시 바닥\(지지선\)|오전 10시 지지선|➔)/g;
+    const pattern = /([+\-]\d+(?:\.\d+)?%|\d{1,4}(?:,\d{3})*(?:\.\d+)?(?:조|억|만)?원|\$\d+(?:\.\d+)?|뇌동매매\(추격매수\) 절대 금지!|뇌동매매는 절대 금합니다|추격매수 금지|장 시작 직후 추격 금지|단기 매물 출회 주의|프로그램 매도 출회 경계|방어적 대응 필수|분할\s*매수|나눠 사 모으기\(분할매수\)|나눠 사기\(분할매수\)|환율 안정세|이탈은 제한적|오전 10시 바닥\(지지선\)|오전 10시 지지선|➔)/g;
     const parts = text.split(pattern);
     return parts.map((part, i) => {
         if (!part) return null;
+        // 짝수 인덱스는 정규식 매칭이 아닌 순수 일반 문장이므로 절대 하이라이트 뱃지로 감싸지 않고 텍스트 그대로 안전 출력!
+        if (i % 2 === 0) {
+            return <React.Fragment key={i}>{part}</React.Fragment>;
+        }
         if (part === '➔') {
             return <span key={i} className="text-amber-400 font-black mx-1 inline-block text-xs">➔</span>;
         }
         if (/^-\d+(\.\d+)?%$/.test(part) || part.includes('매물 출회 주의') || part.includes('매도 출회 경계')) {
             return (
-                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-sky-500/25 text-sky-200 font-mono font-bold border border-sky-400/35 text-xs">
+                <span key={i} className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-sky-500/25 text-sky-200 font-mono font-bold border border-sky-400/35 text-xs">
                     {part}
                 </span>
             );
         }
         if (/^\+\d+(\.\d+)?%$/.test(part)) {
             return (
-                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-rose-500/25 text-rose-200 font-mono font-bold border border-rose-400/35 text-xs">
+                <span key={i} className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-rose-500/25 text-rose-200 font-mono font-bold border border-rose-400/35 text-xs">
                     {part}
                 </span>
             );
         }
-        if (part.includes('절대 금지') || part.includes('방어적 대응 필수')) {
+        if (part.includes('절대 금지') || part.includes('방어적 대응 필수') || part.includes('추격 금지')) {
             return (
-                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-rose-500/30 text-rose-100 font-black border border-rose-400/40 text-xs">
+                <span key={i} className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-rose-500/30 text-rose-100 font-black border border-rose-400/40 text-xs">
                     {part}
                 </span>
             );
         }
-        if (part.includes('분할 매수') || part.includes('환율 안정') || part.includes('제한적') || part.includes('오전 10시 지지선')) {
+        if (part.includes('분할') || part.includes('환율 안정') || part.includes('제한적') || part.includes('지지선')) {
             return (
-                <span key={i} className="whitespace-nowrap inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-emerald-500/25 text-emerald-200 font-bold border border-emerald-400/35 text-xs">
+                <span key={i} className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded bg-emerald-500/25 text-emerald-200 font-bold border border-emerald-400/35 text-xs">
                     {part}
                 </span>
             );
         }
         if (/^\d{1,4}(?:,\d{3})*(?:\.\d+)?(?:조|억|만)?원$/.test(part) || /^\$\d+/.test(part)) {
-            return <strong key={i} className="whitespace-nowrap text-amber-300 font-mono font-bold text-xs">{part}</strong>;
+            return <strong key={i} className="text-amber-300 font-mono font-bold text-xs">{part}</strong>;
         }
         return <React.Fragment key={i}>{part}</React.Fragment>;
     });
@@ -6579,11 +6583,11 @@ export default function CeoOfficePage() {
                                                                     {/* 2단 핵심 요점 (해외·원인 / 국내·대응) - 부담 없는 적당한 12.5px 폰트 */}
                                                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                                                                         {summaryBullets.map((item, idx) => (
-                                                                            <div key={idx} className="bg-black/60 border border-white/10 rounded-xl p-2.5 sm:p-3 flex items-start gap-2 shadow-xs">
+                                                                            <div key={idx} className="bg-black/60 border border-white/10 rounded-xl p-2.5 sm:p-3 flex items-start gap-2 shadow-xs min-w-0">
                                                                                 <span className={`px-2 py-0.5 rounded text-[11px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                     {item.tag}
                                                                                 </span>
-                                                                                <p className="text-xs sm:text-[13px] font-semibold text-zinc-100 leading-snug break-keep">
+                                                                                <p className="text-xs sm:text-[13px] font-semibold text-zinc-100 leading-snug break-keep flex-1 min-w-0">
                                                                                     {renderHighlightedExecutiveText(item.text)}
                                                                                 </p>
                                                                             </div>
@@ -6686,7 +6690,7 @@ export default function CeoOfficePage() {
                                                                                                 <span className={`px-1.5 py-0.2 rounded text-[10px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                                     {item.tag}
                                                                                                 </span>
-                                                                                                <span className="break-keep">{renderHighlightedExecutiveText(item.text)}</span>
+                                                                                                <span className="break-keep flex-1 min-w-0">{renderHighlightedExecutiveText(item.text)}</span>
                                                                                             </div>
                                                                                         ))}
                                                                                     </div>
@@ -6724,7 +6728,7 @@ export default function CeoOfficePage() {
                                                                                                 <span className={`px-1.5 py-0.2 rounded text-[10px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                                     {item.tag}
                                                                                                 </span>
-                                                                                                <span className="break-keep">{renderHighlightedExecutiveText(item.text)}</span>
+                                                                                                <span className="break-keep flex-1 min-w-0">{renderHighlightedExecutiveText(item.text)}</span>
                                                                                             </div>
                                                                                         ))}
                                                                                     </div>
@@ -6776,7 +6780,7 @@ export default function CeoOfficePage() {
                                                                                                     <span className={`px-1.5 py-0.2 rounded text-[10px] font-black border shrink-0 mt-0.5 ${item.tagColor}`}>
                                                                                                         {item.tag}
                                                                                                     </span>
-                                                                                                    <span className="break-keep">{renderHighlightedExecutiveText(item.text)}</span>
+                                                                                                    <span className="break-keep flex-1 min-w-0">{renderHighlightedExecutiveText(item.text)}</span>
                                                                                             </div>
                                                                                             ))
                                                                                         )}
