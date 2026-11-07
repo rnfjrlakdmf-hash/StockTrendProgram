@@ -2676,10 +2676,11 @@ function buildDefaultStockRiseIntel(stockName: string, stockCode?: string, extra
 function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string, extraContext?: string): {
     chainBadge: string;
     oneLiner: string;
-    triggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string }[];
+    triggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string; detailed_explanation?: string }[];
     riseChainBadge: string;
     riseOneLiner: string;
-    riseTriggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string }[];
+    riseTriggers: { icon: string; trigger: string; chain: string; impact_degree: string; category_tag?: string; detailed_explanation?: string }[];
+    deepReport?: any;
 } {
     const combined = `${stockName || ''} ${stockCode || ''} ${extraContext || ''}`.toLowerCase();
 
@@ -3474,7 +3475,6 @@ export default function CeoOfficePage() {
                             기안: 최서연 상무 (CRO)
                         </span>
                     </div>
-                </div>
 
                     {/* 📖 [종목명] 리서치팀 4대 심층 정밀 인과 분석 리포트 (상세 해설) */}
                     {deepReport && (
