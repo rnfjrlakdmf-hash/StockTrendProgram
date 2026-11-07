@@ -3195,15 +3195,34 @@ export default function CeoOfficePage() {
                                     <div className="text-xs sm:text-[13px] font-black text-white leading-snug break-keep pt-0.5">
                                         {t.trigger}
                                     </div>
-                                    <div className="text-[11px] text-gray-200 leading-relaxed break-keep bg-white/[0.03] p-2.5 rounded-lg border border-white/5 space-y-1.5">
-                                        <div className="font-semibold text-gray-100">{t.chain}</div>
+                                    <div className="bg-white/[0.03] p-2.5 rounded-lg border border-white/5 space-y-2">
+                                        <div className="text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
+                                            {t.chain?.includes('➔') ? (
+                                                t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
+                                                    <div key={sIdx} className="flex items-start gap-1">
+                                                        {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
+                                                        <span className={sIdx === arr.length - 1 ? 'font-bold text-emerald-300' : 'text-zinc-300'}>
+                                                            {step.trim()}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div>{t.chain}</div>
+                                            )}
+                                        </div>
                                         {t.detailed_explanation && (
-                                            <div className="text-[10.5px] text-gray-300 pt-1.5 border-t border-white/5 leading-relaxed bg-black/40 p-2 rounded">
-                                                <span className={isRising ? 'text-emerald-300 font-bold mr-1' : isDropping ? 'text-amber-300 font-bold mr-1' : 'text-slate-300 font-bold mr-1'}>
-                                                    🔍 상세 인과 메커니즘:
-                                                </span>
-                                                {t.detailed_explanation}
-                                            </div>
+                                            <details className="group pt-1 border-t border-white/5">
+                                                <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
+                                                    <span className="flex items-center gap-1">
+                                                        <span>📖</span>
+                                                        <span>상세 인과 메커니즘</span>
+                                                    </span>
+                                                    <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
+                                                </summary>
+                                                <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
+                                                    {t.detailed_explanation}
+                                                </div>
+                                            </details>
                                         )}
                                     </div>
                                 </div>
@@ -6568,27 +6587,55 @@ export default function CeoOfficePage() {
                                                                                         {oneLinerIcon} {oneLiner}
                                                                                     </div>
 
-                                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                                                                                         {(triggers || []).map((t: any, idx: number) => (
-                                                                                            <div key={idx} className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1">
-                                                                                                <div className="flex items-center justify-between text-[10px] font-black">
-                                                                                                    <span className={isRising ? 'text-emerald-300' : isDropping ? 'text-amber-300' : 'text-slate-300'}>
-                                                                                                        {t?.icon || (isRising ? '🚀' : isDropping ? '💣' : '⚖️')} {isRising ? `상승 동력 ${idx + 1}` : isDropping ? `해외 뇌관 ${idx + 1}` : `관전 포인트 ${idx + 1}`}
-                                                                                                    </span>
-                                                                                                    <span className={isRising ? 'text-emerald-300' : isDropping ? 'text-rose-300' : 'text-cyan-300'}>
-                                                                                                        {t?.impact_degree}
-                                                                                                    </span>
+                                                                                            <div key={idx} className="bg-black/55 border border-white/10 rounded-xl p-3 flex flex-col justify-between space-y-2 shadow-sm">
+                                                                                                <div className="space-y-1.5">
+                                                                                                    <div className="flex items-center justify-between text-[10px] font-black pb-1 border-b border-white/5">
+                                                                                                        <span className={isRising ? 'text-emerald-300' : isDropping ? 'text-amber-300' : 'text-slate-300'}>
+                                                                                                            {t?.icon || (isRising ? '🚀' : isDropping ? '💣' : '⚖️')} {isRising ? `상승 동력 ${idx + 1}` : isDropping ? `해외 뇌관 ${idx + 1}` : `관전 포인트 ${idx + 1}`}
+                                                                                                        </span>
+                                                                                                        <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold border ${
+                                                                                                            isRising ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : isDropping ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                                                                                                        }`}>
+                                                                                                            {t?.impact_degree}
+                                                                                                        </span>
+                                                                                                    </div>
+
+                                                                                                    <div className="text-xs font-black text-white leading-snug break-keep">
+                                                                                                        {t?.trigger}
+                                                                                                    </div>
+
+                                                                                                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2 text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
+                                                                                                        {t?.chain?.includes('➔') ? (
+                                                                                                            t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
+                                                                                                                <div key={sIdx} className="flex items-start gap-1">
+                                                                                                                    {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
+                                                                                                                    <span className={sIdx === arr.length - 1 ? 'font-bold text-emerald-300' : 'text-zinc-300'}>
+                                                                                                                        {step.trim()}
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            ))
+                                                                                                        ) : (
+                                                                                                            <div>{t?.chain}</div>
+                                                                                                        )}
+                                                                                                    </div>
                                                                                                 </div>
-                                                                                                <div className="text-[11px] font-extrabold text-white leading-snug break-keep">{t?.trigger}</div>
-                                                                                                <div className="text-[10px] text-gray-300 leading-snug break-keep space-y-1">
-                                                                                                    <div>{t?.chain}</div>
-                                                                                                    {t?.detailed_explanation && (
-                                                                                                        <div className="text-[9.5px] text-gray-400 pt-1 border-t border-white/5 leading-relaxed">
-                                                                                                            <span className="text-amber-300 font-bold mr-0.5">상세:</span>
+
+                                                                                                {t?.detailed_explanation && (
+                                                                                                    <details className="group pt-1 border-t border-white/5">
+                                                                                                        <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
+                                                                                                            <span className="flex items-center gap-1">
+                                                                                                                <span>📖</span>
+                                                                                                                <span>상세 배경 분석</span>
+                                                                                                            </span>
+                                                                                                            <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
+                                                                                                        </summary>
+                                                                                                        <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
                                                                                                             {t?.detailed_explanation}
                                                                                                         </div>
-                                                                                                    )}
-                                                                                                </div>
+                                                                                                    </details>
+                                                                                                )}
                                                                                             </div>
                                                                                         ))}
                                                                                     </div>
