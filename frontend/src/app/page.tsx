@@ -2,34 +2,11 @@ import { Metadata } from 'next';
 import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
-import { BookOpen, Newspaper, ShieldCheck } from 'lucide-react';
-import KakaoRevenueAd from '@/components/KakaoRevenueAd';
+import { BookOpen, Newspaper, ShieldCheck, Layers } from 'lucide-react';
 
 export const revalidate = 300;
 
 async function getLatestTheoryPosts() {
-  const staticSlugSet = new Set(STATIC_POSTS.slice(0, 13).map(p => p.slug));
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
-    const res = await fetch('https://stock-trend-program.co.kr/api/theory/posts?page=1&limit=10', {
-      next: { revalidate: 300 },
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data?.posts) && data.posts.length > 0) {
-        const filtered = data.posts.filter((p: any) => !staticSlugSet.has(p.slug || p.id));
-        if (filtered.length >= 6) {
-          return filtered.slice(0, 6);
-        }
-      }
-    }
-  } catch {
-    // API 장애 시 정적 이론 전용 슬라이스(13~19) 사용
-  }
-
   return STATIC_POSTS.slice(13, 19).map(p => ({
     id: p.id,
     title: p.title,
@@ -80,6 +57,17 @@ const INVESTMENT_GUIDES = [
   { href: '/guide/etf', title: 'ETF 구조와 추적오차', desc: '상장지수펀드(ETF)의 순자산가치(NAV), 괴리율, 총보수(TER) 비교 기준' },
 ];
 
+const SECTOR_RESEARCH_LINKS = [
+  { href: '/theme/semiconductor', title: '반도체 · HBM 밸류체인', desc: '전공정·후공정 패키징 및 고대역폭메모리(HBM) 산업 구조 분석' },
+  { href: '/theme/ai', title: '인공지능(AI) 인프라', desc: '데이터센터 서버, NPU·GPU 가속기 및 엔터프라이즈 AI 생태계' },
+  { href: '/theme/secondary-battery', title: '2차전지 · 양극재 소재', desc: '삼원계(NCM)·LFP 배터리 셀 및 핵심 광물 공급망 리서치' },
+  { href: '/theme/nuclear', title: '원자력 · SMR 에너지', desc: '소형모듈원전(SMR) 주기기 제작과 글로벌 전력망 확충 사이클' },
+  { href: '/theme/defense', title: '방위산업 · 우주항공', desc: '글로벌 국방비 증액 기조와 수주잔고 기반 장기 실적 가시성 평가' },
+  { href: '/theme/bio', title: '바이오 · 신약 플랫폼', desc: '임상 1·2·3상 파이프라인 가치평가(rNPV)와 기술수출(L/O) 구조' },
+  { href: '/theme/shipbuilding', title: '조선 · 친환경 LNG선', desc: '신조선가 지수 추이와 고부가가치 친환경 선박 도크 수주 분석' },
+  { href: '/theme/low-pbr', title: '기업 밸류업 · 주주환원', desc: '자사주 매입·소각, 배당성향 확대 및 저PBR 가치주 재평가 원리' },
+];
+
 const FAQS = [
   {
     q: '스마트 투자 비서는 어떤 콘텐츠와 데이터를 제공하나요?',
@@ -87,7 +75,7 @@ const FAQS = [
   },
   {
     q: '제공되는 금융 칼럼과 아카데미 교육 자료는 모두 무료인가요?',
-    a: '네, 모든 거시경제 리서치 칼럼, 70편 이상의 차트·재무 스터디 아카데미, 46대 주식 투자 백과사전 및 배당·평단가 계산기는 별도의 유료 결제 없이 100% 무료로 열람하실 수 있습니다.',
+    a: '네, 모든 거시경제 리서치 칼럼, 차트·재무 스터디 아카데미, 46대 주식 투자 백과사전 및 배당·평단가 계산기는 별도의 유료 결제 없이 100% 무료로 열람하실 수 있습니다.',
   },
   {
     q: '기업 공시(DART·SEC)와 수급 데이터는 어떤 기준으로 분석하나요?',
@@ -140,16 +128,11 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* 1. 통합 마켓 대시보드 (최상단 배치: 헤더 검색 + 실시간 시세 허브 + 카카오 배너 광고 유지) */}
-      <div id="market-dashboard">
-        <HomeClient />
-      </div>
+      {/* 1. 상단 금융 리서치 매거진 · 46대 백과사전 · 실전 차트 스터디 · 산업 리서치 (100% SSR 고품질 에디토리얼 영역) */}
+      <div className="bg-[#06070a]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-10">
 
-      {/* 2. 하단 금융 리서치 매거진 · 46대 백과사전 · 실전 차트 스터디 · FAQ (애드센스 & SEO 콘텐츠 영역) */}
-      <div className="border-t border-white/10 bg-[#06070a]">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-10">
-
-          {/* 매거진 마스트헤드 */}
+          {/* 매거진 마스트헤드 (Above-the-Fold H1 & 핵심 소개) */}
           <div className="rounded-3xl bg-gradient-to-br from-blue-950/40 via-zinc-900/60 to-purple-950/20 border border-blue-500/20 p-6 md:p-8 backdrop-blur-xl shadow-2xl space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
@@ -177,30 +160,36 @@ export default async function Home() {
 
             {/* 빠른 섹션 이동 탭 */}
             <div className="flex flex-wrap gap-2 pt-2">
-              <a
-                href="#market-dashboard"
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs md:text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
-              >
-                📊 실시간 마켓 대시보드 상단으로 ↑
-              </a>
               <Link
                 href="/guide"
-                className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs md:text-sm font-bold transition-all"
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs md:text-sm font-bold transition-all shadow-md"
               >
-                📚 46대 필수 주식 용어 백과
+                📚 46대 필수 주식 용어 백과사전
               </Link>
               <Link
                 href="/blog"
-                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs md:text-sm font-bold transition-all"
+                className="px-3.5 py-2 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-200 text-xs md:text-sm font-bold transition-all"
               >
-                📰 마켓 리서치 칼럼 (25편)
+                📰 심층 금융 리서치 칼럼 (25편)
               </Link>
               <Link
                 href="/theory"
                 className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs md:text-sm font-bold transition-all"
               >
-                📘 실전 차트 스터디
+                📘 실전 차트·보조지표 아카데미
               </Link>
+              <Link
+                href="/calculator"
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs md:text-sm font-bold transition-all"
+              >
+                🧮 배당금·평단가 계산기
+              </Link>
+              <a
+                href="#market-dashboard"
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs md:text-sm font-bold transition-all"
+              >
+                📊 실시간 마켓 지표 현황판 ↓
+              </a>
             </div>
           </div>
 
@@ -209,14 +198,14 @@ export default async function Home() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
                 <h2 id="featured-research-heading" className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                  <Newspaper className="w-5 h-5 text-blue-400" /> 오늘의 추천 금융 리서치 &amp; 거시경제 칼럼
+                  <Newspaper className="w-5 h-5 text-blue-400" /> 심층 금융 리서치 &amp; 거시경제 분석 칼럼
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
                   재무제표 독해법, 금리·환율 거시경제 사이클, 기업 밸류에이션(PER·PBR·ROE)을 깊이 있게 분석한 정통 리서치 칼럼입니다.
                 </p>
               </div>
               <Link href="/blog" className="text-xs font-bold text-blue-300 hover:text-white bg-blue-500/15 border border-blue-500/30 px-3.5 py-2 rounded-xl self-start sm:self-center shrink-0">
-                전체 칼럼 25편 보기 →
+                전체 칼럼 보기 →
               </Link>
             </div>
 
@@ -347,13 +336,44 @@ export default async function Home() {
             </section>
           )}
 
-          {/* [섹션 4] 공공 데이터 수집 기준 & 자주 묻는 질문 (컴팩트 통합 카드) */}
+          {/* [섹션 4] 핵심 산업·섹터 밸류체인 리서치 아카이브 */}
+          <section aria-labelledby="sector-research-heading" className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div>
+                <h2 id="sector-research-heading" className="text-lg md:text-xl font-black text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-amber-400" /> 핵심 산업·섹터 밸류체인 리서치
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  국내외 주력 산업의 공급망(Supply Chain) 구조와 핵심 경쟁력 지표를 정리한 섹터별 심층 리서치 백과입니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {SECTOR_RESEARCH_LINKS.map(({ href, title, desc }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 hover:border-amber-500/40 transition-all group block shadow-sm"
+                >
+                  <h3 className="text-white text-xs sm:text-sm font-bold group-hover:text-amber-300 transition-colors truncate">
+                    {title}
+                  </h3>
+                  <p className="text-gray-400 text-[11px] mt-1 leading-relaxed line-clamp-2">
+                    {desc}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* [섹션 5] 기업 재무제표 · 거시경제 · 전자공시 정량 분석 방법론 및 FAQ */}
           <section className="bg-zinc-900/40 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6">
             <div className="flex items-start gap-3 pb-4 border-b border-white/10">
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
               <div>
                 <h2 className="text-base md:text-lg font-black text-white">
-                  공공 데이터 수집 원칙 및 자주 묻는 질문 (FAQ)
+                  공공 데이터 기반 리서치 방법론 및 자주 묻는 질문 (FAQ)
                 </h2>
                 <p className="text-xs text-gray-400 mt-1 leading-relaxed">
                   스마트 투자 비서는 금융감독원 전자공시시스템(Open DART), 한국거래소(KRX), 미국 증권거래위원회(SEC EDGAR)의 공식 공공 데이터를 정량 분석하며 자본시장법을 준수합니다.
@@ -361,7 +381,28 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-300 leading-relaxed">
+              <div className="p-5 rounded-2xl bg-zinc-950/80 border border-white/5 space-y-2">
+                <h3 className="text-sm font-black text-blue-300">1. 기업 내재가치 및 재무제표 검증</h3>
+                <p className="text-gray-400">
+                  단기 주가 등락에 흔들리지 않기 위해 포괄손익계산서, 재무상태표, 현금흐름표의 3대 재무제표를 교차 검증합니다. 주가수익비율(PER), 주가순자산비율(PBR), 자기자본이익률(ROE) 및 영업현금흐름(OCF)과 잉여현금흐름(FCF) 추이를 업종 평균과 비교하여 재무 건전성을 평가합니다.
+                </p>
+              </div>
+              <div className="p-5 rounded-2xl bg-zinc-950/80 border border-white/5 space-y-2">
+                <h3 className="text-sm font-black text-purple-300">2. 거시경제 지표와 통화정책 상관관계</h3>
+                <p className="text-gray-400">
+                  미국 연방준비제도(Fed)의 기준금리 결정(FOMC), 소비자물가지수(CPI), 생산자물가지수(PPI), 비농업 고용지표 및 원·달러 환율 변동이 국내 수출 기업의 채산성과 외국인 기관 수급에 미치는 거시적 인과관계를 시나리오별로 분석합니다.
+                </p>
+              </div>
+              <div className="p-5 rounded-2xl bg-zinc-950/80 border border-white/5 space-y-2">
+                <h3 className="text-sm font-black text-emerald-300">3. DART 전자공시 및 수급 통계 해석</h3>
+                <p className="text-gray-400">
+                  단일판매·공급계약 체결, 유상증자·전환사채(CB) 발행, 타법인 주식 취득 등 기업 가치에 직접적인 영향을 미치는 공시 원문을 분석하고, 최근 20거래일 기준 기관·외국인 합산 순매수 강도와 거래대금 변화를 객관적인 수치로 정리합니다.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {FAQS.map(({ q, a }, idx) => (
                 <div key={idx} className="p-4 rounded-2xl bg-zinc-950/70 border border-white/5 space-y-1.5">
                   <h3 className="text-white text-xs sm:text-sm font-bold flex items-start gap-2">
@@ -376,9 +417,12 @@ export default async function Home() {
             </div>
           </section>
 
-          <KakaoRevenueAd type="bottom" />
-
         </div>
+      </div>
+
+      {/* 2. 실시간 통합 마켓 대시보드 (글로벌 지수 · 수급 통계 위젯) */}
+      <div id="market-dashboard" className="border-t border-white/10">
+        <HomeClient />
       </div>
     </>
   );

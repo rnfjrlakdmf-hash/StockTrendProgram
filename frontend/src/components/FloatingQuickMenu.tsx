@@ -240,10 +240,9 @@ export default function FloatingQuickMenu() {
         <>
         <div ref={menuRef} className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-[70] flex flex-col items-end">
             {/* Mini Watchlist Panel (실시간 시세 및 내 관심종목 연동) */}
+            {isWatchlistOpen && (
             <div 
-                className={`absolute bottom-16 right-16 w-80 sm:w-88 mb-4 bg-slate-950/95 backdrop-blur-2xl border border-amber-400/30 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_20px_rgba(245,158,11,0.15)] overflow-hidden transition-all duration-300 transform origin-bottom-right ${
-                    isWatchlistOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-50 opacity-0 pointer-events-none"
-                }`}
+                className="absolute bottom-16 right-16 w-80 sm:w-88 mb-4 bg-slate-950/95 backdrop-blur-2xl border border-amber-400/30 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_20px_rgba(245,158,11,0.15)] overflow-hidden transition-all duration-300 transform origin-bottom-right scale-100 opacity-100 pointer-events-auto"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-white/10 bg-gradient-to-r from-amber-500/10 to-transparent">
@@ -374,6 +373,7 @@ export default function FloatingQuickMenu() {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Expanding Quick Menu Items */}
             <div 

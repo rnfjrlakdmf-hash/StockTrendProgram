@@ -351,13 +351,23 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
 
                 {/* 2. Center: Core Knowledge Tabs (Clean & 100% Conflict-Free) */}
                 <nav className="hidden lg:flex items-center gap-1.5 shrink-0" aria-label="메인 지식 네비게이션">
-                    <Link 
-                        href="/signals?tab=scanner" 
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
-                    >
-                        <span>🔥</span>
-                        <span>장마감 스캐너</span>
-                    </Link>
+                    {Boolean(user && ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '')) ? (
+                        <Link 
+                            href="/signals?tab=scanner" 
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/signals') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <span>🔥</span>
+                            <span>장마감 스캐너</span>
+                        </Link>
+                    ) : (
+                        <Link 
+                            href="/about" 
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/about') ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 shadow-sm shadow-orange-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <span>🏛️</span>
+                            <span>리서치 원칙</span>
+                        </Link>
+                    )}
                     <Link 
                         href="/calculator" 
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${pathname?.startsWith('/calculator') ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm shadow-amber-500/10' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
@@ -406,14 +416,16 @@ export default function Header({ title = "대시보드", subtitle = "환영합�
                     </div>
 
                 <div className="flex items-center justify-end gap-3" ref={dropdownRef}>
-                    <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all hover:shadow-glass group">
-                        <Bell className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" />
-                        {user && unreadAlertsCount > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0a0a0c] z-10 shadow-lg animate-pulse">
-                                {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
-                            </span>
-                        )}
-                    </Link>
+                    {user && !user.is_guest && (
+                        <Link href="/alerts" className="relative p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all hover:shadow-glass group">
+                            <Bell className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" />
+                            {unreadAlertsCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] flex items-center justify-center border border-[#0a0a0c] z-10 shadow-lg animate-pulse">
+                                    {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
+                                </span>
+                            )}
+                        </Link>
+                    )}
                     <div className="relative">
                         <button 
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}

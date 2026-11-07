@@ -2,6 +2,7 @@ interface SeoContentProps {
     pageTitle?: string;
     pageDescription?: string;
     variant?: 'home' | 'subpage';
+    asH1?: boolean;
 }
 
 export default function SeoContentBlock({ pageTitle, pageDescription }: SeoContentProps) {
