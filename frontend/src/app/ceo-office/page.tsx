@@ -2522,6 +2522,120 @@ function buildDefaultStockRiseIntel(stockName: string, stockCode?: string, extra
         };
     }
 
+    // 2차전지 / 배터리 / 양극재 (에코프로비엠, 에코프로, 포스코퓨처엠, LG에너지솔루션, 엘앤에프, 삼성SDI 등)
+    if (['에코프로', '에코프로비엠', '247540', '086520', '포스코퓨처엠', '003670', 'lg에너지솔루션', '373220', '엘앤에프', '066970', '삼성sdi', '006400', 'sk이노베이션', '2차전지', '배터리', '양극재', '리튬'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 글로벌 완성차 EV 신차 출시 · 헝가리/북미 공장 가동 본격화 · 메탈가 바닥 통과 수혜주',
+            riseOneLiner: `해외에서 『유럽·북미 완성차의 신규 전기차 라인업 출시 및 헝가리·북미 현지 공장 가동 본격화』와 함께 『리튬·니켈 메탈 가격 바닥 확인』이 나타나며 ➔ 고마진 하이니켈 양극재 출하량 반등과 분기 흑자 턴어라운드로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 유럽·북미 신규 전기차 모델 출시 및 헝가리 신공장 가동 본격화',
+                    chain: '글로벌 완성차의 신규 EV 모델 공급 개시 ➔ 헝가리 데브레첸 등 해외 공장 가동률 급상승 ➔ 하이니켈 양극재 분기 출하량 급증으로 실적 퀀텀점프',
+                    detailed_explanation: `${stockName}의 핵심 성장 동력인 유럽 헝가리 공장이 본격 양산 체제에 돌입하면서 현지 완성차 고객사향 직납 물량이 가파르게 늘어나고 있습니다. 전기차 신모델 출시 사이클과 맞물려 분기 단위 출하량이 바닥을 찍고 반등하는 강력한 실적 개선 국면입니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '💰',
+                    trigger: '📈 핵심 메탈(리튬·니켈) 가격 바닥 통과 및 양극재 판가 스프레드(마진) 회복',
+                    chain: '광물 가격 하향 안정 ➔ 원재료 재고평가손실 종료 ➔ 고마진 하이니켈 판가 스프레드 확대로 영업이익률 흑자 전환',
+                    detailed_explanation: '지난 수분기 동안 수익성을 갉아먹던 리튬·니켈 등 핵심 원자재 가격 하락세가 멈추고 바닥을 형성했습니다. 이에 따라 고가 원재료 재고 부담이 완전히 해소되고 제품 판가와 원가 간 마진(스프레드)이 정상 궤도로 복귀하고 있습니다.',
+                    impact_degree: '✨ 스프레드 마진 회복'
+                },
+                {
+                    icon: '🌐',
+                    trigger: '⚡ ESS(에너지저장장치) 및 차세대 배터리(LFP·나트륨) 포트폴리오 다변화',
+                    chain: '신재생에너지 그리드용 ESS 배터리 수요 급증 ➔ 양극재 포트폴리오 다각화 ➔ EV 단일 의존도 분산 및 안정적 수익성 확보',
+                    detailed_explanation: '전기차 외에도 글로벌 AI 데이터센터 전력망 및 신재생에너지 확대로 ESS용 대용량 배터리 양극재 수요가 폭발하고 있습니다. 여기에 중저가 LFP 및 고전압 미드니켈 라인업을 보강하여 글로벌 수주 안정성을 대폭 강화하고 있습니다.',
+                    impact_degree: '⚡ 포트폴리오 다변화'
+                }
+            ],
+            deepReport: {
+                summary_headline: `${stockName}은 글로벌 전기차 캐즘 바닥을 통과하며 해외 공장 가동과 함께 턴어라운드를 시작하는 2차전지 핵심 소재주입니다.`,
+                business_model_context: `${stockName}은 세계 최고 수준의 하이니켈 양극재 기술력을 바탕으로 삼성SDI, SK온 등 글로벌 배터리 셀 제조사를 거쳐 포드, BMW 등 글로벌 완성차 OEM에 핵심 소재를 공급합니다.`,
+                transmission_mechanism: `해외 완성차 신차 출시 및 북미/유럽 배터리 합작공장(JV) 가동 ➔ 양극재 수주 잔고 급증 ➔ 판가-원가 스프레드 정상화 ➔ 분기 영업이익 흑자 턴어라운드로 직결됩니다.`,
+                smart_money_logic: `기관 및 외인 큰손들은 '월별 양극재 수출 통관 중량 반등'과 '메탈 가격 횡보세 유지'를 매수의 핵심 시그널로 인식하고 있습니다.`,
+                key_inflection_points: `① 분기 양극재 출하량(Q) 두 자릿수 반등 여부, ② 헝가리 신공장 램프업 가동률, ③ 외국인 패시브 수급 5일 연속 순매수 전환`
+            }
+        };
+    }
+
+    // 유통 / 편의점 / 내수 소비재 (BGF리테일, GS리테일, 이마트 등)
+    if (['bgf리테일', 'bgf', '282330', 'gs리테일', '007070', '이마트', '139480', '편의점', 'cu', '유통', '소비재'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 고마진 PB 간편식 돌풍 · 점포 대형화 효율 극대화 · 해외 K-편의점 수출 수혜주',
+            riseOneLiner: `국내외에서 『초저가·고품질 PB(자체 브랜드) 간편식·디저트 매출 급증 및 점포 대형화에 따른 점당 매출 신장』과 함께 『몽골·말레이시아 등 K-편의점 해외 진출 성공』이 맞물리며 ➔ 든든한 현금흐름과 안정적 영업이익으로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 고마진 PB(자체 브랜드) 차별화 간편식·디저트 라인업 및 H&B 매출 급증',
+                    chain: '가성비 PB 간편식/디저트 돌풍 ➔ 편의점 객단가 상승 및 마진율 개선 ➔ 불황형 소비 수혜로 분기 영업이익 견인',
+                    detailed_explanation: `${stockName}(CU)은 연세우유 크림빵, 득템 시리즈 등 메가 히트 PB 상품을 지속 발굴하며 편의점을 단순 소매점에서 '근거리 장보기·트렌드 쇼핑 플랫폼'으로 진화시켰습니다. 고마진 차별화 상품 비중 확대로 객단가와 수익성이 동시에 향상되고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '💰',
+                    trigger: '📈 우량 입지 중심 점포 대형화 및 본부 임차형 전환에 따른 점당 효율성 극대화',
+                    chain: '수익성 높은 대형 점포 중심 출점 ➔ 점당 일평균 매출(상승) ➔ 가맹본부와 가맹점주 수익 동반 개선',
+                    detailed_explanation: '단순 점포 수 늘리기 경쟁에서 탈피하여 점당 매출이 높은 우량 상권 중심 출점 전략을 구사하고 있습니다. 기존 소형 점포를 대형 특화 매장으로 전환하고 본부 임차형 비중을 늘려 고정비 효율을 극대화하고 있습니다.',
+                    impact_degree: '✨ 점포 효율 극대화'
+                },
+                {
+                    icon: '🌐',
+                    trigger: '⚡ 몽골·말레이시아·카자흐스탄 등 해외 K-편의점 로열티 및 글로벌 확장',
+                    chain: 'K-컬처 열풍 타고 해외 마스터 프랜차이즈 확대 ➔ 로열티 및 PB 상품 수출 ➔ 내수 한계 극복 글로벌 성장축 확보',
+                    detailed_explanation: '국내 시장의 포화 우려를 딛고 몽골, 말레이시아, 카자흐스탄 등 아시아 신흥국에서 압도적인 점유율 1위를 달성했습니다. 자본 투자 부담이 적은 마스터 프랜차이즈 방식으로 안정적인 로열티와 수출 마진을 창출하고 있습니다.',
+                    impact_degree: '⚡ 글로벌 성장 모멘텀'
+                }
+            ],
+            deepReport: {
+                summary_headline: `${stockName}은 불황에 강한 근거리 플랫폼으로 고마진 PB와 해외 진출을 통해 안정적 이익 성장을 구가하는 내수 대표주입니다.`,
+                business_model_context: `${stockName}은 전국 1만 8천여 개 이상의 CU 편의점 네트워크를 운영하는 국내 최상위 유통 기업으로, 경기 변동에 둔감한 필수 소비재 중심의 강력한 현금창출능력을 보유하고 있습니다.`,
+                transmission_mechanism: `고물가 속 가성비 PB 소비 선호 ➔ 편의점 방문 객수 증가 ➔ 일평균 점포 매출 상승 ➔ 분기 영업이익률 개선 및 주주환원 확대로 연결됩니다.`,
+                smart_money_logic: `기관 투자자들은 고배당 매력과 함께 '기존점 매출 성장률(SSSG) 플러스 전환'을 안정적 방어주 매수의 핵심 기준으로 평가합니다.`,
+                key_inflection_points: `① 기존점 일평균 매출 성장률 추이, ② 고마진 PB 및 담배 외 일반 상품 비중, ③ 주당 배당금(DPS) 및 자사주 소각 정책`
+            }
+        };
+    }
+
+    // 바이오 / 혁신신약 / 뇌전증 직판 (SK바이오팜 등)
+    if (['sk바이오팜', '바이오팜', '326030'].some(k => combined.includes(k))) {
+        return {
+            riseChainBadge: '🔥 미국 엑스코프리 직판 고마진 폭발 · 4Q 임상 모멘텀 · 연간 흑자 안착 수혜주',
+            riseOneLiner: `미국 시장에서 『뇌전증 혁신신약 엑스코프리 처방 수(TRx) 가파른 우상향 및 미국 직판망을 통한 90%대 고마진 영업 레버리지』와 함께 『4Q 주요 임상 파이프라인(오파칼림 등) 이벤트 가치 부각』이 맞물리며 ➔ 연간 흑자 기조 안착으로 ${stockName} 주가가 강력하게 상승하고 있습니다!`,
+            riseTriggers: [
+                {
+                    icon: '🚀',
+                    trigger: '🔥 미국 엑스코프리(세노바메이트) 처방 수(TRx) 사상 최대치 경신 및 직판 고마진',
+                    chain: '미국 신경과 전문의 처방 확대 ➔ 분기 처방 건수(TRx) 가파른 우상향 ➔ 90% 이상 고마진 직판 구조로 영업이익 퀀텀점프',
+                    detailed_explanation: `${stockName}은 국내 제약사 최초로 미국 시장에서 자체 직판 영업망을 구축하여 엑스코프리를 직접 판매하고 있습니다. 약가 중간 수수료 없이 매출의 90% 이상이 직판 이익으로 귀속되는 고마진 구조로, 처방 환자 수가 가파르게 늘어나며 강력한 영업 레버리지가 발생하고 있습니다.`,
+                    impact_degree: '🔥 1순위 상승 동력'
+                },
+                {
+                    icon: '💎',
+                    trigger: '📈 4Q 오파칼림 글로벌 임상 이벤트 및 전신발작(PGTC) 적응증 확대 가시화',
+                    chain: '부분발작에서 전신발작으로 처방 대상 확대 ➔ 4분기 임상 결과 및 파이프라인 가치 재평가 ➔ 글로벌 타깃 시장 2배 확장',
+                    detailed_explanation: '현재 성인 부분발작에 한정된 처방 영역을 전신발작 및 소아·청소년 환자군으로 넓히는 글로벌 3상 임상이 순항 중입니다. 4분기 주요 임상 데이터 발표와 함께 타깃 시장 규모가 2배 이상 커질 것으로 기대되고 있습니다.',
+                    impact_degree: '✨ 임상 모멘텀 폭발'
+                },
+                {
+                    icon: '🌐',
+                    trigger: '⚡ 미국 직판 유통 인프라를 활용한 제2의 신약 도입(In-licensing) 시너지',
+                    chain: '이미 구축된 미국 직판 영업망 확보 ➔ 타사 혁신신약 도입(In-licensing) 판매 ➔ 고정비 추가 없이 막대한 레버리지 창출',
+                    detailed_explanation: '미국 전역에 깔린 신경과 전문 병원 네트워크를 활용하여, 추가 고정비 없이 타사 우수 신약을 들여와 판매하는 시너지 전략(Second Product)을 추진하고 있어 중장기 종합 빅바이오텍 도약이 기대됩니다.',
+                    impact_degree: '⚡ 파이프라인 시너지'
+                }
+            ],
+            deepReport: {
+                summary_headline: `${stockName}은 미국 직판 뇌전증 신약의 폭발적 처방 성장으로 구조적 흑자 궤도에 오른 독보적 K-바이오텍입니다.`,
+                business_model_context: `${stockName}은 SK그룹의 핵심 바이오 계열사로, 신약 후보물질 발굴부터 글로벌 임상, FDA 신약 승인(NDA), 미국 현지 직판까지 전 과정을 독자 완주한 국내 유일무이한 제약바이오 기업입니다.`,
+                transmission_mechanism: `미국 엑스코프리 주간/월간 처방 수(TRx) 발표 ➔ 고마진 직판 매출 인식 ➔ 고정비 상쇄 후 영업이익 급증 ➔ 연간 흑자 기조 굳히기 및 주가 밸류에이션 리레이팅으로 전달됩니다.`,
+                smart_money_logic: `글로벌 바이오 펀드들은 '미국 엑스코프리 월간 TRx 성장률 둔화 여부'와 '차기 신약 도입(In-licensing) 가시성'을 핵심 매수 잣대로 삼고 있습니다.`,
+                key_inflection_points: `① 미국 블룸버그 집계 엑스코프리 월별 TRx 처방 통계, ② 연간 영업이익 흑자 달성 공시, ③ 외국인 지분율 15% 돌파 여부`
+            }
+        };
+    }
+
     // 기본(범용) 턴어라운드 상승 동력
     return {
         riseChainBadge: `🔥 ${stockName} 글로벌 업황 턴어라운드 & 외국인·기관 수급 결집 수혜주`,
@@ -2740,6 +2854,102 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
             ],
         };
     }
+    // 2차전지 / 배터리 / 양극재 (에코프로비엠, 에코프로, 포스코퓨처엠, LG에너지솔루션 등)
+    if (['에코프로', '에코프로비엠', '247540', '086520', '포스코퓨처엠', '003670', 'lg에너지솔루션', '373220', '엘앤에프', '066970', '삼성sdi', '006400', 'sk이노베이션', '2차전지', '배터리', '양극재', '리튬'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 미국 테슬라(TSLA) · IRA 보조금 정책 · 글로벌 전기차 캐즘 & 리튬가 직결주',
+            oneLiner: `미국·유럽에서 『글로벌 전기차 판매 둔화(캐즘) 심화로 완성차 합작공장 가동률 저하』가 터지거나, 『미국 대선 후 IRA 전기차 보조금 및 세액공제(AMPC) 축소 불확실성』 또는 『중국발 리튬·니켈 가격 급변』이 발생하면 ➔ 양극재 출하량과 판가가 동시에 압박받아 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                {
+                    icon: '🔋',
+                    trigger: '🇺🇸 미국 IRA 전기차 보조금 및 첨단제조생산세액공제(AMPC) 정책 축소 불확실성',
+                    chain: '미국 정책 지원금 축소 ➔ 북미 완성차의 EV 생산 계획 보수화 ➔ 배터리 셀 및 양극재 발주 둔화로 직격탄',
+                    detailed_explanation: '미국 대선 및 의회 지형 변화에 따라 IRA 전기차 구매 보조금 및 배터리 셀/모듈 세액공제(AMPC)가 축소될 경우 북미 시장의 전기차 전환 속도가 늦춰져 주요 공급망의 수익성이 악화될 위험이 있습니다.',
+                    impact_degree: '🔥 1순위 직격탄'
+                },
+                {
+                    icon: '🚗',
+                    trigger: '📉 글로벌 전기차(EV) 캐즘(일시적 수요 정체) 장기화 및 완성차 감산',
+                    chain: '유럽·북미 완성차 EV 판매 부진 ➔ 배터리 고객사 재고 조정 ➔ 양극재 공장 가동률 하락 및 고정비 부담 증가',
+                    detailed_explanation: '고금리와 충전 인프라 부족으로 유럽과 북미 소비자들이 순수 전기차 구매를 망설이면서 완성차 업체들이 하이브리드 비중을 늘리고 있습니다. 이에 따라 순수 전기차용 하이니켈 양극재 주문이 일시 지연될 수 있습니다.',
+                    impact_degree: '⚠️ 전방 수요 직격'
+                },
+                {
+                    icon: '⛏️',
+                    trigger: '🌏 중국산 LFP 저가 배터리 공세 및 핵심 메탈(리튬) 시세 변동성',
+                    chain: '중국 배터리사의 저가 LFP 수출 확대 ➔ 글로벌 완성차의 중저가 배터리 채택 증가 ➔ 하이니켈 가격 인하 압박 및 마진 축소',
+                    detailed_explanation: '중국 배터리 기업들이 공급 과잉을 해소하기 위해 저렴한 LFP 배터리를 유럽·동남아로 밀어내고 있습니다. 글로벌 완성차가 보급형 차량에 LFP를 채택할 경우 삼원계(NCM) 양극재의 단기 점유율 경쟁이 심화될 수 있습니다.',
+                    impact_degree: '⚡ 마진·경쟁 변수'
+                }
+            ]
+        };
+    }
+
+    // 유통 / 편의점 (BGF리테일 등)
+    if (['bgf리테일', 'bgf', '282330', 'gs리테일', '007070', '이마트', '139480', '편의점', 'cu', '유통', '소비재'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 국내 내수 가계 소비 심리 · 편의점 점포 수 포화 · 최저임금 및 인건비 직결주',
+            oneLiner: `국내외에서 『고물가·고금리 장기화에 따른 민간 소비 심리 위축 및 국내 편의점 점포 수 포화에 따른 출점 성장률 둔화』가 터지거나 『최저임금 인상 및 점주 상생 지원금 증가』 이슈가 발생하면 ➔ 점포당 매출 신장세가 둔화되어 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                {
+                    icon: '🏬',
+                    trigger: '📉 국내 내수 가계 소비 심리 위축 및 편의점 점포 수 포화에 따른 신규 출점 둔화',
+                    chain: '고물가에 따른 지갑 닫기 ➔ 편의점 기존점 성장률(SSSG) 정체 ➔ 국내 5만여 개 점포 포화로 양적 성장 한계 직면',
+                    detailed_explanation: '국내 편의점 점포 수가 이미 5만 5천 개를 넘어서며 물리적 출점 여력이 줄어들고 있습니다. 여기에 내수 경기 둔화로 소비자들이 객단가를 낮추면서 기존점 일평균 매출 성장률이 둔화될 수 있다는 우려가 주가의 발목을 잡습니다.',
+                    impact_degree: '🔥 1순위 직격탄'
+                },
+                {
+                    icon: '💵',
+                    trigger: '📈 최저임금 인상 및 가맹점 상생 지원금 지출 확대에 따른 판관비 부담',
+                    chain: '인건비 상승 ➔ 가맹점주 수익성 악화 ➔ 가맹본부의 상생 지원금 및 전기료 보조금 증액으로 영업이익률 압박',
+                    detailed_explanation: '편의점 산업은 인건비와 24시간 운영 비용에 민감합니다. 최저임금 인상 시 가맹점 이탈을 막기 위해 본부가 제공하는 각종 상생 지원비와 폐기 지원금 부담이 늘어나 판관비율이 상승할 수 있습니다.',
+                    impact_degree: '⚠️ 비용 직격탄'
+                },
+                {
+                    icon: '⚖️',
+                    trigger: '🏛️ 대형 이커머스(쿠팡·알리·테무)의 초저가 새벽배송 공세 및 유통업 규제',
+                    chain: '온라인 이커머스의 생필품 무료배송 확대 ➔ 오프라인 편의점 장보기 수요 일부 잠식 ➔ 가격 할인 프로모션 경쟁 심화',
+                    detailed_explanation: '이커머스 플랫폼들의 빠른 배송과 초저가 마케팅이 편의점의 비식품·공산품 매출을 일부 잠식하고 있으며, 상권 내 근접 출점 제한 자율규약 등 제도적 제약이 신규 확장을 제약할 수 있습니다.',
+                    impact_degree: '⚡ 유통 경쟁 변수'
+                }
+            ]
+        };
+    }
+
+    // 바이오 / 신약 / 뇌전증 (SK바이오팜 등)
+    if (['sk바이오팜', '바이오팜', '326030'].some(k => combined.includes(k))) {
+        return {
+            ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
+            chainBadge: '🌏 미국 FDA 규제 및 약가 정책 · 미 국채금리 · 후속 임상 R&D 비용 직결주',
+            oneLiner: `미국에서 『미 연준의 고금리 장기화에 따른 미 국채금리 급등으로 성장주 밸류에이션 압박』이 발생하거나, 『후속 파이프라인(오파칼림 등) 임상 R&D 비용 급증 또는 FDA 규제 승인 일정 지연』 이슈가 터지면 ➔ 단기 투자심리가 위축되며 ${stockName} 주가가 직격탄을 맞아 떨어집니다!`,
+            triggers: [
+                {
+                    icon: '🧬',
+                    trigger: '🇺🇸 후속 신약 파이프라인(방사성의약품·표적단백질분해) 글로벌 임상 R&D 지출 증가',
+                    chain: '신약 개발 파이프라인 확대 ➔ 대규모 글로벌 임상 비용 및 연구개발비 투입 ➔ 단기 분기 영업이익률 변동성 확대',
+                    detailed_explanation: '엑스코프리로 벌어들인 현금을 차세대 파이프라인(방사성의약품, 단백질분해제 등) 임상에 재투자하는 과정에서 분기별 R&D 비용이 큰 폭으로 늘어나며 단기 손익 변동성이 커질 위험이 있습니다.',
+                    impact_degree: '🔥 1순위 직격탄'
+                },
+                {
+                    icon: '💊',
+                    trigger: '🏛️ 단일 신약(엑스코프리) 매출 집중도 및 미국 정부(IRA) 약가 인하 압박',
+                    chain: '전체 매출의 80% 이상이 엑스코프리에 집중 ➔ 미국 메디케어 약가 협상이나 사보험사 환급 정책 변동 시 실적 민감도 가중',
+                    detailed_explanation: '현재 회사 매출의 절대적 비중이 엑스코프리 단일 품목에 의존하고 있어, 미국 내 경쟁 약물 등장이나 의료보험 급여 목록 등재 변동이 발생할 경우 매출 타격이 즉각적으로 반영될 수 있습니다.',
+                    impact_degree: '⚠️ 파이프라인 집중 리스크'
+                },
+                {
+                    icon: '🏦',
+                    trigger: '📈 미국 10년물 국채금리 급등 및 글로벌 바이오 섹터 성장 밸류에이션 할인',
+                    chain: '금리 상승 ➔ 미래 현금흐름의 현재가치 할인율 상승 ➔ 고멀티플 바이오 섹터 전반의 외국인 패시브 매물 출회',
+                    detailed_explanation: '미국 인플레이션 반등이나 연준의 금리 인하 지연으로 미 국채금리가 급등하면, 월가 알고리즘이 미래 성장 가치를 기반으로 하는 바이오테크 종목들의 목표주가를 기계적으로 하향 조정합니다.',
+                    impact_degree: '⚡ 금리·수급 변수'
+                }
+            ]
+        };
+    }
+
     if (['포스코', 'posco', '현대제철', '동국제강', '고려아연', '철강', '열연', '후판'].some(k => combined.includes(k))) {
         return {
             ...buildDefaultStockRiseIntel(stockName, stockCode, extraContext),
@@ -3076,128 +3286,91 @@ export default function CeoOfficePage() {
         const isRising = rawChg > 0;
         const isDropping = rawChg < 0;
 
-        const mainBadgeText = isRising ? '🚀 실시간 상승 원인 & 3대 핵심 모멘텀' : isDropping ? '🚨 하락 원인 & 해외 직격탄 판독' : '⚖️ 보합 원인 & 수급 균형 판독';
-        const mainBadgeColor = isRising ? 'bg-emerald-400 text-slate-950' : isDropping ? 'bg-rose-500 text-white' : 'bg-slate-400 text-slate-950';
+        const riseList = (dropIntel.rise_triggers || fallbackHit.riseTriggers || [
+            { icon: '🚀', trigger: `🔥 ${r.stock_name} 전방 산업 수요 회복 및 실적 턴어라운드`, chain: '핵심 고객사 발주 확대 ➔ 신규 수주 모멘텀 가시화 ➔ 실적 개선 기대감으로 주가 견인', impact_degree: '🔥 1순위 상승 동력', detailed_explanation: '전방 수요 회복 및 신규 수주 가시화로 공장 가동률이 상승하고 실적 개선 기대감이 주가를 견인합니다.' },
+            { icon: '💰', trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입', chain: '기업 밸류에이션 매력 부각 ➔ 메이저 수급 집중 유입 ➔ 단기 수급 탄력성 확보', impact_degree: '✨ 수급 모멘텀', detailed_explanation: '외국인 및 기관 투자자들의 패시브 자금이 집중 유입되며 하방 경직성을 확보하고 있습니다.' },
+        ]).slice(0, 2);
 
-        const mainTitle = isRising
-            ? `“오늘 왜 오르나요? (+${rawChg.toFixed(2)}% 실시간 상승 원인 & 3대 핵심 모멘텀)”`
-            : isDropping
-            ? `“오늘 왜 떨어지나요? (${rawChg.toFixed(2)}% 실시간 하락 원인 & 3대 해외 뇌관)”`
-            : `“오늘 왜 보합인가요? (0.00% 실시간 수급 균형 & 3대 관전 포인트)”`;
+        const riskList = (dropIntel.overseas_triggers || fallbackHit.triggers || [
+            { icon: '💣', trigger: '🇺🇸 미국 증시 변동성 & 글로벌 경기 둔화 우려', chain: '해외 시장 급변동 ➔ 외국인 프로그램 매도 출회 ➔ 단기 가격 조정 압박', impact_degree: '🔥 1순위 직격탄', detailed_explanation: '글로벌 경기 둔화 및 금리 변동성으로 외국인 차익실현 매물이 출회될 수 있습니다.' },
+            { icon: '⚠️', trigger: '📈 원/달러 환율 급변 및 해외 원자재·물류비 상승', chain: '환율 변동성 확대 ➔ 원부자재 수입 단가 상승 ➔ 분기 영업이익률 압박', impact_degree: '⚠️ 마진·원가 리스크', detailed_explanation: '원/달러 환율 급등이나 원부자재 가격 상승 시 영업 마진율이 일시적으로 압박받을 수 있습니다.' },
+        ]).slice(0, 2);
 
-        const chainBadge = isRising
-            ? (dropIntel.rise_chain_badge || fallbackHit.riseChainBadge || `🔥 ${r.stock_name} 글로벌 훈풍 & 상승 주도주`)
-            : isDropping
-            ? (dropIntel.overseas_chain_badge || fallbackHit.chainBadge || `🌏 ${r.stock_name} 글로벌 리스크 직결주`)
-            : `⚪ ${r.stock_name} 수급 균형 & 차기 방향성 탐색주`;
-
-        const conclusionTitle = isRising
-            ? '🚀 리서치팀의 직관적 3초 결론 (오늘 주가를 끌어올린 핵심 상승 동력)'
-            : isDropping
-            ? '💣 리서치팀의 직관적 3초 결론 (이 종목이 가장 무서워하는 해외 직격탄)'
-            : '⚖️ 리서치팀의 직관적 3초 결론 (실시간 수급 공방 및 매물 소화 판독)';
-
-        const conclusionText = isRising
-            ? (dropIntel.rise_one_liner || fallbackHit.riseOneLiner || liveDiag?.primary_cause_title || `전방 수요 회복 및 외인·기관 쌍끌이 매수로 +${rawChg.toFixed(2)}% 강세를 견인 중입니다!`)
-            : isDropping
-            ? (dropIntel.direct_hit_one_liner || fallbackHit.oneLiner || liveDiag?.primary_cause_title || `해외 시장 변동성 및 차익실현 매물 출회로 ${rawChg.toFixed(2)}% 조정을 받고 있습니다!`)
-            : (liveDiag?.primary_cause_title || `악재 공시 없는 상태에서 매수세와 매도세가 팽팽하게 맞서며 50일선 지지선 안착을 시험하는 안정적 보합 흐름입니다.`);
-
-        const activeTriggers = isRising
-            ? (dropIntel.rise_triggers || fallbackHit.riseTriggers || [
-                { icon: '🚀', trigger: `🔥 ${r.stock_name} 전방 산업 수요 회복 및 실적 턴어라운드`, chain: '핵심 고객사 발주 확대와 신규 수주 모멘텀이 가시화되면서 실적 개선 기대감이 주가를 견인합니다.', impact_degree: '🔥 1순위 상승 동력' },
-                { icon: '💰', trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입', chain: '기업 밸류에이션 매력이 부각되며 메이저 수급이 집중 유입되고 있습니다.', impact_degree: '✨ 수급 모멘텀' },
-                { icon: '🌐', trigger: '🇺🇸 글로벌 시장 환경 호조 및 수출 마진 확대', chain: '미국 등 해외 주요 시장 지수가 상승하고 환율 및 원가 구조가 우호적으로 작용합니다.', impact_degree: '⚡ 글로벌 수혜' },
-            ])
-            : isDropping
-            ? (dropIntel.overseas_triggers || fallbackHit.triggers || [
-                { icon: '🌎', trigger: '🇺🇸 미국 증시 급락 & 글로벌 경기 둔화 우려', chain: '밤사이 해외 시장 조정 시 외국인·기관 프로그램 매도가 출회되며 주가를 누릅니다.', impact_degree: '🔥 1순위 직격탄' },
-                { icon: '💱', trigger: '📈 원/달러 환율 급등 및 해외 원자재·물류비 상승', chain: '환율 급등 시 외국인 수급이 이탈하고 원재료 조달 부담이 커집니다.', impact_degree: '⚠️ 수급·원가 직격' },
-                { icon: '📢', trigger: '📑 전방 고객사 발주 지연 또는 물량 공시', chain: '주요 매출처 투자 지연이나 단기 차익 매물 발생 시 주가가 흔들립니다.', impact_degree: '⚡ 기업 고유 변수' },
-            ])
-            : [
-                { icon: '⚖️', trigger: '📊 외국인·기관 수급 공방 및 매물 소화', chain: '단기 급변동 없이 외인과 기관의 매도/매수가 균형을 이루며 차기 모멘텀을 대기 중입니다.', impact_degree: '⚖️ 수급 균형' },
-                { icon: '🛡️', trigger: '🧱 핵심 이동평균선(50일선) 지지력 시험', chain: '추세 이탈 없는 안정적인 횡보 구간으로 단기 차트 바닥을 다지는 과정입니다.', impact_degree: '🧱 지지선 확인' },
-                { icon: '🌐', trigger: '⚡ 대외 매크로 및 전방 고객사 신규 발주 대기', chain: '글로벌 금리 및 전방 고객사 투자 계획 발표에 따른 신규 방향성 형성을 관망 중입니다.', impact_degree: '⚡ 모멘텀 대기' },
-            ];
-
-        const containerBg = isRising
-            ? 'bg-gradient-to-br from-emerald-950/45 via-[#111f1e] to-slate-950 border-emerald-500/60'
-            : isDropping
-            ? 'bg-gradient-to-br from-rose-950/45 via-[#1f1118] to-slate-950 border-rose-500/60'
-            : 'bg-gradient-to-br from-slate-900/95 via-[#131622] to-slate-950 border-slate-600/60';
-
-        const conclusionBoxBorder = isRising ? 'border-emerald-400/45' : isDropping ? 'border-rose-400/45' : 'border-slate-500/45';
-        const conclusionHeaderColor = isRising ? 'text-emerald-300' : isDropping ? 'text-rose-300' : 'text-slate-300';
+        const riseOneLiner = dropIntel.rise_one_liner || fallbackHit.riseOneLiner || `전방 수요 회복 및 메이저 수급 유입으로 든든한 턴어라운드 모멘텀이 형성되고 있습니다.`;
+        const riskOneLiner = dropIntel.direct_hit_one_liner || fallbackHit.oneLiner || `대외 매크로 불확실성 및 원가·수급 변수에 따른 단기 조정 리스크가 상존합니다.`;
 
         return (
             <div className="space-y-4 pt-1">
-                {/* 🚀/🚨/⚖️ 0-1. [핵심!] 실시간 주가 등락률 연동: 올랐으면 상승 원인&모멘텀만, 내렸으면 하락 원인&해외뇌관만 정밀 판독 */}
-                <div className={`rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl border-2 ${containerBg}`}>
+                {/* ⚖️ [기회 vs 리스크 균형 분석] 🟢 상승 동력 2선 vs 🔴 경계 리스크 2선 동시 점검 */}
+                <div className="rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl border-2 bg-gradient-to-br from-slate-900/95 via-[#0e1726] to-slate-950 border-amber-500/40">
                     {/* 상단 헤더 */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 shadow-md ${mainBadgeColor}`}>
-                                <span>{mainBadgeText}</span>
+                            <span className="px-2.5 py-1 rounded-lg font-black text-xs flex items-center gap-1 shadow-md bg-gradient-to-r from-emerald-500/20 via-amber-500/20 to-rose-500/20 text-amber-200 border border-amber-400/40">
+                                <span>⚖️</span>
+                                <span>기회 vs 리스크 균형 분석</span>
                             </span>
                             <span className="text-xs sm:text-sm font-black text-white">
-                                {mainTitle}
+                                “{r.stock_name} 🟢 핵심 상승 동력 2선 vs 🔴 핵심 경계 리스크 2선 균형 진단”
                             </span>
                         </div>
                         <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${
-                            isRising
-                                ? 'bg-emerald-400/15 text-emerald-200 border-emerald-400/30'
-                                : isDropping
-                                ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
-                                : 'bg-slate-400/15 text-slate-200 border-slate-400/30'
+                            rawChg > 0 ? 'bg-emerald-400/15 text-emerald-200 border-emerald-400/30' : rawChg < 0 ? 'bg-rose-400/15 text-rose-200 border-rose-400/30' : 'bg-slate-400/15 text-slate-200 border-slate-400/30'
                         }`}>
-                            {chainBadge}
+                            {rawChg > 0 ? `+${rawChg.toFixed(2)}% 강세` : rawChg < 0 ? `${rawChg.toFixed(2)}% 조정` : '0.00% 보합'}
                         </span>
                     </div>
 
-                    {/* 💡 1줄 직관적 결론 박스 */}
-                    <div className={`bg-black/65 border-2 ${conclusionBoxBorder} rounded-2xl p-3.5 sm:p-4 space-y-2 shadow-inner`}>
-                        <div className={`flex items-center gap-1.5 text-xs font-black ${conclusionHeaderColor}`}>
-                            <span>{conclusionTitle}</span>
+                    {/* 💡 1초 대표님 균형 결론 박스 (기회 + 리스크 2분할) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <div className="bg-emerald-950/30 border border-emerald-500/35 rounded-xl p-3 space-y-1">
+                            <div className="text-[11px] font-black text-emerald-300 flex items-center gap-1">
+                                <span>🟢</span>
+                                <span>대표님 1초 기회 요약 (상승 모멘텀)</span>
+                            </div>
+                            <p className="text-emerald-100 font-bold leading-relaxed break-keep text-[11px]">
+                                {riseOneLiner}
+                            </p>
                         </div>
-                        <p className="text-xs sm:text-sm text-white font-extrabold leading-relaxed break-keep">
-                            {conclusionText}
-                        </p>
+                        <div className="bg-rose-950/30 border border-rose-500/35 rounded-xl p-3 space-y-1">
+                            <div className="text-[11px] font-black text-rose-300 flex items-center gap-1">
+                                <span>🔴</span>
+                                <span>대표님 1초 경계 요약 (하방 리스크)</span>
+                            </div>
+                            <p className="text-rose-100 font-bold leading-relaxed break-keep text-[11px]">
+                                {riskOneLiner}
+                            </p>
+                        </div>
                     </div>
 
-                    {/* 3대 핵심 요인 카드 (올랐으면 3대 상승 동력, 내렸으면 3대 해외 뇌관) */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                        {(activeTriggers || []).map((t: any, tIdx: number) => (
-                            <div key={tIdx} className="bg-gradient-to-b from-black/60 to-slate-950/80 border border-white/15 hover:border-amber-400/50 rounded-xl p-3.5 space-y-2 transition-all shadow-md flex flex-col justify-between">
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between gap-1 pb-1 border-b border-white/10">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <span className="text-base">{t.icon || (isRising ? '🚀' : isDropping ? '💣' : '⚖️')}</span>
-                                            <span className={`text-xs font-black truncate ${isRising ? 'text-emerald-300' : isDropping ? 'text-amber-300' : 'text-slate-300'}`}>
-                                                {isRising ? `상승 동력 ${tIdx + 1}` : isDropping ? `해외 뇌관 ${tIdx + 1}` : `관전 포인트 ${tIdx + 1}`}
+                    {/* 🟢 🔴 좌우 2분할 대조: 기회 요인 2선 vs 위험 요인 2선 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* 🟢 좌측: 기회 & 핵심 상승 동력 2선 */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs font-black text-emerald-300 px-1 pb-1 border-b border-emerald-500/20">
+                                <span className="flex items-center gap-1">
+                                    <span>🟢</span>
+                                    <span>핵심 기회 & 상승 동력 (2선)</span>
+                                </span>
+                                <span className="text-[10px] text-emerald-400/80 font-normal">왜 사야 하는가?</span>
+                            </div>
+                            <div className="space-y-2">
+                                {riseList.map((t: any, idx: number) => (
+                                    <div key={idx} className="bg-gradient-to-b from-black/60 to-emerald-950/20 border border-emerald-500/30 rounded-xl p-3 space-y-2 shadow-sm">
+                                        <div className="flex items-center justify-between text-[10px] font-black pb-1 border-b border-white/5">
+                                            <span className="text-emerald-300 flex items-center gap-1">
+                                                <span>{t?.icon || '🚀'}</span>
+                                                <span>상승 동력 {idx + 1}</span>
                                             </span>
-                                            {t.category_tag && (
-                                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-white/10 text-gray-200 border border-white/20 shrink-0">
-                                                    {t.category_tag}
-                                                </span>
-                                            )}
+                                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+                                                {t?.impact_degree}
+                                            </span>
                                         </div>
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded border shrink-0 ${
-                                            isRising
-                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                                : tIdx === 0 || (t.impact_degree || '').includes('1순위')
-                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                                : 'bg-amber-500/20 text-amber-200 border-amber-500/30'
-                                        }`}>
-                                            {t.impact_degree}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs sm:text-[13px] font-black text-white leading-snug break-keep pt-0.5">
-                                        {t.trigger}
-                                    </div>
-                                    <div className="bg-white/[0.03] p-2.5 rounded-lg border border-white/5 space-y-2">
-                                        <div className="text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
-                                            {t.chain?.includes('➔') ? (
+                                        <div className="text-xs font-black text-white leading-snug break-keep">
+                                            {t?.trigger}
+                                        </div>
+                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2 text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
+                                            {t?.chain?.includes('➔') ? (
                                                 t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
                                                     <div key={sIdx} className="flex items-start gap-1">
                                                         {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
@@ -3207,10 +3380,10 @@ export default function CeoOfficePage() {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div>{t.chain}</div>
+                                                <div>{t?.chain}</div>
                                             )}
                                         </div>
-                                        {t.detailed_explanation && (
+                                        {t?.detailed_explanation && (
                                             <details className="group pt-1 border-t border-white/5">
                                                 <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
                                                     <span className="flex items-center gap-1">
@@ -3220,25 +3393,88 @@ export default function CeoOfficePage() {
                                                     <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
                                                 </summary>
                                                 <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
-                                                    {t.detailed_explanation}
+                                                    {t?.detailed_explanation}
                                                 </div>
                                             </details>
                                         )}
                                     </div>
-                                </div>
-                                <div className="text-[10px] text-gray-400 font-mono flex items-center justify-between pt-1 border-t border-white/5">
-                                    <span className={isRising ? 'text-emerald-400/90' : 'text-amber-400/80'}>
-                                        {isRising ? '🚀 핵심 수혜 효과:' : '⚡ 영향 경로:'}
-                                    </span>
-                                    <span className="text-gray-300 font-semibold truncate ml-1">
-                                        {isRising
-                                            ? (tIdx === 0 ? '핵심 수주/출하량 폭증' : tIdx === 1 ? '메이저 수급 유입' : '글로벌 수출 마진 레버리지')
-                                            : (tIdx === 0 ? '원가율/수급 직격' : tIdx === 1 ? '영업이익률 압박' : '전방 수주/출하량')}
-                                    </span>
-                                </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
+
+                        {/* 🔴 우측: 위험 & 핵심 경계 리스크 2선 */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs font-black text-rose-300 px-1 pb-1 border-b border-rose-500/20">
+                                <span className="flex items-center gap-1">
+                                    <span>🔴</span>
+                                    <span>핵심 위험 & 경계 리스크 (2선)</span>
+                                </span>
+                                <span className="text-[10px] text-rose-400/80 font-normal">무엇을 조심해야 하는가?</span>
+                            </div>
+                            <div className="space-y-2">
+                                {riskList.map((t: any, idx: number) => (
+                                    <div key={idx} className="bg-gradient-to-b from-black/60 to-rose-950/20 border border-rose-500/30 rounded-xl p-3 space-y-2 shadow-sm">
+                                        <div className="flex items-center justify-between text-[10px] font-black pb-1 border-b border-white/5">
+                                            <span className="text-rose-300 flex items-center gap-1">
+                                                <span>{t?.icon || '💣'}</span>
+                                                <span>경계 리스크 {idx + 1}</span>
+                                            </span>
+                                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold border bg-rose-500/20 text-rose-300 border-rose-500/40">
+                                                {t?.impact_degree}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs font-black text-white leading-snug break-keep">
+                                            {t?.trigger}
+                                        </div>
+                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2 text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
+                                            {t?.chain?.includes('➔') ? (
+                                                t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
+                                                    <div key={sIdx} className="flex items-start gap-1">
+                                                        {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
+                                                        <span className={sIdx === arr.length - 1 ? 'font-bold text-rose-300' : 'text-zinc-300'}>
+                                                            {step.trim()}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div>{t?.chain}</div>
+                                            )}
+                                        </div>
+                                        {t?.detailed_explanation && (
+                                            <details className="group pt-1 border-t border-white/5">
+                                                <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
+                                                    <span className="flex items-center gap-1">
+                                                        <span>📖</span>
+                                                        <span>상세 인과 메커니즘</span>
+                                                    </span>
+                                                    <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
+                                                </summary>
+                                                <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
+                                                    {t?.detailed_explanation}
+                                                </div>
+                                            </details>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
+
+                    {/* 🛡️ 하단: 최서연 CRO 리스크 방어 가이드 & 손절선 */}
+                    <div className="bg-gradient-to-r from-purple-950/40 via-slate-900/90 to-purple-950/40 border border-purple-500/35 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs shadow-md">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-black text-[10px]">
+                                🛡️ CRO 리스크 방어 결론
+                            </span>
+                            <span className="text-zinc-200 text-[11px] font-bold break-keep">
+                                상승 동력이 유효하더라도 위 경계 리스크가 돌발할 수 있으므로, <strong className="text-amber-300">시초가 추격매수 금지</strong> 및 <strong className="text-purple-300 font-mono">-3.5% 손절 방어선</strong>을 엄수하십시오.
+                            </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-purple-300 font-bold shrink-0">
+                            기안: 최서연 상무 (CRO)
+                        </span>
+                    </div>
+                </div>
 
                     {/* 📖 [종목명] 리서치팀 4대 심층 정밀 인과 분석 리포트 (상세 해설) */}
                     {deepReport && (
@@ -6483,7 +6719,7 @@ export default function CeoOfficePage() {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* 🚀/🚨/⚖️ [개별 종목 전용] 실시간 주가 등락률 연동: 올랐으면 상승 원인&모멘텀만, 내렸으면 하락 원인&해외뇌관만 3초 직관 브리핑 */}
+                                                                        {/* ⚖️ [개별 종목 전용] 기회(상승 동력 2선) vs 위험(경계 리스크 2선) 균형 분석 (호재와 악재를 동시에 객관적으로 점검) */}
                                                                         {!isMacroDoc && (() => {
                                                                             const dropIntel = (activeDoc as any).drop_impact_intel;
                                                                             const fallbackHit = getStockOverseasDirectHitSummary(activeDoc.stock_name, activeDoc.stock_code, activeDoc.title);
@@ -6492,75 +6728,36 @@ export default function CeoOfficePage() {
                                                                             // 실시간 등락률 정밀 파싱 (가격 문자열 속 퍼센트만 안전하게 추출)
                                                                             const rawChg = parseChangePct((activeDoc as any).change_pct, (activeDoc as any).current_price);
 
-                                                                            const isRising = rawChg > 0;
-                                                                            const isDropping = rawChg < 0;
+                                                                            const riseList = (dropIntel?.rise_triggers || fallbackHit?.riseTriggers || [
+                                                                                { icon: '🚀', trigger: `🔥 ${activeDoc.stock_name} 전방 산업 수요 회복 및 실적 턴어라운드`, chain: '핵심 고객사 발주 확대 ➔ 신규 수주 모멘텀 가시화 ➔ 실적 개선 기대감으로 주가 견인', impact_degree: '🔥 1순위 상승 동력', detailed_explanation: '전방 수요 회복 및 신규 수주 가시화로 공장 가동률이 상승하고 실적 개선 기대감이 주가를 견인합니다.' },
+                                                                                { icon: '💰', trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입', chain: '기업 밸류에이션 매력 부각 ➔ 메이저 수급 집중 유입 ➔ 단기 수급 탄력성 확보', impact_degree: '✨ 수급 모멘텀', detailed_explanation: '외국인 및 기관 투자자들의 패시브 자금이 집중 유입되며 하방 경직성을 확보하고 있습니다.' },
+                                                                            ]).slice(0, 2);
 
-                                                                            const badgeText = isRising ? '🚀 실시간 상승 원인 판독' : isDropping ? '🚨 하락 원인 & 해외 직격탄' : '⚖️ 실시간 보합 판독';
-                                                                            const badgeColor = isRising ? 'bg-emerald-400 text-slate-950' : isDropping ? 'bg-rose-500 text-white' : 'bg-slate-400 text-slate-950';
+                                                                            const riskList = (dropIntel?.overseas_triggers || fallbackHit?.triggers || [
+                                                                                { icon: '💣', trigger: '🇺🇸 미국 증시 변동성 & 글로벌 경기 둔화 우려', chain: '해외 시장 급변동 ➔ 외국인 프로그램 매도 출회 ➔ 단기 가격 조정 압박', impact_degree: '🔥 1순위 직격탄', detailed_explanation: '글로벌 경기 둔화 및 금리 변동성으로 외국인 차익실현 매물이 출회될 수 있습니다.' },
+                                                                                { icon: '⚠️', trigger: '📈 원/달러 환율 급변 및 해외 원자재·물류비 상승', chain: '환율 변동성 확대 ➔ 원부자재 수입 단가 상승 ➔ 분기 영업이익률 압박', impact_degree: '⚠️ 마진·원가 리스크', detailed_explanation: '원/달러 환율 급등이나 원부자재 가격 상승 시 영업 마진율이 일시적으로 압박받을 수 있습니다.' },
+                                                                            ]).slice(0, 2);
 
-                                                                            const cardTitle = isRising
-                                                                                ? `오늘 왜 오르나요? (+${rawChg.toFixed(2)}% 실시간 상승 원인 3초 해답)`
-                                                                                : isDropping
-                                                                                ? `오늘 왜 떨어지나요? (${rawChg.toFixed(2)}% 실시간 하락 원인 3초 해답)`
-                                                                                : `오늘 왜 보합인가요? (0.00% 실시간 수급 균형 3초 해답)`;
-
-                                                                            const chainBadge = isRising
-                                                                                ? (dropIntel?.rise_chain_badge || fallbackHit?.riseChainBadge || `🔥 ${activeDoc.stock_name} 글로벌 훈풍 & 상승 주도주`)
-                                                                                : isDropping
-                                                                                ? (dropIntel?.overseas_chain_badge || fallbackHit?.chainBadge || `🌏 ${activeDoc.stock_name} 글로벌 리스크 직결주`)
-                                                                                : `⚪ ${activeDoc.stock_name} 수급 균형 & 차기 방향성 탐색주`;
-
-                                                                            const oneLiner = isRising
-                                                                                ? (dropIntel?.rise_one_liner || fallbackHit?.riseOneLiner || liveDiag?.primary_cause_title || `전방 수요 회복 및 외인·기관 쌍끌이 매수로 +${rawChg.toFixed(2)}% 강세를 견인 중입니다!`)
-                                                                                : isDropping
-                                                                                ? (dropIntel?.direct_hit_one_liner || fallbackHit?.oneLiner || liveDiag?.primary_cause_title || `대외 시장 변동성 및 차익실현 매물 출회로 ${rawChg.toFixed(2)}% 조정을 받고 있습니다!`)
-                                                                                : (liveDiag?.primary_cause_title || `악재 공시 없는 상태에서 매수세와 매도세가 팽팽하게 맞서며 50일선 지지선 안착을 시험하는 안정적 보합 흐름입니다.`);
-
-                                                                            const triggers = isRising
-                                                                                ? (dropIntel?.rise_triggers || fallbackHit?.riseTriggers || [
-                                                                                    { icon: '🚀', trigger: `🔥 ${activeDoc.stock_name} 전방 산업 수요 회복 및 실적 턴어라운드`, chain: '핵심 고객사 발주 확대와 신규 수주 모멘텀이 가시화되면서 실적 개선 기대감이 주가를 견인합니다.', impact_degree: '🔥 1순위 상승 동력' },
-                                                                                    { icon: '💰', trigger: '📈 외국인·기관 큰손 순매수 및 프로그램 매수세 유입', chain: '기업 밸류에이션 매력이 부각되며 메이저 수급이 집중 유입되고 있습니다.', impact_degree: '✨ 수급 모멘텀' },
-                                                                                    { icon: '🌐', trigger: '🇺🇸 글로벌 시장 환경 호조 및 수출 마진 확대', chain: '미국 등 해외 주요 시장 지수가 상승하고 환율 및 원가 구조가 우호적으로 작용합니다.', impact_degree: '⚡ 글로벌 수혜' },
-                                                                                ])
-                                                                                : isDropping
-                                                                                ? (dropIntel?.overseas_triggers || fallbackHit?.triggers || [])
-                                                                                : [
-                                                                                    { icon: '⚖️', trigger: '📊 외국인·기관 수급 공방 및 매물 소화', chain: '단기 급변동 없이 외인과 기관의 매도/매수가 균형을 이루며 차기 모멘텀을 대기 중입니다.', impact_degree: '⚖️ 수급 균형' },
-                                                                                    { icon: '🛡️', trigger: '🧱 핵심 이동평균선(50일선) 지지력 시험', chain: '추세 이탈 없는 안정적인 횡보 구간으로 단기 차트 바닥을 다지는 과정입니다.', impact_degree: '🧱 지지선 확인' },
-                                                                                    { icon: '🌐', trigger: '⚡ 대외 매크로 및 전방 고객사 신규 발주 대기', chain: '글로벌 금리 및 전방 고객사 투자 계획 발표에 따른 신규 방향성 형성을 관망 중입니다.', impact_degree: '⚡ 모멘텀 대기' },
-                                                                                ];
-
-                                                                            const cardBg = isRising
-                                                                                ? 'bg-gradient-to-r from-emerald-950/40 via-[#0d1f1c] to-teal-950/30 border-emerald-500/50'
-                                                                                : isDropping
-                                                                                ? 'bg-gradient-to-r from-rose-950/40 via-[#1f0d14] to-amber-950/30 border-rose-500/50'
-                                                                                : 'bg-gradient-to-r from-slate-900/90 via-[#141724] to-zinc-900/90 border-slate-600/50';
-
-                                                                            const oneLinerBoxBorder = isRising ? 'border-emerald-400/40' : isDropping ? 'border-rose-400/40' : 'border-slate-500/40';
-                                                                            const oneLinerTextColor = isRising ? 'text-emerald-100' : isDropping ? 'text-rose-100' : 'text-slate-100';
-                                                                            const oneLinerIcon = isRising ? '🚀' : isDropping ? '💣' : '⚖️';
+                                                                            const riseOneLiner = dropIntel?.rise_one_liner || fallbackHit?.riseOneLiner || '전방 수요 회복과 메이저 수급 유입으로 든든한 턴어라운드 모멘텀이 형성되고 있습니다.';
+                                                                            const riskOneLiner = dropIntel?.direct_hit_one_liner || fallbackHit?.oneLiner || '대외 매크로 불확실성 및 원가·수급 변수에 따른 단기 조정 리스크가 상존합니다.';
 
                                                                             return (
-                                                                                <div className={`${cardBg} border rounded-2xl p-3.5 space-y-2.5 shadow-lg`}>
-                                                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                <div className="bg-gradient-to-r from-slate-900/90 via-[#0e1726] to-slate-900/90 border border-amber-500/40 rounded-2xl p-3.5 space-y-3 shadow-lg">
+                                                                                    {/* 상단 헤더 */}
+                                                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/10">
                                                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                                                            <span className={`px-2 py-0.5 rounded-md font-black text-[11px] ${badgeColor}`}>
-                                                                                                {badgeText}
+                                                                                            <span className="px-2 py-0.5 rounded-md font-black text-[11px] bg-gradient-to-r from-emerald-500/20 via-amber-500/20 to-rose-500/20 text-amber-200 border border-amber-400/40 flex items-center gap-1">
+                                                                                                <span>⚖️</span>
+                                                                                                <span>기회 vs 리스크 균형 분석</span>
                                                                                             </span>
                                                                                             <span className="text-xs font-black text-white">
-                                                                                                {cardTitle}
+                                                                                                [{activeDoc.stock_name}] 🟢 상승 동력 2선 vs 🔴 경계 리스크 2선 균형 진단
                                                                                             </span>
-                                                                                            {chainBadge && (
-                                                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                                                                                    isRising 
-                                                                                                        ? 'bg-emerald-400/15 text-emerald-200 border-emerald-400/30'
-                                                                                                        : isDropping
-                                                                                                        ? 'bg-amber-400/15 text-amber-200 border-amber-400/30'
-                                                                                                        : 'bg-slate-400/15 text-slate-200 border-slate-400/30'
-                                                                                                }`}>
-                                                                                                    {chainBadge}
-                                                                                                </span>
-                                                                                            )}
+                                                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                                                                                                rawChg > 0 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : rawChg < 0 ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-slate-500/20 text-slate-300 border-slate-500/40'
+                                                                                            }`}>
+                                                                                                {rawChg > 0 ? `+${rawChg.toFixed(2)}% 강세` : rawChg < 0 ? `${rawChg.toFixed(2)}% 조정` : '0.00% 보합'}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <button
                                                                                             type="button"
@@ -6570,74 +6767,165 @@ export default function CeoOfficePage() {
                                                                                                 setActiveTab('watchlist_research');
                                                                                                 handleSearchStockRisk(q);
                                                                                             }}
-                                                                                            className={`px-3 py-1 rounded-xl font-black text-[11px] cursor-pointer shadow-md flex items-center gap-1 shrink-0 ${
-                                                                                                isRising
-                                                                                                    ? 'bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950'
-                                                                                                    : isDropping
-                                                                                                    ? 'bg-gradient-to-r from-rose-400 to-amber-400 hover:from-rose-300 hover:to-amber-300 text-slate-950'
-                                                                                                    : 'bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-300 hover:to-indigo-300 text-slate-950'
-                                                                                            }`}
+                                                                                            className="px-3 py-1 rounded-xl font-black text-[11px] cursor-pointer shadow-md flex items-center gap-1 shrink-0 bg-gradient-to-r from-cyan-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 text-slate-950"
                                                                                         >
                                                                                             <span>🔬</span>
-                                                                                            <span>{isRising ? '공시(DART)·뉴스·상승원인 리서치팀 정밀판독 →' : isDropping ? '공시(DART)·뉴스·하락원인 리서치팀 정밀판독 →' : '공시(DART)·뉴스·수급 리서치팀 정밀판독 →'}</span>
+                                                                                            <span>공시·수급·리스크 리서치팀 정밀판독 →</span>
                                                                                         </button>
                                                                                     </div>
 
-                                                                                    <div className={`bg-black/60 border ${oneLinerBoxBorder} rounded-xl p-2.5 text-xs ${oneLinerTextColor} font-bold leading-relaxed break-keep`}>
-                                                                                        {oneLinerIcon} {oneLiner}
+                                                                                    {/* 1초 대표님 균형 브리핑 (기회 요약 + 위험 요약) */}
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                                                                        <div className="bg-emerald-950/30 border border-emerald-500/35 rounded-xl p-2.5 space-y-1">
+                                                                                            <div className="text-[10px] font-black text-emerald-300 flex items-center gap-1">
+                                                                                                <span>🟢</span>
+                                                                                                <span>대표님 1초 기회 요약 (상승 모멘텀)</span>
+                                                                                            </div>
+                                                                                            <p className="text-emerald-100 font-bold leading-relaxed break-keep text-[11px]">
+                                                                                                {riseOneLiner}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <div className="bg-rose-950/30 border border-rose-500/35 rounded-xl p-2.5 space-y-1">
+                                                                                            <div className="text-[10px] font-black text-rose-300 flex items-center gap-1">
+                                                                                                <span>🔴</span>
+                                                                                                <span>대표님 1초 경계 요약 (하방 리스크)</span>
+                                                                                            </div>
+                                                                                            <p className="text-rose-100 font-bold leading-relaxed break-keep text-[11px]">
+                                                                                                {riskOneLiner}
+                                                                                            </p>
+                                                                                        </div>
                                                                                     </div>
 
-                                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                                                                                        {(triggers || []).map((t: any, idx: number) => (
-                                                                                            <div key={idx} className="bg-black/55 border border-white/10 rounded-xl p-3 flex flex-col justify-between space-y-2 shadow-sm">
-                                                                                                <div className="space-y-1.5">
-                                                                                                    <div className="flex items-center justify-between text-[10px] font-black pb-1 border-b border-white/5">
-                                                                                                        <span className={isRising ? 'text-emerald-300' : isDropping ? 'text-amber-300' : 'text-slate-300'}>
-                                                                                                            {t?.icon || (isRising ? '🚀' : isDropping ? '💣' : '⚖️')} {isRising ? `상승 동력 ${idx + 1}` : isDropping ? `해외 뇌관 ${idx + 1}` : `관전 포인트 ${idx + 1}`}
-                                                                                                        </span>
-                                                                                                        <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold border ${
-                                                                                                            isRising ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : isDropping ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                                                                                                        }`}>
-                                                                                                            {t?.impact_degree}
-                                                                                                        </span>
-                                                                                                    </div>
-
-                                                                                                    <div className="text-xs font-black text-white leading-snug break-keep">
-                                                                                                        {t?.trigger}
-                                                                                                    </div>
-
-                                                                                                    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2 text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
-                                                                                                        {t?.chain?.includes('➔') ? (
-                                                                                                            t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
-                                                                                                                <div key={sIdx} className="flex items-start gap-1">
-                                                                                                                    {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
-                                                                                                                    <span className={sIdx === arr.length - 1 ? 'font-bold text-emerald-300' : 'text-zinc-300'}>
-                                                                                                                        {step.trim()}
+                                                                                    {/* 🟢 🔴 좌우 2분할 대조: 기회 요인 2선 vs 위험 요인 2선 */}
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                        {/* 🟢 좌측: 기회 & 핵심 상승 동력 2선 */}
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex items-center justify-between text-[11px] font-black text-emerald-300 px-1 pb-1 border-b border-emerald-500/20">
+                                                                                                <span className="flex items-center gap-1">
+                                                                                                    <span>🟢</span>
+                                                                                                    <span>핵심 기회 & 상승 동력 (2선)</span>
+                                                                                                </span>
+                                                                                                <span className="text-[10px] text-emerald-400/80 font-normal">왜 사야 하는가?</span>
+                                                                                            </div>
+                                                                                            <div className="space-y-2">
+                                                                                                {riseList.map((t: any, idx: number) => (
+                                                                                                    <div key={idx} className="bg-gradient-to-b from-black/60 to-emerald-950/20 border border-emerald-500/30 rounded-xl p-3 space-y-1.5 shadow-sm">
+                                                                                                        <div className="flex items-center justify-between text-[10px] font-black pb-1 border-b border-white/5">
+                                                                                                            <span className="text-emerald-300 flex items-center gap-1">
+                                                                                                                <span>{t?.icon || '🚀'}</span>
+                                                                                                                <span>상승 동력 {idx + 1}</span>
+                                                                                                            </span>
+                                                                                                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold border bg-emerald-500/20 text-emerald-300 border-emerald-500/40">
+                                                                                                                {t?.impact_degree}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div className="text-xs font-black text-white leading-snug break-keep">
+                                                                                                            {t?.trigger}
+                                                                                                        </div>
+                                                                                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2 text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
+                                                                                                            {t?.chain?.includes('➔') ? (
+                                                                                                                t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
+                                                                                                                    <div key={sIdx} className="flex items-start gap-1">
+                                                                                                                        {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
+                                                                                                                        <span className={sIdx === arr.length - 1 ? 'font-bold text-emerald-300' : 'text-zinc-300'}>
+                                                                                                                            {step.trim()}
+                                                                                                                        </span>
+                                                                                                                    </div>
+                                                                                                                ))
+                                                                                                            ) : (
+                                                                                                                <div>{t?.chain}</div>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                        {t?.detailed_explanation && (
+                                                                                                            <details className="group pt-1 border-t border-white/5">
+                                                                                                                <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
+                                                                                                                    <span className="flex items-center gap-1">
+                                                                                                                        <span>📖</span>
+                                                                                                                        <span>상세 배경 분석</span>
                                                                                                                     </span>
+                                                                                                                    <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
+                                                                                                                </summary>
+                                                                                                                <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
+                                                                                                                    {t?.detailed_explanation}
                                                                                                                 </div>
-                                                                                                            ))
-                                                                                                        ) : (
-                                                                                                            <div>{t?.chain}</div>
+                                                                                                            </details>
                                                                                                         )}
                                                                                                     </div>
-                                                                                                </div>
-
-                                                                                                {t?.detailed_explanation && (
-                                                                                                    <details className="group pt-1 border-t border-white/5">
-                                                                                                        <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
-                                                                                                            <span className="flex items-center gap-1">
-                                                                                                                <span>📖</span>
-                                                                                                                <span>상세 배경 분석</span>
-                                                                                                            </span>
-                                                                                                            <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
-                                                                                                        </summary>
-                                                                                                        <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
-                                                                                                            {t?.detailed_explanation}
-                                                                                                        </div>
-                                                                                                    </details>
-                                                                                                )}
+                                                                                                ))}
                                                                                             </div>
-                                                                                        ))}
+                                                                                        </div>
+
+                                                                                        {/* 🔴 우측: 위험 & 핵심 경계 리스크 2선 */}
+                                                                                        <div className="space-y-2">
+                                                                                            <div className="flex items-center justify-between text-[11px] font-black text-rose-300 px-1 pb-1 border-b border-rose-500/20">
+                                                                                                <span className="flex items-center gap-1">
+                                                                                                    <span>🔴</span>
+                                                                                                    <span>핵심 위험 & 경계 리스크 (2선)</span>
+                                                                                                </span>
+                                                                                                <span className="text-[10px] text-rose-400/80 font-normal">무엇을 조심해야 하는가?</span>
+                                                                                            </div>
+                                                                                            <div className="space-y-2">
+                                                                                                {riskList.map((t: any, idx: number) => (
+                                                                                                    <div key={idx} className="bg-gradient-to-b from-black/60 to-rose-950/20 border border-rose-500/30 rounded-xl p-3 space-y-1.5 shadow-sm">
+                                                                                                        <div className="flex items-center justify-between text-[10px] font-black pb-1 border-b border-white/5">
+                                                                                                            <span className="text-rose-300 flex items-center gap-1">
+                                                                                                                <span>{t?.icon || '💣'}</span>
+                                                                                                                <span>경계 리스크 {idx + 1}</span>
+                                                                                                            </span>
+                                                                                                            <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold border bg-rose-500/20 text-rose-300 border-rose-500/40">
+                                                                                                                {t?.impact_degree}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div className="text-xs font-black text-white leading-snug break-keep">
+                                                                                                            {t?.trigger}
+                                                                                                        </div>
+                                                                                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2 text-[10.5px] text-zinc-200 leading-snug break-keep space-y-1">
+                                                                                                            {t?.chain?.includes('➔') ? (
+                                                                                                                t.chain.split('➔').map((step: string, sIdx: number, arr: string[]) => (
+                                                                                                                    <div key={sIdx} className="flex items-start gap-1">
+                                                                                                                        {sIdx > 0 && <span className="text-amber-400 font-black shrink-0">➔</span>}
+                                                                                                                        <span className={sIdx === arr.length - 1 ? 'font-bold text-rose-300' : 'text-zinc-300'}>
+                                                                                                                            {step.trim()}
+                                                                                                                        </span>
+                                                                                                                    </div>
+                                                                                                                ))
+                                                                                                            ) : (
+                                                                                                                <div>{t?.chain}</div>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                        {t?.detailed_explanation && (
+                                                                                                            <details className="group pt-1 border-t border-white/5">
+                                                                                                                <summary className="text-[10px] text-amber-300/80 hover:text-amber-300 font-bold cursor-pointer flex items-center justify-between list-none select-none py-0.5">
+                                                                                                                    <span className="flex items-center gap-1">
+                                                                                                                        <span>📖</span>
+                                                                                                                        <span>상세 배경 분석</span>
+                                                                                                                    </span>
+                                                                                                                    <span className="text-[9px] group-open:rotate-180 transition-transform text-gray-400">▼</span>
+                                                                                                                </summary>
+                                                                                                                <div className="text-[10px] text-gray-300 pt-1.5 leading-relaxed break-keep bg-white/[0.02] p-2 rounded-lg mt-1 border border-white/5">
+                                                                                                                    {t?.detailed_explanation}
+                                                                                                                </div>
+                                                                                                            </details>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* 🛡️ 하단: 최서연 CRO 리스크 방어 가이드 & 손절선 */}
+                                                                                    <div className="bg-gradient-to-r from-purple-950/40 via-slate-900/90 to-purple-950/40 border border-purple-500/35 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40 font-black text-[10px]">
+                                                                                                🛡️ CRO 리스크 방어 지침
+                                                                                            </span>
+                                                                                            <span className="text-zinc-200 text-[11px] font-bold">
+                                                                                                호재(상승 동력)가 뚜렷하더라도 위 경계 리스크가 돌발할 수 있으므로, <strong className="text-amber-300">시초가 추격매수 금지</strong> 및 <strong className="text-purple-300 font-mono">-3.5% 손절 방어선</strong>을 엄수하십시오.
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <span className="text-[10px] font-mono text-purple-300 font-bold shrink-0">
+                                                                                            기안: 최서연 상무 (CRO)
+                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
                                                                             );
