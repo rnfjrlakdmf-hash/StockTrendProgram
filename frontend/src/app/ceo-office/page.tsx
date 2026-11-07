@@ -6581,6 +6581,82 @@ export default function CeoOfficePage() {
                                                                             );
                                                                         })()}
 
+                                                                        {/* 📋 [주간 복기 결재문서 전용] 저번 주 추천주 등락 원인 정밀 해부 (왜 올랐고 왜 떨어졌는가? 3대 핵심 축) */}
+                                                                        {((activeDoc as any).weekly_stock_forensics?.length > 0 || activeDoc.doc_id?.includes('WKREV')) && (
+                                                                            <div className="bg-gradient-to-r from-slate-900/90 via-[#0a1424] to-slate-900/90 border border-teal-500/40 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-xl">
+                                                                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="px-2.5 py-1 rounded-lg bg-teal-500/20 text-teal-300 border border-teal-500/40 text-xs font-black">
+                                                                                            🔍 저번 주 추천주 등락 원인 정밀 해부
+                                                                                        </span>
+                                                                                        <span className="text-sm font-black text-white">
+                                                                                            왜 올랐고 왜 떨어졌는가? (3대 핵심 축 완전 복기)
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <span className="text-[11px] text-teal-300/80 font-bold">
+                                                                                        리서치센터 · 퀀트수급본부 · 리스크관리본부 합동 감정
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                <div className="space-y-3">
+                                                                                    {(((activeDoc as any).weekly_stock_forensics || (weeklyReview as any)?.weekly_stock_forensics || []) as any[]).map((f: any, fIdx: number) => (
+                                                                                        <div key={fIdx} className="bg-black/40 border border-white/10 rounded-xl p-3.5 space-y-2.5">
+                                                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">
+                                                                                                        🎯 {f.stock_name}
+                                                                                                    </span>
+                                                                                                    <span className="text-xs text-gray-400 font-mono">
+                                                                                                        ({f.stock_code})
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${
+                                                                                                    f.trend_tone === 'bull'
+                                                                                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                                                                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                                                                }`}>
+                                                                                                    {f.trend_badge}
+                                                                                                </span>
+                                                                                            </div>
+
+                                                                                            <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-2.5 text-xs font-bold text-teal-100 leading-snug break-keep">
+                                                                                                💡 {f.headline_summary}
+                                                                                            </div>
+
+                                                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs leading-snug">
+                                                                                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2.5 space-y-1">
+                                                                                                    <div className="font-black text-emerald-300 flex items-center gap-1">
+                                                                                                        <span>🏭</span>
+                                                                                                        <span>1. 기업 실적·수주 팩트</span>
+                                                                                                    </div>
+                                                                                                    <div className="text-gray-300 text-[11px] leading-relaxed break-keep">{f.pillar_earnings}</div>
+                                                                                                </div>
+                                                                                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2.5 space-y-1">
+                                                                                                    <div className="font-black text-cyan-300 flex items-center gap-1">
+                                                                                                        <span>💰</span>
+                                                                                                        <span>2. 외인·기관 큰손 수급</span>
+                                                                                                    </div>
+                                                                                                    <div className="text-gray-300 text-[11px] leading-relaxed break-keep">{f.pillar_liquidity}</div>
+                                                                                                </div>
+                                                                                                <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2.5 space-y-1">
+                                                                                                    <div className="font-black text-purple-300 flex items-center gap-1">
+                                                                                                        <span>🌐</span>
+                                                                                                        <span>3. 대외 매크로·해외 직격탄</span>
+                                                                                                    </div>
+                                                                                                    <div className="text-gray-300 text-[11px] leading-relaxed break-keep">{f.pillar_macro}</div>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 text-xs text-amber-200 font-medium flex items-center gap-2 break-keep">
+                                                                                                <span className="shrink-0">🎯</span>
+                                                                                                <span><strong className="text-amber-300 font-bold">차주 월요일 실전 대응:</strong> {f.monday_gameplan}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
                                                                         {/* CRO 핵심 경보 + 4대 행동 수칙 통합 바 (슬림 & 고가독성) */}
                                                                         <div className="bg-gradient-to-r from-rose-950/40 via-zinc-950 to-slate-950 border border-rose-500/35 rounded-2xl p-3 space-y-2">
                                                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -9182,6 +9258,50 @@ export default function CeoOfficePage() {
                                                                     <span><strong className="text-amber-300">차주 지침:</strong> {rep.monday_action}</span>
                                                                 </li>
                                                             </ul>
+
+                                                            {rep.weekly_forensics && (
+                                                                <div className="bg-gradient-to-r from-slate-950 via-[#0a1424] to-slate-950 border border-teal-500/35 rounded-xl p-3 space-y-2.5 mt-2.5">
+                                                                    <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-white/10 pb-1.5">
+                                                                        <span className={`px-2 py-0.5 rounded-md font-black text-[11px] border ${
+                                                                            rep.weekly_forensics.trend_tone === 'bull'
+                                                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                                                : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                                        }`}>
+                                                                            {rep.weekly_forensics.trend_badge}
+                                                                        </span>
+                                                                        <span className="text-xs font-black text-teal-200 flex-1 break-keep">
+                                                                            💡 {rep.weekly_forensics.headline_summary}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] leading-snug">
+                                                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2.5 space-y-1">
+                                                                            <div className="font-black text-emerald-300 flex items-center gap-1">
+                                                                                <span>🏭</span>
+                                                                                <span>1. 기업 실적·수주 팩트</span>
+                                                                            </div>
+                                                                            <div className="text-gray-300 leading-relaxed break-keep">{rep.weekly_forensics.pillar_earnings}</div>
+                                                                        </div>
+                                                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2.5 space-y-1">
+                                                                            <div className="font-black text-cyan-300 flex items-center gap-1">
+                                                                                <span>💰</span>
+                                                                                <span>2. 외인·기관 큰손 수급</span>
+                                                                            </div>
+                                                                            <div className="text-gray-300 leading-relaxed break-keep">{rep.weekly_forensics.pillar_liquidity}</div>
+                                                                        </div>
+                                                                        <div className="bg-white/[0.03] border border-white/5 rounded-lg p-2.5 space-y-1">
+                                                                            <div className="font-black text-purple-300 flex items-center gap-1">
+                                                                                <span>🌐</span>
+                                                                                <span>3. 대외 매크로·해외 직격탄</span>
+                                                                            </div>
+                                                                            <div className="text-gray-300 leading-relaxed break-keep">{rep.weekly_forensics.pillar_macro}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5 text-[11px] text-amber-200 font-medium flex items-center gap-1.5 break-keep">
+                                                                        <span className="shrink-0">🎯</span>
+                                                                        <span><strong className="text-amber-300 font-bold">차주 월요일 실전 타점:</strong> {rep.weekly_forensics.monday_gameplan}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
