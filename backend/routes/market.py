@@ -2786,11 +2786,40 @@ _ECON_TITLE_KO_MAP = {
 
 
 def _translate_econ_title(raw_title: str) -> str:
+    import re
     t = (raw_title or "").strip()
-    if t in _ECON_TITLE_KO_MAP:
-        return _ECON_TITLE_KO_MAP[t]
+    t_clean = re.sub(r'^(United States|South Korea|US|KR)\s*[-–:]\s*', '', t, flags=re.IGNORECASE).strip()
+    t_low = t_clean.lower()
+
+    if "inflation expectation" in t_low or "consumer expectation" in t_low:
+        return "뉴욕 연은 1년 기대인플레이션 (소비자 물가 기대심리)"
+    if "broad money" in t_low:
+        return "한국 광의통화 (M2 시중 통화량)"
+    if "5/1 arm" in t_low or "arm contract" in t_low or "arm effective" in t_low:
+        return "주택담보대출(모기지) 변동금리"
+    if "crude oil exports change" in t_low:
+        return "EIA 주간 원유 수출량 변동"
+    if "machinery manufacturing" in t_low:
+        return "기계제조업 생산자물가지수 (도매원가)"
+    if "existing home sales" in t_low:
+        return "미국 기존주택판매 (부동산 경기)"
+    if "initial jobless claims" in t_low or "jobless claims" in t_low:
+        return "주간 신규 실업수당 청구건수 (일자리 지표)"
+    if "core inflation rate" in t_low:
+        return "근원 소비자물가지수 (Core CPI, 생활물가)"
+    if "inflation rate" in t_low:
+        return "소비자물가지수 (CPI, 마트물가)"
+    if "core ppi" in t_low:
+        return "근원 생산자물가지수 (Core PPI, 공장도매원가)"
+    if "ppi" in t_low:
+        return "생산자물가지수 (PPI, 공장출하원가)"
+    if "unemployment rate" in t_low:
+        return "실업률 (일자리 지표)"
+
+    if t_clean in _ECON_TITLE_KO_MAP:
+        return _ECON_TITLE_KO_MAP[t_clean]
     for eng, kor in _ECON_TITLE_KO_MAP.items():
-        if eng.lower() in t.lower():
+        if eng.lower() in t_clean.lower():
             return kor
     if t.startswith("Fed ") and "Speech" in t:
         speaker = t.replace("Fed ", "").replace("Speech", "").strip()
@@ -2800,7 +2829,7 @@ def _translate_econ_title(raw_title: str) -> str:
         return f"국고채 {yr}년물 입찰"
     if "Note Auction" in t or "Bond Auction" in t:
         return f"미국 국채 입찰 ({t})"
-    return t
+    return t_clean
 
 
 def _fmt_econ_val(val, unit: Optional[str], raw_title: str) -> Optional[str]:
@@ -2820,6 +2849,10 @@ def _fmt_econ_val(val, unit: Optional[str], raw_title: str) -> Optional[str]:
             return f"{v_num:.1f}pt"
         if "crude oil" in t_low:
             return f"{v_num:+.2f}백만 배럴"
+        if "broad money" in t_low:
+            return f"약 {int(v_num):,}조 원"
+        if "arm" in t_low or "mortgage" in t_low:
+            return f"{v_num:.2f}%"
         if u == "$":
             return f"${v_num:,.1f}B"
         return f"{v_num}{u}"
@@ -2863,6 +2896,8 @@ def _fetch_live_economic_calendar_by_week(monday_dt) -> Dict[str, List[Dict[str,
                 if country_code == "US" and imp < 0:
                     continue
                 if "Auction" in raw_title or "Bill Purchases" in raw_title:
+                    continue
+                if any(noise in raw_title for noise in ["ARM Effective Rate", "ARM Contract Rate", "Machinery Manufacturing"]):
                     continue
 
                 dt_utc = datetime.strptime(ev["date"][:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
@@ -4200,8 +4235,9 @@ def _build_weekly_review_and_calendar(
         late_week_label = " · ".join(dict.fromkeys(live_late_names))
     if live_early_names or live_late_names:
         wk_easy_headline = (
-            f"{week_range_str} 실시간 캘린더 조회 결과, 주초(월~수) 핵심 일정은 {early_week_label}이며, "
-            f"주후반(목~금) 빅이벤트는 {late_week_label}입니다. 요일별 호재·악재 시나리오와 수혜 섹터를 사전 수립했습니다."
+            f"💡 [대표님을 위한 이번 주 10초 핵심]: 이번 주는 수요일 마트 장바구니 진짜 물가(CPI)와 목요일 공장 도매원가(PPI)가 연이어 발표되는 '인플레이션 판가름 주간'입니다. "
+            f"주초(월~수)에는 {early_week_label}를 확인하며 반도체·조선 등 수출 대형주 위주로 대응하고, "
+            f"주후반(목~금)에는 {late_week_label}를 지켜보며 외국인 큰손 수급 방향에 맞춰 분할 대응합니다."
         )
 
     weekly_calendar = {
