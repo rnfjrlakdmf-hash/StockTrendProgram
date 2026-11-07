@@ -4229,15 +4229,36 @@ def _build_weekly_review_and_calendar(
             "scenario_status_badge": scenario_status_badge,
         })
 
+    def _humanize_cal_tag(name: str) -> str:
+        n = str(name or "").strip()
+        if "기대인플레이션" in n or "Inflation Expectation" in n or "Consumer Expectation" in n:
+            return "미국 1년 기대인플레이션 (물가 심리)"
+        if "근원 소비자" in n or "Core Inflation" in n or "Core CPI" in n:
+            return "근원 소비자물가지수 (진짜 생활물가)"
+        if "소비자물가" in n or "Inflation Rate" in n or "CPI" in n:
+            return "소비자물가지수 (마트 물가)"
+        if "근원 생산자" in n or "Core PPI" in n:
+            return "근원 생산자물가지수 (공장 도매원가)"
+        if "생산자물가" in n or "PPI" in n:
+            return "생산자물가지수 (공장 출하원가)"
+        if "기존주택" in n or "Existing Home" in n:
+            return "기존주택판매 (부동산 소비)"
+        if "실업률" in n or "Unemployment" in n:
+            return "실업률 (일자리 지표)"
+        if "실업수당" in n or "Jobless Claims" in n:
+            return "신규 실업수당 (고용 지표)"
+        if "광의통화" in n or "Broad Money" in n:
+            return "광의통화 (M2 시중 유동성)"
+        return n
+
     if live_early_names:
-        early_week_label = " · ".join(dict.fromkeys(live_early_names))
+        early_week_label = " · ".join(dict.fromkeys(_humanize_cal_tag(x) for x in live_early_names))
     if live_late_names:
-        late_week_label = " · ".join(dict.fromkeys(live_late_names))
+        late_week_label = " · ".join(dict.fromkeys(_humanize_cal_tag(x) for x in live_late_names))
     if live_early_names or live_late_names:
         wk_easy_headline = (
-            f"💡 [대표님을 위한 이번 주 10초 핵심]: 이번 주는 수요일 마트 장바구니 진짜 물가(CPI)와 목요일 공장 도매원가(PPI)가 연이어 발표되는 '인플레이션 판가름 주간'입니다. "
-            f"주초(월~수)에는 {early_week_label}를 확인하며 반도체·조선 등 수출 대형주 위주로 대응하고, "
-            f"주후반(목~금)에는 {late_week_label}를 지켜보며 외국인 큰손 수급 방향에 맞춰 분할 대응합니다."
+            f"이번 주는 수요일 마트 장바구니 진짜 물가(CPI)와 목요일 공장 도매원가(PPI)가 연이어 발표되는 '인플레이션 판가름 주간'으로, 물가가 낮게 나와야 연준이 금리를 내려주어 증시에 강력한 호재가 됩니다. "
+            f"물가 발표 전인 주초에는 반도체·조선 등 수출 우량주 위주로 방어하고, 수요일 밤 물가지표 발표 후 금리와 환율 안정을 확인하며 눌림목에서 분할 매수합니다."
         )
 
     weekly_calendar = {

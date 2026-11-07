@@ -108,6 +108,11 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
     return rawLines.slice(0, 2).map((line, idx) => {
         let s = line
             .replace(/^👩‍💼\s*정유진 비서실장\s*\[[^\]]+\]:\s*/g, '')
+            .replace(/United States-NY Fed Consumer Expectation-NY Fed Inflation Expectation 1yr/gi, '미국 1년 기대인플레이션 (물가 심리)')
+            .replace(/실시간 캘린더 조회 결과,\s*주초\(월~수\) 핵심 일정은\s*[^,]+이며,\s*주후반\(목~금\) 빅이벤트는\s*[^.]+\.?/gi, '이번 주는 수요일 마트 장바구니 진짜 물가(CPI)와 목요일 공장 도매원가(PPI)가 연이어 발표되는 인플레이션 판가름 주간입니다.')
+            .replace(/요일별 호재·악재 시나리오와 수혜 섹터를 사전 수립했습니다\.?/gi, '주초에는 실적 우량주 위주로 방어하고, 수요일 밤 물가 발표 후 금리 안정을 확인하며 눌림목 분할 매수로 대응합니다.')
+            .replace(/Broad Money/gi, '광의통화 (M2 유동성)')
+            .replace(/Existing Home Sales/gi, '미국 기존주택판매 (부동산 소비)')
             .replace(/밤사이 뉴욕증시에서\s*/g, '뉴욕증시 ')
             .replace(/밤사이 뉴욕증시는\s*/g, '뉴욕증시 ')
             .replace(/조정을 받음에 따라,\s*/g, '조정 ➔ ')
@@ -215,6 +220,16 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
     // 소문자 'us ' 접두사를 단정한 국기 이모지 '🇺🇸 '로 정제
     rawVal = rawVal.replace(/\bus\s+/gi, '🇺🇸 ');
     rawVal = rawVal.replace(/\bkr\s+/gi, '🇰🇷 ');
+    rawVal = rawVal
+        .replace(/United States-NY Fed Consumer Expectation-NY Fed Inflation Expectation 1yr/gi, '미국 1년 기대인플레이션 (물가 심리)')
+        .replace(/NY Fed Inflation Expectation/gi, '미국 기대인플레이션')
+        .replace(/Broad Money/gi, '광의통화 (M2 유동성)')
+        .replace(/Existing Home Sales/gi, '기존주택판매 (부동산 소비)')
+        .replace(/Core Inflation Rate/gi, '근원 소비자물가지수 (Core CPI)')
+        .replace(/Inflation Rate/gi, '소비자물가지수 (CPI)')
+        .replace(/Core PPI/gi, '근원 생산자물가지수 (Core PPI)')
+        .replace(/PPI/gi, '생산자물가지수 (PPI)')
+        .replace(/Unemployment Rate/gi, '실업률 (일자리)');
 
     const isDown = rawVal.includes('-') && (rawVal.includes('%') || rawVal.includes('하락') || rawVal.includes('▼'));
     const isUp = rawVal.includes('+') && (rawVal.includes('%') || rawVal.includes('상승') || rawVal.includes('▲'));
