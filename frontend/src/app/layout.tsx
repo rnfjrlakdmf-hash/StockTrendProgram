@@ -72,6 +72,12 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* 비에디토리얼(관리자 집무실·개인 도구) 경로에서는 애드센스 비콘 호출을 원천 차단하여 Mediapartners-Google의 비공개/도구 페이지 크롤링 유발 방지 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=window.location.pathname||'/';var ok=(p==='/'||p==='/guide'||p.indexOf('/guide/')===0||p==='/blog'||p.indexOf('/blog/')===0||p==='/theory'||p.indexOf('/theory/')===0||p.indexOf('/theme/')===0||p==='/calculator'||p==='/about'||p==='/contact'||p==='/privacy-policy'||p==='/terms'||p==='/disclaimer');if(!ok){window.adsbygoogle={loaded:true,push:function(){}};}}catch(e){}})();`
+          }}
+        />
         {/* Google AdSense 공식 스크립트 */}
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833" crossOrigin="anonymous"></script>
         <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
@@ -115,7 +121,7 @@ export default function RootLayout({
                   "inLanguage": "ko-KR",
                   "potentialAction": {
                     "@type": "SearchAction",
-                    "target": "https://stock-trend-program.co.kr/discovery?q={search_term_string}",
+                    "target": "https://stock-trend-program.co.kr/guide?q={search_term_string}",
                     "query-input": "required name=search_term_string"
                   }
                 },

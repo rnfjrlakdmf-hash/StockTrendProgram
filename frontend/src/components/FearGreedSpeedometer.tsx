@@ -463,10 +463,10 @@ export default function FearGreedSpeedometer() {
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-gray-500 px-1">
           <span>코스피·코스닥 2,500종목 팩트 데이터 기반</span>
           <Link 
-            href="/discovery" 
+            href="/guide/technical-analysis" 
             className="text-orange-400 hover:text-orange-300 font-bold flex items-center gap-0.5 transition-colors"
           >
-            정밀 퀀트 분석 <ChevronRight className="w-3 h-3" />
+            보조지표 해설 <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </div>

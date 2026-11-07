@@ -32,10 +32,10 @@ const CATEGORIES = [
 
 // 하단 추천 내부 링크 (구글 애드센스 및 SEO 강화)
 const RECOMMENDED_PAGES = [
-    { href: "/post", title: "오늘의 핫이슈 종목 분석", emoji: "🔥", desc: "상위 1% 수급 데이터 기반 급등주·특징주 심층 리포트" },
+    { href: "/guide", title: "46대 금융 지식 백과사전", emoji: "📖", desc: "PER·PBR·ROE·FOMC 등 필수 주식·거시경제 개념 완벽 해설" },
     { href: "/theory", title: "1타 강사 매일 차트 스터디", emoji: "📚", desc: "초보자도 5분 만에 마스터하는 보조지표 & 실전 매매타점" },
-    { href: "/theme", title: "실시간 주도 테마 레이더", emoji: "⚡", desc: "시장의 돈이 몰리는 실시간 주도 테마 TOP 10" },
-    { href: "/signals", title: "실시간 마켓 시그널", emoji: "🚦", desc: "글로벌 리스크 신호등 및 DART 팩트 속보" },
+    { href: "/calculator", title: "복리 수익률·물타기 계산기", emoji: "🧮", desc: "장기 적립식 복리 시뮬레이션 및 분할매수 평단가 계산 가이드" },
+    { href: "/about", title: "리서치 방법론 및 편집 원칙", emoji: "🏛️", desc: "KRX·DART·SEC 공식 데이터 기반 3단계 팩트체크 기준" },
 ];
 
 export function getPostCategory(title: string, tags: string[] = []) {

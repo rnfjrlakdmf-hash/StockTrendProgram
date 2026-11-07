@@ -48,17 +48,31 @@ async function getTheoryPosts(page: number, limitPerPage: number) {
             throw new Error("No posts from API");
         }
 
-        const posts: TheoryPost[] = data.posts.map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            content: p.content,
-            createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
-            tags: p.tags || [],
-            slug: p.slug || p.id,
-            viewCount: p.viewCount || 0,
-        }));
+        const dynamicPosts: TheoryPost[] = data.posts
+            .filter((p: any) => {
+                const contentStr = String(p.content || "");
+                return contentStr.length >= 2000;
+            })
+            .map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                content: p.content,
+                createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+                tags: p.tags || [],
+                slug: p.slug || p.id,
+                viewCount: p.viewCount || 0,
+            }));
 
-        return { posts, totalPages: data.totalPages || 1 };
+        const postMap = new Map<string, TheoryPost>();
+        dynamicPosts.forEach((p) => postMap.set(p.slug, p));
+        fallbackTheoryPosts.forEach((p) => {
+            if (!postMap.has(p.slug)) {
+                postMap.set(p.slug, p);
+            }
+        });
+        const merged = Array.from(postMap.values());
+
+        return { posts: merged, totalPages: Math.max(1, Math.ceil(merged.length / limitPerPage)) };
     } catch (error) {
         console.warn("이론 포스트 API 실패, 안전 대체 데이터 제공:", error);
         return { 

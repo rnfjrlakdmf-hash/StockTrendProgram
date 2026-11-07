@@ -330,7 +330,7 @@ export default function LiveMarketHub() {
 
                 return (
                   <Link 
-                    href={`/stock/${cleanSymbol}`} 
+                    href="/guide/fundamental-analysis" 
                     key={item.symbol || idx}
                     className="flex items-center justify-between p-2.5 sm:p-3 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-white/5 hover:border-indigo-500/30 transition-all group cursor-pointer"
                   >
@@ -401,7 +401,7 @@ export default function LiveMarketHub() {
 
                 return (
                   <Link 
-                    href={cleanSearchSymbol ? `/stock/${cleanSearchSymbol}` : `/discovery?q=${encodeURIComponent(item.name)}`}
+                    href="/guide/fundamental-analysis"
                     key={idx}
                     className="flex items-center justify-between p-2.5 sm:p-3 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-white/5 hover:border-rose-500/30 transition-all group cursor-pointer"
                   >

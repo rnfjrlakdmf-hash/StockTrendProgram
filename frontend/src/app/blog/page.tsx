@@ -75,15 +75,24 @@ async function getBlogPosts(page: number, limitPerPage: number) {
         if (res.ok) {
             const data = await res.json();
             if (data.status === "ok" && Array.isArray(data.posts)) {
-                dynamicPosts = data.posts.map((p: any) => ({
-                    id: p.id,
-                    title: p.title,
-                    content: p.content,
-                    createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
-                    tags: p.tags || [],
-                    slug: p.slug || p.id,
-                    viewCount: p.viewCount || 0,
-                }));
+                dynamicPosts = data.posts
+                    .filter((p: any) => {
+                        const slugStr = String(p.slug || p.id || "");
+                        const contentStr = String(p.content || "");
+                        if (slugStr.includes("daily-research") || slugStr.includes("mass-") || slugStr.includes("seo-")) {
+                            return false;
+                        }
+                        return contentStr.length >= 2200;
+                    })
+                    .map((p: any) => ({
+                        id: p.id,
+                        title: p.title,
+                        content: p.content,
+                        createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
+                        tags: p.tags || [],
+                        slug: p.slug || p.id,
+                        viewCount: p.viewCount || 0,
+                    }));
             }
         }
 

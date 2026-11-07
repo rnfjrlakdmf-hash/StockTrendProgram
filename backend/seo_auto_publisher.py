@@ -23,11 +23,16 @@ INDEXNOW_KEY = "d1a5029178414151d0fd99a83053ce16"
 
 STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo_auto_state.json")
 
-PUBLIC_SEO_TICKERS = [
-    "005930", "000660", "034020", "010140", "042660", "329180", "003490", "012450",
-    "373220", "006400", "051910", "035420", "035720", "005380", "000270", "207940",
-    "068270", "028300", "042700", "055550", "105560", "NVDA", "TSLA", "AAPL",
-    "MSFT", "GOOGL", "AMZN", "META", "AVGO", "AMD", "PLTR",
+PUBLIC_EDITORIAL_GUIDES = [
+    "per", "pbr", "roe", "eps", "ebitda", "dividend-yield", "rsi", "macd",
+    "bollinger-band", "moving-average", "fomc", "inflation", "interest-rate",
+    "fundamental-analysis", "technical-analysis", "value-investing",
+    "risk-management", "portfolio", "etf", "dart", "short-selling",
+]
+
+PUBLIC_EDITORIAL_THEMES = [
+    "semiconductor", "ai", "secondary-battery", "bio", "robot",
+    "defense", "nuclear", "shipbuilding", "low-pbr", "entertainment",
 ]
 
 
@@ -113,22 +118,21 @@ def auto_publish_daily_seo_from_approvals(auto_approvals: List[Dict[str, Any]] =
     if state.get("last_published_date") == today_str:
         return {"status": "already_pinged_today", "date": today_str}
 
-    # 공개 페이지 URL만 검색엔진에 색인 요청 (/ceo-office 절대 제외)
+    # 100% SSR 장문 에디토리얼 페이지 URL만 검색엔진에 색인 요청
     urls_to_ping = [
         f"{SITE_URL}/",
-        f"{SITE_URL}/directory",
-        f"{SITE_URL}/research",
-        f"{SITE_URL}/theme",
         f"{SITE_URL}/guide",
         f"{SITE_URL}/blog",
         f"{SITE_URL}/theory",
-        f"{SITE_URL}/signals",
-        f"{SITE_URL}/discovery",
+        f"{SITE_URL}/calculator",
+        f"{SITE_URL}/about",
         f"{SITE_URL}/sitemap.xml",
         f"{SITE_URL}/rss.xml",
     ]
-    for ticker in PUBLIC_SEO_TICKERS:
-        urls_to_ping.append(f"{SITE_URL}/stock/{ticker}")
+    for slug in PUBLIC_EDITORIAL_GUIDES:
+        urls_to_ping.append(f"{SITE_URL}/guide/{slug}")
+    for theme_slug in PUBLIC_EDITORIAL_THEMES:
+        urls_to_ping.append(f"{SITE_URL}/theme/{theme_slug}")
 
     ping_res = ping_search_engines(urls_to_ping)
 

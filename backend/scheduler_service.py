@@ -1717,7 +1717,7 @@ def run_market_scheduler():
                 run_market_scheduler.last_run_mass_seo = current_date
                 def _mass_seo():
                     import mass_seo_bot
-                    mass_seo_bot.main()
+                    pass # mass_seo_bot disabled for AdSense compliance
                 _run_bg_job("mass_seo", _mass_seo)
 
             # [매일 실행] 오후 1:30 주식 기초 Q&A 롱테일 봇 (비동기 스레드)
@@ -1725,7 +1725,7 @@ def run_market_scheduler():
                 run_market_scheduler.last_run_qa_seo = current_date
                 def _qa_seo():
                     import qa_seo_bot
-                    qa_seo_bot.main()
+                    pass # qa_seo_bot disabled for AdSense compliance
                 _run_bg_job("qa_seo", _qa_seo)
 
             # [평일 실행] 오후 5:30 오늘의 테마주 싹쓸이 봇 (비동기 스레드)
@@ -1733,7 +1733,7 @@ def run_market_scheduler():
                 run_market_scheduler.last_run_theme_seo = current_date
                 def _theme_seo():
                     import theme_seo_bot
-                    theme_seo_bot.main()
+                    pass # theme_seo_bot disabled for AdSense compliance
                 _run_bg_job("theme_seo", _theme_seo)
 
             # [매일 실행] 오전 8:45 SEO 자동 블로그 포스팅 (조간)
@@ -1741,7 +1741,7 @@ def run_market_scheduler():
                 run_market_scheduler.last_run_seo_blog_morning = current_date
                 def _blog_am():
                     import seo_blog_bot
-                    seo_blog_bot.post_seo_blog()
+                    pass # seo_blog_bot disabled for AdSense compliance
                 _run_bg_job("seo_blog_am", _blog_am)
 
             # [매일 실행] 오후 4:30 SEO 자동 블로그 포스팅 (장마감)
@@ -1749,7 +1749,7 @@ def run_market_scheduler():
                 run_market_scheduler.last_run_seo_blog_afternoon = current_date
                 def _blog_pm():
                     import seo_blog_bot
-                    seo_blog_bot.post_seo_blog()
+                    pass # seo_blog_bot disabled for AdSense compliance
                 _run_bg_job("seo_blog_pm", _blog_pm)
 
             # [매일 실행] 오전 6:30 DART 재무 데이터 선제 캐싱

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import xml.etree.ElementTree as ET
 import requests
@@ -51,7 +51,7 @@ def publish_urls_to_google(urls):
         success_count = 0
         error_count = 0
         
-        target_urls = urls[:200]
+        target_urls = [u for u in urls if not any(bad in u for bad in ["/post/", "/stock/", "/directory", "/discovery", "/signals", "/ceo-office", "/admin"])][:200]
         
         print(f"[Google Indexer] 총 {len(urls)}개 중 {len(target_urls)}개의 URL 전송을 시작합니다...")
         
