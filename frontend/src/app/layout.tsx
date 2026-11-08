@@ -10,6 +10,7 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 import KakaoScript from "@/components/KakaoScript";
 import CookieConsent from "@/components/CookieConsent";
 import BottomTabBar from "@/components/BottomTabBar";
+import FloatingAuthBanner from "@/components/FloatingAuthBanner";
 import FloatingQuickMenu from "@/components/FloatingQuickMenu";
 import { Toaster } from "sonner";
 import type { Viewport } from 'next';
@@ -200,6 +201,7 @@ export default function RootLayout({
 
             <FCMWrapper />
             <BottomTabBar />
+            <FloatingAuthBanner />
             <FloatingQuickMenu />
             <CookieConsent />
           </div>

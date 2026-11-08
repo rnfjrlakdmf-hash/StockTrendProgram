@@ -15,7 +15,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
     const [errorMsg, setErrorMsg] = useState("");
     const [isMobile, setIsMobile] = useState(false);
-    const [agreed, setAgreed] = useState(false);
+    const [agreed, setAgreed] = useState(true);
 
     useEffect(() => {
         setIsMobile(/Mobi|Android|iPhone/i.test(navigator.userAgent) || window.innerWidth <= 768);
@@ -80,12 +80,31 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                 <div className="p-8">
                     {/* 헤더 */}
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl">
-                            📈
+                    <div className="text-center mb-6">
+                        <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-rose-600 rounded-2xl mx-auto mb-3 flex items-center justify-center text-2xl shadow-lg border border-amber-400/30">
+                            🔥
                         </div>
-                        <h2 className="text-xl font-bold text-white mb-2">AI Stock Analyst</h2>
-                        <p className="text-sm text-gray-400">카카오/구글 계정으로 로그인하여<br />관심종목과 브리핑을 동기화하세요.</p>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-black border border-amber-400/40 mb-1.5">
+                            ✨ 100% 무료 회원 혜택
+                        </div>
+                        <h2 className="text-xl font-black text-white mb-1.5">3초 간편가입</h2>
+                        <p className="text-xs text-zinc-300 font-medium">카카오·구글 계정으로 1초 만에 시작하세요</p>
+
+                        {/* 가입 즉시 제공되는 3대 특전 박스 */}
+                        <div className="mt-4 p-3 rounded-2xl bg-black/60 border border-white/10 text-left space-y-1.5 text-xs">
+                            <div className="flex items-center gap-2 text-zinc-200">
+                                <span className="text-amber-400 font-bold">✓</span>
+                                <span>오늘 장마감 세력 집중 매수 <strong className="text-amber-300">TOP 5 종목</strong> 즉시 열람</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-zinc-200">
+                                <span className="text-amber-400 font-bold">✓</span>
+                                <span>내 종목 물타기·배당금 계산기 <strong className="text-emerald-300">무제한 저장</strong></span>
+                            </div>
+                            <div className="flex items-center gap-2 text-zinc-200">
+                                <span className="text-amber-400 font-bold">✓</span>
+                                <span>매일 아침 AI 장전 핵심 시황 브리핑 <strong className="text-sky-300">무료 제공</strong></span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* 약관 동의 체크박스 */}
