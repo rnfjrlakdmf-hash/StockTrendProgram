@@ -135,7 +135,7 @@ function splitIntoBullets(raw: string): string[] {
     const cleaned = humanized.replace(/\s+/g, ' ').trim();
     // 1) 엠대시(—) 및 마침표/종결어미 뒤 공백을 기준으로 1차 분리
     const rawParts = cleaned
-        .split(/(?<=[—])\s*|(?<=[.!?다요음함])\s+/)
+        .split(/(?<=[—])\s*|(?<=[.!?])\s+/)
         .map(s => s.trim().replace(/^[-—•✓\s]+/, '').replace(/[-—\s]+$/, '').trim())
         .filter(Boolean);
 
