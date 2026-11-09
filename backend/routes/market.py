@@ -1558,6 +1558,23 @@ def get_stock_research_reports(
                 return ""
             s = raw_s
             s = re.sub(r'(^|[^0-9])0(2[0-9]년)', r'\g<1>20\g<2>', s)
+            s = re.sub(r'(\d+)\.0\s*만원', r'\1만원', s)
+            s = re.sub(r'(\d+)\.([1-9])\s*만원', r'\1만 \2,000원', s)
+            s = re.sub(r'(\d+)\.0\s*(조|억)\s*원', r'\1\2원', s)
+            s = re.sub(r'투자의견\s*Trading\s*Buy', "투자의견 '단기매수'", s, flags=re.IGNORECASE)
+            s = re.sub(r'투자의견\s*BUY', "투자의견 '매수'", s, flags=re.IGNORECASE)
+            s = re.sub(r'투자의견\s*(?:HOLD|Neutral)', "투자의견 '중립'", s, flags=re.IGNORECASE)
+            s = re.sub(r'유지한다\.?', '유지합니다.', s)
+            s = re.sub(r'상향\s*조정한다\.?', '올려 잡았습니다(상향).', s)
+            s = re.sub(r'상향한다\.?', '올려 잡았습니다(상향).', s)
+            s = re.sub(r'하향\s*조정한다\.?', '내려 잡았습니다(하향).', s)
+            s = re.sub(r'하향한다\.?', '내려 잡았습니다(하향).', s)
+            s = re.sub(r'제시한다\.?', '제시했습니다.', s)
+            s = re.sub(r'전망한다\.?', '전망합니다.', s)
+            s = re.sub(r'판단한다\.?', '판단합니다.', s)
+            s = re.sub(r'기대된다\.?', '기대됩니다.', s)
+            s = re.sub(r'예상된다\.?', '예상됩니다.', s)
+            s = re.sub(r'기록했다\.?', '기록했습니다.', s)
             s = re.sub(r'([1-4])Q(?:\d{2})?\s*Review:?', r'\1분기 실적 요약:', s, flags=re.IGNORECASE)
             s = re.sub(r'([1-4])Q(?:\d{2})?\s*Preview:?', r'\1분기 실적 전망:', s, flags=re.IGNORECASE)
             s = re.sub(r'연결\s*매출액', '매출', s)
@@ -1688,6 +1705,7 @@ def get_stock_research_reports(
         filtered_points = []
         for p in pts_list:
             p_clean = re.sub(r'^[(\[\<][+\-!*▶■▲▼#\w\s]+[)\]\>]\s*:?\s*', '', str(p or '')).strip()
+            p_clean = _humanize_kr_report_sentence(p_clean)
             if len(p_clean) >= 12 and p_clean != rep_title and p_clean not in filtered_points:
                 filtered_points.append(p_clean)
 

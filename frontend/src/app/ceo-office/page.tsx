@@ -43,8 +43,25 @@ function humanizeFinancialText(text: string): string {
     if (!text) return '';
     let s = text;
 
-    // 0. 연도 앞자리 잘림('026년' -> '2026년') 어디서든 자동 복원
+    // 0. 연도 앞자리 잘림('026년' -> '2026년') 및 어색한 '8.0만원' 소수점 금액 표기 자동 정제
     s = s.replace(/(^|[^0-9])0(2[0-9]년)/g, '$120$2');
+    s = s.replace(/(\d+)\.0\s*만원/g, '$1만원');
+    s = s.replace(/(\d+)\.([1-9])\s*만원/g, '$1만 $2,000원');
+    s = s.replace(/(\d+)\.0\s*(조|억)\s*원/g, '$1$2원');
+    s = s.replace(/투자의견\s*Trading\s*Buy/gi, "투자의견 '단기매수'");
+    s = s.replace(/투자의견\s*BUY/gi, "투자의견 '매수'");
+    s = s.replace(/투자의견\s*(?:HOLD|Neutral)/gi, "투자의견 '중립'");
+    s = s.replace(/유지한다\.?/g, '유지합니다.');
+    s = s.replace(/상향\s*조정한다\.?/g, '올려 잡았습니다(상향).');
+    s = s.replace(/상향한다\.?/g, '올려 잡았습니다(상향).');
+    s = s.replace(/하향\s*조정한다\.?/g, '내려 잡았습니다(하향).');
+    s = s.replace(/하향한다\.?/g, '내려 잡았습니다(하향).');
+    s = s.replace(/제시한다\.?/g, '제시했습니다.');
+    s = s.replace(/전망한다\.?/g, '전망합니다.');
+    s = s.replace(/판단한다\.?/g, '판단합니다.');
+    s = s.replace(/기대된다\.?/g, '기대됩니다.');
+    s = s.replace(/예상된다\.?/g, '예상됩니다.');
+    s = s.replace(/기록했다\.?/g, '기록했습니다.');
 
     // 1. 분기 및 Review/Preview 정제
     s = s.replace(/([1-4])Q(?:\d{2})?\s*Review:?/gi, '$1분기 실적 요약:');
