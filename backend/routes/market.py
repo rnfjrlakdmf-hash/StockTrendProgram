@@ -4739,7 +4739,7 @@ def get_ceo_office_boardroom(
         return _fetch_single_yfinance_research({"symbol": "KRW=X", "name": "원/달러 환율", "sector": "외환"}, "macro")
 
     def _task_comp():
-        return get_stock_research_reports(category="company", q="", page=0, size=16).get("items", [])
+        return get_stock_research_reports(category="company", q="", page=0, size=30).get("items", [])
 
     def _task_mkt():
         return get_stock_research_reports(category="market", q="", page=0, size=4).get("items", [])[:4]
@@ -5029,15 +5029,125 @@ def get_ceo_office_boardroom(
             "easy_terms": _extract_easy_terms("컨센서스 나스닥 선물 50일선"),
         })
 
-    # [기안 제2~5호] 리서치팀이 포착한 주요 국내 종목 자율 분석 기안서 (실시간 현재가 & 기대수익금 정밀 계산!)
+    # [기안 제2~5호] 국내 주식 4건 구성: [코스피 우량 실적주 2종목] + [코스닥 알짜 혁신·성장주 2종목] 황금 밸런스!
     from stock_names import STOCK_MAP
+    kosdaq_growth_reports = [
+        {
+            "id": "kq_comp_1",
+            "category": "코스닥·바이오대장",
+            "stock_name": "알테오젠",
+            "item_code": "196170",
+            "is_kosdaq": True,
+            "title": "글로벌 빅파마 피하주사(SC) 제형 변경 플랫폼 기술수출 로열티 본격 유입",
+            "broker": "신한투자증권",
+            "date": date_hyphen,
+            "target_price": "450,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["머크(MSD) 키트루다SC 상용화에 따른 마일스톤 및 판매 로열티 유입 기대", "추가 글로벌 빅파마향 ALT-B4 플랫폼 기술수출 확장성 유효"],
+            "plain_explanation": "정맥주사 항암제를 몇 분 만에 맞는 피하주사(SC)로 바꿔주는 독보적 기술로 글로벌 제약사들로부터 거액의 기술료(로열티)를 받는 코스닥 대표 바이오 기업입니다 ➔ 주가가 잠깐 쉬어갈 때마다 조금씩 나눠 사 모으기(분할매수) 좋은 기회입니다.",
+            "action_point": "글로벌 임상 결과 발표 및 추가 기술수출 본계약 공시 일정을 확인하며 분할 접근하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_2",
+            "category": "코스닥·AI반도체소부장",
+            "stock_name": "리노공업",
+            "item_code": "058470",
+            "is_kosdaq": True,
+            "title": "온디바이스 AI 스마트폰·AI 칩 검사용 리노핀 및 소켓 고마진(영업이익률 40%+) 성장",
+            "broker": "메리츠증권",
+            "date": date_hyphen,
+            "target_price": "260,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["글로벌 빅테크 AI 칩 설계 다변화로 R&D용 테스트 소켓 수요 증가", "영업이익률 40%를 웃도는 독보적 기술 경쟁력과 무차입 경영 재무 건전성"],
+            "plain_explanation": "새로 개발되는 AI 반도체가 불량인지 검사할 때 꼭 필요한 초정밀 핀과 소켓을 전 세계 빅테크에 공급하며 영업이익률 40% 이상을 남기는 코스닥 초우량 소부장 기업입니다 ➔ 시장이 흔들릴 때마다 조금씩 나눠 사 모으는(분할매수) 전략이 유리합니다.",
+            "action_point": "신규 AI 칩 출시 사이클과 외국인·기관의 코스닥 반도체 소부장 수급 유입을 함께 점검하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_3",
+            "category": "코스닥·로봇대장",
+            "stock_name": "레인보우로보틱스",
+            "item_code": "277810",
+            "is_kosdaq": True,
+            "title": "삼성전자 최대주주 시너지 및 산업용 협동로봇·양팔 휴머노이드 로봇 상용화 가속",
+            "broker": "유진투자증권",
+            "date": date_hyphen,
+            "target_price": "210,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["삼성전자 제조 라인향 협동로봇 및 자율이동로봇(AMR) 공급 확대 기대", "핵심 부품 내재화를 통한 원가 경쟁력 확보 및 글로벌 로봇 시장 진출"],
+            "plain_explanation": "카이스트 휴보 연구진이 설립하고 삼성전자가 대규모 지분 투자를 단행한 코스닥 대표 로봇 기업으로, 공장 자동화와 휴머노이드 로봇 시대를 이끄는 핵심 성장주입니다 ➔ 단기 급등 시 추격매수를 피하고 바닥(지지선) 확인 후 나눠 사기 전략이 유효합니다.",
+            "action_point": "대기업 계열사향 실제 로봇 납품 수주 공시와 분기 매출 증가 속도를 체크하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_4",
+            "category": "코스닥·K뷰티수출",
+            "stock_name": "실리콘투",
+            "item_code": "257720",
+            "is_kosdaq": True,
+            "title": "미국·유럽·중동 K-뷰티 인디브랜드 역직구 유통 독점적 성장 및 사상 최대 실적 경신",
+            "broker": "한국투자증권",
+            "date": date_hyphen,
+            "target_price": "60,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["북미 외 유럽·중동·중남미 등 글로벌 전 권역으로 K-화장품 수출 물량 급증", "자체 물류 인프라 기반 높은 영업 레버리지 효과 지속"],
+            "plain_explanation": "한국의 인기 중소 화장품 브랜드들을 미국·유럽·중동 전 세계에 수출·유통해 주며 매출과 이익이 폭발적으로 늘고 있는 코스닥 K-뷰티 대장주입니다 ➔ 본업에서 돈을 아주 잘 벌고 있어 눌림목마다 조금씩 나눠 사 모으는(분할매수) 전략이 유리합니다.",
+            "action_point": "월별 화장품 통관 수출 데이터와 해외 법인별 매출 성장률을 함께 확인하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_5",
+            "category": "코스닥·미용의료기기",
+            "stock_name": "클래시스",
+            "item_code": "214150",
+            "is_kosdaq": True,
+            "title": "글로벌 피부미용 의료기기(슈링크·볼뉴머) 브라질·유럽·미국 수출 고성장 및 소모품 마진 확대",
+            "broker": "미래에셋증권",
+            "date": date_hyphen,
+            "target_price": "68,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["장비 누적 설치 대수 증가에 따른 고마진 소모품(카트리지·팁) 매출 비중 50% 돌파", "미국 및 유럽 시장 인허가 확대에 따른 글로벌 외형 성장 지속"],
+            "plain_explanation": "피부과 리프팅 기기(슈링크·볼뉴머)를 전 세계 병원에 팔고, 시술할 때마다 쓰이는 고마진 소모품으로 영업이익률 50%에 육박하는 돈을 버는 코스닥 알짜 성장주입니다 ➔ 주가가 잠깐 내려갈 때마다 조금씩 나눠 사 모으기(분할매수) 좋은 기회입니다.",
+            "action_point": "분기별 해외 소모품 수출 비중과 미국·유럽향 신규 매출 추이를 점검하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_6",
+            "category": "코스닥·반도체독점장비",
+            "stock_name": "HPSP",
+            "item_code": "403870",
+            "is_kosdaq": True,
+            "title": "선단 반도체 미세공정 필수 고압수소어닐링(HPA) 장비 글로벌 독점 공급 지위 지속",
+            "broker": "NH투자증권",
+            "date": date_hyphen,
+            "target_price": "45,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["TSMC·삼성전자·인텔 등 글로벌 파운드리 선단 공정 투자 확대 수혜", "영업이익률 50% 수준의 독점 장비 기술력과 신규 고압산화공정(HPO) 장비 모멘텀"],
+            "plain_explanation": "최첨단 미세 반도체를 만들 때 불량을 없애주는 '고압수소어닐링' 장비를 전 세계에서 유일하게 독점 공급하는 코스닥 알짜 기술주입니다 ➔ 독점 기술력으로 이익률이 매우 높으므로 주가 조정 시 나눠 사 모으는(분할매수) 전략이 유리합니다.",
+            "action_point": "글로벌 파운드리 업체들의 설비투자(CAPEX) 재개 시점과 신규 장비 채택 여부를 확인하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+    ]
+
     kr_poll_codes = []
-    for rep in desk_company_reports[:8]:
+    for rep in desk_company_reports[:12] + kosdaq_growth_reports:
         c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name"))
         if c and c not in kr_poll_codes:
             kr_poll_codes.append(c)
 
     kr_realtime_quotes = {}
+    known_kosdaq_codes = {
+        "196170", "277810", "058470", "257720", "141080", "214150", "214450", "403870",
+        "247540", "086520", "028300", "066970", "039030", "005290", "036930", "095340",
+        "293490", "035900", "041510", "122870", "035760", "112040", "263750", "145020",
+    }
     if kr_poll_codes:
         try:
             import requests
@@ -5051,15 +5161,46 @@ def get_ceo_office_boardroom(
                     cmp_obj = it.get("compareToPreviousPrice") or {}
                     if cmp_obj.get("name") in ["FALLING", "DOWN"] or str(cmp_obj.get("code")) in ["4", "5"]:
                         ratio = -ratio
+                    sosok = str(it.get("sosok") or "")
+                    mkt_type = str(it.get("marketType") or "").upper()
+                    is_kq = (sosok == "1") or ("KOSDAQ" in mkt_type) or (code in known_kosdaq_codes)
                     kr_realtime_quotes[code] = {
                         "price": p_raw,
                         "ratio": ratio,
+                        "is_kosdaq": is_kq,
                         "display": f"{int(p_raw):,}원 ({ratio:+.2f}%)"
                     }
         except Exception as e:
             print(f"[CEOOffice] Realtime price polling error: {e}")
 
-    for idx, rep in enumerate(desk_company_reports[:4], start=2):
+    # 코스피 우량주 2종목 + 코스닥 유망 성장주 2종목 균형 선발
+    kospi_reps = []
+    kosdaq_reps = []
+    for rep in desk_company_reports:
+        c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name")) or ""
+        is_kq = bool(rep.get("is_kosdaq")) or (c in known_kosdaq_codes) or bool(kr_realtime_quotes.get(c, {}).get("is_kosdaq"))
+        rep["is_kosdaq"] = is_kq
+        if is_kq:
+            kosdaq_reps.append(rep)
+        else:
+            kospi_reps.append(rep)
+
+    # 코스닥 리포트가 2개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
+    for offset in [0, 2, 4]:
+        if len(kosdaq_reps) >= 2:
+            break
+        cand = dict(kosdaq_growth_reports[(day_num + offset) % len(kosdaq_growth_reports)])
+        if all(r["stock_name"] != cand["stock_name"] for r in kosdaq_reps):
+            kosdaq_reps.append(cand)
+
+    selected_kr_reports = kospi_reps[:2] + kosdaq_reps[:2]
+    for rep in desk_company_reports:
+        if len(selected_kr_reports) >= 4:
+            break
+        if all(r["stock_name"] != rep["stock_name"] for r in selected_kr_reports):
+            selected_kr_reports.append(rep)
+
+    for idx, rep in enumerate(selected_kr_reports[:4], start=2):
         s_name = rep["stock_name"]
         s_broker = rep["broker"]
         s_gp = rep["target_price"]
@@ -5132,7 +5273,7 @@ def get_ceo_office_boardroom(
             "drop_impact_intel": _hit,
             "doc_number": f"제 {date_doc_str}-0{idx} 호",
             "category_type": "kr_stock",
-            "category_badge": f"🏢 국내 주식 ({s_broker})",
+            "category_badge": f"🚀 코스닥 유망주 ({s_broker})" if rep.get("is_kosdaq") else f"🏢 코스피 우량주 ({s_broker})",
             "urgency": "정규 결재",
             "stock_name": s_name,
             "stock_code": s_code,

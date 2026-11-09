@@ -5531,7 +5531,7 @@ export default function CeoOfficePage() {
                                     >
                                         <span className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
                                             <span>🇰🇷</span>
-                                            <span>국내 우량 실적주</span>
+                                            <span>코스피 & 코스닥 유망주</span>
                                         </span>
                                         <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
                                             {intelligenceMetrics.krDocs.length}건
@@ -5545,7 +5545,12 @@ export default function CeoOfficePage() {
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-emerald-300 transition-colors">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-emerald-300 transition-colors flex items-center gap-1 min-w-0">
+                                                    {doc.category_badge?.includes('코스닥') && (
+                                                        <span className="px-1 py-0.2 rounded text-[9px] font-black bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 shrink-0">🚀코스닥</span>
+                                                    )}
+                                                    <span className="truncate">{doc.stock_name}</span>
+                                                </span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.target_price && <span className="text-gray-300">목표 {doc.target_price}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -5557,7 +5562,7 @@ export default function CeoOfficePage() {
                                     </div>
                                 </div>
                                 <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-emerald-400 font-bold">
-                                    <span>증권사 리서치 목표가 연동</span>
+                                    <span>코스피 우량 2 + 코스닥 알짜 2</span>
                                     <span>클릭 시 상세 열람 →</span>
                                 </div>
                             </div>
