@@ -4549,10 +4549,10 @@ def _build_weekly_review_and_calendar(
     review_doc = {
         "doc_id": f"DOC-{date_doc_str}-WKREV",
         "doc_number": f"제 {date_doc_str}-복기호",
-        "category_type": "kr_stock",
+        "category_type": "world_news",
         "category_badge": "📋 주간 리서치·성과 복기팀",
         "urgency": "주간 복기 결산",
-        "stock_name": f"주간 리서치 복기 (1순위: {top1['stock_name']})",
+        "stock_name": "주간 리서치·성과 복기",
         "stock_code": top1.get("stock_code") or "",
         "current_price": top1_curr_price,
         "target_price": top1_target_price,
@@ -4673,10 +4673,9 @@ def _build_weekly_review_and_calendar(
                 {"label": "10만원 이하 테마별 공략주", "value": short_picks_summary},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
             ],
-            "research_opinion": (
-                f"👍 [오늘 일정 & 테마별 수혜주 분석 · 윤서아 경제일정팀장]: 오늘({cur_cfg['day_ko']}) 시장의 핵심 체크포인트는 '{cur_theme_clean}'입니다. {cur_cfg['bull_scenario']} "
-                f"💡 [10만원 이하 맞춤 공략주]: 1) AI 반도체: HPSP (34,750원 · 독점 장비 마진 50%) 2) 전력설비·변압기: 제룡전기 (34,100원) · 일진전기 (42,500원) 3) 조선·해양: 삼성중공업 (15,320원 · 10만원으로 6주 매수 가능)"
-            ),
+        "research_opinion": (
+            "👍 [왜 중요한가요? · 박진우 리서치센터장]: 전 세계 경제 뉴스와 거시지표는 주식 시장의 '날씨'와 같습니다. 미국 금리와 국제유가가 안정된 맑은 날씨라야 반도체, 조선, 방산 등 수출 대장주들이 실적대로 주가를 낼 수 있습니다."
+        ),
             "quant_opinion": (
                 f"📊 [오늘 수급 시나리오 · 김도현 수급본부장]: 주요 경제지표 발표에 맞춰 외국인과 기관 큰손 자금이 {focus_str} 대장주로 유입되는지 실시간 추적 중입니다. 환율({fx_price_str.split(' ')[0]})과 미국 선물 흐름이 안정될 때 외국인 프로그램 순매수가 유입되므로 수급 지지력이 확인된 종목 위주로 접근합니다."
             ),
@@ -5568,10 +5567,9 @@ def get_ceo_office_boardroom(
             {"label": "미 연준(Fed) 금리 기조", "value": "점진적 완화 & 물가 안정 추적"},
             {"label": "글로벌 투자 심리", "value": "🟢 위험자산 선호 (Risk-On) 우세"},
         ],
-            "research_opinion": (
-                f"👍 [오늘 일정 & 테마별 수혜주 분석 · 윤서아 경제일정팀장]: 오늘({cur_cfg['day_ko']}) 시장의 핵심 체크포인트는 '{cur_theme_clean}'입니다. {cur_cfg['bull_scenario']} "
-                f"💡 [10만원 이하 맞춤 공략주]: 1) AI 반도체: HPSP (34,750원 · 독점 장비 마진 50%) 2) 전력설비·변압기: 제룡전기 (34,100원) · 일진전기 (42,500원) 3) 조선·해양: 삼성중공업 (15,320원 · 10만원으로 6주 매수 가능)"
-            ),
+        "research_opinion": (
+            "👍 [왜 중요한가요? · 박진우 리서치센터장]: 전 세계 경제 뉴스와 거시지표는 주식 시장의 '날씨'와 같습니다. 환율과 국제유가가 안정세를 유지해야 기업들의 실적 개선세가 주가에 온전히 반영될 수 있습니다."
+        ),
         "quant_opinion": (
             "📊 [외국인 자금 흐름은? · 김도현 수급본부장]: 달러화 강세 압력이 완화될 때마다 글로벌 패시브 자금이 한국 코스피 대형주 및 미국 대표 성장주 ETF로 빠르게 유입되는 퀀트 시그널이 확인됩니다."
         ),
