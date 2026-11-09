@@ -4109,6 +4109,7 @@ export default function CeoOfficePage() {
     const [officeStatus, setOfficeStatus] = useState<string>('🏖️ 주말·야간 24시간 비상근무 가동 · 전 부서 자율 시장 분석 및 대표이사 결재 상정 완료');
     const [updatedAt, setUpdatedAt] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
+    const [freshLoaded, setFreshLoaded] = useState<boolean>(false);
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
@@ -4549,6 +4550,10 @@ export default function CeoOfficePage() {
             const json = await res.json();
             if (json.status === 'success' && json.data) {
                 const d = json.data;
+                if (!topicParam && !messageParam) {
+                    try { localStorage.setItem('ceo_office_cache_v1', JSON.stringify(d)); } catch (e) {}
+                }
+                setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
                 if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
                 if (d.agenda) setAgenda(d.agenda);
@@ -4584,6 +4589,26 @@ export default function CeoOfficePage() {
             setIsCallingMeeting(false);
         }
     }, [user]);
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('ceo_office_cache_v1');
+            if (!raw) return;
+            const d = JSON.parse(raw);
+            if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
+            if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
+            if (d.agenda) setAgenda(d.agenda);
+            if (Array.isArray(d.debates) && d.debates.length > 0) setDebates(d.debates);
+            if (Array.isArray(d.research_desk) && d.research_desk.length > 0) setResearchDesk(d.research_desk);
+            if (Array.isArray(d.market_desk) && d.market_desk.length > 0) setMarketDesk(d.market_desk);
+            if (d.office_status) setOfficeStatus(d.office_status);
+            if (d.updated_at) setUpdatedAt(d.updated_at);
+            if (d.company_policy && Object.keys(d.company_policy).length > 0) setCompanyPolicy(d.company_policy);
+            if (d.weekly_review && Object.keys(d.weekly_review).length > 0) setWeeklyReview(d.weekly_review);
+            if (d.weekly_calendar && Object.keys(d.weekly_calendar).length > 0) setWeeklyCalendar(d.weekly_calendar);
+            setFreshLoaded(true);
+        } catch (e) {}
+    }, []);
 
     useEffect(() => {
         if (!authLoading && isAdmin) {
@@ -5158,7 +5183,7 @@ export default function CeoOfficePage() {
                                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[34px] font-black tracking-tight text-white leading-snug">
                                     대표님, 오늘 시장 분석이 완료되었습니다. <br className="hidden sm:inline" />
                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-500/25 border border-amber-400/50 text-amber-300 font-extrabold shadow-sm mr-2 align-middle my-1">
-                                        📋 총 {totalDocs}건의 결재 기안서
+                                        📋 {freshLoaded ? `총 ${totalDocs}건의 결재 기안서` : '결재 기안서 최신 내용 불러오는 중… ⏳'}
                                     </span>
                                     <span className="inline-block whitespace-nowrap text-zinc-100">검토 후 서명해 주십시오 🖋️</span>
                                 </h1>
