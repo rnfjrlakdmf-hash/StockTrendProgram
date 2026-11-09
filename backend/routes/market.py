@@ -2080,8 +2080,8 @@ def _fetch_single_yfinance_research(meta: Dict[str, Any], asset_type: str) -> Di
             return f"{val:.2f}pt"
         if sym in ["^TNX", "TNX"]:
             return f"{val:.2f}%"
-        if sym == "DX-Y.NYB":
-            return f"{val:.2f}pt"
+        if sym in ["DX-Y.NYB", "NQ=F", "ES=F"]:
+            return f"{val:,.2f}pt"
         return f"${val:,.2f}"
 
     trend_badge = "📊 50일 이동평균선 근접 구간"
@@ -2676,6 +2676,49 @@ FUTURES_MACRO_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
             {"term": "닥터 코퍼 (Doctor Copper)", "desc": "산업 전반에 쓰여 경기 변동을 가장 먼저 알아맞힌다고 해서 붙여진 구리의 별칭입니다."},
             {"term": "초고압 케이블", "desc": "AI 데이터센터와 발전소 간 전력을 손실 없이 대용량 송전하는 특수 전선입니다."},
             {"term": "전력망 인프라", "desc": "AI 가속기와 전기차 충전을 뒷받침하기 위해 전 세계적으로 증설 중인 송배전 설비망입니다."}
+        ],
+    },
+    "^VIX": {
+        "name": "VIX 변동성 지수 (^VIX · 공포지수)",
+        "badge": "🚨 월스트리트 시장 공포·안도 온도계",
+        "title": "[VIX 변동성 지수 (^VIX)] 글로벌 증시 투매 경보 & 저가 분할매수 타이밍 포착",
+        "why_important": "월스트리트 투자자들이 느끼는 불안감(공포)을 숫자로 나타낸 '시장 공포 온도계'입니다. 보통 20 이하이면 시장이 평온한 상승장이고, 30 위로 치솟으면 과도한 공포로 인한 저가 매수 기회로 해석합니다.",
+        "quant_point": "VIX 지수가 단기 급등 후 고점을 찍고 내려올 때 글로벌 퀀트 자금의 강력한 반등 매수세가 한국과 미국 증시로 유입됩니다.",
+        "risk_point": "VIX 지수가 25~30선을 돌파하며 급등하는 날에는 장 초반 추격매수를 멈추고 현금 비중을 지키는 방어 원칙이 작동합니다.",
+        "secretary_guide": "글로벌 증시의 공포와 안도를 측정하는 VIX 변동성 지수 점검 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!",
+        "recommendation": "VIX 변동성 경보 및 역발상 분할매수 기준 승인",
+        "terms": [
+            {"term": "VIX (공포지수)", "desc": "향후 30일간 S&P500 지수가 얼마나 크게 출렁일지 옵션 가격을 바탕으로 계산한 심리 지표입니다."},
+            {"term": "안도 랠리", "desc": "시장을 짓누르던 불확실성이 해소되면서 공포지수가 내려가고 주가가 힘차게 반등하는 현상입니다."},
+            {"term": "역발상 투자", "desc": "남들이 공포에 질려 투매할 때 우량주를 싸게 분할 매수하는 실전 투자 기법입니다."}
+        ],
+    },
+    "NG=F": {
+        "name": "천연가스 선물 (NG=F · AI 발전연료)",
+        "badge": "🔥 AI 데이터센터 발전 · LNG 에너지",
+        "title": "[천연가스 선물 (NG=F)] 미국 AI 데이터센터 가스터빈 발전 수요 & 한국 LNG·조선 수혜",
+        "why_important": "AI 데이터센터가 막대한 전기를 당장 공급받기 위해 가장 많이 사용하는 핵심 발전 연료입니다. 천연가스 시세와 물동량은 한국 LNG 운반선(조선주)과 가스터빈(두산에너빌리티 등) 수주에 직결됩니다.",
+        "quant_point": "북미 LNG 수출 터미널 증설과 천연가스 물동량 확대는 한국 조선 3사 및 강관·피팅 기자재 업종의 강력한 수급 모멘텀이 됩니다.",
+        "risk_point": "계절적 날씨 변수(한파·폭염)와 재고 발표에 따라 일일 등락폭이 크므로 산업 수혜주 중심으로 연결해 해석합니다.",
+        "secretary_guide": "AI 발전 연료이자 한국 조선·에너지 업종의 풍향계인 천연가스 선물 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!",
+        "recommendation": "글로벌 LNG·천연가스 및 한국 조선·발전 연계 감시 승인",
+        "terms": [
+            {"term": "LNG (액화천연가스)", "desc": "천연가스를 영하 162도로 냉각해 부피를 600분의 1로 줄여 배로 실어 나르는 청정 발전 연료입니다."},
+            {"term": "가스터빈 발전", "desc": "천연가스를 태워 전기를 만드는 발전 방식으로, AI 데이터센터 전력 공급의 핵심 대안입니다."}
+        ],
+    },
+    "SI=F": {
+        "name": "국제 은 선물 (SI=F · 산업용 귀금속)",
+        "badge": "🥈 태양광·AI 전자부품 핵심 소재",
+        "title": "[국제 은 선물 (SI=F)] 금과 함께 움직이는 안전자산 & AI 반도체·태양광 산업 수요 분석",
+        "why_important": "은(Silver)은 금과 같은 귀금속 안전자산이면서도 전기 전도율이 가장 뛰어나 AI 서버 기판, 전기차 전장부품, 태양광 패널에 필수적으로 쓰이는 핵심 산업재입니다.",
+        "quant_point": "금 가격 강세와 친환경·AI 전력 인프라 투자가 맞물릴 때 은 선물 가격이 탄력적으로 상승하며 관련 소재주 수급을 자극합니다.",
+        "risk_point": "금에 비해 시장 규모가 작아 하루 변동폭이 더 클 수 있으므로 달러 인덱스와 실질금리 추이를 함께 점검합니다.",
+        "secretary_guide": "귀금속 안전자산이자 AI·태양광 필수 소재인 국제 은 선물 점검 기안서입니다. [승인 서명]을 눌러 가결해 주십시오!",
+        "recommendation": "국제 은 선물 및 산업용 귀금속 추세 감시 승인",
+        "terms": [
+            {"term": "금·은 교환비", "desc": "금 1온스 가격으로 은 몇 온스를 살 수 있는지 보여주는 비율로, 은의 저평가 여부를 판단할 때 씁니다."},
+            {"term": "산업용 금속 수요", "desc": "단순 보석용이 아니라 반도체, 태양광 셀, 전기차 접점 부품 등 공장에서 실제로 소모되는 수요입니다."}
         ],
     },
 }
@@ -4703,34 +4746,35 @@ def get_ceo_office_boardroom(
     futures_catalog = MULTI_ASSET_CATALOG.get("futures", [])
     day_num = now_kst.timetuple().tm_yday
 
-    # 미국 주식 4건 구성: [대형 빅테크 2종목] + [혁신 신생기업(우주·양자·SMR·UAM·AI) 2종목] 황금 밸런스 자동 순환!
+    # 미국 주식 6건 구성: [대형 빅테크 3종목] + [혁신 신생기업(10만원 이하 우주·양자·SMR·UAM·AI) 3종목] 황금 밸런스 자동 순환!
     bigtech_pool = [c for c in us_catalog if not c.get("is_emerging")]
     emerging_pool = [c for c in us_catalog if c.get("is_emerging")]
     selected_us_metas = []
-    for offset in [0, 3]:
+    for offset in [0, 3, 6]:
         if bigtech_pool:
             cand = bigtech_pool[(day_num + offset) % len(bigtech_pool)]
             if cand not in selected_us_metas:
                 selected_us_metas.append(cand)
-    for offset in [0, 3]:
+    for offset in [0, 2, 5]:
         if emerging_pool:
             cand = emerging_pool[(day_num + offset) % len(emerging_pool)]
             if cand not in selected_us_metas:
                 selected_us_metas.append(cand)
     for cand in us_catalog:
-        if len(selected_us_metas) >= 4:
+        if len(selected_us_metas) >= 6:
             break
         if cand not in selected_us_metas:
             selected_us_metas.append(cand)
 
-    # 글로벌 선물/거시 지표: 4종목 엄선 (나스닥100 선물, S&P500 선물, WTI 원유 선물 + 일자별 로테이션 지표[금, 구리, 달러, 국채금리])
+    # 글로벌 선물/거시 지표 4종목: 1번(나스닥100 선물) 기본 온도계 + 2·3·4번은 9대 핵심 거시지표(S&P500, 원유, 금, 구리, 국채금리, 달러, VIX공포지수, 천연가스, 은) 일자별 다이내믹 순환!
     nq_meta = next((c for c in futures_catalog if c["symbol"] == "NQ=F"), None)
-    es_meta = next((c for c in futures_catalog if c["symbol"] == "ES=F"), None)
-    cl_meta = next((c for c in futures_catalog if c["symbol"] == "CL=F"), None)
-    rot_candidates = [c for c in futures_catalog if c["symbol"] not in ["NQ=F", "ES=F", "CL=F"]]
-    rot_idx = day_num % len(rot_candidates) if rot_candidates else 0
-    fourth_meta = rot_candidates[rot_idx] if rot_candidates else None
-    selected_futures_metas = [m for m in [nq_meta, es_meta, cl_meta, fourth_meta] if m is not None]
+    rot_candidates = [c for c in futures_catalog if c["symbol"] != "NQ=F"]
+    selected_futures_metas = [nq_meta] if nq_meta else []
+    for offset in [0, 3, 6]:
+        if rot_candidates and len(selected_futures_metas) < 4:
+            cand = rot_candidates[(day_num + offset) % len(rot_candidates)]
+            if cand not in selected_futures_metas:
+                selected_futures_metas.append(cand)
 
     us1_meta = selected_us_metas[0] if selected_us_metas else None
     us2_meta = selected_us_metas[1] if len(selected_us_metas) > 1 else None
@@ -4763,7 +4807,7 @@ def get_ceo_office_boardroom(
         return idx, _fetch_single_yfinance_research(meta, atype)
 
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=14) as ex:
             f_comp = ex.submit(_task_comp)
             f_mkt = ex.submit(_task_mkt)
             f_fx = ex.submit(_task_fx)
@@ -4832,7 +4876,7 @@ def get_ceo_office_boardroom(
         else:
             _deferred_comp.append(_rc)
     for _rc in _deferred_comp:
-        if len(desk_company_reports) >= 6:
+        if len(desk_company_reports) >= 12:
             break
         if _rc["stock_name"] not in _seen_comp_names:
             _seen_comp_names.add(_rc["stock_name"])
@@ -5300,7 +5344,7 @@ def get_ceo_office_boardroom(
             return int(gp_digits) <= 130000
         return True
 
-    # 1주당 10만원 이하 코스피 우량주 2종목 + 코스닥 알짜 성장주 2종목 균형 선발
+    # 1주당 10만원 이하 코스피 우량주 3종목 + 코스닥 알짜 성장주 3종목 (총 6종목) 균형 선발!
     kospi_reps = []
     kosdaq_reps = []
     for rep in desk_company_reports:
@@ -5316,25 +5360,25 @@ def get_ceo_office_boardroom(
             if all(r["stock_name"] != rep["stock_name"] for r in kospi_reps):
                 kospi_reps.append(rep)
 
-    # 10만원 이하 코스피 리포트가 2개 미만이면 일자별 순환 코스피 가성비 우량주로 자동 보강
+    # 10만원 이하 코스피 리포트가 3개 미만이면 일자별 순환 코스피 가성비 우량주로 자동 보강
     for offset in range(len(kospi_affordable_reports)):
-        if len(kospi_reps) >= 2:
+        if len(kospi_reps) >= 3:
             break
         cand = dict(kospi_affordable_reports[(day_num + offset) % len(kospi_affordable_reports)])
         if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kospi_reps):
             kospi_reps.append(cand)
 
-    # 10만원 이하 코스닥 리포트가 2개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
+    # 10만원 이하 코스닥 리포트가 3개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
     for offset in range(len(kosdaq_growth_reports)):
-        if len(kosdaq_reps) >= 2:
+        if len(kosdaq_reps) >= 3:
             break
         cand = dict(kosdaq_growth_reports[(day_num + offset) % len(kosdaq_growth_reports)])
         if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kosdaq_reps):
             kosdaq_reps.append(cand)
 
-    selected_kr_reports = kospi_reps[:2] + kosdaq_reps[:2]
+    selected_kr_reports = kospi_reps[:3] + kosdaq_reps[:3]
 
-    for idx, rep in enumerate(selected_kr_reports[:4], start=2):
+    for idx, rep in enumerate(selected_kr_reports[:6], start=2):
         s_name = rep["stock_name"]
         s_broker = rep["broker"]
         s_gp = rep["target_price"]
@@ -5409,9 +5453,9 @@ def get_ceo_office_boardroom(
             _hit = None
 
         auto_approvals.append({
-            "doc_id": f"DOC-{date_doc_str}-0{idx}",
+            "doc_id": f"DOC-{date_doc_str}-{idx:02d}",
             "drop_impact_intel": _hit,
-            "doc_number": f"제 {date_doc_str}-0{idx} 호",
+            "doc_number": f"제 {date_doc_str}-{idx:02d} 호",
             "category_type": "kr_stock",
             "category_badge": f"🚀 코스닥 유망주 ({s_broker})" if rep.get("is_kosdaq") else f"🏢 코스피 우량주 ({s_broker})",
             "urgency": "정규 결재",
