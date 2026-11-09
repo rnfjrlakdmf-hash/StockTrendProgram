@@ -4605,17 +4605,28 @@ def _build_weekly_review_and_calendar(
         cur_day_obj = calendar_days[day_idx]
         cur_date_str = now_kst.strftime("%m/%d")
         cur_evs = cur_day_obj.get("events") or cur_cfg["events"]
-        cur_theme = cur_day_obj.get("theme") or cur_cfg["theme"]
-        events_summary = ", ".join(f"{e['country']} {e['name']}({e['time']})" for e in cur_evs[:2])
+        cur_theme_raw = cur_day_obj.get("theme") or cur_cfg["theme"]
+        cur_theme_clean = cur_theme_raw.split("] ")[-1].strip() if "]" in cur_theme_raw else cur_theme_raw.strip()
+
+        def _short_ev_label(ev_item: dict) -> str:
+            c_flag = (ev_item.get("country") or "").split(" ")[0]
+            e_name = _humanize_cal_tag(ev_item.get("name") or "")
+            # 괄호 안 부연설명이 너무 길면 핵심만 남김
+            e_name = re.sub(r'\s*\([^)]{8,}\)', '', e_name).strip()
+            if len(e_name) > 22:
+                e_name = e_name[:22].rstrip()
+            return f"{c_flag} {e_name}({ev_item.get('time', '')})"
+
+        events_summary_short = " · ".join(_short_ev_label(e) for e in cur_evs[:2])
         focus_str = ", ".join(cur_cfg["focus_sectors"])
 
         cur_active = cur_day_obj.get("active_scenario", "pending")
         if cur_active == "bull":
-            scenario_extra = "🔥 [실시간 발표 속보]: 오늘 발표된 핵심 지표가 시장 예상치를 상회하는 골디락스 호재로 확인되어 '🟢 긍정(호재) 공략 시나리오'가 실시간 가동 중입니다!"
+            scenario_extra = f"발표된 지표가 시장 예상에 부합하는 호재로 확인되어 🟢 긍정 시나리오가 가동 중이며 ➔ {focus_str} 중심의 눌림목 분할매수가 유리합니다."
         elif cur_active == "bear":
-            scenario_extra = "⚠️ [실시간 발표 속보]: 오늘 발표된 지표 경계감으로 '🔴 부진(악재) 리스크 방어 지침'이 실시간 가동 중입니다."
+            scenario_extra = "발표 지표 경계감으로 🔴 리스크 방어 지침이 가동 중이므로 ➔ 장 초반 추격매수를 피하고 오전 10시 바닥(지지선) 확인 후 분할 대응합니다."
         else:
-            scenario_extra = f"호재 시나리오 발생 시 {focus_str} 섹터가 직접적인 수혜를 입을 전망입니다."
+            scenario_extra = f"지표가 안정적으로 발표되면 {focus_str} 섹터가 직접 수혜를 입으며 ➔ 오전 10시 이후 눌림목에서 나눠 사기(분할매수)로 대응합니다."
 
         calendar_doc = {
             "doc_id": f"DOC-{date_doc_str}-DAYCAL",
@@ -4631,27 +4642,26 @@ def _build_weekly_review_and_calendar(
             "proposer": "윤서아 이사 (경제일정팀장) · 이준호 이사 (글로벌) · 김도현 상무 (퀀트)",
             "submitted_at": f"{time_str} 오늘({cur_cfg['day_ko']}) 한·미 경제일정 분석 완료",
             "easy_headline": (
-                f"오늘({cur_date_str} {cur_cfg['day_ko']}) 시장의 방향을 가를 핵심 일정은 '{cur_theme}'입니다. "
-                f"주요 발표 지표는 {events_summary}이며, "
+                f"오늘({cur_date_str} {cur_cfg['day_ko']}) 핵심 일정은 {events_summary_short} 발표입니다. "
                 f"{scenario_extra}"
             ),
             "key_numbers": [
-                {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_theme.split("] ")[-1] if "]" in cur_theme else cur_theme},
+                {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_theme_clean},
                 {"label": "실시간 시나리오 상태", "value": cur_day_obj.get("scenario_status_badge", "정상 가동")},
                 {"label": "호재 시 집중 공략 섹터", "value": focus_str},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
             ],
             "research_opinion": (
-                f"👍 [오늘 일정 분석 · 윤서아 경제일정팀장]: 오늘 {cur_cfg['day_ko']}요일은 {cur_theme}이 시장의 화두입니다. {cur_cfg['bull_scenario']}"
+                f"👍 [오늘 일정 분석 · 윤서아 경제일정팀장]: 오늘({cur_cfg['day_ko']}) 시장의 핵심 체크포인트는 '{cur_theme_clean}'입니다. {cur_cfg['bull_scenario']}"
             ),
             "quant_opinion": (
-                f"📊 [오늘 수급 시나리오 · 김도현 수급본부장]: 주요 지표 발표 전후로 외국인과 기관의 자금이 {focus_str} 대장주로 유입되는지 실시간 감시 중입니다. {cur_cfg['bear_scenario']}"
+                f"📊 [오늘 수급 시나리오 · 김도현 수급본부장]: 주요 경제지표 발표에 맞춰 외국인과 기관 큰손 자금이 {focus_str} 대장주로 유입되는지 실시간 추적 중입니다. 환율({fx_price_str.split(' ')[0]})과 미국 선물 흐름이 안정될 때 외국인 프로그램 순매수가 유입되므로 수급 지지력이 확인된 종목 위주로 접근합니다."
             ),
             "risk_opinion": (
-                f"⚠️ [오늘 리스크 방어 · 최서연 리스크본부장]: {cur_cfg['bear_scenario']}"
+                f"⚠️ [오늘 리스크 방어 · 최서연 리스크본부장]: {cur_cfg['bear_scenario']} 10만원 한도 내에서도 한 번에 다 사지 말고 오전 10시 바닥(지지선) 확인 후 나눠 사기(분할매수)와 -3.5% 손절 원칙을 꼭 지켜주십시오."
             ),
             "secretary_conclusion": (
-                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정팀에서 오늘({cur_date_str} {cur_cfg['day_ko']}) 발표될 핵심 경제 일정과 이에 맞춘 집중 공략 섹터({focus_str})를 보고드립니다. [승인 서명]을 눌러 오늘 일정 대응을 가동해 주십시오!"
+                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정팀에서 오늘({cur_date_str} {cur_cfg['day_ko']}) 핵심 일정과 집중 공략 섹터({focus_str})를 한눈에 보기 쉽게 정리했습니다. [승인 서명]을 눌러 오늘 일정 대응을 가동해 주십시오!"
             ),
             "recommendation": f"오늘({cur_cfg['day_ko']}) 경제지표 대응 및 집중 섹터({focus_str}) 공략 승인",
             "detail_url": "https://stock.naver.com/research/economy",

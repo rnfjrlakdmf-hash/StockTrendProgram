@@ -312,6 +312,7 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
     // 소문자 'us ' 접두사를 단정한 국기 이모지 '🇺🇸 '로 정제
     rawVal = rawVal.replace(/\bus\s+/gi, '🇺🇸 ');
     rawVal = rawVal.replace(/\bkr\s+/gi, '🇰🇷 ');
+    rawVal = rawVal.replace(/^\$([0-9,]+(?:\.[0-9]+)?원)/, '$1');
     rawVal = rawVal
         .replace(/United States-NY Fed Consumer Expectation-NY Fed Inflation Expectation 1yr/gi, '미국 1년 기대인플레이션 (물가 심리)')
         .replace(/NY Fed Inflation Expectation/gi, '미국 기대인플레이션')
@@ -394,7 +395,7 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
                 </div>
             );
         } else if (rawVal.includes('★')) {
-            const starMatch = rawVal.match(/^(★+)\s*(.*)$/);
+            const starMatch = rawVal.match(/^([★☆]+)\s*(.*)$/);
             renderedValue = (
                 <div className="space-y-0.5">
                     <div className="text-amber-400 font-black text-xs tracking-wider">
