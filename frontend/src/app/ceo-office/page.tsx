@@ -152,7 +152,7 @@ function splitIntoBullets(raw: string): string[] {
     const cleaned = humanized.replace(/\s+/g, ' ').trim();
     // 1) 엠대시(—) 및 마침표/종결어미 뒤 공백을 기준으로 1차 분리
     const rawParts = cleaned
-        .split(/(?<=[—])\s*|(?<=[.!?])\s+/)
+        .split(/(?<=[—])\s*|(?<!\b\d)(?<=[.!?])\s+/)
         .map(s => s.trim().replace(/^[-—•✓\s]+/, '').replace(/[-—\s]+$/, '').trim())
         .filter(Boolean);
 
@@ -224,7 +224,8 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
         let tagColor = 'bg-amber-500/25 text-amber-300 border-amber-400/40';
 
         if (sectionType === 'summary') {
-            tag = idx === 0 ? '해외·원인' : '국내·대응';
+            const isWkRevText = /주간|복기|Top\s*3/.test(raw);
+            tag = isWkRevText ? (idx === 0 ? '주간복기' : '공략타점') : (idx === 0 ? '해외·원인' : '국내·대응');
             tagColor = idx === 0
                 ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
                 : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
@@ -406,9 +407,17 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
                     )}
                 </div>
             );
+        } else if (rawVal.includes('➔')) {
+            // 현재가 ➔ 목표가 화살표 비교 데이터: 쉼표(,)가 깨지지 않도록 한 줄에 깔끔하게 렌더링
+            renderedValue = (
+                <div className="text-xs sm:text-[13px] font-black font-mono text-rose-200 leading-snug break-keep">
+                    {renderHighlightedExecutiveText(rawVal)}
+                </div>
+            );
         } else {
-            // 섹터 나열: "AI 반도체 (HBM), 전력설비·변압기, 조선·해양플랜트"
-            const sectorItems = rawVal.split(',').map((s: string) => s.trim()).filter(Boolean);
+            // 섹터 나열만 쉼표 분리 (숫자 천단위 콤마 ',000'는 절대 분리하지 않음!)
+            const isSectorList = (rawLabel.includes('섹터') || rawLabel.includes('집중')) && !/\d,\d{3}/.test(rawVal);
+            const sectorItems = isSectorList ? rawVal.split(/,\s+/).map((s: string) => s.trim()).filter(Boolean) : [rawVal];
             if (sectorItems.length > 1) {
                 renderedValue = (
                     <div className="flex flex-wrap gap-1 mt-0.5">
@@ -422,7 +431,7 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
             } else {
                 renderedValue = (
                     <div className="text-xs font-bold text-zinc-100 leading-snug break-keep">
-                        {rawVal}
+                        {renderHighlightedExecutiveText(rawVal)}
                     </div>
                 );
             }
@@ -6421,8 +6430,8 @@ export default function CeoOfficePage() {
                                                     activeDoc.stock_name?.includes('금리') || 
                                                     activeDoc.stock_name?.includes('시스템') ||
                                                     activeDoc.stock_name?.includes('선물') ||
-                                                    activeDoc.stock_name?.includes('경제일정') ||
-                                                    activeDoc.stock_name?.includes('주간 리서치');
+                                                    activeDoc.stock_name?.includes('경제일정');
+                                                const isWeeklyReviewDoc = activeDoc.doc_id?.includes('WKREV') || activeDoc.stock_name?.includes('주간 리서치');
 
                                                 const riskData = getDetailedRiskBreakdown(activeDoc, riskCapital);
                                                 const researchBody = parseExecutiveOpinion(activeDoc.research_opinion, "리서치센터", "💡").body || activeDoc.easy_headline || "";
@@ -6604,15 +6613,21 @@ export default function CeoOfficePage() {
                                                             .trim();
 
                                                         // 카드별 1초 한줄 결론 헤드라인 도출 (적당한 12~13px)
-                                                        const card1Headline = isMacroDoc
+                                                        const card1Headline = isWeeklyReviewDoc
+                                                            ? `🏆 10만원 이하 알짜 추천주 성적표 복기 & 최우선 Top 3(${activeDoc.target_price || '목표가'} · ${activeDoc.upside_pct || '강세'}) 엄선`
+                                                            : isMacroDoc
                                                             ? (isCautiousResearch ? '⚠️ 미 반도체·기술주 급락 여파 · 장초반 매물 주의 (환율은 안정)' : '🟢 글로벌 거시환경 우호적 · 수출·대형주 모멘텀 양호')
                                                             : `🚀 목표가 ${activeDoc.target_price || '상향'} (${activeDoc.upside_pct || '모멘텀 우수'}) · 실적·수주 성장세 뚜렷`;
 
-                                                        const card2Headline = isMacroDoc
+                                                        const card2Headline = isWeeklyReviewDoc
+                                                            ? '🏦 1순위 유망주 외국인·기관 수급 유입 및 10만원 한도 분할매수 타점 포착'
+                                                            : isMacroDoc
                                                             ? (isCautiousQuant ? '📊 장초반 프로그램 매도 경계 · 방어주·환율수혜주 수급 관찰' : '🏦 환율 안정 속 외국인·기관 수급 유입 기대')
                                                             : (isCautiousQuant ? '📊 장초반 외인·기관 수급 방향성 확인 후 진입' : '🏦 외국인·기관 50일선 하방 지지력 확보');
 
-                                                        const card3Headline = isMacroDoc
+                                                        const card3Headline = isWeeklyReviewDoc
+                                                            ? '🎯 장 시작 직후 추격매수 금지 · 오전 10시 눌림목 확인 후 1주씩 나눠 사기'
+                                                            : isMacroDoc
                                                             ? '🛑 장 시작 직후 추격매수 금지! 오전 10시 바닥(지지선) 확인 후 나눠 사기'
                                                             : '🎯 장 시작 직후 추격매수 금지 · 오전 10시 바닥(지지선) 확인 후 3번에 나눠 사기';
 

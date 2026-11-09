@@ -4489,13 +4489,20 @@ def _build_weekly_review_and_calendar(
         "days": calendar_days,
     }
 
-    # 4) 전자결재 서류함(auto_approvals)에 올라갈 정식 기안서 2건 생성
-    top3_names_str = ", ".join(f"{x['stock_name']}({x['upside_pct']})" for x in monday_top3)
+    # 4) 전자결재 서류함(auto_approvals)에 올라갈 정식 기안서 2건 생성 (10만원 한도 맞춤형 깔끔 정돈)
+    top3_names_str = " · ".join(f"{x['stock_name']}({x['upside_pct']})" for x in monday_top3)
+    top3_only_names = " · ".join(x['stock_name'] for x in monday_top3)
     top1_curr_price = top1.get("current_price") or "실시간 연동"
+    top1_curr_only = top1_curr_price.split(" ")[0]
+    top1_curr_num = int(top1.get("curr_p_num") or 30000)
     top1_target_price = top1.get("target_price") or f"평균여력 +{avg_upside:.1f}%"
+    top1_target_num = int(re.sub(r'[^\d]', '', str(top1_target_price)) or 40000)
     top1_upside = top1.get("upside_pct") or f"+{avg_upside:.1f}%"
-    top1_profit_per_share = top1.get("profit_per_share") or f"기대수익 {top1_upside}"
-    top1_profit_10m = top1.get("profit_10m") or f"약 +{int(10000000 * (avg_upside / 100)):,}원"
+    top1_buyable = max(1, 100000 // max(1, top1_curr_num))
+    top1_diff = max(0, top1_target_num - top1_curr_num)
+    top1_profit_100k = int(top1_buyable * top1_diff)
+    top1_profit_per_share = top1.get("profit_per_share") or f"주당 +{top1_diff:,}원 ({top1_upside})"
+    top1_profit_10m = f"10만원 한도 {top1_buyable}주 매수 가능 (기대수익 +{top1_profit_100k:,}원)"
     review_doc = {
         "doc_id": f"DOC-{date_doc_str}-WKREV",
         "doc_number": f"제 {date_doc_str}-복기호",
@@ -4509,33 +4516,28 @@ def _build_weekly_review_and_calendar(
         "upside_pct": top1_upside,
         "profit_per_share": top1_profit_per_share,
         "profit_10m": top1_profit_10m,
-        "title": f"[주간 리서치·성과 복기] 추천주 {len(review_items)}선 성적표 복기 & 차주 월요일 개장 Top 3 전략",
+        "title": f"[주간 리서치·성과 복기] 10만원 이하 알짜 추천주 {len(review_items)}선 복기 & Top 3 전략",
         "proposer": "한지훈 이사 (주간복기팀장) · 박진우 부사장 (리서치) · 최서연 상무 (CRO)",
         "submitted_at": f"{time_str} 주간 리서치·실전계좌 합동 복기 완료",
         "easy_headline": (
-            f"한 주간 추천주 성적표를 [1. 기업 실적·수주 팩트], [2. 외인·기관 큰손 수급], [3. 대외 매크로 직격탄] 3대 축으로 정밀 해부했습니다. "
-            f"이번 주 증권사 추천 종목 {len(review_items)}건의 평균 목표가 상승여력은 +{avg_upside:.1f}%이며, 차주 월요일 최우선 공략 Top 3 종목은 {top3_names_str}입니다. "
-            f"실전 운용 계좌는 누적 수익률 {total_ret_pct:+.2f}%(총자산 {total_equity:,}원)로 철통 방어력을 유지 중입니다."
+            f"이번 주 증권사가 추천한 10만원 이하 알짜 종목 {len(review_items)}건의 실적·수급·환율 영향을 종합 복기한 결과, 평균 목표가 상승여력이 +{avg_upside:.1f}%로 매우 우수합니다. "
+            f"10만원 한도로 부담 없이 담아볼 최우선 Top 3 종목은 {top3_names_str}이며 ➔ 장 시작 직후 추격매수를 피하고 오전 10시 이후 눌림목에서 1주씩 나눠 사 모으는(분할매수) 전략이 유리합니다."
         ),
         "key_numbers": [
-            {"label": "주간 복기 리포트", "value": f"총 {len(review_items)}종목 (평균여력 +{avg_upside:.1f}%)"},
-            {"label": "실전 계좌 누적 성과", "value": f"{total_ret_pct:+.2f}% (총자산 {total_equity:,}원)"},
-            {"label": f"1순위({top1['stock_name']}) 현재가→목표가", "value": f"{top1_curr_price.split(' ')[0]} ➔ {top1_target_price} ({top1_upside})"},
-            {"label": "운용 현금 비중", "value": f"{cash_ratio:.1f}% (안전 방어력 확보)"},
+            {"label": "주간 복기 리포트", "value": f"10만원 이하 {len(review_items)}종목 (평균 +{avg_upside:.1f}%)"},
+            {"label": f"1순위({top1['stock_name']}) 현재가→목표가", "value": f"{top1_curr_only} ➔ {top1_target_price} ({top1_upside})"},
+            {"label": "10만원 한도 실전 매수 플랜", "value": f"{top1_buyable}주 매수 가능 (기대 +{top1_profit_100k:,}원)"},
+            {"label": "최우선 공략 Top 3", "value": top3_only_names},
         ],
         "research_opinion": (
-            f"👍 [주간 리서치 정밀 복기 · 한지훈 복기팀장 & 박진우 부사장]: 한 주간 증권사 리포트 추천 종목들의 등락 원인을 완전 복기했습니다. 단순 테마주가 아닌 실적과 수주 잔고가 검증된 {top3_names_str}이 목표주가 괴리율과 하방 지지력을 동시에 확보했습니다.\n\n"
-            + "\n".join([
-                f"• [{f['stock_name']} {f['trend_badge']}]: {f['headline_summary']} (🏭 실적: {f['pillar_earnings']} / 💰 수급: {f['pillar_liquidity']} / 🌐 매크로: {f['pillar_macro']})"
-                for f in weekly_forensics_list[:3]
-            ])
+            f"👍 [주간 리서치 정밀 복기 · 한지훈 복기팀장 & 박진우 부사장]: 한 주간 증권사 리포트가 추천한 10만원 이하 가성비 우량·성장주들의 실제 실적과 수주 잔고를 꼼꼼히 다시 점검했습니다. 반짝 테마주가 아니라 본업에서 돈을 잘 버는 {top3_names_str} 3종목이 목표주가까지 추가 상승 여력이 가장 크고 주가 바닥도 단단합니다."
         ),
         "weekly_stock_forensics": weekly_forensics_list,
         "quant_opinion": (
-            f"📊 [실전 계좌 수급 복기 · 김도현 수급본부장]: 현재 실전 운용 계좌(총자산 {total_equity:,}원, 보유 {len(open_positions)}건)는 승률 {win_rate:.0f}%를 기록 중이며, 1순위 공략주 {top1['stock_name']}(현재가 {top1_curr_price})은 월요일 개장 시 시초가 추격매수를 피하고 눌림목에서 분할 매수하는 전략이 유효합니다."
+            f"📊 [실전 수급 & 매수 타점 · 김도현 수급본부장]: 1순위 공략주인 '{top1['stock_name']}'(현재가 {top1_curr_only})은 10만원 예산으로 {top1_buyable}주 매수가 가능하며 외국인과 기관의 저가 매수세가 유입되고 있습니다. 장 시작 직후 급등할 때 따라 사지 말고 ➔ 오전 10시 이후 주가가 숨고르기하는 눌림목 구간에서 나눠 사 모으는(분할매수) 전략이 유효합니다."
         ),
         "risk_opinion": (
-            f"⚠️ [주간 매매 반성 & 감사 · 최서연 리스크본부장]: 1순위 후보 '{top1['stock_name']}'(목표가 {top1_target_price}) 포함 모든 편입 종목은 1차 목표가에서 50% 분할 익절 원칙을 철저히 지키고, 손절 기준선(-3.5%~-5.0%) 이탈 시 지체 없이 자동 방어하도록 감사 완료했습니다."
+            f"⚠️ [주간 리스크 방어 원칙 · 최서연 리스크본부장]: 1순위 후보 '{top1['stock_name']}'(목표가 {top1_target_price})을 포함한 모든 추천 종목은 1차 목표가 도달 시 절반(50%)을 먼저 팔아 수익을 확정합니다. 만약 매수가 대비 -3.5% 이상 하락하면 미련 없이 손절해 소중한 원금을 지키는 안전 수칙을 엄수합니다."
         ),
         "secretary_conclusion": (
             "👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 한지훈 이사의 주간 리서치·성과복기팀에서 이번 주 추천주와 실전 계좌를 깔끔하게 복기하고 월요일 Top 3 타겟을 올렸습니다. [승인 서명]을 눌러 차주 운용 전략을 재가해 주십시오!"
