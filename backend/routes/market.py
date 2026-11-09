@@ -5483,32 +5483,61 @@ def get_ceo_office_boardroom(
         except Exception as _e:
             _hit = None
 
+        # 목표가 하향 / 투자의견 중립 / 적자·부진 등 하향·경계 리포트 여부 자동 판별
+        is_bearish_or_downgrade = (
+            any(k in s_easy for k in ["하향", "중립", "HOLD", "Hold", "비중축소", "매도", "부진", "적자", "둔화", "쇼크", "하회", "우려", "보수적", "부담"])
+            or any(k in s_title for k in ["하향", "중립", "부진", "적자", "둔화", "우려", "쇼크", "하회"])
+            or rep.get("opinion") in ["중립", "HOLD", "Hold", "비중축소", "매도"]
+            or (upside_num is not None and upside_num < 0)
+        )
+
         hit_badge = (_hit.get("overseas_chain_badge") or "") if _hit else ""
         hit_badge_clean = hit_badge.replace("🌏 ", "").strip()
 
-        # 1. 해외·글로벌 수혜 및 실적·수주 원인 문장 (원인)
+        # 1. 해외·글로벌 원인 문장 (하향/부진 시 '영향·부담', 호재 시 '수혜')
         if hit_badge_clean:
-            cause_sentence = f"[{hit_badge_clean} 수혜] {s_easy}"
+            badge_suffix = "영향·부담" if is_bearish_or_downgrade else "수혜"
+            cause_sentence = f"[{hit_badge_clean} {badge_suffix}] {s_easy}"
         else:
             cause_sentence = s_easy
         if not cause_sentence.endswith("."):
             cause_sentence += "."
 
-        # 2. 목표주가 및 10만원 예산 실전 매수 대응 문장 (금액 & 대응)
-        if s_gp and s_gp not in ["제시안함", "컨센서스 유지"]:
+        # 2. 목표주가 및 실전 대응 문장 (하향 시 보수적 관망, 호재 시 분할 매수)
+        if is_bearish_or_downgrade:
+            action_sentence = f"증권사 목표주가가 {s_gp}으로 하향(또는 보수적 유지) 조정되었으므로 ➔ 무리한 추격매수를 피하고 실적 반등 및 업황 회복 확인 전까지 보수적 관망(방어) 전략이 유리합니다."
+        elif s_gp and s_gp not in ["제시안함", "컨센서스 유지"]:
             action_sentence = f"현재가({curr_price_str}) 대비 목표주가 {s_gp}(기대수익 {upside_str}) 제시 ➔ 10만원 예산으로 {buyable_100k}주 분할 매수 공략이 유효합니다."
         else:
             action_sentence = f"현재가 {curr_price_str} 수준이며 ➔ 10만원 예산으로 {buyable_100k}주 분할 매수 공략이 유효합니다."
 
         kr_easy_headline = f"{cause_sentence} {action_sentence}"
 
+        # 뱃지 및 의견 라벨 적응형 설정
+        if is_bearish_or_downgrade:
+            cat_badge = f"⚠️ 목표가 하향·리스크 점검 ({s_broker})"
+            res_op_prefix = "⚠️ [리서치 분석 · 박진우 리서치센터장]"
+            rec_text = f"{s_name} 목표가 하향에 따른 보수적 관망(방어) 승인"
+            sec_conclusion = (
+                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: '{s_name}'의 최근 목표가 하향 및 리스크 요인을 정리했습니다. "
+                f"무리한 진입을 자제하고 [승인 서명]을 눌러 보수적 방어 감시 체제로 재가해 주십시오!"
+            )
+        else:
+            cat_badge = f"🚀 코스닥 유망주 ({s_broker})" if rep.get("is_kosdaq") else f"🏢 코스피 우량주 ({s_broker})"
+            res_op_prefix = "👍 [왜 좋은가요? · 박진우 리서치센터장]"
+            rec_text = f"현재가 {curr_price_str} / 목표가 {s_gp} 관심종목 등록 승인"
+            sec_conclusion = (
+                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: '{s_name}'(현재가 {curr_price_str} ➔ 목표가 {s_gp}, 기대수익 {upside_str})의 투자 가치를 정리했습니다. "
+                f"우리 회사 중점 관심 종목으로 등록할지 [승인 서명]을 눌러 결정해 주십시오!"
+            )
+
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-{idx:02d}",
             "drop_impact_intel": _hit,
             "doc_number": f"제 {date_doc_str}-{idx:02d} 호",
             "category_type": "kr_stock",
-            "category_badge": f"🚀 코스닥 유망주 ({s_broker})" if rep.get("is_kosdaq") else f"🏢 코스피 우량주 ({s_broker})",
-            "urgency": "정규 결재",
+            "category_badge": cat_badge,
+            "urgency": "리스크 점검" if is_bearish_or_downgrade else "정규 결재",
             "stock_name": s_name,
             "stock_code": s_code,
             "change_pct": float(q.get("ratio", 0.0)) if q else 0.0,
@@ -5527,13 +5556,15 @@ def get_ceo_office_boardroom(
                 {"label": "주당 예상 기대차익", "value": profit_per_share},
                 {"label": "10만원 한도 실전 매수 플랜", "value": profit_10m},
             ],
-            "research_opinion": f"👍 [왜 좋은가요? · 박진우 리서치센터장]: {cause_sentence}",
-            "quant_opinion": f"📊 [돈의 흐름은? · 김도현 수급본부장]: 현재가 {curr_price_str} 대비 목표 가격({s_gp})까지 {upside_str}의 매력적인 상승 여력이 열려 있으며, 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다.",
-            "risk_opinion": f"⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 무조건 좋다고 바로 사기보다는, {s_check}",
-            "secretary_conclusion": (
-                f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: '{s_name}'(현재가 {curr_price_str} ➔ 목표가 {s_gp}, 기대수익 {upside_str})의 투자 가치를 정리했습니다. 우리 회사 중점 관심 종목으로 등록할지 [승인 서명]을 눌러 결정해 주십시오!"
+            "research_opinion": f"{res_op_prefix}: {cause_sentence}",
+            "quant_opinion": (
+                f"📊 [돈의 흐름은? · 김도현 수급본부장]: 목표주가 하향 및 업황 둔화 우려로 기관과 외국인의 매물 출회 가능성을 면밀히 감시하고 있으며, 지지선 확인 전까지 보수적 접근이 필요합니다."
+                if is_bearish_or_downgrade else
+                f"📊 [돈의 흐름은? · 김도현 수급본부장]: 현재가 {curr_price_str} 대비 목표 가격({s_gp})까지 {upside_str}의 매력적인 상승 여력이 열려 있으며, 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다."
             ),
-            "recommendation": f"현재가 {curr_price_str} / 목표가 {s_gp} 관심종목 등록 승인",
+            "risk_opinion": f"⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 무조건 좋다고 바로 사기보다는, {s_check}",
+            "secretary_conclusion": sec_conclusion,
+            "recommendation": rec_text,
             "detail_url": rep["detail_url"],
             "easy_terms": _extract_easy_terms(f"{s_name} {s_title} {s_easy}"),
         })

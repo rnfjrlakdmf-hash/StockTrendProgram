@@ -231,15 +231,31 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
                     ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
                     : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
             } else if (categoryType === 'kr_stock') {
-                tag = idx === 0 ? '해외·상승원인' : '목표가·실전대응';
-                tagColor = idx === 0
-                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
-                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+                const isDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(raw);
+                if (isDown) {
+                    tag = idx === 0 ? '해외·하향원인' : '리스크·방어대응';
+                    tagColor = idx === 0
+                        ? 'bg-rose-500/25 text-rose-200 border-rose-400/40'
+                        : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
+                } else {
+                    tag = idx === 0 ? '해외·상승원인' : '목표가·실전대응';
+                    tagColor = idx === 0
+                        ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                        : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+                }
             } else if (categoryType === 'us_stock') {
-                tag = idx === 0 ? '글로벌·성장동력' : '월가목표가·대응';
-                tagColor = idx === 0
-                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
-                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+                const isDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(raw);
+                if (isDown) {
+                    tag = idx === 0 ? '글로벌·둔화요인' : '리스크·방어대응';
+                    tagColor = idx === 0
+                        ? 'bg-rose-500/25 text-rose-200 border-rose-400/40'
+                        : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
+                } else {
+                    tag = idx === 0 ? '글로벌·성장동력' : '월가목표가·대응';
+                    tagColor = idx === 0
+                        ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                        : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+                }
             } else if (categoryType === 'global_futures') {
                 tag = idx === 0 ? '미국장·선행지표' : '국내시장·파급';
                 tagColor = idx === 0
@@ -252,10 +268,11 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
                     : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
             }
         } else if (sectionType === 'research') {
+            const isDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(raw);
             const isStock = categoryType === 'kr_stock' || categoryType === 'us_stock';
-            tag = isStock ? (idx === 0 ? '핵심호재' : '방어논리') : (idx === 0 ? '시장파급' : '방어논리');
+            tag = isStock ? (idx === 0 ? (isDown ? '하향원인' : '핵심호재') : '방어논리') : (idx === 0 ? '시장파급' : '방어논리');
             tagColor = idx === 0
-                ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
+                ? (isDown ? 'bg-rose-500/25 text-rose-200 border-rose-400/40' : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40')
                 : 'bg-teal-500/25 text-teal-200 border-teal-400/40';
         } else if (sectionType === 'quant') {
             tag = idx === 0 ? '수급경보' : '자금흐름';
@@ -6645,22 +6662,30 @@ export default function CeoOfficePage() {
                                                             .trim();
 
                                                         // 카드별 1초 한줄 결론 헤드라인 도출 (적당한 12~13px)
+                                                        const isStockDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(activeDoc.easy_headline || '') || (activeDoc.upside_pct && activeDoc.upside_pct.includes('-'));
+
                                                         const card1Headline = isWeeklyReviewDoc
                                                             ? `🏆 10만원 이하 알짜 추천주 성적표 복기 & 최우선 Top 3(${activeDoc.target_price || '목표가'} · ${activeDoc.upside_pct || '강세'}) 엄선`
                                                             : isMacroDoc
                                                             ? (isCautiousResearch ? '⚠️ 미 반도체·기술주 급락 여파 · 장초반 매물 주의 (환율은 안정)' : '🟢 글로벌 거시환경 우호적 · 수출·대형주 모멘텀 양호')
+                                                            : isStockDown
+                                                            ? `⚠️ 목표가 ${activeDoc.target_price || '하향'} (${activeDoc.upside_pct || '보수적'}) · 단기 업황 둔화 & 방어적 관망 권고`
                                                             : `🚀 목표가 ${activeDoc.target_price || '상향'} (${activeDoc.upside_pct || '모멘텀 우수'}) · 실적·수주 성장세 뚜렷`;
 
                                                         const card2Headline = isWeeklyReviewDoc
                                                             ? '🏦 1순위 유망주 외국인·기관 수급 유입 및 10만원 한도 분할매수 타점 포착'
                                                             : isMacroDoc
                                                             ? (isCautiousQuant ? '📊 장초반 프로그램 매도 경계 · 방어주·환율수혜주 수급 관찰' : '🏦 환율 안정 속 외국인·기관 수급 유입 기대')
+                                                            : isStockDown
+                                                            ? '📊 목표가 하향에 따른 외국인·기관 매물 출회 경계 및 바닥 지지력 확인'
                                                             : (isCautiousQuant ? '📊 장초반 외인·기관 수급 방향성 확인 후 진입' : '🏦 외국인·기관 50일선 하방 지지력 확보');
 
                                                         const card3Headline = isWeeklyReviewDoc
                                                             ? '🎯 장 시작 직후 추격매수 금지 · 오전 10시 눌림목 확인 후 1주씩 나눠 사기'
                                                             : isMacroDoc
                                                             ? '🛑 장 시작 직후 추격매수 금지! 오전 10시 바닥(지지선) 확인 후 나눠 사기'
+                                                            : isStockDown
+                                                            ? '🛑 성급한 저가 매수 금지! 업황 반등 및 지지선 확인 전까지 보수적 관망'
                                                             : '🎯 장 시작 직후 추격매수 금지 · 오전 10시 바닥(지지선) 확인 후 3번에 나눠 사기';
 
                                                         return (
