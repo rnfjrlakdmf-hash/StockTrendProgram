@@ -5574,7 +5574,7 @@ export default function CeoOfficePage() {
                                     >
                                         <span className="flex items-center gap-1.5 text-xs font-black text-sky-300">
                                             <span>🌎</span>
-                                            <span>미국 10대 빅테크</span>
+                                            <span>미국 빅테크 & 혁신 신생주</span>
                                         </span>
                                         <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono">
                                             {intelligenceMetrics.usDocs.length}건
@@ -5588,7 +5588,12 @@ export default function CeoOfficePage() {
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-sky-300 transition-colors">{doc.stock_name}</span>
+                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-sky-300 transition-colors flex items-center gap-1 min-w-0">
+                                                    {doc.category_badge?.includes('신생') && (
+                                                        <span className="px-1 py-0.2 rounded text-[9px] font-black bg-amber-500/25 text-amber-300 border border-amber-400/40 shrink-0">🚀신생</span>
+                                                    )}
+                                                    <span className="truncate">{doc.stock_name}</span>
+                                                </span>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.current_price && <span className="text-gray-300">{doc.current_price.split(' ')[0]}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
@@ -6104,7 +6109,7 @@ export default function CeoOfficePage() {
                                             {[
                                                 { key: 'all', label: '전체', count: countTotal, icon: '📋' },
                                                 { key: 'kr_stock', label: '국내 주식', count: countKr, icon: '🇰🇷' },
-                                                { key: 'us_stock', label: '미국 빅테크', count: countUs, icon: '🌎' },
+                                                { key: 'us_stock', label: '미국 빅테크·신생주', count: countUs, icon: '🚀' },
                                                 { key: 'global_futures', label: '글로벌 선물·지수', count: countFutures, icon: '📊' },
                                                 { key: 'world_news', label: '전세계 경제뉴스', count: countNews, icon: '📰' },
                                             ].map(tab => {
@@ -6210,7 +6215,7 @@ export default function CeoOfficePage() {
                                                             badgeClass: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30',
                                                         },
                                                         us_stock: {
-                                                            title: '🌎 3. 미국 빅테크 주도주',
+                                                            title: '🚀 3. 미국 빅테크 & 혁신 신생주',
                                                             badgeClass: 'text-sky-300 bg-sky-500/15 border-sky-500/30',
                                                         },
                                                         global_futures: {

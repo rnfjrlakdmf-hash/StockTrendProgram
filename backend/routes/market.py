@@ -1933,6 +1933,14 @@ MULTI_ASSET_CATALOG = {
         {"symbol": "AVGO", "name": "브로드컴 (Broadcom)", "sector": "맞춤형 AI 칩(ASIC) · 네트워킹", "desc": "빅테크 기업들의 자체 AI 칩(ASIC) 설계와 AI 데이터센터 초고속 통신 반도체 솔루션을 공급하고 있습니다."},
         {"symbol": "PLTR", "name": "팔란티어 (Palantir)", "sector": "AI 데이터 운영체제(AIP) · 국방", "desc": "미국 정부·국방부 및 글로벌 민간 기업을 대상으로 AI 데이터 분석 운영체제(AIP)를 공급하는 소프트웨어 기업입니다."},
         {"symbol": "TSM", "name": "TSMC", "sector": "글로벌 파운드리 1위", "desc": "엔비디아·애플·AMD 등의 최첨단 AI 칩과 CoWoS 첨단 패키징을 위탁생산하는 글로벌 파운드리 기업입니다."},
+        {"symbol": "IONQ", "name": "아이온큐 (IonQ)", "sector": "양자컴퓨터 선도 · 이온트랩", "desc": "아마존 AWS·마이크로소프트 Azure·구글 클라우드에 상용 양자컴퓨터 시스템을 탑재한 글로벌 양자컴퓨팅 대장주입니다.", "is_emerging": True},
+        {"symbol": "RKLB", "name": "로켓랩 (Rocket Lab)", "sector": "우주항공 · 소형 로켓 발사체", "desc": "스페이스X의 대항마로 꼽히는 민간 소형 우주 로켓(일렉트론) 발사 및 우주 시스템 제조 1위 혁신 기업입니다.", "is_emerging": True},
+        {"symbol": "ASTS", "name": "AST 스페이스모바일 (AST SpaceMobile)", "sector": "저궤도 위성 · 스마트폰 직결 통신", "desc": "지상 기지국 없이 일반 스마트폰에 인공위성 광대역 5G 통신을 직접 연결하는 우주 인터넷 혁신 기업입니다.", "is_emerging": True},
+        {"symbol": "SMR", "name": "뉴스케일파워 (NuScale Power)", "sector": "차세대 소형모듈원전(SMR)", "desc": "미국 원자력규제위원회(NRC) 설계 인증을 최초 획득한 소형모듈원자로(SMR) 선도 기업으로 AI 데이터센터 전력난 수혜주입니다.", "is_emerging": True},
+        {"symbol": "JOBY", "name": "조비 에비에이션 (Joby Aviation)", "sector": "UAM 도심항공 · 비행택시", "desc": "도요타와 델타항공이 대규모 투자한 전기 수직이착륙기(eVTOL) 에어택시 상용화 1위 기업입니다.", "is_emerging": True},
+        {"symbol": "SOUN", "name": "사운드하운드 AI (SoundHound AI)", "sector": "음성 인식 · 대화형 AI 에이전트", "desc": "글로벌 완성차 및 프랜차이즈 식음료 매장에 자연어 음성 AI 비서를 공급하는 차세대 AI 소프트웨어 기업입니다.", "is_emerging": True},
+        {"symbol": "RGTI", "name": "리게티 컴퓨팅 (Rigetti Computing)", "sector": "초전도 양자컴퓨터 칩 제조", "desc": "자체 양자 파운드리에서 초전도 기반 다중 큐비트 양자 프로세서를 직접 설계·제조하는 풀스택 양자컴퓨팅 기업입니다.", "is_emerging": True},
+        {"symbol": "LUNR", "name": "인튜이티브 머신스 (Intuitive Machines)", "sector": "달 탐사 착륙선 · NASA 파트너", "desc": "민간 기업 최초로 달 표면 착륙에 성공한 NASA 아르테미스 프로젝트 핵심 우주 인프라 파트너입니다.", "is_emerging": True},
     ],
     "etf": [
         {"symbol": "QQQ", "name": "Invesco QQQ (미국 나스닥100 ETF)", "sector": "미국 빅테크 · 나스닥100 지수 추종", "desc": "애플, 엔비디아, 마이크로소프트 등 나스닥 상장 비금융 상위 100대 기술주 지수(NASDAQ-100)를 추종하는 패시브 ETF입니다."},
@@ -2450,6 +2458,118 @@ US_STOCK_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
             {"term": "3나노 공정", "desc": "현재 전 세계에서 가장 진보된 초미세 반도체 양산 제조 공정입니다."}
         ],
     },
+    "IONQ": {
+        "badge": "🚀 양자컴퓨터 대장주 · 클라우드 탑재",
+        "kr_link": "국내 양자암호·광통신 부품(우리로, 코위버, 케이씨에스)",
+        "why_important": "기존 슈퍼컴퓨터로 수만 년 걸릴 연산을 단 몇 분 만에 해결하는 양자컴퓨터 상용화 1위 기업으로, AI 다음 시대를 열 차세대 혁신 신생기업입니다.",
+        "quant_point": "구글·MS·엔비디아의 양자컴퓨팅 콘퍼런스 및 정부 양자 기술 지원 법안 발표 시 폭발적인 거래량과 함께 급등 탄력을 보입니다.",
+        "risk_point": "아직 초기 성장 단계의 신생 기술주이므로 금리 변동이나 분기 수주 잔고 발표에 따라 주가 등락폭이 크니 분할 접근이 필수입니다.",
+        "secretary_guide": "미국 차세대 양자컴퓨팅 혁신 신생기업 아이온큐(IONQ) 분석 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "차세대 양자컴퓨팅 신생 대장주 감시 승인",
+        "terms": [
+            {"term": "큐비트 (Qubit)", "desc": "0과 1을 동시에 처리해 연산 속도를 기하급수적으로 높이는 양자컴퓨터의 기본 정보 단위입니다."},
+            {"term": "이온트랩 방식", "desc": "전하를 띤 원자(이온)를 전자기장으로 가두어 레이저로 제어하는 아이온큐의 핵심 양자 기술입니다."},
+            {"term": "양자 우위", "desc": "양자컴퓨터가 기존 최고 성능의 슈퍼컴퓨터보다 훨씬 빠르고 정확하게 문제를 푸는 단계입니다."}
+        ],
+    },
+    "RKLB": {
+        "badge": "🚀 민간 우주 로켓 발사 2위 · 스페이스X 대항마",
+        "kr_link": "국내 우주항공·위성(한화에어로스페이스, 쎄트렉아이, 인텔리안테크)",
+        "why_important": "일론 머스크의 스페이스X 다음으로 가장 많은 상업용 로켓('일렉트론')을 성공적으로 발사하고 있는 우주항공 대표 혁신 신생기업입니다.",
+        "quant_point": "차세대 중형 로켓 '뉴트론(Neutron)' 개발 진척 및 미국 정부·NASA 위성 발사 대형 계약 수주 공시가 강력한 주가 상승 동력입니다.",
+        "risk_point": "로켓 발사 일정 연기나 발사 실패 리스크가 존재하므로 추격매수를 피하고 눌림목에서 분할 매수해야 합니다.",
+        "secretary_guide": "스페이스X의 대항마로 급성장 중인 우주항공 신생기업 로켓랩(RKLB) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "글로벌 민간 우주발사체 신생기업 감시 승인",
+        "terms": [
+            {"term": "일렉트론 (Electron)", "desc": "로켓랩이 상용화하여 수십 회 이상 발사에 성공한 주력 소형 위성 발사 로켓입니다."},
+            {"term": "뉴트론 (Neutron)", "desc": "스페이스X 팰컨9과 경쟁하기 위해 로켓랩이 개발 중인 차세대 재사용 중형 로켓입니다."},
+            {"term": "저궤도 위성 (LEO)", "desc": "지구 상공 500~2,000km의 낮은 궤도를 돌며 초고속 통신과 지구 관측을 수행하는 인공위성입니다."}
+        ],
+    },
+    "ASTS": {
+        "badge": "🚀 우주 스마트폰 직결 위성통신 · AT&T/버라이즌 제휴",
+        "kr_link": "국내 위성통신 안테나·부품(인텔리안테크, AP위성, 센서뷰)",
+        "why_important": "별도 위성 안테나 없이 내가 쓰는 일반 스마트폰으로 산속·바다 어디서든 인공위성 5G 인터넷을 바로 연결해 주는 우주 통신 신생기업입니다.",
+        "quant_point": "상업용 위성 '블루버드(BlueBird)' 발사 성공과 미국 최대 통신사(AT&T·버라이즌) 상용 서비스 개시 일정에 맞춰 강한 매수세가 유입됩니다.",
+        "risk_point": "위성 군집 구축을 위한 추가 자금 조달(유상증자) 여부와 위성 발사 일정을 꼼꼼히 확인해야 합니다.",
+        "secretary_guide": "스마트폰과 인공위성을 직접 연결하는 혁신 신생기업 AST 스페이스모바일(ASTS) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "우주 위성 직결 통신 신생기업 감시 승인",
+        "terms": [
+            {"term": "블루버드 (BlueBird)", "desc": "AST 스페이스모바일이 궤도에 쏘아 올린 초대형 상업용 우주 셀룰러 통신 위성입니다."},
+            {"term": "D2D (Direct-to-Device)", "desc": "지상 기지국이나 특수 단말기 없이 위성과 일반 스마트폰을 직접 연결하는 차세대 통신 기술입니다."},
+            {"term": "통신 음영지역", "desc": "사막, 바다, 산간 지역 등 지상 기지국이 닿지 않아 휴대폰이 터지지 않는 구역입니다."}
+        ],
+    },
+    "SMR": {
+        "badge": "🚀 차세대 소형원전(SMR) 1호 인증 · AI 전력 해결사",
+        "kr_link": "두산에너빌리티(핵심 기자재 독점 공급) · 삼성물산 · GS에너지",
+        "why_important": "AI 데이터센터가 먹는 막대한 전기를 안전하고 친환경적으로 공급할 소형모듈원전(SMR) 분야에서 미국 정부 설계 인증을 최초 획득한 혁신 기업입니다.",
+        "quant_point": "한국 두산에너빌리티가 지분 투자 및 원자로 핵심 기자재를 공급하므로, 뉴스케일파워(SMR) 주가 상승은 한국 원전주 수급에 직결됩니다.",
+        "risk_point": "빅테크 데이터센터와의 실제 장기 전력공급 본계약(수주) 체결 시점과 건설 원가 변수를 확인하며 대응해야 합니다.",
+        "secretary_guide": "AI 데이터센터 전력난의 해법으로 꼽히는 소형원전 신생기업 뉴스케일파워(SMR) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "차세대 소형원전(SMR) 및 국내 원전 공급망 감시 승인",
+        "terms": [
+            {"term": "SMR (소형모듈원자로)", "desc": "대형 원전의 10분의 1 크기로 공장에서 찍어내듯 제작해 데이터센터 옆에 설치할 수 있는 차세대 원전입니다."},
+            {"term": "NRC 설계 인증", "desc": "미국 원자력규제위원회(NRC)가 원자로 설계의 안전성을 공식 승인한 최고 권위 인증입니다."},
+            {"term": "PPA (전력구매계약)", "desc": "빅테크 기업이 발전소로부터 수십 년간 안정적으로 전기를 사기로 맺는 장기 계약입니다."}
+        ],
+    },
+    "JOBY": {
+        "badge": "🚀 하늘을 나는 택시(UAM) 상용화 1위 · 도요타 투자",
+        "kr_link": "국내 UAM·항공모빌리티(한화시스템, 한국항공우주, 현대차)",
+        "why_important": "꽉 막힌 도로 대신 하늘로 날아다니는 전기 비행택시(eVTOL) 분야에서 미 연방항공청(FAA) 인증과 상용화에 가장 앞서 있는 혁신 신생기업입니다.",
+        "quant_point": "도요타의 대규모 추가 투자와 중동(두바이)·미국 상용 노선 첫 운항 허가 모멘텀이 부각될 때마다 기관 매수세가 유입됩니다.",
+        "risk_point": "상용 운항을 통한 본격적인 흑자 전환 전까지는 R&D 비용이 지속 발생하므로 지지선 확인 후 분할 매수가 안전합니다.",
+        "secretary_guide": "미래 도심 항공 교통을 바꿀 에어택시 선두 신생기업 조비 에비에이션(JOBY) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "글로벌 UAM 에어택시 신생기업 감시 승인",
+        "terms": [
+            {"term": "UAM (도심항공교통)", "desc": "도심 상공에서 수직으로 이착륙하는 전기 비행체를 활용해 승객을 수송하는 차세대 교통 체계입니다."},
+            {"term": "eVTOL", "desc": "활주로 없이 헬리콥터처럼 수직으로 뜨고 내리는 친환경 전기 비행기입니다."},
+            {"term": "FAA 형식인증", "desc": "미국 연방항공청이 새로운 항공기의 상업용 운항 안전성을 최종 허가하는 필수 절차입니다."}
+        ],
+    },
+    "SOUN": {
+        "badge": "🚀 차량·매장 대화형 음성 AI 선두",
+        "kr_link": "국내 음성·대화형 AI 소프트웨어(솔트룩스, 코난테크놀로지, 마음AI)",
+        "why_important": "자동차 운전석과 드라이브스루 매장에서 사람처럼 자연스럽게 대화를 알아듣고 주문을 처리하는 음성 AI 기술로 빠르게 시장을 넓히는 신생 AI 기업입니다.",
+        "quant_point": "글로벌 완성차 브랜드 및 대형 외식 체인과의 신규 음성 AI 탑재 계약 발표 시 높은 주가 탄력성을 보입니다.",
+        "risk_point": "빅테크 기업들의 자체 음성 AI 모델과의 경쟁 및 단기 급등 후 변동성에 유의하여 분할 대응해야 합니다.",
+        "secretary_guide": "일상 속 대화형 음성 AI 시장을 개척하는 신생기업 사운드하운드 AI(SOUN) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "대화형 음성 AI 신생기업 감시 승인",
+        "terms": [
+            {"term": "대화형 음성 AI", "desc": "단순 명령어 인식을 넘어 사람의 복잡한 구어체 질문을 이해하고 즉시 답하는 인공지능입니다."},
+            {"term": "차량용 AI 비서", "desc": "운전 중 내비게이션, 차량 제어, 맛집 검색 등을 목소리만으로 수행하는 스마트카 핵심 기능입니다."},
+            {"term": "구독형 로열티", "desc": "소프트웨어가 탑재된 기기 대수나 이용량에 비례해 꾸준히 들어오는 반복 매출입니다."}
+        ],
+    },
+    "RGTI": {
+        "badge": "🚀 초전도 양자컴퓨터 칩 자체 제조",
+        "kr_link": "국내 양자컴퓨팅·극저온 부품 관련주",
+        "why_important": "양자컴퓨터의 두뇌인 '초전도 양자 프로세서(QPU)'를 자체 공장에서 직접 설계·제조하는 풀스택 양자컴퓨팅 혁신 신생기업입니다.",
+        "quant_point": "신규 큐비트 아키텍처('안카') 성능 발표 및 미국 에너지부·국방부 양자 연구 과제 선정 시 강한 수급이 몰립니다.",
+        "risk_point": "소형 신생 기술주 특성상 하루 주가 등락폭이 매우 크므로 시초가 추격매수를 금하고 소액 분할 접근이 유리합니다.",
+        "secretary_guide": "초전도 양자 프로세서를 직접 만드는 혁신 신생기업 리게티 컴퓨팅(RGTI) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "초전도 양자컴퓨터 신생기업 감시 승인",
+        "terms": [
+            {"term": "초전도 양자칩 (QPU)", "desc": "극저온 상태에서 전기 저항이 0이 되는 초전도 회로를 이용해 만든 양자컴퓨터 프로세서입니다."},
+            {"term": "풀스택 양자기업", "desc": "양자 칩 설계부터 제조, 클라우드 소프트웨어까지 전 과정을 자체 보유한 기업을 뜻합니다."},
+            {"term": "양자 오류 정정", "desc": "양자 상태의 미세한 잡음(노이즈)을 잡아내어 계산 정확도를 높이는 핵심 기술입니다."}
+        ],
+    },
+    "LUNR": {
+        "badge": "🚀 민간 최초 달 착륙 성공 · NASA 핵심 파트너",
+        "kr_link": "국내 우주탐사·위성항법(한화에어로스페이스, 한국항공우주, 컨텍)",
+        "why_important": "인류 역사상 민간 기업 최초로 달 표면에 착륙선('오디세우스')을 안착시킨 기업으로, NASA의 달 기지 건설 및 우주 통신망 프로젝트를 수행하는 우주 신생기업입니다.",
+        "quant_point": "NASA의 수조 원대 달 위성 통신망(NSNS) 계약 수주 및 후속 달 착륙선 발사 일정에 맞춰 강한 모멘텀이 발생합니다.",
+        "risk_point": "우주 탐사 임무 특성상 발사 일정 및 착륙 결과에 따른 이벤트 변동성이 크므로 비중 조절 원칙을 지켜야 합니다.",
+        "secretary_guide": "민간 달 탐사 시대를 연 우주 혁신 신생기업 인튜이티브 머신스(LUNR) 기안서입니다. [승인 서명]을 눌러주십시오!",
+        "recommendation": "달 탐사·우주 인프라 신생기업 감시 승인",
+        "terms": [
+            {"term": "아르테미스 프로젝트", "desc": "미국 NASA가 주도하여 인류를 다시 달에 보내고 지속 가능한 달 기지를 건설하는 대규모 우주 계획입니다."},
+            {"term": "NSNS (근우주 네트워크)", "desc": "달과 지구 사이의 초고속 데이터 통신과 항법을 지원하는 NASA의 우주 통신망 사업입니다."},
+            {"term": "달 착륙선 (Nova-C)", "desc": "인튜이티브 머신스가 개발하여 과학 장비와 화물을 달 표면에 수송하는 무인 우주선입니다."}
+        ],
+    },
 }
 
 FUTURES_MACRO_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
@@ -2621,8 +2741,8 @@ def _create_us_stock_approval_doc(
         "drop_impact_intel": _hit,
         "doc_number": f"제 {date_doc_str}-{seq_str} 호",
         "category_type": "us_stock",
-        "category_badge": f"🌎 미국 빅테크 ({sym})",
-        "urgency": "미국 빅테크 핵심",
+        "category_badge": f"🚀 미국 혁신 신생기업 ({sym})" if meta.get("is_emerging") else f"🌎 미국 빅테크 ({sym})",
+        "urgency": "차세대 신생 유망주" if meta.get("is_emerging") else "미국 빅테크 핵심",
         "stock_name": f"{name_ko}({sym})" if (name_ko and name_ko != sym and sym not in name_ko) else sym,
         "stock_code": sym,
         "change_pct": float(info.get("change_pct", 0.0)) if (info and info.get("change_pct") is not None) else 0.0,
@@ -4576,19 +4696,25 @@ def get_ceo_office_boardroom(
     futures_catalog = MULTI_ASSET_CATALOG.get("futures", [])
     day_num = now_kst.timetuple().tm_yday
 
-    # 일자별로 10대 미국 빅테크 중 4종목 자동 순환 선정 (매일 다른 4개 빅테크 종목 자동 심층 분석)
+    # 미국 주식 4건 구성: [대형 빅테크 2종목] + [혁신 신생기업(우주·양자·SMR·UAM·AI) 2종목] 황금 밸런스 자동 순환!
+    bigtech_pool = [c for c in us_catalog if not c.get("is_emerging")]
+    emerging_pool = [c for c in us_catalog if c.get("is_emerging")]
     selected_us_metas = []
-    step_offsets = [0, 2, 5, 7]
-    for offset in step_offsets:
-        idx = (day_num + offset) % len(us_catalog) if us_catalog else 0
-        cand = us_catalog[idx]
-        if cand not in selected_us_metas:
-            selected_us_metas.append(cand)
+    for offset in [0, 3]:
+        if bigtech_pool:
+            cand = bigtech_pool[(day_num + offset) % len(bigtech_pool)]
+            if cand not in selected_us_metas:
+                selected_us_metas.append(cand)
+    for offset in [0, 3]:
+        if emerging_pool:
+            cand = emerging_pool[(day_num + offset) % len(emerging_pool)]
+            if cand not in selected_us_metas:
+                selected_us_metas.append(cand)
     for cand in us_catalog:
-        if cand not in selected_us_metas:
-            selected_us_metas.append(cand)
         if len(selected_us_metas) >= 4:
             break
+        if cand not in selected_us_metas:
+            selected_us_metas.append(cand)
 
     # 글로벌 선물/거시 지표: 4종목 엄선 (나스닥100 선물, S&P500 선물, WTI 원유 선물 + 일자별 로테이션 지표[금, 구리, 달러, 국채금리])
     nq_meta = next((c for c in futures_catalog if c["symbol"] == "NQ=F"), None)
