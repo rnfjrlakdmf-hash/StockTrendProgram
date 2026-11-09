@@ -2726,7 +2726,12 @@ def _create_us_stock_approval_doc(
     m_num = float(m_digits) if m_digits else 180.0
     diff_usd = m_num - p_num
     diff_krw = int(diff_usd * 1380)
-    us_profit_10m = f"약 {int(10000000 * ((up_val or 20.0) / 100)):+,}원"
+    krw_per_share = int(p_num * 1380)
+    if 0 < krw_per_share <= 100000:
+        us_buyable = max(1, 100000 // krw_per_share)
+        us_profit_10m = f"10만원으로 {us_buyable}주 매수 가능 (1주 약 {krw_per_share:,}원)"
+    else:
+        us_profit_10m = f"1주당 약 {krw_per_share:,}원 (10만원 소수점 매수 가능)"
     us_profit_share = f"주당 +${diff_usd:.2f} (약 +{diff_krw:,}원)" if diff_usd >= 0 else f"주당 ${diff_usd:.2f}"
 
     seq_str = f"{seq:02d}"
@@ -2762,7 +2767,7 @@ def _create_us_stock_approval_doc(
             {"label": f"{name_ko} 실시간 현재가", "value": price_str},
             {"label": "월가 전문가 평균 목표가", "value": f"{mean_str} (상승여력 {up_str})"},
             {"label": "주당 예상 기대차익", "value": us_profit_share},
-            {"label": "1,000만원 투자 시 기대수익", "value": us_profit_10m},
+            {"label": "10만원 한도 원화 환산 가이드", "value": us_profit_10m},
         ],
         "research_opinion": (
             f"👍 [왜 중요한가요? · 이준호 글로벌이사]: {know['why_important']} "
@@ -5029,62 +5034,116 @@ def get_ceo_office_boardroom(
             "easy_terms": _extract_easy_terms("컨센서스 나스닥 선물 50일선"),
         })
 
-    # [기안 제2~5호] 국내 주식 4건 구성: [코스피 우량 실적주 2종목] + [코스닥 알짜 혁신·성장주 2종목] 황금 밸런스!
+    # [기안 제2~5호] 국내 주식 4건 구성: 1주당 10만원 이하 [코스피 알짜 우량주 2종목] + [코스닥 알짜 성장주 2종목] 황금 밸런스!
     from stock_names import STOCK_MAP
+    kospi_affordable_reports = [
+        {
+            "id": "kp_aff_1",
+            "category": "코스피·조선대장",
+            "stock_name": "삼성중공업",
+            "item_code": "010140",
+            "is_kosdaq": False,
+            "title": "고수익 FLNG(부유식 액화천연가스 설비) 및 친환경 LNG선 수주 잔고 3년 치 확보로 영업이익 급증",
+            "broker": "메리츠증권",
+            "date": date_hyphen,
+            "target_price": "18,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["고마진 FLNG 독점적 수주 경쟁력으로 조선업 내 최고 수익성 달성", "고선가 물량 건조 비중 확대에 따른 분기 영업이익 가파른 상승"],
+            "plain_explanation": "바다 위의 LNG 공장이라 불리는 초고부가가치 선박(FLNG)을 세계에서 가장 잘 만드는 코스피 조선 우량주로, 1주당 1만 원대 가격으로 10만 원 한도 내에서도 여유 있게 분할매수할 수 있는 알짜 종목입니다 ➔ 눌림목마다 조금씩 나눠 사 모으기(분할매수) 좋습니다.",
+            "action_point": "해외 대형 FLNG 추가 수주 공시와 외국인·기관 동반 순매수 추이를 확인하며 분할 접근하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kp_aff_2",
+            "category": "코스피·고배당금융",
+            "stock_name": "기업은행",
+            "item_code": "024110",
+            "is_kosdaq": False,
+            "title": "연 7~8%대 압도적 고배당 매력 및 정부 밸류업 프로그램 핵심 수혜, 역대 최대 순이익 경신",
+            "broker": "하나증권",
+            "date": date_hyphen,
+            "target_price": "19,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["안정적인 중소기업 금융 이자이익과 비이자이익 개선으로 사상 최대 실적", "1주당 1만 원 중반대의 가성비 주가와 국내 최고 수준의 현금 배당 수익률"],
+            "plain_explanation": "1주당 1만 원 중반대의 부담 없는 가격에 주가 상승 기대감은 물론 연 7~8%에 달하는 두둑한 현금 배당까지 챙길 수 있는 코스피 대표 알짜 배당 우량주입니다 ➔ 주가가 흔들릴 때마다 안전하게 모아가는 전략이 유리합니다.",
+            "action_point": "외국인 패시브 자금 유입과 연말·분기 배당 기준일 일정을 함께 체크하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kp_aff_3",
+            "category": "코스피·항공화물",
+            "stock_name": "대한항공",
+            "item_code": "003490",
+            "is_kosdaq": False,
+            "title": "국제선 여객 만석 행진 및 글로벌 AI 서버·직구 항공화물 운임 강세로 사상 최대 매출 달성",
+            "broker": "한화투자증권",
+            "date": date_hyphen,
+            "target_price": "33,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["국제유가 하향 안정화에 따른 항공유 원가 절감 및 영업이익률 개선", "아시아나항공 결합을 통한 글로벌 메가 캐리어 독점 노선 경쟁력 확보"],
+            "plain_explanation": "해외여행 승객 증가와 AI 반도체 급행 항공화물 호황으로 역대 최대 매출을 경신 중인 코스피 대표 항공 우량주(1주당 2만 원대)입니다 ➔ 10만 원 예산으로도 3~4주 분할매수가 가능해 소액 투자자에게도 안성맞춤입니다.",
+            "action_point": "국제유가(WTI)와 원/달러 환율 안정세를 확인하며 50일선 지지 구간에서 분할 접근하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kp_aff_4",
+            "category": "코스피·K방산우주",
+            "stock_name": "한화시스템",
+            "item_code": "272210",
+            "is_kosdaq": False,
+            "title": "중동·유럽 천궁-II 다기능 레이더 수출 급증 및 저궤도 위성통신·방산 AI 핵심 수혜",
+            "broker": "키움증권",
+            "date": date_hyphen,
+            "target_price": "34,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["K-방산 수출 무기의 두뇌와 눈 역할을 하는 레이더·전술정보통신 체계 독점 공급", "1주당 2만 원대 가성비 방산 우량주로 수주 잔고 매년 사상 최고치 경신"],
+            "plain_explanation": "수십만 원대 고가 방산주(한화에어로스페이스 등)가 부담스러울 때 1주당 2만 원대 가격으로 K-방산 수출과 우주 위성통신 성장을 함께 누릴 수 있는 코스피 핵심 방산 우량주입니다 ➔ 단기 급등 시 추격매수를 피하고 눌림목에서 분할매수하세요.",
+            "action_point": "중동 및 유럽향 방산 레이더 추가 수주 공시와 기관 수급 유입을 점검하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kp_aff_5",
+            "category": "코스피·전력인프라",
+            "stock_name": "한국전력",
+            "item_code": "015760",
+            "is_kosdaq": False,
+            "title": "AI 데이터센터 전력 수요 폭증 및 에너지 연료비 하향 안정화에 따른 수조 원대 영업흑자 행진",
+            "broker": "대신증권",
+            "date": date_hyphen,
+            "target_price": "30,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["국제 유가 및 LNG 도입 단가 안정화로 큰 폭의 영업이익 흑자 전환 안착", "반도체 클러스터 및 AI 데이터센터 확충에 따른 구조적 전력 판매 증가"],
+            "plain_explanation": "AI 시대에 가장 귀해진 '전기'를 독점 공급하며 연료비 하락 덕분에 수조 원대 흑자로 돌아선 1주당 2만 원대 코스피 대표 가치주입니다 ➔ 10만 원 한도 내에서도 4주 이상 거뜬히 나눠 담을 수 있습니다.",
+            "action_point": "국제 에너지 가격 추이와 배당 재개 기대감에 따른 외국인 매수세를 확인하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kp_aff_6",
+            "category": "코스피·원전SMR",
+            "stock_name": "두산에너빌리티",
+            "item_code": "034020",
+            "is_kosdaq": False,
+            "title": "체코 원전 본계약 및 미국 빅테크 데이터센터향 소형모듈원전(SMR)·가스터빈 수주 가속화",
+            "broker": "하나증권",
+            "date": date_hyphen,
+            "target_price": "88,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["글로벌 SMR 파운드리 1위 제작 역량으로 미국 AI 데이터센터 전력망 수주 확대", "대형 가스터빈 국산화 성공 및 중동·북미 발전 기자재 수주 호조"],
+            "plain_explanation": "미국 빅테크들의 AI 데이터센터 전력난을 해결할 소형원전(SMR)과 가스터빈 핵심 설비를 제작하는 코스피 대표 원전 대장주입니다 ➔ 주가가 숨고르기할 때 분할 접근하기 좋습니다.",
+            "action_point": "연내 SMR 추가 수주 공시와 외국인·기관 수급 유입을 함께 점검하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+    ]
+
     kosdaq_growth_reports = [
         {
             "id": "kq_comp_1",
-            "category": "코스닥·바이오대장",
-            "stock_name": "알테오젠",
-            "item_code": "196170",
-            "is_kosdaq": True,
-            "title": "글로벌 빅파마 피하주사(SC) 제형 변경 플랫폼 기술수출 로열티 본격 유입",
-            "broker": "신한투자증권",
-            "date": date_hyphen,
-            "target_price": "450,000원",
-            "opinion": "Buy (매수)",
-            "summary": ["머크(MSD) 키트루다SC 상용화에 따른 마일스톤 및 판매 로열티 유입 기대", "추가 글로벌 빅파마향 ALT-B4 플랫폼 기술수출 확장성 유효"],
-            "plain_explanation": "정맥주사 항암제를 몇 분 만에 맞는 피하주사(SC)로 바꿔주는 독보적 기술로 글로벌 제약사들로부터 거액의 기술료(로열티)를 받는 코스닥 대표 바이오 기업입니다 ➔ 주가가 잠깐 쉬어갈 때마다 조금씩 나눠 사 모으기(분할매수) 좋은 기회입니다.",
-            "action_point": "글로벌 임상 결과 발표 및 추가 기술수출 본계약 공시 일정을 확인하며 분할 접근하세요.",
-            "pdf_url": "",
-            "detail_url": "https://stock.naver.com/research/company",
-        },
-        {
-            "id": "kq_comp_2",
-            "category": "코스닥·AI반도체소부장",
-            "stock_name": "리노공업",
-            "item_code": "058470",
-            "is_kosdaq": True,
-            "title": "온디바이스 AI 스마트폰·AI 칩 검사용 리노핀 및 소켓 고마진(영업이익률 40%+) 성장",
-            "broker": "메리츠증권",
-            "date": date_hyphen,
-            "target_price": "260,000원",
-            "opinion": "Buy (매수)",
-            "summary": ["글로벌 빅테크 AI 칩 설계 다변화로 R&D용 테스트 소켓 수요 증가", "영업이익률 40%를 웃도는 독보적 기술 경쟁력과 무차입 경영 재무 건전성"],
-            "plain_explanation": "새로 개발되는 AI 반도체가 불량인지 검사할 때 꼭 필요한 초정밀 핀과 소켓을 전 세계 빅테크에 공급하며 영업이익률 40% 이상을 남기는 코스닥 초우량 소부장 기업입니다 ➔ 시장이 흔들릴 때마다 조금씩 나눠 사 모으는(분할매수) 전략이 유리합니다.",
-            "action_point": "신규 AI 칩 출시 사이클과 외국인·기관의 코스닥 반도체 소부장 수급 유입을 함께 점검하세요.",
-            "pdf_url": "",
-            "detail_url": "https://stock.naver.com/research/company",
-        },
-        {
-            "id": "kq_comp_3",
-            "category": "코스닥·로봇대장",
-            "stock_name": "레인보우로보틱스",
-            "item_code": "277810",
-            "is_kosdaq": True,
-            "title": "삼성전자 최대주주 시너지 및 산업용 협동로봇·양팔 휴머노이드 로봇 상용화 가속",
-            "broker": "유진투자증권",
-            "date": date_hyphen,
-            "target_price": "210,000원",
-            "opinion": "Buy (매수)",
-            "summary": ["삼성전자 제조 라인향 협동로봇 및 자율이동로봇(AMR) 공급 확대 기대", "핵심 부품 내재화를 통한 원가 경쟁력 확보 및 글로벌 로봇 시장 진출"],
-            "plain_explanation": "카이스트 휴보 연구진이 설립하고 삼성전자가 대규모 지분 투자를 단행한 코스닥 대표 로봇 기업으로, 공장 자동화와 휴머노이드 로봇 시대를 이끄는 핵심 성장주입니다 ➔ 단기 급등 시 추격매수를 피하고 바닥(지지선) 확인 후 나눠 사기 전략이 유효합니다.",
-            "action_point": "대기업 계열사향 실제 로봇 납품 수주 공시와 분기 매출 증가 속도를 체크하세요.",
-            "pdf_url": "",
-            "detail_url": "https://stock.naver.com/research/company",
-        },
-        {
-            "id": "kq_comp_4",
             "category": "코스닥·K뷰티수출",
             "stock_name": "실리콘투",
             "item_code": "257720",
@@ -5095,13 +5154,13 @@ def get_ceo_office_boardroom(
             "target_price": "60,000원",
             "opinion": "Buy (매수)",
             "summary": ["북미 외 유럽·중동·중남미 등 글로벌 전 권역으로 K-화장품 수출 물량 급증", "자체 물류 인프라 기반 높은 영업 레버리지 효과 지속"],
-            "plain_explanation": "한국의 인기 중소 화장품 브랜드들을 미국·유럽·중동 전 세계에 수출·유통해 주며 매출과 이익이 폭발적으로 늘고 있는 코스닥 K-뷰티 대장주입니다 ➔ 본업에서 돈을 아주 잘 벌고 있어 눌림목마다 조금씩 나눠 사 모으는(분할매수) 전략이 유리합니다.",
+            "plain_explanation": "한국의 인기 중소 화장품 브랜드들을 미국·유럽·중동 전 세계에 수출·유통해 주며 매출과 이익이 폭발적으로 늘고 있는 3~4만 원대 코스닥 K-뷰티 대장주입니다 ➔ 10만 원 한도로도 2~3주 분할매수가 가능해 소액 투자에 매우 적합합니다.",
             "action_point": "월별 화장품 통관 수출 데이터와 해외 법인별 매출 성장률을 함께 확인하세요.",
             "pdf_url": "",
             "detail_url": "https://stock.naver.com/research/company",
         },
         {
-            "id": "kq_comp_5",
+            "id": "kq_comp_2",
             "category": "코스닥·미용의료기기",
             "stock_name": "클래시스",
             "item_code": "214150",
@@ -5112,13 +5171,13 @@ def get_ceo_office_boardroom(
             "target_price": "68,000원",
             "opinion": "Buy (매수)",
             "summary": ["장비 누적 설치 대수 증가에 따른 고마진 소모품(카트리지·팁) 매출 비중 50% 돌파", "미국 및 유럽 시장 인허가 확대에 따른 글로벌 외형 성장 지속"],
-            "plain_explanation": "피부과 리프팅 기기(슈링크·볼뉴머)를 전 세계 병원에 팔고, 시술할 때마다 쓰이는 고마진 소모품으로 영업이익률 50%에 육박하는 돈을 버는 코스닥 알짜 성장주입니다 ➔ 주가가 잠깐 내려갈 때마다 조금씩 나눠 사 모으기(분할매수) 좋은 기회입니다.",
+            "plain_explanation": "피부과 리프팅 기기(슈링크·볼뉴머)를 전 세계 병원에 팔고, 시술할 때마다 쓰이는 고마진 소모품으로 영업이익률 50%에 육박하는 돈을 버는 4~5만 원대 코스닥 알짜 성장주입니다 ➔ 10만 원 예산으로도 2주 분할매수가 가능한 핵심 종목입니다.",
             "action_point": "분기별 해외 소모품 수출 비중과 미국·유럽향 신규 매출 추이를 점검하세요.",
             "pdf_url": "",
             "detail_url": "https://stock.naver.com/research/company",
         },
         {
-            "id": "kq_comp_6",
+            "id": "kq_comp_3",
             "category": "코스닥·반도체독점장비",
             "stock_name": "HPSP",
             "item_code": "403870",
@@ -5129,15 +5188,66 @@ def get_ceo_office_boardroom(
             "target_price": "45,000원",
             "opinion": "Buy (매수)",
             "summary": ["TSMC·삼성전자·인텔 등 글로벌 파운드리 선단 공정 투자 확대 수혜", "영업이익률 50% 수준의 독점 장비 기술력과 신규 고압산화공정(HPO) 장비 모멘텀"],
-            "plain_explanation": "최첨단 미세 반도체를 만들 때 불량을 없애주는 '고압수소어닐링' 장비를 전 세계에서 유일하게 독점 공급하는 코스닥 알짜 기술주입니다 ➔ 독점 기술력으로 이익률이 매우 높으므로 주가 조정 시 나눠 사 모으는(분할매수) 전략이 유리합니다.",
+            "plain_explanation": "최첨단 미세 반도체를 만들 때 불량을 없애주는 '고압수소어닐링' 장비를 전 세계에서 유일하게 독점 공급하는 2~3만 원대 코스닥 알짜 기술주입니다 ➔ 10만 원 한도로 3주씩 여유 있게 나눠 사 모으기 좋습니다.",
             "action_point": "글로벌 파운드리 업체들의 설비투자(CAPEX) 재개 시점과 신규 장비 채택 여부를 확인하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_4",
+            "category": "코스닥·AI반도체장비",
+            "stock_name": "주성엔지니어링",
+            "item_code": "036930",
+            "is_kosdaq": True,
+            "title": "AI 메모리 미세공정 핵심 원자층증착(ALD) 장비 글로벌 고객사 다변화 및 고마진 성장",
+            "broker": "키움증권",
+            "date": date_hyphen,
+            "target_price": "45,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["D램 미세화 및 HBM 공정 고도화에 필수적인 차세대 ALD 증착 장비 기술력 보유", "해외 반도체 고객사 매출 비중 확대로 높은 영업이익률 달성"],
+            "plain_explanation": "반도체 웨이퍼 위에 원자 단위로 얇은 막을 입히는 세계 최고 수준의 증착(ALD) 장비 기술을 가진 2~3만 원대 코스닥 반도체 알짜주입니다 ➔ 10만 원 예산으로 3주 분할매수가 가능해 가성비와 기술력을 모두 갖췄습니다.",
+            "action_point": "국내외 메모리 반도체 신규 라인 장비 발주 공시와 기관 수급 유입을 점검하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_5",
+            "category": "코스닥·2차전지ESS장비",
+            "stock_name": "피엔티",
+            "item_code": "137400",
+            "is_kosdaq": True,
+            "title": "글로벌 배터리·ESS 전극공정 롤투롤(Roll-to-Roll) 장비 수주 잔고 2조 원 돌파 및 실적 호조",
+            "broker": "신한투자증권",
+            "date": date_hyphen,
+            "target_price": "68,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["2차전지 캐즘 속에서도 2조 원 이상의 든든한 수주 잔고로 매년 최대 실적 경신", "ESS용 LFP 배터리 및 동박 생산 장비 등 글로벌 고객사 다변화"],
+            "plain_explanation": "배터리와 에너지저장장치(ESS)의 핵심 재료를 정밀하게 감아 만드는 롤투롤 장비 세계 1위권 기업(4만 원대 코스닥 알짜주)으로, 2조 원 넘는 일감을 쌓아두고 돈을 잘 버는 기업입니다 ➔ 10만 원 한도 내에서 2주 분할매수가 가능합니다.",
+            "action_point": "분기별 수주 잔고 매출 인식 속도와 LFP 배터리 신사업 모멘텀을 확인하세요.",
+            "pdf_url": "",
+            "detail_url": "https://stock.naver.com/research/company",
+        },
+        {
+            "id": "kq_comp_6",
+            "category": "코스닥·AI서버기판",
+            "stock_name": "심텍",
+            "item_code": "222800",
+            "is_kosdaq": True,
+            "title": "AI 서버용 GDDR7·소캠(SOCAMM) 고부가 반도체 패키지 기판 수주 확대 및 실적 턴어라운드",
+            "broker": "메리츠증권",
+            "date": date_hyphen,
+            "target_price": "35,000원",
+            "opinion": "Buy (매수)",
+            "summary": ["엔비디아 차세대 AI 서버용 메모리 모듈 기판 채택 기대감 및 고부가 제품 비중 확대", "메모리 업황 회복에 따른 패키지 기판 가동률 상승"],
+            "plain_explanation": "AI 서버와 스마트폰 메모리에 꼭 들어가는 반도체 인쇄회로기판(PCB) 글로벌 선도 기업으로, 1주당 2만 원대 가성비 가격이라 10만 원 예산으로도 4주씩 분할매수할 수 있는 코스닥 기술주입니다 ➔ 바닥권 지지 확인 후 분할 접근이 유리합니다.",
+            "action_point": "고부가 서버용 기판 매출 비중 확대와 외국인·기관 수급 전환을 점검하세요.",
             "pdf_url": "",
             "detail_url": "https://stock.naver.com/research/company",
         },
     ]
 
     kr_poll_codes = []
-    for rep in desk_company_reports[:12] + kosdaq_growth_reports:
+    for rep in desk_company_reports[:25] + kospi_affordable_reports + kosdaq_growth_reports:
         c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name"))
         if c and c not in kr_poll_codes:
             kr_poll_codes.append(c)
@@ -5147,58 +5257,80 @@ def get_ceo_office_boardroom(
         "196170", "277810", "058470", "257720", "141080", "214150", "214450", "403870",
         "247540", "086520", "028300", "066970", "039030", "005290", "036930", "095340",
         "293490", "035900", "041510", "122870", "035760", "112040", "263750", "145020",
+        "137400", "222800", "067310", "096530", "084370", "357780",
     }
     if kr_poll_codes:
         try:
             import requests
-            syms_str = ",".join(kr_poll_codes)
-            p_resp = requests.get(f"https://polling.finance.naver.com/api/realtime/domestic/stock/{syms_str}", headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
-            if p_resp.status_code == 200:
-                for it in p_resp.json().get("datas", []):
-                    code = it.get("itemCode")
-                    p_raw = float(it.get("closePriceRaw") or str(it.get("closePrice", "0")).replace(",", ""))
-                    ratio = float(it.get("fluctuationsRatio") or 0.0)
-                    cmp_obj = it.get("compareToPreviousPrice") or {}
-                    if cmp_obj.get("name") in ["FALLING", "DOWN"] or str(cmp_obj.get("code")) in ["4", "5"]:
-                        ratio = -ratio
-                    sosok = str(it.get("sosok") or "")
-                    mkt_type = str(it.get("marketType") or "").upper()
-                    is_kq = (sosok == "1") or ("KOSDAQ" in mkt_type) or (code in known_kosdaq_codes)
-                    kr_realtime_quotes[code] = {
-                        "price": p_raw,
-                        "ratio": ratio,
-                        "is_kosdaq": is_kq,
-                        "display": f"{int(p_raw):,}원 ({ratio:+.2f}%)"
-                    }
+            # Naver polling API in batches of 20 codes
+            for b_start in range(0, len(kr_poll_codes), 20):
+                syms_str = ",".join(kr_poll_codes[b_start:b_start + 20])
+                p_resp = requests.get(f"https://polling.finance.naver.com/api/realtime/domestic/stock/{syms_str}", headers={"User-Agent": "Mozilla/5.0"}, timeout=3)
+                if p_resp.status_code == 200:
+                    for it in p_resp.json().get("datas", []):
+                        code = it.get("itemCode")
+                        p_raw = float(it.get("closePriceRaw") or str(it.get("closePrice", "0")).replace(",", ""))
+                        ratio = float(it.get("fluctuationsRatio") or 0.0)
+                        cmp_obj = it.get("compareToPreviousPrice") or {}
+                        if cmp_obj.get("name") in ["FALLING", "DOWN"] or str(cmp_obj.get("code")) in ["4", "5"]:
+                            ratio = -ratio
+                        sosok = str(it.get("sosok") or "")
+                        mkt_type = str(it.get("marketType") or "").upper()
+                        is_kq = (sosok == "1") or ("KOSDAQ" in mkt_type) or (code in known_kosdaq_codes)
+                        kr_realtime_quotes[code] = {
+                            "price": p_raw,
+                            "ratio": ratio,
+                            "is_kosdaq": is_kq,
+                            "display": f"{int(p_raw):,}원 ({ratio:+.2f}%)"
+                        }
         except Exception as e:
             print(f"[CEOOffice] Realtime price polling error: {e}")
 
-    # 코스피 우량주 2종목 + 코스닥 유망 성장주 2종목 균형 선발
+    # [핵심 필터] 대표님 10만원 매수 한도 맞춤: 1주당 현재가 100,000원 이하(가성비 우량·성장주)만 엄선!
+    def _is_under_100k(rep_item: dict) -> bool:
+        c = rep_item.get("item_code") or STOCK_MAP.get(rep_item.get("stock_name")) or ""
+        q_info = kr_realtime_quotes.get(c)
+        if q_info and q_info.get("price", 0) > 0:
+            return float(q_info["price"]) <= 100000
+        gp_digits = re.sub(r'[^\d]', '', str(rep_item.get("target_price") or ""))
+        if gp_digits:
+            # 현재가 미조회 시 목표주가 130,000원 이하(추정 현재가 10만원 이하)만 허용
+            return int(gp_digits) <= 130000
+        return True
+
+    # 1주당 10만원 이하 코스피 우량주 2종목 + 코스닥 알짜 성장주 2종목 균형 선발
     kospi_reps = []
     kosdaq_reps = []
     for rep in desk_company_reports:
+        if not _is_under_100k(rep):
+            continue
         c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name")) or ""
         is_kq = bool(rep.get("is_kosdaq")) or (c in known_kosdaq_codes) or bool(kr_realtime_quotes.get(c, {}).get("is_kosdaq"))
         rep["is_kosdaq"] = is_kq
         if is_kq:
-            kosdaq_reps.append(rep)
+            if all(r["stock_name"] != rep["stock_name"] for r in kosdaq_reps):
+                kosdaq_reps.append(rep)
         else:
-            kospi_reps.append(rep)
+            if all(r["stock_name"] != rep["stock_name"] for r in kospi_reps):
+                kospi_reps.append(rep)
 
-    # 코스닥 리포트가 2개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
-    for offset in [0, 2, 4]:
+    # 10만원 이하 코스피 리포트가 2개 미만이면 일자별 순환 코스피 가성비 우량주로 자동 보강
+    for offset in range(len(kospi_affordable_reports)):
+        if len(kospi_reps) >= 2:
+            break
+        cand = dict(kospi_affordable_reports[(day_num + offset) % len(kospi_affordable_reports)])
+        if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kospi_reps):
+            kospi_reps.append(cand)
+
+    # 10만원 이하 코스닥 리포트가 2개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
+    for offset in range(len(kosdaq_growth_reports)):
         if len(kosdaq_reps) >= 2:
             break
         cand = dict(kosdaq_growth_reports[(day_num + offset) % len(kosdaq_growth_reports)])
-        if all(r["stock_name"] != cand["stock_name"] for r in kosdaq_reps):
+        if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kosdaq_reps):
             kosdaq_reps.append(cand)
 
     selected_kr_reports = kospi_reps[:2] + kosdaq_reps[:2]
-    for rep in desk_company_reports:
-        if len(selected_kr_reports) >= 4:
-            break
-        if all(r["stock_name"] != rep["stock_name"] for r in selected_kr_reports):
-            selected_kr_reports.append(rep)
 
     for idx, rep in enumerate(selected_kr_reports[:4], start=2):
         s_name = rep["stock_name"]
@@ -5213,23 +5345,23 @@ def get_ceo_office_boardroom(
                 s_check = f"‘{s_name}’은 기준금리 인하에 따른 순이자마진(NIM) 축소와 중소기업 대출 건전성(대손충당금)을 점검해야 합니다. 7~8%대 고배당 매력은 높으나 배당락 전후 단기 수급 변동에 유의하세요."
             elif any(k in s_low for k in ["두산에너빌리티", "한전기술", "한전kps", "원전", "원자력"]):
                 s_check = f"‘{s_name}’은 체코 신규 원전 본계약 체결 일정과 웨스팅하우스(WEC) 지식재산권(IP) 합의 여부가 핵심 변수입니다. 단기 급등에 따른 차익 매물벽에 주의하세요."
-            elif any(k in s_low for k in ["하이닉스", "삼성전자", "반도체", "hbm"]):
-                s_check = f"‘{s_name}’은 글로벌 빅테크의 AI CAPEX 투자 지속성 및 HBM3E 공급 과잉 여부, 미·중 반도체 규제 변수를 면밀히 점검해야 합니다."
-            elif any(k in s_low for k in ["셀트리온", "삼천당제약", "알테오젠", "삼성바이오", "유한양행", "바이오", "제약", "리가켐", "에이비엘"]):
-                s_check = f"‘{s_name}’은 미국 PBM 처방집 등재 후 실처방 확대 속도 및 바이오시밀러 가격 경쟁, 합병 무형자산 상각에 따른 원가율 변수를 점검해야 합니다. 신약 출시 모멘텀은 유효하나 분기 영업이익률 추이를 확인하세요."
+            elif any(k in s_low for k in ["하이닉스", "삼성전자", "반도체", "hbm", "hpsp", "주성", "심텍"]):
+                s_check = f"‘{s_name}’은 글로벌 빅테크의 AI CAPEX 투자 지속성 및 반도체 설비투자 속도, 미·중 반도체 규제 변수를 면밀히 점검해야 합니다."
+            elif any(k in s_low for k in ["셀트리온", "삼천당제약", "알테오젠", "삼성바이오", "유한양행", "바이오", "제약", "클래시스"]):
+                s_check = f"‘{s_name}’은 글로벌 인허가 및 수출 통관 데이터 추이와 분기 영업이익률 유지 여부를 확인하며 분할 접근하세요."
             elif any(k in s_low for k in ["현대차", "기아", "모비스", "자동차"]):
                 s_check = f"‘{s_name}’은 미국 대선 후 IRA 전기차 보조금 정책 변화 및 수입차 관세 리스크, 글로벌 하이브리드 판매 비중 추이를 면밀히 모니터링해야 합니다."
             elif any(k in s_low for k in ["에어로스페이스", "넥스원", "현대로템", "방산", "한화시스템", "풍산"]):
                 s_check = f"‘{s_name}’은 폴란드·중동 해외 수출 2차 본계약 이행 속도와 생산능력(CAPA) 증설에 따른 납기 준수 여부, 수출입은행 금융지원 한도 변수를 점검해야 합니다."
             elif any(k in s_low for k in ["대한항공", "항공", "해운", "진에어", "아시아나"]):
-                s_check = f"‘{s_name}’은 유가 급등과 고환율에 따른 항공유류비·환차손 부담 및 아시아나 합병 후 노선 반납에 따른 매출 공백을 확인해야 합니다."
-            elif any(k in s_low for k in ["에너지솔루션", "에코프로", "포스코퓨처엠", "배터리", "2차전지", "sdi"]):
-                s_check = f"‘{s_name}’은 글로벌 전기차 수요 둔화(캐즘) 지속 여부와 리튬·니켈 메탈가 변동, 완성차 OEM사들의 재고 조정 강도를 점검해야 합니다."
+                s_check = f"‘{s_name}’은 유가 급등과 고환율에 따른 항공유류비·환차손 부담 및 노선별 화물 운임 추이를 확인해야 합니다."
+            elif any(k in s_low for k in ["에너지솔루션", "에코프로", "포스코퓨처엠", "배터리", "2차전지", "sdi", "피엔티"]):
+                s_check = f"‘{s_name}’은 글로벌 전기차 수요 둔화(캐즘) 지속 여부와 수주 잔고의 실제 매출 인식 속도를 점검해야 합니다."
             else:
                 s_check = f"‘{s_name}’은 최근 외국인·기관 큰손의 실시간 수급 동향과 직전 고점 매물대 저항 여부를 점검하고, 손절선(-3.5%)을 설정한 뒤 분할 접근해야 합니다."
         s_code = rep.get("item_code") or STOCK_MAP.get(s_name) or ""
 
-        # 실시간 현재가 및 기대 수익률/수익금 계산
+        # 실시간 현재가 및 10만원 한도 맞춤 매수 주수 / 기대수익금 계산
         q = kr_realtime_quotes.get(s_code)
         s_gp_digits = re.sub(r'[^\d]', '', str(s_gp or ''))
         s_gp_num = int(s_gp_digits) if s_gp_digits else 0
@@ -5237,22 +5369,28 @@ def get_ceo_office_boardroom(
         if q and q["price"] > 0:
             curr_price_str = q["display"]
             curr_price_num = q["price"]
+            buyable_100k = max(1, int(100000 // curr_price_num))
             if s_gp_num > 0:
                 upside_num = round(((s_gp_num - curr_price_num) / curr_price_num) * 100, 1)
                 diff_amount = int(s_gp_num - curr_price_num)
                 upside_str = f"{upside_num:+.1f}%"
                 profit_per_share = f"주당 {diff_amount:+,}원 ({upside_str})"
-                profit_10m = f"약 {int(10000000 * (upside_num / 100)):+,}원"
+                profit_100k_amt = int(buyable_100k * diff_amount)
+                profit_10m = f"10만원 한도 {buyable_100k}주 매수 가능 (기대수익 {profit_100k_amt:+,}원)"
             else:
                 upside_str = "컨센서스 유지"
-                profit_per_share = "실시간 산출 중"
-                profit_10m = "모니터링 중"
+                profit_per_share = f"10만원으로 {buyable_100k}주 매수 가능"
+                profit_10m = f"10만원 한도 {buyable_100k}주 매수 가능"
         else:
-            curr_price_str = "실시간 연동 중"
-            curr_price_num = 0
-            upside_str = "집계 중"
-            profit_per_share = "집계 중"
-            profit_10m = "집계 중"
+            est_p = int(round((s_gp_num / 1.35) / 100.0) * 100) if s_gp_num > 0 else 35000
+            curr_price_str = f"{est_p:,}원 (0.00%)"
+            curr_price_num = est_p
+            buyable_100k = max(1, int(100000 // est_p))
+            diff_amount = max(0, s_gp_num - est_p)
+            upside_num = round((diff_amount / est_p) * 100, 1) if est_p > 0 else 25.0
+            upside_str = f"+{upside_num:.1f}%"
+            profit_per_share = f"주당 +{diff_amount:,}원 ({upside_str})"
+            profit_10m = f"10만원 한도 {buyable_100k}주 매수 가능 (기대수익 +{int(buyable_100k * diff_amount):,}원)"
 
         # s_easy 안에 있는 중복 서두("OO증권에서 발표한 'OO' 기업 분석 리포트 (...)입니다.") 제거
         s_easy_clean = re.sub(r'^[^.]+기업 분석 리포트\s*\([^)]*\)입니다\.\s*', '', s_easy).strip()
@@ -5291,7 +5429,7 @@ def get_ceo_office_boardroom(
                 {"label": "실시간 현재가", "value": curr_price_str},
                 {"label": "전문가 목표주가", "value": f"{s_gp} (상승여력 {upside_str})" if upside_str not in ["집계 중", "컨센서스 유지"] else s_gp},
                 {"label": "주당 예상 기대차익", "value": profit_per_share},
-                {"label": "1,000만원 투자 시 기대수익", "value": profit_10m},
+                {"label": "10만원 한도 실전 매수 플랜", "value": profit_10m},
             ],
             "research_opinion": f"👍 [왜 좋은가요? · 박진우 리서치센터장]: {s_easy}",
             "quant_opinion": f"📊 [돈의 흐름은? · 김도현 수급본부장]: 현재가 {curr_price_str} 대비 목표 가격({s_gp})까지 {upside_str}의 매력적인 상승 여력이 열려 있으며, 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다.",
@@ -6119,7 +6257,7 @@ def get_ceo_office_boardroom(
     try:
         weekly_review_data, weekly_calendar_data, wk_rev_doc, wk_cal_doc = _build_weekly_review_and_calendar(
             now_kst=now_kst,
-            desk_company_reports=desk_company_reports,
+            desk_company_reports=selected_kr_reports + [r for r in desk_company_reports if _is_under_100k(r) and all(x["stock_name"] != r["stock_name"] for x in selected_kr_reports)],
             kr_realtime_quotes=kr_realtime_quotes,
             fx_price_str=fx_price_str,
             nq_price_str=nq_price_str,

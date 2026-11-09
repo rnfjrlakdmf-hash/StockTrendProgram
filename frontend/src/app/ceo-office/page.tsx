@@ -2221,17 +2221,17 @@ const FALLBACK_AUTO_APPROVALS: AutoApprovalDoc[] = [
         doc_id: 'DOC-DEFAULT-04',
         doc_number: '제 2026-04 호',
         category_type: 'kr_stock',
-        category_badge: '🏢 종목 쉽게 읽기 (미래에셋증권)',
+        category_badge: '🚀 코스닥 유망주 (한국투자증권)',
         urgency: '정규 결재',
-        stock_name: 'SK하이닉스',
-        title: '[SK하이닉스] HBM3E 12단 독점적 지위 지속 및 AI 서버용 고부가 메모리 수익성 극대화',
+        stock_name: '실리콘투',
+        title: '[실리콘투] 미국·유럽 K-뷰티 역직구 수출 급증 및 10만원 이하 코스닥 알짜 실적주',
         proposer: '박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)',
         submitted_at: '쉬운 해설 완료',
         easy_headline: '미래에셋증권에서 SK하이닉스 목표주가를 270,000원으로 제시했습니다! 미국 엔비디아에 납품하는 AI 전용 초고속 메모리(HBM) 분야 1등이라서, 일반 반도체 경기와 상관없이 돈을 아주 잘 벌고 있다는 뜻입니다.',
         key_numbers: [
             { label: '분석한 회사 이름', value: 'SK하이닉스' },
             { label: '보고서 낸 증권사', value: '미래에셋증권' },
-            { label: '전문가 목표주가', value: '270,000원' },
+            { label: '전문가 목표주가', value: '60,000원' },
             { label: '전문가 결론', value: '사도 좋음 (매수)' },
         ],
         research_opinion: '👍 [왜 좋은가요? · 박진우 리서치센터장]: AI 컴퓨터에 꼭 들어가야 하는 최고급 메모리(HBM)를 사실상 독점 공급하다시피 하면서 업계 최고 수준의 이익률을 내고 있습니다.',
@@ -2371,7 +2371,7 @@ const FALLBACK_RESEARCH_DESK: ResearchReportItem[] = [
     {
         id: 'fb_rep_3',
         category: '종목·목표주가',
-        stock_name: 'SK하이닉스',
+        stock_name: '실리콘투',
         title: 'HBM3E 12단 독점적 지위 지속 및 AI 서버용 고부가 메모리 수익성 극대화',
         broker: '미래에셋증권',
         date: '최신 발간',
@@ -5551,8 +5551,13 @@ export default function CeoOfficePage() {
                                                     )}
                                                     <span className="truncate">{doc.stock_name}</span>
                                                 </span>
-                                                <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
-                                                    {doc.target_price && <span className="text-gray-300">목표 {doc.target_price}</span>}
+                                                <div className="flex items-center gap-1 shrink-0 font-mono text-[11px]">
+                                                    {doc.current_price && doc.current_price.includes('원') ? (
+                                                        <span className="text-emerald-300 font-bold">{doc.current_price.split(' ')[0]}</span>
+                                                    ) : null}
+                                                    {doc.target_price && (
+                                                        <span className="text-gray-400 text-[10px]">➔ {doc.target_price}</span>
+                                                    )}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
                                                         <span className="text-rose-400 font-black">{doc.upside_pct}</span>
                                                     )}
@@ -5562,7 +5567,7 @@ export default function CeoOfficePage() {
                                     </div>
                                 </div>
                                 <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] text-emerald-400 font-bold">
-                                    <span>코스피 우량 2 + 코스닥 알짜 2</span>
+                                    <span>전 종목 1주당 10만원 이하 맞춤 엄선</span>
                                     <span>클릭 시 상세 열람 →</span>
                                 </div>
                             </div>
