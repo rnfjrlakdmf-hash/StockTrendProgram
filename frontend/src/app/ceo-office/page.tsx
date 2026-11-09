@@ -171,7 +171,7 @@ function splitIntoBullets(raw: string): string[] {
 }
 
 // 긴 서술형 문장을 한눈에 확 들어오는 개조식 단문(핵심 태그 + 화살표 요약)으로 압축하는 헬퍼
-function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research' | 'quant' | 'action' = 'summary'): { tag: string; tagColor: string; text: string }[] {
+function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research' | 'quant' | 'action' = 'summary', categoryType?: string): { tag: string; tagColor: string; text: string }[] {
     const rawLines = splitIntoBullets(raw);
     if (rawLines.length === 0) return [];
 
@@ -224,13 +224,36 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
         let tagColor = 'bg-amber-500/25 text-amber-300 border-amber-400/40';
 
         if (sectionType === 'summary') {
-            const isWkRevText = /주간|복기|Top\s*3/.test(raw);
-            tag = isWkRevText ? (idx === 0 ? '주간복기' : '공략타점') : (idx === 0 ? '해외·원인' : '국내·대응');
-            tagColor = idx === 0
-                ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
-                : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
+            const isWkRevText = /주간|복기|Top\s*3/.test(raw) || categoryType === 'weekly_review';
+            if (isWkRevText) {
+                tag = idx === 0 ? '주간복기' : '공략타점';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
+            } else if (categoryType === 'kr_stock') {
+                tag = idx === 0 ? '해외·상승원인' : '목표가·실전대응';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+            } else if (categoryType === 'us_stock') {
+                tag = idx === 0 ? '글로벌·성장동력' : '월가목표가·대응';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+            } else if (categoryType === 'global_futures') {
+                tag = idx === 0 ? '미국장·선행지표' : '국내시장·파급';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-purple-500/25 text-purple-200 border-purple-400/40';
+            } else {
+                tag = idx === 0 ? '해외·원인' : '국내·대응';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
+            }
         } else if (sectionType === 'research') {
-            tag = idx === 0 ? '시장파급' : '방어논리';
+            const isStock = categoryType === 'kr_stock' || categoryType === 'us_stock';
+            tag = isStock ? (idx === 0 ? '핵심호재' : '방어논리') : (idx === 0 ? '시장파급' : '방어논리');
             tagColor = idx === 0
                 ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40'
                 : 'bg-teal-500/25 text-teal-200 border-teal-400/40';
@@ -6611,10 +6634,11 @@ export default function CeoOfficePage() {
 
                                                     {/* ── [STEP 2] ⚡ 3초 핵심 브리핑 (적당하고 정돈된 크기 & 시원한 가독성) ── */}
                                                     {(() => {
-                                                        const summaryBullets = toCrispExecutiveBullets(activeDoc.easy_headline || researchBody, 'summary');
-                                                        const researchBullets = toCrispExecutiveBullets(researchBody, 'research');
-                                                        const quantBullets = toCrispExecutiveBullets(quantBody, 'quant');
-                                                        const actionBullets = toCrispExecutiveBullets(riskOpinionBody, 'action');
+                                                        const catType = isWeeklyReviewDoc ? 'weekly_review' : activeDoc.category_type;
+                                                        const summaryBullets = toCrispExecutiveBullets(activeDoc.easy_headline || researchBody, 'summary', catType);
+                                                        const researchBullets = toCrispExecutiveBullets(researchBody, 'research', catType);
+                                                        const quantBullets = toCrispExecutiveBullets(quantBody, 'quant', catType);
+                                                        const actionBullets = toCrispExecutiveBullets(riskOpinionBody, 'action', catType);
 
                                                         const cleanSecretary = (activeDoc.secretary_conclusion || '')
                                                             .replace(/^👩‍💼\s*정유진 비서실장\s*\[[^\]]+\]:\s*/g, '')

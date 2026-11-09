@@ -5475,7 +5475,6 @@ def get_ceo_office_boardroom(
         if not s_easy_clean:
             s_easy_clean = s_easy
         s_easy = s_easy_clean
-        gp_explain = f"현재가({curr_price_str}) 대비 목표주가 {s_gp}(기대수익 {upside_str}) 제시 — " if s_gp and s_gp not in ["제시안함", "컨센서스 유지"] else "" 
 
         # 종목별 1:1 맞춤형 실시간 해외 직격탄 뇌관 연동 (Gemini AI + 25개 섹터)
         try:
@@ -5483,6 +5482,25 @@ def get_ceo_office_boardroom(
             _hit = _resolve_stock_overseas_direct_hit(s_name, s_code, f"{s_name} {s_title} {s_easy}", f"{s_name} {s_code} {s_title} {s_easy}".lower())
         except Exception as _e:
             _hit = None
+
+        hit_badge = (_hit.get("overseas_chain_badge") or "") if _hit else ""
+        hit_badge_clean = hit_badge.replace("🌏 ", "").strip()
+
+        # 1. 해외·글로벌 수혜 및 실적·수주 원인 문장 (원인)
+        if hit_badge_clean:
+            cause_sentence = f"[{hit_badge_clean} 수혜] {s_easy}"
+        else:
+            cause_sentence = s_easy
+        if not cause_sentence.endswith("."):
+            cause_sentence += "."
+
+        # 2. 목표주가 및 10만원 예산 실전 매수 대응 문장 (금액 & 대응)
+        if s_gp and s_gp not in ["제시안함", "컨센서스 유지"]:
+            action_sentence = f"현재가({curr_price_str}) 대비 목표주가 {s_gp}(기대수익 {upside_str}) 제시 ➔ 10만원 예산으로 {buyable_100k}주 분할 매수 공략이 유효합니다."
+        else:
+            action_sentence = f"현재가 {curr_price_str} 수준이며 ➔ 10만원 예산으로 {buyable_100k}주 분할 매수 공략이 유효합니다."
+
+        kr_easy_headline = f"{cause_sentence} {action_sentence}"
 
         auto_approvals.append({
             "doc_id": f"DOC-{date_doc_str}-{idx:02d}",
@@ -5502,14 +5520,14 @@ def get_ceo_office_boardroom(
             "title": f"[{s_name}] {s_title}",
             "proposer": "박진우 부사장 (리서치) · 김도현 상무 (수급) · 최서연 상무 (리스크)",
             "submitted_at": f"{rep['date']} 발간 · 쉬운 해설 완료",
-            "easy_headline": f"{gp_explain}{s_easy}",
+            "easy_headline": kr_easy_headline,
             "key_numbers": [
                 {"label": "실시간 현재가", "value": curr_price_str},
                 {"label": "전문가 목표주가", "value": f"{s_gp} (상승여력 {upside_str})" if upside_str not in ["집계 중", "컨센서스 유지"] else s_gp},
                 {"label": "주당 예상 기대차익", "value": profit_per_share},
                 {"label": "10만원 한도 실전 매수 플랜", "value": profit_10m},
             ],
-            "research_opinion": f"👍 [왜 좋은가요? · 박진우 리서치센터장]: {s_easy}",
+            "research_opinion": f"👍 [왜 좋은가요? · 박진우 리서치센터장]: {cause_sentence}",
             "quant_opinion": f"📊 [돈의 흐름은? · 김도현 수급본부장]: 현재가 {curr_price_str} 대비 목표 가격({s_gp})까지 {upside_str}의 매력적인 상승 여력이 열려 있으며, 외국인과 기관 큰손들이 몰래 사 모으고 있는지 실시간으로 감시하고 있습니다.",
             "risk_opinion": f"⚠️ [뭘 조심해야 하나요? · 최서연 리스크본부장]: 무조건 좋다고 바로 사기보다는, {s_check}",
             "secretary_conclusion": (
