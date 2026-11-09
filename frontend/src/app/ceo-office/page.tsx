@@ -5553,21 +5553,23 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                title={doc.target_price ? `${doc.stock_name} (현재가 ${doc.current_price?.split(' ')[0] || ''} ➔ 목표가 ${doc.target_price})` : doc.stock_name}
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-emerald-300 transition-colors flex items-center gap-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                                                    <span className="font-extrabold text-white group-hover:text-emerald-300 transition-colors truncate">
+                                                        {doc.stock_name}
+                                                    </span>
                                                     {doc.category_badge?.includes('코스닥') && (
-                                                        <span className="px-1 py-0.2 rounded text-[9px] font-black bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 shrink-0">🚀코스닥</span>
+                                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-teal-500/20 text-teal-300 border border-teal-400/30 shrink-0">
+                                                            코스닥
+                                                        </span>
                                                     )}
-                                                    <span className="truncate">{doc.stock_name}</span>
-                                                </span>
-                                                <div className="flex items-center gap-1 shrink-0 font-mono text-[11px]">
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.current_price && doc.current_price.includes('원') ? (
                                                         <span className="text-emerald-300 font-bold">{doc.current_price.split(' ')[0]}</span>
                                                     ) : null}
-                                                    {doc.target_price && (
-                                                        <span className="text-gray-400 text-[10px]">➔ {doc.target_price}</span>
-                                                    )}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
                                                         <span className="text-rose-400 font-black">{doc.upside_pct}</span>
                                                     )}
@@ -5606,14 +5608,19 @@ export default function CeoOfficePage() {
                                                 key={doc.doc_id}
                                                 type="button"
                                                 onClick={() => handleJumpToDoc(doc.doc_id)}
+                                                title={doc.target_price ? `${doc.stock_name} (현재가 ${doc.current_price?.split(' ')[0] || ''} ➔ 목표가 ${doc.target_price})` : doc.stock_name}
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
-                                                <span className="font-extrabold text-white truncate flex-1 mr-2 group-hover:text-sky-300 transition-colors flex items-center gap-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                                                    <span className="font-extrabold text-white group-hover:text-sky-300 transition-colors truncate">
+                                                        {doc.stock_name}
+                                                    </span>
                                                     {doc.category_badge?.includes('신생') && (
-                                                        <span className="px-1 py-0.2 rounded text-[9px] font-black bg-amber-500/25 text-amber-300 border border-amber-400/40 shrink-0">🚀신생</span>
+                                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 shrink-0">
+                                                            신생
+                                                        </span>
                                                     )}
-                                                    <span className="truncate">{doc.stock_name}</span>
-                                                </span>
+                                                </div>
                                                 <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                                                     {doc.current_price && <span className="text-gray-300">{doc.current_price.split(' ')[0]}</span>}
                                                     {doc.upside_pct && doc.upside_pct.includes('%') && (
