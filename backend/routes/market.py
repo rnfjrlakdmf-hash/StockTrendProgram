@@ -4697,7 +4697,7 @@ def _build_weekly_review_and_calendar(
             "key_numbers": [
                 {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_theme_clean},
                 {"label": "실시간 시나리오 상태", "value": cur_day_obj.get("scenario_status_badge", "정상 가동")},
-                {"label": "10만원 이하 테마별 공략주", "value": short_picks_summary},
+                {"label": "10만원 이하 공략주", "value": short_picks_summary},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
             ],
             "research_opinion": research_opinion,

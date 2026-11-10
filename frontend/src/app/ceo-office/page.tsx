@@ -4654,7 +4654,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v3', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v4', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4695,7 +4695,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v3');
+            const raw = localStorage.getItem('ceo_office_cache_v4');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -6666,17 +6666,17 @@ export default function CeoOfficePage() {
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between ${cardStyle}`}
+                                                                        className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-start ${cardStyle}`}
                                                                     >
-                                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
-                                                                            <span className="text-[11px] sm:text-xs text-zinc-300 font-extrabold tracking-tight truncate">
+                                                                        <div className="flex items-center justify-between gap-1 pb-1.5 mb-1.5 border-b border-white/5">
+                                                                            <span className="text-[11px] sm:text-xs text-zinc-300 font-extrabold tracking-tight truncate" title={kn.label}>
                                                                                 {kn.label}
                                                                             </span>
                                                                             <span className={`text-[10px] font-black px-1.5 py-0.2 rounded shrink-0 border ${badgeStyle}`}>
                                                                                 {badgeText}
                                                                             </span>
                                                                         </div>
-                                                                        <div className="min-h-[38px] flex items-center">
+                                                                        <div className="flex items-center min-h-[38px] pt-0.5">
                                                                             {renderedValue}
                                                                         </div>
                                                                     </div>
