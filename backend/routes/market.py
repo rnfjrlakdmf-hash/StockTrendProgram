@@ -4784,7 +4784,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "SELL",
                 "vote_label": "🔴 관망/축소",
                 "confidence": 88,
-                "reason": f"경쟁 심화와 마진 훼손 우려로 해자(Moat)가 흔들리고 있어 무리한 진입을 자제합니다."
+                "reason": "경쟁이 심해지고 마진이 줄어들어 회사의 독점 무기(해자)가 흔들리고 있으니 무리한 매수는 피합니다."
             },
             {
                 "id": "munger",
@@ -4794,7 +4794,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "SELL",
                 "vote_label": "🔴 관망/축소",
                 "confidence": 85,
-                "reason": f"치명적인 단기 업황 둔화 요인이 확인된 만큼, 성급하게 저가 매수에 나설 이유가 없습니다."
+                "reason": "단기 업황 둔화와 실적 부진 리스크가 확인되었으니, 성급하게 저가 매수에 나서지 않고 지켜봅니다."
             },
             {
                 "id": "graham",
@@ -4804,7 +4804,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "HOLD",
                 "vote_label": "🟡 중립",
                 "confidence": 65,
-                "reason": f"목표가 하향으로 안전마진(Margin of Safety)이 축소되었으므로 바닥 확인이 선행되어야 합니다."
+                "reason": "목표가가 낮아져 주가의 안전 에어백이 얇아졌으므로, 바닥을 완전히 다질 때까지 매수를 보류합니다."
             },
             {
                 "id": "lynch",
@@ -4814,7 +4814,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "SELL",
                 "vote_label": "🔴 매도/보류",
                 "confidence": 90,
-                "reason": f"성장 엔진이 둔화된 종목은 멀티플 축소 압박을 받으므로 섣부른 물타기는 금물입니다."
+                "reason": "성장 엔진이 둔화된 종목은 주가가 더 떨어질 수 있으니, 섣부른 물타기를 절대 금해야 합니다."
             },
             {
                 "id": "druckenmiller",
@@ -4824,7 +4824,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "SELL",
                 "vote_label": "🔴 비중 0%",
                 "confidence": 92,
-                "reason": f"수급과 모멘텀이 하방으로 꺾였으므로 손실을 짧게 끊고 자금을 보존해야 합니다."
+                "reason": "외국인·기관 자금이 빠져나가고 주가 흐름이 하락으로 꺾였으니, 손실을 짧게 끊고 현금을 지켜야 합니다."
             }
         ]
         target_allocation = 0
@@ -4842,7 +4842,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "HOLD",
                 "vote_label": "🟡 중립/관망",
                 "confidence": 75,
-                "reason": f"단기 매크로 지표 예측은 무의미하며, 오직 가격이 싸진 우량 기업만 분할 매수합니다."
+                "reason": "단기 지표 뉴스에 일희일비하지 않고, 가격이 싸진 진짜배기 1등 알짜 기업만 분할해서 차분히 모아갑니다."
             },
             {
                 "id": "munger",
@@ -4852,7 +4852,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "HOLD",
                 "vote_label": "🟡 중립/관망",
                 "confidence": 78,
-                "reason": f"지수 변동성 소음에 휘둘리지 않고, 기업의 장기 경쟁력에만 시선을 고정합니다."
+                "reason": "시장 변동성 소음에 휘둘리지 않고, 10년 뒤에도 망하지 않고 살아남을 진짜 위대한 기업에만 집중합니다."
             },
             {
                 "id": "graham",
@@ -4862,7 +4862,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 분할 매수",
                 "confidence": 80,
-                "reason": f"시장 밸류에이션 밴드 내에서 지수가 조정을 받을 때마다 안전마진이 생겨납니다."
+                "reason": "시장 지수가 흔들려 주가가 싸질 때마다, 손해 보지 않고 돈을 지킬 안전 에어백이 더 커집니다."
             },
             {
                 "id": "lynch",
@@ -4872,7 +4872,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 수혜주 매수",
                 "confidence": 85,
-                "reason": f"거시 환경이 안정되는 국면에서 시장 점유율을 늘리는 실적 성장주를 선취매합니다."
+                "reason": "거시 경제가 안정될 때 주문(수주)을 가장 빠르게 늘려갈 진짜 실적 성장주를 미리 선취매합니다."
             },
             {
                 "id": "druckenmiller",
@@ -4882,7 +4882,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 적극 공략",
                 "confidence": 95,
-                "reason": f"환율·금리 사이클 변곡점(Inflection) 포착! 글로벌 유동성 유입 섹터에 집중 베팅합니다."
+                "reason": "환율과 금리 흐름이 돌아서며 외국인 큰손 자금이 주도 섹터로 몰려오는 바로 지금이 승부 타이밍입니다."
             }
         ]
         target_allocation = 15
@@ -4900,7 +4900,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 매수 (사자)",
                 "confidence": 88,
-                "reason": f"{name}의 확고한 시장 지배력과 진입장벽, 우수한 현금 창출력에 높은 점수를 부여합니다."
+                "reason": f"{name}은 남들이 못 따라 하는 독점 기술과 1등 지배력이 있어, 매달 현금을 아주 안정적으로 잘 법니다."
             },
             {
                 "id": "munger",
@@ -4910,7 +4910,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 매수 (사자)",
                 "confidence": 86,
-                "reason": f"치명적 경쟁 리스크가 낮고, 우수한 비즈니스 모델이 {f'합리적 가격대({doc.get("current_price")})' if doc.get("current_price") else '합리적인 가격대'}에 형성되어 있습니다."
+                "reason": "망할 위험(부채·치명적 경쟁)이 거의 없는 훌륭한 사업인데, 지금 주가도 거품 없이 아주 착한 가격입니다."
             },
             {
                 "id": "graham",
@@ -4920,7 +4920,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY" if "+" in upside else "HOLD",
                 "vote_label": "🟢 안전마진 확보" if "+" in upside else "🟡 중립",
                 "confidence": 78,
-                "reason": f"{f'목표주가({target_price}) 대비 {upside}' if target_price and target_price not in ['제시안함', '-'] else '현재 밸류에이션 대비 충분한'} 수준의 안전마진이 확보되어 하방 방어력이 단단합니다."
+                "reason": f"목표가({target_price}) 대비 주가가 많이 싸서, 밑으로 떨어질 위험을 막아주는 안전 에어백이 아주 튼튼합니다." if target_price and target_price not in ['제시안함', '-'] else "회사가 가진 자산에 비해 주가가 바닥권이라, 밑으로 떨어질 위험을 막아주는 안전 에어백이 단단합니다."
             },
             {
                 "id": "lynch",
@@ -4930,7 +4930,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 성장주 매수",
                 "confidence": 92,
-                "reason": f"전방 산업 성장률과 분기 수주 모멘텀이 뛰어나 PEG 관점에서 매우 매력적인 구간입니다."
+                "reason": "일감(주문서)이 쏟아져 매년 가파르게 크고 있는데, 주가는 성장 속도에 비해 아직 너무 저렴한 바겐세일 상태입니다."
             },
             {
                 "id": "druckenmiller",
@@ -4940,7 +4940,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 적극 매수",
                 "confidence": 94,
-                "reason": f"기관·외국인 수급 유입과 업황 턴어라운드 변곡점(Inflection)이 일치하여 승부처로 판단합니다."
+                "reason": "외국인과 기관 큰손 돈이 바닥에서 강하게 쏟아져 들어오며 주가가 상승으로 방향을 튼 최고의 매수 타이밍입니다."
             }
         ]
         target_allocation = 18
