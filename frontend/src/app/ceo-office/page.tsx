@@ -4654,7 +4654,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v2', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v3', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4695,7 +4695,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v2');
+            const raw = localStorage.getItem('ceo_office_cache_v3');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -5633,7 +5633,7 @@ export default function CeoOfficePage() {
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
                                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                                                    <span className="font-extrabold text-white group-hover:text-emerald-300 transition-colors truncate">
+                                                    <span className="font-extrabold text-white group-hover:text-emerald-300 transition-colors whitespace-nowrap">
                                                         {doc.stock_name}
                                                     </span>
                                                     {doc.category_badge?.includes('코스닥') && (
@@ -5688,7 +5688,7 @@ export default function CeoOfficePage() {
                                                 className="w-full flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-sky-500/15 border border-transparent hover:border-sky-500/30 transition-all cursor-pointer text-left group min-w-0"
                                             >
                                                 <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                                                    <span className="font-extrabold text-white group-hover:text-sky-300 transition-colors truncate">
+                                                    <span className="font-extrabold text-white group-hover:text-sky-300 transition-colors whitespace-nowrap">
                                                         {doc.stock_name}
                                                     </span>
                                                     {doc.category_badge?.includes('신생') && (
