@@ -4620,35 +4620,62 @@ def _build_weekly_review_and_calendar(
         events_summary_short = " · ".join(_short_ev_label(e) for e in cur_evs[:2])
         focus_str = ", ".join(cur_cfg["focus_sectors"])
 
-        # 대표님 10만원 매수 한도 맞춤형 섹터별 실전 알짜 종목 자동 매핑
+        # 대표님 10만원 매수 한도 맞춤형 섹터별 실전 알짜 종목 동적 매핑
         sector_stock_map = {
-            "AI 반도체 (HBM)": "HPSP(3.4만) · 심텍(2.8만)",
-            "전력설비·변압기": "제룡전기(3.4만) · 일진전기(4.2만) · 대한전선(1.6만)",
-            "조선·해양플랜트": "삼성중공업(1.5만) · 한국카본(1.3만)",
-            "원전·SMR": "두산에너빌리티(4.3만) · 한국전력(2.4만)",
-            "바이오·헬스케어": "클래시스(2.5만) · 피엔티(2.3만)",
-            "항공·운송": "대한항공(2.9만)",
+            "AI 반도체": "HPSP(3.4만)",
+            "HBM": "HPSP(3.4만)",
+            "반도체": "HPSP(3.4만)",
+            "전력설비": "제룡전기(3.4만)",
+            "변압기": "제룡전기(3.4만)",
+            "조선": "삼성중공업(1.5만)",
+            "해양플랜트": "삼성중공업(1.5만)",
+            "원전": "두산에너빌리티(4.3만)",
+            "SMR": "두산에너빌리티(4.3만)",
+            "바이오": "클래시스(2.5만)",
+            "헬스케어": "클래시스(2.5만)",
             "방위산업": "한화시스템(2.8만)",
-            "금융·밸류업": "기업은행(1.9만)",
+            "방산": "한화시스템(2.8만)",
+            "항공": "대한항공(2.9만)",
+            "운송": "대한항공(2.9만)",
+            "금융": "기업은행(1.9만)",
+            "밸류업": "기업은행(1.9만)",
+            "대형주": "두산에너빌리티(4.3만)",
+            "성장주": "클래시스(2.5만)",
         }
-        recommended_stocks_list = []
+        picked_stocks = []
         for sec in cur_cfg["focus_sectors"]:
-            for k_sec, k_stocks in sector_stock_map.items():
-                if sec in k_sec or k_sec in sec:
-                    recommended_stocks_list.append(f"{sec}: {k_stocks}")
+            for k_sec, k_stock in sector_stock_map.items():
+                if k_sec in sec or sec in k_sec:
+                    if k_stock not in picked_stocks:
+                        picked_stocks.append(k_stock)
                     break
-        if not recommended_stocks_list:
-            recommended_stocks_list = ["HPSP(3.4만)", "제룡전기(3.4만)", "삼성중공업(1.5만)"]
-        recommended_stocks_str = " · ".join(recommended_stocks_list[:3])
-        short_picks_summary = "HPSP(3.4만), 제룡전기(3.4만), 삼성중공업(1.5만)"
+        if not picked_stocks:
+            picked_stocks = ["두산에너빌리티(4.3만)", "클래시스(2.5만)", "한화시스템(2.8만)"]
+        short_picks_summary = ", ".join(picked_stocks[:3])
 
         cur_active = cur_day_obj.get("active_scenario", "pending")
         if cur_active == "bull":
             scenario_extra = f"발표된 지표가 시장 예상에 부합하는 호재로 확인되어 🟢 긍정 시나리오가 가동 중이며 ➔ 10만원 이하 수혜주[{short_picks_summary}] 중심의 눌림목 분할매수가 유리합니다."
         elif cur_active == "bear":
-            scenario_extra = "발표 지표 경계감으로 🔴 리스크 방어 지침이 가동 중이므로 ➔ 장 초반 추격매수를 피하고 오전 10시 바닥(지지선) 확인 후 분할 대응합니다."
+            scenario_extra = f"발표 지표 경계감으로 🔴 리스크 방어 지침이 가동 중이므로 ➔ 장 초반 추격매수를 피하고 [{short_picks_summary}]를 오전 10시 바닥(지지선) 확인 후 분할 대응합니다."
         else:
             scenario_extra = f"지표가 안정적으로 발표되면 {focus_str} 섹터가 직접 수혜를 입으며 ➔ 10만원 이하 알짜주[{short_picks_summary}]를 오전 10시 이후 눌림목에서 나눠 사기(분할매수)로 대응합니다."
+
+        research_opinion = (
+            f"👍 [오늘 일정 & 시황 파급 · 박진우 리서치센터장]: 오늘({cur_cfg['day_ko']}) 시장의 핵심 체크포인트는 '{cur_theme_clean}'이며, 주요 발표 지표는 {events_summary_short}입니다. "
+            f"{cur_cfg['bull_scenario']} 이에 따라 오늘의 시장 주도 섹터는 '{focus_str}'로 압축되며, "
+            f"대표님 10만원 매수 한도에 최적화된 유망 알짜주 [{short_picks_summary}]가 수주 잔고와 실적 지지력을 바탕으로 가장 우수한 방어력과 상승 탄력을 보일 전망입니다."
+        )
+
+        quant_opinion = (
+            f"📊 [오늘 외인·기관 수급 시나리오 · 김도현 수급본부장]: 주요 지표({events_summary_short}) 발표 전후 외국인과 기관 큰손의 자금은 '{focus_str}' 섹터 내 밸류에이션 매력이 높은 알짜주로 유입되는 흐름이 포착됩니다. "
+            f"실시간 환율({fx_price_str.split(' ')[0]}) 안정세 속에 10만원 이하 공략 후보 [{short_picks_summary}]의 기관 순매수 유입 및 장중 50일선 지지력을 실시간 감시하며 눌림목 매수 타점을 포착합니다."
+        )
+
+        risk_opinion = (
+            f"⚠️ [오늘 행동 지침 & 리스크 방어 · 최서연 리스크본부장]: {cur_cfg['bear_scenario']} "
+            f"오늘 주요 경제지표 발표 전후로 시장 변동성이 커질 수 있으므로, 장 시작 직후 추격매수를 절대 금하고 오전 10시 이후 바닥(지지선)이 확인될 때 [{short_picks_summary}]를 10만원 한도 내에서 1주씩 나눠 사기(분할매수)와 -3.5% 손절 원칙을 철저히 준수합니다."
+        )
 
         calendar_doc = {
             "doc_id": f"DOC-{date_doc_str}-DAYCAL",
@@ -4673,15 +4700,9 @@ def _build_weekly_review_and_calendar(
                 {"label": "10만원 이하 테마별 공략주", "value": short_picks_summary},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
             ],
-        "research_opinion": (
-            "👍 [왜 중요한가요? · 박진우 리서치센터장]: 전 세계 경제 뉴스와 거시지표는 주식 시장의 '날씨'와 같습니다. 미국 금리와 국제유가가 안정된 맑은 날씨라야 반도체, 조선, 방산 등 수출 대장주들이 실적대로 주가를 낼 수 있습니다."
-        ),
-            "quant_opinion": (
-                f"📊 [오늘 수급 시나리오 · 김도현 수급본부장]: 주요 경제지표 발표에 맞춰 외국인과 기관 큰손 자금이 {focus_str} 대장주로 유입되는지 실시간 추적 중입니다. 환율({fx_price_str.split(' ')[0]})과 미국 선물 흐름이 안정될 때 외국인 프로그램 순매수가 유입되므로 수급 지지력이 확인된 종목 위주로 접근합니다."
-            ),
-            "risk_opinion": (
-                f"⚠️ [오늘 리스크 방어 · 최서연 리스크본부장]: {cur_cfg['bear_scenario']} 10만원 한도 내에서도 한 번에 다 사지 말고 오전 10시 바닥(지지선) 확인 후 나눠 사기(분할매수)와 -3.5% 손절 원칙을 꼭 지켜주십시오."
-            ),
+            "research_opinion": research_opinion,
+            "quant_opinion": quant_opinion,
+            "risk_opinion": risk_opinion,
             "secretary_conclusion": (
                 f"👩‍💼 정유진 비서실장 [대표님 결재 가이드]: 윤서아 이사의 경제일정팀에서 오늘({cur_date_str} {cur_cfg['day_ko']}) 핵심 일정과 집중 공략 섹터({focus_str}) 및 10만원 이하 알짜 종목({short_picks_summary})을 한눈에 보기 쉽게 정리했습니다. [승인 서명]을 눌러 오늘 일정 대응을 가동해 주십시오!"
             ),

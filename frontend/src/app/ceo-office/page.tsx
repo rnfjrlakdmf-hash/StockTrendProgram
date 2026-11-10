@@ -230,6 +230,11 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
                 tagColor = idx === 0
                     ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
                     : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
+            } else if (categoryType === 'calendar') {
+                tag = idx === 0 ? '해외·핵심일정' : '국내·섹터대응';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
             } else if (categoryType === 'kr_stock') {
                 const isDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(raw);
                 if (isDown) {
@@ -268,12 +273,43 @@ function toCrispExecutiveBullets(raw: string, sectionType: 'summary' | 'research
                     : 'bg-amber-500/25 text-amber-200 border-amber-400/40';
             }
         } else if (sectionType === 'research') {
-            const isDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(raw);
-            const isStock = categoryType === 'kr_stock' || categoryType === 'us_stock';
-            tag = isStock ? (idx === 0 ? (isDown ? '하향원인' : '핵심호재') : '방어논리') : (idx === 0 ? '시장파급' : '방어논리');
-            tagColor = idx === 0
-                ? (isDown ? 'bg-rose-500/25 text-rose-200 border-rose-400/40' : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40')
-                : 'bg-teal-500/25 text-teal-200 border-teal-400/40';
+            if (categoryType === 'calendar') {
+                tag = idx === 0 ? '일정파급' : '집중알짜주';
+                tagColor = idx === 0
+                    ? 'bg-sky-500/25 text-sky-200 border-sky-400/40'
+                    : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40';
+            } else {
+                const isDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(raw);
+                const isStock = categoryType === 'kr_stock' || categoryType === 'us_stock';
+                tag = isStock ? (idx === 0 ? (isDown ? '하향원인' : '핵심호재') : '방어논리') : (idx === 0 ? '시장파급' : '방어논리');
+                tagColor = idx === 0
+                    ? (isDown ? 'bg-rose-500/25 text-rose-200 border-rose-400/40' : 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40')
+                    : 'bg-teal-500/25 text-teal-200 border-teal-400/40';
+            }
+        } else if (sectionType === 'quant') {
+            if (categoryType === 'calendar') {
+                tag = idx === 0 ? '수급시나리오' : '실전타점';
+                tagColor = idx === 0
+                    ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400/40'
+                    : 'bg-blue-500/25 text-blue-200 border-blue-400/40';
+            } else {
+                tag = idx === 0 ? '수급경보' : '자금흐름';
+                tagColor = idx === 0
+                    ? 'bg-cyan-500/25 text-cyan-200 border-cyan-400/40'
+                    : 'bg-blue-500/25 text-blue-200 border-blue-400/40';
+            }
+        } else if (sectionType === 'action') {
+            if (categoryType === 'calendar') {
+                tag = idx === 0 ? '절대원칙' : '손절수칙';
+                tagColor = idx === 0
+                    ? 'bg-rose-500/25 text-rose-200 border-rose-400/40'
+                    : 'bg-purple-500/25 text-purple-200 border-purple-400/40';
+            } else {
+                tag = idx === 0 ? '절대원칙' : '실전타점';
+                tagColor = idx === 0
+                    ? 'bg-rose-500/25 text-rose-200 border-rose-400/40'
+                    : 'bg-purple-500/25 text-purple-200 border-purple-400/40';
+            }
         } else if (sectionType === 'quant') {
             tag = idx === 0 ? '수급경보' : '자금흐름';
             tagColor = idx === 0
@@ -6651,7 +6687,7 @@ export default function CeoOfficePage() {
 
                                                     {/* ── [STEP 2] ⚡ 3초 핵심 브리핑 (적당하고 정돈된 크기 & 시원한 가독성) ── */}
                                                     {(() => {
-                                                        const catType = isWeeklyReviewDoc ? 'weekly_review' : activeDoc.category_type;
+                                                        const catType = isWeeklyReviewDoc ? 'weekly_review' : (activeDoc.doc_id.includes('CAL') ? 'calendar' : activeDoc.category_type);
                                                         const summaryBullets = toCrispExecutiveBullets(activeDoc.easy_headline || researchBody, 'summary', catType);
                                                         const researchBullets = toCrispExecutiveBullets(researchBody, 'research', catType);
                                                         const quantBullets = toCrispExecutiveBullets(quantBody, 'quant', catType);
@@ -6662,10 +6698,13 @@ export default function CeoOfficePage() {
                                                             .trim();
 
                                                         // 카드별 1초 한줄 결론 헤드라인 도출 (적당한 12~13px)
+                                                        const isCalendarDoc = activeDoc.doc_id.includes('CAL');
                                                         const isStockDown = /하향|중립|적자|부진|둔화|쇼크|하회|우려|부담|보수적/.test(activeDoc.easy_headline || '') || (activeDoc.upside_pct && activeDoc.upside_pct.includes('-'));
 
                                                         const card1Headline = isWeeklyReviewDoc
                                                             ? `🏆 10만원 이하 알짜 추천주 성적표 복기 & 최우선 Top 3(${activeDoc.target_price || '목표가'} · ${activeDoc.upside_pct || '강세'}) 엄선`
+                                                            : isCalendarDoc
+                                                            ? `🗓️ 오늘 핵심 지표 발표 & 집중 수혜 섹터(${activeDoc.key_numbers?.find(k => k.label.includes('테마'))?.value?.slice(0, 22) || '주요 지표'}) 시황 분석`
                                                             : isMacroDoc
                                                             ? (isCautiousResearch ? '⚠️ 미 반도체·기술주 급락 여파 · 장초반 매물 주의 (환율은 안정)' : '🟢 글로벌 거시환경 우호적 · 수출·대형주 모멘텀 양호')
                                                             : isStockDown
@@ -6674,6 +6713,8 @@ export default function CeoOfficePage() {
 
                                                         const card2Headline = isWeeklyReviewDoc
                                                             ? '🏦 1순위 유망주 외국인·기관 수급 유입 및 10만원 한도 분할매수 타점 포착'
+                                                            : isCalendarDoc
+                                                            ? '🏦 지표 발표 전후 외인·기관 프로그램 수급 유입 및 10만원 이하 알짜주 타점'
                                                             : isMacroDoc
                                                             ? (isCautiousQuant ? '📊 장초반 프로그램 매도 경계 · 방어주·환율수혜주 수급 관찰' : '🏦 환율 안정 속 외국인·기관 수급 유입 기대')
                                                             : isStockDown
@@ -6682,6 +6723,8 @@ export default function CeoOfficePage() {
 
                                                         const card3Headline = isWeeklyReviewDoc
                                                             ? '🎯 장 시작 직후 추격매수 금지 · 오전 10시 눌림목 확인 후 1주씩 나눠 사기'
+                                                            : isCalendarDoc
+                                                            ? '🛑 장 시작 직후 추격매수 금지 · 지표 발표 전후 바닥 확인 및 -3.5% 손절 엄수'
                                                             : isMacroDoc
                                                             ? '🛑 장 시작 직후 추격매수 금지! 오전 10시 바닥(지지선) 확인 후 나눠 사기'
                                                             : isStockDown
