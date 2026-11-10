@@ -406,19 +406,39 @@ const ANALYST_EASY_EXPLANATIONS: Record<string, { tag: string; analogy: string; 
 };
 
 // 🏛️ 월가 5대 전설 AI 자문단 헬퍼 (VIRATTT AI 헤지펀드 아키텍처 연동)
+// 💡 비(非)종목 기안서(시황, 매크로, 경제일정, 주간복기)에는 null 반환
 function getWallStreetCouncil(doc: any) {
+    if (!doc) return null;
+    const name = String(doc?.stock_name || '').trim();
+    const catType = String(doc?.category_type || '').trim();
+    const docId = String(doc?.doc_id || '').trim();
+
+    const isNonStock =
+        ['world_news', 'global_futures', 'futures', 'macro', 'all'].includes(catType) ||
+        name.includes('선물') ||
+        name.includes('특보') ||
+        name.includes('환율') ||
+        name.includes('시스템') ||
+        name.includes('전체 시장') ||
+        name.includes('시장 종합') ||
+        name.includes('경제일정') ||
+        name.includes('매크로') ||
+        name.includes('주간 리서치') ||
+        docId.includes('CAL') ||
+        docId.includes('WKREV');
+
+    if (isNonStock) {
+        return null;
+    }
+
     if (doc?.wall_street_council && Array.isArray(doc.wall_street_council.analysts)) {
         return doc.wall_street_council;
     }
 
-    const name = String(doc?.stock_name || '').trim();
     const targetPrice = String(doc?.target_price || '').trim();
     const upside = String(doc?.upside_pct || '').trim();
-    const catType = String(doc?.category_type || '').trim();
-    const docId = String(doc?.doc_id || '').trim();
     const headline = String(doc?.easy_headline || doc?.title || '').trim();
 
-    const isMacro = catType === 'futures' || catType === 'world_news' || name.includes('선물') || name.includes('특보') || name.includes('환율') || docId.includes('CAL');
     const isBearish = Boolean(doc?.is_bearish_or_downgrade) || headline.includes('하향') || (upside.includes('-') && upside.includes('%')) || headline.includes('중립');
 
     if (isBearish) {
@@ -435,21 +455,6 @@ function getWallStreetCouncil(doc: any) {
             consensus_badge: "⚪ 전원 관망 / 현금 100% 방어",
             consensus_summary: "5대 거장 전원 일치로 투자 비중 0% 결정 ➔ 100% 현금 대기 권고",
             risk_limit_rule: "단일 종목 최대 한도 25% 엄수 · 의견 불일치 시 100% 현금 방어"
-        };
-    } else if (isMacro) {
-        return {
-            analysts: [
-                { id: "buffett", name: "워런 버핏", role: "경제적 해자 & ROE", avatar: "👴", vote: "HOLD", vote_label: "🟡 중립/관망", confidence: 75, reason: "단기 지표 뉴스에 일희일비하지 않고, 가격이 싸진 진짜배기 1등 알짜 기업만 분할해서 차분히 모아갑니다." },
-                { id: "munger", name: "찰리 멍거", role: "위대한 기업 & 리스크 배제", avatar: "👓", vote: "HOLD", vote_label: "🟡 중립/관망", confidence: 78, reason: "시장 변동성 소음에 휘둘리지 않고, 10년 뒤에도 망하지 않고 살아남을 진짜 위대한 기업에만 집중합니다." },
-                { id: "graham", name: "벤저민 그레이엄", role: "딥 밸류 & 안전마진", avatar: "📜", vote: "BUY", vote_label: "🟢 분할 매수", confidence: 80, reason: "시장 지수가 흔들려 주가가 싸질 때마다, 손해 보지 않고 돈을 지킬 안전 에어백이 더 커집니다." },
-                { id: "lynch", name: "피터 린치", role: "합리적 성장주 (GARP)", avatar: "👜", vote: "BUY", vote_label: "🟢 수혜주 매수", confidence: 85, reason: "거시 경제가 안정될 때 주문(수주)을 가장 빠르게 늘려갈 진짜 실적 성장주를 미리 선취매합니다." },
-                { id: "druckenmiller", name: "스탠리 드러켄밀러", role: "매크로 변곡점 & 모멘텀", avatar: "⚡", vote: "BUY", vote_label: "🟢 적극 공략", confidence: 95, reason: "환율과 금리 흐름이 돌아서며 외국인 큰손 자금이 주도 섹터로 몰려오는 바로 지금이 승부 타이밍입니다." }
-            ],
-            target_allocation_pct: 15,
-            cash_allocation_pct: 85,
-            consensus_badge: "🟢 매크로 변곡점 분할 편입 (3인 찬성)",
-            consensus_summary: "매크로 지표 호전 및 수혜 섹터 중심 포트폴리오 15% 편입",
-            risk_limit_rule: "단일 종목 최대 한도 25% 엄수 · 야간 변동성 헤지 준수"
         };
     } else {
         return {
@@ -4787,7 +4792,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v9', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v10', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4828,7 +4833,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v9');
+            const raw = localStorage.getItem('ceo_office_cache_v10');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -6919,7 +6924,34 @@ export default function CeoOfficePage() {
 
                                                                 {/* ── [STEP 2.5] 🏛️ 월가 5대 전설 AI 투자자문단 (VIRATTT AI 헤지펀드 아키텍처 연동) ── */}
                                                                     {(() => {
+                                                                        // 💡 대표님 결재 편의: 핵심 시황, 글로벌 매크로, 경제일정, 주간복기 등 비(非)종목 기안서에는 전설 5인 자문단을 표시하지 않음
+                                                                        const sName = String(activeDoc?.stock_name || '').trim();
+                                                                        const catType = String(activeDoc?.category_type || '').trim();
+                                                                        const docId = String(activeDoc?.doc_id || '').trim();
+                                                                        const isNonStock =
+                                                                            isMarketSystem ||
+                                                                            isMacroDoc ||
+                                                                            isWeeklyReviewDoc ||
+                                                                            docId.includes('CAL') ||
+                                                                            docId.includes('WKREV') ||
+                                                                            ['world_news', 'global_futures', 'futures', 'macro', 'all'].includes(catType) ||
+                                                                            sName.includes('경제일정') ||
+                                                                            sName.includes('매크로') ||
+                                                                            sName.includes('전체 시장') ||
+                                                                            sName.includes('시장 종합') ||
+                                                                            sName.includes('환율') ||
+                                                                            sName.includes('선물') ||
+                                                                            sName.includes('주간 리서치') ||
+                                                                            sName.includes('시스템');
+
+                                                                        if (isNonStock) {
+                                                                            return null;
+                                                                        }
+
                                                                         const council = getWallStreetCouncil(activeDoc);
+                                                                        if (!council || !Array.isArray(council.analysts) || council.analysts.length === 0) {
+                                                                            return null;
+                                                                        }
                                                                         const targetPct = council.target_allocation_pct;
                                                                         const cashPct = council.cash_allocation_pct;
 

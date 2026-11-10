@@ -6657,9 +6657,22 @@ def get_ceo_office_boardroom(
         },
     }
     # Enrich each approval doc with Wall Street Council (5 Masters AI Hedge Fund)
+    # 💡 실제 매매 대상 종목(kr_stock, us_stock)에만 부여하고, 비(非)종목 기안서(시황, 매크로, 경제일정, 주간복기)는 제외
     for doc_item in auto_approvals:
-        if isinstance(doc_item, dict) and "wall_street_council" not in doc_item:
-            doc_item["wall_street_council"] = _generate_wall_street_council(doc_item)
+        if isinstance(doc_item, dict):
+            s_name = str(doc_item.get("stock_name", "")).strip()
+            c_type = str(doc_item.get("category_type", "")).strip()
+            d_id = str(doc_item.get("doc_id", "")).strip()
+            is_non_stock = (
+                c_type in ["world_news", "global_futures", "futures", "macro", "all"]
+                or "CAL" in d_id
+                or "WKREV" in d_id
+                or any(kw in s_name for kw in ["경제일정", "매크로", "전체 시장", "시장 종합", "환율", "선물", "주간 리서치", "시스템"])
+            )
+            if is_non_stock:
+                doc_item.pop("wall_street_council", None)
+            elif "wall_street_council" not in doc_item:
+                doc_item["wall_street_council"] = _generate_wall_street_council(doc_item)
 
     if not topic and not message:
         _CEO_OFFICE_CACHE = resp_data
