@@ -4749,8 +4749,6 @@ def _build_weekly_review_and_calendar(
     return weekly_review, weekly_calendar, review_doc, calendar_doc
 
 
-@router.get("/ceo-office")
-
 def _generate_wall_street_council(doc: dict) -> dict:
     """
     VIRATTT AI 헤지펀드(ai-hedge-fund) 아키텍처 연동:
@@ -4953,6 +4951,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
     }
 
 
+@router.get("/ceo-office")
 def get_ceo_office_boardroom(
     topic: str = Query("", description="안건 종목명/티커 또는 빈 문자열(전사 자동 결재 브리핑)"),
     message: str = Query("", description="대표님이 대화창에 직접 입력한 지시 말씀"),
