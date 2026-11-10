@@ -492,7 +492,11 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
         badgeText = '실시간 판정';
         badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
         cardStyle = 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-zinc-900/90 to-slate-950/90';
-    } else if (rawLabel.includes('섹터') || rawLabel.includes('공략') || rawLabel.includes('수혜')) {
+    } else if (rawLabel.includes('공략') || rawLabel.includes('종목')) {
+        badgeText = '공략주';
+        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
+        cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('섹터') || rawLabel.includes('수혜')) {
         badgeText = '수혜 섹터';
         badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
         cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
@@ -6740,7 +6744,7 @@ export default function CeoOfficePage() {
                                                                                 {badgeText}
                                                                             </span>
                                                                         </div>
-                                                                        <div className="flex items-center min-h-[38px] pt-0.5">
+                                                                        <div className="flex items-start min-h-[38px] pt-1">
                                                                             {renderedValue}
                                                                         </div>
                                                                     </div>
