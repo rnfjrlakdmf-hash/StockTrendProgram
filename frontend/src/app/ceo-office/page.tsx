@@ -376,6 +376,35 @@ function renderHighlightedExecutiveText(text: string): React.ReactNode {
 }
 
 // 4대 핵심 지표(전광판) 깔끔 렌더링 헬퍼: 숫자/금융 데이터는 font-mono, 한글 텍스트/테마/섹터는 font-sans로 자간 깨짐 없이 자연스럽게 출력!
+// 🏛️ 월가 5대 전설 3초 쉬운 요약 사전 (마우스 호버 시 직관적 이해 제공)
+const ANALYST_EASY_EXPLANATIONS: Record<string, { tag: string; analogy: string; desc: string }> = {
+    buffett: {
+        tag: "비법 소스 & 1등 해자",
+        analogy: "3대째 내려오는 맛집의 독점 비법 소스",
+        desc: "남들이 흉내 못 내는 독점 경쟁력(해자)으로 매년 내 자본 대비 15~20% 이상을 꼬박꼬박 불려주는 진짜배기 1등 기업인지 검사합니다."
+    },
+    munger: {
+        tag: "망할 구멍 없는 기업",
+        analogy: "불황에도 10년 뒤 끄떡없는 알짜 가게",
+        desc: "빚이 너무 많거나 유행을 타서 망할 위험을 철저히 배제하고, 어떤 경제 위기가 와도 끄떡없이 살아남을 위대한 기업만 고릅니다."
+    },
+    graham: {
+        tag: "10억 건물을 6억에",
+        analogy: "바닥에 단단하게 깔린 안전 에어백",
+        desc: "당장 회사가 망해 땅과 공장을 팔아도 내가 산 가격보다 더 건질 수 있을 만큼 주가가 바닥 헐값(안전마진)인지 확인합니다."
+    },
+    lynch: {
+        tag: "성장 대비 바겐세일",
+        analogy: "손님이 2배로 느는데 가격은 그대로인 식당",
+        desc: "일감과 주문서(수주)가 쏟아져 매년 20~30%씩 무섭게 크는데, 시장이 아직 가치를 몰라봐서 주가가 싼 알짜 성장주를 찾습니다."
+    },
+    druckenmiller: {
+        tag: "큰손 수급 급류 타기",
+        analogy: "외국인·기관 큰손이 줄 서서 담는 바로 그 타이밍",
+        desc: "환율·금리 환경이 좋아지고 외국인·기관 큰손 자금이 바닥에서 강하게 쏟아져 들어오는 바로 그 매수 승부처를 포착합니다."
+    }
+};
+
 // 🏛️ 월가 5대 전설 AI 자문단 헬퍼 (VIRATTT AI 헤지펀드 아키텍처 연동)
 function getWallStreetCouncil(doc: any) {
     if (doc?.wall_street_council && Array.isArray(doc.wall_street_council.analysts)) {
@@ -4758,7 +4787,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v7', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v8', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4799,7 +4828,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v7');
+            const raw = localStorage.getItem('ceo_office_cache_v8');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -6929,7 +6958,7 @@ export default function CeoOfficePage() {
 
                                                                                 {/* 5대 거장 카드 그리드 (버핏 · 멍거 · 그레이엄 · 린치 · 드러켄밀러) */}
                                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-                                                                                    {council.analysts.map((a: any) => {
+                                                                                    {council.analysts.map((a: any, aIdx: number) => {
                                                                                         const isBuy = a.vote === 'BUY';
                                                                                         const isSell = a.vote === 'SELL';
                                                                                         const cardBorder = isBuy
@@ -6945,6 +6974,18 @@ export default function CeoOfficePage() {
                                                                                             : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
 
                                                                                         const gaugeColor = isBuy ? 'bg-emerald-400' : isSell ? 'bg-rose-400' : 'bg-amber-400';
+                                                                                        const easyInfo = ANALYST_EASY_EXPLANATIONS[a.id] || {
+                                                                                            tag: a.role,
+                                                                                            analogy: "월가 전설의 핵심 검증 철학",
+                                                                                            desc: a.reason
+                                                                                        };
+
+                                                                                        // 툴팁 위치 좌/우/중앙 스마트 정렬 (화면 밖 잘림 방지)
+                                                                                        const tipAlign = aIdx === 0
+                                                                                            ? 'left-0 translate-x-0'
+                                                                                            : aIdx === council.analysts.length - 1
+                                                                                            ? 'right-0 left-auto translate-x-0'
+                                                                                            : 'left-1/2 -translate-x-1/2';
 
                                                                                         return (
                                                                                             <div
@@ -6967,14 +7008,38 @@ export default function CeoOfficePage() {
                                                                                                         </div>
                                                                                                     </div>
 
-                                                                                                    {/* 3행: 전문 투자 철학/역할 태그 */}
-                                                                                                    <div className="pb-1 border-b border-white/10">
-                                                                                                        <div className="text-[10px] text-zinc-300 font-bold bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-center truncate" title={a.role}>
-                                                                                                            {a.role}
+                                                                                                    {/* 3행: 전문 투자 철학/역할 태그 & 마우스 호버 시 3초 쉬운 요약 말풍선 */}
+                                                                                                    <div className="relative group/analyst-tip pb-1 border-b border-white/10">
+                                                                                                        <div
+                                                                                                            className="cursor-help flex items-center justify-center gap-1 text-[9.5px] sm:text-[10px] text-zinc-300 hover:text-amber-300 font-bold bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/40 px-1.5 py-0.5 rounded text-center transition-colors"
+                                                                                                            title={`💡 [${easyInfo.tag} · ${easyInfo.analogy}]\n${easyInfo.desc}`}
+                                                                                                        >
+                                                                                                            <span className="truncate">{a.role}</span>
+                                                                                                            <span className="text-[10px] text-amber-400/80 group-hover/analyst-tip:text-amber-300 shrink-0">ⓘ</span>
+                                                                                                        </div>
+
+                                                                                                        {/* 팝업 말풍선 (마우스 올리면 3초 만에 이해되는 초간단 요약) */}
+                                                                                                        <div className={`pointer-events-none absolute bottom-full mb-2 w-64 p-3 rounded-xl bg-slate-950/95 border border-amber-400/50 text-left shadow-2xl backdrop-blur-md opacity-0 group-hover/analyst-tip:opacity-100 transition-all duration-200 z-50 ${tipAlign}`}>
+                                                                                                            <div className="flex items-center justify-between gap-1 pb-1 mb-1.5 border-b border-white/10">
+                                                                                                                <span className="text-xs font-black text-amber-300 flex items-center gap-1">
+                                                                                                                    <span>{a.avatar}</span>
+                                                                                                                    <span>{a.name}의 3초 요약</span>
+                                                                                                                </span>
+                                                                                                                <span className="text-[9px] text-amber-400/80 font-bold px-1.5 py-0.2 bg-amber-500/10 rounded border border-amber-500/20">
+                                                                                                                    {easyInfo.tag}
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                            <div className="text-[10.5px] font-extrabold text-white mb-1.5 flex items-start gap-1">
+                                                                                                                <span className="text-amber-400 text-xs shrink-0 mt-0.5">💡</span>
+                                                                                                                <span className="break-keep">{easyInfo.analogy}</span>
+                                                                                                            </div>
+                                                                                                            <p className="text-[10px] text-zinc-300 font-medium leading-relaxed break-keep">
+                                                                                                                {easyInfo.desc}
+                                                                                                            </p>
                                                                                                         </div>
                                                                                                     </div>
 
-                                                                                                    {/* 3행: 확신도 점수 & 게이지 바 */}
+                                                                                                    {/* 4행: 확신도 점수 & 게이지 바 */}
                                                                                                     <div className="space-y-1 pt-0.5">
                                                                                                         <div className="flex items-center justify-between text-[10px]">
                                                                                                             <span className="text-zinc-400 font-bold">확신도</span>
@@ -6988,7 +7053,7 @@ export default function CeoOfficePage() {
                                                                                                         </div>
                                                                                                     </div>
 
-                                                                                                    {/* 4행: 한 줄 핵심 근거 (충분한 행간 & 쾌적한 폰트 패딩) */}
+                                                                                                    {/* 5행: 한 줄 핵심 근거 (충분한 행간 & 쾌적한 폰트 패딩) */}
                                                                                                     <div className="text-[11px] text-zinc-200 font-medium leading-relaxed break-keep p-2 rounded-lg bg-black/40 border border-white/5 min-h-[58px] flex items-center">
                                                                                                         {a.reason}
                                                                                                     </div>
