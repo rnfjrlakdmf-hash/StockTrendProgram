@@ -4722,7 +4722,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v5', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v6', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4763,7 +4763,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v5');
+            const raw = localStorage.getItem('ceo_office_cache_v6');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -6910,19 +6910,23 @@ export default function CeoOfficePage() {
                                                                                                 className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between ${cardBorder}`}
                                                                                             >
                                                                                                 <div className="space-y-2">
-                                                                                                    {/* 1행: 아바타 + 이름 (좌) & 투표 뱃지 (우) - 한 줄 시원한 배치 */}
-                                                                                                    <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-white/10">
-                                                                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                                                                            <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
-                                                                                                            <span className="text-xs font-black text-white truncate tracking-tight">{a.name}</span>
-                                                                                                        </div>
-                                                                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border shrink-0 ${badgeColor}`}>
-                                                                                                            {a.vote_label}
+                                                                                                    {/* 1행: 아바타 + 거장 풀네임 (단독 1행 100% 너비 확보로 글자 잘림 완전 방지) */}
+                                                                                                    <div className="flex items-center gap-1.5 min-w-0 pb-0.5">
+                                                                                                        <span className="text-lg shrink-0 select-none leading-none">{a.avatar}</span>
+                                                                                                        <span className="text-xs sm:text-[13px] font-black text-white whitespace-nowrap tracking-tight">
+                                                                                                            {a.name}
                                                                                                         </span>
                                                                                                     </div>
 
-                                                                                                    {/* 2행: 전문 투자 철학/역할 태그 (카드 전폭 100% 활용, 글자 깨짐 완전 방지) */}
+                                                                                                    {/* 2행: 투표 판정 뱃지 (가로 100% 꽉 채운 선명한 버튼형 뱃지) */}
                                                                                                     <div>
+                                                                                                        <div className={`w-full py-1 px-2 rounded-lg border text-center text-[10.5px] font-black shadow-sm ${badgeColor}`}>
+                                                                                                            {a.vote_label}
+                                                                                                        </div>
+                                                                                                    </div>
+
+                                                                                                    {/* 3행: 전문 투자 철학/역할 태그 */}
+                                                                                                    <div className="pb-1 border-b border-white/10">
                                                                                                         <div className="text-[10px] text-zinc-300 font-bold bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-center truncate" title={a.role}>
                                                                                                             {a.role}
                                                                                                         </div>
