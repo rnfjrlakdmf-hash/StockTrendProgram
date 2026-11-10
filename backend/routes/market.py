@@ -4954,7 +4954,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
         "cash_allocation_pct": cash_allocation,
         "consensus_badge": consensus_badge,
         "consensus_summary": consensus_text,
-        "risk_limit_rule": "단일 종목 최대 한도 25% 엄수 · 3회 분할 매수 수칙 준수",
+        "risk_limit_rule": "1회 운용 예산(10만원) 한도 엄수 · 단일 종목 몰빵 금지 · 3회 분할 매수 준수",
         "framework_badge": "VIRATTT AI Hedge Fund Multi-Agent System"
     }
 

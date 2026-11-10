@@ -454,7 +454,7 @@ function getWallStreetCouncil(doc: any) {
             cash_allocation_pct: 100,
             consensus_badge: "⚪ 전원 관망 / 현금 100% 방어",
             consensus_summary: "5대 거장 전원 일치로 투자 비중 0% 결정 ➔ 100% 현금 대기 권고",
-            risk_limit_rule: "단일 종목 최대 한도 25% 엄수 · 의견 불일치 시 100% 현금 방어"
+            risk_limit_rule: "1회 운용 예산(10만원) 한도 엄수 · 단일 종목 몰빵 금지 · 의견 불일치 시 100% 현금 방어"
         };
     } else {
         return {
@@ -469,7 +469,7 @@ function getWallStreetCouncil(doc: any) {
             cash_allocation_pct: 82,
             consensus_badge: "🟢 만장일치 적극 매수 (5인 찬성)",
             consensus_summary: `5대 거장 만장일치 추천 ➔ 포트폴리오 목표 비중 18%, 3회 분할 매수 적합`,
-            risk_limit_rule: "단일 종목 최대 한도 25% 엄수 · 3회 분할 매수 수칙 준수"
+            risk_limit_rule: "1회 운용 예산(10만원) 한도 엄수 · 단일 종목 몰빵 금지 · 3회 분할 매수 준수"
         };
     }
 }
@@ -4792,7 +4792,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v10', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v11', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4833,7 +4833,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v10');
+            const raw = localStorage.getItem('ceo_office_cache_v11');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -6948,12 +6948,13 @@ export default function CeoOfficePage() {
                                                                             return null;
                                                                         }
 
-                                                                        const council = getWallStreetCouncil(activeDoc);
+                                                                         const council = getWallStreetCouncil(activeDoc);
                                                                         if (!council || !Array.isArray(council.analysts) || council.analysts.length === 0) {
                                                                             return null;
                                                                         }
                                                                         const targetPct = council.target_allocation_pct;
                                                                         const cashPct = council.cash_allocation_pct;
+                                                                        const plan = riskData?.financialPlan;
 
                                                                         return (
                                                                             <div className="bg-gradient-to-r from-slate-950 via-[#0a1224] to-slate-950 border border-amber-500/40 hover:border-amber-400/60 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-3 transition-all">
@@ -6973,6 +6974,28 @@ export default function CeoOfficePage() {
                                                                                     </div>
 
                                                                                     <div className="flex items-center gap-2 flex-wrap">
+                                                                                        {/* 💡 10만원 한도 실시간 매수 가이드 뱃지 (대표님 요청: 25% 대신 명확한 10만원 기준 실시간 가격 & 매수 주수 표시) */}
+                                                                                        {plan && (
+                                                                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs shadow-sm ${
+                                                                                                plan.priceExceedsBudget
+                                                                                                    ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                                                                                                    : 'bg-emerald-950/40 border-emerald-400/50 text-emerald-200'
+                                                                                            }`}>
+                                                                                                <span className="text-[11px] font-black text-amber-300 shrink-0">💵 10만원 한도 매수:</span>
+                                                                                                {plan.priceExceedsBudget ? (
+                                                                                                    <span className="font-extrabold text-rose-300 text-xs">
+                                                                                                        ⚠️ 0주 대기 (실시간 {plan.currPrice} &gt; 10만원)
+                                                                                                    </span>
+                                                                                                ) : (
+                                                                                                    <span className="font-medium text-zinc-100 text-xs flex items-center gap-1">
+                                                                                                        <span>실시간 {plan.currPrice} ➔</span>
+                                                                                                        <strong className="text-amber-300 font-black underline underline-offset-2">딱 {plan.totalShares} 매수 ({plan.actualInvest})</strong>
+                                                                                                        <span className="text-zinc-400 text-[10.5px]">(잔여 현금 {plan.cashReserve})</span>
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        )}
+
                                                                                         <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-xl border border-white/10 text-xs">
                                                                                             <span className="text-zinc-400 text-[11px] font-bold">목표 편입 비중:</span>
                                                                                             <span className={`font-mono font-black ${targetPct > 0 ? 'text-emerald-400 text-sm' : 'text-zinc-400'}`}>
@@ -7095,14 +7118,38 @@ export default function CeoOfficePage() {
                                                                                     })}
                                                                                 </div>
 
-                                                                                {/* 하단 리스크 헤지펀드 규칙 안내 바 */}
-                                                                                <div className="bg-black/40 border border-white/5 rounded-xl px-3 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs text-zinc-300">
-                                                                                    <div className="flex items-center gap-1.5">
-                                                                                        <span className="text-amber-300 font-bold text-[11px]">🛡️ 헤지펀드 자금 집행 가이드:</span>
-                                                                                        <span className="text-[11px] text-zinc-300">{council.consensus_summary}</span>
+                                                                                {/* 하단 리스크 헤지펀드 규칙 안내 바 & 10만원 실시간 매수 가이드 */}
+                                                                                <div className="bg-gradient-to-r from-black/80 via-slate-950 to-black/80 border border-amber-500/30 rounded-xl p-2.5 sm:px-3 sm:py-2.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 text-xs text-zinc-300">
+                                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                                        <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-1 shrink-0 shadow-sm">
+                                                                                            <span>🛡️</span>
+                                                                                            <span>10만원 실전 집행 가이드</span>
+                                                                                        </span>
+                                                                                        {plan ? (
+                                                                                            plan.priceExceedsBudget ? (
+                                                                                                <span className="text-xs text-rose-300 font-bold">
+                                                                                                    현재 실시간 주가 <strong className="text-white font-mono underline">{plan.currPrice}</strong>이 대표님 1회 운용 예산(10만원)을 초과하여 <strong>[0주 매수 대기]</strong> 상태로 원금을 100% 안전 보존합니다.
+                                                                                                </span>
+                                                                                            ) : (
+                                                                                                <div className="flex items-center gap-2 flex-wrap text-xs text-zinc-200">
+                                                                                                    <span>실시간 현재가 <strong className="text-white font-mono">{plan.currPrice}</strong> 기준:</span>
+                                                                                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500/25 text-emerald-300 font-black border border-emerald-400/50 text-xs shadow-sm">
+                                                                                                        👉 딱 {plan.totalShares} 매수 ({plan.actualInvest})
+                                                                                                    </span>
+                                                                                                    <span className="text-zinc-400 text-[11px]">
+                                                                                                        (남은 현금 <strong className="text-zinc-200 font-mono">{plan.cashReserve}</strong>은 안전 예수금 보관)
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            )
+                                                                                        ) : (
+                                                                                            <span className="text-[11px] text-zinc-300">{council.consensus_summary}</span>
+                                                                                        )}
                                                                                     </div>
-                                                                                    <div className="flex items-center gap-1 text-[10px] text-purple-300 font-bold shrink-0">
-                                                                                        <span>⚡ {council.risk_limit_rule}</span>
+
+                                                                                    <div className="flex items-center gap-2 text-[11px] text-amber-300 font-bold shrink-0 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                                                                                        <span>⚡ 10만원 한도 엄수 (단일 종목 몰빵 절대 금지)</span>
+                                                                                        <span className="text-zinc-500">·</span>
+                                                                                        <span className="text-zinc-300 font-medium">3회 분할 매수 준수</span>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
