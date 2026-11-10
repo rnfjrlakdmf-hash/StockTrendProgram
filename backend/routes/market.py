@@ -4902,7 +4902,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY",
                 "vote_label": "🟢 매수 (사자)",
                 "confidence": 86,
-                "reason": f"치명적 경쟁 리스크가 낮고, 좋은 비즈니스가 합리적 가격대({doc.get('current_price', '')})에 형성되어 있습니다."
+                "reason": f"치명적 경쟁 리스크가 낮고, 우수한 비즈니스 모델이 {f'합리적 가격대({doc.get("current_price")})' if doc.get("current_price") else '합리적인 가격대'}에 형성되어 있습니다."
             },
             {
                 "id": "graham",
@@ -4912,7 +4912,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY" if "+" in upside else "HOLD",
                 "vote_label": "🟢 안전마진 확보" if "+" in upside else "🟡 중립",
                 "confidence": 78,
-                "reason": f"목표주가({target_price}) 대비 {upside} 수준의 안전마진이 확보되어 하방 방어력이 단단합니다."
+                "reason": f"{f'목표주가({target_price}) 대비 {upside}' if target_price and target_price not in ['제시안함', '-'] else '현재 밸류에이션 대비 충분한'} 수준의 안전마진이 확보되어 하방 방어력이 단단합니다."
             },
             {
                 "id": "lynch",

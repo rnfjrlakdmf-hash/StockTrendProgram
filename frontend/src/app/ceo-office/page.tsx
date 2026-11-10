@@ -427,7 +427,7 @@ function getWallStreetCouncil(doc: any) {
             analysts: [
                 { id: "buffett", name: "워런 버핏", role: "경제적 해자 & ROE", avatar: "👴", vote: "BUY", vote_label: "🟢 매수 (사자)", confidence: 88, reason: `${name}의 확고한 시장 지배력과 진입장벽, 우수한 현금 창출력에 높은 점수를 부여합니다.` },
                 { id: "munger", name: "찰리 멍거", role: "위대한 기업 & 리스크 배제", avatar: "👓", vote: "BUY", vote_label: "🟢 매수 (사자)", confidence: 86, reason: `치명적 경쟁 리스크가 낮고, 좋은 비즈니스가 합리적 가격대에 형성되어 있습니다.` },
-                { id: "graham", name: "벤저민 그레이엄", role: "딥 밸류 & 안전마진", avatar: "📜", vote: upside.includes('+') ? "BUY" : "HOLD", vote_label: upside.includes('+') ? "🟢 안전마진 확보" : "🟡 중립", confidence: 78, reason: `목표주가(${targetPrice}) 대비 ${upside} 수준의 안전마진이 확보되어 하방 방어력이 단단합니다.` },
+                { id: "graham", name: "벤저민 그레이엄", role: "딥 밸류 & 안전마진", avatar: "📜", vote: upside.includes('+') ? "BUY" : "HOLD", vote_label: upside.includes('+') ? "🟢 안전마진 확보" : "🟡 중립", confidence: 78, reason: targetPrice && targetPrice !== "제시안함" ? `목표주가(${targetPrice}) 대비 ${upside || "상승"} 수준의 안전마진이 확보되어 하방 방어력이 단단합니다.` : `현재 밸류에이션 대비 충분한 안전마진이 확보되어 하방 방어력이 단단합니다.` },
                 { id: "lynch", name: "피터 린치", role: "합리적 성장주 (GARP)", avatar: "👜", vote: "BUY", vote_label: "🟢 성장주 매수", confidence: 92, reason: "전방 산업 성장률과 분기 수주 모멘텀이 뛰어나 PEG 관점에서 매우 매력적인 구간입니다." },
                 { id: "druckenmiller", name: "스탠리 드러켄밀러", role: "매크로 변곡점 & 모멘텀", avatar: "⚡", vote: "BUY", vote_label: "🟢 적극 매수", confidence: 94, reason: "기관·외국인 수급 유입과 업황 턴어라운드 변곡점(Inflection)이 일치하여 승부처로 판단합니다." }
             ],
@@ -6909,23 +6909,27 @@ export default function CeoOfficePage() {
                                                                                                 key={a.id}
                                                                                                 className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between ${cardBorder}`}
                                                                                             >
-                                                                                                <div className="space-y-1.5">
-                                                                                                    {/* 상단: 아바타 + 이름 + 투표 뱃지 */}
-                                                                                                    <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-white/5">
-                                                                                                        <div className="flex items-center gap-1.5">
-                                                                                                            <span className="text-base">{a.avatar}</span>
-                                                                                                            <div className="flex flex-col">
-                                                                                                                <span className="text-xs font-black text-white leading-none">{a.name}</span>
-                                                                                                                <span className="text-[9px] text-zinc-400 font-bold leading-tight mt-0.5">{a.role}</span>
-                                                                                                            </div>
+                                                                                                <div className="space-y-2">
+                                                                                                    {/* 1행: 아바타 + 이름 (좌) & 투표 뱃지 (우) - 한 줄 시원한 배치 */}
+                                                                                                    <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-white/10">
+                                                                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                                                                            <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
+                                                                                                            <span className="text-xs font-black text-white truncate tracking-tight">{a.name}</span>
                                                                                                         </div>
                                                                                                         <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border shrink-0 ${badgeColor}`}>
                                                                                                             {a.vote_label}
                                                                                                         </span>
                                                                                                     </div>
 
-                                                                                                    {/* 확신도 점수 게이지 바 */}
-                                                                                                    <div className="space-y-0.5 pt-0.5">
+                                                                                                    {/* 2행: 전문 투자 철학/역할 태그 (카드 전폭 100% 활용, 글자 깨짐 완전 방지) */}
+                                                                                                    <div>
+                                                                                                        <div className="text-[10px] text-zinc-300 font-bold bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-center truncate" title={a.role}>
+                                                                                                            {a.role}
+                                                                                                        </div>
+                                                                                                    </div>
+
+                                                                                                    {/* 3행: 확신도 점수 & 게이지 바 */}
+                                                                                                    <div className="space-y-1 pt-0.5">
                                                                                                         <div className="flex items-center justify-between text-[10px]">
                                                                                                             <span className="text-zinc-400 font-bold">확신도</span>
                                                                                                             <span className="font-mono font-black text-white">{a.confidence}점</span>
@@ -6938,8 +6942,8 @@ export default function CeoOfficePage() {
                                                                                                         </div>
                                                                                                     </div>
 
-                                                                                                    {/* 한 줄 핵심 근거 */}
-                                                                                                    <div className="text-[11px] text-zinc-200 font-medium leading-snug break-keep pt-1 bg-white/[0.02] p-1.5 rounded-lg border border-white/5 min-h-[46px] flex items-center">
+                                                                                                    {/* 4행: 한 줄 핵심 근거 (충분한 행간 & 쾌적한 폰트 패딩) */}
+                                                                                                    <div className="text-[11px] text-zinc-200 font-medium leading-relaxed break-keep p-2 rounded-lg bg-black/40 border border-white/5 min-h-[58px] flex items-center">
                                                                                                         {a.reason}
                                                                                                     </div>
                                                                                                 </div>
