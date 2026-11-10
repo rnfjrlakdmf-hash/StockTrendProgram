@@ -449,9 +449,10 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
     let rawVal = String(kn.value || '').trim();
     const rawLabel = String(kn.label || '').trim();
 
-    // 소문자 'us ' 접두사를 단정한 국기 이모지 '🇺🇸 '로 정제
-    rawVal = rawVal.replace(/\bus\s+/gi, '🇺🇸 ');
-    rawVal = rawVal.replace(/\bkr\s+/gi, '🇰🇷 ');
+    // 소문자/대문자 'us ', 'kr ' 접두사를 단정한 국기 이모지 '🇺🇸 ', '🇰🇷 '로 정제
+    rawVal = rawVal.replace(/\b(?:us|US)\s+(?:미국\s*)?/gi, '🇺🇸 미국 ');
+    rawVal = rawVal.replace(/\b(?:kr|KR)\s+(?:한국\s*)?/gi, '🇰🇷 한국 ');
+    rawVal = rawVal.replace(/🇺🇸\s*미국\s*미국/g, '🇺🇸 미국');
     rawVal = rawVal.replace(/^\$([0-9,]+(?:\.[0-9]+)?원)/, '$1');
     rawVal = rawVal
         .replace(/United States-NY Fed Consumer Expectation-NY Fed Inflation Expectation 1yr/gi, '미국 1년 기대인플레이션 (물가 심리)')
@@ -471,12 +472,32 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
     const isFinancialPrice = /^[\$₩]?[0-9,]+(?:\.[0-9]+)?(?:원|pt|%|달러)?(?:\s*\([+\-]?[0-9,]+(?:\.[0-9]+)?%?\))?$/i.test(rawVal.trim()) ||
         (/[0-9,]+(?:\.[0-9]+)?\s*\([+\-]\d+(?:\.\d+)?%\)/.test(rawVal) && rawVal.length < 35);
 
-    // 라벨과 값에 따른 스마트 뱃지 판별
+    // 라벨과 값에 따른 스마트 뱃지 판별 (공략주/알짜주 우선 매핑)
     let badgeText = '핵심';
     let badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
     let cardStyle = 'border-amber-500/30 bg-gradient-to-br from-zinc-900/90 to-slate-950/90';
 
-    if (isDown) {
+    if (rawLabel.includes('공략') || rawLabel.includes('종목') || rawLabel.includes('알짜') || rawLabel.includes('추천')) {
+        badgeText = '공략주';
+        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
+        cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('시나리오') || rawLabel.includes('상태')) {
+        badgeText = '실시간 판정';
+        badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
+        cardStyle = 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('중요도') || rawLabel.includes('별')) {
+        badgeText = '중요도';
+        badgeStyle = 'bg-purple-500/20 text-purple-300 border-purple-400/30';
+        cardStyle = 'border-purple-500/30 bg-gradient-to-br from-purple-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('섹터') || rawLabel.includes('수혜')) {
+        badgeText = '수혜 섹터';
+        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
+        cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (rawLabel.includes('테마') || rawLabel.includes('일정')) {
+        badgeText = '핵심 테마';
+        badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
+        cardStyle = 'border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-zinc-900/90 to-slate-950/90';
+    } else if (isDown) {
         badgeText = '▼ 조정';
         badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
         cardStyle = 'border-sky-500/35 bg-gradient-to-br from-sky-950/30 to-slate-950/90';
@@ -484,31 +505,43 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
         badgeText = '▲ 강세';
         badgeStyle = 'bg-rose-500/20 text-rose-300 border-rose-400/30';
         cardStyle = 'border-rose-500/35 bg-gradient-to-br from-rose-950/30 to-slate-950/90';
-    } else if (rawLabel.includes('테마') || rawLabel.includes('일정')) {
-        badgeText = '핵심 테마';
-        badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
-        cardStyle = 'border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-zinc-900/90 to-slate-950/90';
-    } else if (rawLabel.includes('시나리오') || rawLabel.includes('상태')) {
-        badgeText = '실시간 판정';
-        badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
-        cardStyle = 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-zinc-900/90 to-slate-950/90';
-    } else if (rawLabel.includes('공략') || rawLabel.includes('종목')) {
-        badgeText = '공략주';
-        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
-        cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
-    } else if (rawLabel.includes('섹터') || rawLabel.includes('수혜')) {
-        badgeText = '수혜 섹터';
-        badgeStyle = 'bg-sky-500/20 text-sky-300 border-sky-400/30';
-        cardStyle = 'border-sky-500/30 bg-gradient-to-br from-sky-950/20 via-zinc-900/90 to-slate-950/90';
-    } else if (rawLabel.includes('중요도') || rawLabel.includes('별')) {
-        badgeText = '중요도';
-        badgeStyle = 'bg-purple-500/20 text-purple-300 border-purple-400/30';
-        cardStyle = 'border-purple-500/30 bg-gradient-to-br from-purple-950/20 via-zinc-900/90 to-slate-950/90';
     }
 
     let renderedValue: React.ReactNode = null;
 
-    if (isFinancialPrice) {
+    if (rawLabel.includes('공략') || rawLabel.includes('알짜') || rawLabel.includes('추천') || (rawVal.includes('(') && rawVal.includes('만)') && rawVal.includes(','))) {
+        // "두산에너빌리티(4.3만), 클래시스(2.5만), 한화시스템(2.8만)" -> 세련된 칩 스타일
+        const stocks = rawVal.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+        renderedValue = (
+            <div className="flex flex-wrap gap-1.5 items-center">
+                {stocks.map((stk, idx) => {
+                    const match = stk.match(/^([^(]+)(\([^)]+\))?$/);
+                    const sName = match ? match[1].trim() : stk;
+                    const sPrice = match && match[2] ? match[2].trim() : '';
+                    return (
+                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-500/10 border border-sky-400/30 text-sky-200 text-[11px] font-bold shadow-sm">
+                            <span className="text-[10px] text-sky-400">🎯</span>
+                            <span className="text-white font-extrabold">{sName}</span>
+                            {sPrice && <span className="text-emerald-400 text-[10.5px] font-mono font-bold">{sPrice}</span>}
+                        </span>
+                    );
+                })}
+            </div>
+        );
+    } else if (rawLabel.includes('시나리오') || rawLabel.includes('상태') || rawVal.includes('대기') || rawVal.includes('가동')) {
+        const isPending = rawVal.includes('대기') || rawVal.includes('⏳');
+        const isBull = rawVal.includes('🟢') || rawVal.includes('긍정') || rawVal.includes('호재');
+        renderedValue = (
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-black shadow-sm ${
+                isPending ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' :
+                isBull ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' :
+                'bg-rose-500/10 border-rose-500/30 text-rose-200'
+            }`}>
+                <span className="text-sm shrink-0">{isPending ? '⏳' : isBull ? '🟢' : '🛡️'}</span>
+                <span className="tracking-tight">{rawVal.replace(/^[⏳🟢🔴🟡]\s*/, '')}</span>
+            </div>
+        );
+    } else if (isFinancialPrice) {
         // 시세/가격 데이터: font-mono로 깔끔한 정렬
         const valColor = isDown ? "text-sky-300" : isUp ? "text-rose-300" : "text-amber-300";
         renderedValue = (
@@ -542,8 +575,11 @@ function renderExecutiveKeyNumber(kn: { label: string; value: string }): {
             const starMatch = rawVal.match(/^([★☆]+)\s*(.*)$/);
             renderedValue = (
                 <div className="space-y-0.5">
-                    <div className="text-amber-400 font-black text-xs tracking-wider">
-                        {starMatch ? starMatch[1] : '★★★★★'}
+                    <div className="text-amber-400 font-black text-xs tracking-wider flex items-center gap-1.5">
+                        <span>{starMatch ? starMatch[1] : '★★★★★'}</span>
+                        <span className="text-[9.5px] text-purple-300 font-bold px-1.5 py-0.2 rounded bg-purple-500/20 border border-purple-400/30">
+                            {rawVal.includes('★★★★★') ? '최고 중요' : '주요 일정'}
+                        </span>
                     </div>
                     {starMatch && starMatch[2] && (
                         <div className="text-[11px] text-zinc-300 font-bold leading-tight break-keep">
@@ -4722,7 +4758,7 @@ export default function CeoOfficePage() {
             if (json.status === 'success' && json.data) {
                 const d = json.data;
                 if (!topicParam && !messageParam) {
-                    try { localStorage.setItem('ceo_office_cache_v6', JSON.stringify(d)); } catch (e) {}
+                    try { localStorage.setItem('ceo_office_cache_v7', JSON.stringify(d)); } catch (e) {}
                 }
                 setFreshLoaded(true);
                 if (Array.isArray(d.executives) && d.executives.length > 0) setExecutives(d.executives);
@@ -4763,7 +4799,7 @@ export default function CeoOfficePage() {
 
     useEffect(() => {
         try {
-            const raw = localStorage.getItem('ceo_office_cache_v6');
+            const raw = localStorage.getItem('ceo_office_cache_v7');
             if (!raw) return;
             const d = JSON.parse(raw);
             if (Array.isArray(d.auto_approvals) && d.auto_approvals.length > 0) setAutoApprovals(d.auto_approvals);
@@ -6731,20 +6767,26 @@ export default function CeoOfficePage() {
                                                             {activeDoc.key_numbers.slice(0, 4).map((kn, i) => {
                                                                 const { badgeText, badgeStyle, cardStyle, renderedValue } = renderExecutiveKeyNumber(kn);
 
+                                                                // 라벨 단축 정돈 (글자 잘림 및 '...' 완전 방지)
+                                                                let cleanLabel = kn.label;
+                                                                if (cleanLabel.includes('10만원') && (cleanLabel.includes('공략') || cleanLabel.includes('테마') || cleanLabel.includes('알짜'))) {
+                                                                    cleanLabel = '10만원 이하 알짜주';
+                                                                }
+
                                                                 return (
                                                                     <div
                                                                         key={i}
-                                                                        className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-start ${cardStyle}`}
+                                                                        className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between min-h-[96px] ${cardStyle}`}
                                                                     >
                                                                         <div className="flex items-center justify-between gap-1 pb-1.5 mb-1.5 border-b border-white/5">
-                                                                            <span className="text-[11px] sm:text-xs text-zinc-300 font-extrabold tracking-tight truncate" title={kn.label}>
-                                                                                {kn.label}
+                                                                            <span className="text-[11px] sm:text-xs text-zinc-200 font-black tracking-tight truncate" title={cleanLabel}>
+                                                                                {cleanLabel}
                                                                             </span>
-                                                                            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded shrink-0 border ${badgeStyle}`}>
+                                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded shrink-0 border ${badgeStyle}`}>
                                                                                 {badgeText}
                                                                             </span>
                                                                         </div>
-                                                                        <div className="flex items-start min-h-[38px] pt-1">
+                                                                        <div className="flex-1 flex items-center pt-0.5">
                                                                             {renderedValue}
                                                                         </div>
                                                                     </div>

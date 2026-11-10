@@ -4607,9 +4607,17 @@ def _build_weekly_review_and_calendar(
         cur_evs = cur_day_obj.get("events") or cur_cfg["events"]
         cur_theme_raw = cur_day_obj.get("theme") or cur_cfg["theme"]
         cur_theme_clean = cur_theme_raw.split("] ")[-1].strip() if "]" in cur_theme_raw else cur_theme_raw.strip()
+        cur_theme_clean = re.sub(r'\bus\s+', '🇺🇸 ', cur_theme_clean, flags=re.IGNORECASE)
+        cur_theme_clean = re.sub(r'\bkr\s+', '🇰🇷 ', cur_theme_clean, flags=re.IGNORECASE)
 
         def _short_ev_label(ev_item: dict) -> str:
-            c_flag = (ev_item.get("country") or "").split(" ")[0]
+            raw_country = (ev_item.get("country") or "").strip().lower()
+            if "us" in raw_country:
+                c_flag = "🇺🇸"
+            elif "kr" in raw_country:
+                c_flag = "🇰🇷"
+            else:
+                c_flag = (ev_item.get("country") or "").split(" ")[0]
             e_name = _humanize_cal_tag(ev_item.get("name") or "")
             # 괄호 안 부연설명이 너무 길면 핵심만 남김
             e_name = re.sub(r'\s*\([^)]{8,}\)', '', e_name).strip()
@@ -4697,7 +4705,7 @@ def _build_weekly_review_and_calendar(
             "key_numbers": [
                 {"label": f"오늘({cur_cfg['day_ko']}) 핵심 테마", "value": cur_theme_clean},
                 {"label": "실시간 시나리오 상태", "value": cur_day_obj.get("scenario_status_badge", "정상 가동")},
-                {"label": "10만원 이하 공략주", "value": short_picks_summary},
+                {"label": "10만원 이하 알짜주", "value": short_picks_summary},
                 {"label": "지표 발표 중요도", "value": f"{cur_cfg['stars']} ({cur_cfg['importance_badge']})"},
             ],
             "research_opinion": research_opinion,

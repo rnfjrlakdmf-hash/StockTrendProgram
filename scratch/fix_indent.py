@@ -1,32 +1,31 @@
-import sys
+with open('backend/routes/market.py', 'r', encoding='utf-8') as f:
+    c = f.read()
 
-file_path = "backend/korea_data.py"
-with open(file_path, "r", encoding="utf-8") as f:
-    lines = f.readlines()
+# Fix indentation around line 6652
+bad_snippet = '''    if not topic and not message:
+            # Enrich each approval doc with Wall Street Council (5 Masters AI Hedge Fund)
+    for doc_item in auto_approvals:
+        if isinstance(doc_item, dict) and "wall_street_council" not in doc_item:
+            doc_item["wall_street_council"] = _generate_wall_street_council(doc_item)
 
-new_lines = []
-deindent_start = 0
-for i, line in enumerate(lines):
-    # Find the start of domestic logic
-    if i >= 1475 and "# Domestic Stock Logic (Naver)" in line:
-        deindent_start = i
-        break
+        _CEO_OFFICE_CACHE = resp_data'''
 
-if deindent_start == 0:
-    print("Could not find start point")
-    sys.exit(1)
+good_snippet = '''    # Enrich each approval doc with Wall Street Council (5 Masters AI Hedge Fund)
+    for doc_item in auto_approvals:
+        if isinstance(doc_item, dict) and "wall_street_council" not in doc_item:
+            doc_item["wall_street_council"] = _generate_wall_street_council(doc_item)
 
-for i, line in enumerate(lines):
-    if i >= deindent_start:
-        # Check if line starts with 8 spaces
-        if line.startswith("        "):
-            new_lines.append(line[4:])
-        else:
-            new_lines.append(line)
-    else:
-        new_lines.append(line)
+    if not topic and not message:
+        _CEO_OFFICE_CACHE = resp_data'''
 
-with open(file_path, "w", encoding="utf-8") as f:
-    f.writelines(new_lines)
+norm_c = c.replace('\r\n', '\n')
+norm_bad = bad_snippet.replace('\r\n', '\n')
+norm_good = good_snippet.replace('\r\n', '\n')
 
-print(f"Successfully de-indented from line {deindent_start+1}")
+if norm_bad in norm_c:
+    norm_c = norm_c.replace(norm_bad, norm_good)
+    with open('backend/routes/market.py', 'w', encoding='utf-8') as f:
+        f.write(norm_c)
+    print('Fixed indentation in market.py successfully!')
+else:
+    print('bad_snippet not found!')
