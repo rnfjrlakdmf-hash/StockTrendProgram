@@ -47,9 +47,6 @@ const navigationGroups = [
             { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
             { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
             { name: "수익률 리더보드", href: "/ranking", icon: Trophy, desc: "포트폴리오 수익률과 퀀트 점수를 기반으로 산출되는 리더보드입니다." },
-            { name: "서비스 소개 및 편집 원칙", href: "/about", icon: Shield, desc: "스마트 투자 비서의 데이터 분석 원칙과 리서치 방법론을 안내합니다." },
-            { name: "문의 및 제보 안내", href: "/contact", icon: MessageSquare, desc: "리서치 콘텐츠 관련 문의 및 데이터 오류 제보 창구입니다." },
-            { name: "금융 면책조항 및 운영정책", href: "/disclaimer", icon: UserCheck, desc: "자본시장법 준수 원칙 및 투자 유의사항을 안내합니다." },
         ]
     }
 ];
