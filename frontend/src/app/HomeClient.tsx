@@ -29,28 +29,30 @@ export default function HomeClient() {
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-5 space-y-6">
         {/* 1. 상단 퀵 내비게이션 바 (깔끔한 1줄 정렬) */}
-        <div className="rounded-2xl bg-zinc-900/80 border border-white/10 px-5 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-lg">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black shrink-0">
-              RESEARCH HUB
+        <div className="rounded-2xl bg-zinc-900/90 border border-white/10 px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-md">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black shrink-0 flex items-center gap-1">
+              <span>🏛️</span>
+              <span>RESEARCH HUB</span>
             </span>
-            <p className="text-xs sm:text-sm text-gray-300 truncate">
-              한국거래소(KRX)·금융감독원(DART)·미국 SEC 공시 기반 정량 수급 분석 및 금융 교육 플랫폼
-            </p>
+            <span className="text-xs text-gray-400 hidden xl:inline-block font-medium truncate">
+              공식 공공데이터 기반 정량 수급 분석 &amp; 금융 교육
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
             {isAdmin && (
               <>
                 <Link
                   href="/ceo-office"
-                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all shadow-sm"
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 text-xs font-black transition-all shadow-sm hover:brightness-110 flex items-center gap-1"
                 >
-                  🏛️ 대표이사 집무실
+                  <span>🏛️</span>
+                  <span>대표이사 집무실</span>
                 </Link>
                 <Link
                   href="/research"
-                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-bold transition-all"
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-bold transition-all"
                 >
                   📑 증권 리서치
                 </Link>
@@ -58,25 +60,25 @@ export default function HomeClient() {
             )}
             <Link
               href="/blog"
-              className="px-3 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-bold transition-all"
+              className="px-2.5 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-bold transition-all"
             >
               📰 마켓 칼럼
             </Link>
             <Link
               href="/theory"
-              className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
+              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
             >
               📘 차트 아카데미
             </Link>
             <Link
               href="/guide"
-              className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all"
+              className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all"
             >
               📚 금융 백과 (46선)
             </Link>
             <Link
               href="/calculator"
-              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-bold transition-all"
+              className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-bold transition-all"
             >
               🧮 주식 계산기
             </Link>
