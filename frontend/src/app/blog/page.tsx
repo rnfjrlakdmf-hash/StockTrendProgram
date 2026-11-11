@@ -48,6 +48,7 @@ export const metadata: Metadata = {
 };
 
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+import { API_BASE_URL } from "@/lib/config";
 
 export const revalidate = 60; // 60초마다 ISR (캐시 갱신)
 
@@ -65,8 +66,9 @@ async function getBlogPosts(page: number, limitPerPage: number) {
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts?page=${page}&limit=${limitPerPage}`;
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const baseUrl = API_BASE_URL || (typeof window === 'undefined' ? "http://127.0.0.1:8000" : "");
+        const apiUrl = `${baseUrl}/api/blog/posts?page=${page}&limit=${limitPerPage}`;
         const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -82,7 +84,8 @@ async function getBlogPosts(page: number, limitPerPage: number) {
                         if (slugStr.includes("daily-research") || slugStr.includes("mass-") || slugStr.includes("seo-")) {
                             return false;
                         }
-                        return contentStr.length >= 2200;
+                        // API 목록 응답에서는 content가 미리보기 요약이므로 최소 30자 이상이면 유효 포스트로 채택
+                        return contentStr.length >= 30;
                     })
                     .map((p: any) => ({
                         id: p.id,

@@ -2,9 +2,32 @@ import { Metadata } from 'next';
 import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
+import { API_BASE_URL } from '@/lib/config';
 import { BookOpen, Newspaper, ShieldCheck, Layers } from 'lucide-react';
 
-export const revalidate = 300;
+export const revalidate = 60;
+
+async function getFeaturedBlogPosts() {
+  try {
+    const baseUrl = API_BASE_URL || (typeof window === 'undefined' ? "http://127.0.0.1:8000" : "");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch(`${baseUrl}/api/blog/posts?page=1&limit=6`, {
+      next: { revalidate: 60 },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === "ok" && Array.isArray(data.posts) && data.posts.length > 0) {
+        return data.posts.slice(0, 6);
+      }
+    }
+  } catch (err) {
+    console.warn("Featured blog posts fallback to static:", err);
+  }
+  return STATIC_POSTS.slice(0, 6);
+}
 
 async function getLatestTheoryPosts() {
   return STATIC_POSTS.slice(13, 19).map(p => ({
@@ -89,7 +112,7 @@ const FAQS = [
 
 export default async function Home() {
   const latestTheoryPosts = await getLatestTheoryPosts();
-  const featuredBlogPosts = STATIC_POSTS.slice(0, 6);
+  const featuredBlogPosts = await getFeaturedBlogPosts();
 
   const jsonLd = {
     "@context": "https://schema.org",

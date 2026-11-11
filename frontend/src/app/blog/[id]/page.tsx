@@ -5,6 +5,7 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import BlogViewTracker from "@/components/BlogViewTracker";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+import { API_BASE_URL } from "@/lib/config";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
 
@@ -51,8 +52,9 @@ async function getBlogPost(slug: string) {
         
         // 2. 백엔드 API를 통해 동적 블로그 포스트 상세 데이터를 가져옴
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-        const apiUrl = `https://stock-trend-program.co.kr/api/blog/posts/${encodeURIComponent(decodedSlug)}`;
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const baseUrl = API_BASE_URL || (typeof window === 'undefined' ? "http://127.0.0.1:8000" : "");
+        const apiUrl = `${baseUrl}/api/blog/posts/${encodeURIComponent(decodedSlug)}`;
         const res = await fetch(apiUrl, { 
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) StockTrendSSR/1.0' },
             next: { revalidate: 60 },
