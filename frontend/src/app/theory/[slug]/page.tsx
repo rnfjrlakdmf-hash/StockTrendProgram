@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
 import { STATIC_POSTS } from "@/lib/staticBlogPosts";
+import { API_BASE_URL } from "@/lib/config";
 
 export const revalidate = 60; // ISR 60초
 
@@ -49,8 +50,9 @@ async function getTheoryPost(slug: string) {
         }
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-        const apiUrl = `https://stock-trend-program.co.kr/api/theory/posts/${encodeURIComponent(decodedSlug)}`;
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const baseUrl = API_BASE_URL || (typeof window === 'undefined' ? "http://127.0.0.1:8000" : "");
+        const apiUrl = `${baseUrl}/api/theory/posts/${encodeURIComponent(decodedSlug)}`;
         const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
         clearTimeout(timeoutId);
         
