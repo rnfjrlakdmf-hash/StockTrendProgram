@@ -2843,6 +2843,7 @@ def _create_futures_approval_doc(
     info: Optional[Dict[str, Any]],
     date_doc_str: str,
     time_str: str,
+    priority_rank: int = 1,
 ) -> Dict[str, Any]:
     sym = meta["symbol"]
     name = meta.get("name", sym)
@@ -2865,6 +2866,16 @@ def _create_futures_approval_doc(
         ],
     })
 
+    priority_badge_map = {
+        1: "🥇 [중요도 1순위] 기술주 선행지표",
+        2: "🥈 [중요도 2순위] 글로벌 표준지수",
+        3: "🥉 [중요도 3순위] 국제 유가·물가",
+        4: "🏅 [중요도 4순위] 달러패권·환율",
+        5: "🎖️ [중요도 5순위] 벤치마크 국채금리",
+        6: "🚨 [중요도 6순위] 월가 공포·변동성",
+    }
+    p_badge = priority_badge_map.get(priority_rank, f"📊 [중요도 {priority_rank}순위]")
+
     price_str = f"{info['price']} ({info['change_pct']:+.2f}%)" if (info and info.get("price")) else (info.get("price") if info else "실시간 연동 중")
     ma50_str = (info.get("ma50") if info else None) or "-"
     trend_str = (info.get("trend_badge") if info else None) or "📊 50일선 추세 점검"
@@ -2872,24 +2883,28 @@ def _create_futures_approval_doc(
     low52_str = (info.get("low_52w") if info else None) or "-"
 
     seq_str = f"{seq:02d}"
+    raw_title = know.get("title", f"[{name}] 글로벌 시장 동향 및 한국 증시 연동 분석")
+    title_with_rank = f"[10대 핵심 {priority_rank}위] {raw_title}"
+
     return {
         "doc_id": f"DOC-{date_doc_str}-{seq_str}",
         "doc_number": f"제 {date_doc_str}-{seq_str} 호",
         "category_type": "global_futures",
-        "category_badge": know.get("badge", f"📊 {sector}"),
-        "urgency": "글로벌 매크로",
+        "category_badge": f"{p_badge} · {sector}",
+        "urgency": f"중요도 {priority_rank}순위",
         "stock_name": f"{know['name']}({sym})" if sym not in know.get('name', '') else know['name'],
         "stock_code": sym,
         "change_pct": float(info.get("change_pct", 0.0)) if (info and info.get("change_pct") is not None) else 0.0,
         "current_price": price_str,
-        "title": know.get("title", f"[{name}] 글로벌 시장 동향 및 한국 증시 연동 분석"),
+        "title": title_with_rank,
         "proposer": "최서연 상무 (CRO) · 이준호 이사 (글로벌·파생본부장)",
         "submitted_at": f"{time_str} 시카고상품거래소(CME) 등 24시간 실시간 점검",
         "easy_headline": (
-            f"'{know['name']}' 시세({price_str})는 {know['why_important']} "
+            f"'{know['name']}' 시세({price_str})는 10대 핵심 거시지표 중 {priority_rank}순위 중요 지표이며, {know['why_important']} "
             f"이 지표가 안정적인 흐름을 유지해야 글로벌 투자 자금이 한국 증시 및 아시아 시장으로도 안심하고 유입될 수 있습니다."
         ),
         "key_numbers": [
+            {"label": "10대 핵심 거시지표 순위", "value": f"중요도 {priority_rank}순위 ({know['name']})"},
             {"label": f"{know['name']} 현재 시세", "value": price_str},
             {"label": "최근 두 달 평균선(50일선)", "value": ma50_str},
             {"label": "현재 흐름 판정", "value": trend_str},
@@ -5040,15 +5055,27 @@ def get_ceo_office_boardroom(
         if cand not in selected_us_metas:
             selected_us_metas.append(cand)
 
-    # 글로벌 선물/거시 지표 4종목: 1번(나스닥100 선물) 기본 온도계 + 2·3·4번은 9대 핵심 거시지표(S&P500, 원유, 금, 구리, 국채금리, 달러, VIX공포지수, 천연가스, 은) 일자별 다이내믹 순환!
-    nq_meta = next((c for c in futures_catalog if c["symbol"] == "NQ=F"), None)
-    rot_candidates = [c for c in futures_catalog if c["symbol"] != "NQ=F"]
-    selected_futures_metas = [nq_meta] if nq_meta else []
-    for offset in [0, 3, 6]:
-        if rot_candidates and len(selected_futures_metas) < 4:
-            cand = rot_candidates[(day_num + offset) % len(rot_candidates)]
-            if cand not in selected_futures_metas:
-                selected_futures_metas.append(cand)
+    # 글로벌 선물/거시 10대 핵심 지표 중 중요도 순위 1~6위 엄선 상정
+    # 1순위: NQ=F (나스닥100 선물 - 미국 기술주 선행 지표)
+    # 2순위: ES=F (S&P 500 선물 - 글로벌 대형주 표준지수)
+    # 3순위: CL=F (WTI 원유 선물 - 인플레이션 및 원가 직격탄)
+    # 4순위: DX-Y.NYB (달러 인덱스 - 글로벌 달러 가치 및 원/달러 환율 방향성)
+    # 5순위: ^TNX (미국 10년물 국채금리 - 글로벌 자산 평가 기준 금리)
+    # 6순위: ^VIX (VIX 변동성/공포지수 - 월가 패닉 및 변동성 측정)
+    futures_priority_order = [
+        "NQ=F",      # 1순위: 나스닥 100 선물
+        "ES=F",      # 2순위: S&P 500 선물
+        "CL=F",      # 3순위: WTI 원유 선물
+        "DX-Y.NYB",  # 4순위: 달러 인덱스 선물
+        "^TNX",      # 5순위: 미국 10년물 국채금리
+        "^VIX",      # 6순위: VIX 변동성(공포) 지수
+        "GC=F",      # 7순위: 국제 금 선물
+        "HG=F",      # 8순위: 구리 선물
+        "SI=F",      # 9순위: 국제 은 선물
+        "NG=F",      # 10순위: 천연가스 선물
+    ]
+    futures_map = {c["symbol"]: c for c in futures_catalog}
+    selected_futures_metas = [futures_map[sym] for sym in futures_priority_order[:6] if sym in futures_map]
 
     us1_meta = selected_us_metas[0] if selected_us_metas else None
     us2_meta = selected_us_metas[1] if len(selected_us_metas) > 1 else None
@@ -5081,7 +5108,7 @@ def get_ceo_office_boardroom(
         return idx, _fetch_single_yfinance_research(meta, atype)
 
     try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=14) as ex:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=18) as ex:
             f_comp = ex.submit(_task_comp)
             f_mkt = ex.submit(_task_mkt)
             f_fx = ex.submit(_task_fx)
@@ -5828,11 +5855,12 @@ def get_ceo_office_boardroom(
         info = us_infos[i] if i < len(us_infos) else None
         auto_approvals.append(_create_us_stock_approval_doc(seq, meta, info, date_doc_str, time_str))
 
-    # [기안 선물·거시지표 4종목] (나스닥100 선물, S&P500 선물, WTI 원유 선물, 금/구리/달러/국채)
+    # [기안 선물·거시지표 10대 핵심 중요도 1~6순위] (나스닥100, S&P500, WTI원유, 달러인덱스, 10년물국채, VIX공포지수)
     for i, meta in enumerate(selected_futures_metas):
         seq = len(auto_approvals) + 1
         info = futures_infos[i] if i < len(futures_infos) else None
-        auto_approvals.append(_create_futures_approval_doc(seq, meta, info, date_doc_str, time_str))
+        priority_rank = i + 1
+        auto_approvals.append(_create_futures_approval_doc(seq, meta, info, date_doc_str, time_str, priority_rank=priority_rank))
 
     # [기안 마지막호] 전세계 글로벌 경제뉴스 & 매크로 인텔리전스 (실시간 원/달러 환율·금리·국제유가 연동)
     _macro_seq = len(auto_approvals) + 1
