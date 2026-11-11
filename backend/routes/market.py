@@ -5644,39 +5644,63 @@ def get_ceo_office_boardroom(
             return int(gp_digits) <= 130000
         return True
 
-    # 1주당 10만원 이하 코스피 우량주 3종목 + 코스닥 알짜 성장주 3종목 (총 6종목) 균형 선발!
-    kospi_reps = []
-    kosdaq_reps = []
-    for rep in desk_company_reports:
-        if not _is_under_100k(rep):
-            continue
-        c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name")) or ""
-        is_kq = bool(rep.get("is_kosdaq")) or (c in known_kosdaq_codes) or bool(kr_realtime_quotes.get(c, {}).get("is_kosdaq"))
-        rep["is_kosdaq"] = is_kq
-        if is_kq:
-            if all(r["stock_name"] != rep["stock_name"] for r in kosdaq_reps):
-                kosdaq_reps.append(rep)
-        else:
-            if all(r["stock_name"] != rep["stock_name"] for r in kospi_reps):
-                kospi_reps.append(rep)
+    # 당일 기준 국내 증권사 추천주 6종목 일자별 영구 고정 캐시 (Daily Persistent Lock)
+    # 하루 동안 네이버 API 지연/타임아웃이나 서버 재시작 시에도 선발 종목이 절대 변하지 않도록 보장
+    cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    os.makedirs(cache_dir, exist_ok=True)
+    daily_kr_cache_path = os.path.join(cache_dir, f"ceo_office_kr_reports_{date_doc_str}.json")
 
-    # 10만원 이하 코스피 리포트가 3개 미만이면 일자별 순환 코스피 가성비 우량주로 자동 보강
-    for offset in range(len(kospi_affordable_reports)):
-        if len(kospi_reps) >= 3:
-            break
-        cand = dict(kospi_affordable_reports[(day_num + offset) % len(kospi_affordable_reports)])
-        if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kospi_reps):
-            kospi_reps.append(cand)
+    selected_kr_reports = []
+    if os.path.exists(daily_kr_cache_path):
+        try:
+            with open(daily_kr_cache_path, "r", encoding="utf-8") as f:
+                loaded_reps = json.load(f)
+                if isinstance(loaded_reps, list) and len(loaded_reps) >= 6:
+                    selected_kr_reports = loaded_reps[:6]
+        except Exception as _e:
+            print(f"[CEOOffice] Daily KR cache load error: {_e}")
 
-    # 10만원 이하 코스닥 리포트가 3개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
-    for offset in range(len(kosdaq_growth_reports)):
-        if len(kosdaq_reps) >= 3:
-            break
-        cand = dict(kosdaq_growth_reports[(day_num + offset) % len(kosdaq_growth_reports)])
-        if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kosdaq_reps):
-            kosdaq_reps.append(cand)
+    if not selected_kr_reports:
+        # 1주당 10만원 이하 코스피 우량주 3종목 + 코스닥 알짜 성장주 3종목 (총 6종목) 균형 선발!
+        kospi_reps = []
+        kosdaq_reps = []
+        for rep in desk_company_reports:
+            if not _is_under_100k(rep):
+                continue
+            c = rep.get("item_code") or STOCK_MAP.get(rep.get("stock_name")) or ""
+            is_kq = bool(rep.get("is_kosdaq")) or (c in known_kosdaq_codes) or bool(kr_realtime_quotes.get(c, {}).get("is_kosdaq"))
+            rep["is_kosdaq"] = is_kq
+            if is_kq:
+                if all(r["stock_name"] != rep["stock_name"] for r in kosdaq_reps):
+                    kosdaq_reps.append(rep)
+            else:
+                if all(r["stock_name"] != rep["stock_name"] for r in kospi_reps):
+                    kospi_reps.append(rep)
 
-    selected_kr_reports = kospi_reps[:3] + kosdaq_reps[:3]
+        # 10만원 이하 코스피 리포트가 3개 미만이면 일자별 순환 코스피 가성비 우량주로 자동 보강
+        for offset in range(len(kospi_affordable_reports)):
+            if len(kospi_reps) >= 3:
+                break
+            cand = dict(kospi_affordable_reports[(day_num + offset) % len(kospi_affordable_reports)])
+            if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kospi_reps):
+                kospi_reps.append(cand)
+
+        # 10만원 이하 코스닥 리포트가 3개 미만이면 일자별 순환 코스닥 알짜 성장주로 자동 보강
+        for offset in range(len(kosdaq_growth_reports)):
+            if len(kosdaq_reps) >= 3:
+                break
+            cand = dict(kosdaq_growth_reports[(day_num + offset) % len(kosdaq_growth_reports)])
+            if _is_under_100k(cand) and all(r["stock_name"] != cand["stock_name"] for r in kosdaq_reps):
+                kosdaq_reps.append(cand)
+
+        selected_kr_reports = kospi_reps[:3] + kosdaq_reps[:3]
+
+        if len(selected_kr_reports) >= 6:
+            try:
+                with open(daily_kr_cache_path, "w", encoding="utf-8") as f:
+                    json.dump(selected_kr_reports, f, ensure_ascii=False, indent=2)
+            except Exception as _e:
+                print(f"[CEOOffice] Daily KR cache save error: {_e}")
 
     for idx, rep in enumerate(selected_kr_reports[:6], start=2):
         s_name = rep["stock_name"]
