@@ -3,7 +3,7 @@ import HomeClient from './HomeClient';
 import Link from 'next/link';
 import { STATIC_POSTS } from '@/lib/staticBlogPosts';
 import { API_BASE_URL } from '@/lib/config';
-import { BookOpen, Newspaper, ShieldCheck, Layers } from 'lucide-react';
+import EditorialArchiveHub from '@/components/EditorialArchiveHub';
 
 export const revalidate = 60;
 
@@ -154,200 +154,16 @@ export default async function Home() {
       {/* ── 1. [최상단 배치] 실시간 통합 마켓 대시보드 (LIVE RADAR · 공포·탐욕 지수 · 실시간 시세 & 랭킹 허브) ── */}
       <HomeClient />
 
-      {/* ── 2. [하단 정돈 배치] 금융 리서치 & 투자 지식 아카이브 (깔끔하게 정돈된 에디토리얼 영역) ── */}
+      {/* ── 2. [하단 정돈 배치] 금융 리서치 & 투자 지식 아카이브 (깔끔한 탭 허브 형태) ── */}
       <div className="border-t border-white/10 bg-[#06070a]">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-8">
-
-          {/* 에디토리얼 헤더 (간결하고 정돈된 타이틀) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-black">
-                  RESEARCH JOURNAL
-                </span>
-                <span className="text-xs text-gray-400">
-                  발행 및 편집: 윤희원 (StockTrend Research Team)
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                금융 리서치 &amp; 주식 투자 지식 아카이브
-              </h2>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 self-start sm:self-center">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              KRX · DART · SEC 공식 공공데이터 인증
-            </div>
-          </div>
-
-          {/* [섹션 1] 심층 금융 리서치 칼럼 6선 (깔끔한 3열 그리드) */}
-          <section aria-labelledby="featured-research-heading" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 id="featured-research-heading" className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                <Newspaper className="w-4 h-4 text-blue-400" /> 심층 금융 리서치 칼럼
-              </h3>
-              <Link href="/blog" className="text-xs font-bold text-blue-300 hover:text-white bg-blue-500/15 border border-blue-500/30 px-3 py-1.5 rounded-xl transition-all">
-                전체 칼럼 보기 →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {featuredBlogPosts.map((post) => {
-                const plainDesc = String((post as any).excerpt || post.content || '')
-                  .replace(/<[^>]*>?/gm, ' ')
-                  .replace(/\s+/g, ' ')
-                  .trim()
-                  .slice(0, 100);
-                return (
-                  <Link
-                    key={post.slug}
-                    href={`/blog/${encodeURIComponent(post.slug)}`}
-                    className="p-4 rounded-2xl bg-zinc-900/60 border border-white/10 hover:border-blue-500/40 transition-all flex flex-col justify-between gap-2.5 group shadow-sm hover:shadow-blue-500/5"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                          {(post as any).category || '금융 리서치'}
-                        </span>
-                        <span className="text-[10px] text-gray-500">
-                          {new Date(post.createdAt).toLocaleDateString('ko-KR')}
-                        </span>
-                      </div>
-                      <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2 leading-snug">
-                        {post.title}
-                      </h4>
-                      <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">
-                        {plainDesc}...
-                      </p>
-                    </div>
-                    <span className="text-[11px] font-bold text-blue-400 flex items-center gap-1">
-                      칼럼 읽기 →
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* [섹션 2] 46대 필수 주식 백과사전 & 차트 아카데미 (정돈된 2열 분할 레이아웃) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 좌측: 46대 필수 주식 용어 백과사전 (콤팩트 그리드) */}
-            <section aria-labelledby="encyclopedia-heading" className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <h3 id="encyclopedia-heading" className="text-sm sm:text-base font-black text-white flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-purple-400" /> 46대 필수 주식 용어 백과
-                </h3>
-                <Link
-                  href="/guide"
-                  className="text-xs font-bold text-purple-300 hover:text-white bg-purple-500/15 border border-purple-500/30 px-3 py-1 rounded-lg transition-all"
-                >
-                  46개 전체보기 →
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {INVESTMENT_GUIDES.slice(0, 9).map(({ href, title, desc }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 hover:border-purple-500/40 transition-all group block shadow-xs"
-                  >
-                    <h4 className="text-white text-xs font-bold group-hover:text-purple-300 transition-colors truncate">
-                      {title}
-                    </h4>
-                    <p className="text-gray-400 text-[10px] mt-0.5 leading-snug line-clamp-1">
-                      {desc}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            {/* 우측: 실전 차트·보조지표 아카데미 */}
-            {latestTheoryPosts.length > 0 && (
-              <section aria-labelledby="latest-academy-heading" className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <h3 id="latest-academy-heading" className="text-sm sm:text-base font-black text-white flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-emerald-400" /> 차트·보조지표 실전 아카데미
-                  </h3>
-                  <Link href="/theory" className="text-xs font-bold text-emerald-300 hover:text-white bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-lg transition-all">
-                    전체 강의 →
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {latestTheoryPosts.slice(0, 4).map((post: any) => {
-                    const slug = post.slug || post.id;
-                    return (
-                      <Link
-                        key={slug}
-                        href={`/theory/${encodeURIComponent(slug)}`}
-                        className="p-3 rounded-xl bg-zinc-950/70 border border-white/5 hover:border-emerald-500/40 transition-all flex flex-col justify-between gap-2 group"
-                      >
-                        <div className="space-y-1">
-                          <span className="inline-block text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                            차트 스터디
-                          </span>
-                          <h4 className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-1">
-                            {post.title}
-                          </h4>
-                        </div>
-                        <span className="text-[10px] font-bold text-emerald-400">
-                          강의 읽기 →
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* [섹션 3] 핵심 산업 밸류체인 & 자주 묻는 질문 (FAQ) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 좌측: 핵심 산업 테마 칩 */}
-            <section aria-labelledby="sector-research-heading" className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-3">
-              <h3 id="sector-research-heading" className="text-sm sm:text-base font-black text-white flex items-center gap-2 border-b border-white/10 pb-3">
-                <Layers className="w-4 h-4 text-amber-400" /> 핵심 산업·섹터 밸류체인
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {SECTOR_RESEARCH_LINKS.map(({ href, title, desc }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="p-2.5 rounded-xl bg-zinc-950/70 border border-white/5 hover:border-amber-500/40 transition-all group block"
-                  >
-                    <h4 className="text-white text-xs font-bold group-hover:text-amber-300 transition-colors truncate">
-                      {title}
-                    </h4>
-                    <p className="text-gray-400 text-[10px] mt-0.5 truncate">
-                      {desc}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            {/* 우측: 정량 분석 원칙 & 자주 묻는 질문 FAQ */}
-            <section className="bg-zinc-900/40 border border-white/10 rounded-2xl p-5 space-y-3">
-              <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2 border-b border-white/10 pb-3">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> 데이터 리서치 FAQ
-              </h3>
-              <div className="space-y-2">
-                {FAQS.slice(0, 3).map(({ q, a }, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-zinc-950/70 border border-white/5 space-y-1">
-                    <h4 className="text-white text-xs font-bold flex items-start gap-1.5">
-                      <span className="text-blue-400 font-black shrink-0">Q.</span>
-                      <span>{q}</span>
-                    </h4>
-                    <p className="text-gray-400 text-[11px] leading-relaxed pl-4">
-                      {a}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+          <EditorialArchiveHub
+            featuredBlogPosts={featuredBlogPosts}
+            latestTheoryPosts={latestTheoryPosts}
+            investmentGuides={INVESTMENT_GUIDES}
+            sectorResearchLinks={SECTOR_RESEARCH_LINKS}
+            faqs={FAQS}
+          />
         </div>
       </div>
     </>

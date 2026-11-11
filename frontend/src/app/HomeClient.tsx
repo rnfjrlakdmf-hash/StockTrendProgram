@@ -27,66 +27,66 @@ export default function HomeClient() {
         onSearch={handleSearch}
       />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-5 space-y-6">
-        {/* 1. 상단 퀵 내비게이션 바 (깔끔한 1줄 정렬) */}
-        <div className="rounded-2xl bg-zinc-900/90 border border-white/10 px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-md">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-black shrink-0 flex items-center gap-1">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 pt-2 sm:pt-3 space-y-4">
+        {/* 1. 슬림 퀵 리서치 링크 바 (공포·탐욕 지수가 바로 보이도록 얇고 정돈된 1줄 바) */}
+        <div className="rounded-xl bg-zinc-900/80 border border-white/10 px-3 py-1.5 flex flex-wrap items-center justify-between gap-1.5 shadow-sm text-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-black shrink-0 flex items-center gap-1">
               <span>🏛️</span>
               <span>RESEARCH HUB</span>
             </span>
-            <span className="text-xs text-gray-400 hidden xl:inline-block font-medium truncate">
-              공식 공공데이터 기반 정량 수급 분석 &amp; 금융 교육
+            <span className="text-[11px] text-gray-400 hidden xl:inline-block font-medium truncate">
+              공식 공공데이터 기반 정량 수급 분석
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          <div className="flex items-center gap-1 shrink-0 flex-wrap text-[11px]">
             {isAdmin && (
               <>
                 <Link
                   href="/ceo-office"
-                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 text-xs font-black transition-all shadow-sm hover:brightness-110 flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black transition-all shadow-xs hover:brightness-110 flex items-center gap-1"
                 >
                   <span>🏛️</span>
                   <span>대표이사 집무실</span>
                 </Link>
                 <Link
                   href="/research"
-                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-bold transition-all"
+                  className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 font-bold transition-all"
                 >
-                  📑 증권 리서치
+                  📑 리서치
                 </Link>
               </>
             )}
             <Link
               href="/blog"
-              className="px-2.5 py-1.5 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 text-xs font-bold transition-all"
+              className="px-2 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 font-bold transition-all"
             >
-              📰 마켓 칼럼
+              📰 칼럼
             </Link>
             <Link
               href="/theory"
-              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all"
+              className="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-bold transition-all"
             >
-              📘 차트 아카데미
+              📘 차트
             </Link>
             <Link
               href="/guide"
-              className="px-2.5 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all"
+              className="px-2 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 font-bold transition-all"
             >
-              📚 금융 백과 (46선)
+              📚 백과 (46선)
             </Link>
             <Link
               href="/calculator"
-              className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 text-xs font-bold transition-all"
+              className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 font-bold transition-all"
             >
-              🧮 주식 계산기
+              🧮 계산기
             </Link>
           </div>
         </div>
 
-        {/* 2. 핵심 마켓 상황판 2단 그리드: 좌측(공포·탐욕 지수) / 우측(실시간 시세 & 랭킹 허브) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* 2. [최상단 배치] 핵심 마켓 상황판 2단 그리드: 좌측(공포·탐욕 지수) / 우측(실시간 시세 & 랭킹 허브) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
           <FearGreedSpeedometer />
           <LiveMarketHub />
         </div>

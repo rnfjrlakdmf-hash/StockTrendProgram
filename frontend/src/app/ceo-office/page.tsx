@@ -7017,6 +7017,130 @@ export default function CeoOfficePage() {
                                                                                     </div>
                                                                                 </div>
 
+                                                                                 {/* ── [STEP 2.5B 최상단 배치] 🏛️ 5대 거장 종합 결론 & AI 최종 행동 지침 브리핑 ── */}
+                                                                                <div className={`rounded-2xl p-4 sm:p-5 border transition-all shadow-2xl space-y-3.5 ${
+                                                                                    council.target_allocation_pct === 0
+                                                                                        ? 'bg-gradient-to-br from-[#240c14] via-[#12070c] to-black border-rose-500/60 shadow-rose-950/40'
+                                                                                        : 'bg-gradient-to-br from-[#0c261c] via-[#06140e] to-black border-emerald-500/60 shadow-emerald-950/40'
+                                                                                }`}>
+                                                                                    {/* 1. 종합 결론 헤더 & 5인 투표 스코어보드 */}
+                                                                                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+                                                                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                                                                            <span className="px-3 py-1 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 font-black text-xs sm:text-sm inline-flex items-center gap-1.5 shadow-md">
+                                                                                                <span>⚖️</span>
+                                                                                                <span>5대 거장 종합 결론</span>
+                                                                                            </span>
+                                                                                            <h4 className="text-sm sm:text-base font-black text-white tracking-tight">
+                                                                                                {council.consensus_title || (council.target_allocation_pct === 0 ? "전원 매수 보류 & 100% 현금 방어" : "만장일치 적극 매수 & 분할 편입")}
+                                                                                            </h4>
+                                                                                            <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                                                                                                targetPct > 0 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                                                            }`}>
+                                                                                                {council.consensus_badge}
+                                                                                            </span>
+                                                                                        </div>
+
+                                                                                        {/* 투표 집계 현황 뱃지들 */}
+                                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                            {(() => {
+                                                                                                const buys = council.analysts.filter((a: any) => a.vote === 'BUY').length;
+                                                                                                const holds = council.analysts.filter((a: any) => a.vote === 'HOLD').length;
+                                                                                                const sells = council.analysts.filter((a: any) => a.vote === 'SELL').length;
+                                                                                                const avgConf = Math.round(council.analysts.reduce((acc: number, a: any) => acc + (a.confidence || 0), 0) / council.analysts.length);
+
+                                                                                                return (
+                                                                                                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                                                                                                        {buys > 0 && (
+                                                                                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/25 text-emerald-200 border border-emerald-500/50 shadow-xs">
+                                                                                                                🟢 매수 {buys}명
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                        {holds > 0 && (
+                                                                                                            <span className="px-2.5 py-1 rounded-lg bg-amber-500/25 text-amber-200 border border-amber-500/50 shadow-xs">
+                                                                                                                🟡 중립 {holds}명
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                        {sells > 0 && (
+                                                                                                            <span className="px-2.5 py-1 rounded-lg bg-rose-500/25 text-rose-200 border border-rose-500/50 shadow-xs">
+                                                                                                                🔴 관망/축소 {sells}명
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                        <span className="px-2.5 py-1 rounded-lg bg-white/10 text-zinc-200 border border-white/15 font-mono text-[11px]">
+                                                                                                            평균 확신도 {avgConf}점
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                );
+                                                                                            })()}
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    {/* 2. 5인의 관점을 유기적으로 엮은 종합 분석 총평 */}
+                                                                                    <div className="p-3 sm:p-4 rounded-xl bg-black/60 border border-white/10 space-y-2.5">
+                                                                                        <div className="flex items-start gap-2.5">
+                                                                                            <span className="text-amber-400 text-base shrink-0 mt-0.5">💬</span>
+                                                                                            <div className="space-y-1.5 text-xs text-zinc-200 leading-relaxed break-keep">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="text-amber-300 font-extrabold text-xs sm:text-sm">
+                                                                                                        [월가 5인 자문단 의견 종합 도출 결론]
+                                                                                                    </span>
+                                                                                                    <span className="text-[10px] text-zinc-400">
+                                                                                                        (버핏·멍거·그레이엄·린치·드러켄밀러 만장일치 합의)
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                                <p className="text-[12.5px] sm:text-[13px] text-zinc-100 font-medium leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
+                                                                                                    {council.consensus_conclusion || (council.target_allocation_pct === 0
+                                                                                                        ? "버핏의 독점 무기(해자) 훼손 우려와 멍거의 업황 둔화 경고, 린치의 성장 엔진 둔화, 드러켄밀러의 외국인 큰손 자금 이탈이 동시에 확인되었습니다. 그레이엄조차 안전 에어백이 얇아졌다고 경고하므로, 지금은 섣부른 물타기를 멈추고 100% 현금을 보존하며 소나기를 피해야 할 절대 방어 구간입니다."
+                                                                                                        : `${activeDoc.stock_name}은 버핏의 독점 비법 소스(안정적 현금 창출)와 멍거의 무결점 사업 모델, 그레이엄의 든든한 안전 에어백, 린치의 수주 폭증 성장성, 드러켄밀러의 큰손 수급 턴어라운드가 완벽히 맞아떨어졌습니다. 5대 거장 전원 일치로 실시간 현재가 기준 안전 분할 매수를 강력 권고합니다.`
+                                                                                                    )}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* 3. 대표님 즉각 행동 지침 (액션 플랜) */}
+                                                                                        <div className="flex items-center gap-2.5 pt-2.5 border-t border-white/10 text-xs flex-wrap">
+                                                                                            <span className="px-3 py-1 rounded-lg bg-purple-500/30 text-purple-200 border border-purple-400/50 font-black shrink-0 text-xs shadow-sm flex items-center gap-1">
+                                                                                                <span>👉</span>
+                                                                                                <span>대표님 최종 행동 지침</span>
+                                                                                            </span>
+                                                                                            <div className="font-bold break-keep text-xs sm:text-[12.5px]">
+                                                                                                {council.target_allocation_pct === 0 ? (
+                                                                                                    <span className="text-rose-300 font-extrabold flex items-center gap-1 flex-wrap">
+                                                                                                        <span>🛡️ 신규 매수 0주 (지출 0원 유지)</span>
+                                                                                                        <span className="text-zinc-400 font-normal">·</span>
+                                                                                                        <span>기존 보유분 있다면 비중 축소 또는 즉시 손절 방어선(-3.5%) 점검</span>
+                                                                                                    </span>
+                                                                                                ) : (
+                                                                                                    plan ? (
+                                                                                                        plan.priceExceedsBudget ? (
+                                                                                                            <span className="text-amber-300 font-extrabold">
+                                                                                                                1회 예산(10만원) 대비 현재가({plan.currPrice}) 초과로 [0주 대기] · 원금 100% 안전 예수금 보관
+                                                                                                            </span>
+                                                                                                        ) : (
+                                                                                                            <span className="text-emerald-300 font-extrabold">
+                                                                                                                실시간 현재가({plan.currPrice}) 기준 딱 {plan.totalShares}주 ({plan.actualInvest}) 분할 매수 집행 (1차 30% ➔ 2차 40% ➔ 3차 30%)
+                                                                                                            </span>
+                                                                                                        )
+                                                                                                    ) : (
+                                                                                                        <span className="text-emerald-300 font-extrabold">
+                                                                                                            10만원 한도 내 실시간 현재가 기준 3회 분할 매수 집행 (오전 10시 지지선 안착 확인)
+                                                                                                        </span>
+                                                                                                    )
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {/* 5대 거장 개별 분석 상세 카드 헤더 */}
+                                                                                <div className="flex items-center justify-between pt-1">
+                                                                                    <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
+                                                                                        <span className="text-amber-400">👥</span>
+                                                                                        <span>거장 5인 개별 분석 상세 근거</span>
+                                                                                        <span className="text-[10px] text-zinc-500 font-normal">(각 대가별 철학 기반 세부 평가)</span>
+                                                                                    </div>
+                                                                                    <span className="text-[10px] text-zinc-400">카드를 호버하면 3초 핵심 철학 확인</span>
+                                                                                </div>
+
                                                                                 {/* 5대 거장 카드 그리드 (버핏 · 멍거 · 그레이엄 · 린치 · 드러켄밀러) */}
                                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
                                                                                     {council.analysts.map((a: any, aIdx: number) => {
@@ -7122,107 +7246,6 @@ export default function CeoOfficePage() {
                                                                                             </div>
                                                                                         );
                                                                                     })}
-                                                                                </div>
-
-                                                                                {/* ── [STEP 2.5B] 🏛️ 5대 거장 종합 결론 & 대표님 최종 행동 지침 브리핑 ── */}
-                                                                                <div className={`rounded-xl p-3 sm:p-3.5 border transition-all shadow-lg space-y-2.5 ${
-                                                                                    council.target_allocation_pct === 0
-                                                                                        ? 'bg-gradient-to-r from-[#1c0d12] via-black/80 to-[#150a0e] border-rose-500/50 hover:border-rose-400/70'
-                                                                                        : 'bg-gradient-to-r from-[#0c1f17] via-black/80 to-[#081710] border-emerald-500/50 hover:border-emerald-400/70'
-                                                                                }`}>
-                                                                                    {/* 1. 상단 타이틀 & 5인 투표 결과 현황 */}
-                                                                                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/10">
-                                                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                                                            <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-sm">
-                                                                                                <span>⚖️</span>
-                                                                                                <span>5대 거장 종합 결론</span>
-                                                                                            </span>
-                                                                                            <span className="text-xs sm:text-[13px] font-black text-white">
-                                                                                                {council.consensus_title || (council.target_allocation_pct === 0 ? "전원 매수 보류 & 100% 현금 방어" : "만장일치 적극 매수 & 분할 편입")}
-                                                                                            </span>
-                                                                                        </div>
-
-                                                                                        {/* 투표 집계 현황 뱃지들 */}
-                                                                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                                                                            {(() => {
-                                                                                                const buys = council.analysts.filter((a: any) => a.vote === 'BUY').length;
-                                                                                                const holds = council.analysts.filter((a: any) => a.vote === 'HOLD').length;
-                                                                                                const sells = council.analysts.filter((a: any) => a.vote === 'SELL').length;
-                                                                                                const avgConf = Math.round(council.analysts.reduce((acc: number, a: any) => acc + (a.confidence || 0), 0) / council.analysts.length);
-
-                                                                                                return (
-                                                                                                    <div className="flex items-center gap-1 text-[11px] font-bold">
-                                                                                                        {buys > 0 && (
-                                                                                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                                                                                                🟢 매수 {buys}인
-                                                                                                            </span>
-                                                                                                        )}
-                                                                                                        {holds > 0 && (
-                                                                                                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                                                                                                🟡 중립 {holds}인
-                                                                                                            </span>
-                                                                                                        )}
-                                                                                                        {sells > 0 && (
-                                                                                                            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                                                                                                                🔴 관망/축소 {sells}인
-                                                                                                            </span>
-                                                                                                        )}
-                                                                                                        <span className="px-2 py-0.5 rounded-md bg-white/10 text-zinc-200 border border-white/10 font-mono">
-                                                                                                            평균 확신도 {avgConf}점
-                                                                                                        </span>
-                                                                                                    </div>
-                                                                                                );
-                                                                                            })()}
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    {/* 2. 5인의 관점을 엮은 알기 쉬운 종합 총평 */}
-                                                                                    <div className="p-2.5 sm:p-3 rounded-lg bg-black/50 border border-white/5 space-y-2">
-                                                                                        <div className="flex items-start gap-2">
-                                                                                            <span className="text-amber-400 text-sm shrink-0 mt-0.5">💬</span>
-                                                                                            <div className="space-y-1 text-xs text-zinc-200 leading-relaxed break-keep">
-                                                                                                <span className="text-amber-300 font-extrabold text-[12px] block">
-                                                                                                    [자문단 5인 의견 종합 결론]
-                                                                                                </span>
-                                                                                                <p className="text-[12px] sm:text-[12.5px] text-zinc-100 font-medium leading-relaxed">
-                                                                                                    {council.consensus_conclusion || (council.target_allocation_pct === 0
-                                                                                                        ? "버핏의 독점 무기(해자) 훼손 우려와 멍거의 업황 둔화 경고, 린치의 성장 엔진 둔화, 드러켄밀러의 외국인 큰손 자금 이탈이 동시에 확인되었습니다. 그레이엄조차 안전 에어백이 얇아졌다고 경고하므로, 지금은 섣부른 물타기를 멈추고 100% 현금을 보존하며 소나기를 피해야 할 절대 방어 구간입니다."
-                                                                                                        : `${activeDoc.stock_name}은 버핏의 독점 비법 소스(안정적 현금 창출)와 멍거의 무결점 사업 모델, 그레이엄의 든든한 안전 에어백, 린치의 수주 폭증 성장성, 드러켄밀러의 큰손 수급 턴어라운드가 완벽히 맞아떨어졌습니다. 5대 거장 전원 일치로 실시간 현재가 기준 안전 분할 매수를 강력 권고합니다.`
-                                                                                                    )}
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* 3. 대표님 즉각 행동 지침 */}
-                                                                                        <div className="flex items-center gap-2 pt-2 border-t border-white/10 text-xs flex-wrap">
-                                                                                            <span className="px-2 py-0.5 rounded-md bg-purple-500/25 text-purple-200 border border-purple-400/40 font-bold shrink-0 text-[11px]">
-                                                                                                👉 대표님 최종 행동 지침
-                                                                                            </span>
-                                                                                            <span className="font-bold break-keep text-xs">
-                                                                                                {council.target_allocation_pct === 0 ? (
-                                                                                                    <span className="text-rose-300">
-                                                                                                        신규 매수 0주 (결재 서명 시에도 0원 지출) · 기존 보유분 있다면 비중 축소 또는 즉시 손절 방어선(-3.5%) 점검
-                                                                                                    </span>
-                                                                                                ) : (
-                                                                                                    plan ? (
-                                                                                                        plan.priceExceedsBudget ? (
-                                                                                                            <span className="text-amber-300">
-                                                                                                                1회 예산(10만원) 대비 현재가({plan.currPrice}) 초과로 [0주 대기] · 원금 100% 안전 예수금 보관
-                                                                                                            </span>
-                                                                                                        ) : (
-                                                                                                            <span className="text-emerald-300">
-                                                                                                                실시간 현재가({plan.currPrice}) 기준 딱 {plan.totalShares} ({plan.actualInvest}) 분할 매수 집행 (1차 30% ➔ 2차 40% ➔ 3차 30%)
-                                                                                                            </span>
-                                                                                                        )
-                                                                                                    ) : (
-                                                                                                        <span className="text-emerald-300">
-                                                                                                            10만원 한도 내 실시간 현재가 기준 3회 분할 매수 집행 (오전 10시 지지선 안착 확인)
-                                                                                                        </span>
-                                                                                                    )
-                                                                                                )}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </div>
                                                                                 </div>
 
                                                                                 {/* 하단 리스크 헤지펀드 규칙 안내 바 & 10만원 실시간 매수 가이드 */}

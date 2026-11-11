@@ -146,6 +146,7 @@ def get_market_news():
     }
 
 @router.get("/indices")
+@turbo_cache(ttl_seconds=60)
 async def market_indices():
     """실시간 시장 지수 전용 데이터 (스파크라인 포함)"""
     from stock_data import get_market_intelligence_indicators
@@ -158,6 +159,7 @@ async def market_indices():
         return {"status": "error", "message": str(e)}
 
 @router.get("/status")
+@turbo_cache(ttl_seconds=60)
 async def market_status():
     """실시간 시장 지수 및 환율 데이터 반환 (요약 형태)"""
     from stock_data import get_market_status
