@@ -4472,16 +4472,27 @@ def _build_weekly_review_and_calendar(
             })
 
         # 실시간 시장 가동 시나리오 판정
+        final_bull_scenario = cfg["bull_scenario"]
+        final_bear_scenario = cfg["bear_scenario"]
+
         if d_dt.date() > now_kst.date():
             active_scenario = "pending"
-            scenario_status_badge = "⏳ 발표 대기 (실시간 일정 연동됨)"
+            scenario_status_badge = "⏳ 발표 대기 (실시간 일정 연동형)"
         elif has_released:
             if day_bull_count >= day_bear_count:
                 active_scenario = "bull"
                 scenario_status_badge = f"🟢 긍정(호재) 랠리 시나리오 가동 중 ({day_bull_count}건 발표 확인)"
+                bull_ev_names = [e.get("name", "") for e in enriched_events if e.get("status") == "released" and e.get("impact") == "bull"]
+                if bull_ev_names:
+                    names_str = " · ".join(bull_ev_names[:2])
+                    final_bull_scenario = f"실제 발표된 [{names_str}] 지표가 시장 예상치를 웃도는 호재로 확인되었습니다. 고용 체력과 유가 안정화 신호가 맞물려 외국인 수급이 개선되며 국내 수출 대형주 및 실적 우량주의 안도 랠리가 유력합니다."
             else:
                 active_scenario = "bear"
                 scenario_status_badge = f"🔴 부진(악재) 리스크 방어 지침 가동 중 ({day_bear_count}건 경계)"
+                bear_ev_names = [e.get("name", "") for e in enriched_events if e.get("status") == "released" and e.get("impact") == "bear"]
+                if bear_ev_names:
+                    names_str = " · ".join(bear_ev_names[:2])
+                    final_bear_scenario = f"실제 발표된 [{names_str}] 지표가 시장 경계감을 자극하고 있습니다. 단기 변동성에 대비해 무리한 추격매수를 자제하고 지지선을 확인한 후 선별 접근합니다."
         else:
             active_scenario = "pending"
             scenario_status_badge = "⏳ 오늘 주요 지표 발표 대기 중"
@@ -4495,8 +4506,8 @@ def _build_weekly_review_and_calendar(
             "importance_badge": cfg["importance_badge"],
             "theme": day_theme,
             "events": enriched_events,
-            "bull_scenario": cfg["bull_scenario"],
-            "bear_scenario": cfg["bear_scenario"],
+            "bull_scenario": final_bull_scenario,
+            "bear_scenario": final_bear_scenario,
             "focus_sectors": cfg["focus_sectors"],
             "active_scenario": active_scenario,
             "scenario_status_badge": scenario_status_badge,
