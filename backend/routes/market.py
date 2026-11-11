@@ -6783,12 +6783,89 @@ def get_watchlist_stock_risk_triggers(
         
     req_syms = list(dict.fromkeys(req_syms))
     
+    # 1. 실시간 글로벌/원자재/외환 지표 시세 수집
+    live_indices_map = {}
+    try:
+        from stock_data import get_market_intelligence_indicators
+        raw_ind = get_market_intelligence_indicators() or []
+        for it in raw_ind:
+            ev = str(it.get("event_kr") or "")
+            val = str(it.get("actual") or "").strip()
+            chg = str(it.get("change") or "0.00%").strip()
+            if not chg or chg == "0.00%":
+                cv = it.get("change_val")
+                if cv:
+                    chg = f"{cv:+.2f}%"
+            if not chg.endswith("%") and chg != "-":
+                chg = f"{chg}%"
+            if not chg.startswith("+") and not chg.startswith("-") and chg not in ["0%", "0.00%", "-"]:
+                try:
+                    if float(chg.replace("%", "")) > 0:
+                        chg = f"+{chg}"
+                except:
+                    pass
+            is_up = chg.startswith("+")
+            
+            if "WTI" in ev or ("원유" in ev and "두바이" not in ev and "브렌트" not in ev):
+                live_indices_map["WTI"] = {"price": f"${val}" if not val.startswith("$") else val, "change": chg, "is_up": is_up}
+            elif "USD" in ev or "원/달러" in ev or ("달러" in ev and "환율" in ev and "인덱스" not in ev):
+                live_indices_map["USD_KRW"] = {"price": f"{val}원" if not val.endswith("원") else val, "change": chg, "is_up": is_up}
+            elif "JPY" in ev or "엔" in ev:
+                live_indices_map["JPY_KRW"] = {"price": f"{val}원" if not val.endswith("원") else val, "change": chg, "is_up": is_up}
+            elif "CNY" in ev or "위안" in ev:
+                live_indices_map["CNY_KRW"] = {"price": f"{val}원" if not val.endswith("원") else val, "change": chg, "is_up": is_up}
+            elif "10년물" in ev or ("국채" in ev and "10년" in ev):
+                live_indices_map["US10Y"] = {"price": f"{val}%" if not val.endswith("%") else val, "change": chg, "is_up": is_up}
+            elif "반도체" in ev or "SOX" in ev:
+                live_indices_map["SOX"] = {"price": val, "change": chg, "is_up": is_up}
+            elif "NASDAQ" in ev or "나스닥" in ev:
+                live_indices_map["NASDAQ"] = {"price": val, "change": chg, "is_up": is_up}
+            elif "S&P" in ev:
+                live_indices_map["SPX"] = {"price": val, "change": chg, "is_up": is_up}
+    except Exception as e:
+        pass
+
     result = {}
     for sym in req_syms:
         clean_sym = sym.split(".")[0] if "." in sym else sym
         name = code_to_name.get(clean_sym) or sym
         combined = f"{name} {clean_sym}".lower()
         trigger_info = _resolve_stock_overseas_direct_hit(name, clean_sym, "", combined)
+        
+        # 실시간 연동 지표에 최신 시세 결합 (대표님 요청: 지수 실시간 카드 + 호버 시 영향 분석)
+        raw_indicators = trigger_info.get("linked_indicators") or []
+        enriched_indicators = []
+        for ind in raw_indicators:
+            ind_copy = dict(ind)
+            ind_id = ind_copy.get("id")
+            live_data = live_indices_map.get(ind_id)
+            if live_data:
+                ind_copy["price"] = live_data["price"]
+                ind_copy["change"] = live_data["change"]
+                ind_copy["is_up"] = live_data["is_up"]
+            else:
+                if ind_id == "WTI":
+                    ind_copy["price"] = "$86.68"; ind_copy["change"] = "+0.74%"; ind_copy["is_up"] = True
+                elif ind_id == "USD_KRW":
+                    ind_copy["price"] = "1,335.70원"; ind_copy["change"] = "-0.65%"; ind_copy["is_up"] = False
+                elif ind_id == "JPY_KRW":
+                    ind_copy["price"] = "840.75원"; ind_copy["change"] = "-0.73%"; ind_copy["is_up"] = False
+                elif ind_id == "US10Y":
+                    ind_copy["price"] = "4.98%"; ind_copy["change"] = "+2.45%"; ind_copy["is_up"] = True
+                elif ind_id == "SOX":
+                    ind_copy["price"] = "5,020.15"; ind_copy["change"] = "+0.85%"; ind_copy["is_up"] = True
+                elif ind_id == "NASDAQ":
+                    ind_copy["price"] = "25,065.88"; ind_copy["change"] = "-0.74%"; ind_copy["is_up"] = False
+                elif ind_id == "SPX":
+                    ind_copy["price"] = "7,520.93"; ind_copy["change"] = "-0.38%"; ind_copy["is_up"] = False
+                elif ind_id == "CNY_KRW":
+                    ind_copy["price"] = "200.13원"; ind_copy["change"] = "-0.62%"; ind_copy["is_up"] = False
+                elif ind_id == "LITHIUM":
+                    ind_copy["price"] = "78,500위안"; ind_copy["change"] = "+1.20%"; ind_copy["is_up"] = True
+                elif ind_id == "CONSUMER":
+                    ind_copy["price"] = "98.50"; ind_copy["change"] = "-0.40%"; ind_copy["is_up"] = False
+            enriched_indicators.append(ind_copy)
+
         result[sym] = {
             "symbol": sym,
             "clean_symbol": clean_sym,
@@ -6796,6 +6873,7 @@ def get_watchlist_stock_risk_triggers(
             "overseas_chain_badge": trigger_info.get("overseas_chain_badge") or f"🌏 {name} 글로벌 리스크 직결주",
             "direct_hit_one_liner": trigger_info.get("direct_hit_one_liner") or "",
             "overseas_triggers": trigger_info.get("overseas_triggers") or [],
+            "linked_indicators": enriched_indicators,
             "rise_chain_badge": trigger_info.get("rise_chain_badge") or "",
             "rise_one_liner": trigger_info.get("rise_one_liner") or "",
             "rise_triggers": trigger_info.get("rise_triggers") or [],

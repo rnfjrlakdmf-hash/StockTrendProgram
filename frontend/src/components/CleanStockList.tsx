@@ -6,6 +6,20 @@ import { API_BASE_URL } from '@/lib/config';
 import KakaoShareButton from '@/components/KakaoShareButton';
 
 
+export interface LinkedIndicator {
+    id: string;
+    name: string;
+    icon: string;
+    price?: string;
+    change?: string;
+    is_up?: boolean;
+    danger_badge?: string;
+    danger_direction?: 'rise' | 'drop' | 'both';
+    drop_effect: string;
+    rise_effect: string;
+    tip?: string;
+}
+
 export interface CleanStockItem {
     symbol: string;
     name: string;
@@ -73,6 +87,7 @@ export interface CleanStockItem {
         direct_hit_one_liner?: string;
         overseas_triggers?: any[];
         overseas_chain_badge?: string;
+        linked_indicators?: LinkedIndicator[];
         rise_one_liner?: string;
         rise_triggers?: any[];
         rise_chain_badge?: string;
@@ -191,6 +206,152 @@ function BadgeTooltip({
                     <p className="text-[11px] text-zinc-100 leading-relaxed font-normal break-keep">
                         {desc}
                     </p>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+}
+
+function IndicatorRiskCard({ ind }: { ind: LinkedIndicator }) {
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [coords, setCoords] = useState<{ top: number; left: number; showBelow: boolean }>({
+        top: 0,
+        left: 0,
+        showBelow: false,
+    });
+
+    const updatePosition = useCallback(() => {
+        if (!triggerRef.current || typeof window === 'undefined') return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const tooltipWidth = 320;
+        const showBelow = rect.top < 220;
+        const left = Math.max(12, Math.min(window.innerWidth - tooltipWidth - 12, rect.left));
+        const top = showBelow ? rect.bottom + 8 : rect.top - 8;
+        setCoords({ top, left, showBelow });
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleScrollOrResize = () => updatePosition();
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        window.addEventListener('resize', handleScrollOrResize);
+        return () => {
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+            window.removeEventListener('resize', handleScrollOrResize);
+        };
+    }, [isOpen, updatePosition]);
+
+    const isUp = Boolean(ind.is_up || (ind.change && ind.change.startsWith('+')));
+    const isDown = Boolean(ind.change && ind.change.startsWith('-'));
+    const changeColor = isUp ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : isDown ? 'text-sky-400 bg-sky-500/10 border-sky-500/20' : 'text-zinc-400 bg-zinc-800/50 border-zinc-700/30';
+
+    return (
+        <div 
+            ref={triggerRef}
+            className="relative inline-flex"
+            onClick={(e) => {
+                e.stopPropagation();
+                updatePosition();
+                setIsOpen(!isOpen);
+            }}
+            onMouseEnter={() => {
+                updatePosition();
+                setIsOpen(true);
+            }}
+            onMouseLeave={() => setIsOpen(false)}
+        >
+            <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-gradient-to-r from-black/80 via-zinc-900 to-black/80 hover:from-zinc-900 hover:to-zinc-800 border border-zinc-700/60 hover:border-amber-400/70 rounded-lg cursor-pointer transition-all shadow-xs group select-none">
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-xs shrink-0">{ind.icon || '📊'}</span>
+                    <span className="text-[11px] font-bold text-zinc-100 group-hover:text-amber-300 transition-colors whitespace-nowrap">
+                        {ind.name}
+                    </span>
+                    {ind.danger_badge && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-rose-500/15 text-rose-300 border border-rose-500/30 shrink-0">
+                            {ind.danger_badge}
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0 pl-1.5 border-l border-white/10">
+                    {ind.price && (
+                        <span className="text-[11px] font-mono font-black text-white">
+                            {ind.price}
+                        </span>
+                    )}
+                    {ind.change && (
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border ${changeColor}`}>
+                            {ind.change}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* Floating Portal Tooltip */}
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div 
+                    style={{
+                        position: 'fixed',
+                        top: coords.top,
+                        left: coords.left,
+                        transform: coords.showBelow ? 'translateY(0)' : 'translateY(-100%)',
+                        zIndex: 99999,
+                    }}
+                    className="w-[310px] sm:w-[340px] p-3.5 bg-[#090d16] border border-amber-500/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.98)] text-left pointer-events-auto animate-in fade-in duration-150"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between gap-1 pb-2 mb-2.5 border-b border-white/15">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm">{ind.icon || '📊'}</span>
+                            <span className="text-xs font-black text-amber-300">{ind.name}</span>
+                            {ind.price && (
+                                <span className="text-xs font-mono font-extrabold text-white ml-0.5">{ind.price}</span>
+                            )}
+                            {ind.change && (
+                                <span className={`text-[10px] font-mono font-bold ${isUp ? 'text-rose-400' : 'text-sky-400'}`}>
+                                    ({ind.change})
+                                </span>
+                            )}
+                        </div>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                            className="text-gray-400 hover:text-white text-xs p-1 rounded hover:bg-white/10"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    {/* 🔻 이 지표가 떨어지면? */}
+                    <div className="p-2.5 rounded-xl bg-sky-950/40 border border-sky-500/30 mb-2">
+                        <div className="text-[11px] font-black text-sky-300 flex items-center gap-1 mb-1">
+                            <span>🔻</span>
+                            <span>이 지표가 떨어지면 어떻게 되나요?</span>
+                        </div>
+                        <p className="text-[11px] text-sky-100/90 leading-relaxed break-keep font-medium">
+                            {ind.drop_effect || '지표 하락 시 해당 업종의 원가 부담 완화 또는 수요 변동 영향이 발생합니다.'}
+                        </p>
+                    </div>
+
+                    {/* 🔺 이 지표가 올라가면? */}
+                    <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 mb-2">
+                        <div className="text-[11px] font-black text-rose-300 flex items-center gap-1 mb-1">
+                            <span>🔺</span>
+                            <span>이 지표가 급등하면 어떻게 되나요?</span>
+                        </div>
+                        <p className="text-[11px] text-rose-100/90 leading-relaxed break-keep font-medium">
+                            {ind.rise_effect || '지표 급등 시 제조 원가 상승 또는 외국인 수급 이탈 등 직격탄 악재로 작용합니다.'}
+                        </p>
+                    </div>
+
+                    {/* 💡 투자자 체크포인트 */}
+                    {ind.tip && (
+                        <div className="text-[10.5px] text-amber-200/90 bg-amber-500/10 border border-amber-500/25 rounded-lg p-2 flex items-start gap-1.5 break-keep">
+                            <span className="shrink-0 text-amber-400 font-bold">💡</span>
+                            <span>{ind.tip}</span>
+                        </div>
+                    )}
                 </div>,
                 document.body
             )}
@@ -593,14 +754,14 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                 </div>
                             )}
 
-                            {/* [Row 2.5] ⚠️ 조심해야 할 핵심 리스크 & 해외 직격탄 뇌관 (관심종목 핵심 케어) */}
-                            {item.riskTrigger && (item.riskTrigger.direct_hit_one_liner || (item.riskTrigger.overseas_triggers && item.riskTrigger.overseas_triggers.length > 0)) && (
-                                <div className="rounded-xl p-2.5 sm:p-3 bg-gradient-to-r from-rose-950/30 via-black/60 to-rose-950/20 border border-rose-500/30 hover:border-rose-500/50 transition-all space-y-2 shadow-xs">
+                            {/* [Row 2.5] ⚡ 실시간 리스크 연동 지표 (대표님 요청: 긴 줄글 대신 실시간 지수 카드 + 마우스 호버 시 떨어지면/오르면 영향 분석) */}
+                            {item.riskTrigger && ((item.riskTrigger.linked_indicators && item.riskTrigger.linked_indicators.length > 0) || item.riskTrigger.direct_hit_one_liner || (item.riskTrigger.overseas_triggers && item.riskTrigger.overseas_triggers.length > 0)) && (
+                                <div className="rounded-xl p-2.5 sm:p-3 bg-gradient-to-r from-amber-950/20 via-black/70 to-rose-950/20 border border-amber-500/30 hover:border-amber-500/50 transition-all space-y-2 shadow-xs">
                                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs">
-                                                <span>💣</span>
-                                                <span>조심해야 할 리스크</span>
+                                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs">
+                                                <span>⚡</span>
+                                                <span>실시간 리스크 연동 지표</span>
                                             </span>
                                             {item.riskTrigger.overseas_chain_badge && (
                                                 <span className="text-[10px] text-zinc-400 font-medium truncate max-w-[200px] sm:max-w-[340px]">
@@ -608,23 +769,19 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="text-[9.5px] text-rose-400 font-bold bg-rose-500/10 px-2 py-0.2 rounded border border-rose-500/20">
-                                            ⚠️ 해외 직격탄 뇌관
+                                        <span className="text-[9.5px] text-amber-300/90 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                            💡 지수 카드에 마우스 호버 시 상세 영향 분석
                                         </span>
                                     </div>
 
-                                    {/* 핵심 1줄 직격탄 경고문 (사용자 요청: 해외 악재 인과관계 명확화) */}
-                                    {item.riskTrigger.direct_hit_one_liner && (
-                                        <p className="text-[11px] sm:text-[11.5px] font-medium text-rose-100/95 leading-relaxed bg-black/50 p-2 sm:p-2.5 rounded-lg border border-rose-500/20 break-keep">
-                                            <strong className="text-rose-300 font-extrabold mr-1">직격탄 요인:</strong>
-                                            {item.riskTrigger.direct_hit_one_liner}
-                                        </p>
-                                    )}
-
-                                    {/* 3대 해외 뇌관 태그 칩 (마우스 호버/탭 시 상세 인과관계 툴팁) */}
-                                    {item.riskTrigger.overseas_triggers && item.riskTrigger.overseas_triggers.length > 0 && (
-                                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                            {item.riskTrigger.overseas_triggers.map((tr: any, trIdx: number) => (
+                                    {/* 실시간 지수 미니 카드 리스트 (사용자 요청: 긴 글 제거하고 실시간 지수 카드로 표시) */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                                        {item.riskTrigger.linked_indicators && item.riskTrigger.linked_indicators.length > 0 ? (
+                                            item.riskTrigger.linked_indicators.map((ind, indIdx) => (
+                                                <IndicatorRiskCard key={indIdx} ind={ind} />
+                                            ))
+                                        ) : item.riskTrigger.overseas_triggers && item.riskTrigger.overseas_triggers.length > 0 ? (
+                                            item.riskTrigger.overseas_triggers.map((tr: any, trIdx: number) => (
                                                 <BadgeTooltip
                                                     key={trIdx}
                                                     title={`💣 [${tr.category_tag || '뇌관'}] ${tr.trigger}`}
@@ -639,9 +796,9 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                                         </span>
                                                     )}
                                                 </BadgeTooltip>
-                                            ))}
-                                        </div>
-                                    )}
+                                            ))
+                                        ) : null}
+                                    </div>
                                 </div>
                             )}
 

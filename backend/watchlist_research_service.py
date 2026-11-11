@@ -1414,6 +1414,265 @@ def _get_fallback_stock_triggers(name: str, code: str, combined: str) -> Dict[st
     }
 
 
+
+def build_stock_linked_risk_indicators(name: str, code: str, biz_text: str = "", combined: str = "", trigger_info: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """
+    대표님 요청 완벽 구현:
+    긴 글(줄글) 대신 종목별 핵심 해외/매크로 지표(WTI, 환율, 엔화, 10년물 국채, SOX 등)를 
+    실시간 카드 형태로 구성하고, 마우스 호버(또는 터치) 시:
+    1) 🔻 이 지표가 떨어지면 어떻게 되는지? (호재/악재 인과관계)
+    2) 🔺 이 지표가 올라가면 어떻게 되는지? (직격탄/부담 인과관계)
+    3) 💡 투자자 체크포인트
+    를 명확하게 제공합니다.
+    """
+    if not combined:
+        combined = f"{name} {code} {biz_text}".lower()
+
+    # 1. 화장품 / 용기 / 플라스틱 / 화학 (에스엠씨지 460870 등)
+    if any(k in combined for k in ["460870", "에스엠씨지", "화장품용기", "플라스틱", "코스맥스", "한국콜마", "아모레", "lg생활건강", "화장품", "용기", "패키징", "석유화학"]):
+        return [
+            {
+                "id": "WTI",
+                "name": "WTI 국제유가",
+                "icon": "🛢️",
+                "danger_badge": "급등 시 직격탄",
+                "danger_direction": "rise",
+                "drop_effect": "유가 급락 시 ➔ 나프타/플라스틱 용기 원료비가 대폭 낮아져 제조 원가 부담이 줄고 영업이익률이 상승하는 확실한 호재입니다!",
+                "rise_effect": "유가 급등 시 ➔ 석유화학 원자재(PP/PE) 단가가 폭등하여 마진이 깎이고 영업이익이 급감하여 주가가 직격탄을 맞습니다.",
+                "tip": "국제 유가 80$ 돌파 여부와 플라스틱 원자재 단가 추이를 주시하세요."
+            },
+            {
+                "id": "USD_KRW",
+                "name": "원/달러 환율",
+                "icon": "💵",
+                "danger_badge": "급등 시 부담",
+                "danger_direction": "rise",
+                "drop_effect": "환율 하락(원화 강세) 시 ➔ 수입 원부자재 결제 원가가 절감되어 재무 부담이 완화되고 외인 수급이 개선됩니다.",
+                "rise_effect": "환율 급등(원화 약세) 시 ➔ 수입 부자재 결제액 증가 및 환율 불안으로 외국인 수급이 이탈할 수 있습니다.",
+                "tip": "1,380원 돌파 시 원가 관리 비상 신호로 해석됩니다."
+            },
+            {
+                "id": "CONSUMER",
+                "name": "글로벌 소비심리",
+                "icon": "🛍️",
+                "danger_badge": "침체 시 둔화",
+                "danger_direction": "drop",
+                "drop_effect": "글로벌 소비 침체 시 ➔ 전방 화장품 브랜드 발주 축소로 용기 납품 수주량이 줄어들 위험이 있습니다.",
+                "rise_effect": "글로벌 소비 회복 시 ➔ K-뷰티 수출 호조로 화장품 용기 납품량이 급증하여 실적 퀀텀점프 기대!",
+                "tip": "미국/동남아 K-뷰티 수출 통관 통계를 선행 지표로 활용하세요."
+            }
+        ]
+
+    # 2. 카지노 / 호텔 / 여행 / 면세점 (파라다이스 034230, GKL 114090, 롯데관광개발 등)
+    if any(k in combined for k in ["034230", "파라다이스", "114090", "gkl", "035250", "강원랜드", "롯데관광개발", "호텔신라", "카지노", "호텔", "면세", "외국인 카지노"]):
+        return [
+            {
+                "id": "JPY_KRW",
+                "name": "100엔/원 환율",
+                "icon": "💴",
+                "danger_badge": "급락 시 직격탄",
+                "danger_direction": "drop",
+                "drop_effect": "엔화 급락(엔저 심화) 시 ➔ 일본 VIP 고객의 칩 환전 배팅액(드롭액)이 줄어들고 방한 여행 심리가 위축되어 카지노 실적에 직격탄이 됩니다!",
+                "rise_effect": "엔화 급등(엔고 전환) 시 ➔ 일본인 원정 VIP 고객이 급증하고 칩 환전액(드롭액)이 폭증하여 카지노 어닝 서프라이즈 모멘텀이 됩니다.",
+                "tip": "엔/원 환율 900원선 회복 여부가 일본 VIP 드롭액의 핵심 척도입니다."
+            },
+            {
+                "id": "USD_KRW",
+                "name": "원/달러 환율",
+                "icon": "💵",
+                "danger_badge": "급등 시 외인 매도",
+                "danger_direction": "rise",
+                "drop_effect": "환율 안정 시 ➔ 글로벌 자금의 신흥국 위험자산 선호로 코스닥 관광/레저주 외국인 순매수가 유입됩니다.",
+                "rise_effect": "환율 급등 시 ➔ 대외 금융 변동성 확대로 외국인 기관 투자자의 패시브 매도가 출회될 수 있습니다.",
+                "tip": "달러 환율 안정 시 해외 기관의 카지노 리스크 회피 물량이 감소합니다."
+            },
+            {
+                "id": "CNY_KRW",
+                "name": "중국 위안/원",
+                "icon": "🇨🇳",
+                "danger_badge": "약세 시 위축",
+                "danger_direction": "drop",
+                "drop_effect": "위안화 약세 시 ➔ 중국인 관광객 및 고액 자산가의 1인당 카지노 지출 여력이 위축될 우려가 있습니다.",
+                "rise_effect": "위안화 강세 및 경기 부양 시 ➔ 중국인 VIP 및 단체 관광객의 카지노 테이블 배팅액이 대폭 증가합니다.",
+                "tip": "중국 단체관광 비자 정책 및 마카오 대비 한국 카지노 홀드율을 체크하세요."
+            }
+        ]
+
+    # 3. 반도체 / 소부장 (삼성전자, SK하이닉스, 씨엠티엑스, 하나머티리얼즈, 한미반도체 등)
+    if any(k in combined for k in ["005930", "000660", "삼성전자", "sk하이닉스", "한미반도체", "리노공업", "씨엠티엑스", "하나머티리얼즈", "원익ips", "동진쎄미켐", "반도체", "hbm", "소부장", "웨이퍼", "euv"]):
+        return [
+            {
+                "id": "SOX",
+                "name": "필라델피아 반도체",
+                "icon": "💻",
+                "danger_badge": "급락 시 직격탄",
+                "danger_direction": "drop",
+                "drop_effect": "반도체 지수 급락 시 ➔ 글로벌 팹(Fab) 설비투자 축소 우려 및 외국인의 기계적 프로그램 매도 폭탄으로 소부장 주가가 동반 급락합니다!",
+                "rise_effect": "반도체 지수 급등 시 ➔ 글로벌 AI/서버 훈풍 및 파운드리 가동률 상승으로 국내 소부장 수주 기대감이 최고조에 달합니다.",
+                "tip": "미 증시 마감 후 SOX 등락률이 당일 한국 반도체 시초가 방향을 좌우합니다."
+            },
+            {
+                "id": "USD_KRW",
+                "name": "원/달러 환율",
+                "icon": "💵",
+                "danger_badge": "급등 시 외인 이탈",
+                "danger_direction": "rise",
+                "drop_effect": "환율 하락(원화 강세) 시 ➔ 환차익을 노린 글로벌 패시브 자금이 대형 IT 및 반도체주에 강하게 유입됩니다.",
+                "rise_effect": "환율 급등 시 ➔ 외국인 선물·현물 동반 매도 출회 및 원자재 수입단가 상승으로 주가 상단이 제약됩니다.",
+                "tip": "환율 1,350원 이하 안착 시 대형 반도체주 외인 순매수가 강화됩니다."
+            },
+            {
+                "id": "US10Y",
+                "name": "미 10년물 국채",
+                "icon": "📈",
+                "danger_badge": "급등 시 밸류 압박",
+                "danger_direction": "rise",
+                "drop_effect": "국채금리 하락 시 ➔ 글로벌 유동성 완화로 차세대 AI 반도체 성장주들의 밸류에이션 할인이 해소됩니다.",
+                "rise_effect": "국채금리 급등 시 ➔ 대규모 반도체 팹 신설 조달비용 상승 및 빅테크 AI 설비투자(CAPEX) 속도조절 우려가 부각됩니다.",
+                "tip": "미 10년물 4.5% 돌파 시 반도체 장비/소재주 비중 조절에 유의하세요."
+            }
+        ]
+
+    # 4. 2차전지 / 배터리 / 소재 (에코프로, POSCO홀딩스, LG에너지솔루션 등)
+    if any(k in combined for k in ["086520", "005490", "373220", "006400", "051910", "에코프로", "posco", "lg에너지솔루션", "삼성sdi", "엘앤에프", "포스코퓨처엠", "2차전지", "배터리", "양극재", "음극재"]):
+        return [
+            {
+                "id": "WTI",
+                "name": "WTI 국제유가",
+                "icon": "🛢️",
+                "danger_badge": "급락 시 캐즘 우려",
+                "danger_direction": "drop",
+                "drop_effect": "유가 급락 시 ➔ 내연기관차 연료비 하락으로 전기차의 경제성 메리트가 낮아져 전기차 수요 둔화(캐즘)가 장기화될 위험이 있습니다.",
+                "rise_effect": "유가 급등 시 ➔ 기름값 부담으로 친환경 전기차 구매 매력도가 급상승하여 배터리 수요 회복의 강력한 모멘텀이 됩니다.",
+                "tip": "국제 유가 강세는 전통적으로 전기차 및 배터리 섹터의 대표적 우호 변수입니다."
+            },
+            {
+                "id": "US10Y",
+                "name": "미 10년물 국채",
+                "icon": "📈",
+                "danger_badge": "급등 시 조달 부담",
+                "danger_direction": "rise",
+                "drop_effect": "금리 하락 시 ➔ 북미·유럽 대규모 배터리 공장 증설(CAPEX)을 위한 조달 이자 부담이 줄어 성장주 밸류가 회복됩니다.",
+                "rise_effect": "금리 급등 시 ➔ 고금리 장기화로 완성차 업체들의 전기차 신차 할부 구매 심리가 얼어붙고 차입금 이자 부담이 급증합니다.",
+                "tip": "금리 인하 사이클 진입 시 2차전지 성장 멀티플이 가장 빠르게 반응합니다."
+            },
+            {
+                "id": "LITHIUM",
+                "name": "탄산리튬 원자재",
+                "icon": "🔋",
+                "danger_badge": "급락 시 마진 축소",
+                "danger_direction": "drop",
+                "drop_effect": "리튬 가격 급락 시 ➔ 양극재 판매단가(ASP) 연동 하락으로 재고자산 평가손실 및 분기 실적 쇼크가 발생합니다.",
+                "rise_effect": "리튬 가격 반등 시 ➔ 양극재 판가 상승 및 래깅(시차) 마진 확대로 영업이익 턴어라운드가 시작됩니다.",
+                "tip": "리튬 가격 저점 통과(바닥 다지기) 여부가 2차전지 주가 반등의 1순위 신호입니다."
+            }
+        ]
+
+    # 5. 바이오 / 제약 / 헬스케어 (알테오젠, HLB, SK바이오팜 등)
+    if any(k in combined for k in ["바이오", "제약", "신약", "임상", "헬스케어", "알테오젠", "hlb", "sk바이오팜", "삼성바이오", "셀트리온", "유한양행", "리가켐바이오", "에이비엘바이오"]):
+        return [
+            {
+                "id": "US10Y",
+                "name": "미 10년물 국채",
+                "icon": "📈",
+                "danger_badge": "급등 시 직격탄",
+                "danger_direction": "rise",
+                "drop_effect": "금리 하락 시 ➔ 신약 파이프라인 미래 현금흐름 할인율이 낮아지고 바이오 벤처 유동성이 폭발하여 주가가 강력히 랠리합니다!",
+                "rise_effect": "금리 급등 시 ➔ 글로벌 바이오 섹터 성장 밸류에이션이 압박받고 R&D 자금 조달 비용이 증가하여 주가가 직격탄을 맞습니다.",
+                "tip": "미 국채금리가 꺾이는 시점이 바이오 섹터 비중 확대의 최적 타이밍입니다."
+            },
+            {
+                "id": "NASDAQ",
+                "name": "나스닥 100",
+                "icon": "🌐",
+                "danger_badge": "급락 시 동반 투매",
+                "danger_direction": "drop",
+                "drop_effect": "나스닥 급락 시 ➔ 글로벌 바이오테크(XBI) ETF 환매와 함께 국내 바이오주에도 기계적 외인 패시브 매도가 출회됩니다.",
+                "rise_effect": "나스닥 급등 시 ➔ 글로벌 기술주 투자 심리 회복 및 빅파마 M&A/기술이전 훈풍으로 동반 급등합니다.",
+                "tip": "미국 바이오테크(XBI) 지수의 일간 변동성을 함께 체크하세요."
+            },
+            {
+                "id": "USD_KRW",
+                "name": "원/달러 환율",
+                "icon": "💵",
+                "danger_badge": "급등 시 외인 회피",
+                "danger_direction": "rise",
+                "drop_effect": "환율 하락 시 ➔ 코스닥 시장으로 외국인 순매수가 유입되어 고PER 바이오주 수급이 크게 개선됩니다.",
+                "rise_effect": "환율 급등 시 ➔ 위험자산 기피 심리로 코스닥 바이오주 중심의 차익실현 및 매도세가 집중됩니다.",
+                "tip": "환율 안정 시 글로벌 기술수출(L/O) 계약 마일스톤 가치가 더욱 부각됩니다."
+            }
+        ]
+
+    # 6. 항공 / 해운 (대한항공, HMM 등)
+    if any(k in combined for k in ["003490", "011200", "020560", "대한항공", "아시아나", "진에어", "제주항공", "티웨이", "hmm", "팬오션", "항공", "해운"]):
+        return [
+            {
+                "id": "WTI",
+                "name": "WTI 국제유가",
+                "icon": "🛢️",
+                "danger_badge": "급등 시 1순위직격탄",
+                "danger_direction": "rise",
+                "drop_effect": "유가 급락 시 ➔ 항공유/선박유 연료비(전체 영업비용의 30%)가 대폭 절감되어 분기 영업이익이 폭증하는 최고의 호재입니다!",
+                "rise_effect": "유가 급등 시 ➔ 연료비 폭증으로 탑승객이 늘어도 적자로 돌아설 수 있는 가장 치명적인 직격탄 악재입니다.",
+                "tip": "국제 유가 10달러 변동 시 분기 영업이익이 수천억 원 단위로 증감합니다."
+            },
+            {
+                "id": "USD_KRW",
+                "name": "원/달러 환율",
+                "icon": "💵",
+                "danger_badge": "급등 시 외화손실 직격",
+                "danger_direction": "rise",
+                "drop_effect": "환율 하락(원화 강세) 시 ➔ 항공기 리스 달러 부채의 외화환산이익이 대거 발생하고 해외 여행 수요가 폭증합니다.",
+                "rise_effect": "환율 급등 시 ➔ 막대한 달러 외화부채 환산손실 및 항공유 결제대금 원화 부담 급증으로 순이익이 급감합니다.",
+                "tip": "환율 1,380원 상회 시 순이익 단에서의 외화평가손실 발생에 유의하세요."
+            },
+            {
+                "id": "CONSUMER",
+                "name": "글로벌 여행/물동량",
+                "icon": "✈️",
+                "danger_badge": "침체 시 운임 하락",
+                "danger_direction": "drop",
+                "drop_effect": "글로벌 경기 침체 시 ➔ 해외 여행 수요 둔화 및 항공/해상 화물 운임 하락으로 매출 타격.",
+                "rise_effect": "글로벌 여객/물동량 급증 시 ➔ 탑승률 상승 및 화물 운임 프리미엄으로 사상 최대 실적 달성.",
+                "tip": "발틱운임지수(BDI) 및 항공 화물 운임(TAC) 추세를 확인하세요."
+            }
+        ]
+
+    # 기본값 (일반 제조/수출/소비재/기타 종목)
+    return [
+        {
+            "id": "USD_KRW",
+            "name": "원/달러 환율",
+            "icon": "💵",
+            "danger_badge": "급등 시 외인 이탈",
+            "danger_direction": "rise",
+            "drop_effect": "환율 하락(원화 강세) 시 ➔ 수입 원부자재 조달비가 절감되고 한국 증시 외국인 순매수가 강하게 유입되는 수급 호재입니다.",
+            "rise_effect": "환율 급등(원화 약세) 시 ➔ 외국인 패시브 매도 출회 및 수입 원자재 결제 원가 상승 압박으로 주가 상단이 제약됩니다.",
+            "tip": "환율 1,380원 돌파 여부를 외국인 수급 변곡점으로 주시하세요."
+        },
+        {
+            "id": "US10Y",
+            "name": "미 10년물 국채",
+            "icon": "📈",
+            "danger_badge": "급등 시 밸류 압박",
+            "danger_direction": "rise",
+            "drop_effect": "금리 하락 시 ➔ 글로벌 무위험 수익률 하락으로 주식 시장으로의 유동성 유입이 활발해지고 기업 조달금리가 안정됩니다.",
+            "rise_effect": "금리 급등 시 ➔ 기업 차입금 이자 부담 증가 및 글로벌 주식 밸류에이션 멀티플 압박으로 조정 압력이 커집니다.",
+            "tip": "미 10년물 금리의 안정적 하향 안정화 추이를 확인하세요."
+        },
+        {
+            "id": "SPX",
+            "name": "S&P 500 / NASDAQ",
+            "icon": "🌐",
+            "danger_badge": "급락 시 시초가 위협",
+            "danger_direction": "drop",
+            "drop_effect": "미국 증시 급락 시 ➔ 다음 날 국내 증시 개장 직후 글로벌 패시브 자금의 기계적 매도로 동반 조정을 받을 수 있습니다.",
+            "rise_effect": "미국 증시 랠리 시 ➔ 글로벌 위험자산 선호 심리가 확산되어 국내 증시도 갭상승 및 동반 상승 탄력을 받습니다.",
+            "tip": "밤사이 뉴욕 3대 지수의 마감 결과가 당일 투자 심리를 좌우합니다."
+        }
+    ]
+
+
 def _resolve_stock_overseas_direct_hit(name: str, code: str, biz_text: str, combined: str) -> Dict[str, Any]:
     """
     1) 캐시 확인 -> 있으면 0.001초 만에 반환
@@ -1427,17 +1686,23 @@ def _resolve_stock_overseas_direct_hit(name: str, code: str, biz_text: str, comb
         # 만약 기존에 잘못 저장된 범용 템플릿("미국 나스닥" 또는 "원자재 가격 불안")이고 특정 업종(카지노/반도체 등)이라면 재분석
         is_generic = "미국 나스닥" in line or "글로벌 공급망 원자재 가격 불안" in line
         if not is_generic or any(k in combined for k in ["나스닥"]):
+            if "linked_indicators" not in item or not item.get("linked_indicators"):
+                item["linked_indicators"] = build_stock_linked_risk_indicators(name, code, biz_text, combined, item)
             return item
 
     # 1. AI 실시간 호출 시도 (비용 0.2원 수준의 초경량 Gemini Flash)
     ai_res = _ask_gemini_stock_triggers(name, code, biz_text)
     if ai_res:
+        if "linked_indicators" not in ai_res or not ai_res.get("linked_indicators"):
+            ai_res["linked_indicators"] = build_stock_linked_risk_indicators(name, code, biz_text, combined, ai_res)
         cache[code] = ai_res
         _save_stock_triggers_cache(cache)
         return ai_res
 
     # 2. 오프라인 / 룰베이스 정밀 업종 매핑 (25개 업종 완비)
     fallback_res = _get_fallback_stock_triggers(name, code, combined)
+    if "linked_indicators" not in fallback_res or not fallback_res.get("linked_indicators"):
+        fallback_res["linked_indicators"] = build_stock_linked_risk_indicators(name, code, biz_text, combined, fallback_res)
     cache[code] = fallback_res
     _save_stock_triggers_cache(cache)
     return fallback_res
