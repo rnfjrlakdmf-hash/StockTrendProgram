@@ -27,8 +27,6 @@ const navigationGroups = [
         items: [
             { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다." },
             { name: "스마트 주식 계산기", href: "/calculator", icon: Calculator, desc: "물타기 평단가 인하 탈출 시뮬레이션 및 종목별 월배당·연간 배당금 캐시플로우를 계산합니다.", badge: "인기" },
-            { name: "반도체·HBM 산업 밸류체인", href: "/theme/semiconductor", icon: Sparkles, desc: "메모리·비메모리 반도체 전공정 및 후공정 패키징 산업 생태계를 심층 분석합니다." },
-            { name: "AI 인프라·전력망 산업 연구", href: "/theme/ai", icon: Globe, desc: "글로벌 데이터센터 AI 가속기 및 전력 인프라 밸류체인을 분석합니다." },
             { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다.", badge: "LIVE" },
             { name: "장마감 수급 스캐너", href: "/signals?tab=scanner", icon: Flame, desc: "정규장 마감 수급 집중주 & 기술적 벤치마크선 도달 통계를 퀀트 알고리즘으로 추적합니다.", badge: "HOT" },
             { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다.", badge: "HOT" },
