@@ -5,7 +5,7 @@ Auto Price Alert Monitor (자동 시세 알림 모니터)
 
 import asyncio
 from datetime import datetime
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Any
 import yfinance as yf
 from db_manager import get_db_connection
 from stock_data import get_korean_stock_name
@@ -17,6 +17,8 @@ class AutoPriceMonitor:
         self.check_interval = 300  # 5분(300초)마다 체크
         # 알림 발송 기록: { "YYYY-MM-DD": { "005930": {"up_5": True, "down_5": True, "high_52": True} } }
         self.notified_events = {}
+        # 유저별 매수가(평단가) 기준 급등 알림 발송 기록: { "YYYY-MM-DD": { "uid_005930": {"profit_5": True, "profit_10": True} } }
+        self.user_notified_events = {}
 
     async def start(self):
         """모니터링 시작"""
@@ -46,13 +48,11 @@ class AutoPriceMonitor:
         if today_str not in self.notified_events:
             self.notified_events = {today_str: {}}
 
-        # FCM 토큰이 있는 활성 사용자의 관심종목만 가져옴
-        # [Fix-3] 심볼 형식 불일치 관대화: watchlist의 '005930'과 fcm_tokens JOIN 실패 방지
-        # LIKE 매칭으로 '005930', '005930.KS', '005930.KQ' 모두 검색
+        # FCM 토큰이 있는 활성 사용자의 관심종목 및 매수단가(added_price) 가져옴
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT DISTINCT w.user_id, w.symbol 
+            SELECT DISTINCT w.user_id, w.symbol, COALESCE(w.added_price, 0)
             FROM watchlist w
             JOIN fcm_tokens f ON w.user_id = f.user_id
         """)
@@ -75,12 +75,15 @@ class AutoPriceMonitor:
             print(f"[AutoPriceAlert] 조인 결과 0류 - watchlist사용자: {wl_users}, fcm 사용자: {fcm_users} (watchlist {wl_count}류, fcm {fcm_count}류)")
             return
 
-        # 심볼별 유저 리스트 매핑
+        # 심볼별 유저 리스트 및 매수가 매핑
         symbol_users = {}
-        for user_id, symbol in rows:
+        for user_id, symbol, added_price in rows:
             if symbol not in symbol_users:
                 symbol_users[symbol] = []
-            symbol_users[symbol].append(user_id)
+            symbol_users[symbol].append({
+                "user_id": user_id,
+                "added_price": float(added_price or 0)
+            })
 
         # 병렬로 각 심볼 시세 체크
         async def check_single_symbol(symbol, users):
@@ -93,8 +96,18 @@ class AutoPriceMonitor:
         if tasks:
             await asyncio.gather(*tasks)
 
-    async def check_and_alert(self, symbol: str, users: List[str], today_str: str):
+    async def check_and_alert(self, symbol: str, users: List[Any], today_str: str):
         """단일 종목의 가격을 조회하고 알림 조건 검사"""
+        user_ids = []
+        user_added_prices = {}
+        for u in users:
+            if isinstance(u, dict):
+                uid = u["user_id"]
+                user_ids.append(uid)
+                if u.get("added_price", 0) > 0:
+                    user_added_prices[uid] = u["added_price"]
+            else:
+                user_ids.append(str(u))
         
         # 0. 해외 주식 여부 판별
         clean_sym = symbol.split('.')[0]
@@ -355,9 +368,108 @@ class AutoPriceMonitor:
                 "type": "high_52"
             })
 
-        # 알림 발송
+        # 1. 일반 공통 알림 발송 (전일 종가 대비 5% 급등, 급락, 신고가 등)
         for alert in alerts_to_send:
-            await self.send_auto_push(symbol, alert["title"], alert["body"], users)
+            await self.send_auto_push(symbol, alert["title"], alert["body"], user_ids)
+
+        # 2. 🎯 [방법 2: 대표님 특별 요청] 내가 산 금액(매수단가) 기준 급등 자동 FCM 알림 발송
+        if today_str not in self.user_notified_events:
+            self.user_notified_events[today_str] = {}
+
+        for uid, buy_price in user_added_prices.items():
+            if buy_price <= 0:
+                continue
+
+            profit_pct = ((current - buy_price) / buy_price) * 100
+            user_key = f"{uid}_{symbol}"
+            if user_key not in self.user_notified_events[today_str]:
+                self.user_notified_events[today_str][user_key] = {
+                    "profit_5": False,
+                    "profit_10": False,
+                    "profit_20": False
+                }
+            u_state = self.user_notified_events[today_str][user_key]
+
+            buy_price_str = f"${buy_price:,.2f}" if is_foreign else f"{int(buy_price):,}원"
+
+            # 당일 주가가 상승 흐름(change_pct > 0)이거나 전일 대비 플러스일 때 수익 급등 구간 알림
+            if change_pct > 0:
+                # [Tier 1] 내 매수가 대비 +5% 수익 급등 돌파
+                if profit_pct >= 5.0 and not u_state["profit_5"]:
+                    u_state["profit_5"] = True
+                    p_title = f"🚀 [내 매수가 급등] {stock_name} +{profit_pct:.1f}% 수익 돌파!"
+                    p_body = (
+                        f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                        f"• 내 매수가: {buy_price_str} (수익률 {profit_pct:+.2f}%)\n"
+                        f"• 거래량: {vol_str}\n"
+                        f"• AI 가이드: +5% 이상 단기 급등 구간입니다. 1차 분할 익절 또는 홀딩을 검토하세요!"
+                    )
+                    await self.send_auto_push_for_user(symbol, p_title, p_body, uid)
+
+                # [Tier 2] 내 매수가 대비 +10% 두 자릿수 수익 폭등
+                elif profit_pct >= 10.0 and not u_state["profit_10"]:
+                    u_state["profit_10"] = True
+                    p_title = f"🎉 [내 매수가 폭등] {stock_name} +{profit_pct:.1f}% 두 자릿수 수익 달성!"
+                    p_body = (
+                        f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                        f"• 내 매수가: {buy_price_str} (수익률 {profit_pct:+.2f}%)\n"
+                        f"• 거래량: {vol_str}\n"
+                        f"• AI 가이드: +10% 강력한 수익 구간입니다. 수익 보존을 위해 분할 익절을 권장합니다!"
+                    )
+                    await self.send_auto_push_for_user(symbol, p_title, p_body, uid)
+
+                # [Tier 3] 내 매수가 대비 +20% 대박 랠리 돌파
+                elif profit_pct >= 20.0 and not u_state["profit_20"]:
+                    u_state["profit_20"] = True
+                    p_title = f"👑 [내 매수가 대박 랠리] {stock_name} +{profit_pct:.1f}% 슈퍼 수익 돌파!"
+                    p_body = (
+                        f"• 현재가: {curr_str} (전일비 {diff_str})\n"
+                        f"• 내 매수가: {buy_price_str} (수익률 {profit_pct:+.2f}%)\n"
+                        f"• AI 가이드: 대세 상승 파동 진행 중! 트레일링 스탑으로 이익을 극대화하십시오."
+                    )
+                    await self.send_auto_push_for_user(symbol, p_title, p_body, uid)
+
+    async def send_auto_push_for_user(self, symbol: str, title: str, body: str, user_id: str):
+        """특정 유저에게 1:1 맞춤형 푸시 발송 (내 매수가 급등 알림)"""
+        try:
+            from firebase_config import send_multicast_notification
+            from db_manager import get_user_fcm_tokens, check_and_consume_alert_quota
+            
+            status = check_and_consume_alert_quota(user_id)
+            tokens_data = get_user_fcm_tokens(user_id)
+            if not tokens_data:
+                return
+                
+            tokens = [t['token'] for t in tokens_data if t.get('pref_price', True)]
+            if not tokens:
+                return
+                
+            if status == "OK":
+                send_multicast_notification(
+                    tokens=tokens,
+                    title=title,
+                    body=body,
+                    data={
+                        "type": "my_purchase_surge",
+                        "symbol": symbol,
+                        "url": "/watchlist"
+                    },
+                    target_users=[user_id]
+                )
+                print(f"[AutoPriceAlert] Sent personalized surge alert to user {user_id} for {symbol}: {title}")
+            elif status == "LIMIT_REACHED":
+                send_multicast_notification(
+                    tokens=tokens,
+                    title="⚠️ 오늘 무료 프리미엄 알림(3회) 소진",
+                    body="친구 1명만 초대하고 평생 무제한으로 1급 정보를 받아보세요!",
+                    data={
+                        "type": "referral_invite",
+                        "url": "/referral"
+                    },
+                    target_users=[user_id]
+                )
+        except Exception as e:
+            print(f"[AutoPriceAlert] Personalized push error for {user_id}: {e}")
 
     async def send_auto_push(self, symbol: str, title: str, body: str, users: List[str]):
         """유저들에게 자동 가격 푸시 알림 발송"""
@@ -403,7 +515,7 @@ class AutoPriceMonitor:
                     },
                     target_users=ok_users
                 )
-                print(f"[AutoPriceAlert] Sent '{title_prefix}' for {stock_name} to {len(all_tokens)} devices")
+                print(f"[AutoPriceAlert] Sent '{push_title}' for {symbol} to {len(all_tokens)} devices")
                 
             # 한도 도달 안내 발송
             if limit_reached_tokens:
