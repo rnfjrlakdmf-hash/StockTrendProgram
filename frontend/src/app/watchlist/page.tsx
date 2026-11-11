@@ -101,6 +101,8 @@ export default function WatchlistPage() {
 
     // [PRO] 전문 수급 & 증권사 컨센서스 데이터
     const [proInsights, setProInsights] = useState<Record<string, any>>({});
+    // [NEW] 조심해야 할 핵심 리스크 & 해외 직격탄 뇌관 데이터 (대표님 요청)
+    const [riskTriggers, setRiskTriggers] = useState<Record<string, any>>({});
 
     // [NEW] 서브탭 상태
     const [activeTab, setActiveTab] = useState<"quotes" | "schedules" | "alerts">("quotes");
@@ -489,6 +491,18 @@ export default function WatchlistPage() {
         };
         fetchProInsights();
 
+        // [NEW] 조심해야 할 핵심 리스크 & 해외 직격탄 뇌관 로드 (대표님 요청)
+        const fetchRiskTriggers = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/market/watchlist/stock-risk-triggers?symbols=${encodeURIComponent(syms)}`);
+                const json = await res.json();
+                if (json.status === "success" && json.data) {
+                    setRiskTriggers(json.data);
+                }
+            } catch (e) {}
+        };
+        fetchRiskTriggers();
+
         return () => clearInterval(quotesTimer);
     }, [watchlist]);
 
@@ -831,6 +845,29 @@ export default function WatchlistPage() {
                                     </div>
                                 )}
 
+                                {/* ⚡ [NEW] 내 관심종목 24시간 실시간 해외 악재 & 직격탄 뇌관 감시 안내 바 */}
+                                <div className="bg-gradient-to-r from-rose-950/40 via-zinc-900 to-zinc-900/90 border border-rose-500/30 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center text-lg shrink-0">
+                                            💣
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                                    AI 해외 악재 &amp; 직격탄 감시
+                                                </span>
+                                                <span className="text-xs text-zinc-400">등록 종목 1:1 맞춤형 뇌관 분석</span>
+                                            </div>
+                                            <h4 className="text-xs sm:text-sm font-black text-white mt-0.5">
+                                                각 관심종목 카드에서 [조심해야 할 해외 악재 &amp; 직격탄 요인]을 실시간 확인하세요!
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <span className="text-[11px] text-rose-300 font-bold bg-rose-950/60 border border-rose-500/30 px-3 py-1 rounded-xl shrink-0 self-start sm:self-center">
+                                        24시간 리스크 감시 가동 중
+                                    </span>
+                                </div>
+
                                 <div className="bg-gradient-to-b from-zinc-900/90 via-zinc-900/90 to-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
                                     <CleanStockList
                                     items={watchlist.map(item => {
@@ -862,6 +899,8 @@ export default function WatchlistPage() {
                                             price_krw: data?.price_krw || null,
                                             // [v4] 전문 데이터 지표
                                             proInsights: proInsights[item.symbol],
+                                            // [v5] 조심해야 할 핵심 리스크 (해외 직격탄 뇌관 & 인과관계 요약)
+                                            riskTrigger: riskTriggers[item.symbol] || riskTriggers[item.symbol?.split('.')[0]],
                                         };
                                     })}
                                     onItemClick={(sym) => { 

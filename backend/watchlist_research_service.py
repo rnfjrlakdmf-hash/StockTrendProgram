@@ -442,6 +442,60 @@ def _get_fallback_stock_triggers(name: str, code: str, combined: str) -> Dict[st
     AI 응답 지연/오프라인 시에도 25개 주요 업종별 팩트체크 기반으로 
     100% 종목 맞춤형 직격탄을 즉각 산출하는 고성능 룰베이스 딕셔너리
     """
+    # 0-A. 카지노 / 복합리조트 / 호텔 / 외국인 관광 (파라다이스, GKL, 롯데관광개발, 강원랜드, 호텔신라 등)
+    if any(k in combined for k in ["파라다이스", "034230", "gkl", "114090", "롯데관광개발", "032350", "강원랜드", "호텔신라", "카지노", "복합리조트", "파라다이스시티", "외국인카지노", "드롭액", "홀드율"]):
+        return {
+            "overseas_chain_badge": "🌏 중국·일본 VIP 드롭액 및 엔화/위안화 환율 직결주",
+            "direct_hit_one_liner": (
+                f"해외에서 『중국 경제 성장 둔화』하거나 『엔화 약세(엔저) 심화』하면 ➔ "
+                f"중국 VIP 고객 감소 및 일본 VIP 고객의 엔화 가치 하락으로 {name} 주가가 직격탄을 맞아 떨어집니다!"
+            ),
+            "overseas_triggers": [
+                {
+                    "icon": "🇨🇳",
+                    "category_tag": "중국 VIP 수요",
+                    "trigger": "📉 중국 경기 둔화 및 부동산 침체로 인한 고액 자산가(VIP) 해외 원정 도박 감소",
+                    "chain": f"카지노 매출의 핵심 축인 중국계 VIP 고객의 칩 구매액(드롭액)이 줄어들면 {name}의 분기 영업이익이 즉시 하향 압박을 받습니다.",
+                    "impact_degree": "🔥 1순위 직격탄"
+                },
+                {
+                    "icon": "💴",
+                    "category_tag": "엔화 환율",
+                    "trigger": "📉 일본 엔저(엔화 약세) 심화에 따른 일본인 VIP 배팅액 원화 환산액 감소",
+                    "chain": "일본인 VIP 고객이 엔화 가치 하락으로 해외 지출을 줄이거나 칩 교환 시 원화 환산 배팅 규모가 축소되어 환차손이 발생합니다.",
+                    "impact_degree": "⚠️ 엔저 환차손 직격"
+                },
+                {
+                    "icon": "🎰",
+                    "category_tag": "해외 복합리조트",
+                    "trigger": "🏛️ 마카오·싱가포르·일본 오사카 카지노 복합리조트(IR)와의 아시아 고객 유치 경쟁",
+                    "chain": "마카오 및 아시아 대형 복합리조트들이 공격적인 마케팅과 콤프(무료 숙박·항공)를 제공하면 국내 외국인 전용 카지노 집객력이 분산될 수 있습니다.",
+                    "impact_degree": "⚡ 경쟁 집객 변수"
+                }
+            ],
+            "rise_chain_badge": "🔥 중국·일본 VIP 관광객 급증 · 한중 비자 면제 수혜주",
+            "rise_one_liner": (
+                f"해외에서 『중국인 방한 단체관광 및 무비자 확대』가 시행되거나 『엔화 강세 반등』이 나타나면 ➔ "
+                f"카지노 VIP 드롭액과 호텔 투숙률이 폭증하여 {name} 주가가 강력한 상승 탄력을 받습니다!"
+            ),
+            "rise_triggers": [
+                {
+                    "icon": "🚀",
+                    "category_tag": "중국 관광객 유입",
+                    "trigger": "🇨🇳 중국 정부의 방한 단체관광 전면 허용 및 무비자 정책 확대",
+                    "chain": f"중국 본토 VIP 및 일반 대중(Mass) 고객의 방한 관광객이 폭증하여 {name} 카지노 테이블 드롭액과 호텔 투숙률이 동반 급등합니다.",
+                    "impact_degree": "🔥 1순위 상승 동력"
+                },
+                {
+                    "icon": "💴",
+                    "category_tag": "엔화 강세 반등",
+                    "trigger": "📈 일본은행(BOJ) 금리 인상에 따른 엔화 가치 반등 (엔고 전환)",
+                    "chain": "엔화 가치가 상승하면 일본인 VIP 고객의 한국 원정 배팅 체감 비용이 저렴해져 칩 구매액이 가파르게 증가합니다.",
+                    "impact_degree": "✨ 환율 수혜 모멘텀"
+                }
+            ]
+        }
+
     # 0. 반도체 전공정 식각·증착 부품 / 소부장 소모품 (씨엠티엑스, 하나머티리얼즈, 티씨케이, 원익QnC 등)
     if any(k in combined for k in ["씨엠티엑스", "cmtx", "388210", "하나머티리얼즈", "티씨케이", "원익qnc", "월덱스", "케이엔제이", "식각", "증착", "소부장", "실리콘카바이드", "sic", "쿼츠", "전공정 부품", "소모성 부품"]):
         return {
@@ -1369,8 +1423,10 @@ def _resolve_stock_overseas_direct_hit(name: str, code: str, biz_text: str, comb
     cache = _load_stock_triggers_cache()
     if code in cache:
         item = cache[code]
-        # 만약 기존에 잘못 저장된 범용 템플릿("미국 나스닥" 기본값)이고 현대리바트 등 특정 업종이라면 재분석
-        if "미국 나스닥" not in item.get("direct_hit_one_liner", "") or name in ["나스닥"]:
+        line = item.get("direct_hit_one_liner", "")
+        # 만약 기존에 잘못 저장된 범용 템플릿("미국 나스닥" 또는 "원자재 가격 불안")이고 특정 업종(카지노/반도체 등)이라면 재분석
+        is_generic = "미국 나스닥" in line or "글로벌 공급망 원자재 가격 불안" in line
+        if not is_generic or any(k in combined for k in ["나스닥"]):
             return item
 
     # 1. AI 실시간 호출 시도 (비용 0.2원 수준의 초경량 Gemini Flash)

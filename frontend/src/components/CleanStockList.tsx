@@ -68,6 +68,15 @@ export interface CleanStockItem {
             low_52w?: string;
         };
     };
+    // [v5] 조심해야 할 핵심 리스크 (해외 직격탄 뇌관 & 인과관계 요약)
+    riskTrigger?: {
+        direct_hit_one_liner?: string;
+        overseas_triggers?: any[];
+        overseas_chain_badge?: string;
+        rise_one_liner?: string;
+        rise_triggers?: any[];
+        rise_chain_badge?: string;
+    };
 }
 
 // Helper function to extract high-value keywords and format them as hashtags
@@ -580,6 +589,58 @@ export default function CleanStockList({ items, onItemClick, onDelete, onAlertCl
                                         >
                                             🏛️ PBR {item.proInsights.pbr}
                                         </BadgeTooltip>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* [Row 2.5] ⚠️ 조심해야 할 핵심 리스크 & 해외 직격탄 뇌관 (관심종목 핵심 케어) */}
+                            {item.riskTrigger && (item.riskTrigger.direct_hit_one_liner || (item.riskTrigger.overseas_triggers && item.riskTrigger.overseas_triggers.length > 0)) && (
+                                <div className="rounded-xl p-2.5 sm:p-3 bg-gradient-to-r from-rose-950/30 via-black/60 to-rose-950/20 border border-rose-500/30 hover:border-rose-500/50 transition-all space-y-2 shadow-xs">
+                                    <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-black flex items-center gap-1 shadow-xs">
+                                                <span>💣</span>
+                                                <span>조심해야 할 리스크</span>
+                                            </span>
+                                            {item.riskTrigger.overseas_chain_badge && (
+                                                <span className="text-[10px] text-zinc-400 font-medium truncate max-w-[200px] sm:max-w-[340px]">
+                                                    {item.riskTrigger.overseas_chain_badge}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[9.5px] text-rose-400 font-bold bg-rose-500/10 px-2 py-0.2 rounded border border-rose-500/20">
+                                            ⚠️ 해외 직격탄 뇌관
+                                        </span>
+                                    </div>
+
+                                    {/* 핵심 1줄 직격탄 경고문 (사용자 요청: 해외 악재 인과관계 명확화) */}
+                                    {item.riskTrigger.direct_hit_one_liner && (
+                                        <p className="text-[11px] sm:text-[11.5px] font-medium text-rose-100/95 leading-relaxed bg-black/50 p-2 sm:p-2.5 rounded-lg border border-rose-500/20 break-keep">
+                                            <strong className="text-rose-300 font-extrabold mr-1">직격탄 요인:</strong>
+                                            {item.riskTrigger.direct_hit_one_liner}
+                                        </p>
+                                    )}
+
+                                    {/* 3대 해외 뇌관 태그 칩 (마우스 호버/탭 시 상세 인과관계 툴팁) */}
+                                    {item.riskTrigger.overseas_triggers && item.riskTrigger.overseas_triggers.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                            {item.riskTrigger.overseas_triggers.map((tr: any, trIdx: number) => (
+                                                <BadgeTooltip
+                                                    key={trIdx}
+                                                    title={`💣 [${tr.category_tag || '뇌관'}] ${tr.trigger}`}
+                                                    desc={tr.chain || '글로벌 변수에 따른 주가 급변동 리스크가 존재합니다.'}
+                                                    badgeClass="text-[10px] bg-rose-900/30 hover:bg-rose-800/40 text-rose-200 border border-rose-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-xs cursor-help transition-all"
+                                                >
+                                                    <span>{tr.icon || '⚠️'}</span>
+                                                    <span className="truncate max-w-[140px] sm:max-w-[180px]">{tr.trigger}</span>
+                                                    {tr.impact_degree && (
+                                                        <span className="text-[9px] text-rose-400 font-mono ml-0.5 shrink-0">
+                                                            ({tr.impact_degree.replace(/[^가-힣0-9]/g, '')})
+                                                        </span>
+                                                    )}
+                                                </BadgeTooltip>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
                             )}

@@ -6758,6 +6758,52 @@ def partial_sell_trading_desk_position(payload: Dict[str, Any] = Body(...), ceo_
     return res
 
 
+@router.get("/watchlist/stock-risk-triggers")
+@router.post("/watchlist/stock-risk-triggers")
+def get_watchlist_stock_risk_triggers(
+    symbols: Optional[str] = Query(None),
+    payload: Optional[Dict[str, Any]] = Body(default=None),
+):
+    """
+    관심종목 탭에서 각 종목별 '해외에서 무슨 악재/지표가 터지면 직격탄을 맞아 떨어지는가(조심해야 할 리스크)?' 및 
+    핵심 상승 모멘텀을 한눈에 조회하는 초고속 API
+    """
+    from watchlist_research_service import _resolve_stock_overseas_direct_hit
+    from stock_names import STOCK_MAP
+    
+    code_to_name = {v: k for k, v in STOCK_MAP.items()}
+    
+    req_syms = []
+    if symbols:
+        req_syms.extend([s.strip() for s in symbols.split(",") if s.strip()])
+    if isinstance(payload, dict) and isinstance(payload.get("symbols"), list):
+        req_syms.extend([str(s).strip() for s in payload["symbols"] if s])
+    elif isinstance(payload, dict) and isinstance(payload.get("symbols"), str):
+        req_syms.extend([s.strip() for s in payload["symbols"].split(",") if s.strip()])
+        
+    req_syms = list(dict.fromkeys(req_syms))
+    
+    result = {}
+    for sym in req_syms:
+        clean_sym = sym.split(".")[0] if "." in sym else sym
+        name = code_to_name.get(clean_sym) or sym
+        combined = f"{name} {clean_sym}".lower()
+        trigger_info = _resolve_stock_overseas_direct_hit(name, clean_sym, "", combined)
+        result[sym] = {
+            "symbol": sym,
+            "clean_symbol": clean_sym,
+            "name": name,
+            "overseas_chain_badge": trigger_info.get("overseas_chain_badge") or f"🌏 {name} 글로벌 리스크 직결주",
+            "direct_hit_one_liner": trigger_info.get("direct_hit_one_liner") or "",
+            "overseas_triggers": trigger_info.get("overseas_triggers") or [],
+            "rise_chain_badge": trigger_info.get("rise_chain_badge") or "",
+            "rise_one_liner": trigger_info.get("rise_one_liner") or "",
+            "rise_triggers": trigger_info.get("rise_triggers") or [],
+        }
+        
+    return {"status": "success", "count": len(result), "data": result}
+
+
 @router.post("/ceo-office/watchlist-research")
 def post_watchlist_research(
     payload: Dict[str, Any] = Body(default={}),
