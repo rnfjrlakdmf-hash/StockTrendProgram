@@ -17,12 +17,9 @@ const navigationGroups = [
         items: [
             { name: "대표이사 집무실 · 임원회의", href: "/ceo-office", icon: Crown, desc: "리서치센터장·퀀트본부장·리스크관리본부장(CRO) 등 5인의 AI 임원진이 대표님께 대면 보고하고 종목별 끝장 토론 및 리포트 결재를 올리는 살아있는 증권사 시스템입니다.", badge: "대표전용", adminOnly: true },
             { name: "국내·해외·ETF·선물 리서치", href: "/research", icon: Newspaper, desc: "국내 종목, 미국 해외주식(월가 IB 목표주가), 국내외 ETF, 나스닥·금·원유 선물까지 전 자산군 리서치 분석을 실시간 조회합니다.", badge: "LIVE" },
-            { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "초보자를 위한 PER, PBR, 공매도, DART 등 46대 필수 주식 용어 해설 백과사전입니다.", badge: "필수" },
+            { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "PER·PBR·ROE 기업 가치평가부터 DART 전자공시 독해, 매크로 지표까지 총망라한 46대 필수 주식 백과사전입니다.", badge: "필수" },
             { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 심층 리포트를 제공합니다.", badge: "칼럼" },
             { name: "1타 강사 차트 스터디", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론, 보조지표 매매타점을 쉽고 체계적으로 학습합니다.", badge: "인기" },
-            { name: "기업 가치평가 (PER·PBR·ROE)", href: "/guide/per", icon: BarChart3, desc: "주가수익비율(PER), 주가순자산비율(PBR), 자기자본이익률(ROE) 산출 공식과 재무제표 독해법입니다.", badge: "핵심" },
-            { name: "DART 전자공시 독해 가이드", href: "/guide/dart", icon: BookOpen, desc: "금융감독원 전자공시시스템(DART) 사업보고서와 단일판매·공급계약 공시 분석 방법론입니다." },
-            { name: "특징주 공시·수급 브리핑", href: "/blog", icon: Flame, desc: "주요 상장기업의 공시 내역 및 기관·외국인 수급 변동 특징주 리포트입니다." },
         ]
     },
     {
