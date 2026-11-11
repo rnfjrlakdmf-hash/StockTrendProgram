@@ -4831,6 +4831,9 @@ def _generate_wall_street_council(doc: dict) -> dict:
         cash_allocation = 100
         consensus_badge = "⚪ 전원 관망/현금 100% 방어"
         consensus_text = "5대 거장 전원 일치로 투자 비중 0% 결정 ➔ 100% 현금 대기 권고"
+        consensus_title = "전원 매수 보류 & 100% 현금 방어"
+        consensus_conclusion = "버핏의 독점 무기(해자) 훼손 우려와 멍거의 업황 둔화 경고, 린치의 성장 엔진 둔화, 드러켄밀러의 외국인 큰손 자금 이탈이 동시에 확인되었습니다. 그레이엄조차 안전 에어백이 얇아졌다고 경고하므로, 지금은 섣부른 물타기를 멈추고 100% 현금을 보존하며 소나기를 피해야 할 절대 방어 구간입니다."
+        ceo_action_guide = "신규 매수 0주 (지출 0원) · 기존 보유분 있다면 비중 축소 또는 즉시 손절 방어선(-3.5%) 점검"
     elif is_macro:
         # 매크로/선물/경제일정인 경우: 거시 자산 배분 스탠스
         analysts = [
@@ -4947,6 +4950,9 @@ def _generate_wall_street_council(doc: dict) -> dict:
         cash_allocation = 82
         consensus_badge = "🟢 만장일치 적극 매수 (5인 찬성)"
         consensus_text = f"5대 거장 만장일치 추천 ➔ 포트폴리오 목표 비중 {target_allocation}%, 분할 매수 적합"
+        consensus_title = "만장일치 적극 매수 & 분할 편입"
+        consensus_conclusion = f"{name}은 버핏의 독점 비법 소스(안정적 현금 창출)와 멍거의 무결점 사업 모델, 그레이엄의 든든한 안전 에어백, 린치의 수주 폭증 성장성, 드러켄밀러의 큰손 수급 턴어라운드가 완벽히 맞아떨어졌습니다. 5대 거장 전원 일치로 실시간 현재가 기준 안전 분할 매수를 강력 권고합니다."
+        ceo_action_guide = "10만원 한도 내 실시간 분할 매수 집행 (오전 10시 지지선 확인 후 1차 30% ➔ 2차 40% ➔ 3차 30%)"
 
     return {
         "analysts": analysts,
@@ -4954,6 +4960,9 @@ def _generate_wall_street_council(doc: dict) -> dict:
         "cash_allocation_pct": cash_allocation,
         "consensus_badge": consensus_badge,
         "consensus_summary": consensus_text,
+        "consensus_title": consensus_title,
+        "consensus_conclusion": consensus_conclusion,
+        "ceo_action_guide": ceo_action_guide,
         "risk_limit_rule": "1회 운용 예산(10만원) 한도 엄수 · 단일 종목 몰빵 금지 · 3회 분할 매수 준수",
         "framework_badge": "VIRATTT AI Hedge Fund Multi-Agent System"
     }
