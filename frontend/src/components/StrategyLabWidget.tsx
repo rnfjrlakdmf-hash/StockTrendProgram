@@ -93,10 +93,14 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
         { name: '삼성전자', code: '005930' },
         { name: 'SK하이닉스', code: '000660' },
         { name: '현대차', code: '005380' },
+        { name: '카카오', code: '035720' },
         { name: '에코프로비엠', code: '247540' },
+        { name: '알테오젠', code: '196170' },
+        { name: '셀트리온', code: '068270' },
         { name: '테슬라', code: 'TSLA' },
+        { name: '엔비디아', code: 'NVDA' },
         { name: '애플', code: 'AAPL' },
-        { name: '엔비디아', code: 'NVDA' }
+        { name: '팔란티어', code: 'PLTR' }
     ];
 
     // 백테스트 & AI 자가 교정 실행
@@ -237,13 +241,19 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                         {/* 종목 입력 */}
                         <div className="space-y-1 sm:col-span-2 lg:col-span-1">
-                            <label className="text-xs font-semibold text-zinc-300">종목명 또는 코드</label>
+                            <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+                                <span>🔍 종목 검색 (국내/해외)</span>
+                                <span className="text-[10px] text-zinc-400">엔터(Enter) 지원</span>
+                            </label>
                             <input
                                 type="text"
                                 value={symbolInput}
                                 onChange={(e) => setSymbolInput(e.target.value)}
-                                placeholder="예: 삼성전자, 005930, TSLA"
-                                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 transition-all font-medium"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRunAutoTuning();
+                                }}
+                                placeholder="예: 카카오, 셀트리온, TSLA, 엔비디아"
+                                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 transition-all font-medium placeholder:text-zinc-500"
                             />
                         </div>
 
