@@ -435,6 +435,10 @@ def run_strategy_auto_tuning_loop(
             {
                 "step": s["step_name"],
                 "change": s["change_desc"],
+                "reason": s.get("change_desc", ""),
+                "buy_dip": s.get("buy_dip", cur_buy_dip),
+                "tp": s.get("take_profit", cur_tp),
+                "sl": s.get("stop_loss", cur_sl),
                 "return_pct": f"{s['total_return_pct']:+.1f}%",
                 "win_rate": f"{s['win_rate_pct']:.1f}%",
                 "trades": s["total_trades"],
