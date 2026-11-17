@@ -5995,6 +5995,36 @@ export default function CeoOfficePage() {
                 {/* 🚨 대표님 전용 글로벌 리스크 레이더 (내 관심종목 자동 판단) */}
                 <RiskRadarPanel email={getCeoEmail()} />
 
+                {/* 🧪 [신규 오픈] AI 매매 전략 자율 연습장 바로가기 하이라이트 배너 */}
+                <div className="bg-gradient-to-r from-violet-950/90 via-purple-900/70 to-indigo-950/90 border-2 border-violet-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white flex items-center justify-center text-2xl shrink-0 shadow-lg shadow-violet-500/30">
+                            🧪
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-violet-400 text-slate-950 shadow-sm animate-pulse">
+                                    신규 오픈
+                                </span>
+                                <span className="text-sm sm:text-base font-black text-white">
+                                    AI 매매 전략 자율 연습장 (스스로 고치는 자동매매 랩)
+                                </span>
+                            </div>
+                            <p className="text-xs text-zinc-300 mt-1">
+                                대표님의 매매 기준을 5년 주가로 시험하고, 돈 잃은 원인을 분석해 스스로 규칙을 3번 고쳐냅니다.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('strategy_lab')}
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 text-white text-xs font-black transition-all shadow-lg shadow-violet-500/30 shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                        <span>지금 바로 연습장 열기</span>
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
+                </div>
+
                 {/* 🌟 대표이사 집무실 프리미엄 세그먼트 도크 (Luxury Executive Tab Bar) */}
                 <div className="bg-[#070b16]/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-2.5 sm:p-3 shadow-2xl space-y-2.5">
                     {/* 1행: 7대 핵심 집무 탭 (자연스러운 flex-wrap으로 어떤 해상도/배율에서도 절대 짤림 없음) */}

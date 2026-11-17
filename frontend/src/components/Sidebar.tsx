@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator, Rocket } from "lucide-react";
+import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator, Rocket, FlaskConical } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
@@ -18,6 +18,7 @@ const navigationGroups = [
             { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다.", badge: "HOME" },
             { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다.", badge: "LIVE" },
             { name: "대표이사 집무실 · 임원회의", href: "/ceo-office", icon: Crown, desc: "리서치센터장·퀀트본부장·리스크관리본부장(CRO) 등 5인의 AI 임원진이 대표님께 대면 보고하고 종목별 끝장 토론 및 리포트 결재를 올리는 살아있는 증권사 시스템입니다.", badge: "대표전용", adminOnly: true },
+            { name: "AI 매매 전략 자율 연습장", href: "/ceo-office?tab=lab", icon: FlaskConical, desc: "평소 생각하신 매매 규칙을 5년 주가로 시험하고, 돈을 잃은 원인을 분석하여 스스로 규칙을 고치는 AI 매매 연습장입니다.", badge: "스스로교정", adminOnly: true },
         ]
     },
     {
