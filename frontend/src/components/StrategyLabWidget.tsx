@@ -87,6 +87,7 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
     const [errorMsg, setErrorMsg] = useState('');
     const [deploying, setDeploying] = useState(false);
     const [deploySuccess, setDeploySuccess] = useState<string | null>(null);
+    const [showDeployModal, setShowDeployModal] = useState(false);
 
     // 인기 종목 퀵 버튼
     const quickPicks = [
@@ -168,6 +169,7 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
             }
 
             setDeploySuccess(data.message || '성공적으로 자동매매 엔진에 등록되었습니다!');
+            setShowDeployModal(true);
             if (onDeploySuccess) {
                 onDeploySuccess(result.symbol);
             }
@@ -632,16 +634,22 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                 </h4>
                             </div>
                             <p className="text-xs text-zinc-300">
-                                등록 즉시 대표이사 집무실의 <strong className="text-emerald-300">트레이딩 운용팀</strong>과 연동되어 
-                                일일 조건 충족 시 안전 분할 매수 및 자동 익절/손절이 집행됩니다.
+                                등록 즉시 대표이사 집무실의 <strong className="text-emerald-300">트레이딩 운용팀</strong> 및 자동매매 엔진에 실시간 탑재되어 
+                                조건 충족 시(급락 포착) 안전 분할 매수 및 익절/손절이 집행됩니다.
                             </p>
                         </div>
 
                         <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto shrink-0">
                             {deploySuccess ? (
-                                <div className="px-4 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                    <span>{deploySuccess}</span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeployModal(true)}
+                                        className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
+                                    >
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                        <span>등록 완료 (상세 안내 모달 열기)</span>
+                                    </button>
                                 </div>
                             ) : (
                                 <button
@@ -663,6 +671,125 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     )}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 자동매매 등록 완료 알림 모달 */}
+            {showDeployModal && result && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+                    <div className="bg-[#0f172a] border-2 border-emerald-500/40 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+                        {/* 배경 블러 효과 */}
+                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-56 h-56 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
+
+                        {/* 헤더 */}
+                        <div className="relative z-10 flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl shadow-inner">
+                                    🚀
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-400 text-slate-950">
+                                            엔진 탑재 완료
+                                        </span>
+                                        <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                            24시간 실시간 감시 작동 중
+                                        </span>
+                                    </div>
+                                    <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
+                                        [{result.symbol}] 전략 등록 완료!
+                                    </h3>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowDeployModal(false)}
+                                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* 등록된 전략 세부 규칙 요약 카드 */}
+                        <div className="relative z-10 bg-slate-900/80 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
+                            <div className="text-xs font-bold text-zinc-300 flex items-center justify-between">
+                                <span>📋 AI 자율 교정 최적화 매매 규칙</span>
+                                <span className="text-[11px] text-violet-400">규칙 3차 교정 적용</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
+                                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">매수 진입 신호</div>
+                                    <div className="text-sm font-bold text-sky-400">
+                                        당일 -{result.tuning_steps[result.tuning_steps.length - 1]?.buy_dip ?? 3.8}% 급락
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 mt-0.5">익일 시초가 분할 매수</div>
+                                </div>
+
+                                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">목표 익절선</div>
+                                    <div className="text-sm font-bold text-emerald-400">
+                                        +{result.tuning_steps[result.tuning_steps.length - 1]?.take_profit ?? 6.2}%
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 mt-0.5">추세 반등 목표가</div>
+                                </div>
+
+                                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">리스크 손절선</div>
+                                    <div className="text-sm font-bold text-rose-400">
+                                        -{result.tuning_steps[result.tuning_steps.length - 1]?.stop_loss ?? 4.0}%
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 mt-0.5">손실 제한 안전장치</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Q&A 카드: 왜 당장 매수되지 않는가? */}
+                        <div className="relative z-10 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2 text-zinc-200">
+                            <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                                <span>💡</span>
+                                <span>"지금 바로 주식이 안 사지는데 왜 아무 변화가 없나요?"</span>
+                            </div>
+                            <p className="leading-relaxed text-zinc-300 text-[11px] sm:text-xs">
+                                대표님, 정상적으로 잘 가동 중입니다! 이 전략은 아무 때나 무작정 사는 게 아니라, 
+                                <strong className="text-amber-300"> "장중 -{result.tuning_steps[result.tuning_steps.length - 1]?.buy_dip ?? 3.8}% 이상 급락했을 때만"</strong> 
+                                저가에 줍는 안전한 조건부 규칙입니다. 조건에 도달할 때까지 봇이 숨죽여 감시하다가 조건이 충족되는 순간 즉시 자동으로 발주합니다.
+                            </p>
+                        </div>
+
+                        {/* 액션 버튼 */}
+                        <div className="relative z-10 flex flex-col sm:flex-row gap-2.5 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowDeployModal(false);
+                                    window.location.href = '/ceo-office?tab=trading';
+                                }}
+                                className="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-bold transition-all shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <span>💼 트레이딩 운용팀에서 확인</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowDeployModal(false);
+                                    window.location.href = '/auto-trader';
+                                }}
+                                className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-zinc-200 border border-white/10 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <span>🤖 자동매매 콘솔로 이동</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowDeployModal(false)}
+                                className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white text-xs sm:text-sm font-medium transition-all cursor-pointer"
+                            >
+                                닫기
+                            </button>
                         </div>
                     </div>
                 </div>
