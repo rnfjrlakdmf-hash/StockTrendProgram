@@ -8,6 +8,7 @@ import { API_BASE_URL } from '@/lib/config';
 import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
 import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock, Loader2, Zap, Globe } from 'lucide-react';
+import StrategyLabWidget from '@/components/StrategyLabWidget';
 
 
 // [Smart Executive Opinion Parser]
@@ -4360,7 +4361,7 @@ export default function CeoOfficePage() {
     const [isCallingMeeting, setIsCallingMeeting] = useState<boolean>(false);
 
     // 기본 첫 화면을 "🖋️ 대표이사 전자결재 집무실 (서명 전용)"으로 설정!
-    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'one_page_summary' | 'weekly_review_calendar' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research'>('electronic_sign');
+    const [activeTab, setActiveTab] = useState<'electronic_sign' | 'one_page_summary' | 'weekly_review_calendar' | 'boardroom' | 'approved_tf' | 'history' | 'watchlist_research' | 'strategy_lab'>('electronic_sign');
     const [summaryFilter, setSummaryFilter] = useState<'all' | 'approved' | 'kr_stock' | 'us_stock' | 'macro'>('all');
     const [summaryViewMode, setSummaryViewMode] = useState<'table' | 'cards'>('table');
     const [weeklySubView, setWeeklySubView] = useState<'both' | 'review' | 'calendar'>('both');
@@ -4630,6 +4631,9 @@ export default function CeoOfficePage() {
         if (typeof window !== 'undefined' && window.location.search.includes('tab=research')) {
             setActiveTab('watchlist_research');
             fetchWatchlistResearch();
+        }
+        if (typeof window !== 'undefined' && (window.location.search.includes('tab=lab') || window.location.search.includes('tab=strategy'))) {
+            setActiveTab('strategy_lab');
         }
     }, [authLoading, isAdmin, fetchTradingDesk]);
 
@@ -6102,6 +6106,23 @@ export default function CeoOfficePage() {
 
                         <button
                             type="button"
+                            onClick={() => setActiveTab('strategy_lab')}
+                            className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                                activeTab === 'strategy_lab'
+                                    ? 'bg-gradient-to-r from-violet-400 via-fuchsia-300 to-indigo-300 text-slate-950 shadow-lg shadow-violet-500/25 font-black'
+                                    : 'bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 border border-violet-400/30'
+                            }`}
+                        >
+                            <span>🧪 AI 매매 전략 자율 연습장</span>
+                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                                activeTab === 'strategy_lab' ? 'bg-slate-950/40 text-slate-950 font-black' : 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                            }`}>
+                                자가 교정
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => setActiveTab('history')}
                             className={`px-3 py-2 rounded-xl text-xs sm:text-[13px] font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                                 activeTab === 'history'
@@ -7116,9 +7137,40 @@ export default function CeoOfficePage() {
                                                                                                                 1회 예산(10만원) 대비 현재가({plan.currPrice}) 초과로 [0주 대기] · 원금 100% 안전 예수금 보관
                                                                                                             </span>
                                                                                                         ) : (
-                                                                                                            <span className="text-emerald-300 font-extrabold">
-                                                                                                                실시간 현재가({plan.currPrice}) 기준 딱 {plan.totalShares}주 ({plan.actualInvest}) 분할 매수 집행 (1차 30% ➔ 2차 40% ➔ 3차 30%)
-                                                                                                            </span>
+                                                                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                                                                <span className="text-emerald-300 font-extrabold">
+                                                                                                                    실시간 현재가({plan.currPrice}) 기준 딱 {plan.totalShares.replace(/주$/, '')}주 ({plan.actualInvest}) 분할 매수 집행
+                                                                                                                </span>
+                                                                                                                {plan.isSingleShare ? (
+                                                                                                                    <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-xs shadow-sm ring-1 ring-amber-300">
+                                                                                                                        🥇 1차 단일 진입: {plan.tranches[0]?.amt} (1주 전액)
+                                                                                                                    </span>
+                                                                                                                ) : (
+                                                                                                                    <div className="flex flex-wrap items-center gap-1.5 text-xs font-black">
+                                                                                                                        <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black shadow-sm ring-1 ring-amber-300 flex items-center gap-1">
+                                                                                                                            <span>🥇 1차 30%:</span>
+                                                                                                                            <span className="underline underline-offset-2">{plan.tranches[0]?.amt}</span>
+                                                                                                                            <span className="text-[11px] font-bold opacity-90">({plan.tranches[0]?.shares})</span>
+                                                                                                                        </span>
+                                                                                                                        {plan.tranches[1] && plan.tranches[1].shares !== '0주' && (
+                                                                                                                            <>
+                                                                                                                                <span className="text-zinc-500 font-normal">➔</span>
+                                                                                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                                                                                                                    2차 40%: {plan.tranches[1]?.amt} ({plan.tranches[1]?.shares})
+                                                                                                                                </span>
+                                                                                                                            </>
+                                                                                                                        )}
+                                                                                                                        {plan.tranches[2] && plan.tranches[2].shares !== '0주' && (
+                                                                                                                            <>
+                                                                                                                                <span className="text-zinc-500 font-normal">➔</span>
+                                                                                                                                <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                                                                                                                                    3차 30%: {plan.tranches[2]?.amt} ({plan.tranches[2]?.shares})
+                                                                                                                                </span>
+                                                                                                                            </>
+                                                                                                                        )}
+                                                                                                                    </div>
+                                                                                                                )}
+                                                                                                            </div>
                                                                                                         )
                                                                                                     ) : (
                                                                                                         <span className="text-emerald-300 font-extrabold">
@@ -8785,7 +8837,15 @@ export default function CeoOfficePage() {
                                             </div>
 
                                             {/* 일일 보고서 발간 & 실시간 동기화 버튼 */}
-                                            <div className="flex items-center gap-2.5 shrink-0">
+                                            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActiveTab('strategy_lab')}
+                                                    className="px-3.5 py-2.5 rounded-xl bg-violet-600/30 hover:bg-violet-600/50 border border-violet-400/40 text-violet-200 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-violet-900/30 active:scale-95"
+                                                    title="내 매매 규칙을 5년 주가로 시험하고 AI가 스스로 개선하는 연습장"
+                                                >
+                                                    <span>🧪 AI 매매 전략 자율 연습장</span>
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowDailyReportModal(true)}
@@ -10716,7 +10776,13 @@ export default function CeoOfficePage() {
                                         </div>
                                     )}
                                 </div>
-                                                        )}{activeTab === 'history' && (
+                            )}{activeTab === 'strategy_lab' && (
+                                <StrategyLabWidget
+                                    onDeploySuccess={() => {
+                                        fetchTradingDesk();
+                                    }}
+                                />
+                            )}{activeTab === 'history' && (
                                 <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-5 space-y-5">
                                     <div>
                                         <h3 className="text-lg font-black text-white mb-1">

@@ -1012,6 +1012,14 @@ export default function AdminAutoTradePage() {
 
               <button
                 type="button"
+                onClick={() => router.push("/ceo-office?tab=lab")}
+                className="px-3 py-1.5 rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-400/40 text-violet-300 text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              >
+                <span>🧪 AI 매매 전략 자율 연습장</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={async () => {
                   try {
                     if (typeof window !== "undefined" && "Notification" in window) {
