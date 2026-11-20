@@ -121,6 +121,8 @@ export default function EconomicsListClient({
         } catch {
             // ignore
         }
+        // 마운트 시 최신 강의 목록 백그라운드 동기화
+        refreshPosts();
     }, []);
 
     // 커리큘럼 탭 열 때 API 호출

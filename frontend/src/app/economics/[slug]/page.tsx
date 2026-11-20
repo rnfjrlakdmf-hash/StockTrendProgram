@@ -7,7 +7,7 @@ import { API_BASE_URL } from "@/lib/config";
 import { EconomicsPost, FALLBACK_ECONOMICS_POSTS } from "@/lib/economicsFallback";
 import EconomicsStudyTools from "./EconomicsStudyTools";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface RelatedSummary {
     slug: string;
@@ -32,10 +32,10 @@ async function getEconomicsDetail(slug: string): Promise<{
 
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4500);
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         const baseUrl = API_BASE_URL || (typeof window === "undefined" ? "http://127.0.0.1:8000" : "");
         const res = await fetch(`${baseUrl}/api/economics/posts/${encodeURIComponent(decodedSlug)}`, {
-            next: { revalidate: 60 },
+            cache: "no-store",
             signal: controller.signal,
         });
         clearTimeout(timeoutId);
