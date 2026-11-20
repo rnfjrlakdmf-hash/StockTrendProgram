@@ -1473,6 +1473,26 @@ def run_market_scheduler():
             print(f"[Scheduler] 오늘({_init_today}) 주식 스터디 미발행(또는 어제와 중복) 상태 확인 → 예정 시각(08:30~) 즉시 발송 대기")
     except Exception as _e:
         print(f"[Scheduler] 초기화 중 Firestore 확인 실패: {_e}")
+
+    # [매일 1일 1경제학] 서버 재시작 시 오늘치(econ-YYYYMMDD) 실제 발행 여부 Firestore 확인
+    last_run_daily_economics = _saved.get("last_run_daily_economics", "")
+    try:
+        from firebase_admin import firestore as _fs_econ
+        _db_econ = _fs_econ.client()
+        _today_econ_slug = f"econ-{_init_now.strftime('%Y%m%d')}"
+        _econ_existing = _db_econ.collection("economics_posts").document(_today_econ_slug).get()
+        if _econ_existing.exists and ((_econ_existing.to_dict() or {}).get("title")):
+            last_run_daily_economics = _init_today
+            _save_sched_state("last_run_daily_economics", _init_today)
+            print(f"[Scheduler] 오늘({_init_today}) 1일 1경제학 이미 발행됨 → 중복 방지 마킹")
+        else:
+            last_run_daily_economics = ""
+            _save_sched_state("last_run_daily_economics", "")
+            print(f"[Scheduler] 오늘({_init_today}) 1일 1경제학 미발행 확인 → 07:40~ 자동 발행 대기")
+    except Exception as _ee:
+        print(f"[Scheduler] 초기화 중 1일 1경제학 Firestore 확인 실패: {_ee}")
+    run_market_scheduler.last_run_daily_economics = last_run_daily_economics
+
     last_spike_alert_time = None
 
     last_cleanup_date = ""
@@ -1695,6 +1715,31 @@ def run_market_scheduler():
                     run_market_scheduler.theory_retry_count = 0
                 else:
                     run_market_scheduler.theory_retry_count = retry_count + 1
+
+            # [매일 실행] 오전 7:40 매일 1일 1경제학 공부방 자동 포스팅 (07:40 ~ 23:59 자가 복구 윈도우, 비동기 스레드)
+            if getattr(run_market_scheduler, "econ_retry_date", "") != current_date:
+                run_market_scheduler.econ_retry_count = 0
+                run_market_scheduler.econ_retry_date = current_date
+
+            econ_retry_count = getattr(run_market_scheduler, "econ_retry_count", 0)
+            econ_last_run = getattr(run_market_scheduler, "last_run_daily_economics", "")
+            is_econ_window = (now.hour == 7 and now.minute >= 40) or (8 <= now.hour <= 23)
+            if is_econ_window and current_date != econ_last_run and econ_retry_count < 3:
+                _target_date = current_date
+                def _run_daily_econ():
+                    try:
+                        from daily_economics_bot import post_daily_economics
+                        res = post_daily_economics(force=False, send_push=True)
+                        if isinstance(res, dict) and res.get("status") in ("ok", "already_exists"):
+                            run_market_scheduler.last_run_daily_economics = _target_date
+                            _save_sched_state("last_run_daily_economics", _target_date)
+                            run_market_scheduler.econ_retry_count = 0
+                        else:
+                            run_market_scheduler.econ_retry_count = getattr(run_market_scheduler, "econ_retry_count", 0) + 1
+                    except Exception as _econ_err:
+                        print(f"[Scheduler] Daily Economics Bot error: {_econ_err}")
+                        run_market_scheduler.econ_retry_count = getattr(run_market_scheduler, "econ_retry_count", 0) + 1
+                _run_bg_job("daily_economics", _run_daily_econ)
 
             # [장중+애프터마켓] 관심종목 가격 급등락 감시 (5분 간격, 20:00까지 연장, 비동기 스레드)
             if not is_holiday("kor") and 9 <= now.hour <= 19 and now.minute % 5 == 0:

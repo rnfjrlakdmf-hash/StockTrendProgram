@@ -3,7 +3,7 @@
 import { API_BASE_URL } from "@/lib/config";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator, Rocket, FlaskConical } from "lucide-react";
+import { Star, Flame, TrendingUp, TrendingDown, LayoutDashboard, Newspaper, Compass, Settings, Bell, MessageSquare, LineChart, Crown, Zap, X, Network, Sparkles, UserCheck, Shield, CalendarDays, Menu, PlayCircle, Timer, History, BarChart3, Activity, Users, Globe, HelpCircle, List, Gift, Gem, BookOpen, Send, ChevronDown, ChevronRight, Trophy, Calculator, Rocket, FlaskConical, GraduationCap } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { App } from '@capacitor/app';
 import MarketClock from "./MarketClock";
@@ -47,6 +47,7 @@ const navigationGroups = [
     {
         groupName: "금융 아카데미 & 자산 관리",
         items: [
+            { name: "매일 1일 1경제학 공부방", href: "/economics", icon: GraduationCap, desc: "초보자도 하루 5분, 주제가 단 하나도 겹치지 않게 매일 하나씩 일상 비유·그림·퀴즈로 배우는 180일+ 경제학 아카데미입니다.", badge: "매일1강" },
             { name: "1타 강사 차트 스터디", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론, 보조지표 매매타점을 119개 강의로 체계적으로 학습합니다.", badge: "119강" },
             { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "PER·PBR·ROE 기업 가치평가부터 DART 전자공시 독해, 매크로 지표까지 총망라한 46대 필수 주식 백과사전입니다.", badge: "46선" },
             { name: "스마트 주식 계산기", href: "/calculator", icon: Calculator, desc: "물타기 평단가 인하 탈출 시뮬레이션 및 종목별 월배당·연간 배당금 캐시플로우를 계산합니다.", badge: "인기" },

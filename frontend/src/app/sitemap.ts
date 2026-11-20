@@ -54,6 +54,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.95,
         },
         {
+            url: `${baseUrl}/economics`,
+            lastModified: now,
+            changeFrequency: 'daily',
+            priority: 0.95,
+        },
+        {
             url: `${baseUrl}/calculator`,
             lastModified: now,
             changeFrequency: 'weekly',

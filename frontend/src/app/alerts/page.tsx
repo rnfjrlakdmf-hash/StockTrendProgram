@@ -250,7 +250,7 @@ export default function AlertCenterPage() {
                     'sec_insider_trading', 'sec_13f', 'sec_disclosure',
                     'disclosure_alert', 'disclosure', 'large_holding',
                     'insider_trading', 'whale_accumulation', 'whale_alert',
-                    'quant_scanner', 'theory_alert', 'system_alert'
+                    'quant_scanner', 'theory_alert', 'economics_alert', 'system_alert'
                 ].includes(data.type) ||
                 (data.type === 'market_summary' && isGlobal && !hasTargetUsers) ||
                 titleStr.includes('[SEC]') ||
@@ -2530,6 +2530,18 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-sky-400";
             defaultCta = { href: alert.url || (alert.symbol ? `/discovery?q=${alert.symbol}` : "/discovery"), label: "뉴스 기사 원문 보기", icon: Globe, style: "bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border-sky-500/30" };
         }
+        // [4-0-1순위: 🎓 매일 1일 1경제학 공부방]
+        else if (
+            titleText.includes("1일 1경제학") ||
+            alert.type === 'economics_alert' ||
+            (alert.url && String(alert.url).includes('/economics'))
+        ) {
+            typeBadgeStyle = "bg-indigo-500/20 text-indigo-200 border-indigo-400/40 shadow-[0_0_15px_rgba(99,102,241,0.25)]";
+            typeBadgeLabel = "🎓 매일 1일 1경제학";
+            cardBorderHover = "hover:border-indigo-400/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.2)]";
+            accentBorder = "border-l-4 border-l-indigo-400";
+            defaultCta = { href: alert.url || "/economics", label: "🎓 오늘의 5분 경제학 공부하러 가기", icon: Sparkles, style: "bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border-indigo-400/40" };
+        }
         // [4-0순위: 🎓 주식 1타 강사 실전 매매법 특강 / 매일 차트 스터디]
         else if (
             titleText.includes("1타 강사") ||
@@ -2926,8 +2938,8 @@ function formatUsdToKrwInText(text: string): string {
         // 4. 운영 알림 탭 선택 시: 관리자용 보고서 및 자동매매는 완전 제외하고, 순수 일반 서비스 공지/업데이트/스터디 강의 표시
         if (activeTab === "system") {
             if (isAdminAlert || isAutoTradeAlert) return false;
-            const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update', 'theory_alert', 'study'].includes(alert.type) ||
-                titleText.includes('[공지]') || titleText.includes('[안내]') || titleText.includes('[업데이트]') || titleText.includes('[점검]') || titleText.includes('스터디') || titleText.includes('1타 강사');
+            const isSystemNotice = ['system_alert', 'notice', 'announcement', 'service_update', 'update', 'theory_alert', 'economics_alert', 'study'].includes(alert.type) ||
+                titleText.includes('[공지]') || titleText.includes('[안내]') || titleText.includes('[업데이트]') || titleText.includes('[점검]') || titleText.includes('스터디') || titleText.includes('1타 강사') || titleText.includes('1일 1경제학');
             return isSystemNotice;
         }
 
@@ -2960,7 +2972,7 @@ function formatUsdToKrwInText(text: string): string {
                 'sec_insider_trading', 'sec_13f', 'sec_disclosure',
                 'disclosure_alert', 'disclosure', 'large_holding',
                 'insider_trading', 'whale_accumulation', 'whale_alert',
-                'quant_scanner', 'theory_alert', 'system_alert'
+                'quant_scanner', 'theory_alert', 'economics_alert', 'system_alert'
             ].includes(alert.type) ||
             (alert.type === 'market_summary' && alert.is_global === true && !hasTargetUsers) ||
             titleText.includes('[SEC]') ||

@@ -108,6 +108,8 @@ app.include_router(stock_health_router, prefix="/api", tags=["StockHealth"])
 app.include_router(emerging_scanner_router, prefix="/api/market", tags=["EmergingScanner"])
 from routes.strategy_lab import router as strategy_lab_router
 app.include_router(strategy_lab_router, prefix="/api", tags=["StrategyLab"])
+from routes.economics import router as economics_router
+app.include_router(economics_router, prefix="/api", tags=["Economics"])
 
 
 
