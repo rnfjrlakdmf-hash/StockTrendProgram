@@ -1417,40 +1417,211 @@ def get_live_rankings(market: str = "KR", category: str = "amount"):
 
 
 _KR_PROFILE_CACHE: Dict[str, Any] = {}
+_KR_PROFILE_THEME_CACHE: Dict[str, Any] = {}
+
+_KR_THEME_RULES = [
+    (["양극재", "양극활물질", "음극재", "전구체", "전해질", "분리막", "하이니켈", "LFP", "2차전지", "이차전지", "배터리"], "#2차전지·배터리", "전기차(EV) 및 전력망용 배터리의 핵심 소재·셀을 공급하는 친환경 에너지 밸류체인 테마입니다."),
+    (["ESS", "에너지저장", "수냉식", "열관리", "냉각시스템"], "#ESS·에너지저장", "신재생에너지와 AI 데이터센터 전력망 안정화에 필수적인 대용량 에너지저장장치(ESS)·열관리 수혜 테마입니다."),
+    (["UPS", "무정전", "전력기기", "변압기", "배전", "전선", "전력망", "초고압"], "#AI전력·데이터센터", "글로벌 AI 데이터센터 증설로 전력 인프라(변압기·UPS·냉각) 수요가 급증하는 전력 슈퍼사이클 테마입니다."),
+    (["프로브", "테스트 소켓", "검사용 소켓", "반도체 검사", "후공정", "OSAT", "패키징", "리노공업", "테스트핀"], "#반도체소부장·검사", "AI·모바일 신형 칩 출시와 미세공정이 확대될수록 필수 수요가 커지는 반도체 테스트·후공정 소부장 테마입니다."),
+    (["HBM", "고대역폭", "AI 반도체", "파운드리", "웨이퍼", "노광", "식각", "증착", "반도체"], "#반도체·AI칩", "글로벌 AI 서버·온디바이스 확산의 핵심 수혜를 받는 반도체 제조 및 장비·소재 테마입니다."),
+    (["원전", "원자력", "SMR", "소형모듈", "가스터빈", "발전설비"], "#원자력·SMR", "탄소중립과 AI 데이터센터 무탄소 전력 확보를 위한 글로벌 원전 르네상스 및 SMR 수혜 테마입니다."),
+    (["방산", "자주포", "장갑차", "전차", "유도무기", "미사일", "항공우주", "위성", "K-방산"], "#K-방산·우주항공", "유럽·중동 등 글로벌 국방비 증액에 따른 K-방산 대규모 해외 수출 수주 테마입니다."),
+    (["조선", "LNG", "선박", "선가", "해양플랜트", "선박엔진", "FLNG"], "#친환경조선·LNG", "노후 선박 교체와 친환경 LNG·암모니아 추진선 발주 증가로 고선가 수주가 이어지는 조선 테마입니다."),
+    (["전기차", "EV", "하이브리드", "전장", "자율주행", "자동차부품", "모빌리티", "쿨링팬", "Cooling Fan", "완성차"], "#전기차·전장부품", "완성차의 전동화(EV·HEV) 및 스마트카 전장 전환에 따라 공급이 늘어나는 모빌리티 부품 테마입니다."),
+    (["신약", "바이오", "임상", "항체", "ADC", "비만치료제", "CDMO", "바이오시밀러", "제약"], "#바이오·신약개발", "글로벌 기술수출(L/O), FDA 승인 및 바이오 위탁생산(CDMO) 확대가 성장을 이끄는 제약·바이오 테마입니다."),
+    (["의료기기", "미용기기", "임플란트", "진단기기", "헬스케어", "초음파"], "#의료기기·헬스케어", "고령화와 글로벌 미용·정밀진단 수요 증가로 고마진 해외 수출이 성장하는 헬스케어 테마입니다."),
+    (["로봇", "협동로봇", "휴머노이드", "액추에이터", "감속기", "스마트팩토리", "자동화"], "#로봇·자동화", "인구 고령화와 AI 피지컬 로봇 상용화에 따라 제조·물류 자동화 수요가 확대되는 로봇 테마입니다."),
+    (["화장품", "뷰티", "ODM", "스킨케어", "K-뷰티", "생활건강"], "#K-뷰티·화장품", "미국·일본·유럽 등 글로벌 인디브랜드 흥행과 수출 다변화가 실적을 이끄는 K-뷰티 테마입니다."),
+    (["엔터", "음반", "아티스트", "콘텐츠", "드라마", "웹툰", "K-POP", "미디어"], "#엔터·K-콘텐츠", "글로벌 팬덤 확장과 월드투어·OTT 수출로 IP 수익성을 극대화하는 K-컬처 테마입니다."),
+    (["은행", "금융지주", "생명보험", "손해보험", "화재보험", "투자증권", "증권사", "밸류업", "고배당", "자사주 소각"], "#금융·밸류업고배당", "기업 밸류업 프로그램과 자사주 소각·배당 확대 등 주주환원 매력이 부각되는 금융 가치주 테마입니다."),
+    (["항공", "항공사", "여행", "카지노", "면세", "호텔", "레저"], "#항공·여행레저", "국제선 여객 수요 호조와 유가·환율 안정 시 이익 레버리지가 돋보이는 여행·운송 테마입니다."),
+    (["식품", "라면", "음료", "제과", "외식", "K-푸드", "주류"], "#K-푸드·음식료", "북미·유럽 등 해외 현지 매출 비중이 빠르게 늘며 수출 성장주로 재평가받는 K-푸드 테마입니다."),
+    (["클라우드", "소프트웨어", "플랫폼", "AI 에이전트", "보안", "핀테크", "인터넷"], "#AI소프트웨어·플랫폼", "생성형 AI 도입과 클라우드·구독 전환으로 높은 영업 레버리지를 창출하는 IT 플랫폼 테마입니다."),
+    (["OLED", "디스플레이", "패널", "LED", "광학", "카메라모듈", "기판", "PCB", "MLCC"], "#IT부품·디스플레이", "AI 스마트폰·IT 기기 스펙 상향과 온디바이스 AI 교체 주기에 연동되는 전자부품 테마입니다."),
+    (["통신", "5G", "6G", "기지국", "광통신", "네트워크"], "#통신·네트워크", "안정적 현금흐름·배당 매력에 AI 데이터센터 광통신 인프라 투자가 더해지는 통신 테마입니다."),
+    (["철강", "구리", "알루미늄", "비철금속", "리튬", "니켈", "희토류"], "#소재·비철금속", "글로벌 인프라 투자 및 친환경 전력망 확충에 따라 원자재 가격 사이클에 연동되는 핵심 소재 테마입니다."),
+    (["정유", "석유화학", "화학", "정제마진", "특수화학"], "#정유·화학소재", "국제유가와 정제마진, 첨단 스페셜티 화학 소재 전환 여부가 실적을 좌우하는 에너지·화학 테마입니다."),
+    (["건설", "플랜트", "인프라", "시멘트", "중장비", "재건"], "#건설·글로벌플랜트", "해외 대형 플랜트 수주와 국내외 인프라·재건 프로젝트 발주에 연동되는 건설·기계 테마입니다."),
+    (["태양광", "풍력", "수소", "신재생", "친환경"], "#신재생·친환경에너지", "글로벌 탈탄소 정책과 빅테크 친환경 전력 조달(RE100) 확대의 수혜를 받는 그린에너지 테마입니다."),
+    (["게임", "MMORPG", "콘솔", "메타버스"], "#게임·디지털콘텐츠", "글로벌 신작 흥행과 PC·콘솔 멀티플랫폼 확장이 실적 반등을 이끄는 K-게임 테마입니다."),
+    (["유통", "백화점", "마트", "편의점", "이커머스", "물류", "택배"], "#유통·물류", "내수 소비 회복과 온라인 물류 효율화, 해외 역직구 확장이 성장을 이끄는 유통·소비 테마입니다."),
+]
+
+
+def _kr_topic_particle(word: str) -> str:
+    """한글 마지막 글자의 받침 유무에 따라 자연스러운 조사('은'/'는') 반환"""
+    w = (word or "").strip()
+    if not w:
+        return "은"
+    last = w[-1]
+    code = ord(last)
+    if 0xAC00 <= code <= 0xD7A3:
+        return "은" if (code - 0xAC00) % 28 != 0 else "는"
+    return "은" if last.upper() in ("L", "M", "N", "R", "0", "1", "3", "6", "7", "8") else "는"
+
+
+def _humanize_company_overview(raw_text: str, stock_name: str = "") -> str:
+    """공시 문어체 기업 개요를 초보자가 3초 만에 이해할 수 있는 간결한 1~2문장으로 정제"""
+    t = re.sub(r"\s+", " ", (raw_text or "")).strip()
+    if not t:
+        return ""
+    subj = f"{stock_name}{_kr_topic_particle(stock_name)} " if stock_name else ""
+    sentences = [s.strip() for s in re.split(r"(?<=[다임함됨음]\.)\s+", t) if s.strip()]
+    cleaned = []
+    for s in sentences:
+        s = re.sub(r"^동사는\s+", "", s)
+        s = re.sub(r"\d{4}년\s*설립되어\s*\d{4}년\s*(?:코스닥|유가증권|코스피)(?:시장)?에?\s*상장한\s*", "", s)
+        s = re.sub(r"\d{4}년\s*(?:창업|설립)\s*후\s*\d{4}년\s*법인전환,?\s*\d{4}년\s*(?:코스닥|유가증권|코스피)(?:시장)?\s*상장한\s*", "", s)
+        s = re.sub(r"\d{4}년\s*설립된\s*", "", s)
+        s = re.sub(r",?\s*\d{4}년\s*(?:코스닥|유가증권|코스피)(?:시장)?\s*(?:상장|이전상장)(?:함|한)?\s*후\s*\d{4}년\s*(?:유가증권|코스피|코스닥)(?:시장)?(?:으로)?\s*이전상장함\.?", "입니다.", s)
+        s = re.sub(r"기업으로,?\s*입니다\.", "기업입니다.", s)
+        s = re.sub(r"있음\.$", "있습니다.", s)
+        s = re.sub(r"보유함\.$", "보유하고 있습니다.", s)
+        s = re.sub(r"영위함\.$", "영위하고 있습니다.", s)
+        s = re.sub(r"제조·판매함\.$", "제조·판매합니다.", s)
+        s = re.sub(r"판매함\.$", "판매합니다.", s)
+        s = re.sub(r"공급함\.$", "공급합니다.", s)
+        s = re.sub(r"개발함\.$", "개발합니다.", s)
+        s = re.sub(r"추진함\.$", "추진하고 있습니다.", s)
+        s = re.sub(r"기업임\.$", "기업입니다.", s)
+        s = re.sub(r"임\.$", "입니다.", s)
+        s = re.sub(r"함\.$", "합니다.", s)
+        s = re.sub(r"됨\.$", "됩니다.", s)
+        s = re.sub(r"\s+", " ", s).strip()
+        # "중견기업입니다." / "대기업입니다."처럼 사업 설명 없는 빈 껍데기 연혁 문장은 스킵
+        if not s or len(s) < 12 or re.match(r"^(?:중견|중소|대|코스닥|코스피|상장)?기업입니다\.?$", s):
+            continue
+        cleaned.append(s)
+        if len(cleaned) >= 2:
+            break
+
+    if not cleaned:
+        return ""
+    if subj and not cleaned[0].startswith(stock_name):
+        cleaned[0] = subj + cleaned[0]
+    result = " ".join(cleaned).strip()
+    if len(result) > 180:
+        cut = result[:180]
+        end = max(cut.rfind("다."), cut.rfind(". "))
+        result = cut[: end + 1] if end > 65 else cut.rstrip() + "…"
+    return result
+
+
+def _get_kr_company_profile_and_themes(code: str, stock_name: str = "", report_title: str = "") -> Dict[str, Any]:
+    """
+    국내 상장사의 '무슨 회사인지(공식 기업 개요)' + '공식 업종(WICS)' + '핵심 테마 태그 & 테마 해설' 반환 (24시간 캐시)
+    """
+    import requests
+    now = time.time()
+    cache_key = f"{code or stock_name}"
+    hit = _KR_PROFILE_THEME_CACHE.get(cache_key)
+    raw_overview = ""
+    wics_sector = ""
+    market_sector = ""
+
+    if hit and now - hit[0] < 86400:
+        raw_overview, wics_sector, market_sector = hit[1], hit[2], hit[3]
+    elif code and re.match(r"^\d{6}$", str(code).strip()):
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        # 1순위: WiseReport 공식 기업개요 + WICS 업종 (전 종목 99% 커버)
+        try:
+            from bs4 import BeautifulSoup
+            r = requests.get(
+                f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}",
+                headers=headers,
+                timeout=3.5,
+            )
+            if r.status_code == 200:
+                r.encoding = "utf-8"
+                soup = BeautifulSoup(r.text, "html.parser")
+                lis = [li.get_text(" ", strip=True) for li in soup.select(".cmp_comment li") if li.get_text(strip=True)]
+                if lis:
+                    raw_overview = " ".join(lis)
+                else:
+                    el = soup.find("div", class_="cmp_comment")
+                    if el:
+                        raw_overview = el.get_text(" ", strip=True)
+                for dt in soup.select(".td0101 dt"):
+                    dt_txt = dt.get_text(" ", strip=True)
+                    if dt_txt.startswith("WICS"):
+                        wics_sector = dt_txt.split(":", 1)[-1].strip()
+                    elif dt_txt.startswith("KOSPI") or dt_txt.startswith("KOSDAQ"):
+                        market_sector = dt_txt.split(":", 1)[-1].strip()
+        except Exception:
+            pass
+
+        # 2순위 폴백: 네이버 모바일 overview API
+        if not raw_overview:
+            try:
+                r2 = requests.get(f"https://m.stock.naver.com/api/stock/{code}/overview", headers=headers, timeout=3)
+                if r2.status_code == 200:
+                    ov = (r2.json().get("overviewSummary") or {})
+                    parts = [ov.get(f"comment{i}", "").strip() for i in (1, 2, 3) if ov.get(f"comment{i}")]
+                    raw_overview = " ".join(parts).strip()
+            except Exception:
+                pass
+
+        if raw_overview or wics_sector:
+            _KR_PROFILE_THEME_CACHE[cache_key] = (now, raw_overview, wics_sector, market_sector)
+
+    # 1. 쉬운 기업 한 줄~두 줄 소개 정제
+    company_summary = _humanize_company_overview(raw_overview, stock_name=stock_name)
+    if not company_summary:
+        p = _kr_topic_particle(stock_name)
+        if wics_sector:
+            company_summary = f"{stock_name}{p} {wics_sector} 분야를 주력으로 영위하는 국내 상장 기업입니다."
+        else:
+            company_summary = f"{stock_name}{p} 증권사 애널리스트 커버리지가 집중되는 국내 핵심 상장 기업입니다."
+
+    # 2. 핵심 테마 태그(최대 3개) + 테마 한 줄 해설 자동 추출
+    search_blob = f"{stock_name} {wics_sector} {raw_overview} {report_title}"
+    search_upper = search_blob.upper()
+    title_upper = f"{stock_name} {report_title}".upper()
+    lead_upper = raw_overview[:130].upper()
+    matched_themes = []
+    for keywords, tag_label, desc in _KR_THEME_RULES:
+        score = 0
+        for kw in keywords:
+            ku = kw.upper()
+            if ku in search_upper:
+                if ku in title_upper:
+                    score += 3
+                elif ku in lead_upper:
+                    score += 2
+                else:
+                    score += 1
+        if score > 0:
+            matched_themes.append((score, tag_label, desc))
+
+    matched_themes.sort(key=lambda x: x[0], reverse=True)
+    theme_tags = [t[1] for t in matched_themes[:3]]
+    theme_summary = matched_themes[0][2] if matched_themes else ""
+
+    if not theme_tags and wics_sector:
+        clean_wics = wics_sector.replace(" ", "")
+        theme_tags = [f"#{clean_wics}"]
+        theme_summary = f"국내 증시 '{wics_sector}' 업종에 속하며 업황 사이클과 실적 모멘텀에 따라 수급이 집중되는 테마입니다."
+    elif not theme_tags:
+        theme_tags = ["#실적성장주"]
+        theme_summary = "증권사 목표주가 상향과 실적 개선 모멘텀이 부각되는 핵심 관심 테마입니다."
+
+    return {
+        "sector_name": wics_sector or market_sector or "핵심 상장사",
+        "company_summary": company_summary,
+        "theme_tags": theme_tags,
+        "theme_summary": theme_summary,
+    }
 
 
 def _get_kr_company_profile(code: str) -> str:
-    """국내 종목의 '어떤 회사인지' 쉬운 한 줄 소개 (네이버 기업개요 → WiseReport 순, 24시간 캐시)"""
-    import requests
+    """국내 종목의 '어떤 회사인지' 쉬운 한 줄 소개 (WiseReport → 네이버 overview 순, 24시간 캐시)"""
     now = time.time()
     hit = _KR_PROFILE_CACHE.get(code)
     if hit and now - hit[0] < 86400:
         return hit[1]
-
-    text = ""
-    headers = {"User-Agent": "Mozilla/5.0"}
-    try:
-        r = requests.get(f"https://m.stock.naver.com/api/stock/{code}/integration", headers=headers, timeout=4)
-        if r.status_code == 200:
-            text = (r.json().get("corporateOverview") or "").strip()
-    except Exception:
-        pass
-    if not text:
-        try:
-            from bs4 import BeautifulSoup
-            r = requests.get(f"https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}", headers=headers, timeout=4)
-            if r.status_code == 200:
-                el = BeautifulSoup(r.text, "html.parser").find("div", class_="cmp_comment")
-                if el:
-                    text = el.get_text(" ", strip=True)
-        except Exception:
-            pass
-
-    text = re.sub(r"\s+", " ", text).strip()
-    if len(text) > 200:
-        cut = text[:200]
-        end = max(cut.rfind("다."), cut.rfind(". "))
-        text = cut[:end + 1] if end > 60 else cut.rstrip() + "…"
+    info = _get_kr_company_profile_and_themes(code=code)
+    text = info.get("company_summary") or ""
     if text:
         _KR_PROFILE_CACHE[code] = (now, text)
     return text
@@ -3432,10 +3603,27 @@ def _build_weekly_review_and_calendar(
         t = re.sub(r'\b컨센\b', '시장 예상치(컨센서스)', t)
         return t.strip()
 
-    # 1) 리서치 추천 종목 주간 복기 리스트 구성
+    # 1) 리서치 추천 종목 주간 복기 리스트 구성 (기업 개요·테마 병렬 선조회로 0.5초 내 완료)
+    from concurrent.futures import ThreadPoolExecutor
+    _top_reports = desk_company_reports[:6]
+    _profile_map: Dict[int, Dict[str, Any]] = {}
+    try:
+        def _fetch_one_profile(pair):
+            _i, _r = pair
+            _sn = _r.get("stock_name") or "주요 종목"
+            _sc = _r.get("item_code") or STOCK_MAP.get(_sn) or ""
+            _st = _r.get("title") or ""
+            return _i, _get_kr_company_profile_and_themes(_sc, _sn, _st)
+
+        with ThreadPoolExecutor(max_workers=6) as _ex:
+            for _i, _info in _ex.map(_fetch_one_profile, enumerate(_top_reports)):
+                _profile_map[_i] = _info
+    except Exception:
+        pass
+
     review_items = []
     upsides = []
-    for idx, rep in enumerate(desk_company_reports[:6]):
+    for idx, rep in enumerate(_top_reports):
         s_name = rep.get("stock_name") or "주요 종목"
         s_code = rep.get("item_code") or STOCK_MAP.get(s_name) or ""
         s_broker = rep.get("broker") or "주요 증권사"
@@ -3514,6 +3702,8 @@ def _build_weekly_review_and_calendar(
             cl_price_str=cl_price_str,
         )
 
+        prof_info = _profile_map.get(idx) or _get_kr_company_profile_and_themes(s_code, s_name, clean_title)
+
         review_items.append({
             "rank": idx + 1,
             "stock_name": s_name,
@@ -3521,6 +3711,10 @@ def _build_weekly_review_and_calendar(
             "broker": s_broker,
             "date": s_date,
             "title": clean_title,
+            "sector_name": prof_info.get("sector_name", ""),
+            "company_summary": prof_info.get("company_summary", ""),
+            "theme_tags": prof_info.get("theme_tags", []),
+            "theme_summary": prof_info.get("theme_summary", ""),
             "current_price": curr_p_str,
             "curr_p_num": int(curr_p_num),
             "safe_entry_p": safe_entry_p,
@@ -3658,6 +3852,10 @@ def _build_weekly_review_and_calendar(
             "stock_name": item["stock_name"],
             "stock_code": item["stock_code"],
             "broker": item["broker"],
+            "sector_name": item.get("sector_name", ""),
+            "company_summary": item.get("company_summary", ""),
+            "theme_tags": item.get("theme_tags", []),
+            "theme_summary": item.get("theme_summary", ""),
             "current_price": item["current_price"],
             "target_price": item["target_price"],
             "upside_pct": item["upside_pct"],
@@ -4486,6 +4684,13 @@ def _build_weekly_review_and_calendar(
                 if bull_ev_names:
                     names_str = " · ".join(bull_ev_names[:2])
                     final_bull_scenario = f"실제 발표된 [{names_str}] 지표가 시장 예상치를 웃도는 호재로 확인되었습니다. 고용 체력과 유가 안정화 신호가 맞물려 외국인 수급이 개선되며 국내 수출 대형주 및 실적 우량주의 안도 랠리가 유력합니다."
+                
+                pending_ev_names = [e.get("name", "") for e in enriched_events if e.get("status") != "released"]
+                if pending_ev_names:
+                    p_str = " · ".join(pending_ev_names[:2])
+                    final_bear_scenario = f"주요 지표가 호재로 시장 리스크가 완화되었으나, 후속 발표 예정인 [{p_str}] 지표에서 변동성이 발생할 수 있습니다. 단기 급등 시 무리한 추격매수를 자제하고 눌림목 지지선을 확인하며 분할 접근합니다."
+                else:
+                    final_bear_scenario = "주요 발표치가 호재로 확인되어 하방 경직성이 확보되었습니다. 다만 단기 차익 실현 매물이 출회될 수 있으므로 추격매수 대신 눌림목 지지선을 확인하고 분할 접근합니다."
             else:
                 active_scenario = "bear"
                 scenario_status_badge = f"🔴 부진(악재) 리스크 방어 지침 가동 중 ({day_bear_count}건 경계)"
@@ -4493,6 +4698,13 @@ def _build_weekly_review_and_calendar(
                 if bear_ev_names:
                     names_str = " · ".join(bear_ev_names[:2])
                     final_bear_scenario = f"실제 발표된 [{names_str}] 지표가 시장 경계감을 자극하고 있습니다. 단기 변동성에 대비해 무리한 추격매수를 자제하고 지지선을 확인한 후 선별 접근합니다."
+                
+                pending_ev_names = [e.get("name", "") for e in enriched_events if e.get("status") != "released"]
+                if pending_ev_names:
+                    p_str = " · ".join(pending_ev_names[:2])
+                    final_bull_scenario = f"지표 부진으로 단기 조정 압력이 있으나, 후속 발표 예정인 [{p_str}] 지표가 양호하게 확인될 경우 기술적 반등이 기대됩니다. 성급한 손절 대신 분할 대응을 유지합니다."
+                else:
+                    final_bull_scenario = "지표 부진 여파가 이어지고 있으나 과매도 구간 진입 시 저가 매수세가 유입될 수 있습니다. 바닥 다지기 및 반등 신호를 확인 후 접근합니다."
         else:
             active_scenario = "pending"
             scenario_status_badge = "⏳ 오늘 주요 지표 발표 대기 중"
@@ -5669,7 +5881,18 @@ def get_ceo_office_boardroom(
             with open(daily_kr_cache_path, "r", encoding="utf-8") as f:
                 loaded_reps = json.load(f)
                 if isinstance(loaded_reps, list) and len(loaded_reps) >= 6:
-                    selected_kr_reports = loaded_reps[:6]
+                    # 💡 스마트 캐시 자동 갱신:
+                    # 캐시가 새벽(08:30 이전)에 생성되어 당일(date_hyphen) 리포트가 없었는데,
+                    # 현재 08:30 이후이고 네이버에 오늘자 신규 리포트가 다수 올라온 경우 자동 갱신
+                    cache_dates = {r.get("date") for r in loaded_reps}
+                    has_today_in_cache = date_hyphen in cache_dates
+                    desk_today_count = sum(1 for r in desk_company_reports if r.get("date") == date_hyphen)
+
+                    if (not has_today_in_cache) and (hour >= 8 and (hour > 8 or now_kst.minute >= 30)) and (desk_today_count >= 2):
+                        print(f"[CEOOffice] Refreshing early-morning cache with today's ({date_hyphen}) new reports ({desk_today_count} found)")
+                        selected_kr_reports = []
+                    else:
+                        selected_kr_reports = loaded_reps[:6]
         except Exception as _e:
             print(f"[CEOOffice] Daily KR cache load error: {_e}")
 

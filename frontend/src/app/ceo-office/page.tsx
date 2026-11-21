@@ -10360,6 +10360,38 @@ export default function CeoOfficePage() {
                                                                     </span>
                                                                 </div>
 
+                                                                {(item.company_summary || (item.theme_tags && item.theme_tags.length > 0)) && (
+                                                                    <div className="bg-indigo-950/35 border border-indigo-400/30 rounded-xl p-2.5 space-y-1.5 text-[11px] leading-relaxed">
+                                                                        <div className="flex flex-wrap items-center gap-1">
+                                                                            {item.sector_name && (
+                                                                                <span className="px-2 py-0.5 rounded-md bg-white/10 text-gray-200 font-bold text-[10px] border border-white/10">
+                                                                                    🏢 {item.sector_name}
+                                                                                </span>
+                                                                            )}
+                                                                            {(item.theme_tags || []).map((tag: string, tIdx: number) => (
+                                                                                <span
+                                                                                    key={tIdx}
+                                                                                    className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-black text-[10px] border border-sky-400/30"
+                                                                                >
+                                                                                    {tag}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                        {item.company_summary && (
+                                                                            <p className="text-gray-200 font-medium break-keep">
+                                                                                <strong className="text-indigo-300 font-black">기업 소개: </strong>
+                                                                                {item.company_summary}
+                                                                            </p>
+                                                                        )}
+                                                                        {item.theme_summary && (
+                                                                            <p className="text-sky-200/90 font-medium break-keep pt-1 border-t border-white/10">
+                                                                                <strong className="text-sky-300 font-black">🏷️ 테마 설명: </strong>
+                                                                                {item.theme_summary}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+
                                                                 <div className="bg-black/50 border border-white/10 rounded-xl p-3 flex items-center justify-between text-xs">
                                                                     <div>
                                                                         <div className="text-[10px] text-gray-400 font-bold">현재가 ➔ 목표주가</div>
@@ -10432,6 +10464,38 @@ export default function CeoOfficePage() {
                                                             <div className="text-sm font-black text-white">
                                                                 {rep.title}
                                                             </div>
+
+                                                            {(rep.company_summary || (rep.theme_tags && rep.theme_tags.length > 0)) && (
+                                                                <div className="bg-indigo-950/30 border border-indigo-400/25 rounded-xl p-2.5 space-y-1.5 text-[11px] leading-relaxed">
+                                                                    <div className="flex flex-wrap items-center gap-1">
+                                                                        {rep.sector_name && (
+                                                                            <span className="px-2 py-0.5 rounded-md bg-white/10 text-gray-200 font-bold text-[10px]">
+                                                                                🏢 {rep.sector_name}
+                                                                            </span>
+                                                                        )}
+                                                                        {(rep.theme_tags || []).map((tag: string, tIdx: number) => (
+                                                                            <span
+                                                                                key={tIdx}
+                                                                                className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-black text-[10px] border border-sky-400/30"
+                                                                            >
+                                                                                {tag}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                    {rep.company_summary && (
+                                                                        <p className="text-gray-200 font-medium break-keep">
+                                                                            <strong className="text-indigo-300 font-black">무슨 회사? </strong>
+                                                                            {rep.company_summary}
+                                                                        </p>
+                                                                    )}
+                                                                    {rep.theme_summary && (
+                                                                        <p className="text-sky-200/90 font-medium break-keep">
+                                                                            <strong className="text-sky-300 font-black">🏷️ 테마: </strong>
+                                                                            {rep.theme_summary}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
 
                                                             <div className="bg-slate-900/90 border border-white/10 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
                                                                 <span className="text-gray-300 font-bold">
